@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 32">
+  <rect width="96" height="32" rx="8" fill="#0a0a0a"/>
+  <text
+    x="48"
+    y="22"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-weight="800"
+    font-size="13"
+    font-style="italic"
+    letter-spacing="-0.04em"
+  >
+    <tspan fill="#ffffff">Trust</tspan><tspan fill="#00e676">Edge</tspan>
+  </text>
+</svg>
