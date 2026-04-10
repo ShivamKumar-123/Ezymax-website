@@ -1,0 +1,86 @@
+# ============================================================
+# TrustEdge — Production overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================
+name: trustedge
+
+services:
+  # ── Lock down databases to localhost only ────────────────────
+  postgres:
+    ports:
+      - "127.0.0.1:5435:5432"
+    restart: always
+
+  timescaledb:
+    ports:
+      - "127.0.0.1:5433:5432"
+    restart: always
+
+  redis:
+    ports:
+      - "127.0.0.1:6381:6379"
+    restart: always
+
+  zookeeper:
+    ports:
+      - "127.0.0.1:2181:2181"
+    restart: always
+
+  kafka:
+    ports:
+      - "127.0.0.1:9092:9092"
+    restart: always
+
+  # ── Disable Kafka UI in production ──────────────────────────
+  kafka-ui:
+    profiles:
+      - debug
+
+  # ── Backend services — restart policy + no public ports ─────
+  admin-api:
+    ports:
+      - "127.0.0.1:8001:8001"
+    restart: always
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
+
+  gateway:
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: always
+    command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
+  market-data:
+    restart: always
+
+  b-book-engine:
+    restart: always
+
+  risk-engine:
+    restart: always
+
+  # ── Frontends — build with production domain + restart ──────
+  trader-frontend:
+    build:
+      context: ./frontend/trader
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-production}
+    ports:
+      - "127.0.0.1:3010:3000"
+    environment:
+      INTERNAL_API_URL: http://gateway:8000/api/v1
+      TRADER_API_PROXY_TARGET: http://gateway:8000
+      # Browser WebSocket connects directly to api subdomain
+      NEXT_PUBLIC_WS_URL: wss://api.trustedgefx.com
+      # DO NOT set NEXT_PUBLIC_GATEWAY_URL — browser uses same-origin /api/v1 proxy (avoids CORS)
+    restart: always
+
+  admin-frontend:
+    build:
+      context: ./frontend/admin
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3011:3001"
+    environment:
+      ADMIN_API_PROXY_TARGET: http://admin-api:8001
+    restart: always
