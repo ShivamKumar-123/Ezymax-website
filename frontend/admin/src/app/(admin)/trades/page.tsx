@@ -211,8 +211,9 @@ export default function TradesPage() {
   const [createReason, setCreateReason] = useState('');
   const [userSearchLoading, setUserSearchLoading] = useState(false);
 
-  const fetchPositions = useCallback(async () => {
-    setPosLoading(true);
+  /** Full fetch with loading spinner — only on initial load or manual refresh. */
+  const fetchPositions = useCallback(async (silent = false) => {
+    if (!silent) setPosLoading(true);
     try {
       const params: Record<string, string> = { page: String(posPage), limit: '20' };
       const data = await adminApi.get<any>('/trades/positions', params);
@@ -220,27 +221,27 @@ export default function TradesPage() {
       setPosTotal(data.total || 0);
       setPosPages(data.pages || Math.ceil((data.total || 0) / 20) || 1);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to load positions');
+      if (!silent) toast.error(e instanceof Error ? e.message : 'Failed to load positions');
     } finally {
-      setPosLoading(false);
+      if (!silent) setPosLoading(false);
     }
   }, [posPage]);
 
-  const fetchOrders = useCallback(async () => {
-    setOrdersLoading(true);
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setOrdersLoading(true);
     try {
       const data = await adminApi.get<any>('/trades/orders', { status: 'pending' });
       setOrders(data.items || data.orders || []);
       setOrdersTotal(data.total || 0);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to load orders');
+      if (!silent) toast.error(e instanceof Error ? e.message : 'Failed to load orders');
     } finally {
-      setOrdersLoading(false);
+      if (!silent) setOrdersLoading(false);
     }
   }, []);
 
-  const fetchHistory = useCallback(async () => {
-    setHistLoading(true);
+  const fetchHistory = useCallback(async (silent = false) => {
+    if (!silent) setHistLoading(true);
     try {
       const params: Record<string, string> = { page: String(histPage), limit: '20' };
       const data = await adminApi.get<any>('/trades/history', params);
@@ -248,24 +249,26 @@ export default function TradesPage() {
       setHistTotal(data.total || 0);
       setHistPages(data.pages || Math.ceil((data.total || 0) / 20) || 1);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to load history');
+      if (!silent) toast.error(e instanceof Error ? e.message : 'Failed to load history');
     } finally {
-      setHistLoading(false);
+      if (!silent) setHistLoading(false);
     }
   }, [histPage]);
 
+  /** Initial load — shows spinner. */
   useEffect(() => {
-    if (activeTab === 'open') fetchPositions();
-    else if (activeTab === 'pending') fetchOrders();
-    else fetchHistory();
+    if (activeTab === 'open') fetchPositions(false);
+    else if (activeTab === 'pending') fetchOrders(false);
+    else fetchHistory(false);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
 
+  /** Silent background poll every 5s — no spinner, no flicker, data just updates. */
   useEffect(() => {
     const poll = setInterval(() => {
-      if (activeTab === 'open') fetchPositions();
-      else if (activeTab === 'pending') fetchOrders();
-      else fetchHistory();
-    }, 15000);
+      if (activeTab === 'open') fetchPositions(true);
+      else if (activeTab === 'pending') fetchOrders(true);
+      else fetchHistory(true);
+    }, 5000);
     return () => clearInterval(poll);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
 

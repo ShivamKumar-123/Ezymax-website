@@ -135,12 +135,24 @@ const DEFAULT_WATCHLIST = [
   'US30', 'NAS100', 'GER40', 'EURJPY', 'GBPJPY',
 ];
 
+const DEFAULT_SYMBOL = 'XAUUSD';
+const SYMBOL_STORAGE_KEY = 'trustedge-selected-symbol';
+
+function getPersistedSymbol(): string {
+  if (typeof window === 'undefined') return DEFAULT_SYMBOL;
+  try {
+    return sessionStorage.getItem(SYMBOL_STORAGE_KEY) || DEFAULT_SYMBOL;
+  } catch {
+    return DEFAULT_SYMBOL;
+  }
+}
+
 export const useTradingStore = create<TradingState>()((set, get) => ({
   activeAccount: null,
   accounts: [],
   positions: [],
   pendingOrders: [],
-  selectedSymbol: 'EURUSD',
+  selectedSymbol: getPersistedSymbol(),
   prices: {},
   prevPrices: {},
   watchlist: DEFAULT_WATCHLIST,
@@ -151,7 +163,10 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   setAccounts: (a) => set({ accounts: a }),
   setPositions: (p) => set({ positions: p }),
   setPendingOrders: (o) => set({ pendingOrders: o }),
-  setSelectedSymbol: (s) => set({ selectedSymbol: s }),
+  setSelectedSymbol: (s) => {
+    set({ selectedSymbol: s });
+    try { sessionStorage.setItem(SYMBOL_STORAGE_KEY, s); } catch {}
+  },
   setInstruments: (i) => set({ instruments: i }),
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
   removePosition: (id) => set((s) => ({ positions: s.positions.filter((p) => p.id !== id) })),
@@ -261,9 +276,8 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         stop_limit_price: data.stop_limit_price,
       });
 
-      // Refresh data after successful order
-      await get().refreshPositions();
-      await get().refreshAccount();
+      // Refresh in parallel, don't block return
+      Promise.all([get().refreshPositions(), get().refreshAccount()]).catch(() => {});
       
       return res;
     } catch (err) {

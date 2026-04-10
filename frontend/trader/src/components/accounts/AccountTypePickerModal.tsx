@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -30,12 +29,14 @@ const ACCENT = '#00e676';
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Called after account is successfully created — parent should refetch accounts list. */
+  onCreated?: (accountId: string) => void;
 };
 
-export default function AccountTypePickerModal({ open, onClose }: Props) {
-  const router = useRouter();
+export default function AccountTypePickerModal({ open, onClose, onCreated }: Props) {
   const [groups, setGroups] = useState<AvailableAccountGroup[]>([]);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,13 +60,29 @@ export default function AccountTypePickerModal({ open, onClose }: Props) {
     };
   }, [open]);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedId) {
       toast.error('Select an account type');
       return;
     }
-    onClose();
-    router.push(`/trading/open-account?group=${encodeURIComponent(selectedId)}`);
+    setCreating(true);
+    try {
+      const res = await api.post<{ id: string; account_number: string }>('/accounts/open', {
+        account_group_id: selectedId,
+      });
+      toast.success('Trading account created');
+      onClose();
+      if (res?.id) {
+        try {
+          sessionStorage.setItem('ptd-accounts-expand', res.id);
+        } catch {}
+        onCreated?.(res.id);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not open account');
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -181,11 +198,11 @@ export default function AccountTypePickerModal({ open, onClose }: Props) {
           </button>
           <button
             type="button"
-            disabled={loading || groups.length === 0 || !selectedId}
-            onClick={handleContinue}
+            disabled={loading || creating || groups.length === 0 || !selectedId}
+            onClick={() => void handleContinue()}
             className="px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
-            Continue
+            {creating ? 'Creating…' : 'Open Account'}
           </button>
         </div>
       </div>

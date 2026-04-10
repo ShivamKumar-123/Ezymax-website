@@ -123,8 +123,12 @@ class SLTPEngine:
                         triggered = "tp"
 
                 if triggered:
-                    market_price = bid if side == "buy" else ask
-                    await self._close_position(db, pos, market_price, triggered)
+                    # Close at the SL/TP price itself (not market price) — MT5 behavior
+                    if triggered == "sl":
+                        close_price = Decimal(str(pos.stop_loss))
+                    else:
+                        close_price = Decimal(str(pos.take_profit))
+                    await self._close_position(db, pos, close_price, triggered)
 
             await db.commit()
 

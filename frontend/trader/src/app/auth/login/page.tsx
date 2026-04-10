@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -109,15 +108,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-page min-h-screen relative overflow-hidden bg-bg-primary">
-      {/* Animated Background Orbs */}
+    <div className="auth-page min-h-screen relative overflow-hidden" style={{ background: '#0a0a0a' }}>
+      {/* Subtle accent glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[300px] -left-[200px] w-[600px] h-[600px] rounded-full bg-buy/[0.04] blur-[120px] animate-float" />
         <div className="absolute -bottom-[200px] -right-[300px] w-[700px] h-[700px] rounded-full bg-sell/[0.03] blur-[120px] animate-float" style={{ animationDelay: '3s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-accent/[0.02] blur-[100px] animate-float" style={{ animationDelay: '1.5s' }} />
       </div>
-
-      {/* Grid pattern overlay */}
+      {/* Grid pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
@@ -125,78 +122,19 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-        {/* Left Panel — Brand showcase (hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-[55%] relative items-center justify-center p-12">
-          <div className="max-w-xl w-full">
-            {/* Logo */}
-            <div className="mb-12">
-              <Image src="/logo.png" alt="Logo" width={160} height={160} priority className="rounded-2xl"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            </div>
-
-            <h1 className="text-3xl font-extrabold text-text-primary mb-4 leading-tight">
-              Trade Global Markets<br />
-              <span className="text-buy">With Precision</span>
-            </h1>
-            <p className="text-md text-text-secondary mb-10 leading-relaxed max-w-md">
-              Access forex, commodities, indices, and crypto CFDs with ultra-fast execution and professional tools.
-            </p>
-
-            {/* Glass stat cards */}
-            <div className="grid grid-cols-3 gap-4 mb-10">
-              {[
-                { value: '200+', label: 'Instruments', icon: '◈' },
-                { value: '1:500', label: 'Leverage', icon: '⚡' },
-                { value: '<50ms', label: 'Execution', icon: '◉' },
-              ].map((s) => (
-                <div key={s.label} className="glass-card rounded-2xl p-4 noise-texture overflow-hidden group hover:border-buy/20 transition-all duration-300">
-                  <div className="relative z-10">
-                    <div className="text-xxs text-text-tertiary mb-2">{s.icon}</div>
-                    <div className="text-lg font-bold text-text-primary tabular-nums">{s.value}</div>
-                    <div className="text-xxs text-text-tertiary mt-0.5">{s.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Decorative glass chart widget */}
-            <div className="glass-panel rounded-2xl p-5 noise-texture overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-buy animate-pulse" />
-                    <span className="text-xs text-text-secondary">EURUSD</span>
-                  </div>
-                  <span className="text-xs text-buy font-mono tabular-nums">1.08465</span>
-                </div>
-                <svg viewBox="0 0 400 80" className="w-full" fill="none">
-                  <path d="M0 65 Q30 50 60 55 Q90 60 120 40 Q150 20 180 35 Q210 50 240 30 Q270 10 300 25 Q330 40 360 20 Q390 5 400 15"
-                    stroke="#2962FF" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M0 65 Q30 50 60 55 Q90 60 120 40 Q150 20 180 35 Q210 50 240 30 Q270 10 300 25 Q330 40 360 20 Q390 5 400 15 V80 H0 Z"
-                    fill="url(#chartGrad)" />
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2962FF" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#2962FF" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="flex justify-between mt-2 text-xxs text-text-tertiary font-mono">
-                  <span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel — Login Form */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 lg:px-12">
-          <div className="w-full max-w-[400px]">
-            {/* Mobile logo */}
-          <div className="lg:hidden mb-10">
-            <Image src="/logo.png" alt="Logo" width={120} height={120} className="rounded-xl"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
+        <div className="w-full max-w-[420px]">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="12" fill="#2962FF" />
+              <path d="M10 32L18 24L24 30L38 16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M32 16H38V22" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-2xl font-bold italic tracking-tight">
+              <span style={{ color: '#fff' }}>Trust</span>
+              <span style={{ color: '#00e676' }}>Edge</span>
+            </span>
           </div>
 
             {/* Glass form card */}
@@ -301,10 +239,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <p className="text-center text-xxs text-text-tertiary mt-6 px-4">
+            <p className="text-center text-xxs mt-6 px-4" style={{ color: 'rgba(255,255,255,0.3)' }}>
               By signing in you agree to our Terms of Service and Privacy Policy
             </p>
-          </div>
         </div>
       </div>
 

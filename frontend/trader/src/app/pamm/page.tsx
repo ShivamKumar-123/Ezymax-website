@@ -160,6 +160,11 @@ export default function PammPage() {
   const [providerChecked, setProviderChecked] = useState(false);
   const [applying, setApplying] = useState(false);
 
+  // Refill modal
+  const [refillTarget, setRefillTarget] = useState<MyAllocation | null>(null);
+  const [refillAmount, setRefillAmount] = useState('');
+  const [refilling, setRefilling] = useState(false);
+
   // Invest modal
   const [investTarget, setInvestTarget] = useState<MammPammAccount | null>(null);
   const [liveAccounts, setLiveAccounts] = useState<TradingAccount[]>([]);
@@ -167,6 +172,7 @@ export default function PammPage() {
   const [investAmount, setInvestAmount] = useState('');
   const [investScaling, setInvestScaling] = useState('100');
   const [investing, setInvesting] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // Apply form state
   const [applyAccount, setApplyAccount] = useState('');
@@ -244,11 +250,19 @@ export default function PammPage() {
     } catch {}
   }, []);
 
+  const fetchWallet = useCallback(async () => {
+    try {
+      const s = await api.get<{ main_wallet_balance?: number }>('/wallet/summary');
+      setWalletBalance(Number(s.main_wallet_balance) || 0);
+    } catch { setWalletBalance(0); }
+  }, []);
+
   useEffect(() => {
     fetchBrowse();
     fetchProvider();
     fetchLiveAccounts();
-  }, [fetchBrowse, fetchProvider, fetchLiveAccounts]);
+    fetchWallet();
+  }, [fetchBrowse, fetchProvider, fetchLiveAccounts, fetchWallet]);
 
   useEffect(() => {
     if (activeTab === 'investments') fetchAllocations();
@@ -269,6 +283,7 @@ export default function PammPage() {
     const amount = parseFloat(investAmount);
     if (!investAccount || isNaN(amount) || amount <= 0) { toast.error('Enter a valid amount'); return; }
     if (amount < investTarget.min_investment) { toast.error(`Minimum investment is $${investTarget.min_investment}`); return; }
+    if (amount > walletBalance) { toast.error('Insufficient wallet balance'); return; }
     setInvesting(true);
     try {
       const params = new URLSearchParams({ account_id: investAccount, amount: investAmount });
@@ -277,10 +292,11 @@ export default function PammPage() {
         if (isNaN(s) || s < 1 || s > 500) { toast.error('Volume scaling must be 1–500'); setInvesting(false); return; }
         params.set('volume_scaling_pct', investScaling);
       }
-      await api.post(`/social/mamm-pamm/${investTarget.id}/invest?${params.toString()}`, {});
-      toast.success('Investment started!');
+      const res = await api.post<{ top_up?: number }>(`/social/mamm-pamm/${investTarget.id}/invest?${params.toString()}`, {});
+      toast.success(res?.top_up ? `Top-up of $${res.top_up.toFixed(2)} added!` : 'Investment started! Amount deducted from wallet.');
       setInvestTarget(null);
       fetchBrowse();
+      fetchWallet();
       if (activeTab === 'investments') fetchAllocations();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to invest');
@@ -293,14 +309,43 @@ export default function PammPage() {
     if (!withdrawTarget) return;
     setWithdrawing(true);
     try {
-      await api.delete(`/social/mamm-pamm/${withdrawTarget.id}/withdraw`);
-      toast.success('Withdrawal complete');
+      const res = await api.delete<{ returned_to_wallet?: number }>(`/social/mamm-pamm/${withdrawTarget.id}/withdraw`);
+      const returned = res?.returned_to_wallet;
+      toast.success(returned != null ? `$${returned.toFixed(2)} returned to wallet` : 'Withdrawal complete');
       setWithdrawTarget(null);
       fetchAllocations();
+      fetchWallet();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to withdraw');
     } finally {
       setWithdrawing(false);
+    }
+  };
+
+  const openRefill = (a: MyAllocation) => {
+    setRefillTarget(a);
+    setRefillAmount('');
+    fetchWallet();
+  };
+
+  const submitRefill = async () => {
+    if (!refillTarget) return;
+    const amt = parseFloat(refillAmount);
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    if (amt > walletBalance) { toast.error('Insufficient wallet balance'); return; }
+    setRefilling(true);
+    try {
+      const acctId = liveAccounts[0]?.id;
+      if (!acctId) { toast.error('No trading account found'); setRefilling(false); return; }
+      await api.post(`/social/mamm-pamm/${refillTarget.master_id}/invest?account_id=${acctId}&amount=${amt}`, {});
+      toast.success(`Added $${amt.toFixed(2)} to ${refillTarget.manager_name}`);
+      setRefillTarget(null);
+      fetchAllocations();
+      fetchWallet();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Refill failed');
+    } finally {
+      setRefilling(false);
     }
   };
 
@@ -481,13 +526,24 @@ export default function PammPage() {
                             <p className="text-sm font-semibold text-white truncate">{a.manager_name}</p>
                             <div className="mt-1"><TypeBadge type={a.master_type} /></div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setWithdrawTarget(a)}
-                            className="shrink-0 px-2.5 py-1 text-xs font-medium rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            Withdraw
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {a.status === 'active' && (
+                              <button
+                                type="button"
+                                onClick={() => openRefill(a)}
+                                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[#00e676]/40 text-[#00e676] hover:bg-[#00e676]/10 transition-colors"
+                              >
+                                + Refill
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setWithdrawTarget(a)}
+                              className="px-2.5 py-1 text-xs font-medium rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                              Withdraw
+                            </button>
+                          </div>
                         </div>
 
                         <div className="space-y-2 text-xs">
@@ -832,24 +888,25 @@ export default function PammPage() {
               <span className="text-xs text-[#555]">Min: ${investTarget.min_investment.toLocaleString()}</span>
             </div>
 
-            <div>
-              <label className="block text-xs text-[#888] mb-1.5">Account</label>
-              <select
-                value={investAccount}
-                onChange={(e) => setInvestAccount(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#00e676]/50"
-              >
-                {liveAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.account_number} — ${fmt(a.balance)}</option>
-                ))}
-              </select>
+            {/* Wallet balance card */}
+            <div className="rounded-lg border border-[#00e676]/30 bg-[#0a0a0a] p-3 flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#666]">From Main Wallet</div>
+                <div className="text-lg font-bold text-[#00e676] font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+              <button type="button" onClick={() => setInvestAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-[#00e676] hover:underline">Max</button>
+            </div>
+
+            <div className="rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] p-3 text-[11px] text-[#555]">
+              A dedicated investment account will be auto-created for you. Your copied trades will appear there.
             </div>
 
             <div>
-              <label className="block text-xs text-[#888] mb-1.5">Amount ($)</label>
+              <label className="block text-xs text-[#888] mb-1.5">Investment Amount ($)</label>
               <input
                 type="number"
                 min={investTarget.min_investment}
+                max={walletBalance}
                 step="0.01"
                 value={investAmount}
                 onChange={(e) => setInvestAmount(e.target.value)}
@@ -941,6 +998,60 @@ export default function PammPage() {
                 className="flex-1 py-2.5 rounded-lg border border-red-500/40 text-red-400 text-xs font-bold hover:bg-red-500/10 disabled:opacity-50 transition-colors"
               >
                 {withdrawing ? 'Withdrawing…' : 'Confirm Withdraw'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Refill Modal */}
+      <Modal
+        open={!!refillTarget}
+        onClose={() => { if (!refilling) setRefillTarget(null); }}
+        title="Refill Investment"
+        width="sm"
+      >
+        {refillTarget && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-[#0a0a0a] border border-[#2a2a2a] p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-[#555]">Manager</span>
+                <span className="text-white font-medium">{refillTarget.manager_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#555]">Current Investment</span>
+                <span className="text-white font-semibold">${fmt(refillTarget.allocation_amount)}</span>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[#00e676]/30 bg-[#0a0a0a] p-3 flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#666]">Wallet Balance</div>
+                <div className="text-lg font-bold text-[#00e676] font-mono tabular-nums">
+                  ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <button type="button" onClick={() => setRefillAmount(String(walletBalance))} className="text-xs font-bold text-[#00e676] hover:underline">Max</button>
+            </div>
+
+            <div>
+              <label className="block text-xs text-[#888] mb-1.5">Add Amount ($)</label>
+              <input
+                type="number" min="1" step="0.01" value={refillAmount}
+                onChange={(e) => setRefillAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#00e676]/50"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setRefillTarget(null)} disabled={refilling}
+                className="flex-1 py-2.5 rounded-lg border border-[#2a2a2a] text-xs text-[#888] hover:text-white hover:border-[#444] transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+              <button type="button" onClick={submitRefill} disabled={refilling || !refillAmount}
+                className="flex-1 py-2.5 rounded-lg bg-[#00e676] text-black text-xs font-bold hover:bg-[#00c853] disabled:opacity-50 transition-colors">
+                {refilling ? 'Adding…' : 'Add Funds'}
               </button>
             </div>
           </div>

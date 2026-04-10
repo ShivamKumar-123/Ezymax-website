@@ -81,38 +81,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-bg-primary">
+    <div className="flex h-screen w-screen overflow-hidden bg-bg-page">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center h-12 px-4 bg-bg-secondary border-b border-border-primary">
-          <div className="relative flex-1 max-w-sm">
+        {/* Top bar — glass effect */}
+        <div className="flex items-center h-14 px-5 glass border-b border-border-primary/30">
+          <div className="relative flex-1 max-w-md">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input
               type="text"
               placeholder="Search users, trades..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-bg-input border border-border-primary rounded-sm"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-bg-primary/60 border border-border-primary/50 rounded-lg backdrop-blur-sm"
             />
           </div>
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
-            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary">
-              <User size={14} />
-              <span>{admin?.full_name || 'Admin'}</span>
-              <span className="text-xxs text-text-tertiary px-1.5 py-0.5 bg-bg-tertiary rounded-sm">
-                {admin?.role || 'admin'}
-              </span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-primary/40 border border-border-primary/30">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent/60 to-accent/20 flex items-center justify-center">
+                <User size={12} className="text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-text-primary leading-tight">{admin?.full_name || 'Admin'}</span>
+                <span className="text-[9px] text-accent font-medium leading-tight">{admin?.role || 'admin'}</span>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => useAuthStore.getState().logout()}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-tertiary hover:text-sell transition-fast rounded-sm hover:bg-bg-hover"
+              className="flex items-center gap-1.5 px-2.5 py-2 text-xs text-text-tertiary hover:text-sell transition-fast rounded-lg hover:bg-sell/10"
               title="Logout"
             >
-              <LogOut size={14} />
+              <LogOut size={15} />
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        {/* Content area with page animation */}
+        <div className="flex-1 overflow-y-auto animate-page-in">{children}</div>
       </div>
     </div>
   );

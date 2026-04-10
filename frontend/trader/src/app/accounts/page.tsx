@@ -117,6 +117,11 @@ export default function AccountsPage() {
   const [mainWalletBalance, setMainWalletBalance] = useState(0);
   const [transferKindsInitialized, setTransferKindsInitialized] = useState(false);
 
+  /** Unified transfer source/dest ID: 'wallet' or account UUID. */
+  const [uniFrom, setUniFrom] = useState('wallet');
+  const [uniTo, setUniTo] = useState('');
+  const [uniInitialized, setUniInitialized] = useState(false);
+
   const fetchWalletSummary = useCallback(async () => {
     try {
       const s = await api.get<{ main_wallet_balance?: number }>('/wallet/summary');
@@ -257,6 +262,79 @@ export default function AccountsPage() {
     return Math.max(0, Number(a.free_margin ?? 0));
   }, [fromKind, mainWalletBalance, liveAccounts, effectiveFromId]);
 
+  /* ── Unified transfer helpers ── */
+  useEffect(() => {
+    if (uniInitialized || loading) return;
+    if (liveAccounts.length >= 2) {
+      setUniFrom(liveAccounts[0].id);
+      setUniTo(liveAccounts[1].id);
+    } else if (liveAccounts.length === 1) {
+      setUniFrom('wallet');
+      setUniTo(liveAccounts[0].id);
+    }
+    setUniInitialized(true);
+  }, [loading, liveAccounts, uniInitialized]);
+
+  /** All selectable options: wallet + each live account */
+  const transferOptions = useMemo(() => {
+    const opts: Array<{ id: string; label: string; sublabel: string; balance: number }> = [
+      { id: 'wallet', label: 'Main Wallet', sublabel: 'Wallet', balance: mainWalletBalance },
+    ];
+    for (const a of liveAccounts) {
+      opts.push({
+        id: a.id,
+        label: `#${a.account_number}`,
+        sublabel: a.account_group?.name ?? 'Live',
+        balance: Number(a.free_margin ?? a.balance ?? 0),
+      });
+    }
+    return opts;
+  }, [liveAccounts, mainWalletBalance]);
+
+  const uniFromBalance = useMemo(() => {
+    if (uniFrom === 'wallet') return mainWalletBalance;
+    const a = liveAccounts.find((x) => x.id === uniFrom);
+    return a ? Math.max(0, Number(a.free_margin ?? 0)) : 0;
+  }, [uniFrom, liveAccounts, mainWalletBalance]);
+
+  const swapFromTo = () => {
+    const prev = uniFrom;
+    setUniFrom(uniTo);
+    setUniTo(prev);
+  };
+
+  const submitUnifiedTransfer = async () => {
+    if (demoFundingBlocked) { toast.error(DEMO_FUNDING_MSG); return; }
+    const amt = parseFloat(transferAmount);
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    if (uniFrom === uniTo) { toast.error('Select different source and destination'); return; }
+    if (uniFrom === 'wallet' && uniTo === 'wallet') { toast.error('Cannot transfer wallet to wallet'); return; }
+    if (amt > uniFromBalance + 1e-9) { toast.error('Insufficient balance'); return; }
+
+    setTransferSubmitting(true);
+    try {
+      if (uniFrom === 'wallet') {
+        await api.post('/wallet/transfer-main-to-trading', { to_account_id: uniTo, amount: amt });
+        const num = liveAccounts.find((a) => a.id === uniTo)?.account_number ?? '';
+        toast.success(`Sent ${fmt(amt)} to account ${num}`);
+      } else if (uniTo === 'wallet') {
+        await api.post('/wallet/transfer-trading-to-main', { from_account_id: uniFrom, amount: amt });
+        toast.success(`Moved ${fmt(amt)} to your wallet`);
+      } else {
+        await api.post('/wallet/transfer-internal', { from_account_id: uniFrom, to_account_id: uniTo, amount: amt });
+        const toNum = liveAccounts.find((a) => a.id === uniTo)?.account_number ?? '';
+        toast.success(`Moved ${fmt(amt)} to ${toNum}`);
+      }
+      setTransferAmount('');
+      void fetchAccounts();
+      void fetchWalletSummary();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Transfer failed');
+    } finally {
+      setTransferSubmitting(false);
+    }
+  };
+
   const submitTransfer = async () => {
     if (demoFundingBlocked) {
       toast.error(DEMO_FUNDING_MSG);
@@ -345,7 +423,11 @@ export default function AccountsPage() {
 
   return (
     <DashboardShell>
-      <AccountTypePickerModal open={accountPickerOpen} onClose={() => setAccountPickerOpen(false)} />
+      <AccountTypePickerModal
+        open={accountPickerOpen}
+        onClose={() => setAccountPickerOpen(false)}
+        onCreated={() => void fetchAccounts()}
+      />
       <div className="page-main max-w-6xl mx-auto w-full space-y-6">
         {/* Accounts / Internal Transfer — same curved slide + glow as Wallet tabs, slightly taller */}
         <div className="relative mb-8 w-full">
@@ -528,222 +610,124 @@ export default function AccountsPage() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-5">
-                  {/* Transfer from */}
+                <div className="space-y-4">
+                  {/* ── FROM ── */}
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-white">Transfer from</p>
-                    <div className="flex rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-1 gap-1">
-                      <button
-                        type="button"
-                        disabled={fromWalletDisabled}
-                        onClick={() => pickFromKind('wallet')}
-                        className={clsx(
-                          'flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px]',
-                          fromWalletDisabled && 'opacity-35 cursor-not-allowed pointer-events-none',
-                          fromKind === 'wallet'
-                            ? 'bg-[#00e676] text-black shadow-[0_0_16px_rgba(0,230,118,0.2)]'
-                            : 'text-white/90 hover:text-white hover:bg-white/[0.06]',
-                        )}
-                      >
-                        Wallet
-                      </button>
-                      <button
-                        type="button"
-                        disabled={fromTradingDisabled}
-                        onClick={() => pickFromKind('trading')}
-                        className={clsx(
-                          'flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px]',
-                          fromTradingDisabled && 'opacity-35 cursor-not-allowed pointer-events-none',
-                          fromKind === 'trading'
-                            ? 'bg-[#00e676] text-black shadow-[0_0_16px_rgba(0,230,118,0.2)]'
-                            : 'text-white/90 hover:text-white hover:bg-white/[0.06]',
-                        )}
-                      >
-                        Trading account
-                      </button>
-                    </div>
-
-                    {fromKind === 'wallet' ? (
-                      <div className="rounded-xl border border-[#00e676]/35 bg-[#0a0a0a] p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
-                          <Wallet size={20} strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-white">Main wallet</div>
-                          <div className="text-[11px] uppercase tracking-wide text-white/55 font-semibold mt-1">
-                            Balance
-                          </div>
-                          <div className="text-xl font-bold text-[#00e676] tabular-nums">{fmt(mainWalletBalance)}</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="rounded-xl border border-[#00e676]/35 bg-[#0a0a0a] p-4 flex items-start gap-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">From</p>
+                    <select
+                      value={uniFrom}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setUniFrom(v);
+                        if (uniTo === v) {
+                          const alt = transferOptions.find((o) => o.id !== v);
+                          if (alt) setUniTo(alt.id);
+                        }
+                      }}
+                      className="accounts-native-select w-full px-4 py-3 rounded-xl text-sm font-semibold"
+                    >
+                      {transferOptions.map((o) => (
+                        <option key={o.id} value={o.id} disabled={o.id === uniTo}>
+                          {o.label} — {o.sublabel} — {fmt(o.balance)}
+                        </option>
+                      ))}
+                    </select>
+                    {/* From card */}
+                    {(() => {
+                      const opt = transferOptions.find((o) => o.id === uniFrom);
+                      if (!opt) return null;
+                      const isWallet = uniFrom === 'wallet';
+                      return (
+                        <div className="rounded-xl border border-[#00e676]/35 bg-[#0a0a0a] p-4 flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
-                            <Landmark size={20} strokeWidth={2} />
+                            {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            {(() => {
-                              const a = liveAccounts.find((x) => x.id === effectiveFromId);
-                              return (
-                                <>
-                                  <div className="text-sm font-semibold text-white font-mono">
-                                    #{a?.account_number ?? '—'}
-                                  </div>
-                                  <div className="text-[11px] uppercase tracking-wide text-white/55 font-semibold mt-1">
-                                    Available
-                                  </div>
-                                  <div className="text-xl font-bold text-[#00e676] tabular-nums">
-                                    {a ? fmt(a.free_margin ?? 0, a.currency) : '—'}
-                                  </div>
-                                </>
-                              );
-                            })()}
+                            <div className="text-sm font-semibold text-white">{opt.label}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-white/50 font-semibold mt-0.5">
+                              {isWallet ? 'Balance' : 'Available'}
+                            </div>
+                          </div>
+                          <div className="text-xl font-bold text-[#00e676] tabular-nums font-mono shrink-0">
+                            {fmt(opt.balance)}
                           </div>
                         </div>
-                        {liveAccounts.length > 1 && (
-                          <select
-                            value={effectiveFromId}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setTransferFrom(v);
-                              if (transferTo === v) {
-                                const o = liveAccounts.find((x) => x.id !== v);
-                                if (o) setTransferTo(o.id);
-                              }
-                            }}
-                            className="accounts-native-select w-full px-3 py-2.5 rounded-xl text-sm font-mono"
-                          >
-                            {liveAccounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.account_number} — avail. {fmt(a.free_margin ?? 0, a.currency)}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
+                  {/* ── SWAP BUTTON ── */}
                   <div className="flex justify-center">
-                    <div className="w-9 h-9 rounded-full border border-[#00e676]/25 bg-[#0a0a0a] flex items-center justify-center text-[#00e676]/80">
-                      <ChevronDown size={18} />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={swapFromTo}
+                      className="group w-10 h-10 rounded-full border border-[#00e676]/30 bg-[#0a0a0a] flex items-center justify-center text-[#00e676]/80 hover:bg-[#00e676]/10 hover:border-[#00e676]/60 transition-all active:scale-95"
+                      title="Swap direction"
+                    >
+                      <ArrowLeftRight size={16} className="rotate-90 group-hover:scale-110 transition-transform" />
+                    </button>
                   </div>
 
-                  {/* Transfer to */}
+                  {/* ── TO ── */}
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-white">Transfer to</p>
-                    <div className="flex rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-1 gap-1">
-                      <button
-                        type="button"
-                        disabled={toWalletDisabled}
-                        onClick={() => pickToKind('wallet')}
-                        className={clsx(
-                          'flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px]',
-                          toWalletDisabled && 'opacity-35 cursor-not-allowed pointer-events-none',
-                          toKind === 'wallet'
-                            ? 'bg-[#00e676] text-black shadow-[0_0_16px_rgba(0,230,118,0.2)]'
-                            : 'text-white/90 hover:text-white hover:bg-white/[0.06]',
-                        )}
-                      >
-                        Wallet
-                      </button>
-                      <button
-                        type="button"
-                        disabled={toTradingDisabled}
-                        onClick={() => pickToKind('trading')}
-                        className={clsx(
-                          'flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px]',
-                          toTradingDisabled && 'opacity-35 cursor-not-allowed pointer-events-none',
-                          toKind === 'trading'
-                            ? 'bg-[#00e676] text-black shadow-[0_0_16px_rgba(0,230,118,0.2)]'
-                            : 'text-white/90 hover:text-white hover:bg-white/[0.06]',
-                        )}
-                      >
-                        Trading account
-                      </button>
-                    </div>
-
-                    {toKind === 'wallet' ? (
-                      <div className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-4 flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
-                          <Wallet size={20} strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-white">Main wallet</div>
-                          <p className="text-xs text-white/70 mt-1">Funds will appear in your wallet balance.</p>
-                        </div>
-                      </div>
-                    ) : liveAccounts.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-[#3a3a3a] bg-[#0a0a0a] py-8 text-center text-sm text-white/75">
-                        No accounts available
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-4 flex items-start gap-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">To</p>
+                    <select
+                      value={uniTo}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setUniTo(v);
+                        if (uniFrom === v) {
+                          const alt = transferOptions.find((o) => o.id !== v);
+                          if (alt) setUniFrom(alt.id);
+                        }
+                      }}
+                      className="accounts-native-select w-full px-4 py-3 rounded-xl text-sm font-semibold"
+                    >
+                      {transferOptions
+                        .filter((o) => o.id !== uniFrom)
+                        .map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.label} — {o.sublabel} — {fmt(o.balance)}
+                          </option>
+                        ))}
+                    </select>
+                    {/* To card */}
+                    {(() => {
+                      const opt = transferOptions.find((o) => o.id === uniTo);
+                      if (!opt) return null;
+                      const isWallet = uniTo === 'wallet';
+                      return (
+                        <div className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-4 flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
-                            <Landmark size={20} strokeWidth={2} />
+                            {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            {(() => {
-                              const a = liveAccounts.find((x) => x.id === effectiveToId);
-                              return (
-                                <>
-                                  <div className="text-sm font-semibold text-white font-mono">
-                                    #{a?.account_number ?? '—'}
-                                  </div>
-                                  <div className="text-[11px] uppercase tracking-wide text-white/55 font-semibold mt-1">
-                                    Balance
-                                  </div>
-                                  <div className="text-lg font-bold text-white tabular-nums">
-                                    {a ? fmt(a.balance ?? 0, a.currency) : '—'}
-                                  </div>
-                                </>
-                              );
-                            })()}
+                            <div className="text-sm font-semibold text-white">{opt.label}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-white/50 font-semibold mt-0.5">
+                              {isWallet ? 'Wallet' : 'Balance'}
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-white tabular-nums font-mono shrink-0">
+                            {fmt(opt.balance)}
                           </div>
                         </div>
-                        {liveAccounts.length > 1 && (
-                          <select
-                            value={effectiveToId}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setTransferTo(v);
-                              if (transferFrom === v) {
-                                const o = liveAccounts.find((x) => x.id !== v);
-                                if (o) setTransferFrom(o.id);
-                              }
-                            }}
-                            className="accounts-native-select w-full px-3 py-2.5 rounded-xl text-sm font-mono"
-                          >
-                            {liveAccounts.map((a) => (
-                              <option key={a.id} value={a.id}>
-                                {a.account_number}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
-                  <div className="pt-2 space-y-2 border-t border-[#2a2a2a]">
+                  {/* ── AMOUNT ── */}
+                  <div className="pt-3 space-y-2 border-t border-[#2a2a2a]">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="text-sm font-medium text-white/95">
-                        Enter the amount you wish to transfer
-                      </label>
+                      <label className="text-sm font-medium text-white/95">Amount</label>
                       <button
                         type="button"
                         onClick={() =>
-                          setTransferAmount(
-                            maxTransferAmount > 0 ? maxTransferAmount.toFixed(2) : '',
-                          )
+                          setTransferAmount(uniFromBalance > 0 ? uniFromBalance.toFixed(2) : '')
                         }
-                        disabled={maxTransferAmount <= 0}
+                        disabled={uniFromBalance <= 0}
                         className="text-sm font-bold text-[#00e676] hover:underline disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        Max: {fmt(maxTransferAmount)}
+                        Max: {fmt(uniFromBalance)}
                       </button>
                     </div>
                     <input
@@ -757,14 +741,16 @@ export default function AccountsPage() {
                     />
                   </div>
 
+                  {/* ── SUBMIT ── */}
                   <button
                     type="button"
-                    onClick={() => void submitTransfer()}
+                    onClick={() => void submitUnifiedTransfer()}
                     disabled={
                       demoFundingBlocked ||
                       transferSubmitting ||
                       !transferAmount.trim() ||
-                      maxTransferAmount <= 0
+                      uniFromBalance <= 0 ||
+                      uniFrom === uniTo
                     }
                     className="w-full py-3.5 rounded-xl bg-[#00e676] text-black text-base font-bold hover:bg-[#00c853] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
                   >
@@ -907,8 +893,42 @@ function AccountCard({
         >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-4">
             <span className="text-base font-bold text-white">
-              {row.is_demo ? 'Demo Account' : 'Live Account'}
+              {row.is_demo
+                ? 'Demo Account'
+                : row.account_number.startsWith('PM')
+                  ? 'PAMM Pool Account'
+                  : row.account_number.startsWith('MM')
+                    ? 'MAM Pool Account'
+                    : row.account_number.startsWith('CT')
+                      ? 'Copy Trade Pool Account'
+                      : row.account_number.startsWith('CF')
+                        ? 'Copy Trade Account'
+                        : row.account_number.startsWith('IF')
+                          ? 'Investment Account'
+                          : 'Live Account'}
             </span>
+            {(() => {
+              const n = row.account_number;
+              const badge = n.startsWith('PM') ? { label: 'PAMM Pool', color: 'purple' }
+                : n.startsWith('MM') ? { label: 'MAM Pool', color: 'blue' }
+                : n.startsWith('CT') ? { label: 'Copy Pool', color: 'emerald' }
+                : n.startsWith('CF') ? { label: 'Copy Fund', color: 'teal' }
+                : n.startsWith('IF') ? { label: 'Investment', color: 'amber' }
+                : null;
+              if (!badge) return null;
+              const colors: Record<string, string> = {
+                purple: 'bg-purple-500/15 text-purple-400 border-purple-500/25',
+                blue: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
+                emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+                teal: 'bg-teal-500/15 text-teal-400 border-teal-500/25',
+                amber: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+              };
+              return (
+                <span className={clsx('text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border', colors[badge.color])}>
+                  {badge.label}
+                </span>
+              );
+            })()}
             <span className="text-sm text-white/60 font-mono">{idLabel}</span>
             {!editingAlias ? (
               <span className="inline-flex items-center gap-1 text-sm text-text-secondary" onClick={(e) => e.stopPropagation()}>
@@ -1051,36 +1071,81 @@ function AccountCard({
             </div>
           </div>
 
-          <div className="relative z-[60] flex flex-col sm:flex-row flex-wrap gap-2 pt-1">
-            <Link
-              href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#444] text-white text-sm font-semibold hover:border-[#666] hover:bg-white/5 transition-colors"
-            >
-              <BookOpen size={16} />
-              Trading journal
-            </Link>
-            <Link
-              href={tradeHref}
-              prefetch
-              onClick={(e) => {
-                e.stopPropagation();
-                onTradePrepare();
-              }}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
-            >
-              <ExternalLink size={16} />
-              Trade
-            </Link>
-            <button
-              type="button"
-              onClick={() => setCloseModal(true)}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
-            >
-              <Trash2 size={16} />
-              Close account
-            </button>
-          </div>
+          {(() => {
+            const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
+            const isPoolAccount = row.account_number.startsWith('PM') || row.account_number.startsWith('MM') || row.account_number.startsWith('CT');
+            return (
+              <div className="relative z-[60] flex flex-col sm:flex-row flex-wrap gap-2 pt-1">
+                {isManagedAccount ? (
+                  /* Investment / Copy Fund accounts — view-only, no trading */
+                  <>
+                    <Link
+                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                    >
+                      <BookOpen size={16} />
+                      View Trades
+                    </Link>
+                    <div className="rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] px-4 py-2.5 text-xs text-[#666] flex items-center gap-2 sm:ml-auto">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by Copy master'}
+                    </div>
+                  </>
+                ) : isPoolAccount ? (
+                  /* Pool accounts — master can trade */
+                  <>
+                    <Link
+                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#444] text-white text-sm font-semibold hover:border-[#666] hover:bg-white/5 transition-colors"
+                    >
+                      <BookOpen size={16} />
+                      Trade History
+                    </Link>
+                    <Link
+                      href={tradeHref}
+                      prefetch
+                      onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                    >
+                      <ExternalLink size={16} />
+                      Trade (Master)
+                    </Link>
+                  </>
+                ) : (
+                  /* Normal live/demo accounts */
+                  <>
+                    <Link
+                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#444] text-white text-sm font-semibold hover:border-[#666] hover:bg-white/5 transition-colors"
+                    >
+                      <BookOpen size={16} />
+                      Trading journal
+                    </Link>
+                    <Link
+                      href={tradeHref}
+                      prefetch
+                      onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                    >
+                      <ExternalLink size={16} />
+                      Trade
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setCloseModal(true)}
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
+                    >
+                      <Trash2 size={16} />
+                      Close account
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

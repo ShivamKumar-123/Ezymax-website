@@ -317,19 +317,24 @@ function CopyModal({
   const [submitting, setSubmitting] = useState(false);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoadingAccounts(true);
-        const res = await api.get<{ items: TradingAccount[] }>('/accounts');
+        const [accRes, walRes] = await Promise.all([
+          api.get<{ items: TradingAccount[] }>('/accounts'),
+          api.get<{ main_wallet_balance?: number }>('/wallet/summary'),
+        ]);
         if (cancelled) return;
-        const items = res.items ?? [];
+        const items = accRes.items ?? [];
         setAccounts(items);
         if (items.length > 0) setAccountId(items[0].id);
+        setWalletBalance(Number(walRes.main_wallet_balance) || 0);
       } catch {
-        // non-critical, user can still type manually
+        // non-critical
       } finally {
         if (!cancelled) setLoadingAccounts(false);
       }
@@ -340,11 +345,13 @@ function CopyModal({
   const handleSubmit = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    if (!accountId.trim()) { toast.error('Select a trading account'); return; }
+    if (amt > walletBalance) { toast.error('Insufficient wallet balance'); return; }
     setSubmitting(true);
     try {
-      await api.post(`/social/copy?master_id=${provider.id}&account_id=${accountId}&amount=${amt}`, {});
-      toast.success(`Now copying ${provider.provider_name}`);
+      // account_id is sent for API compat but backend auto-creates a dedicated account
+      const acctId = accounts.length > 0 ? accounts[0].id : '00000000-0000-0000-0000-000000000000';
+      await api.post(`/social/copy?master_id=${provider.id}&account_id=${acctId}&amount=${amt}`, {});
+      toast.success(`Now copying ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
       onSuccess();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to start copy');
@@ -364,28 +371,18 @@ function CopyModal({
         <h3 className="text-sm font-semibold text-text-primary mb-1">Copy {provider.provider_name}</h3>
         <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
 
-        <label className="block text-xs text-text-secondary mb-1">Trading Account</label>
-        {loadingAccounts ? (
-          <div className="w-full mb-3 px-3 py-2 rounded-lg bg-bg-primary border border-border-glass text-sm text-text-tertiary">
-            Loading accounts...
+        {/* Wallet balance */}
+        <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-4 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
+            <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
-        ) : accounts.length > 0 ? (
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="w-full mb-3 rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary focus:border-accent/50 focus:outline-none [data-theme='light']:border-black"
-          >
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.account_number} — ${acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="w-full mb-3 px-3 py-2 rounded-lg bg-bg-primary border border-border-glass text-sm text-text-tertiary">
-            No accounts found
-          </div>
-        )}
+          <button type="button" onClick={() => setAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-accent hover:underline">Max</button>
+        </div>
+
+        <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
+          A dedicated trading account will be auto-created for this copy subscription. Copied trades will appear there.
+        </div>
 
         <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
         <input
@@ -393,6 +390,7 @@ function CopyModal({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           min={provider.min_investment}
+          max={walletBalance}
           placeholder={`Min $${provider.min_investment}`}
           className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none [data-theme='light']:border-black"
         />
@@ -551,6 +549,10 @@ function MyCopiesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stoppingId, setStoppingId] = useState<string | null>(null);
+  const [refillTarget, setRefillTarget] = useState<CopySubscription | null>(null);
+  const [refillAmount, setRefillAmount] = useState('');
+  const [refilling, setRefilling] = useState(false);
+  const [walletBal, setWalletBal] = useState(0);
 
   const fetchCopies = useCallback(async () => {
     setLoading(true);
@@ -565,13 +567,21 @@ function MyCopiesTab() {
     }
   }, []);
 
-  useEffect(() => { fetchCopies(); }, [fetchCopies]);
+  const fetchWalletBal = useCallback(async () => {
+    try {
+      const s = await api.get<{ main_wallet_balance?: number }>('/wallet/summary');
+      setWalletBal(Number(s.main_wallet_balance) || 0);
+    } catch { setWalletBal(0); }
+  }, []);
+
+  useEffect(() => { fetchCopies(); fetchWalletBal(); }, [fetchCopies, fetchWalletBal]);
 
   const stopCopy = async (id: string, name: string) => {
     setStoppingId(id);
     try {
-      await api.delete(`/social/copy/${id}`);
-      toast.success(`Stopped copying ${name}`);
+      const res = await api.delete<{ returned_to_wallet?: number }>(`/social/copy/${id}`);
+      const returned = res?.returned_to_wallet;
+      toast.success(returned != null ? `Stopped copying ${name} — $${returned.toFixed(2)} returned to wallet` : `Stopped copying ${name}`);
       setCopies((prev) => prev.filter((c) => c.id !== id));
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to stop copy');
@@ -591,6 +601,42 @@ function MyCopiesTab() {
       toast.error(err instanceof Error ? err.message : 'Failed to withdraw');
     } finally {
       setStoppingId(null);
+    }
+  };
+
+  const openRefill = (c: CopySubscription) => {
+    setRefillTarget(c);
+    setRefillAmount('');
+    fetchWalletBal();
+  };
+
+  const submitRefill = async () => {
+    if (!refillTarget) return;
+    const amt = parseFloat(refillAmount);
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    if (amt > walletBal) { toast.error('Insufficient wallet balance'); return; }
+    setRefilling(true);
+    try {
+      // Use the invest endpoint — it now supports top-up for existing allocations
+      const isCopy = refillTarget.copy_type === 'signal';
+      if (isCopy) {
+        // For signal copies, use the copy endpoint with same master
+        await api.post(`/social/copy?master_id=${refillTarget.master_id}&account_id=${refillTarget.id}&amount=${amt}`, {});
+      } else {
+        // For PAMM/MAM, use the invest endpoint (supports top-up)
+        const accts = await api.get<{ items: Array<{ id: string }> }>('/accounts');
+        const firstLive = (accts.items ?? [])[0];
+        if (!firstLive) { toast.error('No trading account found'); setRefilling(false); return; }
+        await api.post(`/social/mamm-pamm/${refillTarget.master_id}/invest?account_id=${firstLive.id}&amount=${amt}`, {});
+      }
+      toast.success(`Added $${amt.toFixed(2)} to ${refillTarget.provider_name}`);
+      setRefillTarget(null);
+      fetchCopies();
+      fetchWalletBal();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Refill failed');
+    } finally {
+      setRefilling(false);
     }
   };
 
@@ -624,27 +670,81 @@ function MyCopiesTab() {
               <span>ROI: <span className={clsx('font-medium', c.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>{c.total_return_pct >= 0 ? '+' : ''}{c.total_return_pct.toFixed(2)}%</span></span>
             </div>
           </div>
-          {(c.copy_type === 'pamm' || c.copy_type === 'mam') ? (
-            <button
-              type="button"
-              disabled={stoppingId === c.id}
-              onClick={() => withdrawManaged(c.id, c.provider_name)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border border-warning text-warning hover:bg-warning hover:text-white disabled:opacity-50 transition-all"
-            >
-              {stoppingId === c.id ? 'Withdrawing…' : 'Withdraw'}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={stoppingId === c.id}
-              onClick={() => stopCopy(c.id, c.provider_name)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border border-sell text-sell hover:bg-sell hover:text-white disabled:opacity-50 transition-all"
-            >
-              {stoppingId === c.id ? 'Stopping…' : 'Stop'}
-            </button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {c.status === 'active' && (
+              <button
+                type="button"
+                onClick={() => openRefill(c)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-accent text-accent hover:bg-accent hover:text-black disabled:opacity-50 transition-all"
+              >
+                + Refill
+              </button>
+            )}
+            {(c.copy_type === 'pamm' || c.copy_type === 'mam') ? (
+              <button
+                type="button"
+                disabled={stoppingId === c.id}
+                onClick={() => withdrawManaged(c.id, c.provider_name)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-warning text-warning hover:bg-warning hover:text-white disabled:opacity-50 transition-all"
+              >
+                {stoppingId === c.id ? 'Withdrawing…' : 'Withdraw'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={stoppingId === c.id}
+                onClick={() => stopCopy(c.id, c.provider_name)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-sell text-sell hover:bg-sell hover:text-white disabled:opacity-50 transition-all"
+              >
+                {stoppingId === c.id ? 'Stopping…' : 'Stop'}
+              </button>
+            )}
+          </div>
         </div>
       ))}
+
+      {/* Refill Modal */}
+      {refillTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => !refilling && setRefillTarget(null)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6">
+            <button type="button" onClick={() => setRefillTarget(null)} disabled={refilling} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
+            <h3 className="text-sm font-semibold text-text-primary mb-1">Refill — {refillTarget.provider_name}</h3>
+            <p className="text-xxs text-text-tertiary mb-4">Add more funds from your wallet to this investment</p>
+
+            <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-4 flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Wallet Balance</div>
+                <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+              <button type="button" onClick={() => setRefillAmount(String(walletBal))} className="text-xs font-bold text-accent hover:underline">Max</button>
+            </div>
+
+            <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-4 text-xs text-text-secondary">
+              Current investment: <span className="text-text-primary font-semibold">${refillTarget.allocation_amount.toLocaleString()}</span>
+            </div>
+
+            <label className="block text-xs text-text-secondary mb-1">Refill Amount ($)</label>
+            <input
+              type="number" min="1" step="0.01" value={refillAmount}
+              onChange={(e) => setRefillAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+            />
+
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setRefillTarget(null)} disabled={refilling}
+                className="flex-1 py-2.5 rounded-lg border border-border-glass text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+              <button type="button" onClick={submitRefill} disabled={refilling || !refillAmount}
+                className="flex-1 py-2.5 rounded-lg bg-accent text-black text-xs font-bold hover:bg-accent/90 disabled:opacity-50 transition-colors">
+                {refilling ? 'Adding…' : 'Add Funds'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

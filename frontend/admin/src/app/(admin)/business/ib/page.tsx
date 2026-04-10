@@ -141,12 +141,17 @@ export default function IBPage() {
     setSubmitting(true);
     try {
       const body: any = {};
-      if (commissionPlan === 'default' || commissionPlan) {
-        body.commission_plan_id = commissionPlan === 'default' ? null : commissionPlan;
-      }
       if (commissionPlan === 'custom') {
+        // Custom rates — clear plan, send custom values
+        body.commission_plan_id = null;
         if (customPerLot) body.custom_commission_per_lot = parseFloat(customPerLot);
         if (customPerTrade) body.custom_commission_per_trade = parseFloat(customPerTrade);
+      } else if (commissionPlan && commissionPlan !== 'default') {
+        // Specific plan UUID selected
+        body.commission_plan_id = commissionPlan;
+      } else {
+        // Default — clear everything
+        body.commission_plan_id = null;
       }
       await adminApi.put(`/business/ib/agents/${editCommissionModal.id}/commission`, body);
       toast.success('Commission updated successfully');

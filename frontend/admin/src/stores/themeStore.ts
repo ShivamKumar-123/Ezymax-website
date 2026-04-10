@@ -7,7 +7,18 @@ export type AdminTheme = 'light' | 'dark';
 
 function applyThemeClass(theme: AdminTheme) {
   if (typeof document === 'undefined') return;
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  const el = document.documentElement;
+  if (theme === 'light') {
+    el.classList.add('light');
+    el.classList.remove('dark');
+    el.style.backgroundColor = '#f2efe9';
+    el.style.color = '#141414';
+  } else {
+    el.classList.add('dark');
+    el.classList.remove('light');
+    el.style.backgroundColor = '#050707';
+    el.style.color = '#f0f0f0';
+  }
 }
 
 export const useThemeStore = create<{
@@ -17,7 +28,7 @@ export const useThemeStore = create<{
 }>()(
   persist(
     (set, get) => ({
-      theme: 'light',
+      theme: 'dark',
       setTheme: (theme) => {
         applyThemeClass(theme);
         set({ theme });

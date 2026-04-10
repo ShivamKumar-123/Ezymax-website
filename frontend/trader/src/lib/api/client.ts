@@ -1,12 +1,18 @@
 const DEFAULT_SERVER_API = 'http://127.0.0.1:8000/api/v1';
 
-/** Base URL for REST calls. Browser always uses same-origin `/api/v1` (proxied server-side). */
+/** Base URL for REST calls.
+ *  Browser: direct to gateway (NEXT_PUBLIC_GATEWAY_URL) if set, otherwise same-origin proxy.
+ *  Server:  INTERNAL_API_URL (Docker hostname) → NEXT_PUBLIC_API_URL → fallback localhost.
+ */
 export function getApiBase(): string {
-  // In the browser: always use a relative path so requests go through the Next.js server-side
-  // proxy (src/app/api/v1/[...path]/route.ts → gateway). Never expose the Docker-internal
-  // gateway hostname to the browser — that would cause mixed-content blocks on HTTPS.
-  if (typeof window !== 'undefined') return '/api/v1';
-  // Server-side only (route handler, SSR): prefer INTERNAL_API_URL set by Docker Compose.
+  if (typeof window !== 'undefined') {
+    // Direct gateway call (fast — skips Next.js proxy hop).
+    // Set NEXT_PUBLIC_GATEWAY_URL in .env.local for local dev,
+    // or leave unset in production (falls back to same-origin proxy for HTTPS).
+    const direct = process.env.NEXT_PUBLIC_GATEWAY_URL;
+    if (direct) return `${direct.replace(/\/$/, '')}/api/v1`;
+    return '/api/v1';
+  }
   return (
     process.env.INTERNAL_API_URL?.trim()?.replace(/\/$/, '') ||
     process.env.NEXT_PUBLIC_API_URL?.trim()?.replace(/\/$/, '') ||
@@ -140,7 +146,9 @@ class ApiClient {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ')
             : 'Session expired or invalid. Please sign in again.';
-      throw new Error(msg);
+      const err = new Error(msg);
+      (err as any).status = 401;
+      throw err;
     }
 
     if (!res.ok) {
@@ -152,7 +160,9 @@ class ApiClient {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ')
             : `HTTP ${res.status}`;
-      throw new Error(msg || `HTTP ${res.status}`);
+      const err = new Error(msg || `HTTP ${res.status}`);
+      (err as any).status = res.status;
+      throw err;
     }
 
     const text = await res.text();

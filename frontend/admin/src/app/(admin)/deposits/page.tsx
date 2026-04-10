@@ -11,11 +11,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  History,
   Loader2,
   X,
 } from 'lucide-react';
 
-type TabId = 'deposits' | 'withdrawals';
+type TabId = 'deposits' | 'withdrawals' | 'history';
 type StatusFilter = 'pending' | 'approved' | 'rejected' | 'all';
 
 interface Deposit {
@@ -61,6 +62,18 @@ interface Withdrawal {
   reason?: string;
 }
 
+interface TransactionRecord {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  user_email?: string;
+  type: string;
+  amount: number;
+  balance_after?: number;
+  description?: string;
+  created_at: string;
+}
+
 interface ActionModal {
   type: 'approve' | 'reject';
   target: 'deposit' | 'withdrawal';
@@ -72,6 +85,7 @@ interface ActionModal {
 const TABS: { id: TabId; label: string; icon: typeof ArrowDownCircle }[] = [
   { id: 'deposits', label: 'Deposits', icon: ArrowDownCircle },
   { id: 'withdrawals', label: 'Withdrawals', icon: ArrowUpCircle },
+  { id: 'history', label: 'History', icon: History },
 ];
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -119,6 +133,51 @@ async function openAdminBinaryFile(path: string, token: string | null) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+/** Inline image that loads via auth header, shows thumbnail + click to expand. */
+function AuthImage({ src, token, alt, className }: { src: string; token: string | null; alt: string; className?: string }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(src, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (cancelled) return;
+        setBlobUrl(URL.createObjectURL(blob));
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [src, token]);
+
+  if (!blobUrl) return <span className="text-xxs text-text-tertiary">Loading...</span>;
+
+  return (
+    <>
+      <img
+        src={blobUrl}
+        alt={alt}
+        className={cn('cursor-pointer rounded border border-border-primary bg-white object-contain hover:opacity-80 transition-fast', className || 'w-10 h-10')}
+        onClick={() => setExpanded(true)}
+      />
+      {expanded && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setExpanded(false)}>
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setExpanded(false)} className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center text-text-primary hover:bg-sell/20 hover:text-sell">
+              <X size={16} />
+            </button>
+            <img src={blobUrl} alt={alt} className="max-w-[85vw] max-h-[85vh] rounded-lg border border-border-primary shadow-modal object-contain bg-white" />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function withdrawalPayoutSummary(w: Withdrawal): string {
   const bd = w.bank_details;
   if (!bd || typeof bd !== 'object') return '—';
@@ -148,6 +207,9 @@ export default function DepositsPage() {
   const [depositsTotal, setDepositsTotal] = useState(0);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [withdrawalsTotal, setWithdrawalsTotal] = useState(0);
+
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [transactionsTotal, setTransactionsTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,10 +281,32 @@ export default function DepositsPage() {
     }
   }, [page, statusFilter]);
 
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, string> = {
+        page: String(page),
+        per_page: String(PAGE_SIZE),
+      };
+      const res = await adminApi.get<{ items: TransactionRecord[]; total: number }>(
+        '/transactions', params,
+      );
+      setTransactions(res.items || []);
+      setTransactionsTotal(res.total || 0);
+    } catch (e: any) {
+      setError(e.message);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
   useEffect(() => {
     if (activeTab === 'deposits') fetchDeposits();
-    else fetchWithdrawals();
-  }, [activeTab, fetchDeposits, fetchWithdrawals]);
+    else if (activeTab === 'withdrawals') fetchWithdrawals();
+    else fetchTransactions();
+  }, [activeTab, fetchDeposits, fetchWithdrawals, fetchTransactions]);
 
   useEffect(() => {
     setPage(1);
@@ -267,8 +351,8 @@ export default function DepositsPage() {
     }
   };
 
-  const currentItems = activeTab === 'deposits' ? deposits : withdrawals;
-  const currentTotal = activeTab === 'deposits' ? depositsTotal : withdrawalsTotal;
+  const currentItems = activeTab === 'deposits' ? deposits : activeTab === 'withdrawals' ? withdrawals : transactions;
+  const currentTotal = activeTab === 'deposits' ? depositsTotal : activeTab === 'withdrawals' ? withdrawalsTotal : transactionsTotal;
   const totalPages = Math.max(1, Math.ceil(currentTotal / PAGE_SIZE));
 
   return (
@@ -306,8 +390,8 @@ export default function DepositsPage() {
               })}
             </div>
 
-            {/* Status filter */}
-            <div className="pr-3 flex items-center gap-2">
+            {/* Status filter — hide for history tab */}
+            <div className={cn('pr-3 flex items-center gap-2', activeTab === 'history' && 'hidden')}>
               <span className="text-xxs text-text-tertiary">Status:</span>
               <div className="relative">
                 <select
@@ -345,7 +429,7 @@ export default function DepositsPage() {
               <>
                 <div className="overflow-x-auto">
                   {activeTab === 'deposits' ? (
-                    <table className="w-full min-w-[1000px]">
+                    <table className="w-full min-w-[1000px]" data-tab="deposits">
                       <thead>
                         <tr className="border-b border-border-primary bg-bg-tertiary/40">
                           {[
@@ -394,19 +478,12 @@ export default function DepositsPage() {
                             </td>
                             <td className="px-4 py-2.5">
                               {d.screenshot_url ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openAdminBinaryFile(
-                                      `${getAdminApiBase()}/finance/deposits/${d.id}/screenshot`,
-                                      adminApi.getToken(),
-                                    ).catch(() => toast.error('Could not open screenshot'))
-                                  }
-                                  className="inline-flex items-center gap-1 text-xs text-buy hover:underline transition-fast"
-                                >
-                                  View
-                                  <ExternalLink size={11} />
-                                </button>
+                                <AuthImage
+                                  src={`${getAdminApiBase()}/finance/deposits/${d.id}/screenshot`}
+                                  token={adminApi.getToken()}
+                                  alt={`Deposit proof ${d.id}`}
+                                  className="w-12 h-12"
+                                />
                               ) : (
                                 <span className="text-xxs text-text-tertiary">—</span>
                               )}
@@ -464,7 +541,7 @@ export default function DepositsPage() {
                         ))}
                       </tbody>
                     </table>
-                  ) : (
+                  ) : activeTab === 'withdrawals' ? (
                     <table className="w-full min-w-[1000px]">
                       <thead>
                         <tr className="border-b border-border-primary bg-bg-tertiary/40">
@@ -511,19 +588,14 @@ export default function DepositsPage() {
                             <td className="px-4 py-2.5 max-w-[280px]">
                               <p className="text-xs text-text-primary break-words">{withdrawalPayoutSummary(w)}</p>
                               {w.bank_details?.user_payout_qr_path ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openAdminBinaryFile(
-                                      `${getAdminApiBase()}/finance/withdrawals/${w.id}/payout-qr`,
-                                      adminApi.getToken(),
-                                    ).catch(() => toast.error('Could not open QR file'))
-                                  }
-                                  className="mt-1 inline-flex items-center gap-1 text-xxs text-buy hover:underline"
-                                >
-                                  View user QR
-                                  <ExternalLink size={10} />
-                                </button>
+                                <div className="mt-1">
+                                  <AuthImage
+                                    src={`${getAdminApiBase()}/finance/withdrawals/${w.id}/payout-qr`}
+                                    token={adminApi.getToken()}
+                                    alt={`Payout QR ${w.id}`}
+                                    className="w-10 h-10"
+                                  />
+                                </div>
                               ) : null}
                             </td>
                             <td className="px-4 py-2.5">
@@ -579,7 +651,64 @@ export default function DepositsPage() {
                         ))}
                       </tbody>
                     </table>
-                  )}
+                  ) : activeTab === 'history' ? (
+                    <table className="w-full min-w-[800px]">
+                      <thead>
+                        <tr className="border-b border-border-primary bg-bg-tertiary/40">
+                          {['Type', 'User', 'Amount', 'Description', 'Date'].map(
+                            (h) => (
+                              <th
+                                key={h}
+                                className="px-3 py-2 text-left text-xxs font-semibold text-text-tertiary uppercase tracking-wider"
+                              >
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-primary">
+                        {(transactions as TransactionRecord[]).map((t) => {
+                          const isPositive = t.amount >= 0;
+                          const typeLabel = t.type === 'admin_commission' ? 'Admin Commission'
+                            : t.type === 'ib_commission' ? 'Master Fee'
+                            : t.type === 'commission' ? 'Performance Fee'
+                            : t.type === 'deposit' ? 'Deposit'
+                            : t.type === 'withdrawal' ? 'Withdrawal'
+                            : t.type;
+                          const typeBadge = t.type === 'admin_commission' ? 'bg-purple-500/15 text-purple-600'
+                            : t.type === 'ib_commission' ? 'bg-blue-500/15 text-blue-600'
+                            : t.type === 'deposit' ? 'bg-success/15 text-success'
+                            : t.type === 'withdrawal' ? 'bg-danger/15 text-danger'
+                            : 'bg-text-tertiary/15 text-text-tertiary';
+                          return (
+                            <tr key={t.id} className="hover:bg-bg-hover/40 transition-fast">
+                              <td className="px-3 py-2.5">
+                                <span className={cn('inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize', typeBadge)}>
+                                  {typeLabel}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-xs">
+                                <div className="font-medium text-text-primary">{t.user_name || '—'}</div>
+                                <div className="text-text-tertiary text-[10px]">{t.user_email || t.user_id?.slice(0, 8)}</div>
+                              </td>
+                              <td className="px-3 py-2.5 text-xs font-mono font-semibold">
+                                <span className={isPositive ? 'text-success' : 'text-danger'}>
+                                  {isPositive ? '+' : ''}{formatMoney(t.amount)}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-xs text-text-secondary max-w-[300px] truncate">
+                                {t.description || '—'}
+                              </td>
+                              <td className="px-3 py-2.5 text-xxs text-text-tertiary whitespace-nowrap">
+                                {formatDate(t.created_at)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : null}
                 </div>
 
                 {/* Pagination */}

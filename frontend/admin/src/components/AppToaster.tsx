@@ -1,31 +1,24 @@
 'use client';
 
 import { Toaster } from 'react-hot-toast';
-import { useThemeStore } from '@/stores/themeStore';
 
-const lightToast = {
-  background: '#ffffff',
-  color: '#111827',
-  border: '1px solid #E1E5EB',
+const toastStyle = {
+  background: '#111111',
+  color: '#f0f0f0',
+  border: '1px solid rgba(255,255,255,0.06)',
   fontSize: '12px',
-  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.08)',
-};
-
-const darkToast = {
-  background: '#151921',
-  color: '#E8EAED',
-  border: '1px solid #1E2433',
-  fontSize: '12px',
-  boxShadow: '0 4px 24px rgba(0,0,0,0.45)',
+  borderRadius: '10px',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
 };
 
 export default function AppToaster() {
-  const theme = useThemeStore((s) => s.theme);
   return (
     <Toaster
       position="top-right"
       toastOptions={{
-        style: theme === 'dark' ? darkToast : lightToast,
+        style: toastStyle,
+        success: { iconTheme: { primary: '#00e676', secondary: '#000' } },
+        error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
       }}
     />
   );

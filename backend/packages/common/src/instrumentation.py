@@ -53,15 +53,21 @@ def init_sentry(service_name: str) -> None:
 # ---------------------------------------------------------------------------
 # 2. Rate Limiting (slowapi)
 # ---------------------------------------------------------------------------
+_limiter_instance = None
+
+
 def get_rate_limiter():
-    """Return a configured SlowAPI Limiter instance."""
-    from slowapi import Limiter
-    from slowapi.util import get_remote_address
-    return Limiter(
-        key_func=get_remote_address,
-        default_limits=[settings.RATE_LIMIT_DEFAULT],
-        storage_uri=settings.REDIS_URL,
-    )
+    """Return a singleton SlowAPI Limiter instance."""
+    global _limiter_instance
+    if _limiter_instance is None:
+        from slowapi import Limiter
+        from slowapi.util import get_remote_address
+        _limiter_instance = Limiter(
+            key_func=get_remote_address,
+            default_limits=[settings.RATE_LIMIT_DEFAULT],
+            storage_uri=settings.REDIS_URL,
+        )
+    return _limiter_instance
 
 
 def add_rate_limit_handler(app):

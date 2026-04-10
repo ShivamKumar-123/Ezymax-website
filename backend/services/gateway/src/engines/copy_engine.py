@@ -29,6 +29,7 @@ from packages.common.src.models import (
     TradingAccount, TradeHistory, Transaction,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.admin_fees import credit_admin_fee
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("copy-engine")
@@ -464,17 +465,14 @@ class CopyTradeEngine:
                 )
 
                 if admin_fee > 0:
-                    db.add(
-                        Transaction(
-                            user_id=master.user_id,
-                            account_id=master_account.id,
-                            type="commission",
-                            amount=admin_fee,
-                            balance_after=master_account.balance,
-                            reference_id=investor_pos.id,
-                            description=f"Admin commission ({master.admin_commission_pct}%) from copy trade performance fee",
-                        )
+                    await credit_admin_fee(
+                        db, admin_fee,
+                        description=f"Platform commission ({master.admin_commission_pct}%) from master {master_account.account_number} copy trade",
+                        reference_id=investor_pos.id,
                     )
+
+                # Update master's total fee earned
+                master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_share
 
         copy.status = "closed"
 

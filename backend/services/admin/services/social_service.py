@@ -1,4 +1,5 @@
 """Admin Social Trading Service — master requests, masters CRUD."""
+import secrets
 import uuid
 from decimal import Decimal
 
@@ -8,9 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     User, MasterAccount, TradingAccount, InvestorAllocation,
-    CopyTrade, TradeHistory, Transaction, Position,
+    CopyTrade, TradeHistory, Transaction, Position, AccountGroup,
 )
 from dependencies import write_audit_log
+from packages.common.src.admin_fees import credit_admin_fee
+
+
+def _generate_pool_account_number(prefix: str = "PM") -> str:
+    return f"{prefix}{secrets.randbelow(90000000) + 10000000}"
 
 
 async def pamm_analytics(db: AsyncSession) -> dict:
@@ -30,9 +36,10 @@ async def pamm_analytics(db: AsyncSession) -> dict:
     )
     mam_rows = mam_result.all()
 
+    # Sum all admin platform commissions (type=admin_commission from credit_admin_fee)
     fee_result = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.type == "performance_fee",
+            Transaction.type == "admin_commission",
         )
     )
     admin_fee_revenue = float(fee_result.scalar() or 0)
@@ -188,14 +195,26 @@ async def distribute_pamm_profit(
         if master_acct:
             master_acct.balance = (master_acct.balance or Decimal("0")) + Decimal(str(round(master_cut, 8)))
             master_acct.equity = master_acct.balance + (master_acct.credit or Decimal("0"))
+            master_acct.free_margin = master_acct.equity - (master_acct.margin_used or Decimal("0"))
             db.add(Transaction(
                 user_id=master.user_id,
                 account_id=master.account_id,
-                type="performance_fee",
+                type="ib_commission",
                 amount=Decimal(str(round(master_cut, 8))),
+                balance_after=master_acct.balance,
                 description="PAMM manager performance fee earnings",
                 created_by=admin_id,
             ))
+
+        # Track master's total fee earned
+        master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + Decimal(str(round(master_cut, 8)))
+
+    # Credit admin platform fee
+    if total_admin_fee > 0:
+        await credit_admin_fee(
+            db, Decimal(str(round(total_admin_fee, 8))),
+            description=f"Platform commission from PAMM profit distribution (master {master_id})",
+        )
 
     total_net = sum(d["net_profit"] for d in distributions)
     await write_audit_log(
@@ -284,17 +303,44 @@ async def approve_master_request(
     if user:
         user.role = "master_trader"
 
+    # ── Auto-create a dedicated pool trading account for the master ──
+    effective_type = (master.master_type or "signal_provider").lower()
+    prefix = "PM" if effective_type == "pamm" else ("MM" if effective_type == "mamm" else "CT")
+    pool_account = TradingAccount(
+        user_id=master.user_id,
+        account_number=_generate_pool_account_number(prefix),
+        balance=Decimal("0"),
+        equity=Decimal("0"),
+        free_margin=Decimal("0"),
+        margin_used=Decimal("0"),
+        leverage=500,
+        currency="USD",
+        is_demo=False,
+        is_active=True,
+    )
+    db.add(pool_account)
+    await db.flush()  # get pool_account.id
+
+    # Link the pool account to the master
+    master.account_id = pool_account.id
+
     await write_audit_log(
         db, admin_id, "approve_master_request", "master_account", master_id,
         new_values={
             "status": "approved",
             "admin_commission_pct": float(master.admin_commission_pct or 0),
             "master_type": master.master_type,
+            "pool_account_id": str(pool_account.id),
+            "pool_account_number": pool_account.account_number,
         },
         ip_address=ip_address,
     )
     await db.commit()
-    return {"message": "Master request approved"}
+    return {
+        "message": "Master request approved",
+        "pool_account_id": str(pool_account.id),
+        "pool_account_number": pool_account.account_number,
+    }
 
 
 async def reject_master_request(
@@ -348,16 +394,18 @@ async def list_masters(page: int, per_page: int, db: AsyncSession) -> dict:
         )
         inv = investor_q.one()
 
+        # Admin platform commissions linked to this master via description
+        acct_num = ""
+        if m.account_id:
+            _macct = await db.get(TradingAccount, m.account_id)
+            acct_num = _macct.account_number if _macct else str(m.id)
         admin_rev_q = await db.execute(
             select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                Transaction.type == "commission",
-                Transaction.description.ilike(f"%Admin commission%"),
-                Transaction.reference_id.in_(
-                    select(Position.id).where(Position.account_id == m.account_id)
-                ) if m.account_id else Transaction.amount == 0,
+                Transaction.type == "admin_commission",
+                Transaction.description.ilike(f"%{acct_num}%") if acct_num else Transaction.description.ilike(f"%{m.id}%"),
             )
         )
-        admin_revenue = abs(float(admin_rev_q.scalar() or 0))
+        admin_revenue = float(admin_rev_q.scalar() or 0)
 
         perf_fee_q = await db.execute(
             select(func.coalesce(func.sum(Transaction.amount), 0)).where(

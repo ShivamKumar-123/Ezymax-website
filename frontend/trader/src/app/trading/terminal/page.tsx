@@ -15,11 +15,12 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
 import Watchlist from '@/components/trading/Watchlist';
 import OrderPanel from '@/components/trading/OrderPanel';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 
-const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
+const AdvancedChart = dynamic(() => import('@/components/charts/AdvancedChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
   ssr: false,
 });
@@ -43,6 +44,8 @@ export default function TradingTerminalPage() {
     setBottomPanelHeight,
     toggleTerminalMarkets,
   } = useUIStore();
+
+  useDocumentTitle();
 
   const [opW, setOpW] = useState(orderPanelWidth);
   const [bpH, setBpH] = useState(bottomPanelHeight);
@@ -78,7 +81,7 @@ export default function TradingTerminalPage() {
         ORDER_MAX,
         vw - TERMINAL_RESIZE.handlesSlack - TERMINAL_RESIZE.chartMinWidth,
       );
-      const next = Math.max(ORDER_MIN, Math.min(maxOp, op + dx));
+      const next = Math.max(ORDER_MIN, Math.min(maxOp, op - dx));
       setOpW(next);
       setOrderPanelWidth(next);
     },
@@ -393,7 +396,7 @@ export default function TradingTerminalPage() {
                   </div>
                 ) : null}
                 <div className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
-                  <TradingViewChart />
+                  <AdvancedChart />
                 </div>
                 <div className="shrink-0 flex items-center justify-end gap-2 px-2 py-1.5 border-t border-border-glass bg-bg-secondary/90">
                   <button
@@ -536,7 +539,7 @@ export default function TradingTerminalPage() {
               </div>
             ) : null}
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
-              <TradingViewChart />
+              <AdvancedChart />
             </div>
             <div className="shrink-0 flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border-primary bg-bg-secondary">
               {chartExpanded ? (

@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog,
 )
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
@@ -97,9 +98,15 @@ async def place_order(
     from packages.common.src.settings_store import get_bool_setting, get_int_setting
     from ..engines.ib_engine import distribute_ib_commission
 
-    if await get_bool_setting("maintenance_mode", False):
+    # --- Parallel: settings from Redis (no DB session needed) ---
+    maintenance, max_trades = await asyncio.gather(
+        get_bool_setting("maintenance_mode", False),
+        get_int_setting("max_open_trades", 200),
+    )
+    if maintenance:
         raise HTTPException(status_code=503, detail="Platform is under maintenance. Trading is temporarily disabled.")
 
+    # --- Sequential DB queries (AsyncSession doesn't support concurrent queries) ---
     account = await validate_account(req.account_id, user_id, db)
 
     if not account.is_demo and account.account_group:
@@ -113,7 +120,8 @@ async def place_order(
                 ),
             )
 
-    max_trades = await get_int_setting("max_open_trades", 200)
+    instrument = await get_instrument(req.symbol, db)
+
     open_count_q = await db.execute(
         select(func.count(Position.id)).where(
             Position.account_id == account.id,
@@ -122,8 +130,6 @@ async def place_order(
     )
     if (open_count_q.scalar() or 0) >= max_trades:
         raise HTTPException(status_code=400, detail=f"Maximum open trades ({max_trades}) reached")
-
-    instrument = await get_instrument(req.symbol, db)
 
     if req.order_type == "market":
         segment_name = instrument.segment.name if instrument.segment else ""
@@ -191,9 +197,30 @@ async def place_order(
                 Position.status == "open",
             )
         )
-        for pos in open_pos_result.scalars().all():
-            try:
-                p_bid, p_ask = await get_current_price(pos.instrument.symbol)
+        open_positions = open_pos_result.scalars().all()
+
+        # Batch-load all prices in one Redis mget call (instead of N+1 calls)
+        if open_positions:
+            pos_symbols = list({
+                pos.instrument.symbol for pos in open_positions
+                if pos.instrument
+            })
+            tick_keys = [PriceChannel.tick_key(s) for s in pos_symbols]
+            tick_values = await redis_client.mget(tick_keys) if tick_keys else []
+            price_map: dict[str, tuple[Decimal, Decimal]] = {}
+            for sym, val in zip(pos_symbols, tick_values):
+                if val:
+                    try:
+                        d = json.loads(val)
+                        price_map[sym] = (Decimal(str(d["bid"])), Decimal(str(d["ask"])))
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+
+            for pos in open_positions:
+                sym = pos.instrument.symbol if pos.instrument else None
+                if not sym or sym not in price_map:
+                    continue
+                p_bid, p_ask = price_map[sym]
                 pos_side = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
                 cp = p_bid if pos_side == "buy" else p_ask
                 cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
@@ -201,8 +228,6 @@ async def place_order(
                     unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
                 else:
                     unrealized_pnl += (pos.open_price - cp) * pos.lots * cs
-            except Exception:
-                pass
         real_equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
         real_free_margin = real_equity - (account.margin_used or Decimal("0"))
 
@@ -304,24 +329,28 @@ async def place_order(
         )
     )
     await db.commit()
-    await db.refresh(order)
 
+    # Fire-and-forget: notification + IB commission run in background (don't block response)
     if req.order_type == "market":
-        await create_notification(
-            db, user_id,
-            title=f"Order Filled — {instrument.symbol}",
-            message=f"{req.side.upper()} {req.lots} lots @ {order.filled_price}",
-            notif_type="trade", action_url="/trading",
-        )
-
-        try:
-            await distribute_ib_commission(
-                db, user_id, order.id, req.lots, instrument.symbol
-            )
-        except Exception as e:
-            logger.error(f"IB commission error: {e}")
-
-        await db.commit()
+        async def _post_order_tasks():
+            async with AsyncSessionLocal() as bg_db:
+                try:
+                    await create_notification(
+                        bg_db, user_id,
+                        title=f"Order Filled — {instrument.symbol}",
+                        message=f"{req.side.upper()} {req.lots} lots @ {order.filled_price}",
+                        notif_type="trade", action_url="/trading",
+                    )
+                except Exception as e:
+                    logger.warning("Post-order notification error: %s", e)
+                try:
+                    await distribute_ib_commission(
+                        bg_db, user_id, order.id, req.lots, instrument.symbol
+                    )
+                except Exception as e:
+                    logger.error("IB commission error: %s", e)
+                await bg_db.commit()
+        asyncio.create_task(_post_order_tasks())
 
     asyncio.create_task(fire_event(KafkaTopics.ORDERS, str(order.id), {
         "event": "order_placed",
@@ -666,32 +695,43 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     )
     db.add(tx)
 
-    pnl_str = f"+${float(result_profit):.2f}" if result_profit >= 0 else f"-${abs(float(result_profit)):.2f}"
-    await create_notification(
-        db, user_id,
-        title=f"{'Partial Close' if is_partial else 'Position Closed'} — {pos.instrument.symbol if pos.instrument else ''}",
-        message=f"{sv.upper()} {close_lots} lots @ {close_price} | P&L: {pnl_str}",
-        notif_type="trade", action_url="/trading", commit=False,
-    )
-
     await db.commit()
 
-    asyncio.create_task(fire_event(KafkaTopics.TRADES, str(pos.id), {
+    # Fire-and-forget: notification, Kafka event, Redis publish — don't block response
+    _pos_symbol = pos.instrument.symbol if pos.instrument else ""
+    _pos_id = str(pos.id)
+    _acct_id = str(account.id)
+    _profit_str = str(result_profit)
+    pnl_str = f"+${float(result_profit):.2f}" if result_profit >= 0 else f"-${abs(float(result_profit)):.2f}"
+
+    async def _post_close_tasks():
+        async with AsyncSessionLocal() as bg_db:
+            try:
+                await create_notification(
+                    bg_db, user_id,
+                    title=f"{'Partial Close' if is_partial else 'Position Closed'} — {_pos_symbol}",
+                    message=f"{sv.upper()} {close_lots} lots @ {close_price} | P&L: {pnl_str}",
+                    notif_type="trade", action_url="/trading",
+                )
+            except Exception:
+                pass
+        try:
+            await redis_client.publish(f"account:{_acct_id}", json.dumps({
+                "type": "position_closed",
+                "position_id": _pos_id,
+                "profit": _profit_str,
+            }))
+        except Exception:
+            pass
+
+    asyncio.create_task(_post_close_tasks())
+    asyncio.create_task(fire_event(KafkaTopics.TRADES, _pos_id, {
         "event": "position_closed",
-        "position_id": str(pos.id),
-        "symbol": pos.instrument.symbol,
-        "profit": str(result_profit),
+        "position_id": _pos_id,
+        "symbol": _pos_symbol,
+        "profit": _profit_str,
         "partial": is_partial,
     }))
-
-    try:
-        await redis_client.publish(f"account:{account.id}", json.dumps({
-            "type": "position_closed",
-            "position_id": str(pos.id),
-            "profit": str(result_profit),
-        }))
-    except Exception:
-        pass
 
     return {
         "message": result_msg,

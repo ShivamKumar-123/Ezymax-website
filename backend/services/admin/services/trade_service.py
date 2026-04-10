@@ -20,12 +20,16 @@ from packages.common.src.admin_schemas import (
 )
 from dependencies import write_audit_log
 
-_redis = aioredis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+# Admin uses Redis db 1, but market ticks are on db 0 (gateway).
+# Use db 0 explicitly for price reads.
+_redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_redis = aioredis.from_url(_redis_url, decode_responses=True)
+_redis_prices = aioredis.from_url(_redis_url.rsplit("/", 1)[0] + "/0", decode_responses=True)
 
 
 async def _get_live_price(symbol: str) -> dict | None:
     try:
-        data = await _redis.get(f"tick:{symbol}")
+        data = await _redis_prices.get(f"tick:{symbol}")
         if data:
             return json.loads(data)
     except Exception:

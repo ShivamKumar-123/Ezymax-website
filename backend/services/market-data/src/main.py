@@ -19,6 +19,7 @@ from .feed_handler import FeedSimulator, INSTRUMENTS
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
 from .bar_aggregator import BarAggregator
+from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
 from .store import TickStore
 
@@ -83,6 +84,7 @@ class MarketDataService:
             asyncio.create_task(self._spread_config_subscriber()),
             asyncio.create_task(self._stale_quote_refresher()),
             asyncio.create_task(self.aggregator.run_aggregation_loop()),
+            asyncio.create_task(self._auto_seed_bars()),
         ]
         if self._infoway_watchdog_armed:
             tasks.append(asyncio.create_task(self._infoway_fallback_watchdog()))
@@ -211,6 +213,25 @@ class MarketDataService:
             logger.warning("Stopping Infoway feed: %s", exc)
         self.feed = FeedSimulator(tick_rate_multiplier=1.0)
         asyncio.create_task(self.feed.start())
+
+    async def _auto_seed_bars(self) -> None:
+        """Wait for first ticks to arrive, then seed historical bars if Redis is empty."""
+        try:
+            await asyncio.sleep(30.0)  # give feed time to start delivering ticks
+        except asyncio.CancelledError:
+            raise
+        if not self.running:
+            return
+        # Check if bars already exist for a common symbol
+        sample_count = await redis_client.llen("bars:BTCUSD:5m")
+        if sample_count >= 50:
+            logger.info("Bars already seeded (%d bars for BTCUSD:5m), skipping auto-seed", sample_count)
+            return
+        logger.info("Auto-seeding historical bars (first run or bars missing)...")
+        try:
+            await seed_bars()
+        except Exception as exc:
+            logger.warning("Auto-seed bars failed: %s", exc)
 
     async def shutdown(self):
         logger.info("Shutting down Market Data Service...")

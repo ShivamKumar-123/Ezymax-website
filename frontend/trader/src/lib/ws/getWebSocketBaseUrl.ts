@@ -24,7 +24,8 @@ function apiUrlToWsOrigin(apiUrl: string): string | null {
 
 export function getWebSocketBaseUrl(): string {
   const rawWs = process.env.NEXT_PUBLIC_WS_URL?.trim();
-  const rawApi = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const rawGw = process.env.NEXT_PUBLIC_GATEWAY_URL?.trim();
+  const rawApi = rawGw || process.env.NEXT_PUBLIC_API_URL?.trim();
   const pageIsHttps =
     typeof window !== 'undefined' && window.location.protocol === 'https:';
 

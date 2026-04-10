@@ -290,10 +290,14 @@ export default function BanksPage() {
                       {b.qr_code_url ? (
                         <div className="mt-1">
                           <img
-                            src={b.qr_code_url}
+                            src={b.qr_code_url.startsWith('http') ? b.qr_code_url : `${typeof window !== 'undefined' ? window.location.origin : ''}/admin-api${b.qr_code_url.startsWith('/') ? b.qr_code_url : `/${b.qr_code_url}`}`}
                             alt="QR"
-                            className="w-12 h-12 object-contain rounded border border-border-primary bg-white cursor-pointer hover:scale-110 transition-fast"
-                            onClick={() => window.open(b.qr_code_url, '_blank')}
+                            className="w-14 h-14 object-contain rounded-md border border-border-primary bg-white cursor-pointer hover:scale-105 transition-fast shadow-sm"
+                            onClick={() => {
+                              const url = b.qr_code_url!.startsWith('http') ? b.qr_code_url! : `${window.location.origin}/admin-api${b.qr_code_url!.startsWith('/') ? b.qr_code_url! : `/${b.qr_code_url!}`}`;
+                              window.open(url, '_blank');
+                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
                         </div>
                       ) : (

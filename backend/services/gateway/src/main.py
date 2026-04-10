@@ -69,6 +69,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=_cors_methods,
     allow_headers=_cors_headers,
+    max_age=86400,  # Cache preflight for 24h — avoids OPTIONS request before every POST
 )
 
 add_middleware_stack(app)

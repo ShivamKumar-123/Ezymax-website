@@ -1,5 +1,6 @@
 """Social Trading Service — Leaderboard, copy trading, MAM/PAMM, followers."""
 import json
+import secrets
 from decimal import Decimal
 from uuid import UUID
 
@@ -13,6 +14,14 @@ from packages.common.src.models import (
     TradeHistory, AllocationCopyType, Transaction,
 )
 from packages.common.src.redis_client import redis_client
+
+
+def _gen_investor_account_number(copy_type: str = "signal") -> str:
+    """Generate a unique account number for an auto-created investor sub-account."""
+    prefix = "CF"  # Copy Fund
+    if copy_type in ("pamm", "mam"):
+        prefix = "IF"  # Investment Fund
+    return f"{prefix}{secrets.randbelow(90000000) + 10000000}"
 
 
 async def _calculate_live_return(account_id: UUID) -> dict:
@@ -195,19 +204,14 @@ async def start_copy(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="Provider has reached maximum investors")
 
-    acct_result = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.id == account_id,
-            TradingAccount.user_id == user_id,
-        )
-    )
-    account = acct_result.scalar_one_or_none()
-    if not account:
-        raise HTTPException(status_code=404, detail="Trading account not found")
-    if not account.is_active:
-        raise HTTPException(status_code=403, detail="Account is not active")
-    if account.balance < amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
+    # Deduct from main wallet
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    wallet_bal = user.main_wallet_balance or Decimal("0")
+    if wallet_bal < amount:
+        raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
     existing = await db.execute(
         select(InvestorAllocation).where(
@@ -219,10 +223,42 @@ async def start_copy(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Already copying this provider")
 
+    # Auto-create a dedicated trading account for this copy subscription
+    investor_account = TradingAccount(
+        user_id=user_id,
+        account_number=_gen_investor_account_number("signal"),
+        balance=amount,
+        equity=amount,
+        free_margin=amount,
+        margin_used=Decimal("0"),
+        leverage=500,
+        currency="USD",
+        is_demo=False,
+        is_active=True,
+    )
+    db.add(investor_account)
+    await db.flush()
+
+    # Deduct wallet
+    user.main_wallet_balance = wallet_bal - amount
+    db.add(Transaction(
+        user_id=user_id, account_id=investor_account.id, type="withdrawal",
+        amount=-amount,
+        description=f"Copy trading investment → account {investor_account.account_number}",
+    ))
+
+    # Add funds to master's pool account
+    if master.account_id:
+        pool_account = await db.get(TradingAccount, master.account_id)
+        if pool_account:
+            pool_account.balance = (pool_account.balance or Decimal("0")) + amount
+            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+
     allocation = InvestorAllocation(
         master_id=master_id,
         investor_user_id=user_id,
-        investor_account_id=account_id,
+        investor_account_id=investor_account.id,
         copy_type=AllocationCopyType.SIGNAL.value,
         allocation_amount=amount,
         max_drawdown_pct=max_drawdown_pct,
@@ -236,7 +272,9 @@ async def start_copy(
 
     return {
         "id": str(allocation.id), "master_id": str(master_id),
-        "account_id": str(account_id), "amount": float(amount),
+        "investor_account": investor_account.account_number,
+        "amount": float(amount),
+        "wallet_balance": float(user.main_wallet_balance),
         "copy_type": allocation.copy_type, "status": allocation.status,
         "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
     }
@@ -283,15 +321,109 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     if allocation.status != "active":
         raise HTTPException(status_code=400, detail="Subscription already inactive")
 
-    allocation.status = "stopped"
+    # Close open copied positions and calculate PnL
+    from packages.common.src.redis_client import PriceChannel
+    open_copies_q = await db.execute(
+        select(CopyTrade).where(
+            CopyTrade.investor_allocation_id == allocation.id,
+            CopyTrade.status == "open",
+        )
+    )
+    open_copies = open_copies_q.scalars().all()
+
+    total_pnl = Decimal("0")
     master_result = await db.execute(
         select(MasterAccount).where(MasterAccount.id == allocation.master_id)
     )
     master = master_result.scalar_one_or_none()
+
+    for copy in open_copies:
+        investor_pos = await db.get(Position, copy.investor_position_id)
+        if not investor_pos or investor_pos.status != PositionStatus.OPEN:
+            copy.status = "closed"
+            continue
+
+        instrument = investor_pos.instrument
+        if not instrument:
+            copy.status = "closed"
+            continue
+
+        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
+        if not tick_data:
+            continue
+
+        tick = json.loads(tick_data)
+        side_val = investor_pos.side.value if hasattr(investor_pos.side, "value") else str(investor_pos.side)
+        close_price = Decimal(str(tick["bid"])) if side_val == "buy" else Decimal(str(tick["ask"]))
+        contract_size = instrument.contract_size or Decimal("100000")
+
+        if side_val == "buy":
+            gross = (close_price - investor_pos.open_price) * investor_pos.lots * contract_size
+        else:
+            gross = (investor_pos.open_price - close_price) * investor_pos.lots * contract_size
+
+        perf_fee = Decimal("0")
+        if gross > 0 and master:
+            perf_fee = gross * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
+        net = gross - perf_fee
+        total_pnl += net
+
+        investor_pos.status = PositionStatus.CLOSED.value
+        investor_pos.close_price = close_price
+        investor_pos.profit = net
+        from datetime import datetime, timezone
+        investor_pos.closed_at = datetime.now(timezone.utc)
+
+        db.add(TradeHistory(
+            position_id=investor_pos.id, account_id=investor_pos.account_id,
+            instrument_id=investor_pos.instrument_id, side=investor_pos.side,
+            lots=investor_pos.lots, open_price=investor_pos.open_price,
+            close_price=close_price, swap=investor_pos.swap or Decimal("0"),
+            commission=investor_pos.commission or Decimal("0"), profit=net,
+            close_reason="copy_stopped", opened_at=investor_pos.created_at,
+            closed_at=datetime.now(timezone.utc),
+        ))
+        copy.status = "closed"
+
+    # Deduct investor's share from master's pool account
+    if master and master.account_id:
+        pool_account = await db.get(TradingAccount, master.account_id)
+        if pool_account:
+            pool_account.balance = max(Decimal("0"), (pool_account.balance or Decimal("0")) - (allocation.allocation_amount or Decimal("0")))
+            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+
+    # Return capital + PnL to main wallet
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+
+    return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
+    if return_amount < 0:
+        return_amount = Decimal("0")
+
+    if user:
+        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
+        db.add(Transaction(
+            user_id=user_id, account_id=None, type="deposit",
+            amount=return_amount,
+            description="Copy trading withdrawal (capital + P&L)",
+        ))
+
+    allocation.status = "stopped"
+    allocation.total_profit = (allocation.total_profit or Decimal("0")) + total_pnl
+
     if master and master.followers_count and master.followers_count > 0:
         master.followers_count -= 1
+
     await db.commit()
-    return {"message": "Copy trading stopped", "allocation_id": str(allocation_id)}
+    return {
+        "message": "Copy trading stopped — funds returned to wallet",
+        "allocation_id": str(allocation_id),
+        "positions_closed": len(open_copies),
+        "returned_to_wallet": float(return_amount),
+        "total_pnl": float(total_pnl),
+        "wallet_balance": float(user.main_wallet_balance) if user else None,
+    }
 
 
 async def withdraw_managed_account(
@@ -397,12 +529,29 @@ async def withdraw_managed_account(
 
         copy.status = "closed"
 
-    # Update investor account balance
-    investor_account = await db.get(TradingAccount, allocation.investor_account_id)
-    if investor_account:
-        investor_account.balance = (investor_account.balance or Decimal("0")) + total_closed_pnl
-        investor_account.equity = investor_account.balance + (investor_account.credit or Decimal("0"))
-        investor_account.free_margin = investor_account.equity - (investor_account.margin_used or Decimal("0"))
+    # Return capital + PnL to main wallet
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+
+    return_amount = (allocation.allocation_amount or Decimal("0")) + total_closed_pnl
+    if return_amount < 0:
+        return_amount = Decimal("0")
+
+    # Deduct from master's pool account
+    if master and master.account_id:
+        pool_account = await db.get(TradingAccount, master.account_id)
+        if pool_account:
+            pool_account.balance = max(Decimal("0"), (pool_account.balance or Decimal("0")) - (allocation.allocation_amount or Decimal("0")))
+            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+
+    if user:
+        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
+        db.add(Transaction(
+            user_id=user_id, account_id=None, type="deposit",
+            amount=return_amount,
+            description=f"Withdrawal from {'PAMM' if allocation.copy_type == 'pamm' else 'MAM'} (capital + P&L)",
+        ))
 
     # Deactivate allocation
     allocation.status = "withdrawn"
@@ -414,11 +563,13 @@ async def withdraw_managed_account(
     await db.commit()
 
     return {
-        "message": "Withdrawal complete",
+        "message": "Withdrawal complete — funds returned to wallet",
         "allocation_id": str(allocation_id),
         "positions_closed": len(open_copies),
+        "returned_to_wallet": float(return_amount),
         "total_pnl": float(total_closed_pnl),
         "total_profit": float(allocation.total_profit),
+        "wallet_balance": float(user.main_wallet_balance) if user else None,
     }
 
 
@@ -601,53 +752,119 @@ async def invest_managed_account(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="No slots available")
 
-    acct_result = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.id == account_id, TradingAccount.user_id == user_id,
-        )
-    )
-    account = acct_result.scalar_one_or_none()
-    if not account:
-        raise HTTPException(status_code=404, detail="Trading account not found")
-    if not account.is_active:
-        raise HTTPException(status_code=403, detail="Account is not active")
-    if account.balance < amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
+    # Deduct from main wallet
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    wallet_bal = user.main_wallet_balance or Decimal("0")
+    if wallet_bal < amount:
+        raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
-    existing = await db.execute(
+    existing_result = await db.execute(
         select(InvestorAllocation).where(
             InvestorAllocation.master_id == master_id,
             InvestorAllocation.investor_user_id == user_id,
             InvestorAllocation.status == "active",
         )
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already invested in this managed account")
+    existing_alloc = existing_result.scalar_one_or_none()
 
-    alloc_pct = volume_scaling_pct if master.master_type == "mamm" else None
-    copy_type_val = (
-        AllocationCopyType.PAMM.value if master.master_type == "pamm"
-        else AllocationCopyType.MAM.value
-    )
+    # Deduct from wallet
+    user.main_wallet_balance = wallet_bal - amount
 
-    allocation = InvestorAllocation(
-        master_id=master_id, investor_user_id=user_id,
-        investor_account_id=account_id, copy_type=copy_type_val,
-        allocation_amount=amount, allocation_pct=alloc_pct,
-        max_drawdown_pct=max_drawdown_pct, status="active",
-    )
-    db.add(allocation)
-    master.followers_count = (master.followers_count or 0) + 1
-    await db.commit()
-    await db.refresh(allocation)
+    # Add funds to master's pool trading account
+    pool_account = await db.get(TradingAccount, master.account_id) if master.account_id else None
+    if pool_account:
+        pool_account.balance = (pool_account.balance or Decimal("0")) + amount
+        pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+        pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
 
-    out = {
-        "id": str(allocation.id), "master_id": str(master_id),
-        "master_type": master.master_type, "copy_type": allocation.copy_type,
-        "account_id": str(account_id), "amount": float(amount),
-        "status": allocation.status,
-        "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
-    }
+    label = 'PAMM' if master.master_type == 'pamm' else 'MAM'
+
+    if existing_alloc:
+        # ── Top-up: add funds to existing investor account ──
+        existing_alloc.allocation_amount = (existing_alloc.allocation_amount or Decimal("0")) + amount
+        if volume_scaling_pct and master.master_type == "mamm":
+            existing_alloc.allocation_pct = volume_scaling_pct
+        if max_drawdown_pct is not None:
+            existing_alloc.max_drawdown_pct = max_drawdown_pct
+
+        inv_acct = await db.get(TradingAccount, existing_alloc.investor_account_id)
+        if inv_acct:
+            inv_acct.balance = (inv_acct.balance or Decimal("0")) + amount
+            inv_acct.equity = inv_acct.balance + (inv_acct.credit or Decimal("0"))
+            inv_acct.free_margin = inv_acct.equity - (inv_acct.margin_used or Decimal("0"))
+
+        db.add(Transaction(
+            user_id=user_id, account_id=existing_alloc.investor_account_id, type="withdrawal",
+            amount=-amount,
+            description=f"Top-up {label} investment (total: {existing_alloc.allocation_amount})",
+        ))
+
+        await db.commit()
+        await db.refresh(existing_alloc)
+
+        out = {
+            "id": str(existing_alloc.id), "master_id": str(master_id),
+            "master_type": master.master_type, "copy_type": existing_alloc.copy_type,
+            "investor_account": inv_acct.account_number if inv_acct else None,
+            "amount": float(existing_alloc.allocation_amount),
+            "top_up": float(amount),
+            "wallet_balance": float(user.main_wallet_balance),
+            "status": existing_alloc.status,
+            "created_at": existing_alloc.created_at.isoformat() if existing_alloc.created_at else None,
+        }
+    else:
+        # ── New allocation: auto-create dedicated investor account ──
+        ct = "pamm" if master.master_type == "pamm" else "mam"
+        investor_account = TradingAccount(
+            user_id=user_id,
+            account_number=_gen_investor_account_number(ct),
+            balance=amount,
+            equity=amount,
+            free_margin=amount,
+            margin_used=Decimal("0"),
+            leverage=500,
+            currency="USD",
+            is_demo=False,
+            is_active=True,
+        )
+        db.add(investor_account)
+        await db.flush()
+
+        db.add(Transaction(
+            user_id=user_id, account_id=investor_account.id, type="withdrawal",
+            amount=-amount,
+            description=f"Investment in {label} → account {investor_account.account_number}",
+        ))
+
+        alloc_pct = volume_scaling_pct if master.master_type == "mamm" else None
+        copy_type_val = (
+            AllocationCopyType.PAMM.value if master.master_type == "pamm"
+            else AllocationCopyType.MAM.value
+        )
+
+        allocation = InvestorAllocation(
+            master_id=master_id, investor_user_id=user_id,
+            investor_account_id=investor_account.id, copy_type=copy_type_val,
+            allocation_amount=amount, allocation_pct=alloc_pct,
+            max_drawdown_pct=max_drawdown_pct, status="active",
+        )
+        db.add(allocation)
+        master.followers_count = (master.followers_count or 0) + 1
+        await db.commit()
+        await db.refresh(allocation)
+
+        out = {
+            "id": str(allocation.id), "master_id": str(master_id),
+            "master_type": master.master_type, "copy_type": allocation.copy_type,
+            "investor_account": investor_account.account_number,
+            "amount": float(amount),
+            "wallet_balance": float(user.main_wallet_balance),
+            "status": allocation.status,
+            "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
+        }
     if master.master_type == "mamm":
         out["volume_scaling_pct"] = float(volume_scaling_pct)
     return out

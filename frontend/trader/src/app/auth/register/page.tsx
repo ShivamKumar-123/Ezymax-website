@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -67,15 +66,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="auth-page min-h-screen relative overflow-hidden bg-bg-primary">
-      {/* Animated Background */}
+    <div className="auth-page min-h-screen relative overflow-hidden" style={{ background: '#0a0a0a' }}>
+      {/* Subtle accent glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[200px] -right-[300px] w-[600px] h-[600px] rounded-full bg-buy/[0.04] blur-[120px] animate-float" />
         <div className="absolute -bottom-[300px] -left-[200px] w-[700px] h-[700px] rounded-full bg-accent/[0.03] blur-[120px] animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-sell/[0.02] blur-[100px] animate-float" style={{ animationDelay: '4s' }} />
       </div>
-
-      {/* Grid overlay */}
+      {/* Grid pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
@@ -86,8 +83,16 @@ export default function RegisterPage() {
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
         <div className="w-full max-w-[440px]">
           {/* Logo */}
-          <div className="mb-8">
-            <Image src="/logo.png" alt="Logo" width={48} height={48} className="rounded-xl" />
+          <div className="flex items-center gap-3 mb-8">
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="12" fill="#2962FF" />
+              <path d="M10 32L18 24L24 30L38 16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M32 16H38V22" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-xl font-bold italic tracking-tight">
+              <span className="text-white">Trust</span>
+              <span className="text-[#00e676]">Edge</span>
+            </span>
           </div>
 
           {/* Glass form card */}

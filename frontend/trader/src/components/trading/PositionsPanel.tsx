@@ -387,36 +387,26 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
 
     void (async () => {
       try {
-        const res = await toast.promise(
-          api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
-            `/positions/${id}/close`,
-            body,
-            { timeoutMs: 45_000 },
-          ),
-          {
-            loading: 'Closing position…',
-            success: (r) => {
-              const pnl = r.profit ?? 0;
-              const sign = pnl >= 0 ? '+' : '';
-              if (r.remaining_lots && r.remaining_lots > 0) {
-                return `Partial @ ${r.close_price} | P&L: ${sign}$${pnl.toFixed(2)} | ${r.remaining_lots} lots left`;
-              }
-              return `Closed @ ${r.close_price} | P&L: ${sign}$${pnl.toFixed(2)}`;
-            },
-            error: (e: unknown) => (e instanceof Error ? e.message : 'Close failed'),
-          },
+        const res = await api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
+          `/positions/${id}/close`,
+          body,
+          { timeoutMs: 15_000 },
         );
         const pnl = res.profit ?? 0;
+        const sign = pnl >= 0 ? '+' : '';
         pnl >= 0 ? sounds.profit() : sounds.loss();
+
         if (res.remaining_lots && res.remaining_lots > 0) {
-          refreshPositions();
+          toast.success(`Partial @ ${res.close_price} | P&L: ${sign}$${pnl.toFixed(2)} | ${res.remaining_lots} lots left`);
         } else {
+          toast.success(`Closed @ ${res.close_price} | P&L: ${sign}$${pnl.toFixed(2)}`);
           removePosition(id);
         }
-        refreshAccount();
-        void loadHistory();
-      } catch {
-        await refreshPositions();
+        // Refresh in parallel, don't block UI
+        Promise.all([refreshPositions(), refreshAccount(), loadHistory()]).catch(() => {});
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Close failed');
+        refreshPositions().catch(() => {});
       } finally {
         setCloseSubmitting(false);
         setCloseModal(null);

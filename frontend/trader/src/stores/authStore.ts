@@ -105,18 +105,24 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   loadUser: async () => {
+    // Try /auth/me first; if 401, refresh token and retry once
+    const fetchMe = () => api.get<User>('/auth/me');
     try {
-      const user = await api.get<User>('/auth/me');
+      const user = await fetchMe();
       set({ user, isAuthenticated: true, isInitialized: true, token: null });
-    } catch {
-      try {
-        await api.post('/auth/refresh', {});
-        const user = await api.get<User>('/auth/me');
-        set({ user, isAuthenticated: true, isInitialized: true, token: null });
-      } catch {
-        set({ user: null, isAuthenticated: false, isInitialized: true, token: null });
-        api.clearToken();
+    } catch (e: any) {
+      // Only try refresh if it was an auth error (401)
+      const status = e?.status ?? e?.response?.status;
+      if (status === 401 || status === 403) {
+        try {
+          await api.post('/auth/refresh', {});
+          const user = await fetchMe();
+          set({ user, isAuthenticated: true, isInitialized: true, token: null });
+          return;
+        } catch { /* fall through */ }
       }
+      set({ user: null, isAuthenticated: false, isInitialized: true, token: null });
+      api.clearToken();
     }
   },
 

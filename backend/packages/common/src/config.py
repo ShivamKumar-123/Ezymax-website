@@ -70,9 +70,9 @@ class Settings(BaseSettings):
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
 
     # Rate limiting (requests per minute per IP)
-    RATE_LIMIT_DEFAULT: str = "60/minute"
-    RATE_LIMIT_AUTH: str = "10/minute"
-    RATE_LIMIT_TRADING: str = "120/minute"
+    RATE_LIMIT_DEFAULT: str = "600/minute"
+    RATE_LIMIT_AUTH: str = "20/minute"
+    RATE_LIMIT_TRADING: str = "600/minute"
 
     # Request body size limit (bytes) — 10 MB default
     MAX_REQUEST_SIZE: int = 10 * 1024 * 1024

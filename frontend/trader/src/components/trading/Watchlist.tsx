@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTradingStore, InstrumentInfo } from '@/stores/tradingStore';
 import { tradingTerminalUrl } from '@/lib/tradingNav';
@@ -12,7 +12,7 @@ import { BellOff, ChevronUp } from 'lucide-react';
 
 type Trend = 'up' | 'down' | 'neutral';
 
-const TERMINAL_GROUPS = ['CRYPTO', 'FOREX', 'METALS', 'COMMODITIES', 'INDICES'] as const;
+const TERMINAL_GROUPS = ['FOREX', 'CRYPTO', 'INDICES', 'METALS', 'COMMODITIES', 'STOCKS'] as const;
 type TerminalGroup = (typeof TERMINAL_GROUPS)[number];
 
 const SYMBOL_EMOJI: Record<string, string> = {
@@ -46,14 +46,20 @@ function terminalGroup(symbol: string, instruments: InstrumentInfo[]): TerminalG
   const m = SYMBOL_META[symbol];
   const inst = instruments.find((i) => i.symbol === symbol);
   const seg = String(inst?.segment || m?.segment || '').toLowerCase();
-  if (m?.segment === 'Crypto' || seg.includes('crypto')) return 'CRYPTO';
-  if (m?.segment === 'Indices' || seg.includes('indices')) return 'INDICES';
+  if (seg.includes('crypto')) return 'CRYPTO';
+  if (seg.includes('indices') || seg.includes('index')) return 'INDICES';
+  if (seg.includes('commodit')) return 'COMMODITIES';
+  if (seg.includes('metal')) return 'METALS';
+  if (seg.includes('stock') || seg.includes('equit')) return 'STOCKS';
+  if (seg.includes('forex') || seg.includes('fx')) return 'FOREX';
+  // Fallback: check SYMBOL_META
+  if (m?.segment === 'Crypto') return 'CRYPTO';
+  if (m?.segment === 'Indices') return 'INDICES';
   if (m?.segment === 'Commodities') return 'COMMODITIES';
-  if (m?.segment === 'Forex' || seg.includes('forex')) return 'FOREX';
   return 'FOREX';
 }
 
-const SEGMENTS = ['All', 'Forex', 'Commodities', 'Indices', 'Crypto'];
+const SEGMENTS = ['All', 'Forex', 'Crypto', 'Indices', 'Commodities', 'Metals', 'Stocks'];
 
 const SYMBOL_META: Record<string, { display: string; segment: string }> = {
   EURUSD: { display: 'EUR/USD', segment: 'Forex' },
@@ -266,24 +272,46 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
     return () => clearTimeout(t);
   }, [prices, watchlist]);
 
-  const filtered = watchlist.filter((s) => {
+  /** All instruments that have live prices — watchlist + instruments store, filtered. */
+  const priceKeys = Object.keys(prices);
+  const priceCount = priceKeys.length;
+  const allSymbols = useMemo(() => {
+    const syms = new Set(watchlist);
+    for (const inst of instruments) {
+      syms.add(inst.symbol);
+    }
+    // Only show symbols that have a live price tick
+    return Array.from(syms).filter((s) => prices[s] != null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlist, instruments, priceCount]);
+
+  const filtered = allSymbols.filter((s: string) => {
     if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
-    if (segment !== 'All' && segment !== 'Starred' && SYMBOL_META[s]?.segment !== segment) return false;
+    if (segment === 'Starred') return watchlist.includes(s);
+    if (segment !== 'All') {
+      const meta = SYMBOL_META[s];
+      const inst = instruments.find((i) => i.symbol === s);
+      const seg = (inst?.segment || meta?.segment || '').toLowerCase();
+      const segLow = segment.toLowerCase();
+      if (segLow === 'metals') return s === 'XAUUSD' || s === 'XAGUSD' || seg.includes('metal');
+      if (!seg.includes(segLow) && !seg.startsWith(segLow.slice(0, 5))) return false;
+    }
     return true;
   });
 
-  const filteredTerminal = watchlist.filter((s) => {
+  const filteredTerminal = allSymbols.filter((s: string) => {
     if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const groupedTerminal = (() => {
     const buckets: Record<TerminalGroup, string[]> = {
-      CRYPTO: [],
       FOREX: [],
+      CRYPTO: [],
+      INDICES: [],
       METALS: [],
       COMMODITIES: [],
-      INDICES: [],
+      STOCKS: [],
     };
     for (const s of filteredTerminal) {
       buckets[terminalGroup(s, instruments)].push(s);
@@ -497,12 +525,12 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
           </div>
 
           {/* Column labels */}
-          <div className="shrink-0 px-3 py-2 border-b border-border-primary/80 bg-bg-secondary/40">
-            <div className="flex flex-col gap-2 min-[340px]:flex-row min-[340px]:items-center min-[340px]:justify-between min-[340px]:gap-3">
-              <div className="hidden min-[340px]:block min-w-0 shrink" aria-hidden />
-              <div className="grid grid-cols-2 gap-2 w-full min-[340px]:w-[10.5rem] min-[400px]:w-[11.5rem] shrink-0 text-[10px] font-bold uppercase tracking-wider">
-                <span className="text-right text-sell/90">Bid</span>
-                <span className="text-right text-buy/90">Ask</span>
+          <div className="shrink-0 px-3 py-1.5 bg-bg-secondary/60">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 shrink" />
+              <div className="grid grid-cols-2 gap-2 w-[10.5rem] min-[400px]:w-[11.5rem] shrink-0 text-[10px] font-extrabold uppercase tracking-widest">
+                <span className="text-right text-sell/80">BID</span>
+                <span className="text-right text-buy/80">ASK</span>
               </div>
             </div>
           </div>
@@ -549,8 +577,8 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   key={symbol}
                   onClick={() => handleRowClick(symbol)}
                   className={clsx(
-                    'cursor-pointer transition-colors px-3 py-2.5 border-l-2 hover:bg-bg-hover/30 active:bg-buy/5 border-transparent hover:border-buy/40',
-                    symbol === selectedSymbol && 'border-buy bg-buy/5',
+                    'cursor-pointer transition-colors px-3 py-2.5 border-l-2 border-b border-b-border-primary/40 hover:bg-bg-hover/30 active:bg-buy/5 border-l-transparent hover:border-l-buy/40',
+                    symbol === selectedSymbol && 'border-l-buy bg-buy/5',
                   )}
                 >
                   <div className="flex flex-col gap-2 min-[340px]:flex-row min-[340px]:items-start min-[340px]:justify-between min-[340px]:gap-3">
@@ -603,20 +631,16 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                         )}
                       </div>
                       {tick && dayLow != null && dayHigh != null && (
-                        <div className="col-span-2 grid grid-cols-2 gap-2 pt-0.5 border-t border-border-glass/50 mt-0.5">
-                          <div className="text-right min-w-0">
-                            <span className="block text-[9px] font-bold uppercase tracking-wide text-text-tertiary">
-                              Low
-                            </span>
-                            <span className="tabular-nums text-[11px] sm:text-xs font-medium text-text-secondary">
+                        <div className="col-span-2 grid grid-cols-2 gap-2 mt-1">
+                          <div className="text-right min-w-0 flex items-baseline justify-end gap-1">
+                            <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary/70">L</span>
+                            <span className="tabular-nums text-[11px] font-mono font-medium text-text-tertiary">
                               {dayLow.toFixed(digits)}
                             </span>
                           </div>
-                          <div className="text-right min-w-0">
-                            <span className="block text-[9px] font-bold uppercase tracking-wide text-text-tertiary">
-                              High
-                            </span>
-                            <span className="tabular-nums text-[11px] sm:text-xs font-medium text-text-secondary">
+                          <div className="text-right min-w-0 flex items-baseline justify-end gap-1">
+                            <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary/70">H</span>
+                            <span className="tabular-nums text-[11px] font-mono font-medium text-text-tertiary">
                               {dayHigh.toFixed(digits)}
                             </span>
                           </div>

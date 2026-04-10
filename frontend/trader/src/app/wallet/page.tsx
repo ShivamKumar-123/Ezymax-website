@@ -655,11 +655,11 @@ function WalletPageContent() {
 
           <div className="rounded-xl border border-border-primary bg-card p-2.5 sm:p-3">
             <div className="flex gap-2 overflow-x-auto pb-0.5 sidebar-scroll snap-x snap-mandatory [scrollbar-width:thin]">
-              {/* Main wallet — compact */}
+              {/* Main wallet — compact, accent border */}
               <div
                 className={clsx(
-                  'flex shrink-0 snap-start flex-col gap-1.5 rounded-lg border bg-card-nested p-2.5 w-[148px] sm:w-[156px]',
-                  'border-border-primary shadow-sm transition-colors hover:border-border-secondary',
+                  'flex shrink-0 snap-start flex-col gap-1.5 rounded-lg border-2 bg-card-nested p-2.5 w-[148px] sm:w-[156px]',
+                  'border-accent/40 shadow-sm shadow-accent/5 transition-colors hover:border-accent/60',
                 )}
               >
                 <div className="flex items-start justify-between gap-1">
@@ -706,12 +706,24 @@ function WalletPageContent() {
                   currency: cur,
                 }).format(bal);
                 const isSel = a.id === selectedAccountId;
+                const num = a.account_number || '';
+                const isManaged = num.startsWith('IF') || num.startsWith('CF');
+                const isPool = num.startsWith('PM') || num.startsWith('MM') || num.startsWith('CT');
+                const cardLabel = num.startsWith('IF') ? 'PAMM Investment'
+                  : num.startsWith('CF') ? 'Copy Trade'
+                  : num.startsWith('PM') ? 'PAMM Pool'
+                  : num.startsWith('MM') ? 'MAM Pool'
+                  : num.startsWith('CT') ? 'Copy Pool'
+                  : num;
+                const iconColor = isManaged ? 'border-amber-500/20 bg-amber-500/10' : isPool ? 'border-purple-500/20 bg-purple-500/10' : 'border-buy/20 bg-buy/10';
+                const iconTextColor = isManaged ? 'text-amber-400' : isPool ? 'text-purple-400' : 'text-buy';
+
                 return (
                   <div
                     key={a.id}
                     role="button"
                     tabIndex={0}
-                    aria-label={`Trading account ${a.account_number}`}
+                    aria-label={`Trading account ${num}`}
                     onClick={() => setSelectedAccountId(a.id)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -721,51 +733,61 @@ function WalletPageContent() {
                     }}
                     className={clsx(
                       'flex shrink-0 snap-start flex-col gap-1.5 rounded-lg border bg-card-nested p-2.5 w-[148px] sm:w-[156px]',
-                      'border-border-primary shadow-sm transition-colors hover:border-border-secondary cursor-pointer outline-none',
+                      'shadow-sm transition-colors cursor-pointer outline-none',
+                      isManaged ? 'border-amber-500/20 hover:border-amber-500/40' : isPool ? 'border-purple-500/20 hover:border-purple-500/40' : 'border-border-primary hover:border-border-secondary',
                       isSel && 'ring-1 ring-accent/35 border-accent/20',
                     )}
                   >
                     <div className="flex items-start justify-between gap-1">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-buy/20 bg-buy/10">
-                        <TrendingUp className="h-3.5 w-3.5 text-buy" strokeWidth={2} />
+                      <div className={clsx('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', iconColor)}>
+                        <TrendingUp className={clsx('h-3.5 w-3.5', iconTextColor)} strokeWidth={2} />
                       </div>
                     </div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-text-tertiary leading-tight truncate font-mono">
-                      {a.account_number}
+                    <p className={clsx(
+                      'text-[9px] font-bold uppercase tracking-wide leading-tight truncate',
+                      isManaged || isPool ? iconTextColor : 'text-text-tertiary font-mono',
+                    )}>
+                      {cardLabel}
                     </p>
                     <p className="text-sm font-bold tabular-nums font-mono text-text-primary truncate">{line}</p>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openTransferToMain(a.id);
-                        }}
-                        disabled={demoFundingBlocked}
-                        title="Move to main wallet"
-                        className={clsx(
-                          'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
-                          'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
-                        )}
-                      >
-                        <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openTransferFromMain(a.id);
-                        }}
-                        disabled={demoFundingBlocked}
-                        title="Add from main wallet"
-                        className={clsx(
-                          'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
-                          'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
-                        )}
-                      >
-                        <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
-                      </button>
-                    </div>
+                    {!isManaged && !isPool ? (
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTransferToMain(a.id);
+                          }}
+                          disabled={demoFundingBlocked}
+                          title="Move to main wallet"
+                          className={clsx(
+                            'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
+                            'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
+                          )}
+                        >
+                          <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTransferFromMain(a.id);
+                          }}
+                          disabled={demoFundingBlocked}
+                          title="Add from main wallet"
+                          className={clsx(
+                            'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
+                            'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
+                          )}
+                        >
+                          <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center rounded-md border border-border-primary/50 py-1 text-[9px] font-semibold text-text-tertiary">
+                        {isManaged ? 'Managed' : 'Master'}
+                      </div>
+                    )}
                   </div>
                 );
               })}

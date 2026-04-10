@@ -7,6 +7,7 @@ import api from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
+import { tradingTerminalUrl, setPersistedTradingAccountId } from '@/lib/tradingNav';
 
 interface OpenAccountResponse {
   id: string;
@@ -66,15 +67,13 @@ function OpenAccountPageInner() {
     setOpening(groupId);
     try {
       const res = await api.post<OpenAccountResponse>('/accounts/open', { account_group_id: groupId });
-      toast.success('Trading account created');
-      try {
-        if (typeof window !== 'undefined' && res?.id) {
-          sessionStorage.setItem('ptd-accounts-expand', res.id);
-        }
-      } catch {
-        /* ignore */
+      toast.success('Trading account created — opening terminal…');
+      if (res?.id) {
+        setPersistedTradingAccountId(res.id);
+        router.push(tradingTerminalUrl(res.id, { view: 'chart' }));
+      } else {
+        router.push('/trading');
       }
-      router.push('/accounts');
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not open account');

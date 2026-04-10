@@ -161,8 +161,8 @@ export default function OrderPanel() {
       });
       sounds.orderPlaced();
       toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`);
-      refreshPositions();
-      refreshAccount();
+      // Refresh positions and account in parallel, don't block UI
+      Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Order failed');
     } finally {

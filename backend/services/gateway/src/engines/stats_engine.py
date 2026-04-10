@@ -21,6 +21,7 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     MasterAccount, TradingAccount, TradeHistory, InvestorAllocation, Transaction,
 )
+from packages.common.src.admin_fees import credit_admin_fee
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("stats-engine")
@@ -225,6 +226,16 @@ class StatsEngine:
                     balance_after=master_account.balance,
                     description=f"Management fee earned from investor allocation {alloc.id}",
                 ))
+
+                # Credit admin fee to platform
+                if admin_fee > 0:
+                    await credit_admin_fee(
+                        db, admin_fee,
+                        description=f"Platform cut ({master.admin_commission_pct}%) of mgmt fee from master {master_account.account_number}",
+                    )
+
+                # Track master's total fee earned
+                master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_share
 
                 logger.info(
                     "Mgmt fee collected: investor=%s amount=%s master_share=%s admin=%s",

@@ -174,8 +174,11 @@ async def update_ib_commission(
         "custom_commission_per_trade": float(profile.custom_commission_per_trade) if profile.custom_commission_per_trade else None,
     }
 
-    if body.commission_plan_id:
-        profile.commission_plan_id = uuid.UUID(body.commission_plan_id)
+    if body.commission_plan_id and body.commission_plan_id not in ('default', 'custom', 'null', ''):
+        try:
+            profile.commission_plan_id = uuid.UUID(body.commission_plan_id)
+        except (ValueError, AttributeError):
+            raise HTTPException(status_code=400, detail=f"Invalid commission plan ID: {body.commission_plan_id}")
         profile.custom_commission_per_lot = None
         profile.custom_commission_per_trade = None
     else:

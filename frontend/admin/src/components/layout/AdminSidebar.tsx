@@ -100,22 +100,22 @@ export default function AdminSidebar() {
 
   return (
     <div className={cn(
-      'flex flex-col h-full bg-bg-secondary border-r border-border-primary transition-all duration-200',
+      'flex flex-col h-full glass-card border-r border-border-primary/50 transition-all duration-300',
       collapsed ? 'w-14' : 'w-60',
     )}>
       {/* Header */}
-      <div className="flex items-center h-12 px-3 border-b border-border-primary">
+      <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {!collapsed && (
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-sm bg-buy flex items-center justify-center">
-              <span className="text-white text-xxs font-bold">P</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#33eb91] to-[#00c853] flex items-center justify-center shadow-neon-sm">
+              <span className="text-black text-xs font-black">A</span>
             </div>
-            <span className="text-md font-bold text-text-primary">Admin</span>
+            <span className="text-md font-bold text-text-primary tracking-tight">Admin</span>
           </Link>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className={cn('p-1 text-text-tertiary hover:text-text-secondary transition-fast rounded-sm hover:bg-bg-hover', !collapsed && 'ml-auto')}
+          className={cn('p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10', !collapsed && 'ml-auto')}
         >
           {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
         </button>
@@ -132,8 +132,8 @@ export default function AdminSidebar() {
                 <button
                   onClick={() => toggleGroup(item.label)}
                   className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-fast',
-                    hasActiveChild ? 'text-buy' : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
+                    'w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-fast rounded-md mx-1',
+                    hasActiveChild ? 'text-accent bg-accent/8' : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                   )}
                 >
                   <item.icon size={16} />
@@ -153,8 +153,8 @@ export default function AdminSidebar() {
                         className={cn(
                           'block pl-4 pr-3 py-1.5 text-xs transition-fast',
                           isActive(child.href)
-                            ? 'text-buy border-l-2 border-buy -ml-px'
-                            : 'text-text-tertiary hover:text-text-primary',
+                            ? 'text-accent border-l-2 border-accent -ml-px font-semibold'
+                            : 'text-text-tertiary hover:text-text-primary hover:text-accent/80',
                         )}
                       >
                         {child.label}
@@ -171,9 +171,9 @@ export default function AdminSidebar() {
               key={item.label}
               href={item.href!}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 text-xs font-medium transition-fast relative',
+                'flex items-center gap-2 px-3 py-2 text-xs font-medium transition-fast relative rounded-md mx-1',
                 isActive(item.href)
-                  ? 'text-buy bg-bg-hover border-l-2 border-buy'
+                  ? 'nav-active'
                   : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
               )}
             >
