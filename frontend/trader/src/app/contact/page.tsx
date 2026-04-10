@@ -28,7 +28,7 @@ export default function ContactPage() {
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {[
               { icon: Phone, title: 'Phone', value: '+1 (908) 228-0305', desc: 'Available 24/7' },
-              { icon: Mail, title: 'Email', value: 'support@protrader.com', desc: 'Response within 1 hour' },
+              { icon: Mail, title: 'Email', value: 'support@trustedge.com', desc: 'Response within 1 hour' },
               { icon: MessageCircle, title: 'Live Chat', value: 'Chat with us', desc: 'Instant support' },
             ].map(({ icon: Icon, title, value, desc }) => (
               <div key={title} className="bg-gray-50 rounded-xl p-8 border border-gray-200 text-center hover:shadow-md transition-shadow">

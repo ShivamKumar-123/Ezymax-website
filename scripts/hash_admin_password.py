@@ -4,7 +4,7 @@
   pip install 'passlib[bcrypt]'   # once on the machine
   python scripts/hash_admin_password.py 'NewPassword'
 
-Then: UPDATE users SET password_hash = '<output>' WHERE email = 'admin@protrader.com';
+Then: UPDATE users SET password_hash = '<output>' WHERE email = 'admin@trustedge.com';
 """
 import sys
 

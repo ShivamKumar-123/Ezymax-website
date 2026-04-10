@@ -13,7 +13,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-            About ProTrader<br />
+            About TrustEdge<br />
             <span className="text-blue-600">Revolutionizing Global Trading</span>
           </h1>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
@@ -30,10 +30,10 @@ export default function AboutPage() {
           </div>
           <div className="prose prose-lg max-w-none space-y-6">
             <p className="text-gray-500 leading-relaxed">
-              ProTrader was founded with a simple belief: trading should be accessible, transparent, and fair for everyone. We saw traders struggling with high fees, slow withdrawals, and limited access to global markets. We decided to change that.
+              TrustEdge was founded with a simple belief: trading should be accessible, transparent, and fair for everyone. We saw traders struggling with high fees, slow withdrawals, and limited access to global markets. We decided to change that.
             </p>
             <p className="text-gray-500 leading-relaxed">
-              Today, ProTrader serves thousands of traders across 150+ countries, providing them with the tools and freedom they deserve. We're not just a broker—we're a movement toward financial independence.
+              Today, TrustEdge serves thousands of traders across 150+ countries, providing them with the tools and freedom they deserve. We're not just a broker—we're a movement toward financial independence.
             </p>
             <p className="text-gray-500 leading-relaxed">
               Our commitment is simple: provide the best trading experience with zero compromises on security, speed, or transparency.

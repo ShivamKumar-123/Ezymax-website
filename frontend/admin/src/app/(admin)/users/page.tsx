@@ -217,10 +217,13 @@ export default function UsersPage() {
       setMenuPos(null);
     } else {
       const rect = e.currentTarget.getBoundingClientRect();
-      const menuH = 310;
+      const menuW = 190;
+      const menuH = 340;
       const spaceBelow = window.innerHeight - rect.bottom;
-      const top = spaceBelow < menuH ? rect.top - menuH + rect.height : rect.bottom + 4;
-      setMenuPos({ top, left: rect.right - 180 });
+      // Place directly below the ... button, right-aligned
+      const top = spaceBelow < menuH ? Math.max(8, rect.top - menuH) : rect.bottom + 4;
+      const left = Math.max(8, rect.right - menuW);
+      setMenuPos({ top, left });
       setOpenActionsId(userId);
     }
   };
@@ -324,7 +327,7 @@ export default function UsersPage() {
     try {
       const data = await adminApi.post<{ access_token: string; user_email: string }>(`/users/${user.id}/login-as`);
       if (data.access_token) {
-        // Derive trader URL from current admin hostname (admin.protrader.today → protrader.today)
+        // Derive trader URL from current admin hostname (admin.trustedge.today → trustedge.today)
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
         const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:';
         const traderUrl = process.env.NEXT_PUBLIC_TRADER_URL
@@ -411,7 +414,7 @@ export default function UsersPage() {
         {/* Users Table */}
         <div className="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-border-primary bg-bg-tertiary/50">
                   {COLUMNS.map(col => (
@@ -419,48 +422,48 @@ export default function UsersPage() {
                       key={col.key}
                       onClick={() => handleSort(col.key)}
                       className={cn(
-                        'group cursor-pointer select-none px-5 py-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap',
+                        'group cursor-pointer select-none px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap',
                         col.align === 'right' ? 'text-right' : 'text-left',
                       )}
                     >
-                      <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1">
                         {col.label}
                         <SortIcon col={col.key} />
                       </span>
                     </th>
                   ))}
-                  <th className="px-5 py-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider text-center whitespace-nowrap w-[80px]">Actions</th>
+                  <th className="px-2 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider text-center whitespace-nowrap w-[50px]"></th>
                 </tr>
               </thead>
               <tbody>
                 {!loading && sorted.map(u => (
                   <tr key={u.id} className="border-b border-border-primary/40 transition-fast hover:bg-bg-hover/60 group/row">
-                    <td className="px-5 py-4 text-sm text-text-tertiary font-mono tabular-nums whitespace-nowrap" title={u.id}>{u.id.slice(0, 8)}…</td>
-                    <td className="px-5 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 text-text-tertiary font-mono tabular-nums whitespace-nowrap" title={u.id}>{u.id.slice(0, 8)}…</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <Link href={`/users/${u.id}`} className="inline-flex items-center gap-2 hover:text-buy transition-fast">
-                        <div className="w-8 h-8 rounded-full bg-buy/10 border border-buy/20 flex items-center justify-center shrink-0">
-                          <UserRound size={15} className="text-buy" />
+                        <div className="w-7 h-7 rounded-full bg-buy/10 border border-buy/20 flex items-center justify-center shrink-0">
+                          <UserRound size={13} className="text-buy" />
                         </div>
-                        <span className="text-sm font-medium text-text-primary">{u.name}</span>
+                        <span className="text-xs font-medium text-text-primary">{u.name}</span>
                       </Link>
                     </td>
-                    <td className="px-5 py-4 text-sm text-text-secondary whitespace-nowrap">{u.email}</td>
-                    <td className="px-5 py-4 text-sm text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.balance)}</td>
-                    <td className="px-5 py-4 text-sm text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.equity)}</td>
-                    <td className="px-5 py-4 text-sm text-text-secondary whitespace-nowrap">{u.group}</td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={cn('inline-flex px-2.5 py-1 rounded text-xs font-semibold', kycBadge(u.kyc_status))}>{u.kyc_status}</span>
+                    <td className="px-3 py-3 text-text-secondary whitespace-nowrap">{u.email}</td>
+                    <td className="px-3 py-3 text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.balance)}</td>
+                    <td className="px-3 py-3 text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.equity)}</td>
+                    <td className="px-3 py-3 text-text-secondary whitespace-nowrap">{u.group}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className={cn('inline-flex px-2 py-0.5 rounded text-[10px] font-semibold', kycBadge(u.kyc_status))}>{u.kyc_status}</span>
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={cn('inline-flex px-2.5 py-1 rounded text-xs font-semibold', statusBadge(u.status))}>{u.status}</span>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className={cn('inline-flex px-2 py-0.5 rounded text-[10px] font-semibold', statusBadge(u.status))}>{u.status}</span>
                     </td>
-                    <td className="px-5 py-4 text-center whitespace-nowrap" data-actions-menu>
+                    <td className="px-2 py-3 text-center whitespace-nowrap" data-actions-menu>
                       <button
                         type="button"
                         onClick={(e) => toggleActions(u.id, e)}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border-primary text-text-secondary transition-fast hover:bg-bg-hover hover:text-text-primary hover:border-border-secondary"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border-primary text-text-secondary transition-fast hover:bg-bg-hover hover:text-text-primary hover:border-border-secondary"
                       >
-                        <MoreHorizontal size={16} />
+                        <MoreHorizontal size={15} />
                       </button>
                     </td>
                   </tr>
@@ -529,8 +532,8 @@ export default function UsersPage() {
             <div className="fixed inset-0 z-40" onMouseDown={closeMenu} />
             <div
               data-actions-menu
-              className="fixed z-50 min-w-[200px] py-1.5 rounded-lg border border-border-primary bg-bg-secondary shadow-dropdown text-left animate-slide-down"
-              style={{ top: menuPos.top, left: Math.max(8, menuPos.left) }}
+              className="fixed z-50 w-[190px] py-1 rounded-lg border border-border-primary bg-bg-secondary shadow-dropdown text-left animate-slide-down"
+              style={{ top: menuPos.top, left: menuPos.left }}
               onMouseDown={e => e.stopPropagation()}
               onClick={e => e.stopPropagation()}
             >
@@ -540,7 +543,7 @@ export default function UsersPage() {
                   <button
                     key={idx}
                     type="button"
-                    className={cn('flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm transition-fast hover:bg-bg-hover', item.danger ? 'text-danger hover:text-danger' : 'text-text-secondary hover:text-text-primary')}
+                    className={cn('flex items-center gap-2 w-full text-left px-3 py-2 text-xs transition-fast hover:bg-bg-hover', item.danger ? 'text-danger hover:text-danger' : 'text-text-secondary hover:text-text-primary')}
                     onClick={() => item.action()}
                   >
                     <item.icon size={15} /> {item.label}

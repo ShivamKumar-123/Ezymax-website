@@ -577,75 +577,48 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   key={symbol}
                   onClick={() => handleRowClick(symbol)}
                   className={clsx(
-                    'cursor-pointer transition-colors px-3 py-2.5 border-l-2 border-b border-b-border-primary/40 hover:bg-bg-hover/30 active:bg-buy/5 border-l-transparent hover:border-l-buy/40',
-                    symbol === selectedSymbol && 'border-l-buy bg-buy/5',
+                    'cursor-pointer transition-colors px-3 py-3 border-b border-b-[#1a1a1a] hover:bg-white/[0.03] active:bg-buy/5',
+                    symbol === selectedSymbol && 'bg-buy/[0.06]',
                   )}
                 >
-                  <div className="flex flex-col gap-2 min-[340px]:flex-row min-[340px]:items-start min-[340px]:justify-between min-[340px]:gap-3">
-                    <div className="min-w-0 flex flex-col gap-1 shrink">
-                      <div className="flex items-baseline flex-wrap gap-x-2 gap-y-0">
-                        {pipChange != null && (
-                          <span className={clsx('text-[12px] font-mono tabular-nums leading-none', changeColor)}>
-                            {pipChange > 0 ? '+' : ''}
-                            {pipChange} pips
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Left: Symbol + change */}
+                    <div className="min-w-0 shrink">
+                      <div className="text-[15px] font-bold tracking-tight text-text-primary leading-tight">
+                        {symbol}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {spread != null && (
+                          <span className="text-[10px] font-mono text-text-tertiary">
+                            Spr {spread}
                           </span>
                         )}
                         {pctChange != null && (
-                          <span
-                            className={clsx('text-[12px] font-mono font-semibold tabular-nums leading-none', changeColor)}
-                          >
-                            {pctChange > 0 ? '+' : ''}
-                            {pctChange.toFixed(2)}%
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-[17px] sm:text-lg font-extrabold tracking-tight leading-tight text-text-primary">
-                        {symbol}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-text-secondary">
-                        {lastTime && <span>{lastTime}</span>}
-                        {spread != null && (
-                          <span className="flex items-center gap-1 text-text-tertiary">
-                            <span className="text-[10px] font-sans font-semibold not-italic">Spr</span>
-                            <span className="tabular-nums text-text-secondary">{spread}</span>
+                          <span className={clsx('text-[10px] font-mono font-semibold tabular-nums', changeColor)}>
+                            {pctChange > 0 ? '+' : ''}{pctChange.toFixed(2)}%
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="min-w-0 w-full min-[340px]:w-[10.5rem] min-[400px]:w-[11.5rem] shrink-0 grid grid-cols-2 gap-2">
-                      <div className="text-right min-w-0 transition-colors duration-150">
+                    {/* Right: Bid / Ask */}
+                    <div className="shrink-0 flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Bid</div>
                         {tick ? (
                           <PriceCell value={tick.bid} digits={digits} flash={bFlash} tone="bid" />
                         ) : (
                           <span className="text-[13px] text-text-tertiary font-mono">—</span>
                         )}
                       </div>
-                      <div className="text-right min-w-0 transition-colors duration-150">
+                      <div className="text-right">
+                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Ask</div>
                         {tick ? (
                           <PriceCell value={tick.ask} digits={digits} flash={aFlash} tone="ask" />
                         ) : (
                           <span className="text-[13px] text-text-tertiary font-mono">—</span>
                         )}
                       </div>
-                      {tick && dayLow != null && dayHigh != null && (
-                        <div className="col-span-2 grid grid-cols-2 gap-2 mt-1">
-                          <div className="text-right min-w-0 flex items-baseline justify-end gap-1">
-                            <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary/70">L</span>
-                            <span className="tabular-nums text-[11px] font-mono font-medium text-text-tertiary">
-                              {dayLow.toFixed(digits)}
-                            </span>
-                          </div>
-                          <div className="text-right min-w-0 flex items-baseline justify-end gap-1">
-                            <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary/70">H</span>
-                            <span className="tabular-nums text-[11px] font-mono font-medium text-text-tertiary">
-                              {dayHigh.toFixed(digits)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

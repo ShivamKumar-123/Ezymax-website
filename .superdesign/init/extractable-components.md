@@ -10,9 +10,9 @@
 ## DashboardHeader
 - Source: `frontend/trader/src/app/dashboard/page.tsx` (inline, lines 80-111)
 - Category: layout
-- Description: Top header with ProTrader logo, navigation links, user email, profile button
-- Extractable props: activeItem (string, default: "dashboard"), userEmail (string, default: "demo@protrader.com")
-- Hardcoded: ProTrader text, nav item labels (Dashboard, Trading, Wallet, Portfolio, Social, Algo), Profile button text, all CSS
+- Description: Top header with TrustEdge logo, navigation links, user email, profile button
+- Extractable props: activeItem (string, default: "dashboard"), userEmail (string, default: "demo@trustedge.com")
+- Hardcoded: TrustEdge text, nav item labels (Dashboard, Trading, Wallet, Portfolio, Social, Algo), Profile button text, all CSS
 
 ## Watchlist
 - Source: `frontend/trader/src/components/trading/Watchlist.tsx`

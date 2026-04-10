@@ -49,7 +49,6 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
-        localStorage.removeItem('protrader-auth');
         localStorage.removeItem('trustedge-auth');
       } catch {
         /* ignore */

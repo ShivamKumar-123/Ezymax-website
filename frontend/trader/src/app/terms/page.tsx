@@ -19,11 +19,11 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
 
           <Section title="1. Agreement to Terms">
-            By accessing and using the ProTrader platform, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+            By accessing and using the TrustEdge platform, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
           </Section>
 
           <Section title="2. Use License">
-            Permission is granted to temporarily download one copy of the materials on ProTrader&apos;s website for personal, non-commercial transitory viewing only. Under this license you may not:
+            Permission is granted to temporarily download one copy of the materials on TrustEdge&apos;s website for personal, non-commercial transitory viewing only. Under this license you may not:
             <List items={[
               'Modify or copy the materials',
               'Use the materials for any commercial purpose or for any public display',
@@ -69,7 +69,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="6. Limitation of Liability">
-            ProTrader and its officers, directors, employees, and agents will not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform, including but not limited to trading losses, even if we have been advised of the possibility of such damages.
+            TrustEdge and its officers, directors, employees, and agents will not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform, including but not limited to trading losses, even if we have been advised of the possibility of such damages.
           </Section>
 
           <Section title="7. Prohibited Activities">
@@ -90,12 +90,12 @@ export default function TermsPage() {
           </Section>
 
           <Section title="9. Modifications to Terms">
-            ProTrader reserves the right to modify these terms at any time. Changes will be effective immediately upon posting to the website. Your continued use of the platform constitutes acceptance of modified terms.
+            TrustEdge reserves the right to modify these terms at any time. Changes will be effective immediately upon posting to the website. Your continued use of the platform constitutes acceptance of modified terms.
           </Section>
 
           <Section title="10. Contact Information">
             For questions about these Terms of Service, please contact:
-            <ContactBox team="Legal Team" email="legal@protrader.com" />
+            <ContactBox team="Legal Team" email="legal@trustedge.com" />
           </Section>
         </div>
       </section>
@@ -134,7 +134,7 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">ProTrader {team}</p>
+      <p className="font-semibold text-gray-900">TrustEdge {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">Phone: +1 (908) 228-0305</p>
       <p className="text-gray-500">Address: Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH</p>

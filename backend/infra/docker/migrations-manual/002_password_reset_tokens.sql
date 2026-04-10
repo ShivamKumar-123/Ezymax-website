@@ -1,7 +1,7 @@
 -- Password reset flow (forgot-password / reset-password). Run once on existing DBs.
 --
 -- From repo root on the HOST (paths are not inside the postgres container):
---   docker compose exec -T postgres psql -U protrader -d protrader < backend/infra/docker/migrations-manual/002_password_reset_tokens.sql
+--   docker compose exec -T postgres psql -U trustedge -d trustedge < backend/infra/docker/migrations-manual/002_password_reset_tokens.sql
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

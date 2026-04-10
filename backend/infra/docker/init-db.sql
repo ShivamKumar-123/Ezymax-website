@@ -1,4 +1,4 @@
--- ProTrader Main Database Schema
+-- TrustEdge Main Database Schema
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -777,6 +777,6 @@ INSERT INTO account_groups (name, description, leverage_default, is_demo) VALUES
     ('Islamic', 'Swap-free Islamic account', 100, FALSE),
     ('Demo', 'Demo practice account', 100, TRUE);
 
--- Seed super admin (password: ProTraderAdmin2025! — change in production)
+-- Seed super admin (password: TrustEdgeAdmin2025! — change in production)
 INSERT INTO users (email, password_hash, first_name, last_name, role, status, kyc_status)
-VALUES ('admin@protrader.com', '$2b$12$OV1PUf7jA8E22RQ184o0n.KkEjbSriZbLaDqO4SJGj/bjleK37Zh2', 'Super', 'Admin', 'super_admin', 'active', 'approved');
+VALUES ('admin@trustedge.com', '$2b$12$OV1PUf7jA8E22RQ184o0n.KkEjbSriZbLaDqO4SJGj/bjleK37Zh2', 'Super', 'Admin', 'super_admin', 'active', 'approved');

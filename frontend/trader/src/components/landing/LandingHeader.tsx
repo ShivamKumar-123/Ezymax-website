@@ -11,7 +11,7 @@ export default function LandingHeader() {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/logo.svg"
-              alt="ProTrader"
+              alt="TrustEdge"
               width={180}
               height={44}
               priority

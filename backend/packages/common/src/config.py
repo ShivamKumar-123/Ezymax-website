@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://protrader:protrader_dev@localhost:5432/protrader"
-    TIMESCALE_URL: str = "postgresql+asyncpg://protrader:protrader_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://trustedge:trustedge_dev@localhost:5432/trustedge"
+    TIMESCALE_URL: str = "postgresql+asyncpg://trustedge:trustedge_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 

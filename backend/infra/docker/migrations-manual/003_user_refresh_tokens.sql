@@ -1,7 +1,7 @@
 -- HttpOnly refresh-token rotation (cookie auth). Run once on existing DBs.
 --
 -- From repo root on the HOST:
---   docker compose exec -T postgres psql -U protrader -d protrader < backend/infra/docker/migrations-manual/003_user_refresh_tokens.sql
+--   docker compose exec -T postgres psql -U trustedge -d trustedge < backend/infra/docker/migrations-manual/003_user_refresh_tokens.sql
 
 CREATE TABLE IF NOT EXISTS user_refresh_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

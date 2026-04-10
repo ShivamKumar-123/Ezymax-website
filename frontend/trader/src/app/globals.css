@@ -198,9 +198,9 @@
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.08);
   --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-  --toast-bg: #111111;
-  --toast-fg: #f0f0f0;
-  --toast-border: rgba(0, 230, 118, 0.28);
+  --toast-bg: #FFFFFF;
+  --toast-fg: #111111;
+  --toast-border: rgba(0, 0, 0, 0.12);
   color-scheme: light;
 }
 

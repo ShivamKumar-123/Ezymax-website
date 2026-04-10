@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
 
           <Section title="1. Introduction">
-            ProTrader ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
+            TrustEdge ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
           </Section>
 
           <Section title="2. Information We Collect">
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
 
           <Section title="9. Contact Us">
             If you have questions about this Privacy Policy or our privacy practices, please contact us:
-            <ContactBox team="Privacy Team" email="privacy@protrader.com" />
+            <ContactBox team="Privacy Team" email="privacy@trustedge.com" />
           </Section>
         </div>
       </section>
@@ -145,7 +145,7 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">ProTrader {team}</p>
+      <p className="font-semibold text-gray-900">TrustEdge {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">Phone: +1 (908) 228-0305</p>
       <p className="text-gray-500">Address: Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH</p>

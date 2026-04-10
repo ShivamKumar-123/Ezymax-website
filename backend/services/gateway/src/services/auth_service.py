@@ -26,7 +26,7 @@ from packages.common.src.auth import (
 
 logger = logging.getLogger("auth_service")
 
-DEMO_SHARED_EMAIL = "demo@protrader.com"
+DEMO_SHARED_EMAIL = "demo@trustedge.com"
 DEMO_STARTING_BALANCE = Decimal("10000")
 
 _rate_buckets: dict[str, list[float]] = {}
@@ -493,7 +493,7 @@ async def setup_2fa(user_id: UUID, db: AsyncSession) -> dict:
     user = result.scalar_one_or_none()
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="ProTrader")
+    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="TrustEdge")
     user.two_factor_secret = secret
     await db.commit()
     return {"secret": secret, "qr_uri": provisioning_uri}

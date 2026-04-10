@@ -10,7 +10,7 @@ export default function LandingFooter() {
           <div className="lg:col-span-2">
             <Image
               src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/uploads/168dde75-17e5-4e37-a49d-32737bd908dd/1774370971935-4e1057bd/logo.png"
-              alt="ProTrader"
+              alt="TrustEdge"
               width={120}
               height={36}
               className="h-9 w-auto mb-4"
@@ -56,7 +56,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} ProTrader. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} TrustEdge. All rights reserved.</p>
           <div className="flex items-center gap-5 text-sm text-gray-400">
             <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link>

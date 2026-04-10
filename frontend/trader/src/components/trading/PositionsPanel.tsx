@@ -380,10 +380,15 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
 
   const closePosition = (id: string, lots?: number) => {
     unlockAudio();
-    setCloseSubmitting(true);
+    // Close modal instantly — don't wait for API
+    setCloseModal(null);
+    setCloseSubmitting(false);
 
     const body: Record<string, unknown> = {};
     if (lots) body.lots = lots;
+
+    // Optimistic: remove from UI immediately for full close
+    if (!lots) removePosition(id);
 
     void (async () => {
       try {
@@ -400,16 +405,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
           toast.success(`Partial @ ${res.close_price} | P&L: ${sign}$${pnl.toFixed(2)} | ${res.remaining_lots} lots left`);
         } else {
           toast.success(`Closed @ ${res.close_price} | P&L: ${sign}$${pnl.toFixed(2)}`);
-          removePosition(id);
         }
-        // Refresh in parallel, don't block UI
         Promise.all([refreshPositions(), refreshAccount(), loadHistory()]).catch(() => {});
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Close failed');
+        // Restore position if close failed
         refreshPositions().catch(() => {});
-      } finally {
-        setCloseSubmitting(false);
-        setCloseModal(null);
       }
     })();
   };
@@ -858,7 +859,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
             </div>
           ) : (
             <>
-              <div className="flex shrink-0 border-b border-border-glass bg-bg-primary/40">
+              <div className={clsx('flex shrink-0 border-b border-border-glass', isTerminal ? 'bg-[#0e0e0e]' : 'bg-bg-primary/40')}>
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -880,7 +881,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-2 px-2 py-1.5 shrink-0 border-b border-border-glass/60 bg-bg-primary/20">
+              <div className={clsx('flex items-center justify-between gap-2 px-2 py-1.5 shrink-0 border-b border-border-glass/60', isTerminal ? 'bg-[#0e0e0e]' : 'bg-bg-primary/20')}>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"

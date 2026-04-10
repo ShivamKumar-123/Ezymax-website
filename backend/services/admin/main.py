@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(n
 logger = logging.getLogger("admin-api")
 
 from routes import (
-    auth, dashboard, users, trades, deposits, banks,
+    auth, dashboard, users, trades, deposits, banks, book,
     config as routes_config, instruments_admin, business, social, analytics, bonus, banners,
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
 )
@@ -74,6 +74,7 @@ app.include_router(auth.router, prefix=prefix)
 app.include_router(dashboard.router, prefix=prefix)
 app.include_router(users.router, prefix=prefix)
 app.include_router(trades.router, prefix=prefix)
+app.include_router(book.router, prefix=prefix)
 app.include_router(deposits.router, prefix=prefix)
 app.include_router(banks.router, prefix=prefix)
 app.include_router(routes_config.router, prefix=prefix)

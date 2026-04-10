@@ -130,11 +130,11 @@ async def send_email(
 # ============================================
 
 async def send_password_reset_email(to: str, reset_url: str) -> bool:
-    subject = "ProTrader — Password Reset Request"
+    subject = "TrustEdge — Password Reset Request"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#1a73e8;">Password Reset</h2>
-        <p>You requested a password reset for your ProTrader account.</p>
+        <p>You requested a password reset for your TrustEdge account.</p>
         <p><a href="{reset_url}"
               style="display:inline-block;padding:12px 24px;background:#1a73e8;
                      color:#fff;text-decoration:none;border-radius:4px;">
@@ -149,7 +149,7 @@ async def send_password_reset_email(to: str, reset_url: str) -> bool:
 
 
 async def send_deposit_confirmation_email(to: str, amount: str, currency: str, status: str) -> bool:
-    subject = f"ProTrader — Deposit {status.title()}"
+    subject = f"TrustEdge — Deposit {status.title()}"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#1a73e8;">Deposit {status.title()}</h2>
@@ -162,7 +162,7 @@ async def send_deposit_confirmation_email(to: str, amount: str, currency: str, s
 
 
 async def send_withdrawal_status_email(to: str, amount: str, currency: str, status: str) -> bool:
-    subject = f"ProTrader — Withdrawal {status.title()}"
+    subject = f"TrustEdge — Withdrawal {status.title()}"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#1a73e8;">Withdrawal {status.title()}</h2>
@@ -174,7 +174,7 @@ async def send_withdrawal_status_email(to: str, amount: str, currency: str, stat
 
 
 async def send_margin_call_email(to: str, margin_level: str, account_number: str) -> bool:
-    subject = "ProTrader — Margin Call Warning"
+    subject = "TrustEdge — Margin Call Warning"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#e53935;">Margin Call Warning</h2>
@@ -188,7 +188,7 @@ async def send_margin_call_email(to: str, margin_level: str, account_number: str
 
 
 async def send_kyc_status_email(to: str, status: str, reason: str | None = None) -> bool:
-    subject = f"ProTrader — KYC Verification {status.title()}"
+    subject = f"TrustEdge — KYC Verification {status.title()}"
     reason_line = f"<p>Reason: {reason}</p>" if reason else ""
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">

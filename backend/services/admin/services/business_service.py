@@ -79,10 +79,27 @@ async def approve_ib_application(
     )
     default_plan = default_plan_q.scalar_one_or_none()
 
+    # Auto-detect parent IB: if this user was referred by an IB, link as child
+    parent_ib_id = None
+    parent_level = 0
+    referral_q = await db.execute(
+        select(Referral).where(Referral.referred_id == app.user_id)
+    )
+    referral = referral_q.scalar_one_or_none()
+    if referral and referral.ib_profile_id:
+        parent_q = await db.execute(
+            select(IBProfile).where(IBProfile.id == referral.ib_profile_id, IBProfile.is_active == True)
+        )
+        parent_ib = parent_q.scalar_one_or_none()
+        if parent_ib:
+            parent_ib_id = parent_ib.id
+            parent_level = parent_ib.level or 1
+
     profile = IBProfile(
         user_id=app.user_id,
         referral_code=referral_code,
-        level=1,
+        level=parent_level + 1,
+        parent_ib_id=parent_ib_id,
         commission_plan_id=default_plan.id if default_plan else None,
     )
     db.add(profile)
@@ -517,3 +534,142 @@ async def list_sub_brokers(page: int, per_page: int, db: AsyncSession):
         })
 
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
+
+
+# ─── IB Hierarchy Management ──────────────────────────────────────────────
+
+async def set_parent_ib(
+    ib_id: uuid.UUID, parent_ib_id: uuid.UUID | None,
+    admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Admin assigns/changes the parent IB of an IB profile."""
+    result = await db.execute(select(IBProfile).where(IBProfile.id == ib_id))
+    ib = result.scalar_one_or_none()
+    if not ib:
+        raise HTTPException(status_code=404, detail="IB not found")
+
+    old_parent = str(ib.parent_ib_id) if ib.parent_ib_id else None
+
+    if parent_ib_id:
+        if parent_ib_id == ib_id:
+            raise HTTPException(status_code=400, detail="IB cannot be its own parent")
+        parent_q = await db.execute(select(IBProfile).where(IBProfile.id == parent_ib_id))
+        parent = parent_q.scalar_one_or_none()
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent IB not found")
+        # Circular check
+        check = parent
+        for _ in range(20):
+            if check.parent_ib_id is None:
+                break
+            if check.parent_ib_id == ib_id:
+                raise HTTPException(status_code=400, detail="Circular hierarchy detected")
+            chk_q = await db.execute(select(IBProfile).where(IBProfile.id == check.parent_ib_id))
+            check = chk_q.scalar_one_or_none()
+            if not check:
+                break
+        ib.parent_ib_id = parent_ib_id
+        ib.level = (parent.level or 1) + 1
+    else:
+        ib.parent_ib_id = None
+        ib.level = 1
+
+    await write_audit_log(db, admin_id, "set_parent_ib", "ib_profile", ib_id,
+        old_values={"parent_ib_id": old_parent},
+        new_values={"parent_ib_id": str(parent_ib_id) if parent_ib_id else None},
+        ip_address=ip_address)
+    await db.commit()
+    return {"message": "Parent IB updated", "ib_id": str(ib_id), "level": ib.level}
+
+
+async def move_user_to_ib(
+    user_id: uuid.UUID, new_ib_id: uuid.UUID,
+    admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Admin moves a trader from one IB to another."""
+    ib_q = await db.execute(select(IBProfile).where(IBProfile.id == new_ib_id, IBProfile.is_active == True))
+    new_ib = ib_q.scalar_one_or_none()
+    if not new_ib:
+        raise HTTPException(status_code=404, detail="Target IB not found")
+
+    ref_q = await db.execute(select(Referral).where(Referral.referred_id == user_id))
+    referral = ref_q.scalar_one_or_none()
+    old_ib = str(referral.ib_profile_id) if referral and referral.ib_profile_id else None
+
+    if referral:
+        referral.ib_profile_id = new_ib.id
+        referral.referrer_id = new_ib.user_id
+    else:
+        db.add(Referral(referrer_id=new_ib.user_id, referred_id=user_id, ib_profile_id=new_ib.id))
+
+    await write_audit_log(db, admin_id, "move_user_to_ib", "referral", user_id,
+        old_values={"ib_profile_id": old_ib},
+        new_values={"ib_profile_id": str(new_ib.id)},
+        ip_address=ip_address)
+    await db.commit()
+    return {"message": "User moved", "user_id": str(user_id), "new_ib_referral_code": new_ib.referral_code}
+
+
+async def get_ib_tree(ib_id: uuid.UUID | None, db: AsyncSession) -> list[dict]:
+    """Full IB hierarchy tree. ib_id=None returns all root IBs."""
+    if ib_id:
+        root_q = await db.execute(select(IBProfile).where(IBProfile.id == ib_id))
+        root = root_q.scalar_one_or_none()
+        return [await _build_ib_node(root, db)] if root else []
+    roots_q = await db.execute(
+        select(IBProfile).where(IBProfile.parent_ib_id.is_(None), IBProfile.is_active == True)
+        .order_by(IBProfile.created_at))
+    return [await _build_ib_node(r, db) for r in roots_q.scalars().all()]
+
+
+async def _build_ib_node(ib, db: AsyncSession, depth: int = 0) -> dict:
+    if depth > 10:
+        return {}
+    user_q = await db.execute(select(User).where(User.id == ib.user_id))
+    user = user_q.scalar_one_or_none()
+    ref_count = (await db.execute(
+        select(func.count(Referral.id)).where(Referral.ib_profile_id == ib.id)
+    )).scalar() or 0
+    children_q = await db.execute(
+        select(IBProfile).where(IBProfile.parent_ib_id == ib.id, IBProfile.is_active == True))
+    children = children_q.scalars().all()
+    return {
+        "id": str(ib.id), "user_id": str(ib.user_id),
+        "email": user.email if user else "?",
+        "name": f"{user.first_name or ''} {user.last_name or ''}".strip() if user else "?",
+        "referral_code": ib.referral_code, "level": ib.level or 1,
+        "total_earned": float(ib.total_earned or 0), "referral_count": ref_count,
+        "children": [await _build_ib_node(c, db, depth + 1) for c in children],
+    }
+
+
+async def get_ib_referrals(ib_id: uuid.UUID, page: int, per_page: int, db: AsyncSession) -> dict:
+    """Traders referred by a specific IB with commission data."""
+    total = (await db.execute(
+        select(func.count(Referral.id)).where(Referral.ib_profile_id == ib_id)
+    )).scalar() or 0
+    refs = await db.execute(
+        select(Referral).where(Referral.ib_profile_id == ib_id)
+        .order_by(Referral.created_at.desc()).offset((page - 1) * per_page).limit(per_page))
+    items = []
+    for r in refs.scalars().all():
+        user_q = await db.execute(select(User).where(User.id == r.referred_id))
+        user = user_q.scalar_one_or_none()
+        if not user:
+            continue
+        from packages.common.src.models import Position, TradingAccount
+        trade_count = (await db.execute(
+            select(func.count(Position.id)).join(TradingAccount, Position.account_id == TradingAccount.id)
+            .where(TradingAccount.user_id == user.id)
+        )).scalar() or 0
+        comm = (await db.execute(
+            select(func.coalesce(func.sum(IBCommission.amount), 0))
+            .where(IBCommission.ib_id == ib_id, IBCommission.source_user_id == user.id)
+        )).scalar() or 0
+        items.append({
+            "user_id": str(user.id), "email": user.email,
+            "name": f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            "trades": trade_count, "commission_generated": float(comm),
+            "joined_at": user.created_at.isoformat() if user.created_at else None,
+        })
+    return {"referrals": items, "total": total, "page": page}

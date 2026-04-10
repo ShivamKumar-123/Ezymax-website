@@ -22,7 +22,7 @@ export default function WhiteLabelPage() {
               <span className="text-blue-600">in 72 Hours</span>
             </h1>
             <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-2xl mx-auto">
-              Build your own branded brokerage with ProTrader&apos;s institutional-grade white-label solution. Full technology stack, liquidity, and 24/7 support included.
+              Build your own branded brokerage with TrustEdge&apos;s institutional-grade white-label solution. Full technology stack, liquidity, and 24/7 support included.
             </p>
             <div className="flex flex-wrap justify-center gap-4 mb-12">
               <a

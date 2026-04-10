@@ -5,16 +5,16 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-protrader}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-protrader_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-protrader}
+      POSTGRES_USER: ${POSTGRES_USER:-trustedge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trustedge_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-trustedge}
     ports:
       - "5435:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U protrader"]
+      test: ["CMD-SHELL", "pg_isready -U trustedge"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -22,8 +22,8 @@ services:
   timescaledb:
     image: timescale/timescaledb:latest-pg16
     environment:
-      POSTGRES_USER: ${TIMESCALE_USER:-protrader}
-      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-protrader_dev}
+      POSTGRES_USER: ${TIMESCALE_USER:-trustedge}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-trustedge_dev}
       POSTGRES_DB: ${TIMESCALE_DB:-marketdata}
     ports:
       - "5433:5432"
@@ -31,7 +31,7 @@ services:
       - ts_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U protrader"]
+      test: ["CMD-SHELL", "pg_isready -U trustedge"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -83,7 +83,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: protrader
+      KAFKA_CLUSTERS_0_NAME: trustedge
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
   # Admin dashboard API (port 8001)
@@ -105,7 +105,7 @@ services:
     environment:
       # Override: shared backend/.env uses REDIS_URL for gateway (db 0); admin service must use db 1
       REDIS_URL: redis://redis:6379/1
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-protrader}:${POSTGRES_PASSWORD:-protrader_dev}@postgres:5432/${POSTGRES_DB:-protrader}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-trustedge}:${POSTGRES_PASSWORD:-trustedge_dev}@postgres:5432/${POSTGRES_DB:-trustedge}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?Set ADMIN_JWT_SECRET in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
@@ -246,7 +246,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://protrader:protrader_dev@postgres:5432/protrader}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://trustedge:trustedge_dev@postgres:5432/trustedge}
     volumes:
       - ./backend:/app
     profiles:

@@ -160,6 +160,69 @@ async def update_mlm_config(
     )
 
 
+# ─── IB Hierarchy Management ──────────────────────────────────────────────
+
+from pydantic import BaseModel as _BM
+
+class _SetParentBody(_BM):
+    parent_ib_id: str | None = None
+
+class _MoveUserBody(_BM):
+    new_ib_id: str
+
+
+@router.get("/ib/tree")
+async def get_ib_tree(
+    ib_id: str | None = Query(None),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    _id = uuid.UUID(ib_id) if ib_id else None
+    return await business_service.get_ib_tree(ib_id=_id, db=db)
+
+
+@router.get("/ib/agents/{agent_id}/referrals")
+async def get_ib_referrals(
+    agent_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await business_service.get_ib_referrals(ib_id=agent_id, page=page, per_page=per_page, db=db)
+
+
+@router.put("/ib/agents/{agent_id}/parent")
+async def set_parent_ib(
+    agent_id: uuid.UUID,
+    body: _SetParentBody,
+    request: Request,
+    admin: User = Depends(require_permission("ib.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    parent_id = uuid.UUID(body.parent_ib_id) if body.parent_ib_id else None
+    return await business_service.set_parent_ib(
+        ib_id=agent_id, parent_ib_id=parent_id, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.put("/ib/users/{user_id}/move")
+async def move_user_to_ib(
+    user_id: uuid.UUID,
+    body: _MoveUserBody,
+    request: Request,
+    admin: User = Depends(require_permission("ib.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await business_service.move_user_to_ib(
+        user_id=user_id, new_ib_id=uuid.UUID(body.new_ib_id), admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+# ─── Sub-Broker ───────────────────────────────────────────────────────────
+
 @router.get("/sub-broker/applications")
 async def list_sub_broker_applications(
     page: int = Query(1, ge=1),

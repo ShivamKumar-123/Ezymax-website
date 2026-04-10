@@ -39,7 +39,7 @@ def _send_plain_sync(to_email: str, subject: str, body_text: str) -> None:
         server.send_message(msg)
 
 
-async def send_password_reset_email(to_email: str, reset_link: str, *, app_name: str = "ProTrader") -> bool:
+async def send_password_reset_email(to_email: str, reset_link: str, *, app_name: str = "TrustEdge") -> bool:
     """Send reset email. Returns True if sent, False if SMTP not configured or send failed."""
     if not smtp_configured():
         return False

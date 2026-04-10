@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var L='protrader-ui',N='trustedge-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='light';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'light';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#F2EFE9';d.style.color='#000000';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#F2EFE9';document.documentElement.style.color='#000000';}})();`,
+            __html: `(function(){try{var L='trustedge-ui',N='trustedge-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='light';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'light';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#F2EFE9';d.style.color='#000000';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#F2EFE9';document.documentElement.style.color='#000000';}})();`,
           }}
         />
       </head>
@@ -55,15 +55,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   border: '1px solid var(--toast-border)',
                   fontSize: '13px',
                   borderRadius: '12px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 },
                 success: {
                   className: 'trustedge-hot-toast',
-                  iconTheme: { primary: '#00e676', secondary: '#111111' },
+                  iconTheme: { primary: '#00e676', secondary: 'var(--toast-bg)' },
                 },
                 error: {
                   className: 'trustedge-hot-toast',
-                  iconTheme: { primary: '#f87171', secondary: '#111111' },
+                  iconTheme: { primary: '#f87171', secondary: 'var(--toast-bg)' },
                 },
                 loading: { className: 'trustedge-hot-toast' },
               }}

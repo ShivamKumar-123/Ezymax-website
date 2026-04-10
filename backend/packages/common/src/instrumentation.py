@@ -38,7 +38,7 @@ def init_sentry(service_name: str) -> None:
             dsn=dsn,
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
             environment=settings.ENVIRONMENT,
-            release=f"protrader-{service_name}@1.0.0",
+            release=f"trustedge-{service_name}@1.0.0",
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),
                 SqlalchemyIntegration(),

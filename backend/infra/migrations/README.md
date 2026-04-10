@@ -1,4 +1,4 @@
-# ProTrader — Alembic Migrations
+# TrustEdge — Alembic Migrations
 
 Schema evolution is managed via Alembic. All migration files live in `versions/`.
 
@@ -12,7 +12,7 @@ current DB and the ORM models in `packages/common/src/models.py`.
 
 ```bash
 # From the backend/ root (where packages/ is visible)
-export DATABASE_URL=postgresql+asyncpg://protrader:protrader_dev@localhost:5432/protrader
+export DATABASE_URL=postgresql+asyncpg://trustedge:trustedge_dev@localhost:5432/trustedge
 ```
 
 Alembic must be installed (it is included in `packages/common` dependencies):

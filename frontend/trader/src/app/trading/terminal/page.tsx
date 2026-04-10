@@ -251,7 +251,7 @@ export default function TradingTerminalPage() {
 
   if (!accountId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-bg-primary min-h-0">
+      <div className="flex-1 flex items-center justify-center min-h-0" style={{ background: '#0a0a0a' }}>
         <p className="text-sm text-text-tertiary">Choose an account to trade…</p>
       </div>
     );
@@ -305,7 +305,7 @@ export default function TradingTerminalPage() {
     };
 
     return (
-      <div className="flex-1 flex flex-col overflow-hidden bg-bg-primary min-h-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 pb-[70px]" style={{ background: '#0a0a0a' }}>
         <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
           {mobileView === 'watchlist' && <Watchlist />}
           {mobileView === 'news' && (
@@ -420,7 +420,7 @@ export default function TradingTerminalPage() {
               </div>
 
               {/* Refined Quick Trade Bottom Bar */}
-              <div className="fixed bottom-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom,0px)))] left-0 right-0 p-3 bg-bg-secondary/95 backdrop-blur-xl border-t border-border-glass z-50">
+              <div className="fixed bottom-[calc(4rem+max(0.5rem,env(safe-area-inset-bottom,0px)))] left-0 right-0 p-3 bg-bg-secondary/95 backdrop-blur-xl border-t border-border-glass z-50">
                 {!mobileMarketStatus.isOpen && (
                   <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sell/10 border border-sell/20">
                     <span className="text-[9px] font-bold text-sell uppercase tracking-wider">● CLOSED</span>
@@ -494,7 +494,7 @@ export default function TradingTerminalPage() {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden min-h-0 relative bg-bg-base pt-[env(safe-area-inset-top,0px)]">
+    <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)]" style={{ background: '#0a0a0a' }}>
       <TerminalLeftRail
         activeSpace={activeSpace}
         onSpaceChange={applySpace}

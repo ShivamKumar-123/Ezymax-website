@@ -23,7 +23,7 @@ export default function DashboardShell({
   return (
     <div
       className={cn(
-        'h-[100dvh] flex overflow-hidden pb-16 md:pb-0 bg-bg-base text-text-primary',
+        'h-[100dvh] flex overflow-hidden pb-[70px] lg:pb-0 bg-bg-base text-text-primary',
         className,
       )}
       data-theme="dark"

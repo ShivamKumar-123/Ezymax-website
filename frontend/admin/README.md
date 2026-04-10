@@ -1,4 +1,4 @@
-# ProTrader Admin (Next.js)
+# TrustEdge Admin (Next.js)
 
 ## Run locally
 

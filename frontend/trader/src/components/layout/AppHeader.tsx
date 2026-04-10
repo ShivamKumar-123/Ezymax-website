@@ -25,7 +25,9 @@ export default function AppHeader() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handle = user?.email ? user.email.split('@')[0] : 'Trader';
+  const handle = user?.first_name
+    ? [user.first_name, user.last_name].filter(Boolean).join(' ')
+    : user?.email ? user.email.split('@')[0] : 'Trader';
   const initials = user
     ? (
         user.first_name?.[0] && user.last_name?.[0]
@@ -111,7 +113,7 @@ export default function AppHeader() {
               <div className="w-9 h-9 rounded-full bg-[#00e676]/20 border border-[#00e676]/30 flex items-center justify-center text-[#00e676] text-xs font-bold uppercase">
                 {initials}
               </div>
-              <span className="text-sm text-white hidden sm:inline">@{handle}</span>
+              <span className="text-sm text-white hidden sm:inline">{handle}</span>
               <ChevronDown size={13} className="text-[#888] hidden sm:inline" />
             </button>
 

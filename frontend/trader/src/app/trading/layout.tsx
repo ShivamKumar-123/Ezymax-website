@@ -168,21 +168,21 @@ function TradingSession({ children }: { children: React.ReactNode }) {
                   <div
                     className={clsx(
                       'pointer-events-auto flex gap-3 rounded-xl border px-3.5 py-3 shadow-modal max-w-[min(92vw,360px)]',
-                      'bg-card border-border-primary text-text-primary page-fade-in',
                       'transition-opacity duration-200',
                       t.visible ? 'opacity-100' : 'opacity-0',
                     )}
+                    style={{ background: '#111', borderColor: 'rgba(255,255,255,0.1)', color: '#f0f0f0' }}
                   >
                     <span className="text-xl shrink-0 leading-none pt-0.5 select-none" aria-hidden>
                       {emoji}
                     </span>
                     <div className="min-w-0 flex-1 text-[13px] leading-snug font-semibold">
-                      <p className="text-text-primary">
-                        {reason} Hit — <span className="text-text-secondary">{closed.symbol}</span>{' '}
+                      <p style={{ color: '#f0f0f0' }}>
+                        {reason} Hit — <span style={{ color: '#aaa' }}>{closed.symbol}</span>{' '}
                         <span className={closed.side === 'buy' ? 'text-buy' : 'text-sell'}>
                           {closed.side.toUpperCase()}
                         </span>{' '}
-                        <span className="text-text-secondary font-mono tabular-nums">{closed.lots}</span> lots
+                        <span className="font-mono tabular-nums" style={{ color: '#aaa' }}>{closed.lots}</span> lots
                       </p>
                       <p
                         className={clsx(

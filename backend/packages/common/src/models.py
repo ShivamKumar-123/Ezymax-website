@@ -81,6 +81,7 @@ class User(Base):
     two_factor_secret = Column(String(255))
     language = Column(String(10), default="en")
     theme = Column(String(10), default="dark")
+    book_type = Column(String(1), default="B", server_default="B")  # 'A' (LP routed) or 'B' (internal)
     trading_blocked_until = Column(DateTime(timezone=True))
     main_wallet_balance = Column(Numeric(18, 8), nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

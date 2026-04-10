@@ -10,7 +10,7 @@ down_revision = "0001"
 branch_labels = None
 depends_on = None
 
-# Same as init-db.sql — bcrypt for password: ProTraderAdmin2025!
+# Same as init-db.sql — bcrypt for password: TrustEdgeAdmin2025!
 _DEFAULT_HASH = "$2b$12$OV1PUf7jA8E22RQ184o0n.KkEjbSriZbLaDqO4SJGj/bjleK37Zh2"
 
 
@@ -19,7 +19,7 @@ def upgrade() -> None:
         f"""
         INSERT INTO users (email, password_hash, first_name, last_name, role, status, kyc_status)
         VALUES (
-            'admin@protrader.com',
+            'admin@trustedge.com',
             '{_DEFAULT_HASH}',
             'Super',
             'Admin',
@@ -42,7 +42,7 @@ def downgrade() -> None:
     op.execute(
         """
         DELETE FROM users
-        WHERE email = 'admin@protrader.com'
+        WHERE email = 'admin@trustedge.com'
           AND password_hash = '"""
         + _DEFAULT_HASH
         + """';
