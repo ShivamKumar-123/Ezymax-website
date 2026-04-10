@@ -10,7 +10,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Bust Next cache and prove deploy: pass --build-arg NEXT_PUBLIC_APP_VERSION="$(date +%s)" or set APP_VERSION in compose
 ARG NEXT_PUBLIC_APP_VERSION=docker
+ARG NEXT_PUBLIC_WS_URL=
 ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN npm run build
 
 FROM node:20-alpine AS runner
