@@ -241,6 +241,7 @@ services:
     working_dir: /app
     command: >
       sh -c "pip install -e packages/common --quiet &&
+             pip install alembic sqlalchemy[asyncio] asyncpg --quiet &&
              alembic -c infra/migrations/alembic.ini upgrade head"
     depends_on:
       postgres:
