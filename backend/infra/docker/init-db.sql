@@ -496,6 +496,11 @@ CREATE TABLE ib_profiles (
     total_earned DECIMAL(18,8) DEFAULT 0,
     pending_payout DECIMAL(18,8) DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    custom_commission_per_lot DECIMAL(18,8),
+    custom_commission_per_trade DECIMAL(18,8),
+    rejection_reason TEXT,
+    rejected_at TIMESTAMPTZ,
+    rejected_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -555,6 +560,7 @@ CREATE TABLE master_accounts (
     max_drawdown_pct DECIMAL(10,4) DEFAULT 0,
     sharpe_ratio DECIMAL(10,4) DEFAULT 0,
     followers_count INT DEFAULT 0,
+    total_fee_earned DECIMAL(18,8) DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -568,8 +574,9 @@ CREATE TABLE investor_allocations (
     allocation_pct DECIMAL(5,2),
     max_drawdown_pct DECIMAL(5,2),
     max_lot_override DECIMAL(10,4),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('pending', 'active', 'paused', 'closed')),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('pending', 'active', 'paused', 'closed', 'withdrawn')),
     total_profit DECIMAL(18,8) DEFAULT 0,
+    last_distribution_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
