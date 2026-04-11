@@ -28,7 +28,7 @@ services:
 
   kafka:
     ports:
-      - "127.0.0.1:9100:9092"
+      - "127.0.0.1:9200:9092"
     restart: always
 
   # ── Disable Kafka UI in production ──────────────────────────
