@@ -5,30 +5,20 @@
 name: trustedge
 
 services:
-  # ── Lock down databases to localhost only ────────────────────
+  # ── Infrastructure — restart policy only (no host ports needed) ──
   postgres:
-    ports:
-      - "127.0.0.1:5450:5432"
     restart: always
 
   timescaledb:
-    ports:
-      - "127.0.0.1:5451:5432"
     restart: always
 
   redis:
-    ports:
-      - "127.0.0.1:6390:6379"
     restart: always
 
   zookeeper:
-    ports:
-      - "127.0.0.1:2190:2181"
     restart: always
 
   kafka:
-    ports:
-      - "127.0.0.1:19092:9092"
     restart: always
 
   # ── Disable Kafka UI in production ──────────────────────────
@@ -36,7 +26,7 @@ services:
     profiles:
       - debug
 
-  # ── Backend services — restart policy + no public ports ─────
+  # ── Backend services — restart policy + localhost-only ports ──
   admin-api:
     ports:
       - "127.0.0.1:8001:8001"
