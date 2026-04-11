@@ -3,10 +3,16 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
-import { getPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
+import { useTradingStore } from '@/stores/tradingStore';
+import {
+  getPersistedTradingAccountId,
+  setPersistedTradingAccountId,
+  tradingTerminalUrl,
+} from '@/lib/tradingNav';
 
 /* ─── Icons ─── */
 
@@ -72,12 +78,42 @@ export default function MobileBottomNav() {
   const router = useRouter();
   const { theme, toggleTheme } = useUIStore();
   const logout = useAuthStore((s) => s.logout);
+  const accounts = useTradingStore((s) => s.accounts);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
   const [showMore, setShowMore] = useState(false);
 
   const tradingAccountId = useMemo(() => {
     if (pathname?.startsWith('/trading/terminal')) return searchParams.get('account');
     return getPersistedTradingAccountId();
   }, [pathname, searchParams]);
+
+  /** Resolve a usable account: persisted → active → first available. Persist it for next time. */
+  const resolveTradingAccount = (): string | null => {
+    if (tradingAccountId) return tradingAccountId;
+    if (activeAccount?.id) {
+      setPersistedTradingAccountId(activeAccount.id);
+      return activeAccount.id;
+    }
+    if (accounts.length > 0) {
+      const first = accounts[0];
+      setActiveAccount(first);
+      setPersistedTradingAccountId(first.id);
+      return first.id;
+    }
+    return null;
+  };
+
+  const goToTerminalView = (view: 'watchlist' | 'chart' | 'order') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    const id = resolveTradingAccount();
+    if (id) {
+      router.push(tradingTerminalUrl(id, { view }));
+      return;
+    }
+    toast.error('Open a trading account first');
+    router.push('/trading');
+  };
 
   const isPublicPage =
     pathname === '/' || pathname === '/privacy' || pathname === '/terms' ||
@@ -124,15 +160,23 @@ export default function MobileBottomNav() {
             </Link>
 
             {/* Market */}
-            <Link href={marketHref} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
+            <a
+              href={marketHref}
+              onClick={goToTerminalView('watchlist')}
+              className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2"
+            >
               <span className={clsx('transition-colors', isMarket ? 'text-[#00e676]' : 'text-white/40')}>
                 <IconMarket active={isMarket} />
               </span>
               <span className={clsx('text-[10px] font-semibold', isMarket ? 'text-[#00e676]' : 'text-white/40')}>Market</span>
-            </Link>
+            </a>
 
             {/* Chart — elevated center button */}
-            <Link href={chartHref} className="flex flex-col items-center justify-center flex-1 -mt-4">
+            <a
+              href={chartHref}
+              onClick={goToTerminalView('chart')}
+              className="flex flex-col items-center justify-center flex-1 -mt-4"
+            >
               <div className={clsx(
                 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all',
                 isChart
@@ -142,15 +186,19 @@ export default function MobileBottomNav() {
                 <IconChart />
               </div>
               <span className={clsx('text-[10px] font-semibold mt-1', isChart ? 'text-[#00e676]' : 'text-white/40')}>Chart</span>
-            </Link>
+            </a>
 
             {/* Orders */}
-            <Link href={ordersHref} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
+            <a
+              href={ordersHref}
+              onClick={goToTerminalView('order')}
+              className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2"
+            >
               <span className={clsx('transition-colors', isOrders ? 'text-[#00e676]' : 'text-white/40')}>
                 <IconOrders active={isOrders} />
               </span>
               <span className={clsx('text-[10px] font-semibold', isOrders ? 'text-[#00e676]' : 'text-white/40')}>Orders</span>
-            </Link>
+            </a>
 
             {/* More */}
             <button onClick={() => setShowMore(true)} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
