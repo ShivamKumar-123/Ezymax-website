@@ -20,7 +20,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isInitialized) {
       const isAuthPage = pathname?.startsWith('/auth');
-      const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/risk' || pathname === '/about' || pathname === '/contact' || pathname === '/platforms' || pathname === '/white-label';
+      const isLandingPage =
+        pathname === '/' ||
+        pathname?.startsWith('/company') ||
+        pathname?.startsWith('/education') ||
+        ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
+        ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
+        ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
+      const isPublic = isLandingPage || pathname === '/privacy' || pathname === '/terms' || pathname === '/risk' || pathname === '/about' || pathname === '/contact' || pathname === '/platforms' || pathname === '/white-label';
 
       if (!isAuthenticated && !isAuthPage && !isPublic) {
         router.push('/auth/login');
