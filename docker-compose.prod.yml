@@ -48,6 +48,12 @@ services:
   risk-engine:
     restart: always
 
+  # ── Landing page ────────────────────────────────────────────
+  landing:
+    ports:
+      - "127.0.0.1:3020:80"
+    restart: always
+
   # ── Frontends — build with production domain + restart ──────
   trader-frontend:
     build:
