@@ -83,16 +83,8 @@ export default function RegisterPage() {
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
         <div className="w-full max-w-[440px]">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="#2962FF" />
-              <path d="M10 32L18 24L24 30L38 16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M32 16H38V22" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-xl font-bold italic tracking-tight">
-              <span className="text-white">Trust</span>
-              <span className="text-[#00e676]">Edge</span>
-            </span>
+          <div className="flex items-center justify-center mb-8">
+            <img src="/images/logo2.png" alt="TrustEdgeFX" className="h-14 w-auto object-contain" />
           </div>
 
           {/* Glass form card */}
