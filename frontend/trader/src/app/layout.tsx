@@ -43,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <NotificationListener />
             {children}
-            <MobileBottomNav />
+            <Suspense fallback={null}>
+              <MobileBottomNav />
+            </Suspense>
             <Toaster
               position="top-center"
               containerClassName="trustedge-toaster"
