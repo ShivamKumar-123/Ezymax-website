@@ -145,14 +145,14 @@ const Navbar = () => {
 
             {/* CTA + Login + Mobile Toggle */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsLoginOpen(true)}
+              <Link
+                to="/auth/login"
                 className="hidden sm:inline-flex items-center text-white border border-white/30 hover:bg-white/10 hover:border-white/50 transition-all duration-300 px-5 py-2 rounded-lg text-sm font-medium"
               >
                 Login
-              </button>
-              <button
-                onClick={openPopup}
+              </Link>
+              <Link
+                to="/auth/register"
                 className="hidden sm:inline-flex items-center gap-2 px-5 py-2 text-white font-semibold text-sm rounded-lg transition-all duration-300 hover:-translate-y-0.5"
                 style={{
                   background: 'linear-gradient(135deg, #7B2FFF, #1A56FF)',
@@ -163,7 +163,7 @@ const Navbar = () => {
               >
                 <User size={13} />
                 Open Account
-              </button>
+              </Link>
 
               {/* Mobile toggle */}
               <button
@@ -254,20 +254,20 @@ const Navbar = () => {
                   transition={{ delay: 0.35, duration: 0.3 }}
                   className="pt-3 border-t border-white/5 space-y-2"
                 >
-                  <button
-                    onClick={() => { setIsOpen(false); setIsLoginOpen(true) }}
+                  <Link
+                    to="/auth/login"
                     className="flex items-center justify-center gap-2 w-full px-4 py-3 text-white font-medium text-sm rounded-lg border border-white/20 hover:bg-white/5 transition-all"
                   >
                     Login
-                  </button>
-                  <button
-                    onClick={() => { setIsOpen(false); openPopup() }}
+                  </Link>
+                  <Link
+                    to="/auth/register"
                     className="flex items-center justify-center gap-2 w-full px-4 py-3 text-white font-semibold text-sm rounded-lg transition-all duration-200"
                     style={{ background: 'linear-gradient(135deg, #7B2FFF, #1A56FF)', boxShadow: '0 0 16px rgba(123,47,255,0.3)' }}
                   >
                     <User size={14} />
                     Open Live Account
-                  </button>
+                  </Link>
                 </motion.div>
               </div>
             </motion.div>
