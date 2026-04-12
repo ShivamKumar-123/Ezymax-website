@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Reset trader-app overrides inside the landing wrapper ── */
+.landing-root {
+  --text-primary: #ffffff;
+  --text-secondary: #8B9AB2;
+  --text-tertiary: #5a6a80;
+  --bg-primary: #0A0E1A;
+  --bg-secondary: #0F1628;
+}
+
+/* Font-size: trader config shrinks standard sizes; reset to Tailwind defaults */
+.landing-root .text-xs  { font-size: 0.75rem !important;  line-height: 1rem !important; }
+.landing-root .text-sm  { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+.landing-root .text-base { font-size: 1rem !important;    line-height: 1.5rem !important; }
+.landing-root .text-lg  { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+.landing-root .text-xl  { font-size: 1.25rem !important;  line-height: 1.75rem !important; }
+.landing-root .text-2xl { font-size: 1.5rem !important;   line-height: 2rem !important; }
+.landing-root .text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+
+/* Border-radius: reset to Tailwind defaults */
+.landing-root .rounded-sm   { border-radius: 0.125rem !important; }
+.landing-root .rounded       { border-radius: 0.25rem !important; }
+.landing-root .rounded-md   { border-radius: 0.375rem !important; }
+.landing-root .rounded-lg   { border-radius: 0.5rem !important; }
+.landing-root .rounded-xl   { border-radius: 0.75rem !important; }
+.landing-root .rounded-2xl  { border-radius: 1rem !important; }
+.landing-root .rounded-3xl  { border-radius: 1.5rem !important; }
+.landing-root .rounded-full { border-radius: 9999px !important; }
+
 @layer utilities {
   .glass-card {
     @apply bg-[#111827] border border-white/[0.06] rounded-lg transition-all duration-200 hover:border-white/[0.12];

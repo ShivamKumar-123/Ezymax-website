@@ -24,7 +24,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
   return (
     <PopupProvider>
       <ScrollProgress />
-      <div className="min-h-screen bg-[#0A0E1A] text-white">
+      <div className="landing-root min-h-screen bg-[#0A0E1A] text-white">
         <Navbar />
         {children}
         <Footer />

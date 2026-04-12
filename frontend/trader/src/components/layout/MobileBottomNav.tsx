@@ -115,8 +115,15 @@ export default function MobileBottomNav() {
     router.push('/trading');
   };
 
+  const isLandingPage =
+    pathname === '/' ||
+    pathname?.startsWith('/company') ||
+    pathname?.startsWith('/education') ||
+    ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
+    ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
+    ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
   const isPublicPage =
-    pathname === '/' || pathname === '/privacy' || pathname === '/terms' ||
+    isLandingPage || pathname === '/privacy' || pathname === '/terms' ||
     pathname === '/risk' || pathname === '/about' || pathname === '/contact' ||
     pathname === '/platforms' || pathname === '/white-label';
   if (pathname?.startsWith('/auth') || isPublicPage) return null;
