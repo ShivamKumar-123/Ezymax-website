@@ -32,7 +32,7 @@ export default function DashboardShell({
       <div
         className={cn(
           'flex min-w-0 flex-1 flex-col bg-bg-base transition-[margin] duration-200',
-          'lg:ml-[260px]',
+          sidebarOpen && 'lg:ml-[260px]',
         )}
       >
         <AppHeader />

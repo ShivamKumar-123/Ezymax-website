@@ -153,6 +153,13 @@ export default function AccountsPage() {
   }, [setStoreAccounts]);
 
   useEffect(() => {
+    document.documentElement.setAttribute('data-page', 'accounts');
+    return () => {
+      document.documentElement.removeAttribute('data-page');
+    };
+  }, []);
+
+  useEffect(() => {
     const ac = new AbortController();
     void fetchAccounts(ac.signal);
     return () => {
@@ -428,11 +435,11 @@ export default function AccountsPage() {
         onClose={() => setAccountPickerOpen(false)}
         onCreated={() => void fetchAccounts()}
       />
-      <div className="page-main max-w-6xl mx-auto w-full space-y-6">
-        {/* Accounts / Internal Transfer — same curved slide + glow as Wallet tabs, slightly taller */}
-        <div className="relative mb-8 w-full">
-          <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
-            <div className="relative flex min-h-[64px] sm:min-h-[100px] bg-card">
+      {/* Accounts / Internal Transfer — full-width edge-to-edge, straight top line
+          meeting the sidebar's right border; only the active-tab indicator curves. */}
+      <div className="relative -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-8">
+        <div className="overflow-hidden border-b border-accent/40 bg-card">
+          <div className="relative flex min-h-[64px] sm:min-h-[100px] border-t border-accent/40 bg-card">
               <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                 <div
                   className="absolute top-0 h-full w-1/2 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
@@ -440,10 +447,15 @@ export default function AccountsPage() {
                     transform: tab === 'accounts' ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)',
                   }}
                 >
+                  {/* Only the inner edge (facing the other tab) curves; the outer edge
+                      drops flush with the panel's left/right border. */}
                   <div
                     className={clsx(
-                      'absolute inset-x-0 top-0 h-full rounded-t-[2.5rem] border-2 border-b-0 border-accent bg-card-nested',
+                      'absolute top-0 h-full border-t-2 border-b-0 border-accent bg-card-nested',
                       'animate-wallet-main-tab-glow',
+                      tab === 'accounts'
+                        ? 'left-0 right-1.5 rounded-tr-2xl border-r-2'
+                        : 'left-1.5 right-0 rounded-tl-2xl border-l-2',
                     )}
                   />
                 </div>
@@ -485,6 +497,7 @@ export default function AccountsPage() {
           </div>
         </div>
 
+      <div className="page-main w-full space-y-6">
         {tab === 'accounts' && (
           <div key="tab-accounts" className="animate-wallet-fund-enter-lg">
             {/* Outer shell — nested cards open inside; soft green light pulse like wallet tabs */}

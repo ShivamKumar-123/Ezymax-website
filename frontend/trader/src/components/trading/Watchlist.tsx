@@ -483,11 +483,11 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
         </>
       ) : (
         <>
-          {/* Search */}
-          <div className="p-3 shrink-0">
+          {/* Search — styled to match Crucial Markets */}
+          <div className="p-3 shrink-0 border-b border-[#1a1a1a]">
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-text-secondary"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-[#666]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -499,128 +499,77 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search instruments..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+                placeholder="Search symbols..."
+                className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-[#1e1e1e] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 focus:ring-1 focus:ring-[#00e676]/20"
               />
             </div>
           </div>
 
-          {/* Category tabs */}
-          <div className="flex gap-2 px-3 pb-3 overflow-x-auto scrollbar-hide no-scrollbar shrink-0 border-b border-border-primary">
-            {['All', 'Starred', ...SEGMENTS.slice(1)].map((seg) => (
-              <button
-                key={seg}
-                type="button"
-                onClick={() => setSegment(seg)}
-                className={clsx(
-                  'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap border',
-                  segment === seg
-                    ? 'bg-buy text-white border-buy shadow-lg shadow-buy/20'
-                    : 'bg-bg-secondary text-text-tertiary border-border-glass hover:text-text-secondary hover:border-text-tertiary/30',
-                )}
-              >
-                {seg}
-              </button>
-            ))}
-          </div>
-
-          {/* Column labels */}
-          <div className="shrink-0 px-3 py-1.5 bg-bg-secondary/60">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 shrink" />
-              <div className="grid grid-cols-2 gap-2 w-[10.5rem] min-[400px]:w-[11.5rem] shrink-0 text-[10px] font-extrabold uppercase tracking-widest">
-                <span className="text-right text-sell/80">BID</span>
-                <span className="text-right text-buy/80">ASK</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Instruments */}
+          {/* Instruments — grouped by segment, Crucial Markets style */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y">
-            {filtered.map((symbol) => {
-              const tick = prices[symbol];
-              const digits = getDigits(symbol);
-
-              const sessionOpen = sessionOpenRef.current[symbol];
-              const dayLow = dayLowRef.current[symbol];
-              const dayHigh = dayHighRef.current[symbol];
-              const lastTime = lastTimeRef.current[symbol];
-
-              const delta =
-                tick && sessionOpen != null ? tick.bid - sessionOpen : null;
-              const pipChange =
-                tick && sessionOpen != null
-                  ? sessionPipChange(symbol, tick.bid, sessionOpen, instruments)
-                  : null;
-              const pctRaw =
-                tick && sessionOpen != null && sessionOpen !== 0
-                  ? ((tick.bid - sessionOpen) / sessionOpen) * 100
-                  : null;
-              const pctChange =
-                pctRaw != null && Math.abs(pctRaw) < 0.005 ? 0 : pctRaw;
-              const spread =
-                tick != null ? spreadInPips(symbol, tick.bid, tick.ask, instruments) : null;
-
-              const bFlash = bidFlash[symbol];
-              const aFlash = askFlash[symbol];
-
-              const minMove = tick ? Math.pow(10, -digits) : 0;
-              const changeColor =
-                delta == null || Math.abs(delta) < minMove * 0.25
-                  ? 'text-text-tertiary'
-                  : delta > 0
-                    ? 'text-buy'
-                    : 'text-sell';
-
+            {TERMINAL_GROUPS.map((group) => {
+              const syms = (groupedTerminal[group] || []).filter((s) =>
+                search.trim() === '' ? true : s.toLowerCase().includes(search.toLowerCase()),
+              );
+              if (syms.length === 0) return null;
               return (
-                <div
-                  key={symbol}
-                  onClick={() => handleRowClick(symbol)}
-                  className={clsx(
-                    'cursor-pointer transition-colors px-3 py-3 border-b border-b-[#1a1a1a] hover:bg-white/[0.03] active:bg-buy/5',
-                    symbol === selectedSymbol && 'bg-buy/[0.06]',
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    {/* Left: Symbol + change */}
-                    <div className="min-w-0 shrink">
-                      <div className="text-[15px] font-bold tracking-tight text-text-primary leading-tight">
-                        {symbol}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {spread != null && (
-                          <span className="text-[10px] font-mono text-text-tertiary">
-                            Spr {spread}
-                          </span>
-                        )}
-                        {pctChange != null && (
-                          <span className={clsx('text-[10px] font-mono font-semibold tabular-nums', changeColor)}>
-                            {pctChange > 0 ? '+' : ''}{pctChange.toFixed(2)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Bid / Ask */}
-                    <div className="shrink-0 flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Bid</div>
-                        {tick ? (
-                          <PriceCell value={tick.bid} digits={digits} flash={bFlash} tone="bid" />
-                        ) : (
-                          <span className="text-[13px] text-text-tertiary font-mono">—</span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Ask</div>
-                        {tick ? (
-                          <PriceCell value={tick.ask} digits={digits} flash={aFlash} tone="ask" />
-                        ) : (
-                          <span className="text-[13px] text-text-tertiary font-mono">—</span>
-                        )}
-                      </div>
-                    </div>
+                <div key={group}>
+                  <div className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#5c6370] border-t border-[#1a1a1a] first:border-t-0 bg-[#0c0d12]">
+                    {group}
                   </div>
+                  {syms.map((symbol) => {
+                    const tick = prices[symbol];
+                    const digits = getDigits(symbol);
+                    const bFlash = bidFlash[symbol];
+                    const aFlash = askFlash[symbol];
+                    const sel = symbol === selectedSymbol;
+                    return (
+                      <button
+                        key={symbol}
+                        type="button"
+                        onClick={() => handleRowClick(symbol)}
+                        className={clsx(
+                          'w-full flex items-center justify-between gap-2 pl-0 pr-4 py-3 text-left border-l-[3px] border-b border-b-[#141414] transition-colors',
+                          sel
+                            ? 'border-l-[#00e676] bg-[#00e676]/[0.06]'
+                            : 'border-l-transparent hover:bg-white/[0.03] active:bg-[#00e676]/5',
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pl-4">
+                          <div
+                            className="w-7 h-7 rounded-full shrink-0 bg-gradient-to-br from-amber-400/90 to-blue-500/90"
+                            aria-hidden
+                          />
+                          <span className="text-sm font-bold text-white font-mono">{symbol}</span>
+                          <span className="text-sm leading-none opacity-90 shrink-0" aria-hidden>
+                            {SYMBOL_EMOJI[symbol] || ''}
+                          </span>
+                        </div>
+                        <div className="flex gap-5 shrink-0">
+                          <div className="flex flex-col items-end gap-0.5 min-w-[72px]">
+                            {tick ? (
+                              <PriceCell value={tick.bid} digits={digits} flash={bFlash} tone="bid" />
+                            ) : (
+                              <span className="text-[13px] text-[#555] font-mono">—</span>
+                            )}
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#555]">
+                              Bid
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end gap-0.5 min-w-[72px]">
+                            {tick ? (
+                              <PriceCell value={tick.ask} digits={digits} flash={aFlash} tone="ask" />
+                            ) : (
+                              <span className="text-[13px] text-[#555] font-mono">—</span>
+                            )}
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#555]">
+                              Ask
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })}

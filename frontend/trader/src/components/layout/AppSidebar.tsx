@@ -63,7 +63,7 @@ export default function AppSidebar() {
           /* z-[70] above MobileBottomNav (z-[60]) so drawer links receive taps on small screens */
           'fixed top-0 left-0 z-[70] h-full w-[260px] flex flex-col overflow-hidden transition-transform duration-200',
           'bg-bg-base border-r border-border-primary',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
@@ -90,7 +90,9 @@ export default function AppSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
                 className={cn(
                   'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors mb-0.5',
                   isActive

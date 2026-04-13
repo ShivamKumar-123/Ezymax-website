@@ -14,6 +14,7 @@ import { sounds, unlockAudio } from '@/lib/sounds';
 import { getMarketStatus } from '@/lib/marketHours';
 import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
 import Watchlist from '@/components/trading/Watchlist';
+import InstrumentsTable from '@/components/trading/InstrumentsTable';
 import OrderPanel from '@/components/trading/OrderPanel';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
@@ -27,6 +28,8 @@ const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/Tradin
 
 const ORDER_MIN = 250;
 const ORDER_MAX = 560;
+const MARKETS_MIN = 560;
+const MARKETS_MAX = 1200;
 const BOTTOM_MIN = 160;
 
 export default function TradingTerminalPage() {
@@ -77,15 +80,17 @@ export default function TradingTerminalPage() {
   const onChartRailDrag = useCallback(
     (dx: number) => {
       const { op, vw } = layoutDragStartRef.current;
+      const hardMax = terminalMarketsOpen ? MARKETS_MAX : ORDER_MAX;
+      const hardMin = terminalMarketsOpen ? MARKETS_MIN : ORDER_MIN;
       const maxOp = Math.min(
-        ORDER_MAX,
+        hardMax,
         vw - TERMINAL_RESIZE.handlesSlack - TERMINAL_RESIZE.chartMinWidth,
       );
-      const next = Math.max(ORDER_MIN, Math.min(maxOp, op - dx));
+      const next = Math.max(hardMin, Math.min(maxOp, op - dx));
       setOpW(next);
       setOrderPanelWidth(next);
     },
-    [setOrderPanelWidth],
+    [setOrderPanelWidth, terminalMarketsOpen],
   );
 
   const onBottomDrag = useCallback(
@@ -102,6 +107,26 @@ export default function TradingTerminalPage() {
   useEffect(() => {
     setOpW(orderPanelWidth);
   }, [orderPanelWidth]);
+
+  /** Auto-size the right rail when switching to/from Markets view. */
+  const orderWidthBeforeMarketsRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (terminalMarketsOpen) {
+      if (orderWidthBeforeMarketsRef.current == null) {
+        orderWidthBeforeMarketsRef.current = opW;
+      }
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1600;
+      const target = Math.min(MARKETS_MAX, Math.max(MARKETS_MIN, Math.round(vw * 0.55)));
+      setOpW(target);
+      setOrderPanelWidth(target);
+    } else if (orderWidthBeforeMarketsRef.current != null) {
+      const restored = orderWidthBeforeMarketsRef.current;
+      orderWidthBeforeMarketsRef.current = null;
+      setOpW(restored);
+      setOrderPanelWidth(restored);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [terminalMarketsOpen]);
 
   useEffect(() => {
     setBpH(bottomPanelHeight);
@@ -580,15 +605,43 @@ export default function TradingTerminalPage() {
           >
             {terminalNewsOpen ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <TradingViewNewsTimeline />
+                <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-[#1a1a1a] bg-[#0c0d12]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTerminalNewsOpen(false);
+                      setTerminalMarketsOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e1e1e] bg-[#111] text-[11px] font-bold uppercase tracking-wide text-[#00e676] hover:bg-[#00e676]/10 hover:border-[#00e676]/40 transition-colors"
+                  >
+                    ← Markets
+                  </button>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#666]">Live News</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTerminalNewsOpen(false);
+                      setTerminalMarketsOpen(false);
+                    }}
+                    className="ml-auto px-3 py-1.5 rounded-lg border border-[#1e1e1e] bg-[#111] text-[11px] font-semibold text-[#888] hover:text-white hover:border-[#2a2a2a] transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <TradingViewNewsTimeline />
+                </div>
               </div>
             ) : terminalMarketsOpen ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <Watchlist
-                  variant="terminalRail"
+                <InstrumentsTable
                   onExitMarkets={() => {
                     setTerminalMarketsOpen(false);
                     setTerminalNewsOpen(false);
+                  }}
+                  onViewNews={() => {
+                    setTerminalMarketsOpen(false);
+                    setTerminalNewsOpen(true);
                   }}
                 />
               </div>
