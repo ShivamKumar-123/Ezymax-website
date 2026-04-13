@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useShellStore } from '@/stores/shellStore';
-import { TrustEdgeWordmark } from '@/components/layout/TrustEdgeWordmark';
 import { cn } from '@/lib/utils';
 import {
   LayoutGrid,
@@ -69,11 +68,13 @@ export default function AppSidebar() {
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
-          <TrustEdgeWordmark
-            href="/dashboard"
-            className="flex items-center min-w-0"
-            textClassName="text-xl"
-          />
+          <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
+            <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-9 h-9 object-contain shrink-0" />
+            <span className="inline-flex items-baseline font-bold italic tracking-tight text-xl select-none">
+              <span className="text-text-primary">Trust</span>
+              <span className="text-[#2196f3]">Edge</span>
+            </span>
+          </Link>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}

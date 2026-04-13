@@ -9,8 +9,8 @@ import NotificationListener from '@/components/NotificationListener';
 import TopLoader from '@/components/TopLoader';
 
 export const metadata: Metadata = {
-  title: 'TrustEdge',
-  description: 'TrustEdge — professional forex and CFD trading platform',
+  title: 'TrustEdgeFX',
+  description: 'TrustEdgeFX — professional forex and CFD trading platform',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },

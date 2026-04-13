@@ -187,6 +187,9 @@ export default function LoginPage() {
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             />
             <div className="auth-left__content">
+              <motion.div {...fadeUp(0.15)} className="mb-6">
+                <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-20 h-20 object-contain drop-shadow-[0_0_30px_rgba(124,58,237,0.3)]" />
+              </motion.div>
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>{cfg.title}</motion.h1>
               <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>{cfg.subtitle}</motion.p>
               <div className="auth-left__steps">
@@ -220,6 +223,9 @@ export default function LoginPage() {
                 {/* ── SIGN IN ── */}
                 {activeStep === 1 && (
                   <form className="auth-form" onSubmit={handleSignIn} noValidate>
+                    <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
+                      <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-16 h-16 object-contain" />
+                    </motion.div>
                     <motion.div {...fadeUp(0.3)}>
                       <h2 className="auth-form__title">Sign In</h2>
                       <p className="auth-form__subtitle">Enter your credentials to access your account.</p>
@@ -285,6 +291,9 @@ export default function LoginPage() {
                 {/* ── DEMO ── */}
                 {activeStep === 2 && (
                   <div className="auth-form">
+                    <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
+                      <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-16 h-16 object-contain" />
+                    </motion.div>
                     <motion.div {...fadeUp(0.3)}>
                       <h2 className="auth-form__title">Demo Account</h2>
                       <p className="auth-form__subtitle">Try the platform instantly with a demo account.</p>
