@@ -173,20 +173,20 @@ function TerminalPositionStaticCard({
   const priceDown = cur != null && (pos.side === 'buy' ? cur < pos.open_price : cur > pos.open_price);
 
   return (
-    <div className="w-full max-w-[300px] rounded-lg border border-[#2c2c2e] bg-[#1c1c1e] overflow-hidden shadow-md">
-      <div className="px-2.5 pt-2 pb-2 flex justify-between gap-2 border-b border-[#2a2a2c]">
+    <div className="w-full max-w-[300px] rounded-lg border border-border-primary bg-bg-card overflow-hidden shadow-md">
+      <div className="px-2.5 pt-2 pb-2 flex justify-between gap-2 border-b border-border-primary">
         <div className="min-w-0">
-          <div className="text-xs font-bold text-white font-mono tracking-tight">{pos.symbol}</div>
+          <div className="text-xs font-bold text-text-primary font-mono tracking-tight">{pos.symbol}</div>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <span
               className={clsx(
                 'text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded',
-                pos.side === 'buy' ? 'bg-[#00e676]/18 text-[#00e676]' : 'bg-[#ff5252]/18 text-[#ff5252]',
+                pos.side === 'buy' ? 'bg-[#2196f3]/18 text-[#2196f3]' : 'bg-[#ff5252]/18 text-[#ff5252]',
               )}
             >
               {pos.side}
             </span>
-            <span className="text-[10px] text-[#8e8e93] tabular-nums">{pos.lots} Lots</span>
+            <span className="text-[10px] text-text-tertiary tabular-nums">{pos.lots} Lots</span>
           </div>
         </div>
         <div className="text-right shrink-0">
@@ -194,17 +194,17 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-[#0d2818]/90 border-[#1b4332]/70 text-[#00e676]'
-                : 'bg-[#2a1215]/90 border-[#4a2025]/70 text-[#ff5252]',
+                ? 'bg-green-500/10 border-green-500/20 text-[#2196f3]'
+                : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
             {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
           </div>
           <div className="flex justify-end gap-0.5 mt-1">
-            <span className="text-[8px] font-semibold uppercase px-1 py-0.5 rounded bg-[#2c2c2e] text-[#636366]">
+            <span className="text-[8px] font-semibold uppercase px-1 py-0.5 rounded bg-bg-secondary text-text-tertiary">
               SL
             </span>
-            <span className="text-[8px] font-semibold uppercase px-1 py-0.5 rounded bg-[#2c2c2e] text-[#636366]">
+            <span className="text-[8px] font-semibold uppercase px-1 py-0.5 rounded bg-bg-secondary text-text-tertiary">
               TP
             </span>
           </div>
@@ -213,22 +213,22 @@ function TerminalPositionStaticCard({
 
       <div className="px-2.5 py-1.5 flex items-start justify-between gap-1.5">
         <div className="min-w-0 flex-1">
-          <div className="text-[8px] font-bold uppercase tracking-wide text-[#636366]">Entry price</div>
-          <div className="text-[11px] font-mono font-semibold text-white tabular-nums leading-tight">
+          <div className="text-[8px] font-bold uppercase tracking-wide text-text-tertiary">Entry price</div>
+          <div className="text-[11px] font-mono font-semibold text-text-primary tabular-nums leading-tight">
             {pos.open_price.toFixed(digits)}
           </div>
-          <div className="text-[8px] text-[#48484a] mt-0.5 leading-tight">{formatPositionOpenedAt(pos.created_at)}</div>
+          <div className="text-[8px] text-text-tertiary mt-0.5 leading-tight">{formatPositionOpenedAt(pos.created_at)}</div>
         </div>
-        <ArrowRight className="w-3 h-3 text-[#48484a] shrink-0 mt-3" aria-hidden />
+        <ArrowRight className="w-3 h-3 text-text-tertiary shrink-0 mt-3" aria-hidden />
         <div className="min-w-0 flex-1 text-right">
-          <div className="text-[8px] font-bold uppercase tracking-wide text-[#636366]">Current price</div>
-          <div className="text-[11px] font-mono font-semibold tabular-nums inline-flex items-center justify-end gap-0.5 text-white leading-tight">
+          <div className="text-[8px] font-bold uppercase tracking-wide text-text-tertiary">Current price</div>
+          <div className="text-[11px] font-mono font-semibold tabular-nums inline-flex items-center justify-end gap-0.5 text-text-primary leading-tight">
             {cur != null ? cur.toFixed(digits) : '—'}
             {cur != null &&
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#00e676]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#2196f3]" aria-hidden />
               ))}
           </div>
         </div>
@@ -236,34 +236,34 @@ function TerminalPositionStaticCard({
 
       <div className="px-2.5 pb-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
         <div>
-          <div className="text-[8px] font-semibold uppercase text-[#636366] mb-px">Stop loss</div>
-          <div className="font-mono text-white/95 leading-tight">
+          <div className="text-[8px] font-semibold uppercase text-text-tertiary mb-px">Stop loss</div>
+          <div className="font-mono text-text-primary leading-tight">
             {pos.stop_loss != null ? pos.stop_loss.toFixed(digits) : '—'}
           </div>
         </div>
         <div>
-          <div className="text-[8px] font-semibold uppercase text-[#636366] mb-px">Take profit</div>
-          <div className="font-mono text-white/95 leading-tight">
+          <div className="text-[8px] font-semibold uppercase text-text-tertiary mb-px">Take profit</div>
+          <div className="font-mono text-text-primary leading-tight">
             {pos.take_profit != null ? pos.take_profit.toFixed(digits) : '—'}
           </div>
         </div>
         <div>
-          <div className="text-[8px] font-semibold uppercase text-[#636366] mb-px">Swaps / Fee</div>
-          <div className="font-mono text-[#aeaeb2] tabular-nums text-[10px] leading-tight">{swapsFeeLine}</div>
+          <div className="text-[8px] font-semibold uppercase text-text-tertiary mb-px">Swaps / Fee</div>
+          <div className="font-mono text-text-secondary tabular-nums text-[10px] leading-tight">{swapsFeeLine}</div>
         </div>
         <div>
-          <div className="text-[8px] font-semibold uppercase text-[#636366] mb-px">Margin / Exposure</div>
-          <div className="font-mono text-[#aeaeb2] tabular-nums text-[10px] leading-tight break-all">
+          <div className="text-[8px] font-semibold uppercase text-text-tertiary mb-px">Margin / Exposure</div>
+          <div className="font-mono text-text-secondary tabular-nums text-[10px] leading-tight break-all">
             {marginExposureLine}
           </div>
         </div>
       </div>
 
-      <p className="px-2.5 pb-1 text-[8px] text-[#48484a] font-mono truncate" title={pos.id}>
+      <p className="px-2.5 pb-1 text-[8px] text-text-tertiary font-mono truncate" title={pos.id}>
         POSITION ID: {pos.id}
       </p>
 
-      <div className="px-2.5 pb-2 pt-0.5 flex flex-col gap-1.5 border-t border-[#2a2a2c]">
+      <div className="px-2.5 pb-2 pt-0.5 flex flex-col gap-1.5 border-t border-border-primary">
         <button
           type="button"
           onClick={(e) => {
@@ -280,7 +280,7 @@ function TerminalPositionStaticCard({
             e.stopPropagation();
             onPartialClose();
           }}
-          className="w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#2c2c2e] text-[#e5e5ea] border border-[#3a3a3c] hover:bg-[#3a3a3c] transition-colors"
+          className="w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-bg-secondary text-text-primary border border-border-primary hover:bg-bg-hover transition-colors"
         >
           Partial close
         </button>
@@ -647,7 +647,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       : '—';
 
   return (
-    <div className={clsx('h-full w-full min-w-0 flex flex-col min-h-0', isTerminal ? 'bg-[#0a0a0a]' : 'bg-bg-primary')}>
+    <div className={clsx('h-full w-full min-w-0 flex flex-col min-h-0', isTerminal ? 'bg-bg-base' : 'bg-bg-primary')}>
       {!isTerminal && activeAccount && (
         <div className="px-2 py-2 shrink-0 space-y-2 border-b border-border-glass bg-bg-secondary/30">
           <ActiveAccountBadge account={activeAccount} variant="compact" />
@@ -680,7 +680,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
           )}
         >
           {isTerminal ? (
-            <div className="flex shrink-0 items-end justify-between gap-2 sm:gap-4 min-w-0 px-2 sm:px-3 py-2 border-b border-[#252525]">
+            <div className="flex shrink-0 items-end justify-between gap-2 sm:gap-4 min-w-0 px-2 sm:px-3 py-2 border-b border-border-primary">
               <div className="flex items-end gap-0 sm:gap-1 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
                 {tabs.map((tab) => (
                   <button
@@ -690,8 +690,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'shrink-0 px-2 sm:px-2.5 pb-1 text-left transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? 'text-white border-[#2962FF] font-semibold text-xs sm:text-sm'
-                        : 'text-[#666] border-transparent font-medium text-xs sm:text-sm hover:text-[#999]',
+                        ? 'text-text-primary border-accent font-semibold text-xs sm:text-sm'
+                        : 'text-text-tertiary border-transparent font-medium text-xs sm:text-sm hover:text-text-secondary',
                     )}
                   >
                     <span className="whitespace-nowrap">
@@ -701,7 +701,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   </button>
                 ))}
                 <ChevronRight
-                  className="w-4 h-4 text-[#444] shrink-0 mb-0.5 ml-0.5 opacity-80"
+                  className="w-4 h-4 text-text-tertiary shrink-0 mb-0.5 ml-0.5 opacity-80"
                   aria-hidden
                 />
               </div>
@@ -709,69 +709,69 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 {activeAccount ? (
                   <>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
                         Balance
                       </span>
-                      <span className="text-xs font-mono font-semibold text-white tabular-nums leading-tight">
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
                         ${activeAccount.balance.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
                         Floating P&amp;L
                       </span>
                       <span
                         className={clsx(
                           'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#00e676]' : 'text-[#ef5350]',
+                          totalPnl >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]',
                         )}
                       >
                         {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
                         Equity
                       </span>
-                      <span className="text-xs font-mono font-semibold text-white tabular-nums leading-tight">
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
                         ${equity.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
                         Margin Used
                       </span>
-                      <span className="text-xs font-mono font-semibold text-white tabular-nums leading-tight">
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
                         ${activeAccount.margin_used.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
                         Free Margin
                       </span>
-                      <span className="text-xs font-mono font-semibold text-white tabular-nums leading-tight">
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
                         ${freeMarginCalc.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-[#666] leading-none inline-flex items-center gap-0.5">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none inline-flex items-center gap-0.5">
                         Margin Level
-                        <Info className="w-3 h-3 text-[#555]" aria-label="Margin level info" />
+                        <Info className="w-3 h-3 text-text-tertiary" aria-label="Margin level info" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-white tabular-nums leading-tight">
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
                         {marginLevelDisplay}
                       </span>
                     </div>
                   </>
                 ) : null}
                 {isTerminal && activeTab === 'open' && (
-                  <div className="flex items-center gap-1 shrink-0 pb-0.5 border-l border-[#2a2a2a] ml-1 pl-2">
+                  <div className="flex items-center gap-1 shrink-0 pb-0.5 border-l border-border-primary ml-1 pl-2">
                     {positions.length > 0 && (
                       <div className="relative" ref={bulkMenuRef}>
                         <button
                           type="button"
                           onClick={() => setBulkMenuOpen((o) => !o)}
-                          className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[11px] font-semibold text-[#ccc] hover:text-white hover:bg-[#1a1a1a] border border-[#333] hover:border-[#444] transition-colors"
+                          className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-primary hover:border-border-secondary transition-colors"
                         >
                           Close All
                           <ChevronDown
@@ -779,14 +779,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           />
                         </button>
                         {bulkMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-[#333] bg-[#141414] shadow-xl z-[100]">
+                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-border-primary bg-bg-card shadow-xl z-[100]">
                             <button
                               type="button"
                               onClick={() => {
                                 setBulkMenuOpen(false);
                                 setBulkConfirm('all');
                               }}
-                              className="w-full text-left px-3 py-2 text-xs text-[#ddd] hover:bg-[#252525]"
+                              className="w-full text-left px-3 py-2 text-xs text-text-primary hover:bg-bg-hover"
                             >
                               Close all ({positions.length})
                             </button>
@@ -797,7 +797,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 setBulkConfirm('profit');
                               }}
                               disabled={profitPositions.length === 0}
-                              className="w-full text-left px-3 py-2 text-xs text-[#2962FF] hover:bg-[#252525] disabled:opacity-40"
+                              className="w-full text-left px-3 py-2 text-xs text-accent hover:bg-bg-hover disabled:opacity-40"
                             >
                               Close profitable ({profitPositions.length})
                             </button>
@@ -808,7 +808,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 setBulkConfirm('loss');
                               }}
                               disabled={lossPositions.length === 0}
-                              className="w-full text-left px-3 py-2 text-xs text-[#ff5252] hover:bg-[#252525] disabled:opacity-40"
+                              className="w-full text-left px-3 py-2 text-xs text-[#ff5252] hover:bg-bg-hover disabled:opacity-40"
                             >
                               Close losing ({lossPositions.length})
                             </button>
@@ -822,8 +822,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       className={clsx(
                         'p-1.5 rounded-md transition-colors border',
                         terminalOpenCardView
-                          ? 'text-[#5eb3ff] bg-[#1e3a5f]/40 border-[#2962FF]/35'
-                          : 'text-[#888] hover:text-white hover:bg-[#1a1a1a] border-transparent hover:border-[#333]',
+                          ? 'text-accent bg-accent/15 border-accent/35'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover border-transparent hover:border-border-primary',
                       )}
                       title={terminalOpenCardView ? 'Table view' : 'Card view'}
                       aria-pressed={terminalOpenCardView}
@@ -841,7 +841,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     type="button"
                     onClick={() => void handleRefresh()}
                     disabled={toolbarBusy || (activeTab === 'history' && historyLoading)}
-                    className="p-1.5 rounded-md text-[#888] hover:text-white hover:bg-[#1a1a1a] disabled:opacity-40 transition-colors"
+                    className="p-1.5 rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-40 transition-colors"
                     title="Refresh"
                   >
                     <RefreshCw className={clsx('w-4 h-4', toolbarBusy && 'animate-spin')} />
@@ -849,7 +849,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   <button
                     type="button"
                     onClick={exportCurrentCsv}
-                    className="p-1.5 rounded-md text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                    className="p-1.5 rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                     title="Download CSV"
                   >
                     <Download className="w-4 h-4" />
@@ -859,7 +859,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
             </div>
           ) : (
             <>
-              <div className={clsx('flex shrink-0 border-b border-border-glass', isTerminal ? 'bg-[#0e0e0e]' : 'bg-bg-primary/40')}>
+              <div className={clsx('flex shrink-0 border-b border-border-glass', isTerminal ? 'bg-bg-secondary' : 'bg-bg-primary/40')}>
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -868,7 +868,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#00e676]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#2196f3]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',
@@ -881,7 +881,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 ))}
               </div>
 
-              <div className={clsx('flex items-center justify-between gap-2 px-2 py-1.5 shrink-0 border-b border-border-glass/60', isTerminal ? 'bg-[#0e0e0e]' : 'bg-bg-primary/20')}>
+              <div className={clsx('flex items-center justify-between gap-2 px-2 py-1.5 shrink-0 border-b border-border-glass/60', isTerminal ? 'bg-bg-secondary' : 'bg-bg-primary/20')}>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -916,7 +916,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 {isTerminal && terminalOpenCardView ? (
                   <div className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-3">
                     {positions.length === 0 ? (
-                      <div className="px-4 py-12 text-center text-sm text-[#666]">No open positions</div>
+                      <div className="px-4 py-12 text-center text-sm text-text-tertiary">No open positions</div>
                     ) : (
                       <div className="flex flex-wrap gap-2 content-start items-start">
                         {positions.map((pos) => {
@@ -1497,10 +1497,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
             const count = countMap[bulkConfirm];
             const shell = clsx(
               'relative w-full max-w-[280px] rounded-xl border p-3.5 shadow-2xl overflow-hidden pointer-events-auto',
-              isTerminal ? 'bg-[#1c1c1e] border-[#2c2c2e]' : 'bg-bg-secondary border-border-glass',
+              'bg-bg-card border-border-primary',
             );
-            const titleCls = clsx('text-sm font-bold pr-2', isTerminal ? 'text-white' : 'text-text-primary');
-            const bodyCls = clsx('text-xs', isTerminal ? 'text-white/90' : 'text-text-secondary');
+            const titleCls = clsx('text-sm font-bold pr-2 text-text-primary');
+            const bodyCls = clsx('text-xs text-text-secondary');
             return (
               <div className="fixed inset-0 p-0" style={{ zIndex: 2147483646, isolation: 'isolate' }}>
                 <button
@@ -1530,9 +1530,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       }}
                       className={clsx(
                         'shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors',
-                        isTerminal
-                          ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]'
-                          : 'bg-bg-hover text-text-tertiary hover:text-text-primary',
+                        'bg-bg-hover text-text-tertiary hover:text-text-primary',
                       )}
                       aria-label="Close"
                     >
@@ -1542,7 +1540,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   <p className={clsx(bodyCls, 'mb-2')}>{descMap[bulkConfirm]}</p>
                   {count === 0 ? (
                     <>
-                      <p className={clsx('text-[11px] mb-3', isTerminal ? 'text-white/80' : 'text-text-tertiary')}>
+                      <p className={clsx('text-[11px] mb-3 text-text-tertiary')}>
                         No matching positions found.
                       </p>
                       <button
@@ -1550,7 +1548,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         onClick={() => setBulkConfirm(null)}
                         className={clsx(
                           'w-full py-2.5 font-bold rounded-lg text-sm',
-                          isTerminal ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]' : 'bg-bg-hover text-text-primary',
+                          'bg-bg-hover text-text-primary',
                         )}
                       >
                         OK
@@ -1558,7 +1556,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     </>
                   ) : (
                     <>
-                      <p className={clsx('text-[11px] mb-4', isTerminal ? 'text-white/80' : 'text-text-tertiary')}>
+                      <p className={clsx('text-[11px] mb-4 text-text-tertiary')}>
                         This action cannot be undone.
                       </p>
                       <div className="flex gap-2">
@@ -1567,7 +1565,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           onClick={() => setBulkConfirm(null)}
                           className={clsx(
                             'flex-1 py-2.5 font-bold rounded-lg text-sm active:scale-[0.98] transition-all',
-                            isTerminal ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]' : 'bg-bg-hover text-text-primary',
+                            'bg-bg-hover text-text-primary',
                           )}
                         >
                           Cancel
@@ -1609,12 +1607,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 aria-labelledby="close-position-title"
                 className={clsx(
                   'pointer-events-auto relative w-full max-w-[280px] rounded-xl border p-3.5 shadow-2xl overflow-hidden',
-                  isTerminal ? 'bg-[#1c1c1e] border-[#2c2c2e]' : 'bg-bg-secondary border-border-glass',
+                  'bg-bg-card border-border-primary',
                 )}
                 onMouseDown={(e) => e.stopPropagation()}
               >
               <div className="flex items-start justify-between gap-2 mb-3">
-                <h3 id="close-position-title" className={clsx('text-sm font-bold', isTerminal ? 'text-white' : 'text-text-primary')}>
+                <h3 id="close-position-title" className="text-sm font-bold text-text-primary">
                   Close Position
                 </h3>
                 <button
@@ -1626,9 +1624,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   }}
                   className={clsx(
                     'shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors',
-                    isTerminal
-                      ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]'
-                      : 'bg-bg-hover text-text-tertiary hover:text-text-primary',
+                    'bg-bg-hover text-text-tertiary hover:text-text-primary',
                   )}
                   aria-label="Close dialog"
                 >
@@ -1640,22 +1636,22 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 <div
                   className={clsx(
                     'rounded-lg p-3 space-y-1.5 border',
-                    isTerminal ? 'bg-[#0f0f0f] border-[#2c2c2e]' : 'bg-bg-primary/50 border-border-glass/30',
+                    'bg-bg-secondary border-border-primary',
                   )}
                 >
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className={isTerminal ? 'text-white/85' : 'text-text-tertiary'}>Symbol</span>
-                    <span className={clsx('font-mono', isTerminal ? 'text-white' : 'text-text-primary')}>{closeModal.symbol}</span>
+                    <span className="text-text-tertiary">Symbol</span>
+                    <span className="font-mono text-text-primary">{closeModal.symbol}</span>
                   </div>
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className={isTerminal ? 'text-white/85' : 'text-text-tertiary'}>Side</span>
+                    <span className="text-text-tertiary">Side</span>
                     <span className={clsx('font-bold', closeModal.side === 'buy' ? 'text-buy' : 'text-sell')}>
                       {closeModal.side.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className={isTerminal ? 'text-white/85' : 'text-text-tertiary'}>Open lots</span>
-                    <span className={clsx('font-mono', isTerminal ? 'text-white' : 'text-text-primary')}>{closeModal.lots}</span>
+                    <span className="text-text-tertiary">Open lots</span>
+                    <span className="font-mono text-text-primary">{closeModal.lots}</span>
                   </div>
                 </div>
 
@@ -1663,7 +1659,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   <label
                     className={clsx(
                       'text-[9px] font-bold uppercase tracking-wider block mb-1.5',
-                      isTerminal ? 'text-white' : 'text-text-tertiary',
+                      'text-text-tertiary',
                     )}
                   >
                     Lots to close
@@ -1682,9 +1678,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         }}
                         className={clsx(
                           'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                          isTerminal
-                            ? 'bg-[#2c2c2e] border-[#3a3a3c] text-white hover:bg-[#3a3a3c]'
-                            : 'bg-bg-primary/60 border-border-glass text-text-primary hover:bg-bg-hover',
+                          'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-hover',
                         )}
                       >
                         {pct}%
@@ -1699,9 +1693,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       }}
                       className={clsx(
                         'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                        isTerminal
-                          ? 'bg-[#2962FF]/20 border-[#2962FF]/45 text-white hover:bg-[#2962FF]/30'
-                          : 'bg-buy/10 border-buy/25 text-buy hover:bg-buy/15',
+                        'bg-accent/10 border-accent/25 text-accent hover:bg-accent/15',
                       )}
                     >
                       Full
@@ -1715,12 +1707,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     value={closeModal.closeLots}
                     onChange={(e) => setCloseModal({ ...closeModal, closeLots: e.target.value })}
                     className={clsx(
-                      'w-full px-3 py-2 rounded-lg font-mono text-sm outline-none transition-all border [color-scheme:dark]',
-                      isTerminal
-                        ? 'bg-[#0f0f0f] border-[#2c2c2e] text-white caret-white placeholder:text-white/40 focus:border-[#ff5252]/50 [&::-webkit-inner-spin-button]:opacity-70'
-                        : 'bg-bg-primary border-border-glass text-text-primary focus:border-sell',
+                      'w-full px-3 py-2 rounded-lg font-mono text-sm outline-none transition-all border',
+                      'bg-bg-secondary border-border-primary text-text-primary focus:border-sell',
                     )}
-                    style={isTerminal ? { color: '#ffffff' } : undefined}
                   />
                 </div>
 
@@ -1730,7 +1719,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     onClick={() => setCloseModal(null)}
                     className={clsx(
                       'flex-1 py-2.5 font-bold rounded-lg text-sm active:scale-[0.98] transition-all',
-                      isTerminal ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]' : 'bg-bg-hover text-text-primary',
+                      'bg-bg-hover text-text-primary',
                     )}
                   >
                     Cancel
@@ -1761,11 +1750,11 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   </button>
                 </div>
 
-                <div className={clsx('pt-3 mt-1 border-t', isTerminal ? 'border-[#2c2c2e]' : 'border-border-glass/40')}>
+                <div className={clsx('pt-3 mt-1 border-t border-border-primary')}>
                   <p
                     className={clsx(
                       'text-[9px] font-semibold uppercase tracking-wider text-center mb-2',
-                      isTerminal ? 'text-white' : 'text-text-tertiary',
+                      'text-text-tertiary',
                     )}
                   >
                     Bulk close
@@ -1780,14 +1769,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       disabled={bulkBusy || positions.length === 0}
                       className={clsx(
                         'flex flex-col items-center gap-0.5 py-2 px-0.5 rounded-lg border active:scale-[0.98] transition-all disabled:opacity-40',
-                        isTerminal
-                          ? 'bg-[#0f0f0f] border-[#2c2c2e] hover:bg-[#252525]'
-                          : 'bg-bg-primary/60 border-border-glass hover:bg-bg-hover',
+                        'bg-bg-secondary border-border-primary hover:bg-bg-hover',
                       )}
                     >
-                      <Layers className={clsx('w-3.5 h-3.5', isTerminal ? 'text-white' : 'text-text-secondary')} />
-                      <span className={clsx('text-[9px] font-bold', isTerminal ? 'text-white' : 'text-text-primary')}>All</span>
-                      <span className={clsx('text-[9px] tabular-nums', isTerminal ? 'text-white/75' : 'text-text-tertiary')}>
+                      <Layers className="w-3.5 h-3.5 text-text-secondary" />
+                      <span className="text-[9px] font-bold text-text-primary">All</span>
+                      <span className="text-[9px] tabular-nums text-text-tertiary">
                         ({positions.length})
                       </span>
                     </button>
@@ -1800,14 +1787,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       disabled={bulkBusy || profitPositions.length === 0}
                       className={clsx(
                         'flex flex-col items-center gap-0.5 py-2 px-0.5 rounded-lg border active:scale-[0.98] transition-all disabled:opacity-40',
-                        isTerminal ? 'bg-[#2962FF]/10 border-[#2962FF]/25 hover:bg-[#2962FF]/18' : 'bg-buy/5 border-buy/20 hover:bg-buy/10',
+                        'bg-accent/5 border-accent/20 hover:bg-accent/10',
                       )}
                     >
-                      <TrendingUp className={clsx('w-3.5 h-3.5', isTerminal ? 'text-white' : '')} style={isTerminal ? undefined : { color: '#2962FF' }} />
-                      <span className={clsx('text-[9px] font-bold', isTerminal ? 'text-white' : '')} style={isTerminal ? undefined : { color: '#2962FF' }}>
+                      <TrendingUp className="w-3.5 h-3.5 text-accent" />
+                      <span className="text-[9px] font-bold text-accent">
                         Profit
                       </span>
-                      <span className={clsx('text-[9px] tabular-nums', isTerminal ? 'text-white/75' : 'text-text-tertiary')}>
+                      <span className="text-[9px] tabular-nums text-text-tertiary">
                         ({profitPositions.length})
                       </span>
                     </button>
@@ -1820,14 +1807,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       disabled={bulkBusy || lossPositions.length === 0}
                       className={clsx(
                         'flex flex-col items-center gap-0.5 py-2 px-0.5 rounded-lg border active:scale-[0.98] transition-all disabled:opacity-40',
-                        isTerminal ? 'bg-[#ff5252]/10 border-[#ff5252]/25 hover:bg-[#ff5252]/18' : 'bg-sell/5 border-sell/20 hover:bg-sell/10',
+                        'bg-sell/5 border-sell/20 hover:bg-sell/10',
                       )}
                     >
-                      <TrendingDown className={clsx('w-3.5 h-3.5', isTerminal ? 'text-white' : '')} style={isTerminal ? undefined : { color: '#FF2440' }} />
-                      <span className={clsx('text-[9px] font-bold', isTerminal ? 'text-white' : '')} style={isTerminal ? undefined : { color: '#FF2440' }}>
+                      <TrendingDown className="w-3.5 h-3.5 text-sell" />
+                      <span className="text-[9px] font-bold text-sell">
                         Loss
                       </span>
-                      <span className={clsx('text-[9px] tabular-nums', isTerminal ? 'text-white/75' : 'text-text-tertiary')}>
+                      <span className="text-[9px] tabular-nums text-text-tertiary">
                         ({lossPositions.length})
                       </span>
                     </button>

@@ -426,7 +426,7 @@ export default function AccountsPage() {
   };
 
   const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#00e676] text-[#00e676] text-sm font-bold hover:bg-[#00e676]/10 transition-colors shrink-0';
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#2196f3] text-[#2196f3] text-sm font-bold hover:bg-[#2196f3]/10 transition-colors shrink-0';
 
   return (
     <DashboardShell>
@@ -483,7 +483,7 @@ export default function AccountsPage() {
                     {active ? (
                       <span
                         key={tab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(0,230,118,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]"
                       >
                         {t.label}
                       </span>
@@ -587,27 +587,27 @@ export default function AccountsPage() {
             key="tab-transfer"
             className="w-full max-w-full animate-wallet-fund-enter-lg space-y-6"
           >
-            <div className="rounded-2xl border border-[#00e676]/20 bg-gradient-to-b from-[#141414] to-[#0c0c0c] p-5 sm:p-6 shadow-[0_0_0_1px_rgba(0,0,0,0.5),0_20px_50px_rgba(0,0,0,0.45)]">
+            <div className="rounded-2xl border border-accent/20 bg-bg-card p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
               <div className="flex items-start gap-3 mb-6">
-                <div className="w-11 h-11 rounded-xl bg-[#00e676]/15 border border-[#00e676]/35 flex items-center justify-center shrink-0 text-[#00e676]">
+                <div className="w-11 h-11 rounded-xl bg-accent/15 border border-accent/35 flex items-center justify-center shrink-0 text-accent">
                   <ArrowLeftRight size={22} strokeWidth={2.25} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white tracking-tight">Internal Transfer</h1>
-                  <p className="text-sm text-white/80 mt-1 leading-relaxed max-w-prose">
+                  <h1 className="text-xl font-bold text-text-primary tracking-tight">Internal Transfer</h1>
+                  <p className="text-sm text-text-secondary mt-1 leading-relaxed max-w-prose">
                     Move funds between your main wallet and live trading accounts, or between accounts.
                   </p>
                 </div>
               </div>
 
               {demoFundingBlocked && (
-                <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-amber-200/90">
+                <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-amber-600">
                   {DEMO_FUNDING_MSG}
                 </div>
               )}
 
               {liveAccounts.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[#3a3a3a] bg-[#0a0a0a] px-5 py-10 text-center">
+                <div className="rounded-xl border border-dashed border-border-secondary bg-bg-base px-5 py-10 text-center">
                   <p className="text-sm text-white/80 mb-4">No live trading accounts yet. Open one to deposit and transfer.</p>
                   {!user?.is_demo && (
                     <button
@@ -616,7 +616,7 @@ export default function AccountsPage() {
                         setTab('accounts');
                         setAccountPickerOpen(true);
                       }}
-                      className="text-sm font-bold text-[#00e676] hover:underline"
+                      className="text-sm font-bold text-[#2196f3] hover:underline"
                     >
                       Open live account
                     </button>
@@ -651,17 +651,17 @@ export default function AccountsPage() {
                       if (!opt) return null;
                       const isWallet = uniFrom === 'wallet';
                       return (
-                        <div className="rounded-xl border border-[#00e676]/35 bg-[#0a0a0a] p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
+                        <div className="rounded-xl border border-accent/35 bg-bg-base p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#2196f3]/12 flex items-center justify-center text-[#2196f3] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-white">{opt.label}</div>
-                            <div className="text-[10px] uppercase tracking-wide text-white/50 font-semibold mt-0.5">
+                            <div className="text-sm font-semibold text-text-primary">{opt.label}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold mt-0.5">
                               {isWallet ? 'Balance' : 'Available'}
                             </div>
                           </div>
-                          <div className="text-xl font-bold text-[#00e676] tabular-nums font-mono shrink-0">
+                          <div className="text-xl font-bold text-accent tabular-nums font-mono shrink-0">
                             {fmt(opt.balance)}
                           </div>
                         </div>
@@ -674,7 +674,7 @@ export default function AccountsPage() {
                     <button
                       type="button"
                       onClick={swapFromTo}
-                      className="group w-10 h-10 rounded-full border border-[#00e676]/30 bg-[#0a0a0a] flex items-center justify-center text-[#00e676]/80 hover:bg-[#00e676]/10 hover:border-[#00e676]/60 transition-all active:scale-95"
+                      className="group w-10 h-10 rounded-full border border-accent/30 bg-bg-base flex items-center justify-center text-accent/80 hover:bg-accent/10 hover:border-accent/60 transition-all active:scale-95"
                       title="Swap direction"
                     >
                       <ArrowLeftRight size={16} className="rotate-90 group-hover:scale-110 transition-transform" />
@@ -683,7 +683,7 @@ export default function AccountsPage() {
 
                   {/* ── TO ── */}
                   <div className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-white/50">To</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">To</p>
                     <select
                       value={uniTo}
                       onChange={(e) => {
@@ -710,17 +710,17 @@ export default function AccountsPage() {
                       if (!opt) return null;
                       const isWallet = uniTo === 'wallet';
                       return (
-                        <div className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#00e676]/12 flex items-center justify-center text-[#00e676] shrink-0">
+                        <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#2196f3]/12 flex items-center justify-center text-[#2196f3] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-white">{opt.label}</div>
-                            <div className="text-[10px] uppercase tracking-wide text-white/50 font-semibold mt-0.5">
+                            <div className="text-sm font-semibold text-text-primary">{opt.label}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold mt-0.5">
                               {isWallet ? 'Wallet' : 'Balance'}
                             </div>
                           </div>
-                          <div className="text-lg font-bold text-white tabular-nums font-mono shrink-0">
+                          <div className="text-lg font-bold text-text-primary tabular-nums font-mono shrink-0">
                             {fmt(opt.balance)}
                           </div>
                         </div>
@@ -729,16 +729,16 @@ export default function AccountsPage() {
                   </div>
 
                   {/* ── AMOUNT ── */}
-                  <div className="pt-3 space-y-2 border-t border-[#2a2a2a]">
+                  <div className="pt-3 space-y-2 border-t border-border-primary">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="text-sm font-medium text-white/95">Amount</label>
+                      <label className="text-sm font-medium text-text-primary">Amount</label>
                       <button
                         type="button"
                         onClick={() =>
                           setTransferAmount(uniFromBalance > 0 ? uniFromBalance.toFixed(2) : '')
                         }
                         disabled={uniFromBalance <= 0}
-                        className="text-sm font-bold text-[#00e676] hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        className="text-sm font-bold text-[#2196f3] hover:underline disabled:opacity-40 disabled:pointer-events-none"
                       >
                         Max: {fmt(uniFromBalance)}
                       </button>
@@ -750,7 +750,7 @@ export default function AccountsPage() {
                       value={transferAmount}
                       onChange={(e) => setTransferAmount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-4 py-3.5 rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] font-mono font-semibold text-white text-base placeholder:text-[#555] focus:outline-none focus:ring-2 focus:ring-[#00e676]/40 focus:border-[#00e676]/50"
+                      className="w-full px-4 py-3.5 rounded-xl border border-border-primary bg-bg-base font-mono font-semibold text-text-primary text-base placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50"
                     />
                   </div>
 
@@ -765,7 +765,7 @@ export default function AccountsPage() {
                       uniFromBalance <= 0 ||
                       uniFrom === uniTo
                     }
-                    className="w-full py-3.5 rounded-xl bg-[#00e676] text-black text-base font-bold hover:bg-[#00c853] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-[#2196f3] text-white text-base font-bold hover:bg-[#1976d2] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeftRight size={20} />
                     {transferSubmitting ? 'Transferring…' : 'Transfer'}
@@ -942,7 +942,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
   return (
     <div className="min-w-0">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[13px] font-medium text-white/70">Balance Trend</div>
+        <div className="text-[13px] font-medium text-text-secondary">Balance Trend</div>
         <div className="flex flex-wrap items-center gap-1">
           {TREND_TABS.map((t) => (
             <button
@@ -951,7 +951,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
               onClick={() => setTab(t)}
               className={clsx(
                 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors',
-                tab === t ? 'bg-[#00e676]/20 text-[#00e676] border border-[#00e676]/40' : 'text-white/50 border border-transparent hover:bg-white/5 hover:text-white/70',
+                tab === t ? 'bg-accent/20 text-accent border border-accent/40' : 'text-text-tertiary border border-transparent hover:bg-bg-hover hover:text-text-secondary',
               )}
             >
               {t}
@@ -959,10 +959,10 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
           ))}
         </div>
       </div>
-      <div className="rounded-xl bg-[#080808] border border-[#1a1a1a] relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
+      <div className="rounded-xl bg-bg-base border border-border-primary relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-5 w-5 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+            <div className="h-5 w-5 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
@@ -1091,14 +1091,14 @@ function AccountCard({
       id={`account-card-${row.id}`}
       className="relative overflow-hidden rounded-2xl transition-all duration-300"
       style={{
-        background: '#0d0f10',
-        border: open ? '1px solid rgba(0,230,118,0.22)' : '1px solid rgba(255,255,255,0.06)',
-        boxShadow: open ? '0 4px 32px rgba(0,230,118,0.08)' : '0 4px 24px rgba(0,0,0,0.3)',
+        background: 'var(--bg-card)',
+        border: open ? '1px solid var(--border-accent)' : '1px solid var(--border-primary)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
       }}
     >
       {/* ── Header Row — always visible ── */}
       <div
-        className="flex w-full items-start gap-2 sm:gap-3 px-3 sm:px-5 md:px-6 py-4 sm:py-5 cursor-pointer transition-colors hover:bg-white/[0.015]"
+        className="flex w-full items-start gap-2 sm:gap-3 px-3 sm:px-5 md:px-6 py-4 sm:py-5 cursor-pointer transition-colors hover:bg-bg-hover"
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o); } }}
         role="button"
@@ -1108,30 +1108,30 @@ function AccountCard({
         <span
           className={clsx(
             'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
-            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#00e676] shadow-[0_0_6px_rgba(0,230,118,0.7)]',
+            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#2196f3] shadow-[0_0_6px_rgba(33,150,243,0.7)]',
           )}
           aria-hidden
         />
         <div className="flex-1 min-w-0">
           {/* Account name + ID + alias */}
           <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mb-3 sm:mb-4">
-            <span className="text-sm sm:text-base font-bold text-white">{accountLabel}</span>
-            <span className="text-xs sm:text-sm text-white/40 font-mono">{idLabel}</span>
+            <span className="text-sm sm:text-base font-bold text-text-primary">{accountLabel}</span>
+            <span className="text-xs sm:text-sm text-text-tertiary font-mono">{idLabel}</span>
             {!editingAlias ? (
               <span className="inline-flex items-center gap-1 text-sm" onClick={(e) => e.stopPropagation()}>
                 {alias ? (
                   <>
-                    <span className="text-white/70">{alias}</span>
-                    <button type="button" onClick={() => { setAliasDraft(alias); setEditingAlias(true); }} className="rounded p-0.5 text-[#00e676]/70 hover:text-[#00e676] hover:bg-[#00e676]/10" aria-label="Edit label"><Pencil size={13} /></button>
+                    <span className="text-text-secondary">{alias}</span>
+                    <button type="button" onClick={() => { setAliasDraft(alias); setEditingAlias(true); }} className="rounded p-0.5 text-accent/70 hover:text-accent hover:bg-accent/10" aria-label="Edit label"><Pencil size={13} /></button>
                   </>
                 ) : (
-                  <button type="button" onClick={() => { setAliasDraft(''); setEditingAlias(true); }} className="text-[#00e676]/60 hover:text-[#00e676] text-xs font-semibold">+ Add label</button>
+                  <button type="button" onClick={() => { setAliasDraft(''); setEditingAlias(true); }} className="text-accent/60 hover:text-accent text-xs font-semibold">+ Add label</button>
                 )}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                <input value={aliasDraft} onChange={(e) => setAliasDraft(e.target.value)} placeholder="Alias" className="px-2 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-sm text-white w-36 max-w-[50vw] outline-none focus:border-[#00e676]/30" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { writeAlias(row.id, aliasDraft); setEditingAlias(false); } if (e.key === 'Escape') setEditingAlias(false); }} />
-                <button type="button" className="text-xs text-[#00e676] font-semibold" onClick={() => { writeAlias(row.id, aliasDraft); setEditingAlias(false); }}>Save</button>
+                <input value={aliasDraft} onChange={(e) => setAliasDraft(e.target.value)} placeholder="Alias" className="px-2 py-1 rounded-lg border border-border-primary bg-bg-input text-sm text-text-primary w-36 max-w-[50vw] outline-none focus:border-accent/30" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { writeAlias(row.id, aliasDraft); setEditingAlias(false); } if (e.key === 'Escape') setEditingAlias(false); }} />
+                <button type="button" className="text-xs text-accent font-semibold" onClick={() => { writeAlias(row.id, aliasDraft); setEditingAlias(false); }}>Save</button>
               </span>
             )}
           </div>
@@ -1139,34 +1139,34 @@ function AccountCard({
           {/* Stats row — Balance | Equity | P&L | Leverage */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3">
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Balance</p>
-              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono truncate">{fmt(row.balance, row.currency)}</p>
+              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Balance</p>
+              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono truncate">{fmt(row.balance, row.currency)}</p>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Equity</p>
-              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono truncate">{fmt(row.equity, row.currency)}</p>
+              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Equity</p>
+              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono truncate">{fmt(row.equity, row.currency)}</p>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">P&amp;L</p>
+              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
               <div className="flex items-center gap-1">
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#00e676]' : 'text-red-400')}>
+                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#2196f3]' : 'text-red-400')}>
                   ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
-              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#00e676]/70' : 'text-red-400/70')}>
+              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#2196f3]/70' : 'text-red-400/70')}>
                 ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
               </p>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Leverage</p>
-              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono">1:{row.leverage}</p>
+              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Leverage</p>
+              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono">1:{row.leverage}</p>
             </div>
           </div>
         </div>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-          className="text-white/40 shrink-0 mt-1 p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
+          className="text-text-tertiary shrink-0 mt-1 p-1.5 rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors"
           aria-label={open ? 'Collapse' : 'Expand'}
         >
           <ChevronDown size={20} className={clsx('transition-transform duration-200', open && 'rotate-180')} />
@@ -1175,37 +1175,37 @@ function AccountCard({
 
       {/* ── Expanded Section ── */}
       {open && (
-        <div className="px-3 sm:px-5 md:px-6 pb-4 sm:pb-5 pt-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="px-3 sm:px-5 md:px-6 pb-4 sm:pb-5 pt-0" style={{ borderTop: '1px solid var(--border-primary)' }}>
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 sm:gap-6 pt-4 sm:pt-5">
             {/* Left — Balance Trend chart */}
             <BalanceTrendBlock accountId={row.id} balance={row.balance} />
 
             {/* Right — Account Details */}
             <div>
-              <p className="text-[13px] font-medium text-white/70 mb-3">Account Details</p>
+              <p className="text-[13px] font-medium text-text-secondary mb-3">Account Details</p>
               <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-3 sm:gap-y-4">
                 <div>
-                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Free Margin</p>
-                  <p className="text-base font-bold text-white font-mono tabular-nums">{fmt(row.free_margin, row.currency)}</p>
+                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Free Margin</p>
+                  <p className="text-base font-bold text-text-primary font-mono tabular-nums">{fmt(row.free_margin, row.currency)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Margin Level</p>
-                  <p className="text-base font-bold text-white font-mono tabular-nums">
+                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Margin Level</p>
+                  <p className="text-base font-bold text-text-primary font-mono tabular-nums">
                     {Number.isFinite(row.margin_level) && row.margin_level > 0 ? `${row.margin_level.toFixed(2)}%` : '0.00%'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Currency</p>
-                  <p className="text-base font-bold text-white font-mono">{row.currency}</p>
+                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Currency</p>
+                  <p className="text-base font-bold text-text-primary font-mono">{row.currency}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Created</p>
-                  <p className="text-base font-bold text-white">{formatCreated(row.created_at)}</p>
+                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Created</p>
+                  <p className="text-base font-bold text-text-primary">{formatCreated(row.created_at)}</p>
                 </div>
                 {row.account_group?.name ? (
                   <div className="col-span-2">
-                    <p className="text-[11px] text-white/40 font-medium mb-0.5">Account Type</p>
-                    <p className="text-base font-bold text-white">{row.account_group.name}</p>
+                    <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Account Type</p>
+                    <p className="text-base font-bold text-text-primary">{row.account_group.name}</p>
                   </div>
                 ) : null}
               </div>
@@ -1213,18 +1213,18 @@ function AccountCard({
           </div>
 
           {/* Action buttons row */}
-          <div className="relative z-[60] flex flex-wrap items-center gap-2 pt-4 sm:pt-5 mt-4 sm:mt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="relative z-[60] flex flex-wrap items-center gap-2 pt-4 sm:pt-5 mt-4 sm:mt-5" style={{ borderTop: '1px solid var(--border-primary)' }}>
             {isManagedAccount ? (
               <>
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors"
                 >
                   <BookOpen size={16} />
                   View Trades
                 </Link>
-                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-4 py-2.5 text-xs text-[#555] flex items-center gap-2 sm:ml-auto">
+                <div className="rounded-lg border border-border-primary bg-bg-secondary px-4 py-2.5 text-xs text-text-tertiary flex items-center gap-2 sm:ml-auto">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by Copy master'}
                 </div>
@@ -1234,7 +1234,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 text-white text-sm font-semibold hover:border-white/20 hover:bg-white/[0.03] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-primary text-text-primary text-sm font-semibold hover:border-border-secondary hover:bg-bg-hover transition-colors"
                 >
                   <BookOpen size={16} />
                   Trade History
@@ -1243,7 +1243,7 @@ function AccountCard({
                   href={tradeHref}
                   prefetch
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
@@ -1254,7 +1254,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-white/10 text-white text-xs sm:text-sm font-semibold hover:border-white/20 hover:bg-white/[0.03] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-border-primary text-text-primary text-xs sm:text-sm font-semibold hover:border-border-secondary hover:bg-bg-hover transition-colors"
                 >
                   Trading Journal
                 </Link>
@@ -1262,7 +1262,7 @@ function AccountCard({
                   href={tradeHref}
                   prefetch
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#00e676] text-black text-xs sm:text-sm font-bold hover:bg-[#00c853] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#2196f3] text-white text-xs sm:text-sm font-bold hover:bg-[#1976d2] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />

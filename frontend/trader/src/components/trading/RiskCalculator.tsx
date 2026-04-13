@@ -26,11 +26,11 @@ function Row({
 }) {
   return (
     <div className="space-y-1">
-      <label className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-[#666]">
+      <label className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
         {label}
         {tip && (
           <span className="ml-1 cursor-help" title={tip}>
-            <Info size={11} className="text-[#444]" />
+            <Info size={11} className="text-text-tertiary" />
           </span>
         )}
       </label>
@@ -54,8 +54,7 @@ function CompactSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg py-2 px-2.5 text-[12px] font-medium text-white outline-none appearance-none cursor-pointer"
-      style={{ background: '#111', border: '1px solid #222', colorScheme: 'dark' }}
+      className="w-full rounded-lg py-2 px-2.5 text-[12px] font-medium text-text-primary outline-none appearance-none cursor-pointer bg-bg-secondary border border-border-primary"
     >
       {placeholder && <option value="">{placeholder}</option>}
       {options.map((o) => (
@@ -78,19 +77,17 @@ function CompactInput({
 }) {
   return (
     <div
-      className="flex items-center rounded-lg overflow-hidden"
-      style={{ background: '#111', border: '1px solid #222' }}
+      className="flex items-center rounded-lg overflow-hidden bg-bg-secondary border border-border-primary"
     >
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent px-2.5 py-2 text-[12px] font-mono font-bold text-white outline-none w-0 min-w-0 placeholder:text-[#444]"
-        style={{ colorScheme: 'dark' }}
+        className="flex-1 bg-transparent px-2.5 py-2 text-[12px] font-mono font-bold text-text-primary outline-none w-0 min-w-0 placeholder:text-text-tertiary"
       />
       {suffix && (
-        <span className="pr-2.5 text-[10px] font-semibold text-[#555] shrink-0">{suffix}</span>
+        <span className="pr-2.5 text-[10px] font-semibold text-text-tertiary shrink-0">{suffix}</span>
       )}
     </div>
   );
@@ -136,26 +133,25 @@ function CompactInstrumentPicker({
       <button
         type="button"
         onClick={() => { setOpen(!open); setSearch(''); }}
-        className="w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-[12px] font-medium text-white cursor-pointer transition-colors"
-        style={{ background: '#111', border: '1px solid #222' }}
+        className="w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-[12px] font-medium text-text-primary cursor-pointer transition-colors bg-bg-secondary border border-border-primary"
       >
         <span className="truncate">{current?.symbol || 'Select Instrument'}</span>
-        <ChevronDown size={12} className={`text-[#555] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`text-text-tertiary shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg overflow-hidden shadow-2xl" style={{ background: '#111', border: '1px solid #333' }}>
-          <div className="flex items-center gap-1.5 px-2 py-1.5" style={{ borderBottom: '1px solid #222', background: '#0e0e0e' }}>
-            <Search size={12} className="text-[#555] shrink-0" />
+        <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg overflow-hidden shadow-2xl bg-bg-card border border-border-primary">
+          <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border-primary bg-bg-secondary">
+            <Search size={12} className="text-text-tertiary shrink-0" />
             <input
               ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="flex-1 bg-transparent text-[11px] text-white outline-none placeholder:text-[#444]"
+              className="flex-1 bg-transparent text-[11px] text-text-primary outline-none placeholder:text-text-tertiary"
             />
             {search && (
-              <button type="button" onClick={() => setSearch('')} className="text-[#555] hover:text-white">
+              <button type="button" onClick={() => setSearch('')} className="text-text-tertiary hover:text-text-primary">
                 <X size={11} />
               </button>
             )}
@@ -166,14 +162,14 @@ function CompactInstrumentPicker({
                 key={inst.symbol}
                 type="button"
                 onClick={() => { onChange(inst.symbol); setOpen(false); setSearch(''); }}
-                className="w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors hover:bg-[#1a1a1a]"
-                style={{ color: inst.symbol === value ? '#2962FF' : '#aaa' }}
+                className="w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                style={{ color: inst.symbol === value ? 'var(--accent, #2962FF)' : 'var(--text-secondary)' }}
               >
                 <span className="text-[11px] font-semibold">{inst.symbol}</span>
-                <span className="text-[9px] text-[#555]">{inst.segment}</span>
+                <span className="text-[9px] text-text-tertiary">{inst.segment}</span>
               </button>
             )) : (
-              <div className="px-2 py-3 text-center text-[10px] text-[#444]">No results</div>
+              <div className="px-2 py-3 text-center text-[10px] text-text-tertiary">No results</div>
             )}
           </div>
         </div>
@@ -290,27 +286,27 @@ export default function RiskCalculator() {
   };
 
   return (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden" style={{ background: '#0a0a0a' }}>
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-2.5 py-2 border-b border-[#1a1a1a] bg-[#0e0e0e]">
+      <div className="shrink-0 flex items-center justify-between px-2.5 py-2 border-b border-border-primary bg-bg-secondary">
         <div className="flex items-center gap-2">
-          <Calculator size={14} className="text-[#2962FF]" />
-          <span className="text-xs font-bold text-white">Risk Calculator</span>
+          <Calculator size={14} className="text-accent" />
+          <span className="text-xs font-bold text-text-primary">Risk Calculator</span>
         </div>
         <button
           type="button"
           onClick={handleReset}
-          className="w-7 h-7 rounded-md flex items-center justify-center text-[#555] hover:text-white hover:bg-white/5 transition-colors"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
           title="Reset"
         >
           <RotateCcw size={12} />
         </button>
       </div>
 
-      <div className="h-px w-full shrink-0 bg-[#2962FF]" aria-hidden />
+      <div className="h-px w-full shrink-0 bg-accent" aria-hidden />
 
       {/* Tabs */}
-      <div className="shrink-0 flex items-center gap-0 px-1 py-1.5 border-b border-[#1a1a1a] bg-[#0c0c0c]">
+      <div className="shrink-0 flex items-center gap-0 px-1 py-1.5 border-b border-border-primary bg-bg-secondary">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -319,8 +315,8 @@ export default function RiskCalculator() {
             className={clsx(
               'flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all',
               tab === t.id
-                ? 'bg-[#2962FF] text-white shadow-md shadow-[#2962FF]/20'
-                : 'text-[#666] hover:text-white',
+                ? 'bg-accent text-white shadow-md shadow-accent/20'
+                : 'text-text-tertiary hover:text-text-primary',
             )}
           >
             {t.label}
@@ -357,8 +353,7 @@ export default function RiskCalculator() {
           {tab === 'lotsize' && (
             <Row label="Account Balance" tip="Your balance">
               <div
-                className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-[#00e676]"
-                style={{ background: '#111', border: '1px solid #222' }}
+                className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-accent bg-bg-secondary border border-border-primary"
               >
                 ${balance.toFixed(2)}
               </div>
@@ -395,8 +390,7 @@ export default function RiskCalculator() {
             <>
               <Row label="Leverage" tip="Account leverage">
                 <div
-                  className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-white"
-                  style={{ background: '#111', border: '1px solid #222' }}
+                  className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-text-primary bg-bg-secondary border border-border-primary"
                 >
                   1:{accountLeverage}
                 </div>
@@ -446,8 +440,7 @@ export default function RiskCalculator() {
             onClick={() => {
               if (!entryPrice && livePrice > 0) setEntryPrice(livePrice.toFixed(digits));
             }}
-            className="w-full py-2.5 rounded-lg text-[11px] font-bold text-white transition-all active:scale-[0.98]"
-            style={{ background: '#2962FF', boxShadow: '0 2px 12px rgba(41,98,255,0.2)' }}
+            className="w-full py-2.5 rounded-lg text-[11px] font-bold text-white bg-accent transition-all active:scale-[0.98] shadow-md shadow-accent/20"
           >
             Calculate
           </button>
@@ -460,21 +453,21 @@ export default function RiskCalculator() {
               border: '1px solid rgba(41,98,255,0.2)',
             }}
           >
-            <span className="text-[11px] font-semibold text-[#888] mb-1">{resultLabel}</span>
+            <span className="text-[11px] font-semibold text-text-secondary mb-1">{resultLabel}</span>
             <span className="text-2xl font-black font-mono text-[#5eb3ff]">{resultValue}</span>
             {resultDetails.length > 0 && (
               <div className="mt-3 w-full space-y-1">
                 {resultDetails.map((d) => (
                   <div key={d.l} className="flex items-center justify-between text-[10px]">
-                    <span className="text-[#555]">{d.l}</span>
-                    <span className="font-mono font-semibold text-[#999]">{d.v}</span>
+                    <span className="text-text-tertiary">{d.l}</span>
+                    <span className="font-mono font-semibold text-text-secondary">{d.v}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <p className="text-[8px] text-[#333] text-center leading-relaxed pb-1">
+          <p className="text-[8px] text-text-tertiary/50 text-center leading-relaxed pb-1">
             Approximate values. May vary by market conditions.
           </p>
         </div>

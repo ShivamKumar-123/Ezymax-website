@@ -48,7 +48,7 @@ interface TerminalLeftRailProps {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="block w-full text-center text-[8px] font-semibold tracking-[0.12em] text-white/35 uppercase px-0.5 mt-3 mb-1.5 first:mt-0">
+    <span className="block w-full text-center text-[8px] font-semibold tracking-[0.12em] text-text-tertiary/60 uppercase px-0.5 mt-3 mb-1.5 first:mt-0">
       {children}
     </span>
   );
@@ -75,8 +75,8 @@ function RailBtn({
       className={clsx(
         'w-9 h-9 rounded-md flex items-center justify-center transition-colors shrink-0',
         active
-          ? 'bg-[#1e3a5f] text-[#5eb3ff] shadow-[inset_0_0_0_1px_rgba(94,179,255,0.25)]'
-          : 'text-white/55 hover:text-white hover:bg-white/[0.06]',
+          ? 'bg-accent/15 text-accent shadow-[inset_0_0_0_1px_rgba(33,150,243,0.25)]'
+          : 'text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
       )}
     >
       {children}
@@ -126,12 +126,12 @@ export default function TerminalLeftRail({
 
   return (
     <aside
-      className="shrink-0 w-[52px] flex flex-col items-stretch border-r border-[#1a1a1a] bg-[#060606] z-[5]"
+      className="shrink-0 w-[52px] flex flex-col items-stretch border-r border-border-primary bg-bg-secondary z-[5]"
       aria-label="Terminal toolbar"
     >
-      <div className="flex flex-col items-center gap-0.5 pt-2 pb-1 px-1.5 border-b border-[#141414]">
+      <div className="flex flex-col items-center gap-0.5 pt-2 pb-1 px-1.5 border-b border-border-primary">
         <div className="mb-1 flex justify-center w-full">
-          <TrustEdgeWordmark href="/trading" variant="rail" />
+          <TrustEdgeWordmark href="/accounts" variant="rail" />
         </div>
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>
           <Search size={17} strokeWidth={1.75} />
@@ -205,7 +205,7 @@ export default function TerminalLeftRail({
         )}
       </div>
 
-      <div className="flex flex-col items-center gap-0.5 px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] border-t border-[#141414]">
+      <div className="flex flex-col items-center gap-0.5 px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] border-t border-border-primary">
         <RailBtn
           title={bottomPanelCollapsed ? 'Show positions strip' : 'Hide positions strip'}
           active={bottomPanelCollapsed}
@@ -216,7 +216,7 @@ export default function TerminalLeftRail({
         <Link
           href="/support"
           title="Support chat"
-          className="w-9 h-9 rounded-md flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.06] transition-colors"
+          className="w-9 h-9 rounded-md flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
         >
           <MessageCircle size={17} strokeWidth={1.75} />
         </Link>
@@ -229,7 +229,7 @@ export default function TerminalLeftRail({
         <Link
           href="/profile"
           title="Settings"
-          className="w-9 h-9 rounded-md flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.06] transition-colors"
+          className="w-9 h-9 rounded-md flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
         >
           <Settings size={17} strokeWidth={1.75} />
         </Link>

@@ -16,7 +16,6 @@ import {
   RefreshCcw,
   ArrowDownToLine,
   ArrowUpFromLine,
-  MessageCircle,
   TrendingUp,
   X,
 } from 'lucide-react';
@@ -607,7 +606,7 @@ function WalletPageContent() {
     return (
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading wallet...</span>
         </div>
       </DashboardShell>
@@ -660,19 +659,19 @@ function WalletPageContent() {
               <div
                 className="relative group rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                 style={{
-                  background: 'linear-gradient(145deg, rgba(0,230,118,0.1) 0%, #0d0f10 60%)',
-                  border: '1px solid rgba(0,230,118,0.22)',
-                  boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,230,118,0.06)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-accent)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
                 }}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#00e676]/[0.04] group-hover:bg-[#00e676]/[0.08] transition-colors duration-500" />
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#2196f3]/[0.04] group-hover:bg-[#2196f3]/[0.08] transition-colors duration-500" />
                 <div className="relative p-3 sm:p-4 md:p-5 flex flex-col gap-2.5 sm:gap-3">
                   <div className="flex items-center justify-between">
                     <div
-                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#00e676]/25"
-                      style={{ background: 'linear-gradient(135deg, rgba(0,230,118,0.18) 0%, rgba(0,230,118,0.05) 100%)' }}
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#2196f3]/25"
+                      style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.18) 0%, rgba(33,150,243,0.05) 100%)' }}
                     >
-                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#00e676]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(0,230,118,0.5))' }} />
+                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.5))' }} />
                     </div>
                     {(wallet?.pending_withdrawals ?? 0) > 0 && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
@@ -681,8 +680,8 @@ function WalletPageContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#00e676]/60 mb-0.5 sm:mb-1">Main Wallet</p>
-                    <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-white truncate">
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/60 mb-0.5 sm:mb-1">Main Wallet</p>
+                    <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">
                       {fmt(wallet?.main_wallet_balance ?? 0)}
                     </p>
                   </div>
@@ -692,7 +691,7 @@ function WalletPageContent() {
                       onClick={() => openTransferFromMain(liveAccounts.length === 1 ? liveAccounts[0].id : null)}
                       disabled={demoFundingBlocked}
                       title="Add to trading account"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#00e676]/10 text-[#00e676] border border-[#00e676]/20 hover:bg-[#00e676]/20 hover:border-[#00e676]/40 disabled:opacity-40 disabled:pointer-events-none"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#2196f3]/10 text-[#2196f3] border border-[#2196f3]/20 hover:bg-[#2196f3]/20 hover:border-[#2196f3]/40 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                       To Trading
@@ -716,7 +715,7 @@ function WalletPageContent() {
                   : num.startsWith('MM') ? 'MAM Pool'
                   : num.startsWith('CT') ? 'Copy Pool'
                   : num;
-                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '0,230,118', hex: '#00e676' };
+                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '33,150,243', hex: '#2196f3' };
 
                 return (
                   <div
@@ -728,12 +727,12 @@ function WalletPageContent() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAccountId(a.id); } }}
                     className={clsx(
                       'relative group rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer outline-none hover:scale-[1.02]',
-                      isSel && 'ring-2 ring-[#00e676]/30',
+                      isSel && 'ring-2 ring-[#2196f3]/30',
                     )}
                     style={{
-                      background: `linear-gradient(145deg, rgba(${ac.r},0.08) 0%, #0d0f10 60%)`,
+                      background: 'var(--bg-card)',
                       border: `1px solid rgba(${ac.r},${isSel ? 0.35 : 0.15})`,
-                      boxShadow: isSel ? `0 4px 24px rgba(${ac.r},0.1), 0 0 0 1px rgba(${ac.r},0.08)` : '0 4px 24px rgba(0,0,0,0.3)',
+                      boxShadow: isSel ? `0 2px 12px rgba(${ac.r},0.1)` : '0 2px 12px rgba(0,0,0,0.06)',
                     }}
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] transition-colors duration-500"
@@ -752,7 +751,7 @@ function WalletPageContent() {
                         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate" style={{ color: `rgba(${ac.r},0.6)` }}>
                           {cardLabel}
                         </p>
-                        <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-white truncate">{line}</p>
+                        <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">{line}</p>
                       </div>
                       {!isManaged && !isPool ? (
                         <div className="flex gap-2">
@@ -761,7 +760,7 @@ function WalletPageContent() {
                             onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Move to main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#00e676] hover:border-[#00e676]/25 transition-all disabled:opacity-40"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#2196f3] hover:border-[#2196f3]/25 transition-all disabled:opacity-40"
                           >
                             <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
                           </button>
@@ -770,7 +769,7 @@ function WalletPageContent() {
                             onClick={(e) => { e.stopPropagation(); openTransferFromMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Add from main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#00e676] hover:border-[#00e676]/25 transition-all disabled:opacity-40"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#2196f3] hover:border-[#2196f3]/25 transition-all disabled:opacity-40"
                           >
                             <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
                           </button>
@@ -840,7 +839,7 @@ function WalletPageContent() {
                     {active ? (
                       <span
                         key={fundMainTab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(0,230,118,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]"
                       >
                         {t === 'deposit' ? 'Deposit' : 'Withdraw'}
                       </span>
@@ -864,17 +863,17 @@ function WalletPageContent() {
                       <ArrowDownToLine className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Deposit funds</h2>
+                      <h2 className="text-lg font-bold text-text-primary">Deposit funds</h2>
                       <p className="text-sm text-text-secondary">Add funds to your wallet or accounts</p>
                     </div>
                   </div>
 
                   {/* Deposit To */}
                   <div>
-                    <p className="text-xs text-white/50 mb-2 font-medium uppercase tracking-wide">Deposit To</p>
+                    <p className="text-xs text-text-tertiary mb-2 font-medium uppercase tracking-wide">Deposit To</p>
                     <button
                       type="button"
-                      className="w-full py-3.5 rounded-xl bg-[#00e676] text-black font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-xl bg-[#2196f3] text-white font-bold text-sm flex items-center justify-center gap-2"
                     >
                       <WalletIcon className="w-4 h-4" />
                       Wallet
@@ -889,7 +888,7 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         depositUiSection === 'crypto'
-                          ? 'bg-[#00e676] text-black'
+                          ? 'bg-[#2196f3] text-white'
                           : 'text-white/60 hover:text-white',
                       )}
                     >
@@ -901,7 +900,7 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         depositUiSection === 'manual'
-                          ? 'bg-[#00e676] text-black'
+                          ? 'bg-[#2196f3] text-white'
                           : 'text-white/60 hover:text-white',
                       )}
                     >
@@ -912,16 +911,16 @@ function WalletPageContent() {
                   {depositUiSection === 'crypto' ? (
                     <>
                       <div>
-                        <p className="text-xs text-white/50 mb-3 font-medium uppercase tracking-wide">Payment Method</p>
+                        <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">Payment Method</p>
                         {/* Featured selected coin */}
                         <div className="rounded-xl border border-border-primary bg-bg-secondary p-4 mb-2">
-                          <p className="text-base font-bold text-white font-mono flex items-center gap-2.5">
+                          <p className="text-base font-bold text-text-primary font-mono flex items-center gap-2.5">
                             <span className="text-xl leading-none" aria-hidden>
                               {selectedDepositCrypto.id === 'BTC' ? '₿' : '◆'}
                             </span>
                             <span>
                               {selectedDepositCrypto.label}{' '}
-                              <span className="text-white/40 text-sm font-normal">({selectedDepositCrypto.sub})</span>
+                              <span className="text-text-tertiary text-sm font-normal">({selectedDepositCrypto.sub})</span>
                             </span>
                           </p>
                         </div>
@@ -931,10 +930,10 @@ function WalletPageContent() {
                               key={c.id}
                               type="button"
                               onClick={() => setSelectedCryptoDeposit(c.id)}
-                              className="rounded-xl border border-[#1e1e1e] bg-[#111] p-3.5 text-left transition-colors hover:border-[#2a2a2a] hover:bg-[#161616]"
+                              className="rounded-xl border border-border-primary bg-bg-secondary p-3.5 text-left transition-colors hover:border-border-secondary hover:bg-bg-hover"
                             >
-                              <div className="font-bold text-white font-mono text-sm">{c.label}</div>
-                              <div className="text-[11px] text-white/40 mt-0.5">({c.sub})</div>
+                              <div className="font-bold text-text-primary font-mono text-sm">{c.label}</div>
+                              <div className="text-[11px] text-text-tertiary mt-0.5">({c.sub})</div>
                             </button>
                           ))}
                         </div>
@@ -951,7 +950,7 @@ function WalletPageContent() {
                             value={depositAmount}
                             onChange={(e) => setDepositAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono font-bold text-lg"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
                           />
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -960,7 +959,7 @@ function WalletPageContent() {
                               key={amt}
                               type="button"
                               onClick={() => setDepositAmount(String(amt))}
-                              className="py-2 text-xs font-semibold rounded-lg border border-[#2a2a2a] bg-[#151820] text-[#aaa] hover:border-[#00e676]/40 hover:text-[#00e676]"
+                              className="py-2 text-xs font-semibold rounded-lg border border-[#2a2a2a] bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-accent"
                             >
                               ${amt >= 1000 ? `${amt / 1000}k` : amt}
                             </button>
@@ -968,9 +967,9 @@ function WalletPageContent() {
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-[#00e676]/25 bg-[#00e676]/5 px-4 py-3 space-y-1">
+                      <div className="rounded-xl border border-[#2196f3]/25 bg-[#2196f3]/5 px-4 py-3 space-y-1">
                         <div className="flex items-center gap-2">
-                          <WalletIcon className="w-4 h-4 text-[#00e676] shrink-0" />
+                          <WalletIcon className="w-4 h-4 text-[#2196f3] shrink-0" />
                           <span className="text-sm font-bold text-white">OxaPay</span>
                         </div>
                         <p className="text-[11px] text-[#888] leading-relaxed">
@@ -984,7 +983,7 @@ function WalletPageContent() {
                           value={depositTxId}
                           onChange={(e) => setDepositTxId(e.target.value)}
                           placeholder="Paste OxaPay reference or transaction ID"
-                          className="w-full px-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono text-sm"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
                         />
                       </div>
 
@@ -996,7 +995,7 @@ function WalletPageContent() {
                           'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
                           demoFundingBlocked || depositSubmitting || !depositAmount
                             ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#00e676] text-black hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {depositSubmitting
@@ -1021,13 +1020,13 @@ function WalletPageContent() {
                             onChange={(e) => setDepositAmount(e.target.value)}
                             onBlur={() => void loadManualBankDetails()}
                             placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono font-bold text-lg"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
                           />
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-[#2a2a2a] bg-[#111] px-3 py-3 sm:px-4 space-y-2 min-w-0">
-                        <p className="text-xs font-bold text-white">Pay to this account (from admin)</p>
+                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-3 py-3 sm:px-4 space-y-2 min-w-0">
+                        <p className="text-xs font-bold text-text-primary">Pay to this account (from admin)</p>
                         {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.account_number) ? (
                           <div className="text-[11px] sm:text-xs text-[#aaa] font-mono min-w-0 space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
@@ -1085,7 +1084,7 @@ function WalletPageContent() {
                         <button
                           type="button"
                           onClick={() => void loadManualBankDetails()}
-                          className="text-[10px] font-semibold text-[#00e676] hover:underline"
+                          className="text-[10px] font-semibold text-[#2196f3] hover:underline"
                         >
                           Refresh bank details
                         </button>
@@ -1099,7 +1098,7 @@ function WalletPageContent() {
                           value={depositTxId}
                           onChange={(e) => setDepositTxId(e.target.value)}
                           placeholder="UTR or reference from your bank/UPI app"
-                          className="w-full px-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono text-sm"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
                         />
                       </div>
                       <div className="space-y-1 min-w-0">
@@ -1110,8 +1109,8 @@ function WalletPageContent() {
                           className={clsx(
                             'flex flex-col items-center justify-center w-full min-w-0 py-5 sm:py-6 px-2 rounded-xl border-2 border-dashed cursor-pointer transition-all',
                             depositProofFile
-                              ? 'border-[#00e676]/40 bg-[#00e676]/5'
-                              : 'border-[#2a2a2a] hover:border-[#00e676]/30',
+                              ? 'border-[#2196f3]/40 bg-[#2196f3]/5'
+                              : 'border-[#2a2a2a] hover:border-[#2196f3]/30',
                           )}
                         >
                           <input
@@ -1121,7 +1120,7 @@ function WalletPageContent() {
                             onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
                           />
                           {depositProofFile ? (
-                            <span className="text-sm font-medium text-[#00e676] px-2 text-center">{depositProofFile.name}</span>
+                            <span className="text-sm font-medium text-[#2196f3] px-2 text-center">{depositProofFile.name}</span>
                           ) : (
                             <span className="text-xs text-[#666]">JPG, PNG, PDF, WEBP — max 10 MB</span>
                           )}
@@ -1145,7 +1144,7 @@ function WalletPageContent() {
                             !depositTxId.trim() ||
                             !depositProofFile
                             ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#00e676] text-black hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {depositSubmitting ? 'Submitting…' : 'Submit manual deposit'}
@@ -1161,20 +1160,20 @@ function WalletPageContent() {
                       <ArrowUpFromLine className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Withdraw funds</h2>
+                      <h2 className="text-lg font-bold text-text-primary">Withdraw funds</h2>
                       <p className="text-sm text-text-secondary">Withdraw from your main wallet</p>
                     </div>
                   </div>
 
                   {/* Wallet balance */}
                   <div className="rounded-xl border border-border-primary bg-bg-secondary p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-white/40 mb-1">Wallet Balance</p>
-                    <p className="text-xl font-mono font-bold text-white tabular-nums">
+                    <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary mb-1">Wallet Balance</p>
+                    <p className="text-xl font-mono font-bold text-text-primary tabular-nums">
                       {fmt(wallet?.main_wallet_balance ?? 0)}
                     </p>
                   </div>
 
-                  <p className="text-xs text-white/50 leading-relaxed">
+                  <p className="text-xs text-text-tertiary leading-relaxed">
                     Withdrawals are sent from your <span className="text-white">main wallet</span> only. Ensure the amount
                     you need is available on the main wallet before requesting a payout.
                   </p>
@@ -1187,7 +1186,7 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         withdrawUiSection === 'crypto'
-                          ? 'bg-[#00e676] text-black'
+                          ? 'bg-accent text-white'
                           : 'text-white/60 hover:text-white',
                       )}
                     >
@@ -1199,7 +1198,7 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         withdrawUiSection === 'bank'
-                          ? 'bg-[#00e676] text-black'
+                          ? 'bg-accent text-white'
                           : 'text-white/60 hover:text-white',
                       )}
                     >
@@ -1210,16 +1209,16 @@ function WalletPageContent() {
                   {withdrawUiSection === 'crypto' ? (
                     <>
                       <div>
-                        <p className="text-xs text-white/50 mb-3 font-medium uppercase tracking-wide">Payment Method</p>
+                        <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">Payment Method</p>
                         {/* Featured selected coin */}
                         <div className="rounded-xl border border-border-primary bg-bg-secondary p-4 mb-2">
-                          <p className="text-base font-bold text-white font-mono flex items-center gap-2.5">
+                          <p className="text-base font-bold text-text-primary font-mono flex items-center gap-2.5">
                             <span className="text-xl leading-none" aria-hidden>
                               {selectedWithdrawCrypto.id === 'BTC' ? '₿' : '◆'}
                             </span>
                             <span>
                               {selectedWithdrawCrypto.label}{' '}
-                              <span className="text-white/40 text-sm font-normal">({selectedWithdrawCrypto.sub})</span>
+                              <span className="text-text-tertiary text-sm font-normal">({selectedWithdrawCrypto.sub})</span>
                             </span>
                           </p>
                         </div>
@@ -1229,10 +1228,10 @@ function WalletPageContent() {
                               key={c.id}
                               type="button"
                               onClick={() => setSelectedCryptoWithdraw(c.id)}
-                              className="rounded-xl border border-[#1e1e1e] bg-[#111] p-3.5 text-left transition-colors hover:border-[#2a2a2a] hover:bg-[#161616]"
+                              className="rounded-xl border border-border-primary bg-bg-secondary p-3.5 text-left transition-colors hover:border-border-secondary hover:bg-bg-hover"
                             >
-                              <div className="font-bold text-white font-mono text-sm">{c.label}</div>
-                              <div className="text-[11px] text-white/40 mt-0.5">({c.sub})</div>
+                              <div className="font-bold text-text-primary font-mono text-sm">{c.label}</div>
+                              <div className="text-[11px] text-text-tertiary mt-0.5">({c.sub})</div>
                             </button>
                           ))}
                         </div>
@@ -1246,7 +1245,7 @@ function WalletPageContent() {
                             onClick={() =>
                               setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
                             }
-                            className="text-xs font-bold text-[#00e676] hover:underline"
+                            className="text-xs font-bold text-[#2196f3] hover:underline"
                           >
                             Max
                           </button>
@@ -1260,7 +1259,7 @@ function WalletPageContent() {
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono font-bold text-lg"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
                           />
                         </div>
                       </div>
@@ -1276,7 +1275,7 @@ function WalletPageContent() {
                               : 'OxaPay ID, email, or instructions'
                           }
                           rows={3}
-                          className="w-full px-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 text-sm resize-none"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm resize-none"
                         />
                       </div>
                       <p className="text-[11px] text-[#666]">Processing time: up to 24 hours.</p>
@@ -1297,7 +1296,7 @@ function WalletPageContent() {
                             !withdrawAmount ||
                             !withdrawOxapayDetails.trim()
                             ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#00e676] text-black hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            : 'bg-[#2196f3] text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {withdrawSubmitting
@@ -1315,7 +1314,7 @@ function WalletPageContent() {
                             onClick={() =>
                               setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
                             }
-                            className="text-xs font-bold text-[#00e676] hover:underline"
+                            className="text-xs font-bold text-[#2196f3] hover:underline"
                           >
                             Max
                           </button>
@@ -1329,13 +1328,13 @@ function WalletPageContent() {
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono font-bold text-lg"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
                           />
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-[#2a2a2a] bg-[#111] px-4 py-3 space-y-2">
-                        <p className="text-xs font-bold text-white">Bank / UPI payout</p>
+                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-2">
+                        <p className="text-xs font-bold text-text-primary">Bank / UPI payout</p>
                         <p className="text-[11px] text-[#888] leading-relaxed">
                           Provide the UPI ID and/or upload a QR code. Finance processes after approval.
                         </p>
@@ -1347,7 +1346,7 @@ function WalletPageContent() {
                           value={manualWithdrawUpi}
                           onChange={(e) => setManualWithdrawUpi(e.target.value)}
                           placeholder="yourname@upi"
-                          className="w-full px-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 font-mono text-sm"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1357,7 +1356,7 @@ function WalletPageContent() {
                           value={manualWithdrawNotes}
                           onChange={(e) => setManualWithdrawNotes(e.target.value)}
                           placeholder="Account name, bank, etc."
-                          className="w-full px-4 py-3 rounded-xl border border-[#2a2a2a] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 text-sm"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1366,8 +1365,8 @@ function WalletPageContent() {
                           className={clsx(
                             'flex flex-col items-center justify-center w-full py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all',
                             manualWithdrawQrFile
-                              ? 'border-[#00e676]/40 bg-[#00e676]/5'
-                              : 'border-[#2a2a2a] hover:border-[#00e676]/30',
+                              ? 'border-[#2196f3]/40 bg-[#2196f3]/5'
+                              : 'border-[#2a2a2a] hover:border-[#2196f3]/30',
                           )}
                         >
                           <input
@@ -1377,7 +1376,7 @@ function WalletPageContent() {
                             onChange={(e) => setManualWithdrawQrFile(e.target.files?.[0] ?? null)}
                           />
                           {manualWithdrawQrFile ? (
-                            <span className="text-sm font-medium text-[#00e676] px-2 text-center">
+                            <span className="text-sm font-medium text-[#2196f3] px-2 text-center">
                               {manualWithdrawQrFile.name}
                             </span>
                           ) : (
@@ -1401,7 +1400,7 @@ function WalletPageContent() {
                             !withdrawAmount ||
                             (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
                             ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#00e676] text-black hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            : 'bg-[#2196f3] text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {withdrawSubmitting ? 'Submitting…' : 'Withdraw funds'}
@@ -1552,14 +1551,6 @@ function WalletPageContent() {
         </div>
       )}
 
-      <Link
-        href="/support"
-        className="fixed bottom-20 right-4 z-30 md:bottom-8 w-12 h-12 rounded-full bg-[#00e676] text-[#0a0a0a] shadow-lg shadow-[#00e676]/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-        aria-label="Support"
-      >
-        <MessageCircle className="w-6 h-6" strokeWidth={2} />
-      </Link>
-
     </DashboardShell>
   );
 }
@@ -1570,7 +1561,7 @@ export default function WalletPage() {
       fallback={
         <DashboardShell mainClassName="flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#888]">Loading wallet…</span>
           </div>
         </DashboardShell>

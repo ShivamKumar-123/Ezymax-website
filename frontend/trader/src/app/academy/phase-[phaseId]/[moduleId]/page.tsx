@@ -46,7 +46,7 @@ export default function AcademyModulePage() {
       <DashboardShell>
         <div className="page-main max-w-4xl mx-auto text-center py-20">
           <p className="text-text-secondary">Module not found</p>
-          <Link href="/academy" className="text-[#00e676] hover:underline text-sm mt-2 inline-block">
+          <Link href="/academy" className="text-[#2196f3] hover:underline text-sm mt-2 inline-block">
             ← Back to Academy
           </Link>
         </div>
@@ -77,10 +77,10 @@ export default function AcademyModulePage() {
 
   return (
     <DashboardShell>
-      <div className="page-main max-w-4xl mx-auto w-full pb-8" data-theme="dark">
+      <div className="page-main max-w-4xl mx-auto w-full pb-8">
         <Link
           href={`/academy/${phaseSlug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#00e676] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#00e676]/30"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#2196f3] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#2196f3]/30"
         >
           <ArrowLeft size={14} />
           BACK TO {phase.title}
@@ -94,7 +94,7 @@ export default function AcademyModulePage() {
               className={clsx(
                 'w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold transition-colors',
                 m.id === moduleId
-                  ? 'border-[#00e676] bg-[#00e676]/10 text-[#00e676]'
+                  ? 'border-[#2196f3] bg-[#2196f3]/10 text-[#2196f3]'
                   : 'border-border-glass text-text-tertiary hover:border-text-tertiary',
               )}
             >
@@ -105,13 +105,13 @@ export default function AcademyModulePage() {
 
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs px-2.5 py-1 rounded bg-[#00e676]/10 text-[#00e676] font-bold border border-[#00e676]/20">
+            <span className="text-xs px-2.5 py-1 rounded bg-[#2196f3]/10 text-[#2196f3] font-bold border border-[#2196f3]/20">
               MODULE {module.id}
             </span>
             <span className="text-xs text-text-tertiary">{module.minutes} min read</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">{module.title}</h1>
-          <div className="w-12 h-0.5 bg-[#00e676]" />
+          <h1 className="text-3xl font-bold text-text-primary mb-2">{module.title}</h1>
+          <div className="w-12 h-0.5 bg-[#2196f3]" />
         </div>
 
         {content && (
@@ -123,7 +123,7 @@ export default function AcademyModulePage() {
               <button
                 type="button"
                 onClick={toggleAll}
-                className="text-xs text-[#00e676] hover:underline font-medium uppercase tracking-wider"
+                className="text-xs text-[#2196f3] hover:underline font-medium uppercase tracking-wider"
               >
                 {allExpanded ? 'COLLAPSE ALL' : 'EXPAND ALL'}
               </button>
@@ -137,17 +137,17 @@ export default function AcademyModulePage() {
                     <button
                       type="button"
                       onClick={() => toggleTopic(topic.id)}
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-white/[0.02] transition-colors"
+                      className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-bg-hover transition-colors"
                     >
                       <span
-                        className="w-8 h-8 rounded-full border-2 border-[#00e676]/30 flex items-center justify-center text-xs font-bold shrink-0"
+                        className="w-8 h-8 rounded-full border-2 border-[#2196f3]/30 flex items-center justify-center text-xs font-bold shrink-0"
                         style={{ color: phase.color }}
                       >
                         {String(topic.id).padStart(2, '0')}
                       </span>
-                      <span className="text-white text-sm font-medium flex-1">{topic.title}</span>
+                      <span className="text-text-primary text-sm font-medium flex-1">{topic.title}</span>
                       {isOpen ? (
-                        <ChevronDown size={16} className="text-[#00e676] shrink-0" />
+                        <ChevronDown size={16} className="text-[#2196f3] shrink-0" />
                       ) : (
                         <ChevronRight size={16} className="text-text-tertiary shrink-0" />
                       )}
@@ -157,8 +157,8 @@ export default function AcademyModulePage() {
                       <div className="px-5 pb-5 border-t border-border-glass">
                         <div className="flex items-center justify-between mt-4 mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-0.5 bg-[#00e676]" />
-                            <span className="text-[10px] uppercase tracking-widest text-[#00e676] font-medium">
+                            <div className="w-6 h-0.5 bg-[#2196f3]" />
+                            <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-medium">
                               LESSON CONTENT
                             </span>
                           </div>
@@ -169,10 +169,10 @@ export default function AcademyModulePage() {
                           {topic.blocks.map((block: TopicBlock, bi: number) => {
                             if (block.type === 'definition') {
                               return (
-                                <div key={bi} className="border-l-2 border-[#00e676] bg-[#00e676]/5 rounded-r-lg p-4">
+                                <div key={bi} className="border-l-2 border-[#2196f3] bg-[#2196f3]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <BookOpen size={12} className="text-[#00e676]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#00e676] font-bold">
+                                    <BookOpen size={12} className="text-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
                                       DEFINITION
                                     </span>
                                   </div>
@@ -182,10 +182,10 @@ export default function AcademyModulePage() {
                             }
                             if (block.type === 'keyConcept') {
                               return (
-                                <div key={bi} className="border-l-2 border-[#00e676] bg-[#00e676]/5 rounded-r-lg p-4">
+                                <div key={bi} className="border-l-2 border-[#2196f3] bg-[#2196f3]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <KeyRound size={12} className="text-[#00e676]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#00e676] font-bold">
+                                    <KeyRound size={12} className="text-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
                                       KEY CONCEPT
                                     </span>
                                   </div>
@@ -197,8 +197,8 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi} className="bg-bg-secondary border border-border-glass rounded-xl p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <Lightbulb size={12} className="text-[#00e676]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#00e676] font-bold">
+                                    <Lightbulb size={12} className="text-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
                                       PRACTICE TIP
                                     </span>
                                   </div>
@@ -211,14 +211,14 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#00e676]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#00e676] font-bold">
+                                    <div className="w-6 h-0.5 bg-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
                                       {block.content}
                                     </span>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="bg-bg-secondary border border-border-glass rounded-xl p-4">
-                                      <h4 className="text-white font-semibold text-sm text-center mb-3">{left.title}</h4>
+                                      <h4 className="text-text-primary font-semibold text-sm text-center mb-3">{left.title}</h4>
                                       <ul className="space-y-1.5">
                                         {left.items.map((item, li) => (
                                           <li key={li} className="text-text-secondary text-sm flex items-start gap-1.5">
@@ -228,7 +228,7 @@ export default function AcademyModulePage() {
                                       </ul>
                                     </div>
                                     <div className="bg-bg-secondary border border-border-glass rounded-xl p-4">
-                                      <h4 className="text-white font-semibold text-sm text-center mb-3">{right.title}</h4>
+                                      <h4 className="text-text-primary font-semibold text-sm text-center mb-3">{right.title}</h4>
                                       <ul className="space-y-1.5">
                                         {right.items.map((item, ri) => (
                                           <li key={ri} className="text-text-secondary text-sm flex items-start gap-1.5">
@@ -255,12 +255,12 @@ export default function AcademyModulePage() {
               })}
             </div>
 
-            <div className="border-l-2 border-[#00e676] bg-bg-secondary rounded-r-xl p-5 mb-6">
-              <h3 className="text-[11px] uppercase tracking-widest text-[#00e676] font-bold mb-3">KEY TAKEAWAYS</h3>
+            <div className="border-l-2 border-[#2196f3] bg-bg-secondary rounded-r-xl p-5 mb-6">
+              <h3 className="text-[11px] uppercase tracking-widest text-[#2196f3] font-bold mb-3">KEY TAKEAWAYS</h3>
               <div className="space-y-2">
                 {content.keyTakeaways.map((t, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <CheckCircle size={14} className="text-[#00e676] mt-0.5 shrink-0" />
+                    <CheckCircle size={14} className="text-[#2196f3] mt-0.5 shrink-0" />
                     <p className="text-sm text-text-secondary">{t}</p>
                   </div>
                 ))}
@@ -275,7 +275,7 @@ export default function AcademyModulePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8">
               <button
                 type="button"
-                className="px-6 py-2.5 bg-[#00e676] hover:bg-[#00c853] text-black font-semibold rounded-lg transition-colors text-sm flex items-center gap-1.5 w-fit"
+                className="px-6 py-2.5 bg-[#2196f3] hover:bg-[#1976d2] text-white font-semibold rounded-lg transition-colors text-sm flex items-center gap-1.5 w-fit"
               >
                 MARK AS COMPLETE
                 <ArrowRight size={14} />
@@ -296,7 +296,7 @@ export default function AcademyModulePage() {
           {prevModule ? (
             <Link
               href={`/academy/${phaseSlug}/${prevModule.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-white hover:border-text-tertiary transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-text-primary hover:border-text-tertiary transition-colors"
             >
               <ArrowLeft size={14} />
               PREV
@@ -307,7 +307,7 @@ export default function AcademyModulePage() {
           {nextModule ? (
             <Link
               href={`/academy/${phaseSlug}/${nextModule.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-white hover:border-text-tertiary transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-text-primary hover:border-text-tertiary transition-colors"
             >
               NEXT MODULE
               <ArrowRight size={14} />
@@ -315,7 +315,7 @@ export default function AcademyModulePage() {
           ) : (
             <Link
               href={`/academy/${phaseSlug}/quiz`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#00e676] text-sm text-[#00e676] hover:bg-[#00e676]/10 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#2196f3] text-sm text-[#2196f3] hover:bg-[#2196f3]/10 transition-colors"
             >
               TAKE QUIZ
               <ArrowRight size={14} />

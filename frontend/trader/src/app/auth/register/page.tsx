@@ -127,7 +127,7 @@ function RegisterContent() {
 
   /* password strength */
   const strength = form.password.length >= 12 ? 4 : form.password.length >= 10 ? 3 : form.password.length >= 8 ? 2 : form.password.length > 0 ? 1 : 0;
-  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#00e676'];
+  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#2196f3'];
 
   /* ── Step change ── */
   const handleStepClick = (step: number) => {

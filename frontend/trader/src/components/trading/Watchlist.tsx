@@ -335,7 +335,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
 
   const rail =
     variant === 'terminalRail'
-      ? 'border-0 bg-[#0a0a0a]'
+      ? 'border-0 bg-bg-base'
       : 'border-r border-border-primary bg-bg-primary';
 
   return (
@@ -347,18 +347,18 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
       ) : null}
       {variant === 'terminalRail' ? (
         <>
-          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 bg-[#151820] border-b border-[#252a35]">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 bg-bg-secondary border-b border-border-primary">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div
                 className="w-8 h-8 rounded-full shrink-0 bg-gradient-to-br from-amber-400 to-blue-500"
                 aria-hidden
               />
-              <span className="text-sm font-bold text-white font-mono truncate">{selectedSymbol}</span>
+              <span className="text-sm font-bold text-text-primary font-mono truncate">{selectedSymbol}</span>
               <span className="text-base leading-none shrink-0" aria-hidden>
                 {SYMBOL_EMOJI[selectedSymbol] || '●'}
               </span>
-              <BellOff className="w-3.5 h-3.5 text-[#555] shrink-0" aria-hidden />
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#252a35] text-[#888] shrink-0">
+              <BellOff className="w-3.5 h-3.5 text-text-tertiary shrink-0" aria-hidden />
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-bg-hover text-text-secondary shrink-0">
                 DB
               </span>
             </div>
@@ -371,7 +371,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   setRailListExpanded((e) => !e);
                 }
               }}
-              className="shrink-0 p-1 rounded-md text-[#2962FF] hover:bg-[#2962FF]/10 transition-colors"
+              className="shrink-0 p-1 rounded-md text-accent hover:bg-accent/10 transition-colors"
               aria-expanded={onExitMarkets ? true : railListExpanded}
               aria-label={onExitMarkets ? 'Back to trade panel' : railListExpanded ? 'Collapse symbol list' : 'Expand symbol list'}
             >
@@ -385,10 +385,10 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
           </div>
           {onExitMarkets || railListExpanded ? (
             <>
-              <div className="p-3 shrink-0 border-b border-[#1a1a1a]">
+              <div className="p-3 shrink-0 border-b border-border-primary">
                 <div className="relative">
                   <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-[#666]"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-text-tertiary"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -406,7 +406,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search symbols…"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-[#1e1e1e] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#2962FF]/50 focus:ring-1 focus:ring-[#2962FF]/20"
+                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
                   />
                 </div>
               </div>
@@ -416,7 +416,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   if (syms.length === 0) return null;
                   return (
                     <div key={group}>
-                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5c6370] border-t border-[#222831] first:border-t-0 bg-[#0c0d12]">
+                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-text-tertiary border-t border-border-primary first:border-t-0 bg-bg-secondary">
                         {group}
                       </div>
                       {syms.map((symbol) => {
@@ -431,8 +431,8 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                             className={clsx(
                               'w-full flex items-center justify-between gap-2 pl-0 pr-3 py-2.5 text-left border-l-[3px] transition-colors',
                               sel
-                                ? 'border-l-[#2962FF] bg-[#1a2438]'
-                                : 'border-l-transparent hover:bg-[#14181f]',
+                                ? 'border-l-accent bg-accent/10'
+                                : 'border-l-transparent hover:bg-bg-hover',
                             )}
                           >
                             <div className="flex items-center gap-2 min-w-0 pl-3">
@@ -440,7 +440,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                                 className="w-6 h-6 rounded-full shrink-0 bg-gradient-to-br from-amber-400/90 to-blue-500/90"
                                 aria-hidden
                               />
-                              <span className="text-sm font-bold text-white font-mono">{symbol}</span>
+                              <span className="text-sm font-bold text-text-primary font-mono">{symbol}</span>
                               <span className="text-sm leading-none opacity-90 shrink-0">
                                 {SYMBOL_EMOJI[symbol] || '·'}
                               </span>
@@ -452,21 +452,21 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                                     {tick.bid.toFixed(digits)}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-[#555]">—</span>
+                                  <span className="text-xs text-text-tertiary">—</span>
                                 )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
                                   Bid
                                 </span>
                               </div>
                               <div className="flex flex-col items-end gap-0.5">
                                 {tick ? (
-                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#00e676]">
+                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#2196f3]">
                                     {tick.ask.toFixed(digits)}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-[#555]">—</span>
+                                  <span className="text-xs text-text-tertiary">—</span>
                                 )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
                                   Ask
                                 </span>
                               </div>

@@ -472,7 +472,7 @@ function PortfolioPageContent() {
 
       <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading portfolio...</span>
         </div>
       </DashboardShell>
@@ -512,27 +512,27 @@ function PortfolioPageContent() {
 
   return (
 
-    <DashboardShell mainClassName="bg-[#050505]">
-      <div className="page-main space-y-4 sm:space-y-6 text-white">
+    <DashboardShell>
+      <div className="page-main space-y-4 sm:space-y-6 text-text-primary">
 
-        <h2 className="text-lg font-semibold text-zinc-200">
+        <h2 className="text-lg font-semibold text-text-primary">
           {validAccountId ? 'Trading journal' : 'Portfolio'}
         </h2>
 
         {invalidAccountParam ? (
-          <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-text-primary">
             Invalid account id in the URL — showing your full portfolio.{' '}
-            <Link href="/portfolio" className="font-semibold text-[#00e676] underline underline-offset-2 hover:text-[#00c853]">
+            <Link href="/portfolio" className="font-semibold text-[#2196f3] underline underline-offset-2 hover:text-[#1976d2]">
               Reset
             </Link>
           </div>
         ) : null}
 
         {validAccountId ? (
-          <div className="rounded-xl border border-[#00e676]/30 bg-[#00e676]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-xl border border-[#2196f3]/30 bg-[#2196f3]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#00e676]">Account scope</p>
-              <p className="text-sm text-white mt-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2196f3]">Account scope</p>
+              <p className="text-sm text-text-primary mt-0.5">
                 Journal and trade list for{' '}
                 <span className="font-mono font-semibold">
                   {accountNoLabel ? `#${accountNoLabel}` : validAccountId.slice(0, 8) + '…'}
@@ -541,7 +541,7 @@ function PortfolioPageContent() {
             </div>
             <Link
               href="/portfolio"
-              className="text-xs font-semibold text-[#00e676] hover:text-[#00c853] underline underline-offset-2 shrink-0"
+              className="text-xs font-semibold text-[#2196f3] hover:text-[#1976d2] underline underline-offset-2 shrink-0"
             >
               View all accounts
             </Link>
@@ -549,7 +549,7 @@ function PortfolioPageContent() {
         ) : null}
 
         {journalBlock ? (
-          <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4 md:p-6">
+          <div className="rounded-xl border border-border-primary bg-bg-card p-4 md:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
             <TradingJournalSection journal={journalBlock} title="Trading Journal" />
           </div>
         ) : null}
@@ -1144,7 +1144,7 @@ export default function PortfolioPage() {
       fallback={(
         <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#888]">Loading portfolio...</span>
           </div>
         </DashboardShell>

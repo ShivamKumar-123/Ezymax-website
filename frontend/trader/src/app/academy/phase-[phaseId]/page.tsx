@@ -25,7 +25,7 @@ export default function AcademyPhasePage() {
       <DashboardShell>
         <div className="page-main max-w-4xl mx-auto text-center py-20">
           <p className="text-text-secondary">Phase not found</p>
-          <Link href="/academy" className="text-[#00e676] hover:underline text-sm mt-2 inline-block">
+          <Link href="/academy" className="text-[#2196f3] hover:underline text-sm mt-2 inline-block">
             ← Back to Academy
           </Link>
         </div>
@@ -35,10 +35,10 @@ export default function AcademyPhasePage() {
 
   return (
     <DashboardShell>
-      <div className="page-main max-w-4xl mx-auto w-full pb-8" data-theme="dark">
+      <div className="page-main max-w-4xl mx-auto w-full pb-8">
         <Link
           href="/academy"
-          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#00e676] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#00e676]/30"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#2196f3] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#2196f3]/30"
         >
           <ArrowLeft size={14} />
           BACK TO ACADEMY
@@ -56,7 +56,7 @@ export default function AcademyPhasePage() {
               </span>
             )}
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">{phase.title}</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-1">{phase.title}</h1>
           <p className="text-sm text-text-secondary italic">{phase.subtitle}</p>
         </div>
 
@@ -69,7 +69,7 @@ export default function AcademyPhasePage() {
               className={clsx(
                 'text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider',
                 phase.level === 'BEGINNER'
-                  ? 'bg-[#00e676]/10 text-[#00e676] border-[#00e676]/20'
+                  ? 'bg-[#2196f3]/10 text-[#2196f3] border-[#2196f3]/20'
                   : 'bg-amber-500/10 text-amber-400 border-amber-500/20',
               )}
             >
@@ -104,7 +104,7 @@ export default function AcademyPhasePage() {
                         {module.id}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-white font-semibold">{module.title}</h3>
+                        <h3 className="text-text-primary font-semibold">{module.title}</h3>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-xs text-text-tertiary">{module.topics} topics</span>
                           <span className="text-xs text-text-tertiary">{module.minutes} min</span>
@@ -112,7 +112,7 @@ export default function AcademyPhasePage() {
                             className={clsx(
                               'text-[9px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wider',
                               module.level === 'BEGINNER'
-                                ? 'bg-[#00e676]/10 text-[#00e676]'
+                                ? 'bg-[#2196f3]/10 text-[#2196f3]'
                                 : 'bg-amber-500/10 text-amber-400',
                             )}
                           >
@@ -121,7 +121,7 @@ export default function AcademyPhasePage() {
                         </div>
                       </div>
                     </div>
-                    <ArrowRight size={16} className="text-text-tertiary group-hover:text-[#00e676] transition-colors shrink-0" />
+                    <ArrowRight size={16} className="text-text-tertiary group-hover:text-[#2196f3] transition-colors shrink-0" />
                   </div>
                 </Link>
                 {i < phase.modules.length - 1 && (
@@ -135,16 +135,16 @@ export default function AcademyPhasePage() {
         )}
 
         {phase.quiz && phase.modules.length > 0 && (
-          <div className="mt-6 bg-bg-secondary border border-[#00e676]/20 rounded-xl p-5">
+          <div className="mt-6 bg-bg-secondary border border-[#2196f3]/20 rounded-xl p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-[#00e676] font-medium mb-1">KNOWLEDGE CHECK</p>
-                <h3 className="text-lg font-bold text-white">{phase.quiz.title}</h3>
+                <p className="text-[10px] uppercase tracking-widest text-[#2196f3] font-medium mb-1">KNOWLEDGE CHECK</p>
+                <h3 className="text-lg font-bold text-text-primary">{phase.quiz.title}</h3>
                 <p className="text-xs text-text-tertiary mt-0.5">{phase.quiz.questions.length} questions</p>
               </div>
               <Link
                 href={`/academy/${slug}/quiz`}
-                className="px-4 py-2 rounded-lg bg-[#00e676] hover:bg-[#00c853] text-black text-sm font-semibold transition-colors text-center"
+                className="px-4 py-2 rounded-lg bg-[#2196f3] hover:bg-[#1976d2] text-white text-sm font-semibold transition-colors text-center"
               >
                 Start Quiz
               </Link>

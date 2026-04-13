@@ -256,19 +256,19 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
   };
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-[#0a0a0a] text-white">
+    <div className="h-full min-h-0 flex flex-col bg-bg-base text-text-primary">
       {/* Top toolbar — view toggle + search + segment dropdown + star */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-[#1a1a1a] bg-[#0c0d12]">
+      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-border-primary bg-bg-secondary">
         {/* View toggle: Instruments / News */}
-        <div className="flex items-center gap-1 shrink-0 rounded-lg border border-[#1e1e1e] bg-[#111] p-0.5">
+        <div className="flex items-center gap-1 shrink-0 rounded-lg border border-border-primary bg-bg-secondary p-0.5">
           <button
             type="button"
             onClick={() => setView('instruments')}
             className={clsx(
               'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors',
               view === 'instruments'
-                ? 'bg-[#00e676]/15 text-[#00e676]'
-                : 'text-[#666] hover:text-white',
+                ? 'bg-accent/15 text-accent'
+                : 'text-text-tertiary hover:text-text-primary',
             )}
             aria-label="Instruments"
           >
@@ -282,7 +282,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
             }}
             className={clsx(
               'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors',
-              view === 'news' ? 'bg-[#00e676]/15 text-[#00e676]' : 'text-[#666] hover:text-white',
+              view === 'news' ? 'bg-accent/15 text-accent' : 'text-text-tertiary hover:text-text-primary',
             )}
             aria-label="News"
           >
@@ -292,13 +292,13 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
 
         {/* Search */}
         <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#555]" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[#1e1e1e] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 focus:ring-1 focus:ring-[#00e676]/20"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
           />
         </div>
 
@@ -307,15 +307,15 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
           <button
             type="button"
             onClick={() => setSegOpen((p) => !p)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#1e1e1e] bg-[#111] text-white hover:border-[#2a2a2a] transition-colors min-w-[110px] justify-between"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-border-primary bg-bg-secondary text-text-primary hover:border-border-secondary transition-colors min-w-[110px] justify-between"
           >
             <span>{segment}</span>
             <ChevronDown
-              className={clsx('w-3.5 h-3.5 text-[#666] transition-transform', segOpen && 'rotate-180')}
+              className={clsx('w-3.5 h-3.5 text-text-tertiary transition-transform', segOpen && 'rotate-180')}
             />
           </button>
           {segOpen && (
-            <div className="absolute right-0 top-full mt-1 w-[140px] rounded-lg border border-[#1e1e1e] bg-[#0e0e0e] shadow-2xl z-50 py-1">
+            <div className="absolute right-0 top-full mt-1 w-[140px] rounded-lg border border-border-primary bg-bg-card shadow-2xl z-50 py-1">
               {SEGMENTS.map((s) => (
                 <button
                   key={s}
@@ -327,8 +327,8 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   className={clsx(
                     'w-full text-left px-3 py-1.5 text-xs transition-colors',
                     s === segment
-                      ? 'bg-[#00e676]/10 text-[#00e676] font-bold'
-                      : 'text-[#ccc] hover:bg-white/5',
+                      ? 'bg-accent/10 text-accent font-bold'
+                      : 'text-text-secondary hover:bg-bg-hover',
                   )}
                 >
                   {s}
@@ -345,8 +345,8 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
           className={clsx(
             'shrink-0 p-1.5 rounded-lg border transition-colors',
             starredOnly
-              ? 'bg-[#00e676]/10 border-[#00e676]/40 text-[#00e676]'
-              : 'bg-[#111] border-[#1e1e1e] text-[#666] hover:text-white',
+              ? 'bg-accent/10 border-accent/40 text-accent'
+              : 'bg-bg-secondary border-border-primary text-text-tertiary hover:text-text-primary',
           )}
           aria-label="Show starred only"
         >
@@ -355,7 +355,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
       </div>
 
       {/* Table header */}
-      <div className="shrink-0 grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#666] border-b border-[#1a1a1a] bg-[#0c0d12]">
+      <div className="shrink-0 grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-b border-border-primary bg-bg-secondary">
         <div>Instruments</div>
         <div className="text-right">Bid</div>
         <div className="text-right">Ask</div>
@@ -369,7 +369,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
       {/* Table rows */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         {rows.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-xs text-[#555]">
+          <div className="flex items-center justify-center h-full text-xs text-text-tertiary">
             No instruments match
           </div>
         ) : (
@@ -393,10 +393,10 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                 type="button"
                 onClick={() => handleRowClick(symbol)}
                 className={clsx(
-                  'w-full grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2.5 text-left border-b border-[#141414] transition-colors items-center',
+                  'w-full grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2.5 text-left border-b border-border-primary transition-colors items-center',
                   sel
-                    ? 'bg-[#00e676]/[0.06] border-l-[3px] border-l-[#00e676] pl-[9px]'
-                    : 'border-l-[3px] border-l-transparent hover:bg-white/[0.03]',
+                    ? 'bg-accent/[0.06] border-l-[3px] border-l-accent pl-[9px]'
+                    : 'border-l-[3px] border-l-transparent hover:bg-bg-hover',
                 )}
               >
                 {/* Instruments — star + dot + symbol + flag */}
@@ -408,7 +408,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleStar(symbol, e as any); }}
                     className={clsx(
                       'shrink-0 transition-colors cursor-pointer',
-                      isStarred ? 'text-[#00e676]' : 'text-[#333] hover:text-[#666]',
+                      isStarred ? 'text-accent' : 'text-text-tertiary/50 hover:text-text-tertiary',
                     )}
                     aria-label="Star"
                   >
@@ -421,7 +421,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                     )}
                     aria-hidden
                   />
-                  <span className="text-[13px] font-bold text-white font-mono truncate">{symbol}</span>
+                  <span className="text-[13px] font-bold text-text-primary font-mono truncate">{symbol}</span>
                   {flag && <span className="text-xs leading-none shrink-0">{flag}</span>}
                 </div>
 
@@ -430,10 +430,10 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
                     bFlash === 'up'
-                      ? 'text-[#00e676]'
+                      ? 'text-[#2196f3]'
                       : bFlash === 'down'
                         ? 'text-[#ef5350]'
-                        : 'text-[#00e676]',
+                        : 'text-[#2196f3]',
                   )}
                 >
                   {tick ? tick.bid.toFixed(digits) : '—'}
@@ -444,37 +444,37 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
                     aFlash === 'up'
-                      ? 'text-[#00e676]'
+                      ? 'text-[#2196f3]'
                       : aFlash === 'down'
                         ? 'text-[#ef5350]'
-                        : 'text-[#00e676]',
+                        : 'text-[#2196f3]',
                   )}
                 >
                   {tick ? tick.ask.toFixed(digits) : '—'}
                 </div>
 
                 {/* Spread */}
-                <div className="text-right text-[12px] font-mono text-[#888] tabular-nums">
+                <div className="text-right text-[12px] font-mono text-text-secondary tabular-nums">
                   {spread != null ? spread.toFixed(1) : '—'}
                 </div>
 
                 {/* Leverage */}
-                <div className="text-right text-[12px] font-mono text-[#888] tabular-nums">
+                <div className="text-right text-[12px] font-mono text-text-secondary tabular-nums">
                   {leverage}
                 </div>
 
                 {/* Day High */}
-                <div className="text-right text-[12px] font-mono text-[#888] tabular-nums">
+                <div className="text-right text-[12px] font-mono text-text-secondary tabular-nums">
                   {dayHigh != null ? dayHigh.toFixed(digits) : '—'}
                 </div>
 
                 {/* Day Low */}
-                <div className="text-right text-[12px] font-mono text-[#888] tabular-nums">
+                <div className="text-right text-[12px] font-mono text-text-secondary tabular-nums">
                   {dayLow != null ? dayLow.toFixed(digits) : '—'}
                 </div>
 
                 {/* Description */}
-                <div className="text-[12px] text-[#888] truncate">{desc}</div>
+                <div className="text-[12px] text-text-secondary truncate">{desc}</div>
               </button>
             );
           })

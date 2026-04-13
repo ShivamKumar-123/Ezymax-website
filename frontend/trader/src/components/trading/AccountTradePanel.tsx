@@ -227,44 +227,43 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
   const isConnected = wsStatus === 'connected';
 
   return (
-    <div className="rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] overflow-hidden mt-3 trade-panel-enter">
+    <div className="rounded-xl border border-border-primary bg-bg-base overflow-hidden mt-3 trade-panel-enter">
       {/* ═══ Header ═══ */}
-      <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: '1px solid #1a1a1a', background: '#0e0e0e' }}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-primary bg-bg-secondary">
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: marketStatus.isOpen ? '#00e676' : '#ef5350' }} />
-          <span className="text-sm font-bold text-white tracking-tight">Trade</span>
-          <span className="text-[11px] text-[#555] font-mono">#{account.account_number}</span>
+          <div className="w-2 h-2 rounded-full" style={{ background: marketStatus.isOpen ? '#2196f3' : '#ef5350' }} />
+          <span className="text-sm font-bold text-text-primary tracking-tight">Trade</span>
+          <span className="text-[11px] text-text-tertiary font-mono">#{account.account_number}</span>
         </div>
-        <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-[#555] hover:text-white hover:bg-white/5 transition-colors">
+        <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors">
           <X size={14} />
         </button>
       </div>
 
       <div className="flex flex-col lg:flex-row">
         {/* ═══ ORDER PANEL (left/top) ═══ */}
-        <div className="flex-1 min-w-0" style={{ borderRight: '1px solid #1a1a1a' }}>
+        <div className="flex-1 min-w-0 border-r border-border-primary">
           <div className="p-3 space-y-3">
             {/* Symbol Picker */}
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setSymbolPickerOpen((v) => !v)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
-                style={{ background: '#111', border: '1px solid #1e1e1e' }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-bg-hover transition-colors bg-bg-secondary border border-border-primary"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: 'linear-gradient(135deg, #ffb300, #42a5f5)' }} />
-                  <span className="text-sm font-bold text-white font-mono">{selectedSymbol}</span>
+                  <span className="text-sm font-bold text-text-primary font-mono">{selectedSymbol}</span>
                   {/* Live price badge */}
                   {tick && (
-                    <span className="text-[10px] font-mono text-[#666]">
+                    <span className="text-[10px] font-mono text-text-tertiary">
                       {tick.bid.toFixed(digits)} / {tick.ask.toFixed(digits)}
                     </span>
                   )}
                   {isConnected ? (
                     <span className="flex items-center gap-1" title="Live prices">
-                      <Wifi size={10} className="text-[#00e676]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00e676] animate-pulse" />
+                      <Wifi size={10} className="text-[#2196f3]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2196f3] animate-pulse" />
                     </span>
                   ) : (
                     <span className="flex items-center gap-1" title="Disconnected">
@@ -272,11 +271,11 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                     </span>
                   )}
                 </div>
-                <ChevronDown size={14} className={clsx('text-[#555] transition-transform', symbolPickerOpen && 'rotate-180')} />
+                <ChevronDown size={14} className={clsx('text-text-tertiary transition-transform', symbolPickerOpen && 'rotate-180')} />
               </button>
 
               {symbolPickerOpen && (
-                <div className="absolute left-0 right-0 z-50 mt-1 rounded-lg overflow-y-auto shadow-2xl" style={{ maxHeight: '220px', background: '#0e0e0e', border: '1px solid #1e1e1e' }}>
+                <div className="absolute left-0 right-0 z-50 mt-1 rounded-lg overflow-y-auto shadow-2xl max-h-[220px] bg-bg-card border border-border-primary">
                   {displaySymbols.map((sym) => {
                     const t = prices[sym];
                     const d = getDigits(sym);
@@ -287,15 +286,15 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                         onClick={() => { setSelectedSymbol(sym); setSymbolPickerOpen(false); setStopLoss(''); setTakeProfit(''); }}
                         className={clsx(
                           'w-full flex items-center justify-between px-3 py-2 text-left transition-colors',
-                          sym === selectedSymbol ? 'bg-[#00e676]/8' : 'hover:bg-white/[0.03]',
+                          sym === selectedSymbol ? 'bg-accent/[0.08]' : 'hover:bg-bg-hover',
                         )}
-                        style={{ borderLeft: sym === selectedSymbol ? '2px solid #00e676' : '2px solid transparent' }}
+                        style={{ borderLeft: sym === selectedSymbol ? '2px solid #2196f3' : '2px solid transparent' }}
                       >
-                        <span className="text-xs font-bold text-white font-mono">{sym}</span>
+                        <span className="text-xs font-bold text-text-primary font-mono">{sym}</span>
                         {t && (
                           <div className="flex items-center gap-3">
                             <span className="text-[10px] font-mono text-red-400">{t.bid.toFixed(d)}</span>
-                            <span className="text-[10px] font-mono text-[#00e676]">{t.ask.toFixed(d)}</span>
+                            <span className="text-[10px] font-mono text-[#2196f3]">{t.ask.toFixed(d)}</span>
                           </div>
                         )}
                       </button>
@@ -306,7 +305,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
             </div>
 
             {/* Market / Pending tabs */}
-            <div className="flex" style={{ borderBottom: '1px solid #1a1a1a' }}>
+            <div className="flex border-b border-border-primary">
               {(['market', 'pending'] as const).map((t) => (
                 <button
                   key={t}
@@ -314,8 +313,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   onClick={() => setOrderTab(t)}
                   className="flex-1 py-2 text-xs font-semibold capitalize transition-all"
                   style={{
-                    borderBottom: orderTab === t ? '2px solid #00e676' : '2px solid transparent',
-                    color: orderTab === t ? '#fff' : '#555',
+                    borderBottom: orderTab === t ? '2px solid var(--accent, #2196f3)' : '2px solid transparent',
+                    color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   }}
                 >
                   {t}
@@ -342,8 +341,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 onClick={() => setSide('buy')}
                 className="py-3 rounded-lg text-center transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  background: side === 'buy' ? '#00e676' : 'rgba(0,230,118,0.12)',
-                  color: side === 'buy' ? '#000' : '#00e676',
+                  background: side === 'buy' ? '#2196f3' : 'rgba(33,150,243,0.12)',
+                  color: side === 'buy' ? '#000' : '#2196f3',
                 }}
               >
                 <div className="text-xs font-bold">Buy</div>
@@ -356,57 +355,57 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               <div className="flex items-center justify-between px-1">
                 <div className="text-center">
                   <div className="text-xs font-mono font-semibold text-red-400">{tick.bid.toFixed(digits)}</div>
-                  <div className="text-[9px] text-[#444]">Bid</div>
+                  <div className="text-[9px] text-text-tertiary">Bid</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-[10px] font-mono text-[#666]">
+                  <div className="text-[10px] font-mono text-text-tertiary">
                     {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(1)}
                   </div>
-                  <div className="text-[9px] text-[#444]">Spread</div>
+                  <div className="text-[9px] text-text-tertiary">Spread</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs font-mono font-semibold text-[#00e676]">{tick.ask.toFixed(digits)}</div>
-                  <div className="text-[9px] text-[#444]">Ask</div>
+                  <div className="text-xs font-mono font-semibold text-[#2196f3]">{tick.ask.toFixed(digits)}</div>
+                  <div className="text-[9px] text-text-tertiary">Ask</div>
                 </div>
               </div>
             )}
 
             {/* SL / TP toggles */}
-            <div className="flex items-center gap-4" style={{ borderTop: '1px solid #151515', paddingTop: '10px' }}>
+            <div className="flex items-center gap-4 border-t border-border-primary pt-2.5">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <div
                   onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
                   className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer"
-                  style={{ background: slEnabled ? '#ef5350' : '#222' }}
+                  style={{ background: slEnabled ? '#ef5350' : 'var(--bg-secondary)' }}
                 >
                   <div className="absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: slEnabled ? '16px' : '3px' }} />
                 </div>
-                <span className="text-[10px] text-[#666]">SL</span>
+                <span className="text-[10px] text-text-secondary">SL</span>
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <div
                   onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
                   className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer"
-                  style={{ background: tpEnabled ? '#00e676' : '#222' }}
+                  style={{ background: tpEnabled ? '#2196f3' : 'var(--bg-secondary)' }}
                 >
                   <div className="absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: tpEnabled ? '16px' : '3px' }} />
                 </div>
-                <span className="text-[10px] text-[#666]">TP</span>
+                <span className="text-[10px] text-text-secondary">TP</span>
               </label>
-              <div className="ml-auto text-[9px] font-mono text-[#444]">1:{account.leverage}</div>
+              <div className="ml-auto text-[9px] font-mono text-text-tertiary">1:{account.leverage}</div>
             </div>
 
             {/* Volume */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#555]">Volume</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">Volume</span>
                 <div className="flex gap-0.5">
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium" style={{ background: '#181818', color: '#aaa' }}>Lots</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-[#444] cursor-pointer hover:text-[#888] transition-colors">Units</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-bg-hover text-text-secondary">Lots</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-text-tertiary cursor-pointer hover:text-text-secondary transition-colors">Units</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={() => adjustLots(-0.01)} className="w-8 h-9 rounded-lg flex items-center justify-center transition-colors text-[#666] hover:text-white" style={{ background: '#141414', border: '1px solid #1e1e1e' }}>
+                <button type="button" onClick={() => adjustLots(-0.01)} className="w-8 h-9 rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary">
                   <Minus size={12} />
                 </button>
                 <input
@@ -415,10 +414,9 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   onChange={(e) => setLots(parseFloat(e.target.value) || 0.01)}
                   step={0.01}
                   min={0.01}
-                  className="flex-1 text-center text-sm font-mono font-bold py-2 rounded-lg focus:outline-none"
-                  style={{ background: '#141414', border: '1px solid #1e1e1e', color: '#e8eaed' }}
+                  className="flex-1 text-center text-sm font-mono font-bold py-2 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary"
                 />
-                <button type="button" onClick={() => adjustLots(0.01)} className="w-8 h-9 rounded-lg flex items-center justify-center transition-colors text-[#666] hover:text-white" style={{ background: '#141414', border: '1px solid #1e1e1e' }}>
+                <button type="button" onClick={() => adjustLots(0.01)} className="w-8 h-9 rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary">
                   <Plus size={12} />
                 </button>
               </div>
@@ -435,7 +433,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   step={execPrice > 100 ? 0.01 : 0.00001}
                   placeholder={`e.g. ${(execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits)}`}
                   className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none"
-                  style={{ background: '#141414', border: '1px solid rgba(239,83,80,0.25)', color: '#ef5350' }}
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(239,83,80,0.25)', color: '#ef5350' }}
                 />
               </div>
             )}
@@ -443,7 +441,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
             {/* TP input */}
             {tpEnabled && (
               <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#00e676] mb-1 block">Take Profit</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2196f3] mb-1 block">Take Profit</span>
                 <input
                   type="number"
                   value={takeProfit}
@@ -451,21 +449,21 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   step={execPrice > 100 ? 0.01 : 0.00001}
                   placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
                   className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none"
-                  style={{ background: '#141414', border: '1px solid rgba(0,230,118,0.25)', color: '#00e676' }}
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(33,150,243,0.25)', color: '#2196f3' }}
                 />
               </div>
             )}
 
             {/* Order summary */}
-            <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: '#0e0e0e', border: `1px solid ${!hasEnoughMargin ? 'rgba(239,83,80,0.3)' : '#1a1a1a'}` }}>
+            <div className="rounded-xl p-2.5 space-y-1.5 bg-bg-secondary" style={{ border: `1px solid ${!hasEnoughMargin ? 'rgba(239,83,80,0.3)' : 'var(--border-primary)'}` }}>
               {[
-                { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: '#e8eaed' },
-                { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#e8eaed' },
-                { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#00e676' },
-                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#00e676' : '#f57c00' },
+                { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
+                { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-primary)' },
+                { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#2196f3' },
+                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#2196f3' : '#f57c00' },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between">
-                  <span className="text-[10px]" style={{ color: '#555' }}>{row.label}</span>
+                  <span className="text-[10px] text-text-tertiary">{row.label}</span>
                   <span className="text-[11px] font-mono" style={{ color: row.color }}>{row.value}</span>
                 </div>
               ))}
@@ -483,9 +481,9 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               disabled={submitting || !hasEnoughMargin || (orderTab === 'market' && !marketStatus.isOpen)}
               className="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               style={{
-                background: side === 'buy' ? '#00e676' : '#ef5350',
+                background: side === 'buy' ? '#2196f3' : '#ef5350',
                 color: side === 'buy' ? '#000' : '#fff',
-                boxShadow: side === 'buy' ? '0 4px 20px rgba(0,230,118,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
+                boxShadow: side === 'buy' ? '0 4px 20px rgba(33,150,243,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
               }}
             >
               {submitting ? (
@@ -510,18 +508,18 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
         </div>
 
         {/* ═══ POSITIONS PANEL (right/bottom) ═══ */}
-        <div className="lg:w-[340px] shrink-0" style={{ borderTop: '1px solid #1a1a1a' }}>
-          <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid #1a1a1a', background: '#0c0c0c' }}>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#555]">Open Positions</span>
-            <span className="text-[9px] font-mono text-[#444]">{positions.length}</span>
+        <div className="lg:w-[340px] shrink-0 border-t border-border-primary">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border-primary bg-bg-secondary">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Open Positions</span>
+            <span className="text-[9px] font-mono text-text-tertiary">{positions.length}</span>
           </div>
 
           {posLoading && positions.length === 0 ? (
             <div className="flex items-center justify-center py-6">
-              <div className="w-4 h-4 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : positions.length === 0 ? (
-            <div className="text-center py-6 text-[11px] text-[#444]">No open positions</div>
+            <div className="text-center py-6 text-[11px] text-text-tertiary">No open positions</div>
           ) : (
             <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
               {positions.map((pos) => {
@@ -534,30 +532,29 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                     ? (cp - pos.open_price) * pos.lots * cs
                     : (pos.open_price - cp) * pos.lots * cs
                   : pos.profit;
-                const pnlColor = livePnl >= 0 ? '#00e676' : '#ef5350';
+                const pnlColor = livePnl >= 0 ? '#2196f3' : '#ef5350';
                 const d = getDigits(pos.symbol);
 
                 return (
                   <div
                     key={pos.id}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-white/[0.02] transition-colors"
-                    style={{ borderBottom: '1px solid #131313' }}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-bg-hover transition-colors border-b border-border-primary"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span
                           className="text-[9px] font-bold uppercase px-1 py-0.5 rounded"
                           style={{
-                            background: pos.side === 'buy' ? 'rgba(0,230,118,0.12)' : 'rgba(239,83,80,0.12)',
-                            color: pos.side === 'buy' ? '#00e676' : '#ef5350',
+                            background: pos.side === 'buy' ? 'rgba(33,150,243,0.12)' : 'rgba(239,83,80,0.12)',
+                            color: pos.side === 'buy' ? '#2196f3' : '#ef5350',
                           }}
                         >
                           {pos.side}
                         </span>
-                        <span className="text-[11px] font-bold text-white font-mono">{pos.symbol}</span>
-                        <span className="text-[9px] text-[#555] font-mono">{pos.lots}</span>
+                        <span className="text-[11px] font-bold text-text-primary font-mono">{pos.symbol}</span>
+                        <span className="text-[9px] text-text-tertiary font-mono">{pos.lots}</span>
                       </div>
-                      <div className="text-[9px] text-[#444] font-mono mt-0.5">
+                      <div className="text-[9px] text-text-tertiary font-mono mt-0.5">
                         Open: {pos.open_price.toFixed(d)}
                         {cp > 0 && <span className="ml-2">Now: {cp.toFixed(d)}</span>}
                       </div>
@@ -574,16 +571,16 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
           )}
 
           {/* Account summary footer */}
-          <div className="px-3 py-2 space-y-1" style={{ borderTop: '1px solid #1a1a1a', background: '#0c0c0c' }}>
+          <div className="px-3 py-2 space-y-1 border-t border-border-primary bg-bg-secondary">
             {[
               { label: 'Balance', value: `$${account.balance.toFixed(2)}` },
               { label: 'Equity', value: `$${account.equity.toFixed(2)}` },
               { label: 'Margin Used', value: `$${account.margin_used.toFixed(2)}` },
-              { label: 'Free Margin', value: `$${account.free_margin.toFixed(2)}`, color: '#00e676' },
+              { label: 'Free Margin', value: `$${account.free_margin.toFixed(2)}`, color: '#2196f3' },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between">
-                <span className="text-[9px] text-[#444]">{r.label}</span>
-                <span className="text-[10px] font-mono tabular-nums" style={{ color: r.color || '#e8eaed' }}>{r.value}</span>
+                <span className="text-[9px] text-text-tertiary">{r.label}</span>
+                <span className="text-[10px] font-mono tabular-nums" style={{ color: r.color || 'var(--text-primary)' }}>{r.value}</span>
               </div>
             ))}
           </div>

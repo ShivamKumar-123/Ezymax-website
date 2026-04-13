@@ -33,7 +33,7 @@ export default function AcademyQuizPage() {
       <DashboardShell>
         <div className="page-main max-w-4xl mx-auto text-center py-20">
           <p className="text-text-secondary">Quiz not found</p>
-          <Link href="/academy" className="text-[#00e676] hover:underline text-sm mt-2 inline-block">
+          <Link href="/academy" className="text-[#2196f3] hover:underline text-sm mt-2 inline-block">
             ← Back to Academy
           </Link>
         </div>
@@ -51,23 +51,23 @@ export default function AcademyQuizPage() {
 
   return (
     <DashboardShell>
-      <div className="page-main max-w-4xl mx-auto w-full pb-8" data-theme="dark">
+      <div className="page-main max-w-4xl mx-auto w-full pb-8">
         <Link
           href={`/academy/${phaseSlug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#00e676] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#00e676]/30"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#2196f3] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#2196f3]/30"
         >
           <ArrowLeft size={14} />
           BACK TO {phase.title}
         </Link>
 
-        <div className="bg-bg-secondary border border-[#00e676]/20 rounded-xl p-6 mb-6">
-          <p className="text-[10px] uppercase tracking-widest text-[#00e676] font-medium mb-1">KNOWLEDGE CHECK</p>
-          <h1 className="text-xl font-bold text-white mb-3">{quiz.title}</h1>
+        <div className="bg-bg-secondary border border-[#2196f3]/20 rounded-xl p-6 mb-6">
+          <p className="text-[10px] uppercase tracking-widest text-[#2196f3] font-medium mb-1">KNOWLEDGE CHECK</p>
+          <h1 className="text-xl font-bold text-text-primary mb-3">{quiz.title}</h1>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-2 bg-bg-tertiary rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#00e676] rounded-full transition-all"
+                className="h-full bg-[#2196f3] rounded-full transition-all"
                 style={{ width: `${(answeredCount / quiz.questions.length) * 100}%` }}
               />
             </div>
@@ -77,8 +77,8 @@ export default function AcademyQuizPage() {
           </div>
 
           <div className="mb-6">
-            <p className="text-sm text-white font-medium mb-4">
-              <span className="text-[#00e676] font-bold mr-2">{String(currentQuestion + 1).padStart(2, '0')}</span>
+            <p className="text-sm text-text-primary font-medium mb-4">
+              <span className="text-[#2196f3] font-bold mr-2">{String(currentQuestion + 1).padStart(2, '0')}</span>
               {question.question}
             </p>
 
@@ -94,11 +94,11 @@ export default function AcademyQuizPage() {
                     className={clsx(
                       'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors text-sm',
                       isSelected
-                        ? 'border-[#00e676] bg-[#00e676]/5 text-white'
-                        : 'border-border-glass bg-bg-tertiary text-text-secondary hover:border-text-tertiary hover:text-white',
+                        ? 'border-[#2196f3] bg-[#2196f3]/5 text-text-primary'
+                        : 'border-border-glass bg-bg-tertiary text-text-secondary hover:border-text-tertiary hover:text-text-primary',
                     )}
                   >
-                    <span className={clsx('text-xs font-medium', isSelected ? 'text-[#00e676]' : 'text-text-tertiary')}>
+                    <span className={clsx('text-xs font-medium', isSelected ? 'text-[#2196f3]' : 'text-text-tertiary')}>
                       {letter}
                     </span>
                     {option}
@@ -113,7 +113,7 @@ export default function AcademyQuizPage() {
               <button
                 type="button"
                 onClick={() => setCurrentQuestion((p) => p - 1)}
-                className="flex items-center gap-1 text-sm text-text-secondary hover:text-white transition-colors"
+                className="flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary transition-colors"
               >
                 <ArrowLeft size={14} />
                 PREV
@@ -125,7 +125,7 @@ export default function AcademyQuizPage() {
               <button
                 type="button"
                 onClick={() => setCurrentQuestion((p) => p + 1)}
-                className="flex items-center gap-1 text-sm text-[#00e676] hover:underline"
+                className="flex items-center gap-1 text-sm text-[#2196f3] hover:underline"
               >
                 NEXT
                 <ArrowRight size={14} />
@@ -139,7 +139,7 @@ export default function AcademyQuizPage() {
         <button
           type="button"
           disabled={answeredCount < quiz.questions.length}
-          className="px-6 py-3 bg-[#00e676]/20 text-[#00e676] font-semibold rounded-lg text-sm uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#00e676]/30 transition-colors"
+          className="px-6 py-3 bg-[#2196f3]/20 text-[#2196f3] font-semibold rounded-lg text-sm uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2196f3]/30 transition-colors"
         >
           SUBMIT ANSWERS
         </button>
@@ -147,14 +147,14 @@ export default function AcademyQuizPage() {
         <div className="flex items-center justify-between mt-8 flex-wrap gap-2">
           <Link
             href={`/academy/${phaseSlug}`}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-white hover:border-text-tertiary transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-text-primary hover:border-text-tertiary transition-colors"
           >
             <ArrowLeft size={14} />
             PREV
           </Link>
           <Link
             href="/academy"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-white hover:border-text-tertiary transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border-glass text-sm text-text-secondary hover:text-text-primary hover:border-text-tertiary transition-colors"
           >
             NEXT
             <ArrowRight size={14} />

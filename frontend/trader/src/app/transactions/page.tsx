@@ -166,7 +166,7 @@ export default function TransactionsPage() {
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 space-y-5 sm:space-y-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
                 Transaction History
               </h1>
               <p className="text-text-secondary text-xs sm:text-sm mt-1">
@@ -198,22 +198,22 @@ export default function TransactionsPage() {
             <div
               className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
               style={{
-                background: 'linear-gradient(145deg, rgba(0,230,118,0.12) 0%, #0d0f10 70%)',
-                border: '1px solid rgba(0,230,118,0.18)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#00e676]/[0.04] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#2196f3]/[0.04] pointer-events-none" />
               <div className="relative flex items-center gap-3">
                 <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#00e676]/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(0,230,118,0.2) 0%, rgba(0,230,118,0.06) 100%)' }}
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#2196f3]/25"
+                  style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.2) 0%, rgba(33,150,243,0.06) 100%)' }}
                 >
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#00e676]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(0,230,118,0.5))' }} />
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.5))' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#00e676]/60">Total Deposits</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-white tabular-nums mt-0.5 truncate">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/60">Total Deposits</p>
+                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(totalDeposited)}
                   </p>
                 </div>
@@ -224,9 +224,9 @@ export default function TransactionsPage() {
             <div
               className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
               style={{
-                background: 'linear-gradient(145deg, rgba(239,68,68,0.1) 0%, #0d0f10 70%)',
-                border: '1px solid rgba(239,68,68,0.18)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
               <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-red-500/[0.04] pointer-events-none" />
@@ -239,7 +239,7 @@ export default function TransactionsPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-red-400/60">Withdrawals</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-white tabular-nums mt-0.5 truncate">
+                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(totalWithdrawn)}
                   </p>
                 </div>
@@ -250,22 +250,22 @@ export default function TransactionsPage() {
             <div
               className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
               style={{
-                background: 'linear-gradient(145deg, rgba(0,230,118,0.08) 0%, #0d0f10 70%)',
-                border: '1px solid rgba(0,230,118,0.15)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#00e676]/[0.03] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#2196f3]/[0.03] pointer-events-none" />
               <div className="relative flex items-center gap-3">
                 <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#00e676]/20"
-                  style={{ background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,230,118,0.04) 100%)' }}
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#2196f3]/20"
+                  style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.04) 100%)' }}
                 >
-                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#00e676]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(0,230,118,0.4))' }} />
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.4))' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#00e676]/50">Commissions</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-white tabular-nums mt-0.5 truncate">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/50">Commissions</p>
+                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(0)}
                   </p>
                 </div>
@@ -276,9 +276,9 @@ export default function TransactionsPage() {
             <div
               className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
               style={{
-                background: 'linear-gradient(145deg, rgba(245,158,11,0.1) 0%, #0d0f10 70%)',
-                border: '1px solid rgba(245,158,11,0.18)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
               <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-amber-500/[0.04] pointer-events-none" />
@@ -291,7 +291,7 @@ export default function TransactionsPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-400/60">Pending</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-white tabular-nums mt-0.5">
+                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5">
                     {pendingTxCount} <span className="text-sm font-semibold text-text-tertiary">transactions</span>
                   </p>
                 </div>
@@ -302,14 +302,14 @@ export default function TransactionsPage() {
           <div
             className="rounded-2xl overflow-hidden"
             style={{
-              background: '#0d0f10',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-primary)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
             }}
           >
             {/* Header with title + type tabs */}
             <div className="px-4 sm:px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-lg font-bold text-white">Transactions</h2>
+              <h2 className="text-lg font-bold text-text-primary">Transactions</h2>
               <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
@@ -330,8 +330,8 @@ export default function TransactionsPage() {
                     className={clsx(
                       'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200',
                       typeFilter === t
-                        ? 'bg-white/10 text-white border border-white/20 shadow-sm'
-                        : 'text-[#888] hover:text-white border border-transparent hover:border-white/10',
+                        ? 'bg-bg-active text-text-primary border border-border-secondary shadow-sm'
+                        : 'text-text-tertiary hover:text-text-primary border border-transparent hover:border-border-primary',
                     )}
                   >
                     {label}
@@ -354,13 +354,13 @@ export default function TransactionsPage() {
                     'px-3 py-1 text-[11px] font-semibold rounded-full border transition-all',
                     statusFilter === s
                       ? s === 'completed'
-                        ? 'bg-[#00e676]/15 text-[#00e676] border-[#00e676]/30'
+                        ? 'bg-[#2196f3]/15 text-[#2196f3] border-[#2196f3]/30'
                         : s === 'pending'
                           ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                           : s === 'failed'
                             ? 'bg-red-500/15 text-red-400 border-red-500/30'
-                            : 'bg-white/8 text-white border-white/15'
-                      : 'border-white/6 text-[#666] hover:text-[#aaa] hover:border-white/12',
+                            : 'bg-bg-active text-text-primary border-border-secondary'
+                      : 'border-border-primary text-text-tertiary hover:text-text-secondary hover:border-border-secondary',
                   )}
                 >
                   {s === 'all' ? 'All status' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -372,15 +372,15 @@ export default function TransactionsPage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-                  className="px-2 sm:px-2.5 py-1 rounded-lg border border-white/8 bg-white/[0.03] text-[10px] sm:text-[11px] text-[#aaa] outline-none focus:border-[#00e676]/30 flex-1 sm:flex-none sm:w-[120px] min-w-0"
+                  className="px-2 sm:px-2.5 py-1 rounded-lg border border-border-primary bg-bg-secondary text-[10px] sm:text-[11px] text-text-secondary outline-none focus:border-accent/30 flex-1 sm:flex-none sm:w-[120px] min-w-0"
                   placeholder="From"
                 />
-                <span className="text-[#444] text-xs shrink-0">–</span>
+                <span className="text-text-tertiary text-xs shrink-0">–</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-                  className="px-2 sm:px-2.5 py-1 rounded-lg border border-white/8 bg-white/[0.03] text-[10px] sm:text-[11px] text-[#aaa] outline-none focus:border-[#00e676]/30 flex-1 sm:flex-none sm:w-[120px] min-w-0"
+                  className="px-2 sm:px-2.5 py-1 rounded-lg border border-border-primary bg-bg-secondary text-[10px] sm:text-[11px] text-text-secondary outline-none focus:border-accent/30 flex-1 sm:flex-none sm:w-[120px] min-w-0"
                   placeholder="To"
                 />
               </div>
@@ -402,8 +402,8 @@ export default function TransactionsPage() {
             <div className="px-3 sm:px-6 py-3 sm:py-5 space-y-1.5 sm:space-y-2">
               {!pagedTx.length ? (
                 <div className="py-16 text-center">
-                  <ArrowLeftRight className="w-10 h-10 text-[#333] mx-auto mb-3" />
-                  <p className="text-[#888] text-sm font-medium">
+                  <ArrowLeftRight className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
+                  <p className="text-text-secondary text-sm font-medium">
                     {filteredTx.length === 0 && transactions.length > 0
                       ? 'No transactions match your filters'
                       : 'No transfers yet'}
@@ -427,8 +427,7 @@ export default function TransactionsPage() {
                   return (
                     <div
                       key={tx.id}
-                      className="rounded-xl p-2.5 sm:p-3 md:p-4 flex items-center gap-2 sm:gap-3 transition-all hover:bg-white/[0.02]"
-                      style={{ border: '1px solid rgba(255,255,255,0.04)' }}
+                      className="rounded-xl p-2.5 sm:p-3 md:p-4 flex items-center gap-2 sm:gap-3 transition-all hover:bg-bg-hover border border-border-primary/50"
                     >
                       <div className={iconWrap}>
                         {tx.type === 'deposit' ? (
@@ -496,16 +495,16 @@ export default function TransactionsPage() {
             </div>
 
             {filteredTx.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3" style={{ borderTop: '1px solid var(--border-primary)' }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[#666]">Rows</span>
+                  <span className="text-[11px] text-text-tertiary">Rows</span>
                   <select
                     value={pageSize}
                     onChange={(e) => {
                       setPageSize(Number(e.target.value));
                       setPage(1);
                     }}
-                    className="text-[11px] border border-white/8 bg-white/[0.03] text-[#aaa] rounded-lg px-2 py-1.5 outline-none focus:border-[#00e676]/30"
+                    className="text-[11px] border border-border-primary bg-bg-secondary text-text-secondary rounded-lg px-2 py-1.5 outline-none focus:border-accent/30"
                   >
                     {PAGE_SIZES.map((s) => (
                       <option key={s} value={s}>
@@ -519,23 +518,23 @@ export default function TransactionsPage() {
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage === 1}
-                    className="p-1.5 rounded-lg border border-white/8 text-[#888] disabled:opacity-30 hover:border-[#00e676]/30 hover:text-[#00e676] transition-colors"
+                    className="p-1.5 rounded-lg border border-border-primary text-text-tertiary disabled:opacity-30 hover:border-accent/30 hover:text-accent transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-[11px] text-[#666] px-2">
+                  <span className="text-[11px] text-text-tertiary px-2">
                     {safePage} / {totalPages}
                   </span>
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
-                    className="p-1.5 rounded-lg border border-white/8 text-[#888] disabled:opacity-30 hover:border-[#00e676]/30 hover:text-[#00e676] transition-colors"
+                    className="p-1.5 rounded-lg border border-border-primary text-text-tertiary disabled:opacity-30 hover:border-accent/30 hover:text-accent transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
-                <span className="text-[11px] text-[#666]">
+                <span className="text-[11px] text-text-tertiary">
                   {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredTx.length)} of{' '}
                   {filteredTx.length}
                 </span>

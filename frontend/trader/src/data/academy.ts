@@ -7,7 +7,7 @@ export const phases = [
     duration: '8-8 Weeks',
     level: 'BEGINNER',
     totalMinutes: 170,
-    color: '#00e676',
+    color: '#2196f3',
     modules: [
       { id: '1.1', title: 'What Is the Forex Market?', topics: 6, minutes: 20, level: 'BEGINNER' },
       { id: '1.2', title: 'Currency Pairs & Market Structure', topics: 6, minutes: 30, level: 'BEGINNER' },
@@ -48,7 +48,7 @@ export const phases = [
     duration: '6-8 Weeks',
     level: 'BEGINNER',
     totalMinutes: 210,
-    color: '#00e676',
+    color: '#2196f3',
     modules: [
       { id: '2.1', title: 'Introduction to Charts', topics: 6, minutes: 25, level: 'BEGINNER' },
       { id: '2.2', title: 'Support & Resistance', topics: 6, minutes: 30, level: 'BEGINNER' },
@@ -90,7 +90,7 @@ export const phases = [
     duration: '6-8 Weeks',
     level: 'INTERMEDIATE',
     totalMinutes: 195,
-    color: '#00e676',
+    color: '#2196f3',
     modules: [
       { id: '3.1', title: 'Market Structure & Order Flow', topics: 6, minutes: 30, level: 'INTERMEDIATE' },
       { id: '3.2', title: 'Supply & Demand Zones', topics: 6, minutes: 30, level: 'INTERMEDIATE' },

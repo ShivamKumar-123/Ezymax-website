@@ -292,7 +292,7 @@ export default function TradingTerminalPage() {
 
   if (!accountId) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-0" style={{ background: '#0a0a0a' }}>
+      <div className="flex-1 flex items-center justify-center min-h-0 bg-bg-base">
         <p className="text-sm text-text-tertiary">Choose an account to trade…</p>
       </div>
     );
@@ -346,7 +346,7 @@ export default function TradingTerminalPage() {
     };
 
     return (
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0 pb-[70px] scrollbar-none" style={{ background: '#0a0a0a' }}>
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 pb-[70px] scrollbar-none bg-bg-base">
         <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col scrollbar-none">
           {mobileView === 'watchlist' && <Watchlist />}
           {mobileView === 'news' && (
@@ -412,7 +412,7 @@ export default function TradingTerminalPage() {
 
               {/* ── Mobile Symbol Search Overlay ── */}
               {mobileSymbolSearch && (
-                <div className="fixed inset-0 z-[90] flex flex-col" style={{ background: '#0a0a0a' }}>
+                <div className="fixed inset-0 z-[90] flex flex-col bg-bg-base">
                   {/* Search header */}
                   <div className="shrink-0 flex items-center gap-2 px-3 py-3 border-b border-border-glass bg-bg-secondary">
                     <div className="relative flex-1 min-w-0">
@@ -523,25 +523,6 @@ export default function TradingTerminalPage() {
                 <div className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
                   <AdvancedChart />
                 </div>
-                <div className="shrink-0 flex items-center justify-end gap-2 px-2 py-1.5 border-t border-border-glass bg-bg-secondary/90">
-                  <button
-                    type="button"
-                    onClick={() => setChartExpanded((v) => !v)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-text-secondary border border-border-glass hover:bg-buy/10 hover:text-buy hover:border-buy/30 transition-colors"
-                  >
-                    {chartExpanded ? (
-                      <>
-                        <Minimize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                        Normal view
-                      </>
-                    ) : (
-                      <>
-                        <Maximize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                        Expand chart
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
 
               {/* Refined Quick Trade Bottom Bar */}
@@ -619,7 +600,7 @@ export default function TradingTerminalPage() {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)]" style={{ background: '#0a0a0a' }}>
+    <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
       <TerminalLeftRail
         activeSpace={activeSpace}
         onSpaceChange={applySpace}
@@ -646,7 +627,7 @@ export default function TradingTerminalPage() {
             className={clsx(
               'flex flex-col overflow-hidden bg-bg-base flex-1 min-w-0 min-h-0 relative isolate z-0',
               chartExpanded &&
-                'ring-1 ring-inset ring-accent/25 shadow-[inset_0_0_0_1px_rgba(0,230,118,0.08)]',
+                'ring-1 ring-inset ring-accent/25 shadow-[inset_0_0_0_1px_rgba(33,150,243,0.08)]',
             )}
           >
             {chartExpanded ? (
@@ -668,30 +649,6 @@ export default function TradingTerminalPage() {
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
               <AdvancedChart />
             </div>
-            <div className="shrink-0 flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border-primary bg-bg-secondary">
-              {chartExpanded ? (
-                <span className="text-[11px] text-text-secondary truncate pl-1">{selectedSymbol}</span>
-              ) : (
-                <span className="text-[11px] text-text-tertiary pl-1">Chart panel</span>
-              )}
-              <button
-                type="button"
-                onClick={() => setChartExpanded((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold text-text-secondary border border-border-primary hover:border-accent/40 hover:text-accent hover:bg-accent/5 transition-colors"
-              >
-                {chartExpanded ? (
-                  <>
-                    <Minimize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                    Normal view
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                    Expand chart
-                  </>
-                )}
-              </button>
-            </div>
           </div>
 
           <PanelResizeHandle
@@ -711,25 +668,25 @@ export default function TradingTerminalPage() {
               </div>
             ) : terminalNewsOpen ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-[#1a1a1a] bg-[#0c0d12]">
+                <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-border-primary bg-bg-secondary">
                   <button
                     type="button"
                     onClick={() => {
                       setTerminalNewsOpen(false);
                       setTerminalMarketsOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e1e1e] bg-[#111] text-[11px] font-bold uppercase tracking-wide text-[#00e676] hover:bg-[#00e676]/10 hover:border-[#00e676]/40 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-card text-[11px] font-bold uppercase tracking-wide text-accent hover:bg-accent/10 hover:border-accent/40 transition-colors"
                   >
                     ← Markets
                   </button>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#666]">Live News</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary">Live News</span>
                   <button
                     type="button"
                     onClick={() => {
                       setTerminalNewsOpen(false);
                       setTerminalMarketsOpen(false);
                     }}
-                    className="ml-auto px-3 py-1.5 rounded-lg border border-[#1e1e1e] bg-[#111] text-[11px] font-semibold text-[#888] hover:text-white hover:border-[#2a2a2a] transition-colors"
+                    className="ml-auto px-3 py-1.5 rounded-lg border border-border-primary bg-bg-card text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-secondary transition-colors"
                   >
                     Close
                   </button>

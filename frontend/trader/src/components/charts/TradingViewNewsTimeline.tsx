@@ -59,7 +59,7 @@ function TradingViewNewsTimelineInner({
   );
 
   const colorTheme: 'dark' | 'light' =
-    useDarkEmbed || theme !== 'light' ? 'dark' : 'light';
+    useDarkEmbed ? 'dark' : theme === 'light' ? 'light' : 'dark';
   /** Opaque dark panel reads as black; transparent can look grey on some shells */
   const isTransparent = false;
 
@@ -71,26 +71,26 @@ function TradingViewNewsTimelineInner({
   return (
     <div
       className={clsx(
-        'flex flex-col h-full min-h-0 w-full bg-black',
+        'flex flex-col h-full min-h-0 w-full bg-bg-base',
         hideChrome ? 'min-h-[520px] md:min-h-[640px]' : '',
         className,
       )}
     >
       {!hideChrome ? (
-        <div className="shrink-0 px-3 py-2.5 border-b border-[#2a2e39] bg-[#1e222d] flex items-baseline justify-between gap-2">
+        <div className="shrink-0 px-3 py-2.5 border-b border-border-primary bg-bg-secondary flex items-baseline justify-between gap-2">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#787b86]">Live news</span>
-            <span className="text-xs text-white ml-2 font-mono font-semibold">{effectiveSymbol}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Live news</span>
+            <span className="text-xs text-text-primary ml-2 font-mono font-semibold">{effectiveSymbol}</span>
           </div>
-          <span className="text-[9px] text-[#787b86] truncate">TradingView</span>
+          <span className="text-[9px] text-text-tertiary truncate">TradingView</span>
         </div>
       ) : null}
-      <div className="flex-1 min-h-0 w-full min-w-0 bg-black">
+      <div className="flex-1 min-h-0 w-full min-w-0 bg-bg-base">
         <iframe
           key={iframeSrc}
           title={`Market news — ${effectiveSymbol}`}
           src={iframeSrc}
-          className="h-full w-full min-h-[400px] border-0 bg-black"
+          className="h-full w-full min-h-[400px] border-0 bg-bg-base"
           allow="clipboard-write"
           referrerPolicy="no-referrer-when-downgrade"
         />
