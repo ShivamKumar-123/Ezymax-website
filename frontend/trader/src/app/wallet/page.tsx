@@ -607,7 +607,7 @@ function WalletPageContent() {
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
           <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#888]">Loading wallet...</span>
+          <span className="text-sm text-text-secondary">Loading wallet...</span>
         </div>
       </DashboardShell>
     );
@@ -620,7 +620,7 @@ function WalletPageContent() {
           {/* Crucial-ui style page header */}
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-white">Wallet</h1>
+              <h1 className="text-xl font-bold text-text-primary">Wallet</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-xl">
                 Manage deposits and withdrawals. Approved funds credit your main wallet.
               </p>
@@ -760,7 +760,7 @@ function WalletPageContent() {
                             onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Move to main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#2196f3] hover:border-[#2196f3]/25 transition-all disabled:opacity-40"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
                           >
                             <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
                           </button>
@@ -769,7 +769,7 @@ function WalletPageContent() {
                             onClick={(e) => { e.stopPropagation(); openTransferFromMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Add from main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#2196f3] hover:border-[#2196f3]/25 transition-all disabled:opacity-40"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
                           >
                             <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
                           </button>
@@ -888,8 +888,8 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         depositUiSection === 'crypto'
-                          ? 'bg-[#2196f3] text-white'
-                          : 'text-white/60 hover:text-white',
+                          ? 'bg-accent text-white'
+                          : 'text-text-tertiary hover:text-text-primary',
                       )}
                     >
                       Crypto
@@ -900,8 +900,8 @@ function WalletPageContent() {
                       className={clsx(
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         depositUiSection === 'manual'
-                          ? 'bg-[#2196f3] text-white'
-                          : 'text-white/60 hover:text-white',
+                          ? 'bg-accent text-white'
+                          : 'text-text-tertiary hover:text-text-primary',
                       )}
                     >
                       Manual deposit
@@ -940,9 +940,9 @@ function WalletPageContent() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">Amount (USD)</label>
+                        <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] font-bold">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
                           <input
                             type="number"
                             min="1"
@@ -959,7 +959,7 @@ function WalletPageContent() {
                               key={amt}
                               type="button"
                               onClick={() => setDepositAmount(String(amt))}
-                              className="py-2 text-xs font-semibold rounded-lg border border-[#2a2a2a] bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-accent"
+                              className="py-2 text-xs font-semibold rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-accent"
                             >
                               ${amt >= 1000 ? `${amt / 1000}k` : amt}
                             </button>
@@ -970,14 +970,14 @@ function WalletPageContent() {
                       <div className="rounded-xl border border-[#2196f3]/25 bg-[#2196f3]/5 px-4 py-3 space-y-1">
                         <div className="flex items-center gap-2">
                           <WalletIcon className="w-4 h-4 text-[#2196f3] shrink-0" />
-                          <span className="text-sm font-bold text-white">OxaPay</span>
+                          <span className="text-sm font-bold text-text-primary">OxaPay</span>
                         </div>
-                        <p className="text-[11px] text-[#888] leading-relaxed">
+                        <p className="text-[11px] text-text-secondary leading-relaxed">
                           Pay via OxaPay, then submit below. Add your reference ID so support can match your payment.
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">OxaPay transaction / reference ID (optional)</label>
+                        <label className="text-xs text-text-secondary">OxaPay transaction / reference ID (optional)</label>
                         <input
                           type="text"
                           value={depositTxId}
@@ -994,7 +994,7 @@ function WalletPageContent() {
                         className={clsx(
                           'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
                           demoFundingBlocked || depositSubmitting || !depositAmount
-                            ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
                             : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
@@ -1002,16 +1002,16 @@ function WalletPageContent() {
                           ? 'Submitting…'
                           : `Deposit funds${depositAmount ? ` — ${fmt(parseFloat(depositAmount || '0'))}` : ''}`}
                       </button>
-                      <p className="text-center text-[11px] text-[#666]">
+                      <p className="text-center text-[11px] text-text-tertiary">
                         Deposits are reviewed and typically approved within 24 hours.
                       </p>
                     </>
                   ) : (
                     <>
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">Amount (USD)</label>
+                        <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] font-bold">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
                           <input
                             type="number"
                             min="1"
@@ -1028,39 +1028,39 @@ function WalletPageContent() {
                       <div className="rounded-xl border border-border-primary bg-bg-secondary px-3 py-3 sm:px-4 space-y-2 min-w-0">
                         <p className="text-xs font-bold text-text-primary">Pay to this account (from admin)</p>
                         {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.account_number) ? (
-                          <div className="text-[11px] sm:text-xs text-[#aaa] font-mono min-w-0 space-y-2">
+                          <div className="text-[11px] sm:text-xs text-text-secondary font-mono min-w-0 space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                               {manualBankInfo.bank_name ? (
                                 <p className="break-words">
-                                  <span className="text-[#666] font-sans text-[10px] uppercase tracking-wide">Bank</span>
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Bank</span>
                                   <br />
                                   {manualBankInfo.bank_name}
                                 </p>
                               ) : null}
                               {manualBankInfo.account_holder ? (
                                 <p className="break-words">
-                                  <span className="text-[#666] font-sans text-[10px] uppercase tracking-wide">Holder</span>
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Holder</span>
                                   <br />
                                   {manualBankInfo.account_holder}
                                 </p>
                               ) : null}
                               {manualBankInfo.account_number ? (
                                 <p className="break-all">
-                                  <span className="text-[#666] font-sans text-[10px] uppercase tracking-wide">A/C</span>
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">A/C</span>
                                   <br />
                                   {manualBankInfo.account_number}
                                 </p>
                               ) : null}
                               {manualBankInfo.ifsc_code ? (
                                 <p className="break-all">
-                                  <span className="text-[#666] font-sans text-[10px] uppercase tracking-wide">IFSC</span>
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">IFSC</span>
                                   <br />
                                   {manualBankInfo.ifsc_code}
                                 </p>
                               ) : null}
                               {manualBankInfo.upi_id ? (
                                 <p className="break-all sm:col-span-2">
-                                  <span className="text-[#666] font-sans text-[10px] uppercase tracking-wide">UPI</span>
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">UPI</span>
                                   <br />
                                   {manualBankInfo.upi_id}
                                 </p>
@@ -1071,7 +1071,7 @@ function WalletPageContent() {
                                 <img
                                   src={manualBankInfo.qr_code_url}
                                   alt="Payment QR"
-                                  className="w-full max-w-[220px] max-h-48 object-contain rounded-lg border border-[#2a2a2a] bg-[#0d0d0f]"
+                                  className="w-full max-w-[220px] max-h-48 object-contain rounded-lg border border-border-primary bg-bg-base"
                                 />
                               </div>
                             ) : null}
@@ -1090,7 +1090,7 @@ function WalletPageContent() {
                         </button>
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <label className="text-xs text-[#888]">
+                        <label className="text-xs text-text-secondary">
                           Transaction / reference ID <span className="text-red-400">*</span>
                         </label>
                         <input
@@ -1102,15 +1102,15 @@ function WalletPageContent() {
                         />
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <label className="text-xs text-[#888]">
+                        <label className="text-xs text-text-secondary">
                           Payment screenshot <span className="text-red-400">*</span>
                         </label>
                         <label
                           className={clsx(
                             'flex flex-col items-center justify-center w-full min-w-0 py-5 sm:py-6 px-2 rounded-xl border-2 border-dashed cursor-pointer transition-all',
                             depositProofFile
-                              ? 'border-[#2196f3]/40 bg-[#2196f3]/5'
-                              : 'border-[#2a2a2a] hover:border-[#2196f3]/30',
+                              ? 'border-accent/40 bg-accent/5'
+                              : 'border-border-primary hover:border-accent/30',
                           )}
                         >
                           <input
@@ -1143,7 +1143,7 @@ function WalletPageContent() {
                             !depositAmount ||
                             !depositTxId.trim() ||
                             !depositProofFile
-                            ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
                             : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
@@ -1174,7 +1174,7 @@ function WalletPageContent() {
                   </div>
 
                   <p className="text-xs text-text-tertiary leading-relaxed">
-                    Withdrawals are sent from your <span className="text-white">main wallet</span> only. Ensure the amount
+                    Withdrawals are sent from your <span className="text-text-primary font-medium">main wallet</span> only. Ensure the amount
                     you need is available on the main wallet before requesting a payout.
                   </p>
 
@@ -1187,7 +1187,7 @@ function WalletPageContent() {
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         withdrawUiSection === 'crypto'
                           ? 'bg-accent text-white'
-                          : 'text-white/60 hover:text-white',
+                          : 'text-text-tertiary hover:text-text-primary',
                       )}
                     >
                       Crypto
@@ -1199,7 +1199,7 @@ function WalletPageContent() {
                         'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
                         withdrawUiSection === 'bank'
                           ? 'bg-accent text-white'
-                          : 'text-white/60 hover:text-white',
+                          : 'text-text-tertiary hover:text-text-primary',
                       )}
                     >
                       Bank
@@ -1239,7 +1239,7 @@ function WalletPageContent() {
 
                       <div className="space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <label className="text-xs text-[#888]">Amount (USD)</label>
+                          <label className="text-xs text-text-secondary">Amount (USD)</label>
                           <button
                             type="button"
                             onClick={() =>
@@ -1251,7 +1251,7 @@ function WalletPageContent() {
                           </button>
                         </div>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] font-bold">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
                           <input
                             type="number"
                             min="0.01"
@@ -1265,7 +1265,7 @@ function WalletPageContent() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">Wallet address / payout details</label>
+                        <label className="text-xs text-text-secondary">Wallet address / payout details</label>
                         <textarea
                           value={withdrawOxapayDetails}
                           onChange={(e) => setWithdrawOxapayDetails(e.target.value)}
@@ -1278,7 +1278,7 @@ function WalletPageContent() {
                           className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm resize-none"
                         />
                       </div>
-                      <p className="text-[11px] text-[#666]">Processing time: up to 24 hours.</p>
+                      <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
 
                       <button
                         type="button"
@@ -1295,8 +1295,8 @@ function WalletPageContent() {
                             withdrawSubmitting ||
                             !withdrawAmount ||
                             !withdrawOxapayDetails.trim()
-                            ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#2196f3] text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {withdrawSubmitting
@@ -1308,7 +1308,7 @@ function WalletPageContent() {
                     <>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <label className="text-xs text-[#888]">Amount (USD)</label>
+                          <label className="text-xs text-text-secondary">Amount (USD)</label>
                           <button
                             type="button"
                             onClick={() =>
@@ -1320,7 +1320,7 @@ function WalletPageContent() {
                           </button>
                         </div>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] font-bold">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
                           <input
                             type="number"
                             min="0.01"
@@ -1335,12 +1335,12 @@ function WalletPageContent() {
 
                       <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-2">
                         <p className="text-xs font-bold text-text-primary">Bank / UPI payout</p>
-                        <p className="text-[11px] text-[#888] leading-relaxed">
+                        <p className="text-[11px] text-text-secondary leading-relaxed">
                           Provide the UPI ID and/or upload a QR code. Finance processes after approval.
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">UPI ID</label>
+                        <label className="text-xs text-text-secondary">UPI ID</label>
                         <input
                           type="text"
                           value={manualWithdrawUpi}
@@ -1350,7 +1350,7 @@ function WalletPageContent() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">Notes for finance (optional)</label>
+                        <label className="text-xs text-text-secondary">Notes for finance (optional)</label>
                         <input
                           type="text"
                           value={manualWithdrawNotes}
@@ -1360,13 +1360,13 @@ function WalletPageContent() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs text-[#888]">Your QR code (optional)</label>
+                        <label className="text-xs text-text-secondary">Your QR code (optional)</label>
                         <label
                           className={clsx(
                             'flex flex-col items-center justify-center w-full py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all',
                             manualWithdrawQrFile
-                              ? 'border-[#2196f3]/40 bg-[#2196f3]/5'
-                              : 'border-[#2a2a2a] hover:border-[#2196f3]/30',
+                              ? 'border-accent/40 bg-accent/5'
+                              : 'border-border-primary hover:border-accent/30',
                           )}
                         >
                           <input
@@ -1380,7 +1380,7 @@ function WalletPageContent() {
                               {manualWithdrawQrFile.name}
                             </span>
                           ) : (
-                            <span className="text-xs text-[#666]">JPG, PNG, PDF, WEBP</span>
+                            <span className="text-xs text-text-tertiary">JPG, PNG, PDF, WEBP</span>
                           )}
                         </label>
                       </div>
@@ -1399,8 +1399,8 @@ function WalletPageContent() {
                             withdrawSubmitting ||
                             !withdrawAmount ||
                             (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
-                            ? 'bg-[#252a35] text-[#666] cursor-not-allowed'
-                            : 'bg-[#2196f3] text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
                         {withdrawSubmitting ? 'Submitting…' : 'Withdraw funds'}
@@ -1562,7 +1562,7 @@ export default function WalletPage() {
         <DashboardShell mainClassName="flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 py-12">
             <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#888]">Loading wallet…</span>
+            <span className="text-sm text-text-secondary">Loading wallet…</span>
           </div>
         </DashboardShell>
       }
