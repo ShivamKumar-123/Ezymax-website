@@ -401,17 +401,19 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
               >
                 {/* Instruments — star + dot + symbol + flag */}
                 <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    type="button"
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => toggleStar(symbol, e)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleStar(symbol, e as any); }}
                     className={clsx(
-                      'shrink-0 transition-colors',
+                      'shrink-0 transition-colors cursor-pointer',
                       isStarred ? 'text-[#00e676]' : 'text-[#333] hover:text-[#666]',
                     )}
                     aria-label="Star"
                   >
                     <Star className="w-3 h-3" fill={isStarred ? 'currentColor' : 'none'} />
-                  </button>
+                  </span>
                   <div
                     className={clsx(
                       'w-5 h-5 rounded-full shrink-0 bg-gradient-to-br',
