@@ -46,7 +46,7 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 w-11 h-11 sm:w-9 sm:h-9 rounded-full glass-card flex items-center justify-center text-text-secondary hover:text-text-primary transition-fast"
+        className="relative min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-bg-hover/60 border border-border-primary flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-fast"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
       >
         <svg
@@ -66,7 +66,7 @@ export function NotificationBell() {
         {unreadCount > 0 && (
           <span
             className={clsx(
-              'absolute -top-0.5 -right-0.5 min-h-[1.125rem] min-w-[1.125rem] px-1 rounded-full bg-sell text-white font-bold flex items-center justify-center leading-none border-2 border-bg-primary shadow-sm',
+              'absolute -top-0.5 -right-0.5 min-h-[1.125rem] min-w-[1.125rem] px-1 rounded-full bg-sell text-white font-bold flex items-center justify-center leading-none border-2 border-bg-secondary shadow-sm',
               badgeLabel.length > 1 ? 'text-[9px]' : 'text-[10px]',
             )}
           >

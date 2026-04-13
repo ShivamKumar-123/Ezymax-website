@@ -114,7 +114,7 @@ export default function AppHeader() {
                 {initials}
               </div>
               <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>
-              <ChevronDown size={13} className="text-[#888] hidden sm:inline" />
+              <ChevronDown size={13} className="text-text-tertiary hidden sm:inline" />
             </button>
 
             {userMenuOpen && (
