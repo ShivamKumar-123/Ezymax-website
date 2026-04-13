@@ -81,17 +81,15 @@ export function NotificationBell() {
           <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 max-h-[min(70vh,24rem)] sm:max-h-96 overflow-hidden rounded-xl border border-border-glass bg-bg-secondary shadow-lg z-50 flex flex-col">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border-glass">
               <span className="text-xs font-bold text-text-primary">Notifications</span>
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => void markAllRead()}
-                  className="text-xxs text-buy hover:text-buy/80 transition-fast"
-                >
-                  Mark all read
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => void markAllRead()}
+                className="text-xxs text-buy hover:text-buy/80 transition-fast"
+              >
+                Mark all read
+              </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto scrollbar-none">
               {notifications.length === 0 ? (
                 <div className="px-4 py-8 text-center text-xs text-text-tertiary">No notifications</div>
               ) : (
@@ -103,7 +101,7 @@ export function NotificationBell() {
                       if (!n.is_read) void markAsRead(n.id);
                     }}
                     className={clsx(
-                      'w-full text-left px-3 py-2.5 border-b border-border-glass/50 hover:bg-bg-hover/50 transition-fast',
+                      'w-full text-left px-3 py-2.5 hover:bg-bg-hover/50 transition-fast',
                       !n.is_read && 'bg-buy/[0.04]',
                     )}
                   >

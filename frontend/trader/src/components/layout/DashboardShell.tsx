@@ -39,7 +39,7 @@ export default function DashboardShell({
         <main
           key={pathname}
           className={cn(
-            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-4 md:p-6 page-fade-in',
+            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-2.5 sm:p-4 md:p-6 page-fade-in',
             mainClassName,
           )}
         >

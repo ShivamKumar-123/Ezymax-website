@@ -150,6 +150,25 @@ function generateSyntheticBars(
   return bars;
 }
 
+/* ─── Wait for price ─── */
+
+/** Wait up to `timeoutMs` for a live price tick for `symbol` to appear in the store. */
+function waitForPrice(symbol: string, timeoutMs = 8000): Promise<{ bid: number; ask: number } | null> {
+  const tick = useTradingStore.getState().prices[symbol];
+  if (tick && tick.bid > 0) return Promise.resolve(tick);
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const unsub = useTradingStore.subscribe((state) => {
+      const t = state.prices[symbol];
+      if (t && t.bid > 0) { unsub(); resolve(t); }
+      else if (Date.now() - start > timeoutMs) { unsub(); resolve(null); }
+    });
+    // Safety timeout in case no ticks come at all
+    setTimeout(() => { unsub(); resolve(null); }, timeoutMs + 100);
+  });
+}
+
 /* ─── Config ─── */
 
 const CONFIG: DatafeedConfiguration = {
@@ -261,8 +280,9 @@ export const trustEdgeDatafeed: IBasicDataFeed = {
         }
       }
 
-      // 2. Non-crypto → synthetic candles from live price (instant, no backend call)
-      const tick = useTradingStore.getState().prices[sym];
+      // 2. Non-crypto → synthetic candles from live price
+      //    Wait for a price tick if it hasn't arrived yet (WebSocket may still be connecting)
+      const tick = await waitForPrice(sym);
       if (tick && tick.bid > 0) {
         const mid = (tick.bid + tick.ask) / 2;
         const spread = Math.abs(tick.ask - tick.bid);

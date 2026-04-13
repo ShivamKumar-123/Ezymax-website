@@ -2,11 +2,66 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import toast from 'react-hot-toast';
+import '../auth.css';
+
+/* ── animation helpers ── */
+const fadeUp = (delay: number) => ({
+  initial: { y: 16, opacity: 0 },
+  animate: { y: 0, opacity: 1 },
+  transition: { delay, duration: 0.45, ease: 'easeOut' as const },
+});
+
+const formVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -16 },
+};
+
+/* ── step config ── */
+const STEPS = [
+  { number: 1, label: 'Sign in to your account' },
+  { number: 2, label: 'Demo Account' },
+  { number: 3, label: 'Sign up your account' },
+];
+
+const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
+  1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
+  2: { title: 'Try It Out', subtitle: 'Explore the app with a demo account.' },
+  3: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
+};
+
+/* ── Input Field ── */
+function AuthInput({
+  label, type = 'text', placeholder, value, onChange, error, helper, rightIcon, onIconClick,
+}: {
+  label: string; type?: string; placeholder?: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string; helper?: string; rightIcon?: React.ReactNode; onIconClick?: () => void;
+}) {
+  return (
+    <div className="auth-field">
+      <label className="auth-field__label">{label}</label>
+      <div className="auth-field__wrap">
+        <input
+          className={`auth-field__input${rightIcon ? ' auth-field__input--has-icon' : ''}${error ? ' auth-field__input--error' : ''}`}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+        />
+        {rightIcon && (
+          <button type="button" className="auth-field__icon" onClick={onIconClick}>{rightIcon}</button>
+        )}
+      </div>
+      {error && <span className="auth-field__error">{error}</span>}
+      {!error && helper && <span className="auth-field__helper">{helper}</span>}
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   return (
@@ -20,43 +75,38 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { register, isLoading } = useAuthStore();
+
   const [form, setForm] = useState({
     email: '', password: '', confirmPassword: '',
     first_name: '', last_name: '', phone: '', referral_code: '',
   });
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const ref = searchParams.get('ref');
-    if (ref) setForm(prev => ({ ...prev, referral_code: ref }));
+    if (ref) setForm((prev) => ({ ...prev, referral_code: ref }));
   }, [searchParams]);
-  const [step, setStep] = useState(1);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const update = (field: string, value: string) =>
+  const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: '' }));
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const e: Record<string, string> = {};
+    if (!form.first_name.trim()) e.first_name = 'First name is required.';
+    if (!form.last_name.trim()) e.last_name = 'Last name is required.';
+    if (!form.email.includes('@') || !form.email.includes('.')) e.email = 'Please enter a valid email address.';
+    if (form.password.length < 8) e.password = 'Password must be at least 8 characters.';
+    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
 
-    if (step === 1) {
-      if (!form.first_name || !form.last_name || !form.email) {
-        toast.error('Please fill all required fields');
-        return;
-      }
-      setStep(2);
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-
+    setLoading(true);
     try {
       await register({
         email: form.email,
@@ -70,209 +120,179 @@ function RegisterContent() {
       router.push('/accounts');
     } catch (err: any) {
       toast.error(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* password strength */
+  const strength = form.password.length >= 12 ? 4 : form.password.length >= 10 ? 3 : form.password.length >= 8 ? 2 : form.password.length > 0 ? 1 : 0;
+  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#00e676'];
+
+  /* ── Step change ── */
+  const handleStepClick = (step: number) => {
+    if (step === 1 || step === 2) {
+      router.push('/auth/login');
+      return;
     }
   };
 
   return (
-    <div className="auth-page min-h-screen relative overflow-hidden" style={{ background: '#0a0a0a' }}>
-      {/* Subtle accent glows */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[200px] -right-[300px] w-[600px] h-[600px] rounded-full bg-buy/[0.04] blur-[120px] animate-float" />
-        <div className="absolute -bottom-[300px] -left-[200px] w-[700px] h-[700px] rounded-full bg-accent/[0.03] blur-[120px] animate-float" style={{ animationDelay: '2s' }} />
-      </div>
-      {/* Grid pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
-        <div className="w-full max-w-[440px]">
-          {/* Logo */}
-          <div className="flex items-center justify-center mb-8">
-            <img src="/images/logo2.png" alt="TrustEdgeFX" className="h-14 w-auto object-contain" />
-          </div>
-
-          {/* Glass form card */}
-          <div className="glass-panel rounded-3xl p-8 noise-texture overflow-hidden">
-            <div className="relative z-10">
-              {/* Step indicator */}
-              <div className="flex items-center gap-3 mb-8">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step >= 1 ? 'skeu-btn-buy text-text-inverse' : 'glass-light text-text-tertiary'
-                  }`}>1</div>
-                  <div className={`h-[2px] flex-1 rounded ${step >= 2 ? 'bg-buy' : 'bg-border-primary'}`} />
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step >= 2 ? 'skeu-btn-buy text-text-inverse' : 'glass-light text-text-tertiary'
-                  }`}>2</div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-text-primary">
-                  {step === 1 ? 'Personal Details' : 'Set Password'}
-                </h2>
-                <p className="text-xs text-text-tertiary mt-1">
-                  {step === 1 ? 'Tell us about yourself' : 'Secure your account'}
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {step === 1 ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="First Name"
-                        type="text"
-                        required
-                        value={form.first_name}
-                        onChange={(e) => update('first_name', e.target.value)}
-                        placeholder="John"
-                      />
-                      <Input
-                        label="Last Name"
-                        type="text"
-                        required
-                        value={form.last_name}
-                        onChange={(e) => update('last_name', e.target.value)}
-                        placeholder="Doe"
-                      />
+    <div className="auth-wrapper">
+      <div className="auth-card-wrapper">
+        <div className="auth-card">
+          {/* ── LEFT PANEL ── */}
+          <motion.div
+            className="auth-left"
+            initial={{ x: -60, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          >
+            <motion.div
+              className="auth-left__bg"
+              animate={{ scale: [1, 1.25, 1], y: [0, -30, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <div className="auth-left__content">
+              <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>
+                {LEFT_CONFIG[3].title}
+              </motion.h1>
+              <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>
+                {LEFT_CONFIG[3].subtitle}
+              </motion.p>
+              <div className="auth-left__steps">
+                {STEPS.map((s, i) => (
+                  <motion.div key={s.number} {...fadeUp(0.45 + i * 0.08)}>
+                    <div
+                      className={`auth-step ${s.number === 3 ? 'auth-step--active' : 'auth-step--inactive'}`}
+                      onClick={() => handleStepClick(s.number)}
+                    >
+                      <span className="auth-step__num">{s.number}</span>
+                      <span className="auth-step__label">{s.label}</span>
                     </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
 
-                    <Input
+          {/* ── RIGHT PANEL ── */}
+          <div className="auth-right">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="signup"
+                variants={formVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.28, ease: 'easeInOut' }}
+                style={{ width: '100%', maxWidth: 380 }}
+              >
+                <form className="auth-form" onSubmit={handleSubmit} noValidate>
+                  <motion.div {...fadeUp(0.3)}>
+                    <h2 className="auth-form__title">Sign Up Account</h2>
+                    <p className="auth-form__subtitle">Enter your personal data to create your account.</p>
+                  </motion.div>
+
+                  <motion.div className="auth-name-row" {...fadeUp(0.37)}>
+                    <AuthInput
+                      label="First Name"
+                      placeholder="eg. John"
+                      value={form.first_name}
+                      onChange={(e) => update('first_name', e.target.value)}
+                      error={errors.first_name}
+                    />
+                    <AuthInput
+                      label="Last Name"
+                      placeholder="eg. Francisco"
+                      value={form.last_name}
+                      onChange={(e) => update('last_name', e.target.value)}
+                      error={errors.last_name}
+                    />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.44)}>
+                    <AuthInput
                       label="Email"
                       type="email"
-                      required
+                      placeholder="eg. johnfrans@gmail.com"
                       value={form.email}
                       onChange={(e) => update('email', e.target.value)}
-                      placeholder="you@example.com"
-                      icon={
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                        </svg>
-                      }
+                      error={errors.email}
                     />
+                  </motion.div>
 
-                    <Input
-                      label="Phone"
+                  <motion.div {...fadeUp(0.5)}>
+                    <AuthInput
+                      label="Phone (optional)"
                       type="tel"
+                      placeholder="+91 9876543210"
                       value={form.phone}
                       onChange={(e) => update('phone', e.target.value)}
-                      placeholder="+91 9876543210 (optional)"
                     />
+                  </motion.div>
 
-                    <Input
-                      label="Referral Code"
-                      type="text"
+                  <motion.div {...fadeUp(0.56)}>
+                    <AuthInput
+                      label="Referral Code (optional)"
+                      placeholder="Enter code"
                       value={form.referral_code}
                       onChange={(e) => update('referral_code', e.target.value)}
-                      placeholder="Optional"
                     />
+                  </motion.div>
 
-                    <Button type="submit" variant="primary" size="xl" fullWidth>
-                      Continue
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Input
+                  <motion.div {...fadeUp(0.62)}>
+                    <AuthInput
                       label="Password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="Enter your password"
                       value={form.password}
                       onChange={(e) => update('password', e.target.value)}
-                      placeholder="Min 8 characters"
-                      autoComplete="new-password"
-                      icon={
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                        </svg>
-                      }
-                      suffix={
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="text-text-tertiary hover:text-text-secondary transition-fast p-0.5"
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showPassword ? (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                          )}
-                        </button>
-                      }
+                      error={errors.password}
+                      helper="Must be at least 8 characters."
+                      rightIcon={showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+                      onIconClick={() => setShowPass(!showPass)}
                     />
-
-                    {/* Password strength indicator */}
-                    {form.password && (
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4].map((i) => {
-                          const strength = form.password.length >= 12 ? 4 : form.password.length >= 10 ? 3 : form.password.length >= 8 ? 2 : 1;
-                          const colors = ['bg-sell', 'bg-warning', 'bg-buy', 'bg-success'];
-                          return (
-                            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                              i <= strength ? colors[strength - 1] : 'bg-border-primary'
-                            }`} />
-                          );
-                        })}
+                    {strength > 0 && (
+                      <div className="auth-strength" style={{ marginTop: 6 }}>
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="auth-strength__bar"
+                            style={{ background: i <= strength ? strengthColors[strength - 1] : undefined }}
+                          />
+                        ))}
                       </div>
                     )}
+                  </motion.div>
 
-                    <Input
+                  <motion.div {...fadeUp(0.68)}>
+                    <AuthInput
                       label="Confirm Password"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
+                      type={showConfirmPass ? 'text' : 'password'}
+                      placeholder="Re-enter password"
                       value={form.confirmPassword}
                       onChange={(e) => update('confirmPassword', e.target.value)}
-                      placeholder="Re-enter password"
-                      autoComplete="new-password"
-                      error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : undefined}
-                      suffix={
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword((v) => !v)}
-                          className="text-text-tertiary hover:text-text-secondary transition-fast p-0.5"
-                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showConfirmPassword ? (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                          )}
-                        </button>
-                      }
+                      error={errors.confirmPassword}
+                      rightIcon={showConfirmPass ? <Eye size={18} /> : <EyeOff size={18} />}
+                      onIconClick={() => setShowConfirmPass(!showConfirmPass)}
                     />
+                  </motion.div>
 
-                    <div className="flex gap-3">
-                      <Button type="button" variant="outline" size="xl" onClick={() => setStep(1)} className="flex-1">
-                        Back
-                      </Button>
-                      <Button type="submit" variant="primary" size="xl" loading={isLoading} className="flex-[2]">
-                        Create Account
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </form>
+                  <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.72, duration: 0.4 }}>
+                    <button type="submit" className="auth-btn" disabled={loading || isLoading}>
+                      {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : 'Sign Up'}
+                    </button>
+                  </motion.div>
 
-              <div className="emboss-divider my-6" />
-
-              <p className="text-center text-xs text-text-tertiary">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="text-buy hover:text-buy-light transition-fast font-medium">
-                  Sign in
-                </Link>
-              </p>
-            </div>
+                  <motion.p className="auth-footer" {...fadeUp(0.78)}>
+                    Already have an account?{' '}
+                    <a onClick={() => router.push('/auth/login')}>Log in</a>
+                  </motion.p>
+                </form>
+              </motion.div>
+            </AnimatePresence>
           </div>
-
-          <p className="text-center text-xxs text-text-tertiary mt-6 px-4">
-            By creating an account you agree to our Terms of Service and Privacy Policy
-          </p>
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Headphones,
   Receipt,
+  Calculator,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: 'Affiliates', href: '/business', icon: Users },
   { label: 'TrustEdge Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
+  { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Settings', href: '/profile', icon: Settings },
 ] as const;
@@ -104,10 +106,10 @@ export default function AppSidebar() {
                   size={17}
                   strokeWidth={1.85}
                   className={cn(
-                    'shrink-0 transition-[filter,color] sidebar-icon-glow',
+                    'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#00e676]',
                     isActive
-                      ? 'text-accent drop-shadow-[0_0_8px_rgba(0,230,118,0.45)]'
-                      : 'text-accent/55',
+                      ? 'drop-shadow-[0_0_8px_rgba(0,230,118,0.55)]'
+                      : 'drop-shadow-[0_0_6px_rgba(0,230,118,0.35)]',
                   )}
                 />
                 <span className="truncate">{item.label}</span>

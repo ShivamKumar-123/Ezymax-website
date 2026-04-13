@@ -617,7 +617,7 @@ function WalletPageContent() {
   return (
     <DashboardShell mainClassName="flex flex-col min-h-0 overflow-hidden p-0">
       <div className="dashboard-main-scroll flex-1 min-h-0 min-w-0 overflow-y-auto bg-bg-base">
-        <div className="w-full max-w-full space-y-6 px-4 py-4 pb-24 md:px-6 md:py-6">
+        <div className="w-full max-w-full space-y-4 sm:space-y-6 px-2.5 sm:px-4 py-3 sm:py-4 pb-24 md:px-6 md:py-6">
           {/* Crucial-ui style page header */}
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -653,58 +653,59 @@ function WalletPageContent() {
             </div>
           )}
 
-          <div className="rounded-xl border border-border-primary bg-card p-2.5 sm:p-3">
-            <div className="flex gap-2 overflow-x-auto pb-0.5 sidebar-scroll snap-x snap-mandatory [scrollbar-width:thin]">
-              {/* Main wallet — compact, accent border */}
+          {/* ── Account Cards Grid ── */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+              {/* ── Main Wallet Card ── */}
               <div
-                className={clsx(
-                  'flex shrink-0 snap-start flex-col gap-1.5 rounded-lg border-2 bg-card-nested p-2.5 w-[148px] sm:w-[156px]',
-                  'border-accent/40 shadow-sm shadow-accent/5 transition-colors hover:border-accent/60',
-                )}
+                className="relative group rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(0,230,118,0.1) 0%, #0d0f10 60%)',
+                  border: '1px solid rgba(0,230,118,0.22)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,230,118,0.06)',
+                }}
               >
-                <div className="flex items-start justify-between gap-1">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-accent/20 bg-accent/10">
-                    <WalletIcon className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-                  </div>
-                  {(wallet?.pending_withdrawals ?? 0) > 0 ? (
-                    <span className="text-[9px] font-semibold text-amber-500/95 leading-none text-right max-w-[4.5rem]">
-                      {wallet?.pending_withdrawals} pend.
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-[9px] font-bold uppercase tracking-wide text-text-tertiary leading-tight">
-                  Main wallet
-                </p>
-                <p className="text-sm font-bold tabular-nums font-mono text-text-primary truncate">
-                  {fmt(wallet?.main_wallet_balance ?? 0)}
-                </p>
-                {liveAccounts.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openTransferFromMain(liveAccounts.length === 1 ? liveAccounts[0].id : null)
-                    }
-                    disabled={demoFundingBlocked}
-                    title="Add to trading account"
-                    className={clsx(
-                      'flex w-full items-center justify-center gap-1 rounded-md border border-border-primary py-1 text-[10px] font-semibold transition-all',
-                      'text-accent hover:bg-accent/8 hover:border-accent/25 disabled:opacity-40 disabled:pointer-events-none',
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#00e676]/[0.04] group-hover:bg-[#00e676]/[0.08] transition-colors duration-500" />
+                <div className="relative p-3 sm:p-4 md:p-5 flex flex-col gap-2.5 sm:gap-3">
+                  <div className="flex items-center justify-between">
+                    <div
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#00e676]/25"
+                      style={{ background: 'linear-gradient(135deg, rgba(0,230,118,0.18) 0%, rgba(0,230,118,0.05) 100%)' }}
+                    >
+                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#00e676]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(0,230,118,0.5))' }} />
+                    </div>
+                    {(wallet?.pending_withdrawals ?? 0) > 0 && (
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                        {wallet?.pending_withdrawals} pending
+                      </span>
                     )}
-                  >
-                    <ArrowUpFromLine className="h-3 w-3 shrink-0" strokeWidth={2.25} />
-                    To trading
-                  </button>
-                ) : null}
+                  </div>
+                  <div>
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#00e676]/60 mb-0.5 sm:mb-1">Main Wallet</p>
+                    <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-white truncate">
+                      {fmt(wallet?.main_wallet_balance ?? 0)}
+                    </p>
+                  </div>
+                  {liveAccounts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => openTransferFromMain(liveAccounts.length === 1 ? liveAccounts[0].id : null)}
+                      disabled={demoFundingBlocked}
+                      title="Add to trading account"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#00e676]/10 text-[#00e676] border border-[#00e676]/20 hover:bg-[#00e676]/20 hover:border-[#00e676]/40 disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
+                      To Trading
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* One compact card per live trading account */}
+              {/* ── Live Account Cards ── */}
               {liveAccounts.map((a) => {
                 const cur = a.currency || wallet?.currency || 'USD';
                 const bal = Number(a.balance) || 0;
-                const line = new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: cur,
-                }).format(bal);
+                const line = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(bal);
                 const isSel = a.id === selectedAccountId;
                 const num = a.account_number || '';
                 const isManaged = num.startsWith('IF') || num.startsWith('CF');
@@ -715,8 +716,7 @@ function WalletPageContent() {
                   : num.startsWith('MM') ? 'MAM Pool'
                   : num.startsWith('CT') ? 'Copy Pool'
                   : num;
-                const iconColor = isManaged ? 'border-amber-500/20 bg-amber-500/10' : isPool ? 'border-purple-500/20 bg-purple-500/10' : 'border-buy/20 bg-buy/10';
-                const iconTextColor = isManaged ? 'text-amber-400' : isPool ? 'text-purple-400' : 'text-buy';
+                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '0,230,118', hex: '#00e676' };
 
                 return (
                   <div
@@ -725,84 +725,77 @@ function WalletPageContent() {
                     tabIndex={0}
                     aria-label={`Trading account ${num}`}
                     onClick={() => setSelectedAccountId(a.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedAccountId(a.id);
-                      }
-                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAccountId(a.id); } }}
                     className={clsx(
-                      'flex shrink-0 snap-start flex-col gap-1.5 rounded-lg border bg-card-nested p-2.5 w-[148px] sm:w-[156px]',
-                      'shadow-sm transition-colors cursor-pointer outline-none',
-                      isManaged ? 'border-amber-500/20 hover:border-amber-500/40' : isPool ? 'border-purple-500/20 hover:border-purple-500/40' : 'border-border-primary hover:border-border-secondary',
-                      isSel && 'ring-1 ring-accent/35 border-accent/20',
+                      'relative group rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer outline-none hover:scale-[1.02]',
+                      isSel && 'ring-2 ring-[#00e676]/30',
                     )}
+                    style={{
+                      background: `linear-gradient(145deg, rgba(${ac.r},0.08) 0%, #0d0f10 60%)`,
+                      border: `1px solid rgba(${ac.r},${isSel ? 0.35 : 0.15})`,
+                      boxShadow: isSel ? `0 4px 24px rgba(${ac.r},0.1), 0 0 0 1px rgba(${ac.r},0.08)` : '0 4px 24px rgba(0,0,0,0.3)',
+                    }}
                   >
-                    <div className="flex items-start justify-between gap-1">
-                      <div className={clsx('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', iconColor)}>
-                        <TrendingUp className={clsx('h-3.5 w-3.5', iconTextColor)} strokeWidth={2} />
+                    <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] transition-colors duration-500"
+                      style={{ background: `rgba(${ac.r},0.03)` }}
+                    />
+                    <div className="relative p-3 sm:p-4 md:p-5 flex flex-col gap-2.5 sm:gap-3">
+                      <div className="flex items-center justify-between">
+                        <div
+                          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, rgba(${ac.r},0.18) 0%, rgba(${ac.r},0.05) 100%)`, border: `1px solid rgba(${ac.r},0.22)` }}
+                        >
+                          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} style={{ color: ac.hex, filter: `drop-shadow(0 0 6px rgba(${ac.r},0.5))` }} />
+                        </div>
                       </div>
+                      <div>
+                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate" style={{ color: `rgba(${ac.r},0.6)` }}>
+                          {cardLabel}
+                        </p>
+                        <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-white truncate">{line}</p>
+                      </div>
+                      {!isManaged && !isPool ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
+                            disabled={demoFundingBlocked}
+                            title="Move to main wallet"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#00e676] hover:border-[#00e676]/25 transition-all disabled:opacity-40"
+                          >
+                            <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTransferFromMain(a.id); }}
+                            disabled={demoFundingBlocked}
+                            title="Add from main wallet"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] py-2 text-[10px] font-semibold text-[#888] hover:bg-white/[0.06] hover:text-[#00e676] hover:border-[#00e676]/25 transition-all disabled:opacity-40"
+                          >
+                            <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center rounded-xl border py-2 text-[10px] font-bold tracking-wide"
+                          style={{ borderColor: `rgba(${ac.r},0.15)`, color: `rgba(${ac.r},0.5)`, background: `rgba(${ac.r},0.04)` }}
+                        >
+                          {isManaged ? 'Managed' : 'Master'}
+                        </div>
+                      )}
                     </div>
-                    <p className={clsx(
-                      'text-[9px] font-bold uppercase tracking-wide leading-tight truncate',
-                      isManaged || isPool ? iconTextColor : 'text-text-tertiary font-mono',
-                    )}>
-                      {cardLabel}
-                    </p>
-                    <p className="text-sm font-bold tabular-nums font-mono text-text-primary truncate">{line}</p>
-                    {!isManaged && !isPool ? (
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openTransferToMain(a.id);
-                          }}
-                          disabled={demoFundingBlocked}
-                          title="Move to main wallet"
-                          className={clsx(
-                            'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
-                            'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
-                          )}
-                        >
-                          <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openTransferFromMain(a.id);
-                          }}
-                          disabled={demoFundingBlocked}
-                          title="Add from main wallet"
-                          className={clsx(
-                            'flex flex-1 items-center justify-center rounded-md border border-border-primary py-1 transition-all',
-                            'text-text-secondary hover:bg-bg-hover hover:text-accent disabled:opacity-40',
-                          )}
-                        >
-                          <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center rounded-md border border-border-primary/50 py-1 text-[9px] font-semibold text-text-tertiary">
-                        {isManaged ? 'Managed' : 'Master'}
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
-            {liveAccounts.length > 1 &&
-            wallet?.total_live_balance != null &&
-            Math.abs((wallet.total_live_balance ?? 0) - (wallet.balance || 0)) > 0.009 ? (
-              <p className="mt-2 px-0.5 text-[10px] text-text-tertiary">
+            {liveAccounts.length > 1 && wallet?.total_live_balance != null &&
+              Math.abs((wallet.total_live_balance ?? 0) - (wallet.balance || 0)) > 0.009 && (
+              <p className="px-1 text-[11px] text-text-tertiary">
                 All live accounts total:{' '}
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: wallet?.currency || 'USD',
-                }).format(wallet.total_live_balance)}
+                <span className="font-mono font-semibold text-text-secondary">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: wallet?.currency || 'USD' }).format(wallet.total_live_balance)}
+                </span>
               </p>
-            ) : null}
+            )}
           </div>
 
           <div

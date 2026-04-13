@@ -202,7 +202,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const terminalMarketsOpen = useUIStore((s) => s.terminalMarketsOpen);
   const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount } = useTradingStore();
   const [search, setSearch] = useState('');
-  const [segment, setSegment] = useState('All');
+  const [segment, setSegment] = useState('Starred');
   const [bidFlash, setBidFlash] = useState<Record<string, Trend>>({});
   const [askFlash, setAskFlash] = useState<Record<string, Trend>>({});
   const [activeOrderSymbol, setActiveOrderSymbol] = useState<string | null>(null);
@@ -483,96 +483,152 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
         </>
       ) : (
         <>
-          {/* Search — styled to match Crucial Markets */}
-          <div className="p-3 shrink-0 border-b border-[#1a1a1a]">
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-[#666]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2.5"
+          {/* ── Search bar with Go button ── */}
+          <div className="px-3 pt-3 pb-2 shrink-0 border-b border-border-glass bg-bg-secondary">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    if (e.target.value.trim()) setSegment('All');
+                  }}
+                  placeholder="Search symbols..."
+                  className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-glass bg-bg-primary text-text-primary placeholder:text-text-tertiary outline-none focus:border-buy/50 focus:ring-1 focus:ring-buy/20"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => { /* search triggers on change already */ }}
+                className="shrink-0 px-4 py-2.5 rounded-xl bg-buy text-white text-sm font-bold hover:bg-buy-light active:scale-95 transition-all"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search symbols..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-[#1e1e1e] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#00e676]/50 focus:ring-1 focus:ring-[#00e676]/20"
-              />
+                Go
+              </button>
             </div>
           </div>
 
-          {/* Instruments — grouped by segment, Crucial Markets style */}
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y">
-            {TERMINAL_GROUPS.map((group) => {
-              const syms = (groupedTerminal[group] || []).filter((s) =>
-                search.trim() === '' ? true : s.toLowerCase().includes(search.toLowerCase()),
-              );
-              if (syms.length === 0) return null;
-              return (
-                <div key={group}>
-                  <div className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#5c6370] border-t border-[#1a1a1a] first:border-t-0 bg-[#0c0d12]">
-                    {group}
+          {/* ── Category tabs — horizontal scroll ── */}
+          <div className="shrink-0 border-b border-border-glass bg-bg-secondary">
+            <div className="flex overflow-x-auto no-scrollbar scrollbar-none">
+              {(['Starred', 'All', ...TERMINAL_GROUPS] as const).map((tab) => {
+                const label = tab === 'Starred' ? '★ Favourites' : tab === 'All' ? 'All' : tab;
+                const active = segment === (tab === 'Starred' ? 'Starred' : tab);
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setSegment(tab === 'Starred' ? 'Starred' : tab)}
+                    className={clsx(
+                      'shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-colors border-b-2',
+                      active
+                        ? 'text-buy border-buy'
+                        : 'text-text-tertiary border-transparent hover:text-text-primary',
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Results label ── */}
+          {search.trim() !== '' && (
+            <div className="px-4 py-2 shrink-0 bg-bg-secondary/50">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Search Results</span>
+            </div>
+          )}
+
+          {/* ── Instrument list ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y bg-bg-primary no-scrollbar scrollbar-none">
+            {(() => {
+              // Filter symbols by search + segment
+              const displaySymbols = allSymbols.filter((s: string) => {
+                if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+                if (segment === 'Starred') return watchlist.includes(s);
+                if (segment !== 'All') {
+                  const g = terminalGroup(s, instruments);
+                  if (g !== segment) return false;
+                }
+                return true;
+              });
+
+              if (displaySymbols.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <svg className="w-10 h-10 text-text-tertiary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="text-sm text-text-tertiary font-medium">
+                      {segment === 'Starred' ? 'No favourites yet' : 'No instruments found'}
+                    </p>
                   </div>
-                  {syms.map((symbol) => {
-                    const tick = prices[symbol];
-                    const digits = getDigits(symbol);
-                    const bFlash = bidFlash[symbol];
-                    const aFlash = askFlash[symbol];
-                    const sel = symbol === selectedSymbol;
-                    return (
-                      <button
-                        key={symbol}
-                        type="button"
-                        onClick={() => handleRowClick(symbol)}
-                        className={clsx(
-                          'w-full flex items-center justify-between gap-2 pl-0 pr-4 py-3 text-left border-l-[3px] border-b border-b-[#141414] transition-colors',
-                          sel
-                            ? 'border-l-[#00e676] bg-[#00e676]/[0.06]'
-                            : 'border-l-transparent hover:bg-white/[0.03] active:bg-[#00e676]/5',
+                );
+              }
+
+              return displaySymbols.map((symbol: string) => {
+                const tick = prices[symbol];
+                const digits = getDigits(symbol);
+                const meta = SYMBOL_META[symbol];
+                const sel = symbol === selectedSymbol;
+                const isWatchlisted = watchlist.includes(symbol);
+                const displayName = meta?.display || symbol;
+                const segLabel = meta?.segment || terminalGroup(symbol, instruments);
+
+                return (
+                  <button
+                    key={symbol}
+                    type="button"
+                    onClick={() => handleRowClick(symbol)}
+                    className={clsx(
+                      'w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
+                      sel
+                        ? 'bg-buy/[0.06]'
+                        : 'hover:bg-bg-hover active:bg-buy/5',
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-text-primary font-mono tracking-wide">{symbol}</span>
+                        {isWatchlisted && (
+                          <span className="text-amber-400 text-xs" aria-label="Favourited">★</span>
                         )}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 pl-4">
-                          <div
-                            className="w-7 h-7 rounded-full shrink-0 bg-gradient-to-br from-amber-400/90 to-blue-500/90"
-                            aria-hidden
-                          />
-                          <span className="text-sm font-bold text-white font-mono">{symbol}</span>
-                          <span className="text-sm leading-none opacity-90 shrink-0" aria-hidden>
-                            {SYMBOL_EMOJI[symbol] || ''}
+                      </div>
+                      <p className="text-xs text-text-tertiary mt-0.5 truncate uppercase tracking-wide">
+                        {segLabel}{displayName !== symbol ? ` – ${displayName}` : ''}
+                      </p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3">
+                      {tick ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-mono font-bold tabular-nums text-text-primary">
+                            {tick.bid.toFixed(digits)}
+                          </span>
+                          <span className={clsx(
+                            'text-[10px] font-bold tabular-nums',
+                            tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? 'text-buy' : 'text-sell',
+                          )}>
+                            {tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? '▲' : '▼'}{' '}
+                            {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip
                           </span>
                         </div>
-                        <div className="flex gap-5 shrink-0">
-                          <div className="flex flex-col items-end gap-0.5 min-w-[72px]">
-                            {tick ? (
-                              <PriceCell value={tick.bid} digits={digits} flash={bFlash} tone="bid" />
-                            ) : (
-                              <span className="text-[13px] text-[#555] font-mono">—</span>
-                            )}
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#555]">
-                              Bid
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-end gap-0.5 min-w-[72px]">
-                            {tick ? (
-                              <PriceCell value={tick.ask} digits={digits} flash={aFlash} tone="ask" />
-                            ) : (
-                              <span className="text-[13px] text-[#555] font-mono">—</span>
-                            )}
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#555]">
-                              Ask
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
+                      ) : null}
+                      <span className="text-buy text-xs font-semibold whitespace-nowrap">+ Add</span>
+                    </div>
+                  </button>
+                );
+              });
+            })()}
           </div>
         </>
       )}

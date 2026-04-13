@@ -789,37 +789,233 @@ function formatCreated(d?: string) {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(t);
 }
 
-function BalanceTrendBlock() {
+interface ClosedTradeRow {
+  id: string;
+  pnl: number;
+  close_time: string;
+}
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function fmtYLabel(v: number): string {
+  if (Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  if (Math.abs(v) >= 1e3) return `$${(v / 1e3).toFixed(1)}k`;
+  return `$${v.toFixed(0)}`;
+}
+
+function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance: number }) {
   const [tab, setTab] = useState<(typeof TREND_TABS)[number]>('7D');
+  const [trades, setTrades] = useState<ClosedTradeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api
+      .get<{ items?: ClosedTradeRow[] } | ClosedTradeRow[]>('/portfolio/trades', {
+        page: '1',
+        per_page: '1000',
+        account_id: accountId,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const items = (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [];
+        setTrades(items);
+      })
+      .catch(() => { if (!cancelled) setTrades([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [accountId]);
+
+  /* Build daily balance snapshots: work backwards from current balance */
+  const { dailyPoints, xLabels } = useMemo(() => {
+    const msMap: Record<string, number> = { '24H': 864e5, '7D': 6048e5, '30D': 2592e6, '90D': 7776e6, '1Y': 31536e6 };
+    const periodMs = msMap[tab] || 6048e5;
+    const now = new Date();
+    const startMs = now.getTime() - periodMs;
+
+    /* Determine interval: 24H → hourly, 7D → daily, 30D → daily, 90D → weekly, 1Y → monthly */
+    let intervalMs: number;
+    let labelFn: (d: Date) => string;
+    if (tab === '24H') {
+      intervalMs = 36e5; // 1 hour
+      labelFn = (d) => `${d.getHours().toString().padStart(2, '0')}:00`;
+    } else if (tab === '7D' || tab === '30D') {
+      intervalMs = 864e5; // 1 day
+      labelFn = (d) => DAY_NAMES[d.getDay()];
+    } else if (tab === '90D') {
+      intervalMs = 864e5 * 7; // 1 week
+      labelFn = (d) => `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+    } else {
+      intervalMs = 864e5 * 30; // ~1 month
+      labelFn = (d) => MONTH_SHORT[d.getMonth()];
+    }
+
+    /* Build time slots from start to now */
+    const slots: number[] = [];
+    let t = startMs;
+    while (t <= now.getTime()) {
+      slots.push(t);
+      t += intervalMs;
+    }
+    if (slots[slots.length - 1] < now.getTime()) slots.push(now.getTime());
+
+    /* Sort trades by close_time ascending */
+    const sorted = [...trades]
+      .filter((tr) => tr.close_time)
+      .sort((a, b) => new Date(a.close_time).getTime() - new Date(b.close_time).getTime());
+
+    /* Sum P&L per slot: for each slot, accumulate P&L of trades closed after that slot */
+    /* Current balance = balance. Balance at slot[i] = balance - sum(pnl of trades closed after slot[i]) */
+    const pts: { x: number; y: number }[] = [];
+    const labels: string[] = [];
+
+    for (const slotMs of slots) {
+      const pnlAfter = sorted
+        .filter((tr) => new Date(tr.close_time).getTime() > slotMs)
+        .reduce((s, tr) => s + (Number(tr.pnl) || 0), 0);
+      pts.push({ x: slotMs, y: balance - pnlAfter });
+      labels.push(labelFn(new Date(slotMs)));
+    }
+
+    return { dailyPoints: pts, xLabels: labels };
+  }, [trades, tab, balance]);
+
+  /* Chart dimensions with margins for labels */
+  const W = 480;
+  const H = 160;
+  const ML = 48; // left margin for Y-axis labels
+  const MR = 8;
+  const MT = 12;
+  const MB = 22; // bottom margin for X-axis labels
+
+  const { path, areaPath, isProfit, pnlValue, pnlPct, yTicks, screenPts } = useMemo(() => {
+    if (dailyPoints.length < 2) return { path: '', areaPath: '', isProfit: true, pnlValue: 0, pnlPct: 0, yTicks: [] as { y: number; label: string }[], screenPts: [] as { sx: number; sy: number }[] };
+
+    const ys = dailyPoints.map((p) => p.y);
+    const yMin = Math.min(...ys);
+    const yMax = Math.max(...ys);
+    const yPad = (yMax - yMin) * 0.1 || 1;
+    const yLo = yMin - yPad;
+    const yHi = yMax + yPad;
+    const yRange = yHi - yLo || 1;
+    const xMin = dailyPoints[0].x;
+    const xMax = dailyPoints[dailyPoints.length - 1].x;
+    const xRange = xMax - xMin || 1;
+
+    const chartW = W - ML - MR;
+    const chartH = H - MT - MB;
+
+    const pts = dailyPoints.map((p) => ({
+      sx: ML + ((p.x - xMin) / xRange) * chartW,
+      sy: MT + (1 - (p.y - yLo) / yRange) * chartH,
+    }));
+
+    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(' ');
+    const area = `${linePath} L${pts[pts.length - 1].sx.toFixed(1)},${H - MB} L${pts[0].sx.toFixed(1)},${H - MB} Z`;
+
+    const first = dailyPoints[0].y;
+    const last = dailyPoints[dailyPoints.length - 1].y;
+    const diff = last - first;
+    const pct = first > 0 ? (diff / first) * 100 : 0;
+
+    /* Generate 3-4 Y-axis ticks */
+    const tickCount = 4;
+    const ticks: { y: number; label: string }[] = [];
+    for (let i = 0; i < tickCount; i++) {
+      const val = yLo + (yRange * i) / (tickCount - 1);
+      const sy = MT + (1 - (val - yLo) / yRange) * chartH;
+      ticks.push({ y: sy, label: fmtYLabel(val) });
+    }
+
+    return { path: linePath, areaPath: area, isProfit: diff >= 0, pnlValue: diff, pnlPct: pct, yTicks: ticks, screenPts: pts };
+  }, [dailyPoints]);
+
+  const lineColor = isProfit ? '#f59e0b' : '#ef4444'; // amber like Crucial Markets
+  const gradId = `trend-grad-${accountId}`;
+
+  /* Thin down X-axis labels to avoid overlap */
+  const maxXLabels = tab === '24H' ? 8 : tab === '7D' ? 8 : tab === '30D' ? 10 : 8;
+  const xStep = Math.max(1, Math.ceil(xLabels.length / maxXLabels));
+
   return (
     <div className="min-w-0">
-      <div className="text-[13px] font-medium text-white/70 mb-2">Balance trend</div>
-      <div className="flex flex-wrap gap-1 mb-2">
-        {TREND_TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={clsx(
-              'px-2 py-1 rounded-md text-[10px] font-bold transition-colors',
-              tab === t ? 'bg-[#00e676]/20 text-[#00e676] border border-[#00e676]/40' : 'text-white/70 border border-transparent hover:bg-white/5',
-            )}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[13px] font-medium text-white/70">Balance Trend</div>
+        <div className="flex flex-wrap items-center gap-1">
+          {TREND_TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={clsx(
+                'px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors',
+                tab === t ? 'bg-[#00e676]/20 text-[#00e676] border border-[#00e676]/40' : 'text-white/50 border border-transparent hover:bg-white/5 hover:text-white/70',
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="h-28 sm:h-32 rounded-xl bg-[#0a0a0a] border border-[#2a2a2a] relative overflow-hidden">
-        <svg className="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)]" preserveAspectRatio="none">
-          <defs>
-            <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#222" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" opacity={0.6} />
-          <line x1="0%" y1="55%" x2="100%" y2="55%" stroke="#f97316" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-        </svg>
-        <span className="absolute bottom-2 right-2 text-[10px] text-[#555]">{tab} · demo</span>
+      <div className="rounded-xl bg-[#080808] border border-[#1a1a1a] relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-5 w-5 border-2 border-[#00e676] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={lineColor} stopOpacity="0.35" />
+                <stop offset="100%" stopColor={lineColor} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+
+            {/* Horizontal grid lines at Y ticks */}
+            {yTicks.map((tick, i) => (
+              <g key={i}>
+                <line x1={ML} y1={tick.y} x2={W - MR} y2={tick.y} stroke="#1a1a1a" strokeWidth="0.5" />
+                <text x={ML - 6} y={tick.y + 3} textAnchor="end" fill="#555" fontSize="9" fontFamily="monospace">
+                  {tick.label}
+                </text>
+              </g>
+            ))}
+
+            {/* X-axis labels */}
+            {xLabels.map((label, i) => {
+              if (i % xStep !== 0 && i !== xLabels.length - 1) return null;
+              const sx = screenPts[i]?.sx;
+              if (sx == null) return null;
+              return (
+                <text key={i} x={sx} y={H - 4} textAnchor="middle" fill="#555" fontSize="9">
+                  {label}
+                </text>
+              );
+            })}
+
+            {dailyPoints.length >= 2 && (
+              <>
+                {/* Area fill */}
+                <path d={areaPath} fill={`url(#${gradId})`} />
+                {/* Line */}
+                <path d={path} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Data point dots */}
+                {screenPts.map((p, i) => {
+                  if (i % xStep !== 0 && i !== screenPts.length - 1) return null;
+                  return <circle key={i} cx={p.sx} cy={p.sy} r="3" fill={lineColor} stroke="#080808" strokeWidth="1.5" />;
+                })}
+              </>
+            )}
+
+            {dailyPoints.length < 2 && (
+              <text x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle" fill="#444" fontSize="11">
+                Not enough data for this period
+              </text>
+            )}
+          </svg>
+        )}
       </div>
     </div>
   );
@@ -873,292 +1069,215 @@ function AccountCard({
     }
   };
 
+  const accountLabel = row.is_demo
+    ? 'Demo Account'
+    : row.account_number.startsWith('PM')
+      ? 'PAMM Pool Account'
+      : row.account_number.startsWith('MM')
+        ? 'MAM Pool Account'
+        : row.account_number.startsWith('CT')
+          ? 'Copy Trade Pool Account'
+          : row.account_number.startsWith('CF')
+            ? 'Copy Trade Account'
+            : row.account_number.startsWith('IF')
+              ? 'Investment Account'
+              : 'Live Account';
+
+  const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
+  const isPoolAccount = row.account_number.startsWith('PM') || row.account_number.startsWith('MM') || row.account_number.startsWith('CT');
+
   return (
     <li
       id={`account-card-${row.id}`}
-      className={clsx(
-        'relative overflow-hidden rounded-xl border bg-card-nested transition-[box-shadow,border-color] duration-300',
-        open
-          ? 'animate-wallet-neon-tab border-accent/40 shadow-[0_0_32px_rgba(0,230,118,0.14)]'
-          : 'border-border-primary hover:border-accent/25 hover:shadow-[0_0_24px_rgba(0,230,118,0.08)]',
-      )}
+      className="relative overflow-hidden rounded-2xl transition-all duration-300"
+      style={{
+        background: '#0d0f10',
+        border: open ? '1px solid rgba(0,230,118,0.22)' : '1px solid rgba(255,255,255,0.06)',
+        boxShadow: open ? '0 4px 32px rgba(0,230,118,0.08)' : '0 4px 24px rgba(0,0,0,0.3)',
+      }}
     >
-      <div className="relative z-[1] flex w-full items-start gap-3 px-5 py-5 transition-colors hover:bg-white/[0.02]">
+      {/* ── Header Row — always visible ── */}
+      <div
+        className="flex w-full items-start gap-2 sm:gap-3 px-3 sm:px-5 md:px-6 py-4 sm:py-5 cursor-pointer transition-colors hover:bg-white/[0.015]"
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o); } }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+      >
         <span
           className={clsx(
-            'mt-1.5 h-2.5 w-2.5 rounded-full shrink-0',
+            'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
             row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#00e676] shadow-[0_0_6px_rgba(0,230,118,0.7)]',
           )}
           aria-hidden
         />
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => setOpen((o) => !o)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setOpen((o) => !o);
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-expanded={open}
-        >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-4">
-            <span className="text-base font-bold text-white">
-              {row.is_demo
-                ? 'Demo Account'
-                : row.account_number.startsWith('PM')
-                  ? 'PAMM Pool Account'
-                  : row.account_number.startsWith('MM')
-                    ? 'MAM Pool Account'
-                    : row.account_number.startsWith('CT')
-                      ? 'Copy Trade Pool Account'
-                      : row.account_number.startsWith('CF')
-                        ? 'Copy Trade Account'
-                        : row.account_number.startsWith('IF')
-                          ? 'Investment Account'
-                          : 'Live Account'}
-            </span>
-            {(() => {
-              const n = row.account_number;
-              const badge = n.startsWith('PM') ? { label: 'PAMM Pool', color: 'purple' }
-                : n.startsWith('MM') ? { label: 'MAM Pool', color: 'blue' }
-                : n.startsWith('CT') ? { label: 'Copy Pool', color: 'emerald' }
-                : n.startsWith('CF') ? { label: 'Copy Fund', color: 'teal' }
-                : n.startsWith('IF') ? { label: 'Investment', color: 'amber' }
-                : null;
-              if (!badge) return null;
-              const colors: Record<string, string> = {
-                purple: 'bg-purple-500/15 text-purple-400 border-purple-500/25',
-                blue: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
-                emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-                teal: 'bg-teal-500/15 text-teal-400 border-teal-500/25',
-                amber: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
-              };
-              return (
-                <span className={clsx('text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border', colors[badge.color])}>
-                  {badge.label}
-                </span>
-              );
-            })()}
-            <span className="text-sm text-white/60 font-mono">{idLabel}</span>
+        <div className="flex-1 min-w-0">
+          {/* Account name + ID + alias */}
+          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mb-3 sm:mb-4">
+            <span className="text-sm sm:text-base font-bold text-white">{accountLabel}</span>
+            <span className="text-xs sm:text-sm text-white/40 font-mono">{idLabel}</span>
             {!editingAlias ? (
-              <span className="inline-flex items-center gap-1 text-sm text-text-secondary" onClick={(e) => e.stopPropagation()}>
+              <span className="inline-flex items-center gap-1 text-sm" onClick={(e) => e.stopPropagation()}>
                 {alias ? (
                   <>
-                    <span className="text-white/90">{alias}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAliasDraft(alias);
-                        setEditingAlias(true);
-                      }}
-                      className="rounded p-0.5 text-accent hover:bg-accent/10"
-                      aria-label="Edit label"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    <span className="text-white/70">{alias}</span>
+                    <button type="button" onClick={() => { setAliasDraft(alias); setEditingAlias(true); }} className="rounded p-0.5 text-[#00e676]/70 hover:text-[#00e676] hover:bg-[#00e676]/10" aria-label="Edit label"><Pencil size={13} /></button>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAliasDraft('');
-                      setEditingAlias(true);
-                    }}
-                    className="font-semibold text-accent/90 hover:text-accent hover:underline"
-                  >
-                    + Add label
-                  </button>
+                  <button type="button" onClick={() => { setAliasDraft(''); setEditingAlias(true); }} className="text-[#00e676]/60 hover:text-[#00e676] text-xs font-semibold">+ Add label</button>
                 )}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                <input
-                  value={aliasDraft}
-                  onChange={(e) => setAliasDraft(e.target.value)}
-                  placeholder="Alias"
-                  className="px-2 py-1 rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] text-sm text-white w-36 max-w-[50vw]"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      writeAlias(row.id, aliasDraft);
-                      setEditingAlias(false);
-                    }
-                    if (e.key === 'Escape') setEditingAlias(false);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="text-xs text-[#00e676] font-semibold"
-                  onClick={() => {
-                    writeAlias(row.id, aliasDraft);
-                    setEditingAlias(false);
-                  }}
-                >
-                  Save
-                </button>
+                <input value={aliasDraft} onChange={(e) => setAliasDraft(e.target.value)} placeholder="Alias" className="px-2 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-sm text-white w-36 max-w-[50vw] outline-none focus:border-[#00e676]/30" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { writeAlias(row.id, aliasDraft); setEditingAlias(false); } if (e.key === 'Escape') setEditingAlias(false); }} />
+                <button type="button" className="text-xs text-[#00e676] font-semibold" onClick={() => { writeAlias(row.id, aliasDraft); setEditingAlias(false); }}>Save</button>
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
-            <div>
-              <div className="text-xs text-text-secondary mb-1">Balance</div>
-              <div className="text-sm sm:text-lg font-bold text-white tabular-nums">
-                {fmt(row.balance, row.currency)}
-              </div>
+          {/* Stats row — Balance | Equity | P&L | Leverage */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3">
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Balance</p>
+              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono truncate">{fmt(row.balance, row.currency)}</p>
             </div>
-            <div>
-              <div className="text-xs text-text-secondary mb-1">Equity</div>
-              <div className="text-sm sm:text-lg font-bold text-white tabular-nums">
-                {fmt(row.equity, row.currency)}
-              </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Equity</p>
+              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono truncate">{fmt(row.equity, row.currency)}</p>
             </div>
-            <div>
-              <div className="text-xs text-text-secondary mb-1">P&amp;L</div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">P&amp;L</p>
               <div className="flex items-center gap-1">
-                {pnlPositive ? <TrendingUp size={14} className="shrink-0 text-[#00e676]" /> : <TrendingDown size={14} className="shrink-0 text-red-400" />}
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums', pnlPositive ? 'text-[#00e676]' : 'text-red-400')}>
-                  {pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
+                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#00e676]' : 'text-red-400')}>
+                  ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
-              <div className={clsx('text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#00e676]' : 'text-red-400')}>
+              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#00e676]/70' : 'text-red-400/70')}>
                 ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
-              </div>
+              </p>
             </div>
-            <div>
-              <div className="text-xs text-text-secondary mb-1">Leverage</div>
-              <div className="text-sm sm:text-lg font-bold text-white tabular-nums">1:{row.leverage}</div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-white/40 font-medium mb-0.5">Leverage</p>
+              <p className="text-sm sm:text-lg font-bold text-white tabular-nums font-mono">1:{row.leverage}</p>
             </div>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="text-white/65 shrink-0 mt-1 p-1 rounded-md hover:bg-white/5 hover:text-white"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+          className="text-white/40 shrink-0 mt-1 p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors"
           aria-label={open ? 'Collapse' : 'Expand'}
         >
-          <ChevronDown size={20} className={clsx('transition-transform', open && 'rotate-180')} />
+          <ChevronDown size={20} className={clsx('transition-transform duration-200', open && 'rotate-180')} />
         </button>
       </div>
 
+      {/* ── Expanded Section ── */}
       {open && (
-        <div className="space-y-5 border-t border-border-primary bg-bg-base/40 px-5 pb-5 pt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-            <BalanceTrendBlock />
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="px-3 sm:px-5 md:px-6 pb-4 sm:pb-5 pt-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 sm:gap-6 pt-4 sm:pt-5">
+            {/* Left — Balance Trend chart */}
+            <BalanceTrendBlock accountId={row.id} balance={row.balance} />
+
+            {/* Right — Account Details */}
+            <div>
+              <p className="text-[13px] font-medium text-white/70 mb-3">Account Details</p>
+              <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-3 sm:gap-y-4">
                 <div>
-                  <span className="text-white/60 text-[13px]">Free margin</span>
-                  <div className="font-mono text-base text-white font-semibold">{fmt(row.free_margin, row.currency)}</div>
+                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Free Margin</p>
+                  <p className="text-base font-bold text-white font-mono tabular-nums">{fmt(row.free_margin, row.currency)}</p>
                 </div>
                 <div>
-                  <span className="text-white/60 text-[13px]">Margin level</span>
-                  <div className="font-mono text-base text-white font-semibold">
-                    {Number.isFinite(row.margin_level) && row.margin_level > 0
-                      ? `${row.margin_level.toFixed(2)}%`
-                      : '0.00%'}
-                  </div>
+                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Margin Level</p>
+                  <p className="text-base font-bold text-white font-mono tabular-nums">
+                    {Number.isFinite(row.margin_level) && row.margin_level > 0 ? `${row.margin_level.toFixed(2)}%` : '0.00%'}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-white/60 text-[13px]">Margin used</span>
-                  <div className="font-mono text-base text-white font-semibold">{fmt(row.margin_used, row.currency)}</div>
+                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Currency</p>
+                  <p className="text-base font-bold text-white font-mono">{row.currency}</p>
                 </div>
                 <div>
-                  <span className="text-white/60 text-[13px]">Currency</span>
-                  <div className="font-mono text-base text-white font-semibold">{row.currency}</div>
-                </div>
-                <div className="sm:col-span-2">
-                  <span className="text-white/60 text-[13px]">Created</span>
-                  <div className="text-base text-white font-semibold">{formatCreated(row.created_at)}</div>
+                  <p className="text-[11px] text-white/40 font-medium mb-0.5">Created</p>
+                  <p className="text-base font-bold text-white">{formatCreated(row.created_at)}</p>
                 </div>
                 {row.account_group?.name ? (
-                  <div className="sm:col-span-2">
-                    <span className="text-white/60 text-[13px]">Account type</span>
-                    <div className="text-base text-white font-semibold">{row.account_group.name}</div>
+                  <div className="col-span-2">
+                    <p className="text-[11px] text-white/40 font-medium mb-0.5">Account Type</p>
+                    <p className="text-base font-bold text-white">{row.account_group.name}</p>
                   </div>
                 ) : null}
               </div>
             </div>
           </div>
 
-          {(() => {
-            const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
-            const isPoolAccount = row.account_number.startsWith('PM') || row.account_number.startsWith('MM') || row.account_number.startsWith('CT');
-            return (
-              <div className="relative z-[60] flex flex-col sm:flex-row flex-wrap gap-2 pt-1">
-                {isManagedAccount ? (
-                  /* Investment / Copy Fund accounts — view-only, no trading */
-                  <>
-                    <Link
-                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
-                    >
-                      <BookOpen size={16} />
-                      View Trades
-                    </Link>
-                    <div className="rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] px-4 py-2.5 text-xs text-[#666] flex items-center gap-2 sm:ml-auto">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by Copy master'}
-                    </div>
-                  </>
-                ) : isPoolAccount ? (
-                  /* Pool accounts — master can trade */
-                  <>
-                    <Link
-                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#444] text-white text-sm font-semibold hover:border-[#666] hover:bg-white/5 transition-colors"
-                    >
-                      <BookOpen size={16} />
-                      Trade History
-                    </Link>
-                    <Link
-                      href={tradeHref}
-                      prefetch
-                      onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
-                    >
-                      <ExternalLink size={16} />
-                      Trade (Master)
-                    </Link>
-                  </>
-                ) : (
-                  /* Normal live/demo accounts */
-                  <>
-                    <Link
-                      href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#444] text-white text-sm font-semibold hover:border-[#666] hover:bg-white/5 transition-colors"
-                    >
-                      <BookOpen size={16} />
-                      Trading journal
-                    </Link>
-                    <Link
-                      href={tradeHref}
-                      prefetch
-                      onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
-                    >
-                      <ExternalLink size={16} />
-                      Trade
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => setCloseModal(true)}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
-                    >
-                      <Trash2 size={16} />
-                      Close account
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })()}
+          {/* Action buttons row */}
+          <div className="relative z-[60] flex flex-wrap items-center gap-2 pt-4 sm:pt-5 mt-4 sm:mt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {isManagedAccount ? (
+              <>
+                <Link
+                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                >
+                  <BookOpen size={16} />
+                  View Trades
+                </Link>
+                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-4 py-2.5 text-xs text-[#555] flex items-center gap-2 sm:ml-auto">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by Copy master'}
+                </div>
+              </>
+            ) : isPoolAccount ? (
+              <>
+                <Link
+                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 text-white text-sm font-semibold hover:border-white/20 hover:bg-white/[0.03] transition-colors"
+                >
+                  <BookOpen size={16} />
+                  Trade History
+                </Link>
+                <Link
+                  href={tradeHref}
+                  prefetch
+                  onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00e676] text-black text-sm font-bold hover:bg-[#00c853] transition-colors"
+                >
+                  Trade
+                  <ExternalLink size={14} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-white/10 text-white text-xs sm:text-sm font-semibold hover:border-white/20 hover:bg-white/[0.03] transition-colors"
+                >
+                  Trading Journal
+                </Link>
+                <Link
+                  href={tradeHref}
+                  prefetch
+                  onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#00e676] text-black text-xs sm:text-sm font-bold hover:bg-[#00c853] transition-colors"
+                >
+                  Trade
+                  <ExternalLink size={13} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setCloseModal(true)}
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-red-400 text-xs sm:text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
+                >
+                  <Trash2 size={14} />
+                  Close Account
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 

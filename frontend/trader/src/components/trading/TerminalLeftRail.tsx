@@ -16,6 +16,7 @@ import {
   Newspaper,
   MessageCircle,
   Settings,
+  Calculator,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { wsManager, type ConnectionStatus } from '@/lib/ws/wsManager';
@@ -40,6 +41,9 @@ interface TerminalLeftRailProps {
   onExpandFullChart: () => void;
   /** Right rail: TradingView live news timeline */
   onPanelsSelectNews: () => void;
+  /** Right rail: Risk calculator */
+  terminalCalcOpen?: boolean;
+  onPanelsSelectCalc?: () => void;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -94,6 +98,8 @@ export default function TerminalLeftRail({
   onPanelsSelectOrder,
   onExpandFullChart,
   onPanelsSelectNews,
+  terminalCalcOpen,
+  onPanelsSelectCalc,
 }: TerminalLeftRailProps) {
   const [wsStatus, setWsStatus] = useState<ConnectionStatus>('disconnected');
 
@@ -188,6 +194,15 @@ export default function TerminalLeftRail({
         >
           <Newspaper size={17} strokeWidth={1.75} />
         </RailBtn>
+        {onPanelsSelectCalc && (
+          <RailBtn
+            title="Risk Calculator"
+            active={!!terminalCalcOpen && !chartExpanded && !terminalNewsOpen}
+            onClick={onPanelsSelectCalc}
+          >
+            <Calculator size={17} strokeWidth={1.75} />
+          </RailBtn>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-0.5 px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] border-t border-[#141414]">
