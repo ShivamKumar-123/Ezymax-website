@@ -690,3 +690,19 @@ html {
     color: #f5f5f5;
   }
 }
+
+/* ───────────────────────────────────────────────────────────── */
+/* Accounts page — flatten AppHeader frame to match Crucial Markets.
+   The default header is a rounded-xl glowing green box. On /accounts,
+   strip that frame so the only framed element is the tabs panel below. */
+/* ───────────────────────────────────────────────────────────── */
+html[data-page="accounts"] header.h-\[65px\] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+html[data-page="accounts"] header.h-\[65px\] + div,
+html[data-page="accounts"] div:has(> header.h-\[65px\]) {
+  background: transparent !important;
+}
