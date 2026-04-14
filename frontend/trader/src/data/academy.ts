@@ -987,7 +987,7 @@ export const lessonContent: Record<string, LessonData> = {
     keyTakeaways: [],
     studyNotes: 'Module content coming soon.',
   },
-  '2.4': {
+  '1.4': {
     topics: [
       {
         id: 1,
@@ -2094,7 +2094,7 @@ export const lessonContent: Record<string, LessonData> = {
     studyNotes:
       'This module covers candlestick pattern recognition across 6 topics (~25 min read). After reading, open a demo chart and spend one week identifying patterns ONLY at key support/resistance levels you\'ve marked on H4/D1. Document each pattern with a screenshot and note whether price reversed or continued. This contextual practice will transform you from pattern-spotting to pattern-trading.',
   },
-    '2.4': {
+  '2.4': {
     topics: [
       {
         id: 1,
