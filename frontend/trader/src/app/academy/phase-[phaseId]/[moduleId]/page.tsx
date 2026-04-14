@@ -241,6 +241,104 @@ export default function AcademyModulePage() {
                                 </div>
                               );
                             }
+                            if (block.type === 'timeline' && block.timelineData) {
+                              return (
+                                <div key={bi}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-0.5 bg-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">{block.content}</span>
+                                  </div>
+                                  <div className="space-y-0">
+                                    {block.timelineData.map((item, ti) => (
+                                      <div key={ti} className="flex gap-4">
+                                        <div className="flex flex-col items-center">
+                                          <div className="w-8 h-8 rounded-full bg-[#2196f3]/10 border border-[#2196f3]/30 flex items-center justify-center text-sm shrink-0">
+                                            {item.icon}
+                                          </div>
+                                          {ti < block.timelineData!.length - 1 && (
+                                            <div className="w-px flex-1 bg-border-glass my-1" />
+                                          )}
+                                        </div>
+                                        <div className="pb-4 min-w-0">
+                                          <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="text-[10px] font-bold text-[#2196f3] uppercase tracking-wider">{item.year}</span>
+                                            <span className="text-sm font-semibold text-text-primary">{item.label}</span>
+                                          </div>
+                                          <p className="text-xs text-text-tertiary">{item.desc}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            if (block.type === 'sessions' && block.sessionsData) {
+                              return (
+                                <div key={bi}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-0.5 bg-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">{block.content}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {block.sessionsData.map((s, si) => (
+                                      <div key={si} className="bg-bg-tertiary border border-border-glass rounded-xl p-3 text-center">
+                                        <div className="text-2xl mb-1">{s.flag}</div>
+                                        <p className="text-text-primary text-xs font-bold">{s.city}</p>
+                                        <p className="text-text-tertiary text-[10px] mt-0.5">{s.hours}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            if (block.type === 'hierarchy' && block.hierarchyData) {
+                              return (
+                                <div key={bi}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-0.5 bg-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">{block.content}</span>
+                                  </div>
+                                  <div className="space-y-0">
+                                    {block.hierarchyData.map((h, hi) => (
+                                      <div key={hi} className="flex gap-3">
+                                        <div className="flex flex-col items-center">
+                                          <div className="w-8 h-8 rounded-full bg-[#2196f3]/10 border border-[#2196f3]/20 flex items-center justify-center text-sm shrink-0">
+                                            {h.icon}
+                                          </div>
+                                          {hi < block.hierarchyData!.length - 1 && (
+                                            <div className="w-px flex-1 border-l border-dashed border-[#2196f3]/20 my-1" />
+                                          )}
+                                        </div>
+                                        <div className="pb-3">
+                                          <p className="text-text-primary text-sm font-semibold">{h.title}</p>
+                                          <p className="text-text-tertiary text-xs">{h.desc}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            if (block.type === 'stats' && block.statsData) {
+                              return (
+                                <div key={bi}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-0.5 bg-[#2196f3]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">{block.content}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {block.statsData.map((s, si) => (
+                                      <div key={si} className="bg-bg-tertiary border border-border-glass rounded-xl p-3 text-center">
+                                        <div className="text-xl mb-1">{s.icon}</div>
+                                        <p className="text-text-primary text-base font-black">{s.value}</p>
+                                        <p className="text-text-secondary text-xs font-semibold">{s.label}</p>
+                                        <p className="text-text-tertiary text-[10px] mt-0.5">{s.sublabel}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
                             return (
                               <p key={bi} className="text-sm text-text-secondary leading-relaxed">
                                 {block.content}
