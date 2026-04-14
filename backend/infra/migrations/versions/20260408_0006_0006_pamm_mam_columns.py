@@ -13,14 +13,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "master_accounts",
-        sa.Column("total_fee_earned", sa.Numeric(18, 8), nullable=True, server_default="0"),
-    )
-    op.add_column(
-        "investor_allocations",
-        sa.Column("last_distribution_at", sa.DateTime(timezone=True), nullable=True),
-    )
+    op.execute("""
+        ALTER TABLE master_accounts
+        ADD COLUMN IF NOT EXISTS total_fee_earned NUMERIC(18, 8) DEFAULT 0;
+    """)
+    op.execute("""
+        ALTER TABLE investor_allocations
+        ADD COLUMN IF NOT EXISTS last_distribution_at TIMESTAMPTZ;
+    """)
 
 
 def downgrade() -> None:
