@@ -29,7 +29,7 @@ export default function AcademyPage() {
 
   return (
     <DashboardShell>
-      <div className="page-main max-w-4xl mx-auto w-full pb-8">
+      <div className="page-main max-w-6xl mx-auto w-full pb-8">
         <div className="text-center mb-8">
           <div className="inline-block px-4 py-1.5 rounded-full border border-[#2196f3]/30 text-[#2196f3] text-xs font-medium tracking-wider uppercase mb-4">
             ● CURRICULUM

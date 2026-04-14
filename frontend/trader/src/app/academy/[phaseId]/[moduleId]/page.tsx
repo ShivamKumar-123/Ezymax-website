@@ -100,7 +100,7 @@ export default function AcademyModulePage() {
 
   return (
     <DashboardShell>
-      <div className="page-main max-w-4xl mx-auto w-full pb-8">
+      <div className="page-main max-w-6xl mx-auto w-full pb-8">
         <Link
           href={`/academy/${phaseSlug}`}
           className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#2196f3] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#2196f3]/30"
@@ -185,7 +185,7 @@ export default function AcademyModulePage() {
                               LESSON CONTENT
                             </span>
                           </div>
-                          <span className="text-[10px] text-text-tertiary">1 min read</span>
+                          <span className="text-[10px] text-text-tertiary">2 min read</span>
                         </div>
 
                         <div className="space-y-4">
@@ -195,9 +195,7 @@ export default function AcademyModulePage() {
                                 <div key={bi} className="border-l-2 border-[#2196f3] bg-[#2196f3]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
                                     <BookOpen size={12} className="text-[#2196f3]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
-                                      DEFINITION
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">DEFINITION</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -208,9 +206,7 @@ export default function AcademyModulePage() {
                                 <div key={bi} className="border-l-2 border-[#2196f3] bg-[#2196f3]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
                                     <KeyRound size={12} className="text-[#2196f3]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
-                                      KEY CONCEPT
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">KEY CONCEPT</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -221,9 +217,7 @@ export default function AcademyModulePage() {
                                 <div key={bi} className="bg-bg-secondary border border-border-glass rounded-xl p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
                                     <Lightbulb size={12} className="text-[#2196f3]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
-                                      PRACTICE TIP
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">PRACTICE TIP</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -235,9 +229,7 @@ export default function AcademyModulePage() {
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
                                     <div className="w-6 h-0.5 bg-[#2196f3]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">
-                                      {block.content}
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest text-[#2196f3] font-bold">{block.content}</span>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="bg-bg-secondary border border-border-glass rounded-xl p-4">
