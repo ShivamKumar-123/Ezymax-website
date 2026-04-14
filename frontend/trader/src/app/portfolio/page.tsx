@@ -549,7 +549,7 @@ function PortfolioPageContent() {
         ) : null}
 
         {journalBlock ? (
-          <div className="rounded-xl border border-border-primary bg-bg-card p-4 md:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+          <div className="rounded-xl border border-border-primary bg-card p-4 md:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
             <TradingJournalSection journal={journalBlock} title="Trading Journal" />
           </div>
         ) : null}

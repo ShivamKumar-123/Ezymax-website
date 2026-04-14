@@ -4,18 +4,18 @@ export const metadata = { title: 'Terms and Conditions — TrustEdgeFX' }
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0f0f1a' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-[#2962FF]/10 flex items-center justify-center">
             <FileText className="w-5 h-5 text-[#2962FF]" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Terms and Conditions</h1>
+          <h1 className="text-3xl font-bold text-text-primary">Terms and Conditions</h1>
         </div>
 
-        <p className="text-lg font-semibold text-white/90 mt-8 mb-1">TrustEdgeFX — Terms and Conditions</p>
-        <p className="text-sm text-white/40 mb-10">Last updated: February 2026</p>
+        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">TrustEdgeFX — Terms and Conditions</p>
+        <p className="text-sm text-text-secondary mb-10">Last updated: February 2026</p>
 
         <div className="space-y-8">
           <Section title="1. Acceptance of Terms">
@@ -89,16 +89,19 @@ export default function TermsPage() {
             These Terms and Conditions shall be governed by and construed in accordance with applicable laws. Any disputes shall be resolved through the appropriate legal channels.
           </Section>
 
-          <div className="pt-4 border-t border-white/10">
-            <p className="text-white/50 text-sm leading-relaxed">
+          <div className="pt-4 border-t" style={{ borderColor: 'var(--border-primary)' }}>
+            <p className="text-text-secondary text-sm leading-relaxed">
               By checking the box and creating your account, you confirm that you have read, understood, and agree to these Terms and Conditions in their entirety.
             </p>
           </div>
 
           {/* Risk Disclaimer */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-            <h2 className="text-lg font-bold text-white mb-3">Risk Disclaimer</h2>
-            <p className="text-white/50 text-sm leading-relaxed">
+          <div
+            className="rounded-xl p-6"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+          >
+            <h2 className="text-lg font-bold text-text-primary mb-3">Risk Disclaimer</h2>
+            <p className="text-text-secondary text-sm leading-relaxed">
               Trading foreign exchange (forex) and other leveraged financial products carries a high level of risk and may not be suitable for all investors. Leverage can work both for and against you — while it amplifies potential profits, it equally amplifies potential losses. You could sustain a loss of some or all of your initial investment and should not invest money that you cannot afford to lose. You should be aware of all the risks associated with leveraged trading and seek independent financial advice if you have any doubts. Past performance is not indicative of future results.
             </p>
           </div>
@@ -111,15 +114,15 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-lg font-bold text-white mb-3">{title}</h2>
-      <div className="text-white/50 text-sm leading-relaxed space-y-2">{children}</div>
+      <h2 className="text-lg font-bold text-text-primary mb-3">{title}</h2>
+      <div className="text-text-secondary text-sm leading-relaxed space-y-2">{children}</div>
     </div>
   )
 }
 
 function List({ items }: { items: string[] }) {
   return (
-    <ul className="list-disc list-inside space-y-2 mt-3 text-white/50 text-sm">
+    <ul className="list-disc list-inside space-y-2 mt-3 text-text-secondary text-sm">
       {items.map((item, i) => <li key={i}>{item}</li>)}
     </ul>
   )

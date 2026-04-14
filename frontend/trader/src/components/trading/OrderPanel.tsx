@@ -518,7 +518,7 @@ export default function OrderPanel() {
 
         {isTradingTerminal ? (
           <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
-            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-bg-card border border-border-primary">
+            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
               <span className="text-[10px] text-text-tertiary">Exec. Price</span>
               <span className="text-xs font-mono font-semibold text-text-primary">
                 {execPrice > 0 ? execPrice.toFixed(digits) : '—'}

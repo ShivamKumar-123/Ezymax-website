@@ -139,7 +139,7 @@ function CompactInstrumentPicker({
         <ChevronDown size={12} className={`text-text-tertiary shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg overflow-hidden shadow-2xl bg-bg-card border border-border-primary">
+        <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg overflow-hidden shadow-2xl bg-card border border-border-primary">
           <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border-primary bg-bg-secondary">
             <Search size={12} className="text-text-tertiary shrink-0" />
             <input

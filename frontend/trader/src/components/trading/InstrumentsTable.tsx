@@ -315,7 +315,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
             />
           </button>
           {segOpen && (
-            <div className="absolute right-0 top-full mt-1 w-[140px] rounded-lg border border-border-primary bg-bg-card shadow-2xl z-50 py-1">
+            <div className="absolute right-0 top-full mt-1 w-[140px] rounded-lg border border-border-primary bg-card shadow-2xl z-50 py-1">
               {SEGMENTS.map((s) => (
                 <button
                   key={s}

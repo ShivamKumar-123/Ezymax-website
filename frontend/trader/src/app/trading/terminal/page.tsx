@@ -675,7 +675,7 @@ export default function TradingTerminalPage() {
                       setTerminalNewsOpen(false);
                       setTerminalMarketsOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-card text-[11px] font-bold uppercase tracking-wide text-accent hover:bg-accent/10 hover:border-accent/40 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-card text-[11px] font-bold uppercase tracking-wide text-accent hover:bg-accent/10 hover:border-accent/40 transition-colors"
                   >
                     ← Markets
                   </button>
@@ -686,7 +686,7 @@ export default function TradingTerminalPage() {
                       setTerminalNewsOpen(false);
                       setTerminalMarketsOpen(false);
                     }}
-                    className="ml-auto px-3 py-1.5 rounded-lg border border-border-primary bg-bg-card text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-secondary transition-colors"
+                    className="ml-auto px-3 py-1.5 rounded-lg border border-border-primary bg-card text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-secondary transition-colors"
                   >
                     Close
                   </button>

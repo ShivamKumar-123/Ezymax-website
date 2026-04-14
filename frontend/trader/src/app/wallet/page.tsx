@@ -212,13 +212,8 @@ function WalletPageContent() {
         const wdItems =
           wdRes.status === 'fulfilled' ? wdRes.value?.items || [] : [];
 
-        let demoBlocked = false;
-        if (accountsRes.status === 'fulfilled') {
-          const accItems = accountsRes.value?.items ?? [];
-          demoBlocked = accItems.length > 0 && !accItems.some((a) => a.is_demo === false);
-        }
-        // If /accounts failed, do not assume demo-only (avoid locking out incorrectly).
-        setDemoFundingBlocked(demoBlocked);
+        // Deposits always credit main wallet directly — no trading account required.
+        setDemoFundingBlocked(false);
 
         if (wdRes.status === 'rejected') {
           toast.error('Could not load pending withdrawal count.');

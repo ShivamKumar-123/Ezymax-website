@@ -78,33 +78,40 @@ class MatchingEngine:
         return Decimal("0")
 
     async def _get_commission(self, instrument_id, user_id, segment_id, lots: Decimal, db: AsyncSession) -> Decimal:
-        """Resolve commission using config hierarchy."""
-        for scope, sid, iid, uid in [
-            ("user", None, None, user_id),
-            ("instrument", None, instrument_id, None),
-            ("segment", segment_id, None, None),
-            ("default", None, None, None),
-        ]:
+        """Resolve commission using config hierarchy: User > Instrument > Segment > Default."""
+        candidates = [
+            {"scope": "user",       "user_id": user_id,   "instrument_id": instrument_id, "segment_id": None},
+            {"scope": "user",       "user_id": user_id,   "instrument_id": None,          "segment_id": None},
+            {"scope": "instrument", "user_id": None,      "instrument_id": instrument_id, "segment_id": None},
+            {"scope": "segment",    "user_id": None,      "instrument_id": None,          "segment_id": segment_id},
+            {"scope": "default",    "user_id": None,      "instrument_id": None,          "segment_id": None},
+        ]
+        for c in candidates:
+            if c["scope"] == "user" and not c["user_id"]:
+                continue
+            if c["scope"] == "instrument" and not c["instrument_id"]:
+                continue
+            if c["scope"] == "segment" and not c["segment_id"]:
+                continue
             query = select(ChargeConfig).where(
-                ChargeConfig.scope == scope,
+                ChargeConfig.scope == c["scope"],
                 ChargeConfig.is_enabled == True,
-            )
-            if uid:
-                query = query.where(ChargeConfig.user_id == uid)
-            if iid:
-                query = query.where(ChargeConfig.instrument_id == iid)
-            if sid:
-                query = query.where(ChargeConfig.segment_id == sid)
-
+                ChargeConfig.user_id == c["user_id"] if c["user_id"] else ChargeConfig.user_id.is_(None),
+                ChargeConfig.instrument_id == c["instrument_id"] if c["instrument_id"] else ChargeConfig.instrument_id.is_(None),
+                ChargeConfig.segment_id == c["segment_id"] if c["segment_id"] else ChargeConfig.segment_id.is_(None),
+            ).limit(1)
             result = await db.execute(query)
             config = result.scalar_one_or_none()
             if config:
-                if config.charge_type == "commission_per_lot":
-                    return config.value * lots
-                elif config.charge_type == "commission_per_trade":
-                    return config.value
-                elif config.charge_type == "spread_percentage":
+                ct = (config.charge_type or "").lower()
+                v = Decimal(str(config.value or 0))
+                if ct in ("commission_per_lot", "per_lot"):
+                    return v * lots
+                if ct in ("commission_per_trade", "per_trade"):
+                    return v
+                if ct == "spread_percentage":
                     return Decimal("0")
+                return v * lots
 
         return Decimal("0")
 
@@ -177,9 +184,18 @@ class MatchingEngine:
             order.status = OrderStatus.REJECTED
             return
 
+        commission = await self._get_commission(
+            instrument_id=instrument.id,
+            user_id=account.user_id,
+            segment_id=instrument.segment_id,
+            lots=order.lots,
+            db=db,
+        )
+
         order.status = OrderStatus.FILLED
         order.filled_price = fill_price
         order.filled_at = datetime.now(timezone.utc)
+        order.commission = commission
 
         position = Position(
             account_id=account.id,
@@ -191,10 +207,13 @@ class MatchingEngine:
             stop_loss=order.stop_loss,
             take_profit=order.take_profit,
             status=PositionStatus.OPEN,
+            commission=commission,
         )
         db.add(position)
 
         account.margin_used += margin
+        account.balance = (account.balance or Decimal("0")) - commission
+        account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
         account.free_margin = account.equity - account.margin_used
 
         logger.info(f"Pending order {order.id} executed: {instrument.symbol} {order.side.value} @ {fill_price}")

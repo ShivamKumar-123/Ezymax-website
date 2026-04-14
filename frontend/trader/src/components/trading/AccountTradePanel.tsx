@@ -275,7 +275,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               </button>
 
               {symbolPickerOpen && (
-                <div className="absolute left-0 right-0 z-50 mt-1 rounded-lg overflow-y-auto shadow-2xl max-h-[220px] bg-bg-card border border-border-primary">
+                <div className="absolute left-0 right-0 z-50 mt-1 rounded-lg overflow-y-auto shadow-2xl max-h-[220px] bg-card border border-border-primary">
                   {displaySymbols.map((sym) => {
                     const t = prices[sym];
                     const d = getDigits(sym);

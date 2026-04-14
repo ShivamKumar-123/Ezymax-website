@@ -350,11 +350,26 @@ export default function PammPage() {
   };
 
   const submitApply = async () => {
-    if (!applyAccount) { toast.error('Select a trading account'); return; }
     setApplying(true);
     try {
+      // Auto-create a dedicated zero-balance trading account for this manager role.
+      const groupsRes = await api.get<{ items: { id: string }[] }>('/accounts/available-groups');
+      const firstGroup = groupsRes?.items?.[0];
+      if (!firstGroup?.id) {
+        toast.error('No account types available. Please contact support.');
+        return;
+      }
+      const created = await api.post<{ id: string }>('/accounts/open', {
+        account_group_id: firstGroup.id,
+      });
+      const newAccountId = created?.id;
+      if (!newAccountId) {
+        toast.error('Failed to create trading account');
+        return;
+      }
+
       const params = new URLSearchParams({
-        account_id: applyAccount,
+        account_id: newAccountId,
         master_type: applyType,
         performance_fee_pct: applyFee,
         management_fee_pct: applyMgmtFee,
@@ -434,7 +449,7 @@ export default function PammPage() {
             {!browseLoading && !browseError && accounts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {accounts.map((a) => (
-                  <div key={a.id} className="bg-bg-card border border-border-primary rounded-xl p-5 flex flex-col hover:border-accent/30 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-colors">
+                  <div key={a.id} className="bg-card border border-border-primary rounded-xl p-5 flex flex-col hover:border-accent/30 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-4">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-text-primary truncate">{a.manager_name}</p>
@@ -494,7 +509,7 @@ export default function PammPage() {
                       { label: 'Total P&L', value: `${summary.total_pnl >= 0 ? '+' : ''}$${fmt(summary.total_pnl)}`, color: summary.total_pnl >= 0 ? 'text-[#2196f3]' : 'text-red-400' },
                       { label: 'P&L %', value: `${summary.overall_pnl_pct >= 0 ? '+' : ''}${summary.overall_pnl_pct.toFixed(2)}%`, color: summary.overall_pnl_pct >= 0 ? 'text-[#2196f3]' : 'text-red-400' },
                     ].map((s) => (
-                      <div key={s.label} className="bg-bg-card border border-border-primary rounded-xl px-4 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                      <div key={s.label} className="bg-card border border-border-primary rounded-xl px-4 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                         <p className="text-[10px] text-text-tertiary mb-1">{s.label}</p>
                         <p className={clsx('text-sm font-bold tabular-nums', s.color ?? 'text-text-primary')}>{s.value}</p>
                       </div>
@@ -520,7 +535,7 @@ export default function PammPage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allocations.map((a) => (
-                      <div key={a.id} className="bg-bg-card border border-border-primary rounded-xl p-5 flex flex-col hover:border-accent/20 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-colors">
+                      <div key={a.id} className="bg-card border border-border-primary rounded-xl p-5 flex flex-col hover:border-accent/20 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-colors">
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-text-primary truncate">{a.manager_name}</p>
@@ -624,25 +639,15 @@ export default function PammPage() {
                 </div>
               )
             ) : (
-              <div className="max-w-lg mx-auto bg-bg-card border border-border-primary rounded-xl p-6 space-y-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+              <div className="max-w-lg mx-auto bg-card border border-border-primary rounded-xl p-6 space-y-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                 <div>
                   <h2 className="text-base font-bold text-text-primary">Apply as PAMM/MAM Manager</h2>
                   <p className="text-xs text-text-tertiary mt-1">Submit your application for admin review</p>
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs text-text-secondary mb-1.5">Trading Account</label>
-                    <select
-                      value={applyAccount}
-                      onChange={(e) => setApplyAccount(e.target.value)}
-                      className="w-full bg-bg-secondary border border-border-primary rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
-                    >
-                      {liveAccounts.length === 0 && <option value="">No live accounts found</option>}
-                      {liveAccounts.map((a) => (
-                        <option key={a.id} value={a.id}>{a.account_number} — ${fmt(a.balance)}</option>
-                      ))}
-                    </select>
+                  <div className="rounded-lg border border-border-primary bg-bg-secondary/50 px-3 py-2.5 text-xs text-text-secondary">
+                    A new dedicated <span className="font-semibold text-text-primary">{applyType.toUpperCase()}</span> trading account will be created automatically with $0 balance when you submit.
                   </div>
 
                   <div>
@@ -768,7 +773,7 @@ export default function PammPage() {
                     { label: 'Fee Earnings', value: `$${fmt(performance.fee_earnings)}`, color: 'text-[#2196f3]' },
                     { label: 'Total ROI', value: `${performance.total_return_pct >= 0 ? '+' : ''}${performance.total_return_pct.toFixed(2)}%`, color: performance.total_return_pct >= 0 ? 'text-[#2196f3]' : 'text-red-400' },
                   ].map((s) => (
-                    <div key={s.label} className="bg-bg-card border border-border-primary rounded-xl px-4 py-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                    <div key={s.label} className="bg-card border border-border-primary rounded-xl px-4 py-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                       <p className="text-[10px] text-text-tertiary mb-1">{s.label}</p>
                       <p className={clsx('text-base font-bold tabular-nums', s.color ?? 'text-text-primary')}>{s.value}</p>
                     </div>
@@ -776,7 +781,7 @@ export default function PammPage() {
                 </div>
 
                 {/* Investor list */}
-                <div className="bg-bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                <div className="bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                   <div className="px-4 py-3 border-b border-border-primary">
                     <p className="text-sm font-semibold text-text-primary">Investors ({investors.length})</p>
                   </div>
@@ -841,7 +846,7 @@ export default function PammPage() {
 
                 {/* Monthly breakdown */}
                 {performance.monthly_breakdown.length > 0 && (
-                  <div className="bg-bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                  <div className="bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                     <div className="px-4 py-3 border-b border-border-primary">
                       <p className="text-sm font-semibold text-text-primary">Monthly Performance</p>
                     </div>

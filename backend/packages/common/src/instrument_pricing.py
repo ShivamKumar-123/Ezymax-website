@@ -176,14 +176,45 @@ async def resolve_commission(
     instrument: Instrument,
     lots: Decimal,
     fill_price: Decimal,
+    user_id: Optional[UUID] = None,
 ) -> Decimal:
-    """Total commission for opening a position.
+    """Total commission for opening/closing a position.
 
-    Uses ``charge_configs`` only (instrument → segment → default). If no enabled
-    row matches, commission is **0** — there is no hidden per-segment fallback so
-    an empty Charges screen in admin means no commission.
+    Priority: User override > Instrument > Segment > Default. If no enabled
+    row matches, commission is **0** — an empty Charges screen in admin means
+    no commission. A Per-User Override row (admin → Charges → Per User) beats
+    every other rule for that user.
     """
     notional = lots * (instrument.contract_size or Decimal("100000")) * fill_price
+
+    if user_id is not None:
+        ur = await db.execute(
+            select(ChargeConfig)
+            .where(
+                func.lower(ChargeConfig.scope) == "user",
+                ChargeConfig.is_enabled == True,
+                ChargeConfig.user_id == user_id,
+                ChargeConfig.instrument_id == instrument.id,
+            )
+            .limit(1)
+        )
+        urow = ur.scalar_one_or_none()
+        if urow:
+            return _commission_from_config(urow, lots, notional)
+
+        ur2 = await db.execute(
+            select(ChargeConfig)
+            .where(
+                func.lower(ChargeConfig.scope) == "user",
+                ChargeConfig.is_enabled == True,
+                ChargeConfig.user_id == user_id,
+                ChargeConfig.instrument_id.is_(None),
+            )
+            .limit(1)
+        )
+        urow2 = ur2.scalar_one_or_none()
+        if urow2:
+            return _commission_from_config(urow2, lots, notional)
 
     for scope, seg_id, inst_id in [
         ("instrument", None, instrument.id),

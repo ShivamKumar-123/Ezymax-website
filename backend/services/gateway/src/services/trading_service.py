@@ -185,7 +185,7 @@ async def place_order(
             if req.side == "sell" and req.take_profit >= fill_price:
                 raise HTTPException(status_code=400, detail="SELL TP must be below entry price")
 
-        commission = await resolve_commission(db, instrument, req.lots, fill_price)
+        commission = await resolve_commission(db, instrument, req.lots, fill_price, user_id=user_id)
 
         contract_size = instrument.contract_size or Decimal("100000")
         required_margin = calc_margin(req.lots, fill_price, contract_size, account.leverage)

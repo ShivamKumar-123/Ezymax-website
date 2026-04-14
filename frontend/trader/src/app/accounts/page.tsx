@@ -587,7 +587,7 @@ export default function AccountsPage() {
             key="tab-transfer"
             className="w-full max-w-full animate-wallet-fund-enter-lg space-y-6"
           >
-            <div className="rounded-2xl border border-accent/20 bg-bg-card p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
+            <div className="rounded-2xl border border-accent/20 bg-card p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
               <div className="flex items-start gap-3 mb-6">
                 <div className="w-11 h-11 rounded-xl bg-accent/15 border border-accent/35 flex items-center justify-center shrink-0 text-accent">
                   <ArrowLeftRight size={22} strokeWidth={2.25} />

@@ -173,7 +173,7 @@ function TerminalPositionStaticCard({
   const priceDown = cur != null && (pos.side === 'buy' ? cur < pos.open_price : cur > pos.open_price);
 
   return (
-    <div className="w-full max-w-[300px] rounded-lg border border-border-primary bg-bg-card overflow-hidden shadow-md">
+    <div className="w-full max-w-[300px] rounded-lg border border-border-primary bg-card overflow-hidden shadow-md">
       <div className="px-2.5 pt-2 pb-2 flex justify-between gap-2 border-b border-border-primary">
         <div className="min-w-0">
           <div className="text-xs font-bold text-text-primary font-mono tracking-tight">{pos.symbol}</div>
@@ -779,7 +779,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           />
                         </button>
                         {bulkMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-border-primary bg-bg-card shadow-xl z-[100]">
+                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-border-primary bg-card shadow-xl z-[100]">
                             <button
                               type="button"
                               onClick={() => {
@@ -1497,7 +1497,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
             const count = countMap[bulkConfirm];
             const shell = clsx(
               'relative w-full max-w-[280px] rounded-xl border p-3.5 shadow-2xl overflow-hidden pointer-events-auto',
-              'bg-bg-card border-border-primary',
+              'bg-card border-border-primary',
             );
             const titleCls = clsx('text-sm font-bold pr-2 text-text-primary');
             const bodyCls = clsx('text-xs text-text-secondary');
@@ -1605,10 +1605,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="close-position-title"
-                className={clsx(
-                  'pointer-events-auto relative w-full max-w-[280px] rounded-xl border p-3.5 shadow-2xl overflow-hidden',
-                  'bg-bg-card border-border-primary',
-                )}
+                className="pointer-events-auto relative w-full max-w-[280px] rounded-xl border border-border-primary p-3.5 shadow-2xl overflow-hidden"
+                style={{ background: 'var(--bg-card)' }}
                 onMouseDown={(e) => e.stopPropagation()}
               >
               <div className="flex items-start justify-between gap-2 mb-3">
