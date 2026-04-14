@@ -106,12 +106,14 @@ export default function AdminSidebar() {
     )}>
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
-        {!collapsed && (
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#33eb91] to-[#00c853] flex items-center justify-center shadow-neon-sm">
-              <span className="text-black text-xs font-black">A</span>
-            </div>
-            <span className="text-md font-bold text-text-primary tracking-tight">Admin</span>
+        {collapsed ? (
+          <img src="/logo.png" alt="TrustEdgeFX" className="w-7 h-7 object-contain mx-auto" />
+        ) : (
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            <img src="/logo.png" alt="TrustEdgeFX" className="w-7 h-7 object-contain shrink-0" />
+            <span className="font-bold tracking-tight text-sm select-none">
+              <span className="text-text-primary">TrustEdge</span><span className="text-[#00e676]">FX</span>
+            </span>
           </Link>
         )}
         <button

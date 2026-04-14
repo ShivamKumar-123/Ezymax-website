@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Loader2, Save, AlertTriangle, Shield } from 'lucide-react';
+import { Loader2, Save, AlertTriangle, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Settings {
@@ -101,6 +101,30 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwNew !== pwConfirm) { toast.error('New passwords do not match'); return; }
+    if (pwNew.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    setPwSaving(true);
+    try {
+      await adminApi.post('/auth/change-password', { current_password: pwCurrent, new_password: pwNew });
+      toast.success('Password changed successfully');
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to change password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -278,6 +302,53 @@ export default function SettingsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            <div className="bg-bg-secondary border border-border-primary rounded-md">
+              <div className="px-4 py-3 border-b border-border-primary flex items-center gap-2">
+                <Lock size={14} className="text-text-tertiary" />
+                <h2 className="text-sm font-medium text-text-primary">Change Password</h2>
+              </div>
+              <form onSubmit={handleChangePassword} className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: 'Current Password', value: pwCurrent, set: setPwCurrent, show: showCurrent, toggle: () => setShowCurrent(v => !v) },
+                    { label: 'New Password', value: pwNew, set: setPwNew, show: showNew, toggle: () => setShowNew(v => !v) },
+                    { label: 'Confirm New Password', value: pwConfirm, set: setPwConfirm, show: showConfirm, toggle: () => setShowConfirm(v => !v) },
+                  ].map((field) => (
+                    <div key={field.label} className="space-y-1">
+                      <label className="text-xs text-text-secondary">{field.label}</label>
+                      <div className="relative">
+                        <input
+                          type={field.show ? 'text' : 'password'}
+                          value={field.value}
+                          onChange={(e) => field.set(e.target.value)}
+                          required
+                          placeholder="••••••••"
+                          className="w-full pl-3 pr-8 py-2 text-xs bg-bg-input border border-border-primary rounded-md focus:border-buy transition-fast"
+                        />
+                        <button
+                          type="button"
+                          onClick={field.toggle}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-fast"
+                        >
+                          {field.show ? <EyeOff size={13} /> : <Eye size={13} />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-buy/15 text-buy border border-buy/30 hover:bg-buy/25 transition-fast disabled:opacity-50"
+                  >
+                    {pwSaving ? <Loader2 size={13} className="animate-spin" /> : <Lock size={13} />}
+                    {pwSaving ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         ) : null}
