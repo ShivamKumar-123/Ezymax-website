@@ -252,6 +252,40 @@ async def trade_history(
             raise HTTPException(status_code=404, detail="Account not found")
         account_ids = [account_id]
 
+    # Lazy backfill: relabel every still-'manual' history row where the
+    # close_price crossed the position's SL/TP. Idempotent + cheap because it
+    # only touches rows that are still 'manual' AND have an SL/TP set — once
+    # a row is flipped to 'sl'/'tp' it's no longer matched. Runs without
+    # requiring a backend restart so the UI corrects instantly.
+    from sqlalchemy import text
+    try:
+        await db.execute(
+            text(
+                """
+                UPDATE trade_history th
+                SET close_reason = CASE
+                    WHEN p.stop_loss IS NOT NULL AND (
+                        (LOWER(CAST(p.side AS TEXT)) = 'buy'  AND th.close_price <= p.stop_loss)
+                     OR (LOWER(CAST(p.side AS TEXT)) = 'sell' AND th.close_price >= p.stop_loss)
+                    ) THEN 'sl'
+                    WHEN p.take_profit IS NOT NULL AND (
+                        (LOWER(CAST(p.side AS TEXT)) = 'buy'  AND th.close_price >= p.take_profit)
+                     OR (LOWER(CAST(p.side AS TEXT)) = 'sell' AND th.close_price <= p.take_profit)
+                    ) THEN 'tp'
+                    ELSE th.close_reason
+                END
+                FROM positions p
+                WHERE th.position_id = p.id
+                  AND COALESCE(th.close_reason, 'manual') = 'manual'
+                  AND (p.stop_loss IS NOT NULL OR p.take_profit IS NOT NULL)
+                """
+            )
+        )
+        await db.commit()
+    except Exception:
+        # Never break trade_history if the backfill fails — just serve what's there.
+        await db.rollback()
+
     base_filter = [TradeHistory.account_id.in_(account_ids)]
     if symbol:
         inst_result = await db.execute(select(Instrument.id).where(Instrument.symbol == symbol.upper()))
