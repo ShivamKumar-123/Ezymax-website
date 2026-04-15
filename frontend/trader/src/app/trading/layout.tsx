@@ -164,12 +164,15 @@ function TradingSession({ children }: { children: React.ReactNode }) {
 
               reason === 'Stop Loss' ? sounds.loss() : sounds.profit();
 
+              // Dismiss any prior close-toasts so they don't stack up on rapid closes.
+              toast.dismiss();
               toast.custom(
                 (t) => (
                   <div
+                    onClick={() => toast.dismiss(t.id)}
                     className={clsx(
-                      'pointer-events-auto flex gap-3 rounded-xl border px-3.5 py-3 shadow-modal max-w-[min(92vw,360px)]',
-                      'transition-opacity duration-200',
+                      'pointer-events-auto cursor-pointer flex gap-3 rounded-xl border px-3.5 py-3 shadow-modal max-w-[min(92vw,360px)]',
+                      'transition-opacity duration-150',
                       t.visible ? 'opacity-100' : 'opacity-0',
                     )}
                     style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
@@ -196,7 +199,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                 ),
-                { duration: 2500 },
+                { duration: 1200 },
               );
             }
           }
