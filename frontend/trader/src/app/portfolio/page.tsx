@@ -24,6 +24,8 @@ import { buildDashboardFromPortfolio } from '@/lib/trading-dashboard';
 
 import api from '@/lib/api/client';
 
+import { getDigits } from '@/lib/utils';
+
 import { FileDown } from 'lucide-react';
 
 import { downloadTradeStatementPdf } from '@/lib/pdf/tradeStatementPdf';
@@ -145,21 +147,25 @@ function fmt(n: number) {
 
 }
 
-function tradeExitLabel(reason: string | null | undefined): { text: string; className: string } {
+function tradeExitLabel(
+  reason: string | null | undefined,
+  triggerPrice?: number,
+  digits: number = 5,
+): { text: string; className: string } {
 
   const r = (reason || 'manual').toLowerCase();
+  const priceStr = triggerPrice != null && Number.isFinite(triggerPrice)
+    ? ` @ ${Number(triggerPrice).toFixed(digits)}`
+    : '';
 
-  if (r === 'sl') return { text: 'Stop loss (SL)', className: 'text-sell bg-sell/10 border-sell/20' };
+  if (r === 'sl') return { text: `Stop loss (SL)${priceStr}`, className: 'text-sell bg-sell/10 border-sell/20' };
 
-  if (r === 'tp') return { text: 'Take profit (TP)', className: 'text-buy bg-buy/10 border-buy/20' };
-
-  if (r === 'manual') return { text: 'Manual close', className: 'text-text-tertiary bg-bg-hover border-border-glass' };
-
-  if (r === 'copy_close' || r === 'copy') return { text: 'Copy close', className: 'text-info bg-info/10 border-info/20' };
+  if (r === 'tp') return { text: `Take profit (TP)${priceStr}`, className: 'text-buy bg-buy/10 border-buy/20' };
 
   if (r === 'admin') return { text: 'Admin', className: 'text-warning bg-warning/10 border-warning/20' };
 
-  return { text: r.replace(/_/g, ' '), className: 'text-text-secondary bg-bg-hover border-border-glass' };
+  // copy_close / copy / manual / anything else → show as Manual close.
+  return { text: 'Manual close', className: 'text-text-tertiary bg-bg-hover border-border-glass' };
 
 }
 
@@ -781,7 +787,7 @@ function PortfolioPageContent() {
                   <div className="px-4 py-8 text-center text-sm text-text-tertiary">No trade history</div>
                 ) : (
                   trades.map((t) => {
-                    const ex = tradeExitLabel(t.close_reason);
+                    const ex = tradeExitLabel(t.close_reason, t.exit_price ?? t.close_price, getDigits(t.symbol));
                     return (
                       <div key={t.id} className="rounded-xl border border-border-glass/50 bg-bg-secondary/30 p-3 space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -876,7 +882,7 @@ function PortfolioPageContent() {
 
                           <td className="px-4 py-3">
                             {(() => {
-                              const ex = tradeExitLabel(t.close_reason);
+                              const ex = tradeExitLabel(t.close_reason, t.exit_price ?? t.close_price, getDigits(t.symbol));
                               return (
                                 <span className={clsx('inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-md border', ex.className)}>
                                   {ex.text}

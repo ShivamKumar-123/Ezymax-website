@@ -276,7 +276,7 @@ async def trade_history(
                 END
                 FROM positions p
                 WHERE th.position_id = p.id
-                  AND COALESCE(th.close_reason, 'manual') = 'manual'
+                  AND COALESCE(th.close_reason, 'manual') IN ('manual', 'copy_close', 'copy')
                   AND (p.stop_loss IS NOT NULL OR p.take_profit IS NOT NULL)
                 """
             )

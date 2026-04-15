@@ -46,25 +46,28 @@ type BulkCloseType = 'all' | 'profit' | 'loss';
 
 type TabId = 'open' | 'pending' | 'history';
 
-/** Maps API close_reason (sl, tp, manual, …) to a short label + badge style for history. */
-function closeReasonBadge(reason: string | null | undefined): { label: string; className: string } {
+/** Maps API close_reason (sl, tp, manual, …) to a short label + badge style for history.
+ *  When a trigger price is available (SL/TP hits close at the level itself), the label
+ *  includes "@ <price>" so the user sees exactly where it fired. */
+function closeReasonBadge(
+  reason: string | null | undefined,
+  triggerPrice?: number,
+  digits: number = 5,
+): { label: string; className: string } {
   const r = (reason || 'manual').toLowerCase();
+  const priceStr = triggerPrice != null && Number.isFinite(triggerPrice)
+    ? ` @ ${Number(triggerPrice).toFixed(digits)}`
+    : '';
   if (r === 'sl' || r === 'stop_loss')
-    return { label: 'Stop loss', className: 'bg-sell/15 text-sell border border-sell/25' };
+    return { label: `Stop loss${priceStr}`, className: 'bg-sell/15 text-sell border border-sell/25' };
   if (r === 'tp' || r === 'take_profit')
-    return { label: 'Take profit', className: 'bg-buy/15 text-buy border border-buy/25' };
-  if (r === 'manual')
-    return { label: 'Manual close', className: 'bg-text-tertiary/15 text-text-tertiary border border-border-glass' };
-  if (r === 'copy_close' || r === 'copy')
-    return { label: 'Copy close', className: 'bg-info/15 text-info border border-info/25' };
+    return { label: `Take profit${priceStr}`, className: 'bg-buy/15 text-buy border border-buy/25' };
   if (r === 'admin')
     return { label: 'Admin', className: 'bg-warning/15 text-warning border border-warning/25' };
   if (r === 'margin' || r === 'liquidation' || r === 'margin_call')
     return { label: 'Margin', className: 'bg-sell/20 text-sell border border-sell/30' };
-  return {
-    label: r.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    className: 'bg-text-tertiary/15 text-text-secondary border border-border-glass',
-  };
+  // Treat copy_close / copy / manual / anything else as manual close for clarity.
+  return { label: 'Manual close', className: 'bg-text-tertiary/15 text-text-tertiary border border-border-glass' };
 }
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
@@ -583,7 +586,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         gross,
         comm,
         gross - comm,
-        closeReasonBadge(t.close_reason).label,
+        closeReasonBadge(t.close_reason, t.close_price, d).label,
         t.close_time,
       ]);
     }
@@ -1343,7 +1346,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const pnl = trade.pnl || 0;
                         const charges = trade.commission || 0;
                         const net = pnl - charges;
-                        const exitBadge = closeReasonBadge(trade.close_reason);
+                        const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         return (
                           <div key={trade.id} className="rounded-xl border border-border-glass bg-bg-secondary/40 p-3 space-y-2">
                             <div className="flex items-center justify-between">
@@ -1414,7 +1417,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const pnl = trade.pnl || 0;
                         const charges = trade.commission || 0;
                         const net = pnl - charges;
-                        const exitBadge = closeReasonBadge(trade.close_reason);
+                        const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         return (
                           <tr key={trade.id} className={tbodyRowClass}>
                             <td className={clsx(td, 'font-bold')}>{trade.symbol}</td>

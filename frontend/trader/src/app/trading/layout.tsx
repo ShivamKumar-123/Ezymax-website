@@ -7,7 +7,6 @@ import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { wsManager } from '@/lib/ws/wsManager';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
-import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import TopBar from '@/components/layout/TopBar';
 import { useUIStore } from '@/stores/uiStore';
@@ -147,60 +146,9 @@ function TradingSession({ children }: { children: React.ReactNode }) {
             const closed = before.find((p) => p.id === id);
             if (closed) {
               const pnl = closed.profit || 0;
-              const hadSl = closed.stop_loss != null;
-              const hadTp = closed.take_profit != null;
-              const isLoss = pnl < 0;
-              const reason =
-                isLoss && hadSl
-                  ? 'Stop Loss'
-                  : !isLoss && hadTp
-                    ? 'Take Profit'
-                    : hadSl
-                      ? 'Stop Loss'
-                      : hadTp
-                        ? 'Take Profit'
-                        : 'Closed';
-              const emoji = reason === 'Stop Loss' ? '🛑' : reason === 'Take Profit' ? '🎯' : '⚡';
-
-              reason === 'Stop Loss' ? sounds.loss() : sounds.profit();
-
-              // Dismiss any prior close-toasts so they don't stack up on rapid closes.
-              toast.dismiss();
-              toast.custom(
-                (t) => (
-                  <div
-                    onClick={() => toast.dismiss(t.id)}
-                    className={clsx(
-                      'pointer-events-auto cursor-pointer flex gap-3 rounded-xl border px-3.5 py-3 shadow-modal max-w-[min(92vw,360px)]',
-                      'transition-opacity duration-150',
-                      t.visible ? 'opacity-100' : 'opacity-0',
-                    )}
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-                  >
-                    <span className="text-xl shrink-0 leading-none pt-0.5 select-none" aria-hidden>
-                      {emoji}
-                    </span>
-                    <div className="min-w-0 flex-1 text-[13px] leading-snug font-semibold">
-                      <p style={{ color: 'var(--text-primary)' }}>
-                        {reason} Hit — <span style={{ color: 'var(--text-secondary)' }}>{closed.symbol}</span>{' '}
-                        <span className={closed.side === 'buy' ? 'text-buy' : 'text-sell'}>
-                          {closed.side.toUpperCase()}
-                        </span>{' '}
-                        <span className="font-mono tabular-nums" style={{ color: 'var(--text-secondary)' }}>{closed.lots}</span> lots
-                      </p>
-                      <p
-                        className={clsx(
-                          'mt-1.5 text-sm font-bold font-mono tabular-nums',
-                          pnl >= 0 ? 'text-buy' : 'text-sell',
-                        )}
-                      >
-                        P&L: {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ),
-                { duration: 1200 },
-              );
+              // Play a quick sound but no popup — the reason will appear in the
+              // history tab / Closed Positions row, so no extra toast noise.
+              pnl >= 0 ? sounds.profit() : sounds.loss();
             }
           }
         });
