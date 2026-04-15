@@ -32,8 +32,22 @@ _cors_methods = [m.strip() for m in app_settings.CORS_ALLOW_METHODS.split(",") i
 _cors_headers = [h.strip() for h in app_settings.CORS_ALLOW_HEADERS.split(",") if h.strip()]
 
 
+async def _apply_startup_ddl():
+    """Idempotent ALTERs that unblock admin endpoints when manual migrations
+    haven't been run yet on a host (Render/Vercel/etc.). Safe to re-run."""
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "ALTER TABLE employees ADD COLUMN IF NOT EXISTS extra_permissions JSONB DEFAULT '[]'::jsonb"
+            ))
+    except Exception as e:
+        logger.warning("startup DDL skipped: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _apply_startup_ddl()
     yield
     await engine.dispose()
 

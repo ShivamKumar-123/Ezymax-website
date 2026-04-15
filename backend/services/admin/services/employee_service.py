@@ -38,7 +38,7 @@ async def list_employees(db: AsyncSession) -> dict:
             "first_name": user.first_name if user else None,
             "last_name": user.last_name if user else None,
             "phone": user.phone if user else None,
-            "extra_permissions": list(emp.extra_permissions or []),
+            "extra_permissions": list(getattr(emp, 'extra_permissions', None) or []),
         })
     return {"employees": items}
 
