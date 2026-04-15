@@ -33,6 +33,8 @@ export default function OrderPanel() {
     prices,
     instruments,
     activeAccount,
+    positions,
+    setPositions,
     refreshPositions,
     refreshAccount,
     orderFormCloneDraft,
@@ -149,9 +151,38 @@ export default function OrderPanel() {
       toast.error(`Insufficient margin`);
       return;
     }
-    // Optimistic: instant feedback, API fires in background
+    // Optimistic: instant feedback, API fires in background.
     sounds.orderPlaced();
     toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
+
+    // Only market orders hit the book immediately — show the position in
+    // the panel without waiting for the API round-trip so the UI feels
+    // synchronous with the tap.
+    const optimisticId = `optim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    let rollback: (() => void) | null = null;
+    if (orderTab === 'market') {
+      const nowIso = new Date().toISOString();
+      const optimisticPos = {
+        id: optimisticId,
+        account_id: activeAccount.id,
+        symbol: selectedSymbol,
+        side,
+        lots: lotsNum,
+        open_price: execPrice,
+        current_price: execPrice,
+        stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
+        take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
+        swap: 0,
+        commission: 0,
+        profit: 0,
+        trade_type: 'market',
+        created_at: nowIso,
+      } as (typeof positions)[number];
+      const prev = positions;
+      setPositions([optimisticPos, ...prev]);
+      rollback = () => setPositions(prev);
+    }
+
     setSubmitting(true);
     api.post('/orders/', {
       account_id: activeAccount.id,
@@ -162,8 +193,10 @@ export default function OrderPanel() {
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
     }).then(() => {
+      // Reconcile with server-authoritative state (replaces the optimistic row).
       Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
     }).catch((e: any) => {
+      if (rollback) rollback();
       toast.error(e.message || 'Order failed');
     }).finally(() => {
       setSubmitting(false);

@@ -264,6 +264,36 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   })),
 
   placeOrder: async (data) => {
+    // Optimistic: market orders hit the book immediately — inject a position
+    // row synchronously so the Positions panel reflects the trade without
+    // waiting for the server round-trip.
+    const s = get();
+    const tick = s.prices[data.symbol];
+    const optimisticId = `optim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    let rollback: (() => void) | null = null;
+    if (data.order_type === 'market' && tick) {
+      const execPrice = data.side === 'buy' ? tick.ask : tick.bid;
+      const prev = s.positions;
+      const optimisticPos = {
+        id: optimisticId,
+        account_id: data.account_id,
+        symbol: data.symbol,
+        side: data.side,
+        lots: Number(data.lots) || 0,
+        open_price: execPrice,
+        current_price: execPrice,
+        stop_loss: data.stop_loss,
+        take_profit: data.take_profit,
+        swap: 0,
+        commission: 0,
+        profit: 0,
+        trade_type: 'market',
+        created_at: new Date().toISOString(),
+      } as (typeof s.positions)[number];
+      set({ positions: [optimisticPos, ...prev] });
+      rollback = () => set({ positions: prev });
+    }
+
     try {
       const res = await api.post<any>('/orders/', {
         account_id: data.account_id,
@@ -277,11 +307,12 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         stop_limit_price: data.stop_limit_price,
       });
 
-      // Refresh in parallel, don't block return
+      // Reconcile with server-authoritative state (replaces the optimistic row).
       Promise.all([get().refreshPositions(), get().refreshAccount()]).catch(() => {});
-      
+
       return res;
     } catch (err) {
+      if (rollback) rollback();
       throw err;
     }
   },
