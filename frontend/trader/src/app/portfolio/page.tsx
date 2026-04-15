@@ -12,15 +12,15 @@ import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 
-import { Card, StatCard } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 
 import { Tabs } from '@/components/ui/Tabs';
 
 import DashboardShell from '@/components/layout/DashboardShell';
 
-import TradingJournalSection from '@/components/profile/TradingJournalSection';
+import TradingOverview from '@/components/profile/TradingOverview';
 
-import { buildTradingJournalFromPortfolio } from '@/lib/trading-dashboard';
+import { buildDashboardFromPortfolio } from '@/lib/trading-dashboard';
 
 import api from '@/lib/api/client';
 
@@ -218,6 +218,8 @@ function PortfolioPageContent() {
 
 
 
+  const [allTrades, setAllTrades] = useState<Trade[]>([]);
+
   const fetchData = useCallback(async () => {
 
     try {
@@ -238,17 +240,25 @@ function PortfolioPageContent() {
 
       if (validAccountId) perfParams.account_id = validAccountId;
 
-      const [sumRes, perfRes] = await Promise.all([
+      const tradeParams: Record<string, string> = { page: '1', per_page: '200' };
+
+      if (validAccountId) tradeParams.account_id = validAccountId;
+
+      const [sumRes, perfRes, tradesRes] = await Promise.all([
 
         api.get<PortfolioSummary>('/portfolio/summary', summaryParams),
 
         api.get<PerformanceData>('/portfolio/performance', perfParams),
+
+        api.get<{ items: Trade[] }>('/portfolio/trades', tradeParams),
 
       ]);
 
       setSummary(sumRes);
 
       setPerformance(perfRes);
+
+      setAllTrades(tradesRes.items ?? []);
 
     } catch (err: unknown) {
 
@@ -272,7 +282,7 @@ function PortfolioPageContent() {
 
     try {
 
-      const params: Record<string, string> = { page: String(p), per_page: '50' };
+      const params: Record<string, string> = { page: String(p), per_page: '10' };
 
       if (validAccountId) params.account_id = validAccountId;
 
@@ -408,7 +418,7 @@ function PortfolioPageContent() {
 
     const t = new URLSearchParams(queryKey).get('tab');
 
-    if (t === 'overview' || t === 'performance' || t === 'history') {
+    if (t === 'overview' || t === 'history') {
 
       setTab(t);
 
@@ -434,33 +444,44 @@ function PortfolioPageContent() {
 
   const holdings = summary?.holdings ?? [];
 
-  const stats = performance?.stats;
-
-  const monthlies = performance?.monthly_breakdown ?? [];
-
-  const equityCurve = performance?.equity_curve ?? [];
-
-  const journalBlock = useMemo(() => {
+  const dashboardData = useMemo(() => {
     if (!summary) return null;
     const lotsOpen = (summary.holdings ?? []).reduce((a, h) => a + (Number(h.lots) || 0), 0);
-    return buildTradingJournalFromPortfolio({
-      balance: summary.total_balance,
-      equity: summary.total_equity,
+    const equity = Number(summary.total_equity) || 0;
+    const balance = Number(summary.total_balance) || 0;
+    // Approx: each open lot blocks ~$1000 margin (100:1 leverage on ~$100k notional).
+    // Replace with real per-position margin once backend exposes it.
+    const approxUsedMargin = Math.min(equity, lotsOpen * 1000);
+    const freeMargin = Math.max(0, equity - approxUsedMargin);
+    const marginLevel =
+      approxUsedMargin > 0 ? `${((equity / approxUsedMargin) * 100).toFixed(1)}%` : null;
+    const periodKey = TF_TO_PERIOD[tf] || 'all';
+    const periodPnl =
+      periodKey === '1m' ? summary.pnl_breakdown?.this_month ?? 0 :
+      periodKey === 'all' ? summary.pnl_breakdown?.all_time ?? 0 :
+      summary.pnl_breakdown?.this_month ?? 0;
+    return buildDashboardFromPortfolio({
+      balance,
+      equity,
       allTimePnl: summary.pnl_breakdown?.all_time ?? 0,
       lotsFromOpenPositions: lotsOpen,
-      totalTrades: performance?.stats?.total_trades ?? 0,
-      winRate: performance?.stats?.win_rate ?? 0,
+      periodPnl,
+      winRateFallback: performance?.stats?.win_rate ?? 0,
       sharpeRatio: performance?.stats?.sharpe_ratio ?? 0,
+      trades: allTrades,
+      equityCurve: performance?.equity_curve ?? [],
+      freeMargin,
+      usedMargin: approxUsedMargin,
+      marginLevel,
+      currency: 'USD',
     });
-  }, [summary, performance]);
+  }, [summary, performance, allTrades, tf]);
 
   const tabs = [
 
-    { id: 'overview', label: 'Overview', count: holdings.length },
+    { id: 'overview', label: 'Open positions', count: holdings.length },
 
-    { id: 'performance', label: 'Performance' },
-
-    { id: 'history', label: 'Trade History' },
+    { id: 'history', label: 'Trade history' },
 
   ];
 
@@ -502,11 +523,6 @@ function PortfolioPageContent() {
 
 
 
-  const maxEquity = equityCurve.length > 0 ? Math.max(...equityCurve.map((e) => e.equity)) : 1;
-
-  const minEquity = equityCurve.length > 0 ? Math.min(...equityCurve.map((e) => e.equity)) : 0;
-
-  const equityRange = maxEquity - minEquity || 1;
 
 
 
@@ -548,131 +564,24 @@ function PortfolioPageContent() {
           </div>
         ) : null}
 
-        {journalBlock ? (
-          <div className="rounded-xl border border-border-primary bg-card p-4 md:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-            <TradingJournalSection journal={journalBlock} title="Trading Journal" />
+        {dashboardData ? (
+          <div className="flex items-center justify-end gap-0.5 -mb-2">
+            {TIMEFRAMES.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTf(t)}
+                className={clsx(
+                  'px-2 py-1 text-[10px] rounded-md transition-all',
+                  tf === t ? 'skeu-btn-buy text-text-inverse' : 'text-text-tertiary hover:bg-bg-hover',
+                )}
+              >
+                {t}
+              </button>
+            ))}
           </div>
         ) : null}
 
-        {/* Equity Curve */}
-
-        <Card variant="glass" padding="none">
-
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-glass">
-
-            <h3 className="text-md font-semibold text-text-primary">Equity Curve</h3>
-
-            <div className="flex gap-0.5">
-
-              {TIMEFRAMES.map((t) => (
-
-                <button
-
-                  key={t}
-
-                  onClick={() => setTf(t)}
-
-                  className={clsx(
-
-                    'px-2 py-1 text-[10px] rounded-md transition-all',
-
-                    tf === t ? 'skeu-btn-buy text-text-inverse' : 'text-text-tertiary hover:bg-bg-hover',
-
-                  )}
-
-                >
-
-                  {t}
-
-                </button>
-
-              ))}
-
-            </div>
-
-          </div>
-
-          <div className="p-4 h-48 flex items-end gap-px">
-
-            {equityCurve.length > 0 ? (
-
-              equityCurve.map((point, i) => {
-
-                const pct = ((point.equity - minEquity) / equityRange) * 100;
-
-                return (
-
-                  <div
-
-                    key={i}
-
-                    className="flex-1 bg-gradient-to-t from-buy/60 to-buy/20 rounded-t-sm transition-all hover:from-buy/80 hover:to-buy/40"
-
-                    style={{ height: `${Math.max(pct, 2)}%` }}
-
-                    title={`${new Date(point.date).toLocaleDateString()}: ${fmt(point.equity)}`}
-
-                  />
-
-                );
-
-              })
-
-            ) : (
-
-              <div className="flex-1 flex items-center justify-center text-sm text-text-tertiary">
-
-                No equity data available
-
-              </div>
-
-            )}
-
-          </div>
-
-        </Card>
-
-
-
-        {/* Stats Row */}
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-
-          <StatCard label="Total Trades" value={stats ? String(stats.total_trades) : '0'} />
-
-          <StatCard
-
-            label="Total Return"
-
-            value={stats ? `${stats.total_return >= 0 ? '+' : ''}${stats.total_return.toFixed(2)}%` : '—'}
-
-            trend={stats && stats.total_return >= 0 ? 'up' : 'down'}
-
-          />
-
-          <StatCard
-
-            label="Max Drawdown"
-
-            value={stats ? `${stats.max_drawdown.toFixed(2)}%` : '—'}
-
-            trend="down"
-
-          />
-
-          <StatCard
-
-            label="P&L Today"
-
-            value={`${(summary?.pnl_breakdown?.today ?? 0) >= 0 ? '+' : ''}${fmt(summary?.pnl_breakdown?.today ?? 0)}`}
-
-            trend={(summary?.pnl_breakdown?.today ?? 0) >= 0 ? 'up' : 'down'}
-
-          />
-
-        </div>
-
-
+        {dashboardData ? <TradingOverview data={dashboardData} /> : null}
 
         <div className="emboss-divider" />
 
@@ -815,110 +724,6 @@ function PortfolioPageContent() {
             </div>
 
           </Card>
-
-        )}
-
-
-
-        {tab === 'performance' && (
-
-          <div className="space-y-6">
-
-            <Card variant="glass" padding="none">
-
-              <div className="px-4 py-3 border-b border-border-glass">
-
-                <h3 className="text-md font-semibold text-text-primary">Monthly Breakdown</h3>
-
-              </div>
-
-              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-
-                {monthlies.length === 0 ? (
-
-                  <div className="col-span-full text-center text-sm text-text-tertiary py-4">No monthly data</div>
-
-                ) : (
-
-                  monthlies.map((m) => {
-                    const pnl = Number(m.pnl) || 0;
-                    return (
-                    <div
-
-                      key={m.month}
-
-                      className={clsx(
-
-                        'rounded-lg p-3 text-center border',
-
-                        pnl >= 0 ? 'border-buy/20 bg-buy/5' : 'border-sell/20 bg-sell/5',
-
-                      )}
-
-                    >
-
-                      <div className="text-[10px] text-text-tertiary mb-1">{m.month}</div>
-
-                      <div className={clsx('text-sm font-mono font-semibold tabular-nums', pnl >= 0 ? 'text-buy' : 'text-sell')}>
-
-                        {pnl >= 0 ? '+' : ''}{pnl.toFixed(0)}
-
-                      </div>
-
-                    </div>
-                    );
-                  })
-
-                )}
-
-              </div>
-
-            </Card>
-
-
-
-            {performance?.symbol_breakdown && performance.symbol_breakdown.length > 0 && (
-
-              <Card variant="glass" padding="none">
-
-                <div className="px-4 py-3 border-b border-border-glass">
-
-                  <h3 className="text-md font-semibold text-text-primary">Symbol Breakdown</h3>
-
-                </div>
-
-                <div className="p-4 space-y-2">
-
-                  {performance.symbol_breakdown.map((s) => {
-                    const sPnl = Number(s.pnl) || 0;
-                    return (
-                    <div key={s.symbol} className="flex items-center justify-between py-2 border-b border-border-glass/50">
-
-                      <div>
-
-                        <span className="text-sm font-medium text-text-primary">{s.symbol}</span>
-
-                        <span className="text-xs text-text-tertiary ml-2">{s.trades} trades</span>
-
-                      </div>
-
-                      <span className={clsx('text-sm font-mono font-semibold tabular-nums', sPnl >= 0 ? 'text-buy' : 'text-sell')}>
-
-                        {sPnl >= 0 ? '+' : ''}{fmt(sPnl)}
-
-                      </span>
-
-                    </div>
-                    );
-                  })}
-
-                </div>
-
-              </Card>
-
-            )}
-
-          </div>
 
         )}
 
@@ -1105,25 +910,47 @@ function PortfolioPageContent() {
             </Card>
 
             {totalPages > 1 && (
-
-              <div className="flex items-center justify-center gap-2">
-
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(1)}>
+                  « First
+                </Button>
                 <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-
                   ← Prev
-
                 </Button>
-
-                <span className="text-xs text-text-tertiary">Page {page} of {totalPages}</span>
-
+                {(() => {
+                  const maxButtons = 7;
+                  const half = Math.floor(maxButtons / 2);
+                  let start = Math.max(1, page - half);
+                  const end = Math.min(totalPages, start + maxButtons - 1);
+                  start = Math.max(1, end - maxButtons + 1);
+                  const nums: number[] = [];
+                  for (let i = start; i <= end; i += 1) nums.push(i);
+                  return nums.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPage(n)}
+                      className={clsx(
+                        'min-w-[32px] h-8 px-2 rounded-md text-xs font-semibold transition-colors border',
+                        n === page
+                          ? 'bg-[#2196f3] text-text-inverse border-[#2196f3]'
+                          : 'bg-bg-card text-text-secondary border-border-primary hover:bg-bg-hover',
+                      )}
+                    >
+                      {n}
+                    </button>
+                  ));
+                })()}
                 <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-
                   Next →
-
                 </Button>
-
+                <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>
+                  Last »
+                </Button>
+                <span className="ml-2 text-xs text-text-tertiary">
+                  Page {page} of {totalPages}
+                </span>
               </div>
-
             )}
 
           </>

@@ -196,13 +196,13 @@ function TradingSession({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                 ),
-                { duration: 6000 },
+                { duration: 2500 },
               );
             }
           }
         });
       }
-    }, 3000);
+    }, 1500);
 
     return () => {
       cancelled = true;

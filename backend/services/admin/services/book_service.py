@@ -33,13 +33,13 @@ async def get_book_stats(db: AsyncSession) -> dict:
         select(func.count(Position.id))
         .join(TradingAccount, Position.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(Position.status == "open", User.book_type == "A")
+        .where(Position.status == "open", User.book_type == "A", TradingAccount.is_demo == False)
     )).scalar() or 0
     b_trades = (await db.execute(
         select(func.count(Position.id))
         .join(TradingAccount, Position.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(Position.status == "open", User.book_type == "B")
+        .where(Position.status == "open", User.book_type == "B", TradingAccount.is_demo == False)
     )).scalar() or 0
 
     return {
@@ -198,13 +198,13 @@ async def get_abook_positions(page: int, per_page: int, db: AsyncSession) -> dic
         select(Position)
         .join(TradingAccount, Position.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(Position.status == "open", User.book_type == "A")
+        .where(Position.status == "open", User.book_type == "A", TradingAccount.is_demo == False)
     )
     total = (await db.execute(
         select(func.count(Position.id))
         .join(TradingAccount, Position.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(Position.status == "open", User.book_type == "A")
+        .where(Position.status == "open", User.book_type == "A", TradingAccount.is_demo == False)
     )).scalar() or 0
 
     result = await db.execute(
@@ -241,13 +241,13 @@ async def get_abook_history(page: int, per_page: int, db: AsyncSession) -> dict:
         select(TradeHistory)
         .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(User.book_type == "A")
+        .where(User.book_type == "A", TradingAccount.is_demo == False)
     )
     total = (await db.execute(
         select(func.count(TradeHistory.id))
         .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
         .join(User, TradingAccount.user_id == User.id)
-        .where(User.book_type == "A")
+        .where(User.book_type == "A", TradingAccount.is_demo == False)
     )).scalar() or 0
 
     result = await db.execute(

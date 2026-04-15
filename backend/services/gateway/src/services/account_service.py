@@ -22,6 +22,7 @@ from packages.common.src.models import (
     TradeHistory,
     TradingAccount,
     Transaction,
+    User,
     UserBonus,
     Withdrawal,
 )
@@ -29,10 +30,18 @@ from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiv
 from packages.common.src.redis_client import redis_client, PriceChannel
 
 
-async def list_openable_account_groups(db: AsyncSession) -> dict:
+async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
+    u = await db.execute(select(User).where(User.id == user_id))
+    user = u.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Demo users see only demo-type groups; live users see only live groups.
     result = await db.execute(
         select(AccountGroup)
-        .where(AccountGroup.is_active == True, AccountGroup.is_demo == False)
+        .where(
+            AccountGroup.is_active == True,
+            AccountGroup.is_demo == bool(user.is_demo),
+        )
         .order_by(AccountGroup.name)
     )
     rows = result.scalars().all()
@@ -58,11 +67,17 @@ async def open_live_account(
 ) -> dict:
     from .auth_service import generate_account_number
 
+    u = await db.execute(select(User).where(User.id == user_id))
+    user = u.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_is_demo = bool(user.is_demo)
+
     gq = await db.execute(
         select(AccountGroup).where(
             AccountGroup.id == req.account_group_id,
             AccountGroup.is_active == True,
-            AccountGroup.is_demo == False,
+            AccountGroup.is_demo == user_is_demo,
         )
     )
     group = gq.scalar_one_or_none()
@@ -71,37 +86,40 @@ async def open_live_account(
 
     min_d = Decimal(str(group.minimum_deposit or 0))
 
-    live_q = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.user_id == user_id,
-            TradingAccount.is_demo == False,
-        )
-    )
-    existing_live = list(live_q.scalars().all())
-
     new_balance = Decimal("0")
-    if min_d > 0 and existing_live:
-        total = sum((a.balance or Decimal("0")) for a in existing_live)
-        if total < min_d:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"You need at least ${float(min_d):.2f} across your existing live accounts "
-                    "to open this account type. Deposit or add funds first."
-                ),
+    if user_is_demo:
+        # Demo users get a starter virtual balance; use min_deposit if set, else $10,000.
+        new_balance = min_d if min_d > 0 else Decimal("10000")
+    else:
+        live_q = await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.user_id == user_id,
+                TradingAccount.is_demo == False,
             )
-        remaining = min_d
-        for acc in sorted(existing_live, key=lambda x: x.balance or Decimal("0"), reverse=True):
-            if remaining <= 0:
-                break
-            bal = acc.balance or Decimal("0")
-            take = min(bal, remaining)
-            if take > 0:
-                acc.balance = bal - take
-                acc.equity = acc.balance
-                acc.free_margin = acc.balance
-                remaining -= take
-        new_balance = min_d
+        )
+        existing_live = list(live_q.scalars().all())
+        if min_d > 0 and existing_live:
+            total = sum((a.balance or Decimal("0")) for a in existing_live)
+            if total < min_d:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"You need at least ${float(min_d):.2f} across your existing live accounts "
+                        "to open this account type. Deposit or add funds first."
+                    ),
+                )
+            remaining = min_d
+            for acc in sorted(existing_live, key=lambda x: x.balance or Decimal("0"), reverse=True):
+                if remaining <= 0:
+                    break
+                bal = acc.balance or Decimal("0")
+                take = min(bal, remaining)
+                if take > 0:
+                    acc.balance = bal - take
+                    acc.equity = acc.balance
+                    acc.free_margin = acc.balance
+                    remaining -= take
+            new_balance = min_d
 
     num = generate_account_number()
     lev = int(group.leverage_default or 100)
@@ -115,7 +133,7 @@ async def open_live_account(
         margin_used=Decimal("0"),
         leverage=lev,
         currency="USD",
-        is_demo=False,
+        is_demo=user_is_demo,
         is_active=True,
     )
     db.add(new_acc)

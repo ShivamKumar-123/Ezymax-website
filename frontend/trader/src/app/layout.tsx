@@ -50,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               position="top-center"
               containerClassName="trustedge-toaster"
               toastOptions={{
+                duration: 1500,
                 className: 'trustedge-hot-toast',
                 style: {
                   background: 'var(--toast-bg)',
@@ -60,10 +61,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 },
                 success: {
+                  duration: 1500,
                   className: 'trustedge-hot-toast',
                   iconTheme: { primary: '#2196f3', secondary: 'var(--toast-bg)' },
                 },
                 error: {
+                  duration: 2500,
                   className: 'trustedge-hot-toast',
                   iconTheme: { primary: '#f87171', secondary: 'var(--toast-bg)' },
                 },

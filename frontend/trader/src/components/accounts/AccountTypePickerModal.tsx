@@ -24,7 +24,6 @@ function fmtMoney(n: number, currency = 'USD') {
 
 const CARD_BG = 'var(--bg-secondary)';
 const CARD_BORDER = 'var(--border-primary)';
-const ACCENT = '#2196f3';
 
 type Props = {
   open: boolean;
@@ -91,9 +90,9 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       onClose={onClose}
       title="Choose account type"
       width="2xl"
-      className="border-border-primary bg-bg-base max-h-[90vh] flex flex-col shadow-2xl shadow-black/50"
-      headerClassName="border-border-primary bg-bg-secondary [&_h3]:text-text-primary [&_button]:text-text-tertiary [&_button:hover]:text-text-primary [&_button:hover]:bg-bg-hover"
-      bodyClassName="bg-bg-base p-4 sm:p-5"
+      className="border border-border-primary bg-bg-card max-h-[90vh] flex flex-col shadow-2xl"
+      headerClassName="border-b border-border-primary bg-bg-card [&_h3]:text-text-primary [&_button]:text-text-tertiary [&_button:hover]:text-text-primary [&_button:hover]:bg-bg-hover"
+      bodyClassName="bg-bg-card p-4 sm:p-5"
     >
       <div className="space-y-4">
         <p className="text-xs text-text-secondary leading-relaxed">
@@ -122,18 +121,14 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     type="button"
                     onClick={() => setSelectedId(g.id)}
                     className={clsx(
-                      'w-full text-left rounded-xl border p-4 sm:p-5 transition-all',
+                      'w-full text-left rounded-xl border-2 p-4 sm:p-5 transition-all',
                       isSel
-                        ? 'ring-2 ring-accent/50 border-accent/60 shadow-[0_0_0_1px_rgba(33,150,243,0.15)]'
-                        : 'hover:border-border-secondary',
+                        ? 'border-[#2196f3] bg-[#2196f3]/[0.06] shadow-[0_0_0_3px_rgba(33,150,243,0.15)]'
+                        : 'border-border-primary bg-bg-secondary hover:border-[#2196f3]/40 hover:bg-bg-hover',
                     )}
-                    style={{
-                      backgroundColor: CARD_BG,
-                      borderColor: isSel ? ACCENT : CARD_BORDER,
-                    }}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-base font-bold text-text-primary">{g.name}</span>
                           {g.swap_free ? (
@@ -145,28 +140,28 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         {g.description ? (
                           <p className="text-xs text-text-secondary leading-snug">{g.description}</p>
                         ) : null}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 pt-2 text-[11px]">
-                          <div>
-                            <span className="text-text-tertiary uppercase tracking-wide font-semibold block mb-0.5">
-                              Min. balance (to trade)
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-2 pt-1 text-[11px]">
+                          <div className="space-y-0.5">
+                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
+                              Min. balance
                             </span>
-                            <span className="text-text-primary font-mono font-semibold tabular-nums">
+                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
                               {fmtMoney(g.minimum_deposit)}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-text-tertiary uppercase tracking-wide font-semibold block mb-0.5">
+                          <div className="space-y-0.5">
+                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
                               Leverage
                             </span>
-                            <span className="text-text-primary font-mono font-semibold tabular-nums">
+                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
                               1:{g.leverage_default}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-text-tertiary uppercase tracking-wide font-semibold block mb-0.5">
+                          <div className="space-y-0.5">
+                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
                               Commission / lot
                             </span>
-                            <span className="text-text-primary font-mono font-semibold tabular-nums">
+                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
                               {g.commission_per_lot}
                             </span>
                           </div>
@@ -174,11 +169,13 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       </div>
                       <div
                         className={clsx(
-                          'shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors',
-                          isSel ? 'border-accent bg-accent/15' : 'border-border-secondary bg-bg-base',
+                          'shrink-0 mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
+                          isSel
+                            ? 'border-[#2196f3] bg-[#2196f3]'
+                            : 'border-border-secondary bg-bg-card',
                         )}
                       >
-                        {isSel ? <Check className="w-4 h-4 text-[#2196f3]" strokeWidth={2.5} /> : null}
+                        {isSel ? <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} /> : null}
                       </div>
                     </div>
                   </button>
@@ -188,11 +185,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
           </ul>
         )}
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border-primary">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border-primary">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-lg border border-border-secondary text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
+            className="px-5 py-2.5 rounded-lg border border-border-primary bg-bg-card text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
           >
             Cancel
           </button>
@@ -200,7 +197,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             type="button"
             disabled={loading || creating || groups.length === 0 || !selectedId}
             onClick={() => void handleContinue()}
-            className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-[0_2px_8px_rgba(33,150,243,0.25)]"
           >
             {creating ? 'Creating…' : 'Open Account'}
           </button>

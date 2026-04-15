@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
+import DemoLockGate from '@/components/demo/DemoLockGate';
 import Modal from '@/components/ui/Modal';
+import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import {
   TrendingUp, Users, DollarSign, AlertCircle, BarChart2,
@@ -136,6 +138,7 @@ function Spinner() {
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 export default function PammPage() {
+  const isDemo = useAuthStore((s) => s.user?.is_demo);
   const [activeTab, setActiveTab] = useState<Tab>('browse');
 
   // Browse
@@ -395,6 +398,19 @@ export default function PammPage() {
   ];
 
   // ─── Render ─────────────────────────────────────────────────────────────────
+
+  if (isDemo) {
+    return (
+      <DashboardShell>
+        <DemoLockGate
+          feature="PAMM / MAM"
+          description="Managed-account investing is only available on real trading accounts. Register a live account to allocate funds to a manager."
+        >
+          <></>
+        </DemoLockGate>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>

@@ -160,7 +160,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
 
   useEffect(() => {
     void fetchPositions();
-    const poll = setInterval(fetchPositions, 5000);
+    const poll = setInterval(fetchPositions, 2000);
     return () => clearInterval(poll);
   }, [fetchPositions]);
 
@@ -202,25 +202,25 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       toast.error(`Insufficient margin`);
       return;
     }
+    // Optimistic: instant feedback, API fires in background
+    sounds.orderPlaced();
+    toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`);
     setSubmitting(true);
-    try {
-      await api.post('/orders/', {
-        account_id: account.id,
-        symbol: selectedSymbol,
-        order_type: orderTab === 'market' ? 'market' : 'limit',
-        side,
-        lots,
-        stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
-        take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
-      });
-      sounds.orderPlaced();
-      toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`);
+    api.post('/orders/', {
+      account_id: account.id,
+      symbol: selectedSymbol,
+      order_type: orderTab === 'market' ? 'market' : 'limit',
+      side,
+      lots,
+      stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
+      take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
+    }).then(() => {
       void fetchPositions();
-    } catch (e: any) {
+    }).catch((e: any) => {
       toast.error(e.message || 'Order failed');
-    } finally {
+    }).finally(() => {
       setSubmitting(false);
-    }
+    });
   };
 
   const displaySymbols = watchlist.length > 0 ? watchlist : ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSD', 'ETHUSD', 'US30'];

@@ -395,7 +395,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         const res = await api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
           `/positions/${id}/close`,
           body,
-          { timeoutMs: 15_000 },
+          { timeoutMs: 8_000 },
         );
         const pnl = res.profit ?? 0;
         const sign = pnl >= 0 ? '+' : '';

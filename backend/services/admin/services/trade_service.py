@@ -40,7 +40,12 @@ async def _get_live_price(symbol: str) -> dict | None:
 async def list_positions(
     page: int, per_page: int, status_filter: str, db: AsyncSession,
 ):
-    query = select(Position)
+    # Exclude demo-account activity from admin views (demo trades are practice-only).
+    query = (
+        select(Position)
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
     if status_filter == "open":
         query = query.where(Position.status == PositionStatus.OPEN.value)
     elif status_filter == "closed":
@@ -114,7 +119,11 @@ async def list_positions(
 async def list_orders(
     page: int, per_page: int, status_filter: str, db: AsyncSession,
 ):
-    query = select(Order)
+    query = (
+        select(Order)
+        .join(TradingAccount, Order.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
     if status_filter == "pending":
         query = query.where(Order.status == OrderStatus.PENDING)
     elif status_filter == "filled":
@@ -168,7 +177,11 @@ async def list_orders(
 
 
 async def list_trade_history(page: int, per_page: int, db: AsyncSession):
-    query = select(TradeHistory)
+    query = (
+        select(TradeHistory)
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 

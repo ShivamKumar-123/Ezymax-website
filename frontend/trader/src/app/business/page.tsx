@@ -10,6 +10,10 @@ import toast from 'react-hot-toast';
 
 import DashboardShell from '@/components/layout/DashboardShell';
 
+import DemoLockGate from '@/components/demo/DemoLockGate';
+
+import { useAuthStore } from '@/stores/authStore';
+
 import api from '@/lib/api/client';
 
 
@@ -46,11 +50,26 @@ function Spinner() {
 
 export default function BusinessPage() {
 
+  const isDemo = useAuthStore((s) => s.user?.is_demo);
+
   const [tab, setTab] = useState<TabId>('ib');
 
   const tabIndex = TABS.findIndex((t) => t.id === tab);
 
   const slideIndex = tabIndex >= 0 ? tabIndex : 0;
+
+  if (isDemo) {
+    return (
+      <DashboardShell>
+        <DemoLockGate
+          feature="Affiliates & IB rewards"
+          description="IB commissions, sub-broker partnerships and network payouts require a real trading account. Register a live account to start earning."
+        >
+          <></>
+        </DemoLockGate>
+      </DashboardShell>
+    );
+  }
 
 
 
@@ -75,12 +94,6 @@ export default function BusinessPage() {
             <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-8">
 
               <h1 className="text-xl sm:text-3xl font-bold text-text-primary mb-2 leading-tight">Business</h1>
-
-              <p className="text-sm text-text-secondary max-w-2xl">
-
-                IB commissions, sub-broker partnerships, and your MLM network — aligned with TrustEdge rewards and accent styling.
-
-              </p>
 
             </div>
 

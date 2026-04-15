@@ -327,22 +327,21 @@ export default function TradingTerminalPage() {
         toast.error('Invalid lot size');
         return;
       }
+      // Optimistic: instant feedback, API fires in background
+      sounds.orderPlaced();
+      toast.success(`${side.toUpperCase()} ${lotSize} ${selectedSymbol}`);
       setOrderSubmitting(true);
-      try {
-        await placeOrder({
-          account_id: activeAccount.id,
-          symbol: selectedSymbol,
-          side,
-          order_type: 'market',
-          lots,
-        });
-        sounds.orderPlaced();
-        toast.success(`${side.toUpperCase()} ${lotSize} ${selectedSymbol}`);
-      } catch (e: unknown) {
+      placeOrder({
+        account_id: activeAccount.id,
+        symbol: selectedSymbol,
+        side,
+        order_type: 'market',
+        lots,
+      }).catch((e: unknown) => {
         toast.error(e instanceof Error ? e.message : 'Order failed');
-      } finally {
+      }).finally(() => {
         setOrderSubmitting(false);
-      }
+      });
     };
 
     return (

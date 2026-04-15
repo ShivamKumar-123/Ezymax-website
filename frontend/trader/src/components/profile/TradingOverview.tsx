@@ -30,8 +30,9 @@ import TradingJournalSection from '@/components/profile/TradingJournalSection';
 
 const NEON = '#2196f3';
 const RED = '#FF4D4D';
-const CARD = '#141414';
-const BORDER = '#252525';
+const CARD = 'var(--bg-card)';
+const BORDER = 'var(--border-primary)';
+void RED;
 
 function fmtUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -64,7 +65,7 @@ function ScoreDonut({ score }: { score: number }) {
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="rotate-[-90deg]">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#2a2a2a" strokeWidth={10} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-primary)" strokeWidth={10} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -77,7 +78,7 @@ function ScoreDonut({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-3xl font-bold text-white">{score}</span>
+        <span className="text-3xl font-bold text-text-primary">{score}</span>
       </div>
     </div>
   );
@@ -145,19 +146,19 @@ function EquityChart({ points }: { points: { date: string; equityUsd: number }[]
   }, [minY, maxY, pts.length]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl border border-[#252525] bg-[#0f0f0f] p-3">
-      <div className="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-zinc-500">
+    <div className="relative w-full overflow-hidden rounded-xl border border-border-primary bg-bg-secondary p-3">
+      <div className="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-text-tertiary">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-[#2196f3]" /> Strong profit
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-800" /> Small win
+          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Small win
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-red-500" /> Losing day
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-zinc-600" /> Rest
+          <span className="w-2 h-2 rounded-full bg-text-tertiary" /> Rest
         </span>
       </div>
       <svg
@@ -170,8 +171,8 @@ function EquityChart({ points }: { points: { date: string; equityUsd: number }[]
           const y = pad.t + innerH - ((yv - minY) / (maxY - minY)) * innerH;
           return (
             <g key={i}>
-              <line x1={pad.l} y1={y} x2={w - pad.r} y2={y} stroke="#1f1f1f" strokeWidth={1} />
-              <text x={4} y={y + 4} fill="#71717a" fontSize={10}>
+              <line x1={pad.l} y1={y} x2={w - pad.r} y2={y} stroke="var(--border-primary)" strokeWidth={1} />
+              <text x={4} y={y + 4} fill="var(--text-tertiary)" fontSize={10}>
                 ${(yv / 1000).toFixed(0)}k
               </text>
             </g>
@@ -195,21 +196,29 @@ function EquityChart({ points }: { points: { date: string; equityUsd: number }[]
         ) : null}
         {hover ? (
           <>
-            <line x1={hover.x} y1={pad.t} x2={hover.x} y2={pad.t + innerH} stroke="#3f3f46" strokeDasharray="4 4" />
+            <line x1={hover.x} y1={pad.t} x2={hover.x} y2={pad.t + innerH} stroke="var(--text-tertiary)" strokeDasharray="4 4" />
             <circle cx={hover.x} cy={hover.y} r={5} fill={NEON} />
           </>
         ) : null}
       </svg>
       {hover ? (
         <div
-          className="absolute z-10 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs shadow-xl pointer-events-none"
+          className="absolute z-10 rounded-lg border border-border-primary bg-bg-card px-3 py-2 text-xs shadow-xl pointer-events-none"
           style={{
             left: `clamp(8px, ${(hover.x / w) * 100}%, calc(100% - 160px))`,
             top: 48,
           }}
         >
-          <div className="text-zinc-400">{format(parseISO(hover.label), 'MMM dd, yyyy')}</div>
-          <div className="font-mono font-semibold text-white">Equity {fmtUsd(hover.v)}</div>
+          <div className="text-text-tertiary">{(() => {
+            try {
+              if (!hover.label) return '';
+              const d = typeof hover.label === 'string' ? parseISO(hover.label) : new Date(hover.label);
+              return Number.isNaN(d.getTime()) ? String(hover.label) : format(d, 'MMM dd, yyyy');
+            } catch {
+              return String(hover.label ?? '');
+            }
+          })()}</div>
+          <div className="font-mono font-semibold text-text-primary">Equity {fmtUsd(hover.v)}</div>
         </div>
       ) : null}
     </div>
@@ -254,7 +263,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
   const s = d.calendar.summary;
 
   return (
-    <div className="space-y-8 text-white pb-8">
+    <div className="space-y-8 text-text-primary pb-8">
       <TradingJournalSection journal={j} />
 
       {/* —— Calendar + sidebar —— */}
@@ -263,10 +272,10 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
           className="xl:col-span-2 rounded-xl border overflow-hidden"
           style={{ backgroundColor: CARD, borderColor: BORDER }}
         >
-          <div className="p-3 md:p-4 border-b border-[#252525] flex flex-wrap items-center justify-between gap-3">
+          <div className="p-3 md:p-4 border-b border-border-primary flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#2196f3]" />
-              <h3 className="font-bold text-white">Trading calendar</h3>
+              <h3 className="font-bold text-text-primary">Trading calendar</h3>
             </div>
             <div className="flex items-center gap-1 flex-wrap">
               {(
@@ -283,7 +292,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                   onClick={() => setCalView(t.id)}
                   className={clsx(
                     'w-8 h-8 rounded-lg text-xs font-bold transition-colors',
-                    calView === t.id ? 'bg-[#2196f3] text-black' : 'bg-zinc-900 text-zinc-400 hover:text-white',
+                    calView === t.id ? 'bg-[#2196f3] text-text-inverse' : 'bg-bg-secondary text-text-tertiary hover:text-text-primary',
                   )}
                 >
                   {t.label}
@@ -291,7 +300,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               ))}
               <button
                 type="button"
-                className="w-8 h-8 rounded-lg bg-zinc-900 text-zinc-400 flex items-center justify-center hover:text-white"
+                className="w-8 h-8 rounded-lg bg-bg-secondary text-text-tertiary flex items-center justify-center hover:text-text-primary"
                 aria-label="Toggle visibility"
               >
                 <Eye className="w-4 h-4" />
@@ -301,41 +310,41 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               <button
                 type="button"
                 onClick={() => setCalMonth(subMonths(calMonth, 1))}
-                className="p-1.5 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                className="p-1.5 rounded-lg border border-border-primary hover:bg-bg-hover text-text-secondary"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-semibold text-white min-w-[100px] text-center">
+              <span className="text-sm font-semibold text-text-primary min-w-[100px] text-center">
                 {format(calMonth, 'MMM yyyy')}
               </span>
               <button
                 type="button"
                 onClick={() => setCalMonth(addMonths(calMonth, 1))}
-                className="p-1.5 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                className="p-1.5 rounded-lg border border-border-primary hover:bg-bg-hover text-text-secondary"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] border-b border-[#252525] bg-black/20">
+          <div className="px-3 py-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] border-b border-border-primary bg-bg-secondary/40">
             <span className="text-[#2196f3] font-semibold">Monthly P&L {fmtCompactSigned(s.monthlyPnlUsd)}</span>
-            <span className="text-zinc-400">
-              Active days <span className="text-white">{s.activeDays}</span>
+            <span className="text-text-tertiary">
+              Active days <span className="text-text-primary">{s.activeDays}</span>
             </span>
-            <span className="text-zinc-400">
-              Trades <span className="text-white">{s.trades}</span>
+            <span className="text-text-tertiary">
+              Trades <span className="text-text-primary">{s.trades}</span>
             </span>
-            <span className="text-zinc-400">
-              Lots <span className="text-white">{s.lots.toFixed(2)}</span>
+            <span className="text-text-tertiary">
+              Lots <span className="text-text-primary">{s.lots.toFixed(2)}</span>
             </span>
-            <span className="ml-auto text-zinc-500">
+            <span className="ml-auto text-text-tertiary">
               <span className="text-[#2196f3]">{s.wins}W</span> <span className="text-red-400">{s.losses}L</span>
             </span>
           </div>
 
           <div className="p-2 md:p-3">
-            <div className="grid grid-cols-[repeat(8,minmax(0,1fr))] gap-1 text-[10px] text-zinc-500 font-semibold mb-1 px-0.5">
+            <div className="grid grid-cols-[repeat(8,minmax(0,1fr))] gap-1 text-[10px] text-text-tertiary font-semibold mb-1 px-0.5">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Wk'].map((h) => (
                 <div key={h} className="text-center py-1">
                   {h}
@@ -357,12 +366,12 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                       className={clsx(
                         'min-h-[72px] rounded-lg border p-1 flex flex-col',
                         !inMonth && 'opacity-25 border-transparent bg-transparent',
-                        inMonth && !cell && 'border-zinc-800 bg-[#0c0c0c]',
-                        inMonth && isWin && 'border-[#2196f3]/50 bg-emerald-950/30',
-                        inMonth && isLoss && 'border-red-500/50 bg-red-950/20',
+                        inMonth && !cell && 'border-border-primary bg-bg-secondary/40',
+                        inMonth && isWin && 'border-[#2196f3]/50 bg-[#2196f3]/10',
+                        inMonth && isLoss && 'border-red-500/50 bg-red-500/10',
                       )}
                     >
-                      <span className="text-[10px] text-zinc-500">{format(dt, 'd')}</span>
+                      <span className="text-[10px] text-text-tertiary">{format(dt, 'd')}</span>
                       {inMonth && cell && cell.kind !== 'empty' ? (
                         <>
                           {showUsd ? (
@@ -376,24 +385,24 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                             </span>
                           ) : null}
                           {calView === 'trades' && cell.trades != null ? (
-                            <span className="text-[10px] text-zinc-400">{cell.trades} trades</span>
+                            <span className="text-[10px] text-text-secondary">{cell.trades} trades</span>
                           ) : null}
                           {calView === 'r' && cell.rMultiple != null ? (
-                            <span className="text-[10px] text-zinc-300">{cell.rMultiple}R</span>
+                            <span className="text-[10px] text-text-secondary">{cell.rMultiple}R</span>
                           ) : null}
                           {calView === 'pct' && cell.pnlUsd != null ? (
-                            <span className="text-[10px] text-zinc-400">{(cell.pnlUsd / 100).toFixed(1)}%</span>
+                            <span className="text-[10px] text-text-secondary">{(cell.pnlUsd / 100).toFixed(1)}%</span>
                           ) : null}
                           {calView === 'usd' && cell.trades != null ? (
-                            <span className="text-[9px] text-zinc-500 mt-auto">{cell.trades} t</span>
+                            <span className="text-[9px] text-text-tertiary mt-auto">{cell.trades} t</span>
                           ) : null}
                         </>
                       ) : null}
                     </div>
                   );
                 })}
-                <div className="min-h-[72px] rounded-lg border border-zinc-800 bg-zinc-900/50 flex flex-col items-center justify-center text-[10px]">
-                  <span className="text-zinc-500 font-mono">
+                <div className="min-h-[72px] rounded-lg border border-border-primary bg-bg-secondary/50 flex flex-col items-center justify-center text-[10px]">
+                  <span className="text-text-tertiary font-mono">
                     {weekTotals[wi].n > 0 ? fmtCompactSigned(weekTotals[wi].sum) : '—'}
                   </span>
                 </div>
@@ -404,9 +413,9 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
 
         <div className="space-y-3">
           <div className="flex justify-end">
-            <label className="text-[10px] text-zinc-500 uppercase font-bold flex items-center gap-2">
+            <label className="text-[10px] text-text-tertiary uppercase font-bold flex items-center gap-2">
               Currency
-              <select className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-sm text-white">
+              <select className="bg-bg-input border border-border-primary rounded-lg px-2 py-1.5 text-sm text-text-primary">
                 <option>USD</option>
               </select>
             </label>
@@ -441,10 +450,10 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                 ['Avg win', fmtUsd(d.stats.avgWinUsd), 'text-[#2196f3]'],
                 ['Avg loss', fmtUsd(-d.stats.avgLossUsd), 'text-red-400'],
                 ['Period P&L', fmtCompactSigned(d.stats.periodPnlUsd), 'text-[#2196f3]'],
-                ['Total trades', String(d.stats.totalTrades), 'text-white'],
+                ['Total trades', String(d.stats.totalTrades), 'text-text-primary'],
               ].map(([k, v, c]) => (
                 <li key={k} className="flex justify-between gap-2">
-                  <span className="text-zinc-500">{k}</span>
+                  <span className="text-text-tertiary">{k}</span>
                   <span className={clsx('font-mono font-semibold tabular-nums', c)}>{v}</span>
                 </li>
               ))}
@@ -458,23 +467,24 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
         <div className="lg:col-span-2 rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
           <div className="flex items-center gap-2 mb-3">
             <LineChart className="w-5 h-5 text-[#2196f3]" />
-            <h3 className="font-bold text-white">Equity growth</h3>
+            <h3 className="font-bold text-text-primary">Equity growth</h3>
           </div>
           <EquityChart points={d.equity} />
         </div>
         <div className="space-y-3">
           <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
-            <h4 className="text-sm font-semibold text-white mb-3">Trading statistics</h4>
+            <h4 className="text-sm font-semibold text-text-primary mb-3">Trading statistics</h4>
             <ul className="space-y-2.5 text-sm">
               {[
                 ['Risk–reward', d.stats.riskReward, 'text-[#2196f3]'],
+                ['Expectancy', `${d.stats.expectancyUsd >= 0 ? '+' : ''}${fmtUsd(d.stats.expectancyUsd)}`, d.stats.expectancyUsd >= 0 ? 'text-[#2196f3]' : 'text-red-400'],
                 ['Best streak', d.stats.bestStreak, 'text-[#2196f3]'],
                 ['Worst streak', d.stats.worstStreak, 'text-red-400'],
                 ['Best trade', fmtUsd(d.stats.bestTradeUsd), 'text-[#2196f3]'],
                 ['Worst trade', fmtUsd(d.stats.worstTradeUsd), 'text-red-400'],
               ].map(([k, v, c]) => (
                 <li key={k} className="flex justify-between gap-2">
-                  <span className="text-zinc-500">{k}</span>
+                  <span className="text-text-tertiary">{k}</span>
                   <span className={clsx('font-medium tabular-nums text-right', c)}>{v}</span>
                 </li>
               ))}
@@ -486,7 +496,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               Crucial score
             </div>
             <ScoreDonut score={d.crucialScore} />
-            <p className="text-[10px] text-zinc-500 text-center mt-3 leading-relaxed">
+            <p className="text-[10px] text-text-tertiary text-center mt-3 leading-relaxed">
               Win rate · Profit factor · Risk–reward · Expectancy
             </p>
           </div>

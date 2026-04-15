@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
+import DemoLockGate from '@/components/demo/DemoLockGate';
+import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 
 type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard';
@@ -751,6 +753,7 @@ function MyCopiesTab() {
 
 /* ─── Main Page ─── */
 function SocialPageInner() {
+  const isDemo = useAuthStore((s) => s.user?.is_demo);
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>(() => tabFromQuery(searchParams.get('tab')));
 
@@ -760,6 +763,19 @@ function SocialPageInner() {
 
   const tabIndex = TABS.findIndex((t) => t.id === activeTab);
   const slideIndex = tabIndex >= 0 ? tabIndex : 0;
+
+  if (isDemo) {
+    return (
+      <DashboardShell>
+        <DemoLockGate
+          feature="Copy Trading"
+          description="Copy trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
+        >
+          <></>
+        </DemoLockGate>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">

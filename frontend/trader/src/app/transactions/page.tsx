@@ -163,7 +163,7 @@ export default function TransactionsPage() {
   return (
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 space-y-5 sm:space-y-6">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-10 py-4 sm:py-6 pb-24 space-y-5 sm:space-y-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
@@ -264,7 +264,7 @@ export default function TransactionsPage() {
                   <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.4))' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/50">Commissions</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/50">IB Commissions</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(0)}
                   </p>
@@ -317,7 +317,7 @@ export default function TransactionsPage() {
                     ['deposit', 'Deposits'],
                     ['withdrawal', 'Withdrawals'],
                     ['transfer', 'Transfers'],
-                    ['commission', 'Commissions'],
+                    ['commission', 'IB Commissions'],
                   ] as const
                 ).map(([t, label]) => (
                   <button

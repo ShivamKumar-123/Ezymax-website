@@ -22,9 +22,10 @@ async def list_openable_account_groups(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Live account types the broker exposes (admin-managed AccountGroup rows)."""
-    _ = current_user
-    return await account_service.list_openable_account_groups(db=db)
+    """Account types the broker exposes (admin-managed AccountGroup rows). Filtered by user's demo/live status."""
+    return await account_service.list_openable_account_groups(
+        db=db, user_id=current_user["user_id"],
+    )
 
 
 @router.post("/open", status_code=status.HTTP_201_CREATED)

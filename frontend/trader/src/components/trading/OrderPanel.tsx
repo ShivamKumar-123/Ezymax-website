@@ -149,26 +149,25 @@ export default function OrderPanel() {
       toast.error(`Insufficient margin`);
       return;
     }
+    // Optimistic: instant feedback, API fires in background
+    sounds.orderPlaced();
+    toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
     setSubmitting(true);
-    try {
-      await api.post('/orders/', {
-        account_id: activeAccount.id,
-        symbol: selectedSymbol,
-        order_type: orderTab === 'market' ? 'market' : 'limit',
-        side,
-        lots: lotsNum,
-        stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
-        take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
-      });
-      sounds.orderPlaced();
-      toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
-      // Refresh positions and account in parallel, don't block UI
+    api.post('/orders/', {
+      account_id: activeAccount.id,
+      symbol: selectedSymbol,
+      order_type: orderTab === 'market' ? 'market' : 'limit',
+      side,
+      lots: lotsNum,
+      stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
+      take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
+    }).then(() => {
       Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
-    } catch (e: any) {
+    }).catch((e: any) => {
       toast.error(e.message || 'Order failed');
-    } finally {
+    }).finally(() => {
       setSubmitting(false);
-    }
+    });
   };
 
   const isConnected = wsStatus === 'connected';

@@ -7,6 +7,8 @@ import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/Card';
 import DashboardShell from '@/components/layout/DashboardShell';
+import DemoLockGate from '@/components/demo/DemoLockGate';
+import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import {
   ArrowUpRight,
@@ -100,6 +102,7 @@ interface ManualBankDetailsResponse {
 }
 
 function WalletPageContent() {
+  const isDemo = useAuthStore((s) => s.user?.is_demo);
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountFromUrl = searchParams.get('account');
@@ -604,6 +607,19 @@ function WalletPageContent() {
           <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-text-secondary">Loading wallet...</span>
         </div>
+      </DashboardShell>
+    );
+  }
+
+  if (isDemo) {
+    return (
+      <DashboardShell>
+        <DemoLockGate
+          feature="Deposits & Withdrawals"
+          description="Funding is only available on real trading accounts. Register a live account to deposit, withdraw and transfer funds."
+        >
+          <></>
+        </DemoLockGate>
       </DashboardShell>
     );
   }

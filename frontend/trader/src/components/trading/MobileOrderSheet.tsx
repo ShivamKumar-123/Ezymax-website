@@ -86,42 +86,38 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
     const slNum = sl.trim() ? parseFloat(sl) : NaN;
     const tpNum = tp.trim() ? parseFloat(tp) : NaN;
 
-    setSubmitting(true);
-    try {
-      await placeOrder({
-        account_id: activeAccount.id,
-        symbol,
-        side,
-        order_type: apiOrderType,
-        lots,
-        price: priceVal,
-        stop_loss: Number.isFinite(slNum) ? slNum : undefined,
-        take_profit: Number.isFinite(tpNum) ? tpNum : undefined,
-      });
-      sounds.orderPlaced();
-      const label =
-        orderType === 'market'
-          ? `${side.toUpperCase()} ${lots} ${symbol}`
-          : `${apiOrderType} ${side} ${lots} ${symbol}`;
-      toast.success(label);
-      onClose();
-    } catch (err: unknown) {
+    // Optimistic: instant feedback, API fires in background
+    sounds.orderPlaced();
+    const label =
+      orderType === 'market'
+        ? `${side.toUpperCase()} ${lots} ${symbol}`
+        : `${apiOrderType} ${side} ${lots} ${symbol}`;
+    toast.success(label);
+    onClose();
+    placeOrder({
+      account_id: activeAccount.id,
+      symbol,
+      side,
+      order_type: apiOrderType,
+      lots,
+      price: priceVal,
+      stop_loss: Number.isFinite(slNum) ? slNum : undefined,
+      take_profit: Number.isFinite(tpNum) ? tpNum : undefined,
+    }).catch((err: unknown) => {
       toast.error(err instanceof Error ? err.message : 'Failed to place order');
-    } finally {
-      setSubmitting(false);
-    }
+    });
   };
 
   return (
     <div className="fixed inset-0 z-[80] md:hidden">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
         onClick={onClose}
       />
       
       {/* Sheet */}
-      <div className="absolute bottom-0 left-0 right-0 bg-bg-primary rounded-t-[32px] border-t border-border-glass shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[92vh] select-none">
+      <div className="absolute bottom-0 left-0 right-0 bg-bg-primary rounded-t-[32px] border-t border-border-glass shadow-2xl animate-in slide-in-from-bottom duration-150 flex flex-col max-h-[92vh] select-none">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-text-tertiary/30 rounded-full" />
