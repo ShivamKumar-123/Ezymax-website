@@ -72,10 +72,12 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
 
-    # Rate limiting (requests per minute per IP)
-    RATE_LIMIT_DEFAULT: str = "600/minute"
-    RATE_LIMIT_AUTH: str = "20/minute"
-    RATE_LIMIT_TRADING: str = "600/minute"
+    # Rate limiting (requests per minute per IP). 600/min = 10/s, which is
+    # easy to trip in production when a user (or shared NAT IP) loads an
+    # authenticated page that fans out several API calls in parallel.
+    RATE_LIMIT_DEFAULT: str = "3000/minute"
+    RATE_LIMIT_AUTH: str = "30/minute"
+    RATE_LIMIT_TRADING: str = "3000/minute"
 
     # Request body size limit (bytes) — 10 MB default
     MAX_REQUEST_SIZE: int = 10 * 1024 * 1024

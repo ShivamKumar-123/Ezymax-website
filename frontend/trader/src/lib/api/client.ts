@@ -62,6 +62,7 @@ class ApiClient {
     body?: unknown,
     params?: Record<string, string>,
     options?: ApiRequestOptions,
+    _retry429: number = 0,
   ): Promise<T> {
     const API_BASE = getApiBase();
     let url: string;
@@ -134,6 +135,18 @@ class ApiClient {
     }
     if (ext) ext.removeEventListener('abort', onExternalAbort);
     clearTimeout(timer);
+
+    // Retry on 429 with exponential backoff (max 3 attempts) so transient
+    // rate-limit bursts don't kill the page.
+    if (res.status === 429 && _retry429 < 3 && method.toUpperCase() === 'GET') {
+      const retryAfterHdr = res.headers.get('Retry-After');
+      const retryAfterSec = retryAfterHdr ? parseFloat(retryAfterHdr) : NaN;
+      const delay = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+        ? Math.min(5000, retryAfterSec * 1000)
+        : Math.min(4000, 400 * Math.pow(2, _retry429));
+      await new Promise((r) => setTimeout(r, delay));
+      return this.request<T>(method, path, body, params, options, _retry429 + 1);
+    }
 
     if (res.status === 401) {
       this.clearToken();
