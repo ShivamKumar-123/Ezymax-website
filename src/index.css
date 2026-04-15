@@ -7,10 +7,12 @@
     @apply bg-primary-bg text-text-primary font-sans antialiased;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
   }
 
   html {
     scroll-behavior: auto;
+    overflow-x: hidden;
   }
 }
 

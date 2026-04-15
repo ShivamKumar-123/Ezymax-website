@@ -1,11 +1,20 @@
-import { Link } from 'react-router-dom'
-import { ArrowRight, Zap, TrendingDown, Lock, BarChart3, CreditCard, Globe, Monitor, Smartphone } from 'lucide-react'
-import Button from '../components/Button'
-import StatBox from '../components/StatBox'
-import FeatureCard from '../components/FeatureCard'
-import PlatformCard from '../components/PlatformCard'
-import HeroScrollCanvas from '../components/HeroScrollCanvas'
-import HeroOverlay from '../components/HeroOverlay'
+import HeroSection from './home/HeroSection'
+import LiveMarketChartsSection from './home/LiveMarketChartsSection'
+import AboutSection from './home/AboutSection'
+import VisionMissionSection from './home/VisionMissionSection'
+import WhySection from './home/WhySection'
+import MarketsSection from './home/MarketsSection'
+import PlatformSection from './home/PlatformSection'
+import AccountsSection from './home/AccountsSection'
+import ConditionsSection from './home/ConditionsSection'
+import ToolsSection from './home/ToolsSection'
+import EducationSection from './home/EducationSection'
+import IslamicAccountSection from './home/IslamicAccountSection'
+import PaymentsSection from './home/PaymentsSection'
+import PartnerProgramSection from './home/PartnerProgramSection'
+import SecuritySection from './home/SecuritySection'
+import StartTradingSection from './home/StartTradingSection'
+import BottomSection from './home/BottomSection'
 
 const Home = () => {
   const features = [
@@ -82,117 +91,56 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
-      {/* HERO SECTION — Scroll-linked canvas animation */}
-      <div className="relative">
-        <HeroScrollCanvas />
-        <HeroOverlay />
-      </div>
+      {/* 1. Hero */}
+      <HeroSection />
 
-      {/* TRUST / STATS SECTION */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-primary-bg mb-16">
-            Trusted by Traders Worldwide
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <StatBox value="500000+" label="Active Traders" />
-            <StatBox value="2.3B+" label="Daily Trading Volume" />
-            <StatBox value="1000+" label="Tradable Instruments" />
-            <StatBox value="15+" label="Years Market Experience" />
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-8 text-primary-bg">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⭐</span>
-              <span className="font-semibold">Top-Rated on Trustpilot 4.8</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock className="w-6 h-6 text-primary-accent" />
-              <span className="font-semibold">Regulated by FCA & CySEC</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6 text-primary-accent" />
-              <span className="font-semibold">24/7 Dedicated Support</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 2. Live Market Charts */}
+      <LiveMarketChartsSection />
 
-      {/* FEATURES SECTION */}
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <div className="inline-block text-primary-accent text-sm font-semibold mb-4 tracking-wider uppercase">
-              Why Choose TrustEdgeFX
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Everything You Need to Trade Like a Pro
-            </h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {features.map((feature, index) => (
-              <FeatureCard key={index} {...feature} />
-            ))}
-          </div>
-          
-          <div className="text-center">
-            <Link to="/company/why-trustedge" className="inline-flex items-center gap-2 text-primary-accent hover:text-white transition-colors font-semibold text-lg">
-              Explore All Features
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* 3. About */}
+      <AboutSection />
 
-      {/* PLATFORMS SECTION */}
-      <section className="section-padding bg-gray-100">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-primary-bg mb-6">
-              Powerful Platforms. Built for Every Trader.
-            </h2>
-            <p className="text-xl text-gray-500 max-w-3xl mx-auto">
-              Choose your preferred platform — from industry-standard MetaTrader to our sleek Web Platform.
-            </p>
-          </div>
+      {/* 4. Vision Mission Values */}
+      <VisionMissionSection />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {platforms.map((platform, index) => (
-              <PlatformCard key={index} {...platform} light />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* 5. Why Choose */}
+      <WhySection />
 
-      {/* CTA BANNER */}
-      <section className="section-padding bg-gradient-hero relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-accent/20 to-primary-purple/20 blur-3xl"></div>
-        </div>
-        
-        <div className="container-custom relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Start Your Trading Journey?
-          </h2>
-          <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-            Join over 500,000 traders and access global markets in minutes.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/accounts/demo">
-              <Button variant="primary" className="w-full sm:w-auto">
-                Open Account
-              </Button>
-            </Link>
-            <Link to="/accounts/demo">
-              <Button variant="ghost" className="w-full sm:w-auto">
-                Try Demo First
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* 6. Markets */}
+      <MarketsSection />
+
+      {/* 7. Platform */}
+      <PlatformSection />
+
+      {/* 8. Accounts */}
+      <AccountsSection />
+
+      {/* 9. Conditions */}
+      <ConditionsSection />
+
+      {/* 10. Tools */}
+      <ToolsSection />
+
+      {/* 11. Education */}
+      <EducationSection />
+
+      {/* 12. Islamic Account */}
+      <IslamicAccountSection />
+
+      {/* 13. Payments */}
+      <PaymentsSection />
+
+      {/* 14. Partner Program */}
+      <PartnerProgramSection />
+
+      {/* 15. Security */}
+      <SecuritySection />
+
+      {/* 16. Start Trading */}
+      <StartTradingSection />
+
+      {/* 17. Bottom (Testimonials + FAQ + CTA) */}
+      <BottomSection />
     </div>
   )
 }

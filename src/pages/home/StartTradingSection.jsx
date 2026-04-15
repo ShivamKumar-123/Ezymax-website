@@ -23,11 +23,11 @@ export default function StartTradingSection() {
         <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
           {steps.map((step) => (
             <ScrollRevealItem key={step.number}>
-              <div className="glass-card p-6 h-full text-center relative">
-                <div className={`absolute -top-4 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full ${step.bg} border-4 border-primary-bg flex items-center justify-center`}>
+              <div className="glass-card p-6 pt-8 h-full text-center relative overflow-visible">
+                <div className={`w-10 h-10 rounded-full ${step.bg} flex items-center justify-center mx-auto mb-4`}>
                   <span className={`${step.color} font-bold text-lg`}>{step.number}</span>
                 </div>
-                <div className={`feature-icon ${step.bg} ${step.color} mb-4 mx-auto mt-6`}>
+                <div className={`feature-icon ${step.bg} ${step.color} mb-4 mx-auto`}>
                   {step.icon}
                 </div>
                 <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
