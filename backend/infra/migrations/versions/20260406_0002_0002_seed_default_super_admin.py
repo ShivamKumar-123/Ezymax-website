@@ -3,6 +3,9 @@
 Revision ID: 0002
 Revises: 0001
 """
+import os
+
+import bcrypt
 from alembic import op
 
 revision = "0002"
@@ -10,8 +13,9 @@ down_revision = "0001"
 branch_labels = None
 depends_on = None
 
-# Same as init-db.sql — bcrypt for password: TrustEdgeAdmin2025!
-_DEFAULT_HASH = "$2b$12$OV1PUf7jA8E22RQ184o0n.KkEjbSriZbLaDqO4SJGj/bjleK37Zh2"
+_ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@trustedge.com")
+_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "TrustEdgeAdmin2025!")
+_DEFAULT_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt(12)).decode()
 
 
 def upgrade() -> None:
@@ -19,7 +23,7 @@ def upgrade() -> None:
         f"""
         INSERT INTO users (email, password_hash, first_name, last_name, role, status, kyc_status)
         VALUES (
-            'admin@trustedge.com',
+            '{_ADMIN_EMAIL}',
             '{_DEFAULT_HASH}',
             'Super',
             'Admin',
@@ -40,11 +44,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(
-        """
+        f"""
         DELETE FROM users
-        WHERE email = 'admin@trustedge.com'
-          AND password_hash = '"""
-        + _DEFAULT_HASH
-        + """';
+        WHERE email = '{_ADMIN_EMAIL}'
+          AND password_hash = '{_DEFAULT_HASH}';
         """
     )

@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 
-const LIGHT_BG = '#F2EFE9';
-const LIGHT_TEXT = '#000000';
+const LIGHT_BG = '#ffffff';
+const LIGHT_TEXT = '#111827';
 const DARK_BG = '#0a0a0a';
 const DARK_TEXT = '#ffffff';
 

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     ADMIN_JWT_SECRET: str = "admin-secret-change-in-production"
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
+
+    ADMIN_EMAIL: str = "admin@trustedge.com"
+    ADMIN_PASSWORD: str = "TrustEdgeAdmin2025!"
     USER_JWT_SECRET: str = "dev-secret-change-in-production"
     USER_JWT_ALGORITHM: str = "HS256"
 

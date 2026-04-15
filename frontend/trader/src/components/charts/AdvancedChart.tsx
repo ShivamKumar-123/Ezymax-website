@@ -40,7 +40,7 @@ function AdvancedChartInner() {
   const theme = useUIStore((s) => s.theme);
 
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const tvTheme = onTradingTerminal || theme !== 'light' ? 'dark' : 'light';
+  const tvTheme = theme === 'light' ? 'light' : 'dark';
   const interval = onTradingTerminal ? '5' : '15';
   const symbol = selectedSymbol || 'XAUUSD';
 
@@ -181,7 +181,7 @@ function AdvancedChartInner() {
     }
   }, [symbol]);
 
-  const surface = tvTheme === 'light' ? 'bg-[#f2efe9]' : 'bg-[#0e0e0e]';
+  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
 
   return (
     <div

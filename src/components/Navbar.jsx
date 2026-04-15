@@ -28,6 +28,7 @@ const navItems = [
       { name: 'Standard', path: '/accounts/standard' },
       { name: 'Pro', path: '/accounts/pro' },
       { name: 'Demo', path: '/accounts/demo' },
+      { name: 'KYC Verification', path: '/kyc' },
     ]
   },
   { label: 'Education',   path: '/education/tutorials', icon: <BookOpen size={16} /> },

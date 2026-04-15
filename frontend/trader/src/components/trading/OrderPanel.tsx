@@ -43,7 +43,7 @@ export default function OrderPanel() {
 
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderTab, setOrderTab] = useState<OrderType>('market');
-  const [lots, setLots] = useState(0.01);
+  const [lots, setLots] = useState('0.01');
   const [slEnabled, setSlEnabled] = useState(false);
   const [tpEnabled, setTpEnabled] = useState(false);
   const [stopLoss, setStopLoss] = useState('');
@@ -65,11 +65,12 @@ export default function OrderPanel() {
   );
 
   const execPrice = tick ? (side === 'buy' ? tick.ask : tick.bid) : 0;
+  const lotsNum = parseFloat(lots) || 0;
 
   const marginRequired = useMemo(() => {
     if (!execPrice || !activeAccount) return 0;
-    return (lots * contractSize * execPrice) / activeAccount.leverage;
-  }, [execPrice, lots, activeAccount, contractSize]);
+    return (lotsNum * contractSize * execPrice) / activeAccount.leverage;
+  }, [execPrice, lotsNum, activeAccount, contractSize]);
 
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
@@ -87,7 +88,7 @@ export default function OrderPanel() {
     const d = orderFormCloneDraft;
     setSelectedSymbol(d.symbol);
     setSide(d.side);
-    setLots(Math.max(0.01, Number(d.lots.toFixed(4))));
+    setLots(Math.max(0.01, Number(d.lots.toFixed(4))).toString());
     if (d.stop_loss != null && d.stop_loss !== undefined && !Number.isNaN(Number(d.stop_loss))) {
       setSlEnabled(true);
       setStopLoss(String(d.stop_loss));
@@ -134,7 +135,7 @@ export default function OrderPanel() {
   }, [tpEnabled]);
 
   const adjustLots = (delta: number) => {
-    setLots((prev) => parseFloat(Math.max(0.01, prev + delta).toFixed(2)));
+    setLots(Math.max(0.01, parseFloat((lotsNum + delta).toFixed(2))).toString());
   };
 
   const handleSubmit = async () => {
@@ -155,12 +156,12 @@ export default function OrderPanel() {
         symbol: selectedSymbol,
         order_type: orderTab === 'market' ? 'market' : 'limit',
         side,
-        lots,
+        lots: lotsNum,
         stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
         take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
       });
       sounds.orderPlaced();
-      toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`);
+      toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
       // Refresh positions and account in parallel, don't block UI
       Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
     } catch (e: any) {
@@ -179,10 +180,10 @@ export default function OrderPanel() {
   const volIn = isTradingTerminal ? 'py-1.5 text-sm' : 'py-2.5 text-base';
 
   return (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden" style={{ background: '#0a0a0a' }}>
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
       {/* ═══ Header ═══ */}
       <div
-        className={clsx('shrink-0 flex items-center justify-between border-b border-[#1a1a1a] bg-[#0e0e0e]', isTradingTerminal ? 'px-2 py-2' : 'px-4 py-2.5')}
+        className={clsx('shrink-0 flex items-center justify-between border-b border-border-primary bg-bg-secondary', isTradingTerminal ? 'px-2 py-2' : 'px-4 py-2.5')}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <div className="relative flex items-center gap-1.5 min-w-0" ref={dropdownRef}>
@@ -198,7 +199,7 @@ export default function OrderPanel() {
             >
               <span
                 className={clsx(
-                  'font-bold text-white font-mono truncate',
+                  'font-bold text-text-primary font-mono truncate',
                   isTradingTerminal ? 'text-xs' : 'text-sm',
                 )}
               >
@@ -207,17 +208,17 @@ export default function OrderPanel() {
               {!isTradingTerminal ? (
                 <ChevronDown
                   size={14}
-                  className={clsx('text-[#555] shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
+                  className={clsx('text-text-tertiary shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
                 />
               ) : (
                 <ChevronDown
                   size={12}
-                  className={clsx('text-[#555] shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
+                  className={clsx('text-text-tertiary shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
                 />
               )}
             </button>
             {symbolPickerOpen && (
-              <div className="absolute top-full left-0 z-50 w-64 mt-1 rounded-lg border border-[#1a1a1a] shadow-2xl bg-[#0e0e0e] overflow-hidden">
+              <div className="absolute top-full left-0 z-50 w-64 mt-1 rounded-lg border border-border-primary shadow-2xl bg-bg-secondary overflow-hidden">
                 <OrderPanelSymbolPicker
                   onPick={(sym) => {
                     setSelectedSymbol(sym);
@@ -235,7 +236,7 @@ export default function OrderPanel() {
                   setSymbolPickerOpen(false);
                   toggleTerminalMarkets();
                 }}
-                className="flex items-center gap-1 px-2 py-1 rounded-md border border-[#2962FF]/40 text-[#2962FF] hover:bg-[#2962FF]/12 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-md border border-accent/40 text-accent hover:bg-accent/12 transition-colors"
                 aria-label={terminalMarketsOpen ? 'Hide markets' : 'Open markets'}
                 aria-expanded={terminalMarketsOpen}
               >
@@ -256,8 +257,8 @@ export default function OrderPanel() {
                 className={clsx(
                   'flex items-center justify-center w-8 h-8 rounded-md border transition-colors',
                   oneClickTrading
-                    ? 'border-[#5eb3ff]/50 bg-[#1e3a5f] text-[#5eb3ff]'
-                    : 'border-[#333] text-white/50 hover:text-white hover:bg-white/[0.06]',
+                    ? 'border-accent/50 bg-accent/15 text-accent'
+                    : 'border-border-secondary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
                 )}
               >
                 <Zap size={15} strokeWidth={1.75} />
@@ -269,12 +270,12 @@ export default function OrderPanel() {
           <div className="flex items-center gap-1">
             <span
               className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#00e676' : '#f57c00' }}
+              style={{ color: marketStatus.isOpen ? '#2196f3' : '#f57c00' }}
             >
               {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
             </span>
             {isConnected ? (
-              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#00e676]" />
+              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#2196f3]" />
             ) : (
               <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
             )}
@@ -283,12 +284,11 @@ export default function OrderPanel() {
       </div>
 
       {isTradingTerminal ? (
-        <div className="h-px w-full shrink-0 bg-[#2962FF]" aria-hidden />
+        <div className="h-px w-full shrink-0 bg-accent" aria-hidden />
       ) : null}
 
       <div
-        className={clsx('flex-1 min-h-0 flex flex-col', isTradingTerminal && 'overflow-hidden')}
-        style={{ background: '#0a0a0a' }}
+        className={clsx('flex-1 min-h-0 flex flex-col bg-bg-base', isTradingTerminal && 'overflow-hidden')}
       >
         <div
           className={clsx(
@@ -300,7 +300,7 @@ export default function OrderPanel() {
         >
           <div className={pad}>
           {/* Market / Pending tabs */}
-          <div className="flex rounded-md overflow-hidden" style={{ background: '#111', border: '1px solid #1e1e1e' }}>
+          <div className="flex rounded-md overflow-hidden bg-bg-secondary border border-border-primary">
             {(['market', 'pending'] as const).map((t) => (
               <button
                 key={t}
@@ -308,11 +308,11 @@ export default function OrderPanel() {
                 onClick={() => setOrderTab(t)}
                 className={clsx('flex-1 font-semibold capitalize transition-all', tabPad)}
                 style={{
-                  background: orderTab === t ? '#1a1a1a' : 'transparent',
-                  color: orderTab === t ? '#fff' : '#666',
+                  background: orderTab === t ? 'var(--bg-hover)' : 'transparent',
+                  color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   borderBottom:
                     orderTab === t
-                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#00e676'}`
+                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#2196f3'}`
                       : '2px solid transparent',
                 }}
               >
@@ -328,35 +328,35 @@ export default function OrderPanel() {
                 onClick={() => setSide('sell')}
                 className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
                 style={{
-                  background: side === 'sell' ? 'rgba(239,83,80,0.15)' : '#111',
-                  border: side === 'sell' ? '1px solid #ef5350' : '1px solid #1e1e1e',
-                  color: side === 'sell' ? '#ef5350' : '#888',
+                  background: side === 'sell' ? 'rgba(239,83,80,0.15)' : 'var(--bg-secondary)',
+                  border: side === 'sell' ? '1px solid #ef5350' : '1px solid var(--border-primary)',
+                  color: side === 'sell' ? '#ef5350' : 'var(--text-secondary)',
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Sell</div>
                 <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'sell' && 'text-red-400')}>{tick ? tick.bid.toFixed(digits) : '---'}</div>
-                <div className={clsx('text-[#666]', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Bid</div>
+                <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Bid</div>
              </button>
              <button
                 type="button"
                 onClick={() => setSide('buy')}
                 className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
                 style={{
-                  background: side === 'buy' ? 'rgba(0,230,118,0.15)' : '#111',
-                  border: side === 'buy' ? '1px solid #00e676' : '1px solid #1e1e1e',
-                  color: side === 'buy' ? '#00e676' : '#888',
+                  background: side === 'buy' ? 'rgba(33,150,243,0.15)' : 'var(--bg-secondary)',
+                  border: side === 'buy' ? '1px solid #2196f3' : '1px solid var(--border-primary)',
+                  color: side === 'buy' ? '#2196f3' : 'var(--text-secondary)',
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Buy</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#00e676]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
-                <div className={clsx('text-[#666]', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
+                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2196f3]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
+                <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
              </button>
           </div>
 
           {/* Spread */}
           {tick && (
              <div className={clsx('flex items-center justify-center', isTradingTerminal ? '-mt-1' : '-mt-2')}>
-                <span className={clsx('font-mono px-2 py-0.5 rounded-full bg-[#111] text-[#666] border border-[#1e1e1e]', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}>
+                <span className={clsx('font-mono px-2 py-0.5 rounded-full bg-bg-secondary text-text-tertiary border border-border-primary', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}>
                   Spread: {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(1)}
                 </span>
              </div>
@@ -367,60 +367,64 @@ export default function OrderPanel() {
             <label className="flex items-center gap-2 cursor-pointer">
               <div
                 onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
-                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-[#2a2a2a]"
-                style={{ background: slEnabled ? '#ef5350' : '#111' }}
+                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
+                style={{ background: slEnabled ? '#ef5350' : 'var(--bg-secondary)' }}
               >
                 <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: slEnabled ? '18px' : '3px' }} />
               </div>
-              <span className="text-[10px] uppercase font-semibold text-[#888]">SL</span>
+              <span className="text-[10px] uppercase font-semibold text-text-secondary">SL</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <div
                 onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
-                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-[#2a2a2a]"
-                style={{ background: tpEnabled ? '#00e676' : '#111' }}
+                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
+                style={{ background: tpEnabled ? '#2196f3' : 'var(--bg-secondary)' }}
               >
                 <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: tpEnabled ? '18px' : '3px' }} />
               </div>
-              <span className="text-[10px] uppercase font-semibold text-[#888]">TP</span>
+              <span className="text-[10px] uppercase font-semibold text-text-secondary">TP</span>
             </label>
             {activeAccount && (
-              <div className="ml-auto text-[10px] font-mono text-[#888] font-semibold">1:{activeAccount.leverage}</div>
+              <div className="ml-auto text-[10px] font-mono text-text-secondary font-semibold">1:{activeAccount.leverage}</div>
             )}
           </div>
 
           {/* Volume */}
           <div className={isTradingTerminal ? 'pt-1' : 'pt-2'}>
             <div className={clsx('flex items-center justify-between', isTradingTerminal ? 'mb-1' : 'mb-1.5')}>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666]">Volume</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">Volume</span>
               <div className="flex gap-0.5">
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium" style={{ background: '#1a1a1a', color: '#aaa' }}>Lots</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-[#444] hover:text-[#888] cursor-pointer transition-colors">Units</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-bg-hover text-text-secondary">Lots</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors">Units</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => adjustLots(-0.01)}
-                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-[#888] hover:text-white')}
-                style={{ background: '#111', border: '1px solid #222' }}
+                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary')}
               >
                 <Minus size={isTradingTerminal ? 12 : 14} />
               </button>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={lots}
-                onChange={(e) => setLots(parseFloat(e.target.value) || 0.01)}
-                step={0.01}
-                min={0.01}
-                className={clsx('flex-1 text-center font-mono font-bold rounded-lg focus:outline-none', volIn)}
-                style={{ background: '#111', border: '1px solid #222', color: '#fff' }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setLots(v);
+                }}
+                onBlur={() => {
+                  const n = parseFloat(lots);
+                  if (!Number.isFinite(n) || n <= 0) setLots('0.01');
+                  else setLots(n.toFixed(2));
+                }}
+                className={clsx('flex-1 text-center font-mono font-bold rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary', volIn)}
               />
               <button
                 type="button"
                 onClick={() => adjustLots(0.01)}
-                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-[#888] hover:text-white')}
-                style={{ background: '#111', border: '1px solid #222' }}
+                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary')}
               >
                 <Plus size={isTradingTerminal ? 12 : 14} />
               </button>
@@ -437,8 +441,7 @@ export default function OrderPanel() {
                 onChange={(e) => setStopLoss(e.target.value)}
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none"
-                style={{ background: '#111', border: '1px solid rgba(239,83,80,0.3)', color: '#ef5350' }}
+                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-red-500/30 text-red-400"
               />
             </div>
           )}
@@ -446,15 +449,14 @@ export default function OrderPanel() {
           {/* TP input */}
           {tpEnabled && (
             <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#00e676] mb-1.5 block">Take Profit</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#2196f3] mb-1.5 block">Take Profit</span>
               <input
                 type="number"
                 value={takeProfit}
                 onChange={(e) => setTakeProfit(e.target.value)}
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none"
-                style={{ background: '#111', border: '1px solid rgba(0,230,118,0.3)', color: '#00e676' }}
+                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#2196f3]/30 text-[#2196f3]"
               />
             </div>
           )}
@@ -462,15 +464,15 @@ export default function OrderPanel() {
           {!isTradingTerminal ? (
             <>
               <div className="py-2" />
-              <div className="rounded-xl p-3 space-y-2" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+              <div className="rounded-xl p-3 space-y-2 bg-bg-secondary border border-border-primary">
                 {[
-                  { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: '#fff' },
-                  { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#888' },
-                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#00e676' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#00e676' : '#f57c00' },
+                  { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
+                  { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
+                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#2196f3' },
+                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#2196f3' : '#f57c00' },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
-                    <span className="text-[11px]" style={{ color: '#666' }}>{row.label}</span>
+                    <span className="text-[11px] text-text-tertiary">{row.label}</span>
                     <span className="text-[11px] font-mono font-semibold" style={{ color: row.color }}>{row.value}</span>
                   </div>
                 ))}
@@ -487,9 +489,9 @@ export default function OrderPanel() {
                 disabled={submitting || !hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 style={{
-                  background: side === 'buy' ? '#00e676' : '#ef5350',
-                  color: side === 'buy' ? '#000' : '#fff',
-                  boxShadow: side === 'buy' ? '0 4px 20px rgba(0,230,118,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
+                  background: side === 'buy' ? '#2196f3' : '#ef5350',
+                  color: '#fff',
+                  boxShadow: side === 'buy' ? '0 4px 20px rgba(33,150,243,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
                 }}
               >
                 {submitting ? (
@@ -515,20 +517,20 @@ export default function OrderPanel() {
         </div>
 
         {isTradingTerminal ? (
-          <div className="shrink-0 border-t border-[#1a1a1a] bg-[#080808] px-2 pt-2 pb-2 space-y-1.5">
-            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-[#111] border border-[#222]">
-              <span className="text-[10px] text-[#666]">Exec. Price</span>
-              <span className="text-xs font-mono font-semibold text-white">
+          <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
+            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
+              <span className="text-[10px] text-text-tertiary">Exec. Price</span>
+              <span className="text-xs font-mono font-semibold text-text-primary">
                 {execPrice > 0 ? execPrice.toFixed(digits) : '—'}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-[#666]">
+            <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
               <span className="truncate">Mrgn ${marginRequired.toFixed(2)}</span>
-              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#00e676]' : 'text-[#ef5350]')}>
+              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#2196f3]' : 'text-[#ef5350]')}>
                 Free ${freeMargin.toFixed(2)}
               </span>
               <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#00e676]' : 'text-[#f57c00]')}
+                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#2196f3]' : 'text-[#f57c00]')}
                 title={isConnected ? 'Feed connected' : 'Feed disconnected'}
               >
                 {isConnected ? '●' : '○'}
@@ -543,9 +545,9 @@ export default function OrderPanel() {
               disabled={submitting || !hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
               className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               style={{
-                background: side === 'buy' ? '#00e676' : '#ef5350',
-                color: side === 'buy' ? '#000' : '#fff',
-                boxShadow: side === 'buy' ? '0 2px 12px rgba(0,230,118,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
+                background: side === 'buy' ? '#2196f3' : '#ef5350',
+                color: '#fff',
+                boxShadow: side === 'buy' ? '0 2px 12px rgba(33,150,243,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
               }}
             >
               {submitting ? (

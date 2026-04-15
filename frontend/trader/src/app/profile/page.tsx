@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { User, Shield, Bell, Monitor, ChevronRight } from 'lucide-react';
+import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette } from 'lucide-react';
+import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
@@ -41,13 +42,14 @@ interface Session {
   created_at: string;
 }
 
-type TabId = 'profile' | 'security' | 'notifications' | 'sessions';
+type TabId = 'profile' | 'security' | 'notifications' | 'sessions' | 'theme';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'profile',       label: 'Profile',       icon: User },
   { id: 'security',      label: 'Security',       icon: Shield },
   { id: 'notifications', label: 'Notifications',  icon: Bell },
   { id: 'sessions',      label: 'Sessions',       icon: Monitor },
+  { id: 'theme',         label: 'Theme',          icon: Palette },
 ];
 
 function fmt(n: number) {
@@ -212,6 +214,8 @@ export default function ProfilePage() {
     } finally { setTerminatingSession(null); }
   };
 
+  const { theme, setTheme } = useUIStore();
+
   const initials =
     `${(profile?.first_name?.[0] ?? '').toUpperCase()}${(profile?.last_name?.[0] ?? '').toUpperCase()}` || 'U';
   const username = profile?.email ? profile.email.split('@')[0] : '';
@@ -260,7 +264,7 @@ export default function ProfilePage() {
             <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
               <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                 <div
-                  className="absolute top-0 h-full w-1/4 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
+                  className="absolute top-0 h-full w-1/5 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
                   style={{ transform: `translate3d(${slideIndex * 100}%,0,0)` }}
                 >
                   <div
@@ -287,7 +291,7 @@ export default function ProfilePage() {
                   >
                     <Icon size={14} className="shrink-0 opacity-90" />
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(0,230,118,0.6)] truncate">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(33,150,243,0.6)] truncate">
                         {t.label}
                       </span>
                     ) : (
@@ -533,6 +537,91 @@ export default function ProfilePage() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── Theme tab ── */}
+        {tab === 'theme' && (
+          <div className="max-w-lg mx-auto space-y-5">
+            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
+              <h3 className="text-base font-semibold text-text-primary mb-1">Theme Settings</h3>
+              <p className="text-sm text-text-secondary mb-5">Choose your preferred appearance.</p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Dark Blue */}
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={clsx(
+                    'relative rounded-xl border-2 p-4 text-left transition-all',
+                    theme === 'dark'
+                      ? 'border-accent bg-accent/8 ring-2 ring-accent/20'
+                      : 'border-border-primary hover:border-border-secondary',
+                  )}
+                >
+                  <div className="w-full h-20 rounded-lg mb-3 overflow-hidden" style={{ background: '#0a0a0a', border: '1px solid #2a2a2a' }}>
+                    <div className="h-3 flex items-center px-2 gap-1" style={{ background: '#111' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    </div>
+                    <div className="flex h-[calc(100%-12px)]">
+                      <div className="w-1/4 border-r" style={{ borderColor: '#2a2a2a', background: '#0d0d0d' }} />
+                      <div className="flex-1 p-1.5">
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#2196f3' }} />
+                        <div className="h-1 w-1/2 rounded-full" style={{ background: '#333' }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Moon size={14} className="text-accent shrink-0" />
+                    <span className="text-sm font-semibold text-text-primary">Dark Blue</span>
+                  </div>
+                  <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Dark background with blue accents</p>
+                  {theme === 'dark' && (
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  )}
+                </button>
+
+                {/* Light White */}
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={clsx(
+                    'relative rounded-xl border-2 p-4 text-left transition-all',
+                    theme === 'light'
+                      ? 'border-accent bg-accent/8 ring-2 ring-accent/20'
+                      : 'border-border-primary hover:border-border-secondary',
+                  )}
+                >
+                  <div className="w-full h-20 rounded-lg mb-3 overflow-hidden" style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}>
+                    <div className="h-3 flex items-center px-2 gap-1" style={{ background: '#f9fafb' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    </div>
+                    <div className="flex h-[calc(100%-12px)]">
+                      <div className="w-1/4 border-r" style={{ borderColor: '#e5e7eb', background: '#f9fafb' }} />
+                      <div className="flex-1 p-1.5">
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#111827' }} />
+                        <div className="h-1 w-1/2 rounded-full" style={{ background: '#d1d5db' }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sun size={14} className="text-warning shrink-0" />
+                    <span className="text-sm font-semibold text-text-primary">Light</span>
+                  </div>
+                  <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Clean white with black text</p>
+                  {theme === 'light' && (
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

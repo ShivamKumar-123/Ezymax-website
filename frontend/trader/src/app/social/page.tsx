@@ -811,7 +811,7 @@ function SocialPageInner() {
                     )}
                   >
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(0,230,118,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]">
                         {tab.label}
                       </span>
                     ) : (

@@ -50,7 +50,7 @@ const WATCHLIST_DEFAULT_PX = WATCHLIST_LAYOUT.default;
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
-      theme: 'light' as Theme,
+      theme: 'dark' as Theme,
       watchlistWidth: WATCHLIST_DEFAULT_PX,
       orderPanelWidth: 340,
       bottomPanelHeight: 320,
@@ -98,7 +98,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: STORAGE_KEY_UI,
-      version: 10,
+      version: 11,
       onRehydrateStorage: () => (rehydrated, err) => {
         if (err || !rehydrated || typeof window === 'undefined') return;
         if (window.innerWidth < 768) return;
@@ -136,8 +136,10 @@ export const useUIStore = create<UIState>()(
           v < 9
             ? false
             : Boolean((state as UIState & { terminalNewsOpen?: boolean }).terminalNewsOpen);
+        const theme = state.theme ?? 'dark';
         return {
           ...state,
+          theme,
           watchlistWidth: w,
           orderPanelWidth: op,
           bottomPanelHeight: bp,

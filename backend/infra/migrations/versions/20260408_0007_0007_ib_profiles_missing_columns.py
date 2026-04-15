@@ -22,25 +22,18 @@ depends_on = None
 
 def upgrade() -> None:
     # ── ib_profiles missing columns ─────────────────────────────────────────
-    op.add_column("ib_profiles", sa.Column("custom_commission_per_lot", sa.Numeric(18, 8), nullable=True))
-    op.add_column("ib_profiles", sa.Column("custom_commission_per_trade", sa.Numeric(18, 8), nullable=True))
-    op.add_column("ib_profiles", sa.Column("rejection_reason", sa.Text(), nullable=True))
-    op.add_column("ib_profiles", sa.Column("rejected_at", sa.DateTime(timezone=True), nullable=True))
-    op.add_column("ib_profiles", sa.Column("rejected_by", sa.UUID(as_uuid=True), nullable=True))
-    op.create_foreign_key(
-        "ib_profiles_rejected_by_fkey",
-        "ib_profiles", "users",
-        ["rejected_by"], ["id"],
-        ondelete="SET NULL",
-    )
+    op.execute("ALTER TABLE ib_profiles ADD COLUMN IF NOT EXISTS custom_commission_per_lot NUMERIC(18, 8);")
+    op.execute("ALTER TABLE ib_profiles ADD COLUMN IF NOT EXISTS custom_commission_per_trade NUMERIC(18, 8);")
+    op.execute("ALTER TABLE ib_profiles ADD COLUMN IF NOT EXISTS rejection_reason TEXT;")
+    op.execute("ALTER TABLE ib_profiles ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMPTZ;")
+    op.execute("ALTER TABLE ib_profiles ADD COLUMN IF NOT EXISTS rejected_by UUID REFERENCES users(id) ON DELETE SET NULL;")
 
     # ── investor_allocations: add 'withdrawn' to status constraint ───────────
-    op.drop_constraint("investor_allocations_status_check", "investor_allocations")
-    op.create_check_constraint(
-        "investor_allocations_status_check",
-        "investor_allocations",
-        "status IN ('pending', 'active', 'paused', 'closed', 'withdrawn')",
-    )
+    op.execute("ALTER TABLE investor_allocations DROP CONSTRAINT IF EXISTS investor_allocations_status_check;")
+    op.execute("""
+        ALTER TABLE investor_allocations ADD CONSTRAINT investor_allocations_status_check
+        CHECK (status IN ('pending', 'active', 'paused', 'closed', 'withdrawn'));
+    """)
 
 
 def downgrade() -> None:

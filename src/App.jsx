@@ -25,6 +25,7 @@ import Contact from './pages/Contact'
 import Blog from './pages/Blog'
 import Tutorials from './pages/Tutorials'
 import MarketNews from './pages/MarketNews'
+import KYC from './pages/KYC'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -58,6 +59,7 @@ const AnimatedRoutes = () => {
         <Route path="/education/blog" element={<PageTransition><Blog /></PageTransition>} />
         <Route path="/education/tutorials" element={<PageTransition><Tutorials /></PageTransition>} />
         <Route path="/education/news" element={<PageTransition><MarketNews /></PageTransition>} />
+        <Route path="/kyc" element={<PageTransition><KYC /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   )

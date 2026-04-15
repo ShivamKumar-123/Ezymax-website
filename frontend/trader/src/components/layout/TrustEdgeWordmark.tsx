@@ -25,27 +25,29 @@ export function TrustEdgeWordmark({
         href={href}
         title="Trading home"
         className={cn(
-          'flex flex-col items-center justify-center gap-0 rounded-md hover:bg-white/[0.06] w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#00e676]',
+          'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#2196f3]',
           className,
         )}
       >
-        <span className="text-[8px] font-extrabold text-white leading-none tracking-tight">Trust</span>
-        <span className="text-[8px] font-extrabold text-[#00e676] leading-none tracking-tight">Edge</span>
+        <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-7 h-7 object-contain" />
       </Link>
     );
   }
 
   const mark = (
-    <span
-      className={cn(
-        'inline-flex items-baseline font-bold italic tracking-tight select-none',
-        'text-xl sm:text-2xl drop-shadow-[0_0_20px_rgba(0,230,118,0.12)]',
-        textClassName,
-      )}
-    >
-      <span className="text-white">Trust</span>
-      <span className="text-[#00e676]">Edge</span>
+    <span className={cn('inline-flex items-center gap-2 select-none', className)}>
+      <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-8 h-8 object-contain shrink-0" />
+      <span
+        className={cn(
+          'inline-flex items-baseline font-bold italic tracking-tight',
+          'text-xl sm:text-2xl drop-shadow-[0_0_20px_rgba(33,150,243,0.12)]',
+          textClassName,
+        )}
+      >
+        <span className="text-text-primary">Trust</span>
+        <span className="text-[#2196f3]">Edge</span>
+      </span>
     </span>
   );
 
@@ -53,7 +55,7 @@ export function TrustEdgeWordmark({
     <Link
       href={href}
       className={cn(
-        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00e676]/60 focus-visible:rounded-md',
+        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2196f3]/60 focus-visible:rounded-md',
         className,
       )}
     >

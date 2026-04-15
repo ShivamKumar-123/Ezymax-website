@@ -202,7 +202,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const terminalMarketsOpen = useUIStore((s) => s.terminalMarketsOpen);
   const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount } = useTradingStore();
   const [search, setSearch] = useState('');
-  const [segment, setSegment] = useState('All');
+  const [segment, setSegment] = useState('Starred');
   const [bidFlash, setBidFlash] = useState<Record<string, Trend>>({});
   const [askFlash, setAskFlash] = useState<Record<string, Trend>>({});
   const [activeOrderSymbol, setActiveOrderSymbol] = useState<string | null>(null);
@@ -335,7 +335,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
 
   const rail =
     variant === 'terminalRail'
-      ? 'border-0 bg-[#0a0a0a]'
+      ? 'border-0 bg-bg-base'
       : 'border-r border-border-primary bg-bg-primary';
 
   return (
@@ -347,18 +347,18 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
       ) : null}
       {variant === 'terminalRail' ? (
         <>
-          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 bg-[#151820] border-b border-[#252a35]">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 bg-bg-secondary border-b border-border-primary">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div
                 className="w-8 h-8 rounded-full shrink-0 bg-gradient-to-br from-amber-400 to-blue-500"
                 aria-hidden
               />
-              <span className="text-sm font-bold text-white font-mono truncate">{selectedSymbol}</span>
+              <span className="text-sm font-bold text-text-primary font-mono truncate">{selectedSymbol}</span>
               <span className="text-base leading-none shrink-0" aria-hidden>
                 {SYMBOL_EMOJI[selectedSymbol] || '●'}
               </span>
-              <BellOff className="w-3.5 h-3.5 text-[#555] shrink-0" aria-hidden />
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#252a35] text-[#888] shrink-0">
+              <BellOff className="w-3.5 h-3.5 text-text-tertiary shrink-0" aria-hidden />
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-bg-hover text-text-secondary shrink-0">
                 DB
               </span>
             </div>
@@ -371,7 +371,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   setRailListExpanded((e) => !e);
                 }
               }}
-              className="shrink-0 p-1 rounded-md text-[#2962FF] hover:bg-[#2962FF]/10 transition-colors"
+              className="shrink-0 p-1 rounded-md text-accent hover:bg-accent/10 transition-colors"
               aria-expanded={onExitMarkets ? true : railListExpanded}
               aria-label={onExitMarkets ? 'Back to trade panel' : railListExpanded ? 'Collapse symbol list' : 'Expand symbol list'}
             >
@@ -385,10 +385,10 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
           </div>
           {onExitMarkets || railListExpanded ? (
             <>
-              <div className="p-3 shrink-0 border-b border-[#1a1a1a]">
+              <div className="p-3 shrink-0 border-b border-border-primary">
                 <div className="relative">
                   <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-[#666]"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-text-tertiary"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -406,7 +406,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search symbols…"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-[#1e1e1e] bg-[#111] text-white placeholder:text-[#555] outline-none focus:border-[#2962FF]/50 focus:ring-1 focus:ring-[#2962FF]/20"
+                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
                   />
                 </div>
               </div>
@@ -416,7 +416,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                   if (syms.length === 0) return null;
                   return (
                     <div key={group}>
-                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5c6370] border-t border-[#222831] first:border-t-0 bg-[#0c0d12]">
+                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-text-tertiary border-t border-border-primary first:border-t-0 bg-bg-secondary">
                         {group}
                       </div>
                       {syms.map((symbol) => {
@@ -431,8 +431,8 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                             className={clsx(
                               'w-full flex items-center justify-between gap-2 pl-0 pr-3 py-2.5 text-left border-l-[3px] transition-colors',
                               sel
-                                ? 'border-l-[#2962FF] bg-[#1a2438]'
-                                : 'border-l-transparent hover:bg-[#14181f]',
+                                ? 'border-l-accent bg-accent/10'
+                                : 'border-l-transparent hover:bg-bg-hover',
                             )}
                           >
                             <div className="flex items-center gap-2 min-w-0 pl-3">
@@ -440,7 +440,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                                 className="w-6 h-6 rounded-full shrink-0 bg-gradient-to-br from-amber-400/90 to-blue-500/90"
                                 aria-hidden
                               />
-                              <span className="text-sm font-bold text-white font-mono">{symbol}</span>
+                              <span className="text-sm font-bold text-text-primary font-mono">{symbol}</span>
                               <span className="text-sm leading-none opacity-90 shrink-0">
                                 {SYMBOL_EMOJI[symbol] || '·'}
                               </span>
@@ -452,21 +452,21 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                                     {tick.bid.toFixed(digits)}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-[#555]">—</span>
+                                  <span className="text-xs text-text-tertiary">—</span>
                                 )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
                                   Bid
                                 </span>
                               </div>
                               <div className="flex flex-col items-end gap-0.5">
                                 {tick ? (
-                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#00e676]">
+                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#2196f3]">
                                     {tick.ask.toFixed(digits)}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-[#555]">—</span>
+                                  <span className="text-xs text-text-tertiary">—</span>
                                 )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-[#555]">
+                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
                                   Ask
                                 </span>
                               </div>
@@ -483,147 +483,152 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
         </>
       ) : (
         <>
-          {/* Search */}
-          <div className="p-3 shrink-0">
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-text-secondary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search instruments..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
-              />
-            </div>
-          </div>
-
-          {/* Category tabs */}
-          <div className="flex gap-2 px-3 pb-3 overflow-x-auto scrollbar-hide no-scrollbar shrink-0 border-b border-border-primary">
-            {['All', 'Starred', ...SEGMENTS.slice(1)].map((seg) => (
-              <button
-                key={seg}
-                type="button"
-                onClick={() => setSegment(seg)}
-                className={clsx(
-                  'px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap border',
-                  segment === seg
-                    ? 'bg-buy text-white border-buy shadow-lg shadow-buy/20'
-                    : 'bg-bg-secondary text-text-tertiary border-border-glass hover:text-text-secondary hover:border-text-tertiary/30',
-                )}
-              >
-                {seg}
-              </button>
-            ))}
-          </div>
-
-          {/* Column labels */}
-          <div className="shrink-0 px-3 py-1.5 bg-bg-secondary/60">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 shrink" />
-              <div className="grid grid-cols-2 gap-2 w-[10.5rem] min-[400px]:w-[11.5rem] shrink-0 text-[10px] font-extrabold uppercase tracking-widest">
-                <span className="text-right text-sell/80">BID</span>
-                <span className="text-right text-buy/80">ASK</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Instruments */}
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y">
-            {filtered.map((symbol) => {
-              const tick = prices[symbol];
-              const digits = getDigits(symbol);
-
-              const sessionOpen = sessionOpenRef.current[symbol];
-              const dayLow = dayLowRef.current[symbol];
-              const dayHigh = dayHighRef.current[symbol];
-              const lastTime = lastTimeRef.current[symbol];
-
-              const delta =
-                tick && sessionOpen != null ? tick.bid - sessionOpen : null;
-              const pipChange =
-                tick && sessionOpen != null
-                  ? sessionPipChange(symbol, tick.bid, sessionOpen, instruments)
-                  : null;
-              const pctRaw =
-                tick && sessionOpen != null && sessionOpen !== 0
-                  ? ((tick.bid - sessionOpen) / sessionOpen) * 100
-                  : null;
-              const pctChange =
-                pctRaw != null && Math.abs(pctRaw) < 0.005 ? 0 : pctRaw;
-              const spread =
-                tick != null ? spreadInPips(symbol, tick.bid, tick.ask, instruments) : null;
-
-              const bFlash = bidFlash[symbol];
-              const aFlash = askFlash[symbol];
-
-              const minMove = tick ? Math.pow(10, -digits) : 0;
-              const changeColor =
-                delta == null || Math.abs(delta) < minMove * 0.25
-                  ? 'text-text-tertiary'
-                  : delta > 0
-                    ? 'text-buy'
-                    : 'text-sell';
-
-              return (
-                <div
-                  key={symbol}
-                  onClick={() => handleRowClick(symbol)}
-                  className={clsx(
-                    'cursor-pointer transition-colors px-3 py-3 border-b border-b-[#1a1a1a] hover:bg-white/[0.03] active:bg-buy/5',
-                    symbol === selectedSymbol && 'bg-buy/[0.06]',
-                  )}
+          {/* ── Search bar with Go button ── */}
+          <div className="px-3 pt-3 pb-2 shrink-0 border-b border-border-glass bg-bg-secondary">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    {/* Left: Symbol + change */}
-                    <div className="min-w-0 shrink">
-                      <div className="text-[15px] font-bold tracking-tight text-text-primary leading-tight">
-                        {symbol}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {spread != null && (
-                          <span className="text-[10px] font-mono text-text-tertiary">
-                            Spr {spread}
-                          </span>
-                        )}
-                        {pctChange != null && (
-                          <span className={clsx('text-[10px] font-mono font-semibold tabular-nums', changeColor)}>
-                            {pctChange > 0 ? '+' : ''}{pctChange.toFixed(2)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    if (e.target.value.trim()) setSegment('All');
+                  }}
+                  placeholder="Search symbols..."
+                  className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-glass bg-bg-primary text-text-primary placeholder:text-text-tertiary outline-none focus:border-buy/50 focus:ring-1 focus:ring-buy/20"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => { /* search triggers on change already */ }}
+                className="shrink-0 px-4 py-2.5 rounded-xl bg-buy text-white text-sm font-bold hover:bg-buy-light active:scale-95 transition-all"
+              >
+                Go
+              </button>
+            </div>
+          </div>
 
-                    {/* Right: Bid / Ask */}
-                    <div className="shrink-0 flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Bid</div>
-                        {tick ? (
-                          <PriceCell value={tick.bid} digits={digits} flash={bFlash} tone="bid" />
-                        ) : (
-                          <span className="text-[13px] text-text-tertiary font-mono">—</span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[9px] text-text-tertiary font-semibold uppercase mb-0.5">Ask</div>
-                        {tick ? (
-                          <PriceCell value={tick.ask} digits={digits} flash={aFlash} tone="ask" />
-                        ) : (
-                          <span className="text-[13px] text-text-tertiary font-mono">—</span>
-                        )}
-                      </div>
-                    </div>
+          {/* ── Category tabs — horizontal scroll ── */}
+          <div className="shrink-0 border-b border-border-glass bg-bg-secondary">
+            <div className="flex overflow-x-auto no-scrollbar scrollbar-none">
+              {(['Starred', 'All', ...TERMINAL_GROUPS] as const).map((tab) => {
+                const label = tab === 'Starred' ? '★ Favourites' : tab === 'All' ? 'All' : tab;
+                const active = segment === (tab === 'Starred' ? 'Starred' : tab);
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setSegment(tab === 'Starred' ? 'Starred' : tab)}
+                    className={clsx(
+                      'shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-colors border-b-2',
+                      active
+                        ? 'text-buy border-buy'
+                        : 'text-text-tertiary border-transparent hover:text-text-primary',
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Results label ── */}
+          {search.trim() !== '' && (
+            <div className="px-4 py-2 shrink-0 bg-bg-secondary/50">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Search Results</span>
+            </div>
+          )}
+
+          {/* ── Instrument list ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y bg-bg-primary no-scrollbar scrollbar-none">
+            {(() => {
+              // Filter symbols by search + segment
+              const displaySymbols = allSymbols.filter((s: string) => {
+                if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+                if (segment === 'Starred') return watchlist.includes(s);
+                if (segment !== 'All') {
+                  const g = terminalGroup(s, instruments);
+                  if (g !== segment) return false;
+                }
+                return true;
+              });
+
+              if (displaySymbols.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <svg className="w-10 h-10 text-text-tertiary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="text-sm text-text-tertiary font-medium">
+                      {segment === 'Starred' ? 'No favourites yet' : 'No instruments found'}
+                    </p>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+
+              return displaySymbols.map((symbol: string) => {
+                const tick = prices[symbol];
+                const digits = getDigits(symbol);
+                const meta = SYMBOL_META[symbol];
+                const sel = symbol === selectedSymbol;
+                const isWatchlisted = watchlist.includes(symbol);
+                const displayName = meta?.display || symbol;
+                const segLabel = meta?.segment || terminalGroup(symbol, instruments);
+
+                return (
+                  <button
+                    key={symbol}
+                    type="button"
+                    onClick={() => handleRowClick(symbol)}
+                    className={clsx(
+                      'w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
+                      sel
+                        ? 'bg-buy/[0.06]'
+                        : 'hover:bg-bg-hover active:bg-buy/5',
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-text-primary font-mono tracking-wide">{symbol}</span>
+                        {isWatchlisted && (
+                          <span className="text-amber-400 text-xs" aria-label="Favourited">★</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-text-tertiary mt-0.5 truncate uppercase tracking-wide">
+                        {segLabel}{displayName !== symbol ? ` – ${displayName}` : ''}
+                      </p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3">
+                      {tick ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-mono font-bold tabular-nums text-text-primary">
+                            {tick.bid.toFixed(digits)}
+                          </span>
+                          <span className={clsx(
+                            'text-[10px] font-bold tabular-nums',
+                            tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? 'text-buy' : 'text-sell',
+                          )}>
+                            {tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? '▲' : '▼'}{' '}
+                            {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip
+                          </span>
+                        </div>
+                      ) : null}
+                      <span className="text-buy text-xs font-semibold whitespace-nowrap">+ Add</span>
+                    </div>
+                  </button>
+                );
+              });
+            })()}
           </div>
         </>
       )}

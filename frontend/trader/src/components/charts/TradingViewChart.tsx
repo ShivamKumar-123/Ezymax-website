@@ -51,8 +51,7 @@ function TradingViewChartInner() {
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const theme = useUIStore((s) => s.theme);
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const tvTheme: 'Dark' | 'Light' =
-    onTradingTerminal || theme !== 'light' ? 'Dark' : 'Light';
+  const tvTheme: 'Dark' | 'Light' = theme === 'light' ? 'Light' : 'Dark';
   const interval = onTradingTerminal ? '5' : '15';
 
   const src = useMemo(
@@ -60,7 +59,7 @@ function TradingViewChartInner() {
     [selectedSymbol, tvTheme, interval],
   );
 
-  const surface = tvTheme === 'Light' ? 'bg-[#f2efe9]' : 'bg-[#0e0e0e]';
+  const surface = tvTheme === 'Light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
 
   return (
     <div className={clsx('w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>

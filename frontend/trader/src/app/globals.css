@@ -13,7 +13,7 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #00e676 accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #2196f3 accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -47,11 +47,11 @@
   --input-bg: #111111;
   --input-border: #1f1f1f;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(0, 230, 118, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0, 230, 118, 0.12), 0 0 0 3px rgba(0, 230, 118, 0.12);
+  --input-focus-border: rgba(33, 150, 243, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(33, 150, 243, 0.12), 0 0 0 3px rgba(33, 150, 243, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(0, 230, 118, 0.22);
+  --selection-bg: rgba(33, 150, 243, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
@@ -60,63 +60,61 @@
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(0, 230, 118, 0.28);
+  --toast-border: rgba(33, 150, 243, 0.28);
 
   color-scheme: dark;
 }
 
 /* ======================================= */
-/* CSS VARIABLES — LIGHT (Bright mode)     */
-/* Cream bg, solid black text, thin black  */
-/* borders — minimal high-contrast         */
+/* CSS VARIABLES — LIGHT (White-Black)     */
+/* Clean white bg, gray borders, black txt */
 /* ======================================= */
 
 [data-theme="light"] {
-  --bg-base: #F2EFE9;
-  --bg-primary: #F2EFE9;
-  --bg-secondary: #EBE8E2;
-  --bg-tertiary: #E4E1DB;
-  --bg-hover: #DDDAD4;
-  --bg-active: #D6D3CD;
-  --bg-input: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --bg-card-nested: #F2EFE9;
-  --bg-glass: rgba(242, 239, 233, 0.92);
+  --bg-base: #ffffff;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-hover: #f3f4f6;
+  --bg-active: #e5e7eb;
+  --bg-input: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-nested: #f9fafb;
+  --bg-glass: rgba(255, 255, 255, 0.92);
   --bg-glass-light: rgba(255, 255, 255, 0.85);
-  --bg-glass-heavy: rgba(242, 239, 233, 0.98);
+  --bg-glass-heavy: rgba(249, 250, 251, 0.98);
 
-  --border-primary: #000000;
-  --border-secondary: #000000;
-  --border-accent: #000000;
-  --border-glass: #000000;
-  --border-glass-bright: #000000;
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-accent: #111827;
+  --border-glass: rgba(0, 0, 0, 0.06);
+  --border-glass-bright: rgba(0, 0, 0, 0.10);
 
-  --text-primary: #000000;
-  --text-secondary: #000000;
-  --text-tertiary: #333333;
-  --text-inverse: #F2EFE9;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
 
-  --scrollbar-track: #E8E5DF;
-  --scrollbar-thumb: #B8B5AE;
-  --scrollbar-hover: #00c853;
+  --scrollbar-track: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-hover: #9ca3af;
 
-  --input-bg: #FFFFFF;
-  --input-border: #000000;
-  --input-shadow: none;
-  --input-focus-border: #000000;
-  --input-focus-shadow: 0 0 0 1px #000000;
-  --input-placeholder: #666666;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+  --input-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  --input-focus-border: #111827;
+  --input-focus-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  --input-placeholder: #9ca3af;
 
-  --selection-bg: rgba(0, 0, 0, 0.12);
+  --selection-bg: rgba(0, 0, 0, 0.08);
 
   --noise-opacity: 0;
-  --emboss-bg: rgba(0, 0, 0, 0.08);
-  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  --emboss-bg: rgba(0, 0, 0, 0.03);
+  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 
-  /* Same dark toast chrome as dark theme — avoids cream popups on trading chart */
-  --toast-bg: #111111;
-  --toast-fg: #f0f0f0;
-  --toast-border: rgba(0, 230, 118, 0.28);
+  --toast-bg: #ffffff;
+  --toast-fg: #111827;
+  --toast-border: rgba(0, 0, 0, 0.1);
 
   color-scheme: light;
 }
@@ -154,53 +152,53 @@
   --scrollbar-hover: #3a3a3a;
   --input-bg: #111111;
   --input-border: #1f1f1f;
-  --input-focus-border: rgba(0, 230, 118, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(0, 230, 118, 0.12);
-  --selection-bg: rgba(0, 230, 118, 0.22);
+  --input-focus-border: rgba(33, 150, 243, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(33, 150, 243, 0.12);
+  --selection-bg: rgba(33, 150, 243, 0.22);
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(0, 230, 118, 0.28);
+  --toast-border: rgba(33, 150, 243, 0.28);
   color-scheme: dark;
 }
 
 .theme-light {
-  --bg-base: #F2EFE9;
-  --bg-primary: #F2EFE9;
-  --bg-secondary: #EBE8E2;
-  --bg-tertiary: #E4E1DB;
-  --bg-hover: #DDDAD4;
-  --bg-active: #D6D3CD;
-  --bg-input: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --bg-card-nested: #F2EFE9;
-  --bg-glass: rgba(242, 239, 233, 0.92);
+  --bg-base: #ffffff;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-hover: #f3f4f6;
+  --bg-active: #e5e7eb;
+  --bg-input: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-nested: #f9fafb;
+  --bg-glass: rgba(255, 255, 255, 0.92);
   --bg-glass-light: rgba(255, 255, 255, 0.85);
-  --bg-glass-heavy: rgba(242, 239, 233, 0.98);
-  --border-primary: #000000;
-  --border-secondary: #000000;
-  --border-accent: #000000;
-  --border-glass: rgba(0, 0, 0, 0.15);
-  --border-glass-bright: rgba(0, 0, 0, 0.2);
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --text-tertiary: #555555;
-  --text-inverse: #F2EFE9;
-  --scrollbar-track: #E8E5DF;
-  --scrollbar-thumb: #B8B5AE;
-  --scrollbar-hover: #00c853;
-  --input-bg: #FFFFFF;
-  --input-border: #000000;
-  --input-shadow: none;
-  --input-focus-border: #000000;
-  --input-focus-shadow: 0 0 0 1px #000;
-  --input-placeholder: #666666;
-  --selection-bg: rgba(0, 0, 0, 0.12);
+  --bg-glass-heavy: rgba(249, 250, 251, 0.98);
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-accent: #111827;
+  --border-glass: rgba(0, 0, 0, 0.06);
+  --border-glass-bright: rgba(0, 0, 0, 0.10);
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  --scrollbar-track: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-hover: #9ca3af;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+  --input-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  --input-focus-border: #111827;
+  --input-focus-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  --input-placeholder: #9ca3af;
+  --selection-bg: rgba(0, 0, 0, 0.08);
   --noise-opacity: 0;
-  --emboss-bg: rgba(0, 0, 0, 0.08);
-  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-  --toast-bg: #FFFFFF;
-  --toast-fg: #111111;
-  --toast-border: rgba(0, 0, 0, 0.12);
+  --emboss-bg: rgba(0, 0, 0, 0.03);
+  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --toast-bg: #ffffff;
+  --toast-fg: #111827;
+  --toast-border: rgba(0, 0, 0, 0.1);
   color-scheme: light;
 }
 
@@ -303,8 +301,8 @@ html {
 }
 
 /* ======================================= */
-/* LIGHT THEME — Bright mode: thin black   */
-/* borders, no heavy shadows               */
+/* LIGHT THEME — White-Black glass &       */
+/* rainbow overrides                       */
 /* ======================================= */
 
 [data-theme="light"] .glass,
@@ -317,29 +315,29 @@ html {
 .theme-light .glass-panel,
 .theme-light .glass-light,
 .theme-light .glass-heavy {
-  border: 1px solid rgba(0,0,0,0.12);
-  box-shadow: none;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
-[data-theme="light"] .rainbow-card-1 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-2 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-3 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-4 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-5 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-6 { border-left: 3px solid #000; }
-[data-theme="light"] .rainbow-card-7 { border-left: 3px solid #000; }
+[data-theme="light"] .rainbow-card-1 { border-left: 3px solid #111827; }
+[data-theme="light"] .rainbow-card-2 { border-left: 3px solid #374151; }
+[data-theme="light"] .rainbow-card-3 { border-left: 3px solid #4b5563; }
+[data-theme="light"] .rainbow-card-4 { border-left: 3px solid #6b7280; }
+[data-theme="light"] .rainbow-card-5 { border-left: 3px solid #111827; }
+[data-theme="light"] .rainbow-card-6 { border-left: 3px solid #374151; }
+[data-theme="light"] .rainbow-card-7 { border-left: 3px solid #4b5563; }
 
 [data-theme="light"] .rainbow-bg {
   background: transparent;
 }
 
 [data-theme="light"] .rainbow-border {
-  border: 1px solid #000;
+  border: 1px solid #e5e7eb;
 }
 
 [data-theme="light"] .rainbow-text {
-  color: #000;
-  -webkit-text-fill-color: #000;
+  color: #111827;
+  -webkit-text-fill-color: #111827;
   background: none;
 }
 
@@ -399,30 +397,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #33eb91 0%, #00e676 50%, #00c853 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(0,230,118,0.28), 0 2px 4px rgba(0,0,0,0.15);
-  color: #000000;
+  background: linear-gradient(180deg, #64b5f6 0%, #2196f3 50%, #1976d2 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(33,150,243,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #5ef0a3 0%, #33eb91 50%, #00e676 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(0,230,118,0.38);
+  background: linear-gradient(180deg, #90caf9 0%, #64b5f6 50%, #2196f3 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(33,150,243,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #00e676 0%, #00c853 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(0,230,118,0.2);
+  background: linear-gradient(180deg, #2196f3 0%, #1976d2 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(33,150,243,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #00e676;
-  color: #000000;
+  background: #2196f3;
+  color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 230, 118, 0.3);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #00c853;
-  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.4);
+  background: #1976d2;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
 .skeu-btn-sell {
@@ -499,7 +497,7 @@ html {
 
 .flash-blue { animation: flashAccent 0.15s ease-out; }
 .flash-red { animation: flashRed 0.15s ease-out; }
-@keyframes flashAccent { 0% { background-color: rgba(0,230,118,0.22); } 100% { background-color: transparent; } }
+@keyframes flashAccent { 0% { background-color: rgba(33,150,243,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults can look white; force TrustEdge dark surface */
@@ -517,6 +515,15 @@ html {
 }
 .page-fade-in { animation: pageFadeIn 0.18s ease-out both; }
 
+/* Sidebar icon glow pulse */
+@keyframes iconGlowPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(33,150,243,0.15)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(33,150,243,0.55)); }
+}
+.sidebar-icon-glow {
+  animation: iconGlowPulse 2.5s ease-in-out infinite;
+}
+
 @keyframes tradeSlideIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -525,7 +532,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #00e676; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #2196f3; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -676,17 +683,33 @@ html {
 /* Accounts / Internal Transfer: native <select> readable on Windows (dark text on dark fix) */
 @layer components {
   .accounts-native-select {
-    background-color: #1a1a1a !important;
-    color: #f5f5f5 !important;
-    border: 1px solid #404040 !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-primary) !important;
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(0, 230, 118, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2) !important;
+    border-color: rgba(33, 150, 243, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
   }
   .accounts-native-select option {
-    background-color: #1a1a1a;
-    color: #f5f5f5;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
   }
+}
+
+/* ───────────────────────────────────────────────────────────── */
+/* Accounts page — flatten AppHeader frame to match Crucial Markets.
+   The default header is a rounded-xl glowing green box. On /accounts,
+   strip that frame so the only framed element is the tabs panel below. */
+/* ───────────────────────────────────────────────────────────── */
+html[data-page="accounts"] header.h-\[65px\] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+html[data-page="accounts"] header.h-\[65px\] + div,
+html[data-page="accounts"] div:has(> header.h-\[65px\]) {
+  background: transparent !important;
 }

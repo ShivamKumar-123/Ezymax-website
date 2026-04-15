@@ -10,6 +10,7 @@ import api from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import TopBar from '@/components/layout/TopBar';
+import { useUIStore } from '@/stores/uiStore';
 
 function mapApiAccount(a: Record<string, unknown>): TradingAccount {
   const g = a.account_group as Record<string, unknown> | null | undefined;
@@ -171,18 +172,18 @@ function TradingSession({ children }: { children: React.ReactNode }) {
                       'transition-opacity duration-200',
                       t.visible ? 'opacity-100' : 'opacity-0',
                     )}
-                    style={{ background: '#111', borderColor: 'rgba(255,255,255,0.1)', color: '#f0f0f0' }}
+                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   >
                     <span className="text-xl shrink-0 leading-none pt-0.5 select-none" aria-hidden>
                       {emoji}
                     </span>
                     <div className="min-w-0 flex-1 text-[13px] leading-snug font-semibold">
-                      <p style={{ color: '#f0f0f0' }}>
-                        {reason} Hit — <span style={{ color: '#aaa' }}>{closed.symbol}</span>{' '}
+                      <p style={{ color: 'var(--text-primary)' }}>
+                        {reason} Hit — <span style={{ color: 'var(--text-secondary)' }}>{closed.symbol}</span>{' '}
                         <span className={closed.side === 'buy' ? 'text-buy' : 'text-sell'}>
                           {closed.side.toUpperCase()}
                         </span>{' '}
-                        <span className="font-mono tabular-nums" style={{ color: '#aaa' }}>{closed.lots}</span> lots
+                        <span className="font-mono tabular-nums" style={{ color: 'var(--text-secondary)' }}>{closed.lots}</span> lots
                       </p>
                       <p
                         className={clsx(
@@ -315,7 +316,7 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
         'trading-page flex flex-col h-[100dvh] bg-bg-base min-h-0',
         terminalOnly ? 'pb-0 md:pb-0' : 'pb-16 md:h-screen md:pb-0',
       )}
-      data-theme="dark"
+      data-theme={useUIStore((s) => s.theme)}
     >
       {!terminalOnly && <TopBar />}
       <div className="flex-1 flex overflow-hidden min-h-0">

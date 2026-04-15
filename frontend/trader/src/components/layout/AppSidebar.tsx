@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useShellStore } from '@/stores/shellStore';
-import { TrustEdgeWordmark } from '@/components/layout/TrustEdgeWordmark';
 import { cn } from '@/lib/utils';
 import {
   LayoutGrid,
@@ -23,6 +22,7 @@ import {
   HelpCircle,
   Headphones,
   Receipt,
+  Calculator,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,6 +36,7 @@ const NAV_ITEMS = [
   { label: 'Affiliates', href: '/business', icon: Users },
   { label: 'TrustEdge Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
+  { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Settings', href: '/profile', icon: Settings },
 ] as const;
@@ -63,15 +64,16 @@ export default function AppSidebar() {
           /* z-[70] above MobileBottomNav (z-[60]) so drawer links receive taps on small screens */
           'fixed top-0 left-0 z-[70] h-full w-[260px] flex flex-col overflow-hidden transition-transform duration-200',
           'bg-bg-base border-r border-border-primary',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
-          <TrustEdgeWordmark
-            href="/dashboard"
-            className="flex items-center min-w-0"
-            textClassName="text-xl"
-          />
+          <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
+            <span className="inline-flex items-baseline font-bold italic tracking-tight text-xl select-none">
+              <span className="text-text-primary">TrustEdge</span>
+              <span className="text-[#2196f3]">FX</span>
+            </span>
+          </Link>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -90,7 +92,9 @@ export default function AppSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
                 className={cn(
                   'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors mb-0.5',
                   isActive
@@ -102,10 +106,10 @@ export default function AppSidebar() {
                   size={17}
                   strokeWidth={1.85}
                   className={cn(
-                    'shrink-0 transition-[filter,color]',
+                    'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#2196f3]',
                     isActive
-                      ? 'text-accent drop-shadow-[0_0_8px_rgba(0,230,118,0.45)]'
-                      : 'text-accent/55 drop-shadow-[0_0_4px_rgba(0,230,118,0.12)]',
+                      ? 'drop-shadow-[0_0_8px_rgba(33,150,243,0.55)]'
+                      : 'drop-shadow-[0_0_6px_rgba(33,150,243,0.35)]',
                   )}
                 />
                 <span className="truncate">{item.label}</span>

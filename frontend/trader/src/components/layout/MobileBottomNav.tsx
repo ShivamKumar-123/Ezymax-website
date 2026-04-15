@@ -58,7 +58,7 @@ const IconMore = ({ active }: { active: boolean }) => (
 
 /* More-sheet items */
 const SHEET_ITEMS = [
-  { name: 'Deposit', path: '/wallet', color: '#00e676', icon: '💰' },
+  { name: 'Deposit', path: '/wallet', color: '#2196f3', icon: '💰' },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: '💳' },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: '📊' },
   { name: 'Copy Trade', path: '/social', color: '#f59e0b', icon: '📋' },
@@ -115,8 +115,15 @@ export default function MobileBottomNav() {
     router.push('/trading');
   };
 
+  const isLandingPage =
+    pathname === '/' ||
+    pathname?.startsWith('/company') ||
+    pathname?.startsWith('/education') ||
+    ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
+    ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
+    ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
   const isPublicPage =
-    pathname === '/' || pathname === '/privacy' || pathname === '/terms' ||
+    isLandingPage || pathname === '/privacy' || pathname === '/terms' ||
     pathname === '/risk' || pathname === '/about' || pathname === '/contact' ||
     pathname === '/platforms' || pathname === '/white-label';
   if (pathname?.startsWith('/auth') || isPublicPage) return null;
@@ -146,17 +153,17 @@ export default function MobileBottomNav() {
         className="lg:hidden fixed bottom-0 left-0 right-0 z-[60]"
         style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="relative" style={{ background: '#0a0a0a' }}>
+        <div className="relative bg-bg-base">
           {/* Top border glow */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00e676]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2196f3]/20 to-transparent" />
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
             <Link href="/accounts" className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
-              <span className={clsx('transition-colors', isHome ? 'text-[#00e676]' : 'text-white/40')}>
+              <span className={clsx('transition-colors', isHome ? 'text-accent' : 'text-text-tertiary')}>
                 <IconHome active={isHome} />
               </span>
-              <span className={clsx('text-[10px] font-semibold', isHome ? 'text-[#00e676]' : 'text-white/40')}>Home</span>
+              <span className={clsx('text-[10px] font-semibold', isHome ? 'text-accent' : 'text-text-tertiary')}>Home</span>
             </Link>
 
             {/* Market */}
@@ -165,10 +172,10 @@ export default function MobileBottomNav() {
               onClick={goToTerminalView('watchlist')}
               className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2"
             >
-              <span className={clsx('transition-colors', isMarket ? 'text-[#00e676]' : 'text-white/40')}>
+              <span className={clsx('transition-colors', isMarket ? 'text-accent' : 'text-text-tertiary')}>
                 <IconMarket active={isMarket} />
               </span>
-              <span className={clsx('text-[10px] font-semibold', isMarket ? 'text-[#00e676]' : 'text-white/40')}>Market</span>
+              <span className={clsx('text-[10px] font-semibold', isMarket ? 'text-accent' : 'text-text-tertiary')}>Market</span>
             </a>
 
             {/* Chart — elevated center button */}
@@ -180,12 +187,12 @@ export default function MobileBottomNav() {
               <div className={clsx(
                 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all',
                 isChart
-                  ? 'bg-[#00e676] text-black shadow-[0_4px_20px_rgba(0,230,118,0.4)]'
-                  : 'bg-[#1a1a1a] text-white/80 border border-white/10',
+                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(33,150,243,0.4)]'
+                  : 'bg-bg-secondary text-text-secondary border border-border-primary',
               )}>
                 <IconChart />
               </div>
-              <span className={clsx('text-[10px] font-semibold mt-1', isChart ? 'text-[#00e676]' : 'text-white/40')}>Chart</span>
+              <span className={clsx('text-[10px] font-semibold mt-1', isChart ? 'text-accent' : 'text-text-tertiary')}>Chart</span>
             </a>
 
             {/* Orders */}
@@ -194,18 +201,18 @@ export default function MobileBottomNav() {
               onClick={goToTerminalView('order')}
               className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2"
             >
-              <span className={clsx('transition-colors', isOrders ? 'text-[#00e676]' : 'text-white/40')}>
+              <span className={clsx('transition-colors', isOrders ? 'text-accent' : 'text-text-tertiary')}>
                 <IconOrders active={isOrders} />
               </span>
-              <span className={clsx('text-[10px] font-semibold', isOrders ? 'text-[#00e676]' : 'text-white/40')}>Orders</span>
+              <span className={clsx('text-[10px] font-semibold', isOrders ? 'text-accent' : 'text-text-tertiary')}>Orders</span>
             </a>
 
             {/* More */}
             <button onClick={() => setShowMore(true)} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
-              <span className={clsx('transition-colors', showMore ? 'text-[#00e676]' : 'text-white/40')}>
+              <span className={clsx('transition-colors', showMore ? 'text-accent' : 'text-text-tertiary')}>
                 <IconMore active={showMore} />
               </span>
-              <span className={clsx('text-[10px] font-semibold', showMore ? 'text-[#00e676]' : 'text-white/40')}>More</span>
+              <span className={clsx('text-[10px] font-semibold', showMore ? 'text-accent' : 'text-text-tertiary')}>More</span>
             </button>
           </div>
         </div>
@@ -216,16 +223,16 @@ export default function MobileBottomNav() {
         <div className="fixed inset-0 z-[80] lg:hidden flex flex-col justify-end" onClick={() => setShowMore(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="relative rounded-t-3xl border-t border-white/[0.08] shadow-2xl"
-            style={{ background: '#0e0e0e', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
+            className="relative rounded-t-3xl border-t border-border-primary shadow-2xl bg-bg-primary"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-white/15" />
+              <div className="w-10 h-1 rounded-full bg-text-tertiary/30" />
             </div>
             <div className="flex items-center justify-between px-5 pt-2 pb-4">
-              <span className="text-white font-bold text-base">Quick Access</span>
-              <button onClick={() => setShowMore(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/8 text-white/60">
+              <span className="text-text-primary font-bold text-base">Quick Access</span>
+              <button onClick={() => setShowMore(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-bg-hover text-text-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             </div>
@@ -244,17 +251,17 @@ export default function MobileBottomNav() {
                   >
                     {item.icon}
                   </div>
-                  <span className="text-[10px] text-white/60 font-medium text-center">{item.name}</span>
+                  <span className="text-[10px] text-text-secondary font-medium text-center">{item.name}</span>
                 </Link>
               ))}
             </div>
 
-            <div className="mx-4 h-px bg-white/[0.06] mb-4" />
+            <div className="mx-4 h-px bg-border-primary mb-4" />
             <div className="flex gap-3 px-4 pb-2">
               <button onClick={toggleTheme}
-                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.07] active:scale-[0.98]">
-                <span className="text-[#00e676]">{theme === 'dark' ? '☀️' : '🌙'}</span>
-                <span className="text-white/80 text-sm font-semibold">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl bg-bg-secondary border border-border-primary active:scale-[0.98]">
+                <span className="text-accent">{theme === 'dark' ? '☀️' : '🌙'}</span>
+                <span className="text-text-primary text-sm font-semibold">{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
               <button onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-500/[0.06] border border-red-500/[0.12] active:scale-[0.98]">

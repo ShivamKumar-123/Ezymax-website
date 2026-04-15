@@ -1,106 +1,112 @@
-import LandingHeader from '@/components/landing/LandingHeader'
-import LandingFooter from '@/components/landing/LandingFooter'
+import { FileText } from 'lucide-react'
 
-export const metadata = { title: 'Terms of Service — TrustEdge' }
+export const metadata = { title: 'Terms and Conditions — TrustEdgeFX' }
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <LandingHeader />
-
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Terms of Service</h1>
-          <p className="text-gray-500">Last updated: March 2026</p>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-16">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-[#2962FF]/10 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#2962FF]" />
+          </div>
+          <h1 className="text-3xl font-bold text-text-primary">Terms and Conditions</h1>
         </div>
-      </section>
 
-      <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
+        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">TrustEdgeFX — Terms and Conditions</p>
+        <p className="text-sm text-text-secondary mb-10">Last updated: February 2026</p>
 
-          <Section title="1. Agreement to Terms">
-            By accessing and using the TrustEdge platform, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+        <div className="space-y-8">
+          <Section title="1. Acceptance of Terms">
+            By creating an account and using the TrustEdgeFX platform, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.
           </Section>
 
-          <Section title="2. Use License">
-            Permission is granted to temporarily download one copy of the materials on TrustEdge&apos;s website for personal, non-commercial transitory viewing only. Under this license you may not:
+          <Section title="2. Eligibility">
+            You must be at least 18 years of age and legally permitted to engage in financial trading in your jurisdiction. You are responsible for ensuring compliance with all applicable laws and regulations.
+          </Section>
+
+          <Section title="3. Account Responsibilities">
+            You are solely responsible for maintaining the confidentiality of your account credentials. All activities conducted under your account are your responsibility. You agree to provide accurate and truthful information during registration and to keep your information up to date.
+          </Section>
+
+          <Section title="4. Trading Risks">
+            Trading forex and other financial instruments involves substantial risk of loss and is not suitable for all investors. Past performance is not indicative of future results. You should carefully consider your financial situation and risk tolerance before trading.
+          </Section>
+
+          <Section title="5. Deposits and Withdrawals">
+            All deposits are subject to the platform&apos;s processing policies. Cryptocurrency deposits are subject to a 2.5% processing fee. Withdrawals require email verification for security purposes. Processing times may vary depending on the payment method.
+          </Section>
+
+          <Section title="6. Bonus Terms">
+            Promotional bonuses, including the welcome bonus, are subject to specific terms and conditions. Bonus funds may have trading volume requirements and withdrawal restrictions. TrustEdgeFX reserves the right to modify or discontinue bonus programs at any time.
+          </Section>
+
+          <Section title="7. Prohibited Conduct">
+            You agree not to engage in any of the following:
             <List items={[
-              'Modify or copy the materials',
-              'Use the materials for any commercial purpose or for any public display',
-              'Attempt to decompile or reverse engineer any software contained on the platform',
-              'Remove any copyright or other proprietary notations from the materials',
-              'Transfer the materials to another person or "mirror" them on any other server',
-              'Use automated tools to access the platform without authorization',
+              'Market manipulation, fraud, or any form of abusive trading practices.',
+              'Using the platform for money laundering or any illegal activity.',
+              'Attempting to exploit system vulnerabilities or interfere with platform operations.',
+              'Creating multiple accounts to circumvent platform rules or bonus limitations.',
+              'Engaging in defamatory, malicious, or harmful attacks against TrustEdgeFX, its brand, employees, partners, or other users. This includes but is not limited to spreading false information, making threatening communications, filing fraudulent complaints, or conducting coordinated campaigns intended to damage the company\u2019s reputation.',
+              'Making false or unsubstantiated accusations against TrustEdgeFX, including but not limited to publicly or privately labeling the platform as a \u201cscam,\u201d \u201cfraud,\u201d or similar defamatory terms without legitimate basis. Such conduct undermines trust and will not be tolerated, and may result in immediate account suspension or termination.',
             ]} />
           </Section>
 
-          <Section title="3. Account Registration">
-            To use our trading platform, you must:
+          <Section title="8. Account Suspension and Termination">
+            TrustEdgeFX reserves the right to suspend, restrict, or terminate any account at its sole discretion, including but not limited to cases where a user:
             <List items={[
-              'Be at least 18 years old',
-              'Provide accurate and complete information',
-              'Maintain the confidentiality of your account credentials',
-              'Accept responsibility for all activities under your account',
-              'Comply with all applicable laws and regulations',
-              'Pass our KYC/AML verification process',
+              'Violates any provision of these Terms and Conditions.',
+              'Engages in malicious conduct against the brand, its affiliates, or other users.',
+              'Provides false or misleading information.',
+              'Is suspected of fraudulent or illegal activity.',
             ]} />
+            <p className="mt-3">Upon suspension or termination, access to trading and withdrawal functions may be restricted pending investigation.</p>
           </Section>
 
-          <Section title="4. Trading Terms">
-            <Sub title="Account Funding">
-              Minimum deposit is $25. You are responsible for ensuring funds are transferred from a legitimate source in your name. We reserve the right to reject deposits from third parties.
-            </Sub>
-            <Sub title="Trading Restrictions">
-              We reserve the right to:
-              <List items={[
-                'Restrict or close accounts engaged in abusive trading practices',
-                'Cancel orders that violate our policies',
-                'Adjust leverage based on account activity',
-                'Refuse service to residents of certain jurisdictions',
-              ]} />
-            </Sub>
-            <Sub title="Spreads and Commissions">
-              Spreads and commissions are subject to change without notice. Current rates are displayed on the platform. Trading costs may vary based on market conditions and account type.
-            </Sub>
+          <Section title="9. Affiliate Program">
+            Participation in the affiliate program is subject to additional terms. Affiliates must promote TrustEdgeFX responsibly and in compliance with all applicable advertising standards. Commissions are subject to review and may be adjusted or revoked in cases of abuse.
           </Section>
 
-          <Section title="5. Withdrawals">
-            Withdrawal requests must be submitted through your account dashboard. We process withdrawals within 24 hours. Cryptocurrency withdrawals are typically processed within 1 hour. You may only withdraw to the payment method used for deposit, except for cryptocurrency withdrawals which can go to any wallet address you specify.
+          <Section title="10. PAMM Investments">
+            PAMM (Percentage Allocation Management Module) investments carry inherent risks. Past performance of a PAMM manager does not guarantee future results. Investors should conduct their own due diligence before allocating funds.
           </Section>
 
-          <Section title="6. Limitation of Liability">
-            TrustEdge and its officers, directors, employees, and agents will not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform, including but not limited to trading losses, even if we have been advised of the possibility of such damages.
+          <Section title="11. Privacy and Data Protection">
+            Your personal data is processed in accordance with our Privacy Policy. By using our services, you consent to the collection, processing, and storage of your data as described therein. We implement industry-standard security measures to protect your information.
           </Section>
 
-          <Section title="7. Prohibited Activities">
-            You agree not to:
-            <List items={[
-              'Engage in money laundering or terrorist financing',
-              'Use the platform for illegal activities',
-              'Manipulate prices or engage in market abuse',
-              'Harass or threaten our staff',
-              'Attempt to gain unauthorized access to the platform',
-              'Share your account credentials with others',
-              'Use automated trading bots without authorization',
-            ]} />
+          <Section title="12. Limitation of Liability">
+            TrustEdgeFX shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount of funds deposited in your account.
           </Section>
 
-          <Section title="8. Dispute Resolution">
-            Any disputes arising from these terms shall be governed by the laws of St. Lucia. Both parties agree to submit to the exclusive jurisdiction of the courts of St. Lucia.
+          <Section title="13. Modifications">
+            TrustEdgeFX reserves the right to modify these Terms and Conditions at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms. Users will be notified of material changes via email or platform notification.
           </Section>
 
-          <Section title="9. Modifications to Terms">
-            TrustEdge reserves the right to modify these terms at any time. Changes will be effective immediately upon posting to the website. Your continued use of the platform constitutes acceptance of modified terms.
+          <Section title="14. Governing Law">
+            These Terms and Conditions shall be governed by and construed in accordance with applicable laws. Any disputes shall be resolved through the appropriate legal channels.
           </Section>
 
-          <Section title="10. Contact Information">
-            For questions about these Terms of Service, please contact:
-            <ContactBox team="Legal Team" email="legal@trustedge.com" />
-          </Section>
+          <div className="pt-4 border-t" style={{ borderColor: 'var(--border-primary)' }}>
+            <p className="text-text-secondary text-sm leading-relaxed">
+              By checking the box and creating your account, you confirm that you have read, understood, and agree to these Terms and Conditions in their entirety.
+            </p>
+          </div>
+
+          {/* Risk Disclaimer */}
+          <div
+            className="rounded-xl p-6"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+          >
+            <h2 className="text-lg font-bold text-text-primary mb-3">Risk Disclaimer</h2>
+            <p className="text-text-secondary text-sm leading-relaxed">
+              Trading foreign exchange (forex) and other leveraged financial products carries a high level of risk and may not be suitable for all investors. Leverage can work both for and against you — while it amplifies potential profits, it equally amplifies potential losses. You could sustain a loss of some or all of your initial investment and should not invest money that you cannot afford to lose. You should be aware of all the risks associated with leveraged trading and seek independent financial advice if you have any doubts. Past performance is not indicative of future results.
+            </p>
+          </div>
         </div>
-      </section>
-
-      <LandingFooter />
+      </div>
     </div>
   )
 }
@@ -108,36 +114,16 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
-      <div className="text-gray-500 leading-relaxed space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function Sub({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-4">
-      <h3 className="font-semibold text-gray-800 mb-2">{title}</h3>
-      {children}
+      <h2 className="text-lg font-bold text-text-primary mb-3">{title}</h2>
+      <div className="text-text-secondary text-sm leading-relaxed space-y-2">{children}</div>
     </div>
   )
 }
 
 function List({ items }: { items: string[] }) {
   return (
-    <ul className="list-disc list-inside space-y-1.5 mt-2 text-gray-500">
-      {items.map((item) => <li key={item}>{item}</li>)}
+    <ul className="list-disc list-inside space-y-2 mt-3 text-text-secondary text-sm">
+      {items.map((item, i) => <li key={i}>{item}</li>)}
     </ul>
-  )
-}
-
-function ContactBox({ team, email }: { team: string; email: string }) {
-  return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">TrustEdge {team}</p>
-      <p className="text-gray-500">Email: {email}</p>
-      <p className="text-gray-500">Phone: +1 (908) 228-0305</p>
-      <p className="text-gray-500">Address: Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH</p>
-    </div>
   )
 }

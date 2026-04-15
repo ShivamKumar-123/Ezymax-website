@@ -60,14 +60,10 @@ export default function LoginPage() {
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="#2962FF" />
-              <path d="M10 32L18 24L24 30L38 16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M32 16H38V22" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img src="/logo.png" alt="TrustEdgeFX" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-xl font-bold text-text-primary">
-            <span>Trust</span><span style={{ color: '#00e676' }}>Edge</span> Admin
+            <span>TrustEdge</span><span style={{ color: '#00e676' }}>FX</span> Admin
           </h1>
           <p className="text-xs text-text-tertiary mt-1">Broker Administration Panel</p>
         </div>

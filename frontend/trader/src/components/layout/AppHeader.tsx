@@ -70,34 +70,34 @@ export default function AppHeader() {
 
   return (
     /* Outer wrapper — sits on #050707 page bg */
-    <div className="px-3 pt-3 pb-0 shrink-0">
+    <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-0 shrink-0">
       <header
-        className="h-[65px] flex items-center justify-between px-5 rounded-xl bg-[#0b0f0f]"
-        style={{
-          border: '1px solid rgba(0,255,150,0.18)',
-          boxShadow: '0 0 20px rgba(0,255,150,0.07), inset 0 1px 0 rgba(255,255,255,0.04)',
-        }}
+        className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
       >
-        {/* LEFT — hamburger circle */}
+        {/* LEFT — logo (opens sidebar) */}
         <button
           type="button"
           onClick={toggleSidebar}
-          className="w-10 h-10 rounded-full bg-[#00e676] flex items-center justify-center shrink-0 hover:bg-[#00c853] transition-colors"
+          className="shrink-0"
           aria-label="Toggle menu"
         >
-          <Menu size={18} className="text-black" strokeWidth={2.5} />
+          <img
+            src="/images/Trustedgefx logo.png"
+            alt="TrustEdgeFX"
+            className="w-10 h-10 object-contain"
+          />
         </button>
 
         {/* RIGHT — balance + bell + user */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Balance pill */}
           <Link
             href="/wallet"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#00e676]/30 bg-[#00e676]/5 hover:bg-[#00e676]/10 transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#2196f3]/30 bg-[#2196f3]/5 hover:bg-[#2196f3]/10 transition-colors"
           >
-            <Wallet size={14} className="text-[#00e676]" />
-            <span className="text-[#00e676] text-sm font-medium">{formatUsd(balance)}</span>
-            <ChevronDown size={12} className="text-[#00e676]/60" />
+            <Wallet size={14} className="text-[#2196f3] shrink-0" />
+            <span className="text-[#2196f3] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
+            <ChevronDown size={12} className="text-[#2196f3]/60 shrink-0 hidden sm:block" />
           </Link>
 
           {/* Notification bell */}
@@ -110,39 +110,39 @@ export default function AppHeader() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-9 h-9 rounded-full bg-[#00e676]/20 border border-[#00e676]/30 flex items-center justify-center text-[#00e676] text-xs font-bold uppercase">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#2196f3]/20 border border-[#2196f3]/30 flex items-center justify-center text-[#2196f3] text-[10px] sm:text-xs font-bold uppercase">
                 {initials}
               </div>
-              <span className="text-sm text-white hidden sm:inline">{handle}</span>
-              <ChevronDown size={13} className="text-[#888] hidden sm:inline" />
+              <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>
+              <ChevronDown size={13} className="text-text-tertiary hidden sm:inline" />
             </button>
 
             {userMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" aria-hidden onClick={() => setUserMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-[#2a2a2a] rounded-xl py-1 z-50 shadow-lg">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-bg-primary border border-border-primary rounded-xl py-1 z-50 shadow-lg">
                   <Link
                     href="/profile"
-                    className="block w-full text-left px-4 py-2 text-sm text-[#888] hover:text-white hover:bg-white/5 transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                     onClick={() => setUserMenuOpen(false)}
                   >
                     Profile & Settings
                   </Link>
                   <Link
                     href="/wallet"
-                    className="block w-full text-left px-4 py-2 text-sm text-[#888] hover:text-white hover:bg-white/5 transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                     onClick={() => setUserMenuOpen(false)}
                   >
                     Wallet
                   </Link>
                   <Link
                     href="/kyc"
-                    className="block w-full text-left px-4 py-2 text-sm text-[#888] hover:text-white hover:bg-white/5 transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                     onClick={() => setUserMenuOpen(false)}
                   >
                     KYC Verification
                   </Link>
-                  <div className="border-t border-[#2a2a2a] my-1" />
+                  <div className="border-t border-border-primary my-1" />
                   <button
                     type="button"
                     className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"

@@ -116,6 +116,17 @@ async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLog
     )
 
 
+async def change_admin_password(admin: User, current_password: str, new_password: str, db: AsyncSession) -> dict:
+    if not verify_password(current_password, admin.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be at least 8 characters")
+    from packages.common.src.auth import hash_password
+    admin.password_hash = hash_password(new_password)
+    await db.commit()
+    return {"message": "Password changed successfully"}
+
+
 async def get_admin_me(admin: User, db: AsyncSession) -> dict:
     employee_role = None
     permissions = set()

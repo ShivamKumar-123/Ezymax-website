@@ -26,20 +26,20 @@ export default function DashboardShell({
         'h-[100dvh] flex overflow-hidden pb-[70px] lg:pb-0 bg-bg-base text-text-primary',
         className,
       )}
-      data-theme="dark"
+      
     >
       <AppSidebar />
       <div
         className={cn(
           'flex min-w-0 flex-1 flex-col bg-bg-base transition-[margin] duration-200',
-          'lg:ml-[260px]',
+          sidebarOpen && 'lg:ml-[260px]',
         )}
       >
         <AppHeader />
         <main
           key={pathname}
           className={cn(
-            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-4 md:p-6 page-fade-in',
+            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-2.5 sm:p-4 md:p-6 page-fade-in',
             mainClassName,
           )}
         >
@@ -48,10 +48,10 @@ export default function DashboardShell({
       </div>
       <Link
         href="/support"
-        className="fixed bottom-20 md:bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#00e676] hover:bg-[#00c853] shadow-lg shadow-[#00e676]/20 flex items-center justify-center transition-colors"
+        className="fixed bottom-20 md:bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#2196f3] hover:bg-[#1976d2] shadow-lg shadow-[#2196f3]/20 flex items-center justify-center transition-colors"
         aria-label="Support"
       >
-        <MessageSquare size={20} className="text-black" />
+        <MessageSquare size={20} className="text-white" />
       </Link>
     </div>
   );

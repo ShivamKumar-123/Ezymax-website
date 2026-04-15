@@ -144,7 +144,7 @@ export default function BusinessPage() {
 
                     {active ? (
 
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(0,230,118,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]">
 
                         {t.label}
 
@@ -338,7 +338,7 @@ function IBTab() {
 
             'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
 
-            applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(0,230,118,0.35)]',
+            applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(33,150,243,0.35)]',
 
           )}
 
@@ -716,7 +716,7 @@ function SubBrokerTab() {
 
           'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
 
-          applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(0,230,118,0.35)]',
+          applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(33,150,243,0.35)]',
 
         )}
 
