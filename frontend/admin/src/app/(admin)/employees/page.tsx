@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
-import { Loader2, Plus, Pencil, Trash2, RefreshCw, UserCog, Activity, LogIn, ShieldCheck } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, RefreshCw, UserCog, Activity, LogIn, ShieldCheck, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Employee {
@@ -200,9 +200,44 @@ export default function EmployeesPage() {
     }
   }
 
+  const loginUrl = typeof window !== 'undefined' ? `${window.location.origin}/login` : '/login';
+  const [copied, setCopied] = useState(false);
+  const copyLoginLink = async () => {
+    try {
+      await navigator.clipboard.writeText(loginUrl);
+      setCopied(true);
+      toast.success('Login link copied');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy — please copy manually');
+    }
+  };
+
   return (
     <>
       <div className="p-6 space-y-4">
+        {/* Shareable login link — admin copies it to hand to new employees */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border border-border-primary bg-bg-secondary px-3 py-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <LogIn size={14} className="text-buy" />
+            <span className="text-xs font-medium text-text-primary">Employee login link</span>
+          </div>
+          <input
+            readOnly
+            value={loginUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            className="flex-1 min-w-0 text-xxs font-mono bg-bg-input border border-border-primary rounded px-2 py-1 text-text-secondary"
+          />
+          <button
+            type="button"
+            onClick={copyLoginLink}
+            className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-md text-xxs font-semibold border transition-fast bg-buy/10 border-buy/30 text-buy hover:bg-buy/20"
+            title="Copy login link"
+          >
+            {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+          </button>
+        </div>
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-text-primary">Employee Management</h1>

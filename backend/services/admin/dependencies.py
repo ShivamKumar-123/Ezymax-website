@@ -90,7 +90,8 @@ def require_permission(permission: str):
         admin: User = Depends(get_current_admin),
         db: AsyncSession = Depends(get_db),
     ) -> User:
-        if admin.role == "super_admin":
+        # Full admins (role 'admin' or 'super_admin') bypass per-permission checks.
+        if admin.role in ("admin", "super_admin"):
             return admin
 
         result = await db.execute(
