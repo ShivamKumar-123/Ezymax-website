@@ -40,8 +40,42 @@ _cors_methods = [m.strip() for m in settings.CORS_ALLOW_METHODS.split(",") if m.
 _cors_headers = [h.strip() for h in settings.CORS_ALLOW_HEADERS.split(",") if h.strip()]
 
 
+async def _backfill_close_reasons():
+    """Relabel historical trade_history rows where close_price matches the
+    position's SL/TP level — those were previously written as 'manual' but
+    should now show as 'sl'/'tp' in the UI. Idempotent."""
+    from sqlalchemy import text
+    sql = text(
+        """
+        UPDATE trade_history th
+        SET close_reason = CASE
+            WHEN p.stop_loss IS NOT NULL AND (
+                (p.side = 'buy'  AND th.close_price <= p.stop_loss)
+             OR (p.side = 'sell' AND th.close_price >= p.stop_loss)
+            ) THEN 'sl'
+            WHEN p.take_profit IS NOT NULL AND (
+                (p.side = 'buy'  AND th.close_price >= p.take_profit)
+             OR (p.side = 'sell' AND th.close_price <= p.take_profit)
+            ) THEN 'tp'
+            ELSE th.close_reason
+        END
+        FROM positions p
+        WHERE th.position_id = p.id
+          AND COALESCE(th.close_reason, 'manual') = 'manual'
+          AND (p.stop_loss IS NOT NULL OR p.take_profit IS NOT NULL)
+        """
+    )
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(sql)
+            await session.commit()
+    except Exception as e:
+        logger.warning("close_reason backfill skipped: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _backfill_close_reasons()
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()
