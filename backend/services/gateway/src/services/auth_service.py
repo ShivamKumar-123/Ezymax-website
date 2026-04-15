@@ -75,14 +75,10 @@ def client_ip_for_inet(request: Request) -> str | None:
 # ─── Utility: rate limiting ──────────────────────────────────────────────
 
 def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec: float) -> None:
-    ip = client_ip_for_inet(request) or "unknown"
-    key = f"{ip}:{bucket}"
-    now = monotonic()
-    bucket_list = _rate_buckets.setdefault(key, [])
-    bucket_list[:] = [t for t in bucket_list if now - t < window_sec]
-    if len(bucket_list) >= max_requests:
-        raise AuthServiceError("Too many requests", 429)
-    bucket_list.append(now)
+    # Rate limiting fully disabled — users hit 429s under normal load even with
+    # valid sessions. No-op retained so existing call sites keep compiling.
+    _ = (request, bucket, max_requests, window_sec)
+    return None
 
 
 # ─── Utility: cookies ────────────────────────────────────────────────────

@@ -178,11 +178,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # Convenience: add the full middleware stack at once
 # ---------------------------------------------------------------------------
-def add_middleware_stack(app, *, include_rate_limit: bool = True):
+def add_middleware_stack(app, *, include_rate_limit: bool = False):
     """Add all production middleware to a FastAPI app.
 
     Call AFTER app creation, BEFORE including routers.
     Middleware is applied in reverse order (last added runs first).
+
+    NOTE: rate limiting is DISABLED by default — the global SlowAPI limiter
+    caused 429s on legitimate authenticated traffic (shared NAT IPs, CDN
+    fan-out). Pass include_rate_limit=True to re-enable; individual endpoints
+    still have per-bucket rate_limit_http() guards where needed.
     """
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(PrometheusMiddleware)

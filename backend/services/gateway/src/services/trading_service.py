@@ -620,6 +620,23 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
 
     full_profit = calc_pnl(pos.side, pos.open_price, close_price, pos.lots, contract_size)
 
+    # If the market price has already crossed the position's SL/TP level, label
+    # this close as SL/TP in trade history instead of "manual" — covers the case
+    # where the SL/TP engine was racing and the user's close request landed first.
+    detected_reason = "manual"
+    if pos.stop_loss:
+        sl = Decimal(str(pos.stop_loss))
+        if sv == "buy" and close_price <= sl:
+            detected_reason = "sl"
+        elif sv == "sell" and close_price >= sl:
+            detected_reason = "sl"
+    if detected_reason == "manual" and pos.take_profit:
+        tp = Decimal(str(pos.take_profit))
+        if sv == "buy" and close_price >= tp:
+            detected_reason = "tp"
+        elif sv == "sell" and close_price <= tp:
+            detected_reason = "tp"
+
     if is_partial:
         ratio = close_lots / pos.lots
         partial_profit = full_profit * ratio
@@ -639,7 +656,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             swap=partial_swap,
             commission=partial_commission,
             profit=partial_profit,
-            close_reason="manual",
+            close_reason=detected_reason,
             opened_at=pos.created_at,
             closed_at=datetime.utcnow(),
         )
@@ -668,7 +685,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             swap=pos.swap or Decimal("0"),
             commission=pos.commission or Decimal("0"),
             profit=full_profit,
-            close_reason="manual",
+            close_reason=detected_reason,
             opened_at=pos.created_at,
             closed_at=datetime.utcnow(),
         )
