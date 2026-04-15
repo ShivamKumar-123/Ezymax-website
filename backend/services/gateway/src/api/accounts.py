@@ -82,3 +82,22 @@ async def delete_trading_account(
     return await account_service.delete_trading_account(
         account_id=account_id, user_id=current_user["user_id"], db=db,
     )
+
+
+@router.patch("/{account_id}/leverage")
+async def update_account_leverage(
+    account_id: UUID,
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Let the user lower their account leverage (up to the admin-defined group max)."""
+    try:
+        leverage = int(body.get("leverage"))
+    except (TypeError, ValueError):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="leverage must be a positive integer")
+    return await account_service.update_account_leverage(
+        account_id=account_id, user_id=current_user["user_id"],
+        leverage=leverage, db=db,
+    )

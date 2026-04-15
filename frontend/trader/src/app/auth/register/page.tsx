@@ -154,9 +154,6 @@ function RegisterContent() {
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             />
             <div className="auth-left__content">
-              <motion.div {...fadeUp(0.15)} className="mb-6">
-                <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-20 h-20 object-contain drop-shadow-[0_0_30px_rgba(124,58,237,0.3)]" />
-              </motion.div>
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>
                 {LEFT_CONFIG[3].title}
               </motion.h1>

@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import MobileOrderSheet from '@/components/trading/MobileOrderSheet';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import { useUIStore } from '@/stores/uiStore';
-import { BellOff, ChevronUp } from 'lucide-react';
+import { BellOff, ChevronUp, Star, TrendingUp } from 'lucide-react';
 
 type Trend = 'up' | 'down' | 'neutral';
 
@@ -200,7 +200,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const pathname = usePathname();
   const urlParams = useSearchParams();
   const terminalMarketsOpen = useUIStore((s) => s.terminalMarketsOpen);
-  const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount } = useTradingStore();
+  const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount, addToWatchlist, removeFromWatchlist } = useTradingStore();
   const [search, setSearch] = useState('');
   const [segment, setSegment] = useState('Starred');
   const [bidFlash, setBidFlash] = useState<Record<string, Trend>>({});
@@ -584,48 +584,94 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                 const isWatchlisted = watchlist.includes(symbol);
                 const displayName = meta?.display || symbol;
                 const segLabel = meta?.segment || terminalGroup(symbol, instruments);
+                const sessionOpen = sessionOpenRef.current[symbol] ?? tick?.bid ?? 0;
+                const isUp = tick ? tick.bid >= sessionOpen : true;
+
+                const toggleFav = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isWatchlisted) removeFromWatchlist(symbol);
+                  else addToWatchlist(symbol);
+                };
+
+                const openChart = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedSymbol(symbol);
+                  const acc = urlParams.get('account');
+                  if (acc) {
+                    router.push(tradingTerminalUrl(acc, { view: 'chart' }));
+                  } else {
+                    router.push('/trading');
+                  }
+                };
 
                 return (
-                  <button
+                  <div
                     key={symbol}
-                    type="button"
-                    onClick={() => handleRowClick(symbol)}
                     className={clsx(
-                      'w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors',
-                      sel
-                        ? 'bg-buy/[0.06]'
-                        : 'hover:bg-bg-hover active:bg-buy/5',
+                      'w-full flex items-center gap-3 px-4 py-3.5 border-b border-border-glass/40 transition-colors',
+                      sel ? 'bg-buy/[0.06]' : 'hover:bg-bg-hover active:bg-buy/5',
                     )}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                    {/* Star toggle — persisted favourite */}
+                    <button
+                      type="button"
+                      onClick={toggleFav}
+                      className="shrink-0 p-1 -ml-1 rounded-md hover:bg-bg-hover transition-colors"
+                      aria-label={isWatchlisted ? 'Remove from favourites' : 'Add to favourites'}
+                      aria-pressed={isWatchlisted}
+                    >
+                      <Star
+                        size={18}
+                        strokeWidth={2}
+                        className={clsx(isWatchlisted ? 'text-amber-400 fill-amber-400' : 'text-text-tertiary')}
+                      />
+                    </button>
+
+                    {/* Tapping the label/body opens the mobile order sheet */}
+                    <button
+                      type="button"
+                      onClick={() => handleRowClick(symbol)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-1.5">
                         <span className="text-base font-bold text-text-primary font-mono tracking-wide">{symbol}</span>
-                        {isWatchlisted && (
-                          <span className="text-amber-400 text-xs" aria-label="Favourited">★</span>
-                        )}
                       </div>
-                      <p className="text-xs text-text-tertiary mt-0.5 truncate uppercase tracking-wide">
+                      <p className="text-[11px] text-text-tertiary mt-0.5 truncate uppercase tracking-wide">
                         {segLabel}{displayName !== symbol ? ` – ${displayName}` : ''}
                       </p>
-                    </div>
-                    <div className="shrink-0 flex items-center gap-3">
-                      {tick ? (
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm font-mono font-bold tabular-nums text-text-primary">
-                            {tick.bid.toFixed(digits)}
-                          </span>
-                          <span className={clsx(
-                            'text-[10px] font-bold tabular-nums',
-                            tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? 'text-buy' : 'text-sell',
-                          )}>
-                            {tick.bid >= (sessionOpenRef.current[symbol] ?? tick.bid) ? '▲' : '▼'}{' '}
-                            {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip
-                          </span>
-                        </div>
-                      ) : null}
-                      <span className="text-buy text-xs font-semibold whitespace-nowrap">+ Add</span>
-                    </div>
-                  </button>
+                    </button>
+
+                    {/* Price + pip change */}
+                    {tick ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRowClick(symbol)}
+                        className="shrink-0 text-right"
+                      >
+                        <span className="block text-sm font-mono font-bold tabular-nums text-text-primary">
+                          {tick.bid.toFixed(digits)}
+                        </span>
+                        <span className={clsx('block text-[10px] font-bold tabular-nums', isUp ? 'text-buy' : 'text-sell')}>
+                          {isUp ? '▲' : '▼'} {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-text-tertiary">—</span>
+                    )}
+
+                    {/* Chart icon — opens full chart for this symbol */}
+                    <button
+                      type="button"
+                      onClick={openChart}
+                      className="shrink-0 p-1.5 rounded-md text-text-tertiary hover:text-buy hover:bg-bg-hover transition-colors"
+                      aria-label="Open chart"
+                      title="Open chart"
+                    >
+                      <TrendingUp size={18} strokeWidth={2} />
+                    </button>
+                  </div>
                 );
               });
             })()}

@@ -116,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
         {/* Content area with page animation */}
-        <div className="flex-1 overflow-y-auto animate-page-in">{children}</div>
+        <div className="flex-1 min-w-0 overflow-auto animate-page-in">{children}</div>
       </div>
     </div>
   );

@@ -112,12 +112,18 @@ async def list_users(
     for u in users:
         name = " ".join(filter(None, [u.first_name, u.last_name])) or u.email.split("@")[0]
         bals = balance_map.get(u.id, {"balance": 0.0, "equity": 0.0})
+        main_wallet = float(u.main_wallet_balance or 0)
+        # Balance/equity columns include the main wallet alongside trading accounts
+        # so admins see the user's total funds at a glance.
         user_list.append({
             "id": str(u.id),
             "name": name,
             "email": u.email,
-            "balance": bals["balance"],
-            "equity": bals["equity"],
+            "main_wallet_balance": main_wallet,
+            "trading_balance": bals["balance"],
+            "trading_equity": bals["equity"],
+            "balance": bals["balance"] + main_wallet,
+            "equity": bals["equity"] + main_wallet,
             "group": u.role or "user",
             "kyc_status": u.kyc_status or "pending",
             "status": u.status or "active",
@@ -241,10 +247,15 @@ async def deduct_fund(
     user_id: uuid.UUID, body: FundRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
-    """Deduct funds from user's MAIN WALLET first. If insufficient, deduct from specified trading account."""
+    """Deduct funds. `body.source` controls where the deduction comes from:
+       - "main_wallet":    deduct only from the user's main wallet (error if short).
+       - "trading_account": deduct only from body.account_id (error if short).
+       - None (legacy):    try main wallet first, fall back to body.account_id.
+    """
     amt = Decimal(str(body.amount))
+    source = (getattr(body, "source", None) or "").strip().lower() or None
 
-    # Try main wallet first
+    # Load user
     user_result = await db.execute(select(User).where(User.id == user_id))
     user_row = user_result.scalar_one_or_none()
     if not user_row:
@@ -252,7 +263,24 @@ async def deduct_fund(
 
     main_bal = user_row.main_wallet_balance or Decimal("0")
 
-    if main_bal >= amt:
+    # Explicit trading-account source skips the main-wallet branch entirely.
+    if source == "trading_account":
+        if not getattr(body, "account_id", None):
+            raise HTTPException(status_code=400, detail="account_id is required when source=trading_account")
+        # Jump straight to the trading-account deduction block below.
+        main_bal_check = Decimal("-1")  # force skip main-wallet branch
+    elif source == "main_wallet":
+        # Never fall back — error if main wallet is insufficient.
+        if main_bal < amt:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient main wallet balance (${float(main_bal):.2f}).",
+            )
+        main_bal_check = main_bal
+    else:
+        main_bal_check = main_bal
+
+    if source != "trading_account" and main_bal_check >= amt:
         # Deduct from main wallet
         user_row.main_wallet_balance = main_bal - amt
         txn = Transaction(
@@ -529,7 +557,9 @@ async def login_as_user(
         "exp": expire,
         "iat": datetime.utcnow(),
     }
-    token = jwt.encode(payload, settings.USER_JWT_SECRET, algorithm=settings.USER_JWT_ALGORITHM)
+    # Sign with the gateway's JWT_SECRET so /auth/bootstrap-session (which uses
+    # decode_token → settings.JWT_SECRET) accepts the impersonation token.
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
     await write_audit_log(
         db, admin_id, "login_as_user", "user", user_id,

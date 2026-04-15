@@ -38,6 +38,7 @@ async def list_employees(db: AsyncSession) -> dict:
             "first_name": user.first_name if user else None,
             "last_name": user.last_name if user else None,
             "phone": user.phone if user else None,
+            "extra_permissions": list(emp.extra_permissions or []),
         })
     return {"employees": items}
 
@@ -208,6 +209,44 @@ async def get_employee_activity(
     ]
 
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
+
+
+async def get_employee_permissions(employee_id: uuid.UUID, db: AsyncSession) -> dict:
+    result = await db.execute(select(Employee).where(Employee.id == employee_id))
+    emp = result.scalar_one_or_none()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    return {
+        "employee_id": str(emp.id),
+        "role": emp.role,
+        "extra_permissions": list(emp.extra_permissions or []),
+    }
+
+
+async def update_employee_permissions(
+    employee_id: uuid.UUID,
+    extra_permissions: list,
+    admin: User,
+    ip_address: str | None,
+    db: AsyncSession,
+) -> dict:
+    if admin.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admins can edit permissions")
+    result = await db.execute(select(Employee).where(Employee.id == employee_id))
+    emp = result.scalar_one_or_none()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    old_perms = list(emp.extra_permissions or [])
+    clean = sorted({str(p).strip() for p in extra_permissions if str(p).strip()})
+    emp.extra_permissions = clean
+    await write_audit_log(
+        db, admin.id, "update_employee_permissions", "employee", emp.id,
+        old_values={"extra_permissions": old_perms},
+        new_values={"extra_permissions": clean},
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return {"employee_id": str(emp.id), "extra_permissions": clean}
 
 
 async def login_as_employee(

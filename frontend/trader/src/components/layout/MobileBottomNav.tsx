@@ -5,6 +5,22 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
+import {
+  ArrowDownToLine,
+  Wallet,
+  PieChart,
+  Copy,
+  Users,
+  TrendingUp,
+  History as HistoryIcon,
+  Newspaper,
+  UserRound,
+  MessageCircle,
+  Sun,
+  Moon,
+  LogOut,
+  type LucideIcon,
+} from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -57,17 +73,17 @@ const IconMore = ({ active }: { active: boolean }) => (
 );
 
 /* More-sheet items */
-const SHEET_ITEMS = [
-  { name: 'Deposit', path: '/wallet', color: '#2196f3', icon: '💰' },
-  { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: '💳' },
-  { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: '📊' },
-  { name: 'Copy Trade', path: '/social', color: '#f59e0b', icon: '📋' },
-  { name: 'Affiliates', path: '/business', color: '#ec4899', icon: '👥' },
-  { name: 'PAMM', path: '/pamm', color: '#06b6d4', icon: '📈' },
-  { name: 'History', path: '/transactions', color: '#a855f7', icon: '🔄' },
-  { name: 'News', path: '/news', color: '#f97316', icon: '📰' },
-  { name: 'Profile', path: '/profile', color: '#8b5cf6', icon: '👤' },
-  { name: 'Support', path: '/support', color: '#14b8a6', icon: '💬' },
+const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon }[] = [
+  { name: 'Deposit', path: '/wallet', color: '#2196f3', icon: ArrowDownToLine },
+  { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
+  { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
+  { name: 'Copy Trade', path: '/social', color: '#f59e0b', icon: Copy },
+  { name: 'Affiliates', path: '/business', color: '#ec4899', icon: Users },
+  { name: 'PAMM', path: '/pamm', color: '#06b6d4', icon: TrendingUp },
+  { name: 'History', path: '/transactions', color: '#a855f7', icon: HistoryIcon },
+  { name: 'News', path: '/news', color: '#f97316', icon: Newspaper },
+  { name: 'Profile', path: '/profile', color: '#8b5cf6', icon: UserRound },
+  { name: 'Support', path: '/support', color: '#14b8a6', icon: MessageCircle },
 ];
 
 /* ─── Component ─── */
@@ -238,34 +254,39 @@ export default function MobileBottomNav() {
             </div>
 
             <div className="grid grid-cols-5 gap-y-5 gap-x-2 px-4 pb-5">
-              {SHEET_ITEMS.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.path}
-                  onClick={() => setShowMore(false)}
-                  className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
-                >
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg"
-                    style={{ background: `${item.color}15`, boxShadow: `0 0 0 1px ${item.color}22` }}
+              {SHEET_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.path}
+                    onClick={() => setShowMore(false)}
+                    className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
                   >
-                    {item.icon}
-                  </div>
-                  <span className="text-[10px] text-text-secondary font-medium text-center">{item.name}</span>
-                </Link>
-              ))}
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{ background: `${item.color}15`, boxShadow: `0 0 0 1px ${item.color}22` }}
+                    >
+                      <Icon size={22} strokeWidth={1.75} style={{ color: item.color }} />
+                    </div>
+                    <span className="text-[10px] text-text-secondary font-medium text-center">{item.name}</span>
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="mx-4 h-px bg-border-primary mb-4" />
             <div className="flex gap-3 px-4 pb-2">
               <button onClick={toggleTheme}
                 className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl bg-bg-secondary border border-border-primary active:scale-[0.98]">
-                <span className="text-accent">{theme === 'dark' ? '☀️' : '🌙'}</span>
+                {theme === 'dark'
+                  ? <Sun size={16} className="text-accent" strokeWidth={2} />
+                  : <Moon size={16} className="text-accent" strokeWidth={2} />}
                 <span className="text-text-primary text-sm font-semibold">{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
               <button onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-500/[0.06] border border-red-500/[0.12] active:scale-[0.98]">
-                <span>🚪</span>
+                <LogOut size={16} className="text-red-400" strokeWidth={2} />
                 <span className="text-red-400 text-sm font-semibold">Log Out</span>
               </button>
             </div>

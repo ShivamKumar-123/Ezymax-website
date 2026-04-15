@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
-import { Loader2, Plus, Pencil, Trash2, RefreshCw, UserCog, Activity, LogIn } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, RefreshCw, UserCog, Activity, LogIn, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Employee {
@@ -16,6 +16,12 @@ interface Employee {
   is_active: boolean;
   last_active?: string;
   created_at: string;
+  extra_permissions?: string[];
+}
+
+interface PermissionCatalog {
+  catalog: Record<string, string[]>;
+  role_defaults: Record<string, string[]>;
 }
 
 interface ActivityLog {
@@ -39,6 +45,13 @@ export default function EmployeesPage() {
   const [activityModal, setActivityModal] = useState<Employee | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+
+  // Permissions modal state
+  const [permModal, setPermModal] = useState<Employee | null>(null);
+  const [permCatalog, setPermCatalog] = useState<PermissionCatalog | null>(null);
+  const [permSelected, setPermSelected] = useState<Set<string>>(new Set());
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -64,6 +77,49 @@ export default function EmployeesPage() {
     setEditId(emp.id);
     setForm({ email: emp.email, full_name: emp.full_name, role: emp.role, phone: emp.phone || '', password: '' });
     setShowModal(true);
+  };
+
+  const openPermissions = async (emp: Employee) => {
+    setPermModal(emp);
+    setPermLoading(true);
+    try {
+      const [cat, current] = await Promise.all([
+        adminApi.get<PermissionCatalog>('/employees/permissions/catalog'),
+        adminApi.get<{ extra_permissions: string[] }>(`/employees/${emp.id}/permissions`),
+      ]);
+      setPermCatalog(cat);
+      setPermSelected(new Set(current.extra_permissions || []));
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load permissions');
+      setPermModal(null);
+    } finally {
+      setPermLoading(false);
+    }
+  };
+
+  const togglePerm = (p: string) => {
+    setPermSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p); else next.add(p);
+      return next;
+    });
+  };
+
+  const savePermissions = async () => {
+    if (!permModal) return;
+    setPermSaving(true);
+    try {
+      await adminApi.put(`/employees/${permModal.id}/permissions`, {
+        extra_permissions: Array.from(permSelected),
+      });
+      toast.success('Permissions updated');
+      setPermModal(null);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save permissions');
+    } finally {
+      setPermSaving(false);
+    }
   };
 
   const openActivity = async (emp: Employee) => {
@@ -221,6 +277,9 @@ export default function EmployeesPage() {
                           }} className="px-2 py-1 rounded-md text-xxs font-medium text-buy border border-buy/30 hover:bg-buy/15 transition-fast" title="Login As Employee">
                             <LogIn size={11} className="inline mr-0.5" />Login
                           </button>
+                          <button onClick={() => openPermissions(emp)} className="p-1 rounded-md text-accent border border-accent/30 hover:bg-accent/10 transition-fast" title="Permissions">
+                            <ShieldCheck size={12} />
+                          </button>
                           <button onClick={() => openActivity(emp)} className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Activity Log">
                             <Activity size={12} />
                           </button>
@@ -305,6 +364,68 @@ export default function EmployeesPage() {
             <div className="px-5 py-3 border-t border-border-primary flex justify-end gap-2">
               <button onClick={() => setDeleteConfirm(null)} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
               <button onClick={() => handleDelete(deleteConfirm)} className="px-3 py-1.5 rounded-md text-xs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-fast">Deactivate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {permModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => !permSaving && setPermModal(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border-primary flex items-center gap-2">
+              <ShieldCheck size={14} className="text-accent" />
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary">Permissions — {permModal.full_name}</h3>
+                <p className="text-xxs text-text-tertiary mt-0.5">
+                  Role <span className="font-mono text-text-secondary">{permModal.role}</span> already grants its default permissions. Check extra sections this employee should also see.
+                </p>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {permLoading || !permCatalog ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={18} className="animate-spin text-text-tertiary" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(permCatalog.catalog).map(([group, perms]) => {
+                    const roleDefaults = new Set(permCatalog.role_defaults[permModal.role] || []);
+                    const allStar = roleDefaults.has('*');
+                    return (
+                      <div key={group} className="border border-border-primary rounded-md">
+                        <div className="px-3 py-2 bg-bg-tertiary/40 border-b border-border-primary">
+                          <h4 className="text-xxs font-semibold text-text-primary uppercase tracking-wide">{group}</h4>
+                        </div>
+                        <div className="px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {perms.map((p) => {
+                            const fromRole = allStar || roleDefaults.has(p);
+                            const checked = fromRole || permSelected.has(p);
+                            return (
+                              <label key={p} className={cn('flex items-center gap-2 px-2 py-1 rounded text-xxs cursor-pointer transition-fast', fromRole ? 'text-text-tertiary bg-bg-hover/30' : 'text-text-primary hover:bg-bg-hover')}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  disabled={fromRole}
+                                  onChange={() => togglePerm(p)}
+                                  className="w-3.5 h-3.5 accent-accent"
+                                />
+                                <span className="font-mono">{p}</span>
+                                {fromRole && <span className="ml-auto text-[9px] uppercase text-success font-bold">role</span>}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-border-primary flex justify-end gap-2">
+              <button onClick={() => setPermModal(null)} disabled={permSaving} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={savePermissions} disabled={permSaving || permLoading} className="px-3 py-1.5 rounded-md text-xs font-medium bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-fast disabled:opacity-50">
+                {permSaving ? 'Saving…' : 'Save Permissions'}
+              </button>
             </div>
           </div>
         </div>

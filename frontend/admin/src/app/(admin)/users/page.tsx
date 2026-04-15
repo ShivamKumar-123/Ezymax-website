@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
@@ -34,8 +35,13 @@ interface User {
   id: string;
   name: string;
   email: string;
+  /** Total: main wallet + sum of trading account balances */
   balance: number;
+  /** Total: main wallet + sum of trading account equity */
   equity: number;
+  main_wallet_balance?: number;
+  trading_balance?: number;
+  trading_equity?: number;
   group: string;
   kyc_status: string;
   status: string;
@@ -51,6 +57,9 @@ interface UsersResponse {
 type SortKey = keyof Pick<User, 'id' | 'name' | 'email' | 'balance' | 'equity' | 'group' | 'kyc_status' | 'status'>;
 type SortDir = 'asc' | 'desc';
 type FundAction = 'add-fund' | 'deduct-fund' | 'give-credit' | 'take-credit';
+
+// Sentinel select-value representing the user's main wallet for deduct-fund.
+const MAIN_WALLET_ID = '__main_wallet__';
 type ModalType = FundAction | 'ban' | 'unban' | 'kill-switch' | null;
 
 const FUND_LABELS: Record<FundAction, string> = {
@@ -216,13 +225,34 @@ export default function UsersPage() {
       setOpenActionsId(null);
       setMenuPos(null);
     } else {
-      const rect = e.currentTarget.getBoundingClientRect();
+      const btn = e.currentTarget;
+      const rect = btn.getBoundingClientRect();
       const menuW = 190;
       const menuH = 340;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      // Place directly below the ... button, right-aligned
-      const top = spaceBelow < menuH ? Math.max(8, rect.top - menuH) : rect.bottom + 4;
-      const left = Math.max(8, rect.right - menuW);
+      const margin = 8;
+
+      // Anchor horizontally to the STATUS cell (the td immediately before the
+      // action cell) so the menu always sits over the STATUS column and stays
+      // inside the viewport regardless of table scroll position.
+      const row = btn.closest('tr');
+      const statusCell = row?.querySelectorAll('td') ?? [];
+      const statusRect =
+        statusCell.length >= 2
+          ? (statusCell[statusCell.length - 2] as HTMLElement).getBoundingClientRect()
+          : null;
+
+      let left = statusRect ? statusRect.left : rect.left - menuW - margin;
+      // Clamp strictly inside the viewport.
+      left = Math.max(margin, Math.min(window.innerWidth - menuW - margin, left));
+
+      // Open ABOVE the 3-dot button by default. Fall back to below only if the
+      // menu wouldn't fit above the viewport top.
+      let top = rect.top - menuH - margin;
+      if (top < margin) {
+        top = Math.min(rect.bottom + margin, window.innerHeight - menuH - margin);
+        top = Math.max(margin, top);
+      }
+
       setMenuPos({ top, left });
       setOpenActionsId(userId);
     }
@@ -246,8 +276,14 @@ export default function UsersPage() {
         const detail = await adminApi.get<{ accounts: { id: string; account_number: string; balance: number; currency: string; is_demo?: boolean }[] }>(`/users/${user.id}`);
         const accs = detail.accounts || [];
         setModalAccounts(accs);
-        const live = accs.find((a: any) => !a.is_demo) || accs[0];
-        if (live) setModalAccountId(live.id);
+        // Default to Main Wallet for deduct-fund (matches prior main-first behavior).
+        // Give/take credit must target a trading account.
+        if (type === 'deduct-fund') {
+          setModalAccountId(MAIN_WALLET_ID);
+        } else {
+          const live = accs.find((a: any) => !a.is_demo) || accs[0];
+          if (live) setModalAccountId(live.id);
+        }
       } catch {
         toast.error('Failed to load user accounts');
       } finally {
@@ -276,8 +312,15 @@ export default function UsersPage() {
         amount: amt,
         description: modalReason || undefined,
       };
-      // Only attach account_id for deduct-fund (main-wallet fallback)
-      if (modalType !== 'add-fund' && modalAccountId) {
+      if (modalType === 'deduct-fund') {
+        // Main wallet vs trading account is an explicit choice in the dropdown.
+        if (modalAccountId === MAIN_WALLET_ID) {
+          payload.source = 'main_wallet';
+        } else if (modalAccountId) {
+          payload.source = 'trading_account';
+          payload.account_id = modalAccountId;
+        }
+      } else if (modalType !== 'add-fund' && modalAccountId) {
         payload.account_id = modalAccountId;
       }
       await adminApi.post(`/users/${modalUser.id}/${modalType}`, payload);
@@ -324,18 +367,26 @@ export default function UsersPage() {
   const handleLoginAs = async (user: User) => {
     setOpenActionsId(null);
     setMenuPos(null);
+    // Open the popup synchronously inside the user-gesture to avoid popup
+    // blockers; we set the URL after the token is minted.
+    const popup = window.open('about:blank', '_blank');
     try {
       const data = await adminApi.post<{ access_token: string; user_email: string }>(`/users/${user.id}/login-as`);
-      if (data.access_token) {
-        // Derive trader URL from current admin hostname (admin.trustedge.today → trustedge.today)
-        const host = typeof window !== 'undefined' ? window.location.hostname : '';
-        const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:';
-        const traderUrl = process.env.NEXT_PUBLIC_TRADER_URL
-          || (host.startsWith('admin.') ? `${proto}//${host.replace(/^admin\./, '')}` : 'http://localhost:3000');
-        window.open(`${traderUrl}/auth/impersonate?token=${encodeURIComponent(data.access_token)}`, '_blank');
-        toast.success(`Logged in as ${data.user_email} in new tab`);
+      if (!data?.access_token) throw new Error('No access token returned');
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+      const traderUrl = process.env.NEXT_PUBLIC_TRADER_URL
+        || (host.startsWith('admin.') ? `${proto}//${host.replace(/^admin\./, '')}` : 'http://localhost:3000');
+      const url = `${traderUrl}/auth/impersonate?token=${encodeURIComponent(data.access_token)}`;
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        // Popup was blocked — fall back to same-tab navigation.
+        window.location.href = url;
       }
+      toast.success(`Logged in as ${data.user_email}`);
     } catch (e) {
+      if (popup && !popup.closed) popup.close();
       toast.error(e instanceof Error ? e.message : 'Login-as failed');
     }
   };
@@ -359,7 +410,7 @@ export default function UsersPage() {
 
   return (
     <>
-      <div className="p-6 space-y-5">
+      <div className="p-6 space-y-5 min-w-0 max-w-full">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -448,7 +499,14 @@ export default function UsersPage() {
                       </Link>
                     </td>
                     <td className="px-3 py-3 text-text-secondary whitespace-nowrap">{u.email}</td>
-                    <td className="px-3 py-3 text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.balance)}</td>
+                    <td className="px-3 py-3 text-right whitespace-nowrap">
+                      <div className="text-text-primary font-mono tabular-nums font-medium">${formatMoney(u.balance)}</div>
+                      {u.main_wallet_balance !== undefined && (
+                        <div className="text-[10px] text-text-tertiary font-mono tabular-nums mt-0.5">
+                          Wallet ${formatMoney(u.main_wallet_balance)} · Trading ${formatMoney(u.trading_balance ?? 0)}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-text-primary text-right font-mono tabular-nums font-medium whitespace-nowrap">${formatMoney(u.equity)}</td>
                     <td className="px-3 py-3 text-text-secondary whitespace-nowrap">{u.group}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
@@ -527,7 +585,12 @@ export default function UsersPage() {
           { divider: true } as any,
           { label: 'Login As User', icon: LogIn, action: () => handleLoginAs(u) },
         ];
-        return (
+        // Portal the dropdown to document.body so `position: fixed` stays
+        // viewport-relative even when an ancestor has a CSS `transform`
+        // (e.g. the `animate-page-in` wrapper) which would otherwise become
+        // the containing block.
+        if (typeof document === 'undefined') return null;
+        return createPortal(
           <>
             <div className="fixed inset-0 z-40" onMouseDown={closeMenu} />
             <div
@@ -551,7 +614,8 @@ export default function UsersPage() {
                 );
               })}
             </div>
-          </>
+          </>,
+          document.body,
         );
       })()}
 
@@ -572,33 +636,36 @@ export default function UsersPage() {
             </div>
           )}
 
-          {/* Deduct Fund: show account selector as fallback */}
+          {/* Deduct Fund: choose source — main wallet OR specific trading account */}
           {modalType === 'deduct-fund' && (
             <>
               <div className="p-3.5 rounded-lg bg-warning/10 border border-warning/25">
                 <p className="text-xs text-text-secondary leading-relaxed">
-                  <span className="font-semibold text-warning">Deduction order:</span> Main wallet is deducted first. If insufficient, the selected trading account is used.
+                  <span className="font-semibold text-warning">Source:</span> Choose whether to deduct from the user&apos;s main wallet or a specific trading account.
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-tertiary mb-1.5">Trading Account (fallback if main wallet is insufficient)</label>
+                <label className="block text-xs font-medium text-text-tertiary mb-1.5">Deduct from</label>
                 {loadingAccounts ? (
                   <div className="flex items-center gap-2 py-3 text-sm text-text-tertiary">
                     <Loader2 size={14} className="animate-spin" /> Loading accounts...
                   </div>
-                ) : modalAccounts.length === 0 ? (
-                  <p className="text-sm text-danger">No trading accounts found for this user.</p>
                 ) : (
                   <select
                     value={modalAccountId}
                     onChange={e => setModalAccountId(e.target.value)}
                     className="w-full py-3 px-4 text-sm bg-bg-input border border-border-primary rounded-lg appearance-none"
                   >
-                    {modalAccounts.map((a: any) => (
-                      <option key={a.id} value={a.id}>
-                        {a.account_number}{a.is_demo ? ' (Demo)' : ''} — ${formatMoney(a.balance)} {a.currency}
-                      </option>
-                    ))}
+                    <option value={MAIN_WALLET_ID}>Main Wallet</option>
+                    {modalAccounts.length > 0 && (
+                      <optgroup label="Trading accounts">
+                        {modalAccounts.map((a: any) => (
+                          <option key={a.id} value={a.id}>
+                            {a.account_number}{a.is_demo ? ' (Demo)' : ''} — ${formatMoney(a.balance)} {a.currency}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 )}
               </div>

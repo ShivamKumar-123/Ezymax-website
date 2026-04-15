@@ -280,6 +280,53 @@ async def get_account_summary(
     )
 
 
+async def update_account_leverage(
+    account_id: UUID, user_id: UUID, leverage: int, db: AsyncSession,
+) -> dict:
+    """Update leverage on an account the user owns, capped at the group's leverage_default."""
+    if leverage < 1:
+        raise HTTPException(status_code=400, detail="leverage must be at least 1")
+
+    q = await db.execute(
+        select(TradingAccount)
+        .options(selectinload(TradingAccount.account_group))
+        .where(TradingAccount.id == account_id, TradingAccount.user_id == user_id)
+    )
+    account = q.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Trading account not found")
+
+    group = account.account_group
+    max_lev = int((group.leverage_default if group else None) or 500)
+    if leverage > max_lev:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Leverage cannot exceed the broker limit for this account (1:{max_lev})",
+        )
+
+    # Block leverage changes while positions are open to avoid surprise margin calls.
+    open_q = await db.execute(
+        select(Position).where(
+            Position.account_id == account.id,
+            Position.status == PositionStatus.OPEN,
+        )
+    )
+    if open_q.scalars().first():
+        raise HTTPException(
+            status_code=400,
+            detail="Close all open positions before changing leverage",
+        )
+
+    account.leverage = leverage
+    await db.commit()
+    await db.refresh(account)
+    return {
+        "id": str(account.id),
+        "leverage": int(account.leverage),
+        "max_leverage": max_lev,
+    }
+
+
 async def delete_trading_account(
     account_id: UUID, user_id: UUID, db: AsyncSession,
 ) -> MessageResponse:

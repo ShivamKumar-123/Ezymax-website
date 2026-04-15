@@ -21,7 +21,24 @@ function ImpersonateInner() {
 
     void (async () => {
       try {
+        // 1) Kill any previous session in this browser (e.g. a demo login
+        // left over on localhost:3000) so its cookies don't leak into the
+        // impersonated session.
+        try {
+          await api.post('/auth/logout', {});
+        } catch {
+          /* no-op — no prior session */
+        }
+        try {
+          api.clearToken();
+        } catch {
+          /* api client may not expose clearToken in this build */
+        }
+
+        // 2) Start the impersonated session.
         await api.post('/auth/bootstrap-session', { access_token: token });
+
+        // 3) Hard redirect so the auth store rehydrates from scratch.
         window.location.replace('/accounts');
       } catch {
         setError('Could not start impersonation session. The link may be expired or invalid.');

@@ -769,6 +769,8 @@ class Employee(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True)
     role = Column(String(30), nullable=False)
     is_active = Column(Boolean, default=True)
+    # Admin-granted extra permissions beyond the role defaults (JSON list of strings).
+    extra_permissions = Column(JSONB, default=list, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     user = relationship("User", lazy="selectin")

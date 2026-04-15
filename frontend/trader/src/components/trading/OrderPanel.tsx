@@ -384,7 +384,10 @@ export default function OrderPanel() {
               <span className="text-[10px] uppercase font-semibold text-text-secondary">TP</span>
             </label>
             {activeAccount && (
-              <div className="ml-auto text-[10px] font-mono text-text-secondary font-semibold">1:{activeAccount.leverage}</div>
+              <LeveragePicker
+                account={activeAccount}
+                onChanged={() => { void refreshAccount(); }}
+              />
             )}
           </div>
 
@@ -572,6 +575,103 @@ export default function OrderPanel() {
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Dropdown that lets the trader lower their leverage to any preset value up to
+ * the admin-set `account_group.leverage_default` ceiling. Persists the change
+ * via PATCH /accounts/:id/leverage.
+ */
+function LeveragePicker({
+  account,
+  onChanged,
+}: {
+  account: TradingAccount;
+  onChanged: () => void;
+}) {
+  const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const maxLev = account.account_group?.leverage_default ?? account.leverage;
+  const presets = useMemo(() => {
+    const base = [1, 10, 25, 50, 100, 200, 300, 400, 500, 1000];
+    const filtered = base.filter((v) => v <= maxLev);
+    if (!filtered.includes(maxLev)) filtered.push(maxLev);
+    return Array.from(new Set(filtered)).sort((a, b) => a - b);
+  }, [maxLev]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const apply = async (lev: number) => {
+    if (lev === account.leverage) { setOpen(false); return; }
+    setSaving(true);
+    try {
+      await api.patch(`/accounts/${account.id}/leverage`, { leverage: lev });
+      // Optimistic local update so the pill reflects the new value immediately.
+      setActiveAccount({ ...account, leverage: lev });
+      toast.success(`Leverage set to 1:${lev}`);
+      onChanged();
+      setOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not change leverage');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="ml-auto relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        disabled={saving}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50"
+        title={`Max 1:${maxLev} — click to change`}
+      >
+        1:{account.leverage}
+        <ChevronDown size={10} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 bottom-full mb-1 w-28 rounded-lg border border-border-primary shadow-xl py-1"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            zIndex: 1000,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+          }}
+        >
+          <div className="px-2 pb-1 pt-0.5 text-[9px] uppercase tracking-wider text-text-tertiary font-bold border-b border-border-primary mb-1">
+            Max 1:{maxLev}
+          </div>
+          <div className="max-h-[220px] overflow-y-auto">
+            {presets.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => void apply(v)}
+                className={clsx(
+                  'w-full text-left px-2 py-1 text-[11px] font-mono transition-colors',
+                  v === account.leverage
+                    ? 'bg-[#2196f3]/15 text-[#2196f3] font-bold'
+                    : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+                )}
+              >
+                1:{v}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

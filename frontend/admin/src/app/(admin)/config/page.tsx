@@ -100,12 +100,15 @@ export default function ConfigPage() {
     setSaving(inst.id);
     try {
       const body: Record<string, any> = {};
-      if (editState.commission) {
-        body.commission = parseFloat(editState.commission);
+      // Send the value whenever the field has any text (including "0") so the
+      // user can explicitly clear a rule by typing 0. Previously truthy checks
+      // dropped "0" from the payload, so saving "0" silently did nothing.
+      if (editState.commission !== '') {
+        body.commission = parseFloat(editState.commission) || 0;
         body.commission_type = editState.commission_type;
       }
-      if (editState.spread) {
-        body.spread = parseFloat(editState.spread);
+      if (editState.spread !== '') {
+        body.spread = parseFloat(editState.spread) || 0;
         body.spread_type = editState.spread_type;
       }
       if (editState.price_impact !== '') {
@@ -342,10 +345,10 @@ export default function ConfigPage() {
                               <span className="text-xxs text-text-tertiary ml-1.5">{inst.display_name}</span>
                             </td>
                             <td className="px-3 py-2 text-xs text-center font-mono tabular-nums text-text-secondary">
-                              {inst.charge ? <span>${inst.charge.value}<span className="text-xxs text-text-tertiary">/{inst.charge.type === 'commission_per_lot' ? 'lot' : inst.charge.type === 'commission_per_trade' ? 'trade' : '%'}</span></span> : <span className="text-text-tertiary">—</span>}
+                              {inst.charge && Number(inst.charge.value) > 0 ? <span>${inst.charge.value}<span className="text-xxs text-text-tertiary">/{inst.charge.type === 'commission_per_lot' ? 'lot' : inst.charge.type === 'commission_per_trade' ? 'trade' : '%'}</span></span> : <span className="text-text-tertiary">—</span>}
                             </td>
                             <td className="px-3 py-2 text-xs text-center font-mono tabular-nums text-text-secondary">
-                              {inst.spread ? <span>{inst.spread.value} <span className="text-xxs text-text-tertiary">pips</span></span> : <span className="text-text-tertiary">—</span>}
+                              {inst.spread && Number(inst.spread.value) > 0 ? <span>{inst.spread.value} <span className="text-xxs text-text-tertiary">pips</span></span> : <span className="text-text-tertiary">—</span>}
                             </td>
                             <td className="px-3 py-2 text-center">
                               {inst.price_impact != null && inst.price_impact > 0 ? (

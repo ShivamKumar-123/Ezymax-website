@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { ChevronDown, Loader2, Plus, Save, Trash2, X } from 'lucide-react';
+import { Loader2, Plus, Save, Trash2, X } from 'lucide-react';
 
 interface Instrument { id: string; symbol: string; display_name: string; segment: string; segment_id: string | null; }
 interface SwapRow {
+  _key: string;
   scope: string;
   instrument_id: string | null;
   segment_id: string | null;
@@ -21,13 +22,14 @@ interface SwapRow {
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const newKey = () => `row_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
 export default function SwapsPage() {
   const [instruments, setInstruments] = useState<Instrument[]>([]);
   const [rows, setRows] = useState<SwapRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [userSearchIdx, setUserSearchIdx] = useState<number | null>(null);
+  const [userSearchKey, setUserSearchKey] = useState<string | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState<{ id: string; name: string; email: string }[]>([]);
 
@@ -40,6 +42,7 @@ export default function SwapsPage() {
       ]);
       setInstruments(instRes.items || []);
       setRows((swapRes || []).map((c: any) => ({
+        _key: newKey(),
         scope: c.scope, instrument_id: c.instrument_id, segment_id: c.segment_id, user_id: c.user_id,
         swap_long: c.swap_long, swap_short: c.swap_short, triple_swap_day: c.triple_swap_day ?? 3,
         swap_free: c.swap_free ?? false, is_enabled: c.is_enabled,
@@ -50,32 +53,47 @@ export default function SwapsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const addRow = (scope: string) => setRows(prev => [...prev, { scope, instrument_id: null, segment_id: null, user_id: null, swap_long: -5, swap_short: -3, triple_swap_day: 2, swap_free: false, is_enabled: true }]);
-  const updateRow = (idx: number, field: string, val: any) => {
-    setRows(prev => prev.map((r, i) => {
-      if (i !== idx) return r;
-      const u = { ...r, [field]: val };
+  const addRow = (scope: string) => setRows(prev => [...prev, { _key: newKey(), scope, instrument_id: null, segment_id: null, user_id: null, swap_long: -5, swap_short: -3, triple_swap_day: 2, swap_free: false, is_enabled: true }]);
+  const updateRow = (key: string, field: string, val: any) => {
+    setRows(prev => prev.map(r => {
+      if (r._key !== key) return r;
+      const u: SwapRow = { ...r, [field]: val };
       if (field === 'instrument_id') { const inst = instruments.find(x => x.id === val); u.segment_id = inst?.segment_id || null; }
       return u;
     }));
   };
-  const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
+  const removeRow = async (key: string) => {
+    const next = rows.filter(r => r._key !== key);
+    setRows(next);
+    try {
+      const cleaned = next.filter(r => !(r.scope === 'user' && !r.user_id) && !(r.scope === 'instrument' && !r.instrument_id));
+      await adminApi.put('/config/swaps', {
+        configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, swap_long: r.swap_long, swap_short: r.swap_short, triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled })),
+      });
+      toast.success('Rule removed');
+    } catch (e: any) {
+      toast.error(e.message || 'Could not delete — restoring');
+      fetchData();
+    }
+  };
 
-  const searchUsers = async (q: string, idx: number) => {
-    setUserSearchQuery(q); setUserSearchIdx(idx);
+  const searchUsers = async (q: string, key: string) => {
+    setUserSearchQuery(q); setUserSearchKey(key);
     if (q.length < 2) { setUserSearchResults([]); return; }
     try { const d = await adminApi.get<{ users: any[] }>('/users', { search: q, per_page: '8' }); setUserSearchResults((d.users || []).map((u: any) => ({ id: u.id, name: u.name, email: u.email }))); } catch {}
   };
-  const selectUser = (idx: number, u: { id: string; name: string; email: string }) => {
-    updateRow(idx, 'user_id', u.id);
-    setRows(prev => prev.map((r, i) => i === idx ? { ...r, user_id: u.id, _user_label: `${u.name} (${u.email})` } : r));
-    setUserSearchIdx(null); setUserSearchQuery(''); setUserSearchResults([]);
+  const selectUser = (key: string, u: { id: string; name: string; email: string }) => {
+    setRows(prev => prev.map(r => r._key === key ? { ...r, user_id: u.id, _user_label: `${u.name} (${u.email})` } : r));
+    setUserSearchKey(null); setUserSearchQuery(''); setUserSearchResults([]);
   };
 
   const saveAll = async () => {
+    const badUser = rows.find(r => r.scope === 'user' && !r.user_id);
+    if (badUser) { toast.error('Pick a user for every Per-User rule or remove that row.'); return; }
+    const cleaned = rows.filter(r => !(r.scope === 'instrument' && !r.instrument_id));
     setSaving(true);
     try {
-      await adminApi.put('/config/swaps', { configs: rows.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, swap_long: r.swap_long, swap_short: r.swap_short, triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled })) });
+      await adminApi.put('/config/swaps', { configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, swap_long: r.swap_long, swap_short: r.swap_short, triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled })) });
       toast.success('Swaps saved'); fetchData();
     } catch (e: any) { toast.error(e.message || 'Save failed'); } finally { setSaving(false); }
   };
@@ -85,10 +103,8 @@ export default function SwapsPage() {
   const globalRows = rows.filter(r => r.scope === 'default');
   const instrumentRows = rows.filter(r => r.scope === 'instrument');
   const userRows = rows.filter(r => r.scope === 'user');
-  const getRowIdx = (r: SwapRow) => rows.indexOf(r);
 
-  function RuleTable({ title, items, scopeType }: { title: string; items: SwapRow[]; scopeType: string }) {
-    return (
+  const renderTable = (title: string, items: SwapRow[], scopeType: string) => (
       <div className="bg-bg-secondary border border-border-primary rounded-md">
         <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-between">
           <h3 className="text-xs font-semibold text-text-primary">{title}</h3>
@@ -103,19 +119,19 @@ export default function SwapsPage() {
             </tr></thead>
             <tbody>
               {items.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-xxs text-text-tertiary">No rules.</td></tr> : items.map(r => {
-                const idx = getRowIdx(r);
+                const k = r._key;
                 return (
-                  <tr key={idx} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
+                  <tr key={k} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
                     {scopeType === 'user' && (
                       <td className="px-3 py-2">
                         {r._user_label ? (
-                          <div className="flex items-center gap-1"><span className="text-xs text-text-primary truncate max-w-[140px]">{r._user_label}</span><button onClick={() => { updateRow(idx, 'user_id', null); setRows(prev => prev.map((x, i) => i === idx ? { ...x, _user_label: undefined } : x)); }} className="text-text-tertiary hover:text-danger"><X size={10} /></button></div>
+                          <div className="flex items-center gap-1"><span className="text-xs text-text-primary truncate max-w-[140px]">{r._user_label}</span><button onClick={() => setRows(prev => prev.map(x => x._key === k ? { ...x, user_id: null, _user_label: undefined } : x))} className="text-text-tertiary hover:text-danger"><X size={10} /></button></div>
                         ) : (
                           <div className="relative">
-                            <input type="text" value={userSearchIdx === idx ? userSearchQuery : ''} onChange={e => searchUsers(e.target.value, idx)} onFocus={() => setUserSearchIdx(idx)} placeholder="Search user..." className="w-36 px-2 py-1 text-xxs bg-bg-input border border-border-primary rounded text-text-primary placeholder:text-text-tertiary" />
-                            {userSearchIdx === idx && userSearchResults.length > 0 && (
+                            <input type="text" value={userSearchKey === k ? userSearchQuery : ''} onChange={e => searchUsers(e.target.value, k)} onFocus={() => setUserSearchKey(k)} placeholder="Search user..." className="w-36 px-2 py-1 text-xxs bg-bg-input border border-border-primary rounded text-text-primary placeholder:text-text-tertiary" />
+                            {userSearchKey === k && userSearchResults.length > 0 && (
                               <div className="absolute left-0 right-0 top-full mt-1 z-20 max-h-32 overflow-y-auto border border-border-primary rounded bg-bg-secondary shadow-dropdown">
-                                {userSearchResults.map(u => <button key={u.id} onClick={() => selectUser(idx, u)} className="w-full text-left px-2 py-1.5 text-xxs hover:bg-bg-hover border-b border-border-primary/50 last:border-0"><span className="text-text-primary">{u.name}</span> <span className="text-text-tertiary">{u.email}</span></button>)}
+                                {userSearchResults.map(u => <button key={u.id} onClick={() => selectUser(k, u)} className="w-full text-left px-2 py-1.5 text-xxs hover:bg-bg-hover border-b border-border-primary/50 last:border-0"><span className="text-text-primary">{u.name}</span> <span className="text-text-tertiary">{u.email}</span></button>)}
                               </div>
                             )}
                           </div>
@@ -123,14 +139,14 @@ export default function SwapsPage() {
                       </td>
                     )}
                     {(scopeType === 'instrument' || scopeType === 'user') && (
-                      <td className="px-3 py-2"><select value={r.instrument_id || ''} onChange={e => updateRow(idx, 'instrument_id', e.target.value || null)} className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-28"><option value="">All</option>{instruments.map(i => <option key={i.id} value={i.id}>{i.symbol}</option>)}</select></td>
+                      <td className="px-3 py-2"><select value={r.instrument_id || ''} onChange={e => updateRow(k, 'instrument_id', e.target.value || null)} className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-28"><option value="">All</option>{instruments.map(i => <option key={i.id} value={i.id}>{i.symbol}</option>)}</select></td>
                     )}
-                    <td className="px-3 py-2"><input type="number" step="0.01" value={r.swap_long} onChange={e => updateRow(idx, 'swap_long', parseFloat(e.target.value) || 0)} className="w-16 px-1.5 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" /></td>
-                    <td className="px-3 py-2"><input type="number" step="0.01" value={r.swap_short} onChange={e => updateRow(idx, 'swap_short', parseFloat(e.target.value) || 0)} className="w-16 px-1.5 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" /></td>
-                    <td className="px-3 py-2"><select value={r.triple_swap_day} onChange={e => updateRow(idx, 'triple_swap_day', parseInt(e.target.value))} className="text-xs py-1 pl-1.5 pr-5 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-16">{DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}</select></td>
-                    <td className="px-3 py-2"><button onClick={() => updateRow(idx, 'swap_free', !r.swap_free)} className={cn('w-8 h-4 rounded-full transition-fast relative', r.swap_free ? 'bg-success' : 'bg-bg-hover border border-border-primary')}><span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-fast', r.swap_free ? 'left-[16px]' : 'left-0.5')} /></button></td>
-                    <td className="px-3 py-2"><button onClick={() => updateRow(idx, 'is_enabled', !r.is_enabled)} className={cn('w-8 h-4 rounded-full transition-fast relative', r.is_enabled ? 'bg-buy' : 'bg-bg-hover border border-border-primary')}><span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-fast', r.is_enabled ? 'left-[16px]' : 'left-0.5')} /></button></td>
-                    <td className="px-3 py-2"><button onClick={() => removeRow(idx)} className="p-1 text-text-tertiary hover:text-danger transition-fast"><Trash2 size={12} /></button></td>
+                    <td className="px-3 py-2"><input type="number" step="0.01" value={r.swap_long} onChange={e => updateRow(k, 'swap_long', parseFloat(e.target.value) || 0)} className="w-16 px-1.5 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" /></td>
+                    <td className="px-3 py-2"><input type="number" step="0.01" value={r.swap_short} onChange={e => updateRow(k, 'swap_short', parseFloat(e.target.value) || 0)} className="w-16 px-1.5 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" /></td>
+                    <td className="px-3 py-2"><select value={r.triple_swap_day} onChange={e => updateRow(k, 'triple_swap_day', parseInt(e.target.value))} className="text-xs py-1 pl-1.5 pr-5 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-16">{DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}</select></td>
+                    <td className="px-3 py-2"><button onClick={() => updateRow(k, 'swap_free', !r.swap_free)} className={cn('w-8 h-4 rounded-full transition-fast relative', r.swap_free ? 'bg-success' : 'bg-bg-hover border border-border-primary')}><span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-fast', r.swap_free ? 'left-[16px]' : 'left-0.5')} /></button></td>
+                    <td className="px-3 py-2"><button onClick={() => updateRow(k, 'is_enabled', !r.is_enabled)} className={cn('w-8 h-4 rounded-full transition-fast relative', r.is_enabled ? 'bg-buy' : 'bg-bg-hover border border-border-primary')}><span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-fast', r.is_enabled ? 'left-[16px]' : 'left-0.5')} /></button></td>
+                    <td className="px-3 py-2"><button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); void removeRow(k); }} className="p-1 text-text-tertiary hover:text-danger transition-fast" title="Delete rule"><Trash2 size={12} /></button></td>
                   </tr>
                 );
               })}
@@ -139,7 +155,6 @@ export default function SwapsPage() {
         </div>
       </div>
     );
-  }
 
   return (
     <>
@@ -153,9 +168,9 @@ export default function SwapsPage() {
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save All
           </button>
         </div>
-        <RuleTable title="Default (All Instruments)" items={globalRows} scopeType="default" />
-        <RuleTable title="Per Instrument" items={instrumentRows} scopeType="instrument" />
-        <RuleTable title="Per User (Override)" items={userRows} scopeType="user" />
+        {renderTable('Default (All Instruments)', globalRows, 'default')}
+        {renderTable('Per Instrument', instrumentRows, 'instrument')}
+        {renderTable('Per User (Override)', userRows, 'user')}
       </div>
     </>
   );

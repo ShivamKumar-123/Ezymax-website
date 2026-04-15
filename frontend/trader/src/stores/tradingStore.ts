@@ -221,6 +221,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
             free_margin: Number(updated.free_margin) || 0,
             credit: Number(updated.credit) || 0,
             margin_level: Number(updated.margin_level) || 0,
+            leverage: Number(updated.leverage) || account.leverage,
             account_group: updated.account_group ?? account.account_group,
           },
         });

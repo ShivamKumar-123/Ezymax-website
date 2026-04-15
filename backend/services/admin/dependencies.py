@@ -99,7 +99,9 @@ def require_permission(permission: str):
         employee = result.scalar_one_or_none()
         if employee:
             role_perms = EMPLOYEE_ROLE_PERMISSIONS.get(employee.role, set())
-            if "*" in role_perms or permission in role_perms:
+            extra = set(employee.extra_permissions or [])
+            effective = role_perms | extra
+            if "*" in effective or permission in effective:
                 return admin
 
         raise HTTPException(

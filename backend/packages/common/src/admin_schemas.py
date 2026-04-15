@@ -139,6 +139,10 @@ class FundRequest(BaseModel):
     account_id: Optional[str] = None  # Optional: add_fund goes to main wallet; deduct_fund uses this as fallback
     amount: float = Field(gt=0)
     description: Optional[str] = None
+    # For deduct_fund only: "main_wallet" → deduct only from main wallet;
+    # "trading_account" → deduct only from the given account_id; omit/None → try
+    # main wallet first, fall back to the trading_account.
+    source: Optional[str] = None
 
 
 class CreditRequest(BaseModel):
