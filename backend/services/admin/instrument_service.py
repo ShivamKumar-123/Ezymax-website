@@ -121,8 +121,12 @@ async def build_admin_instrument_items(
         explicit = ic is not None
 
         ch_out = ch
-        # Matches runtime: only global default (or user — not shown per row) applies; else 0.
-        sp_out = default_spread if default_spread is not None else {"type": "pips", "value": 0.0}
+        sp_out = (
+            spread_map.get(iid)
+            or (spread_map.get(seg_key) if seg_key else None)
+            or default_spread
+            or {"type": "pips", "value": 0.0}
+        )
         if ic and ic.commission_value is not None:
             adb = "commission_per_lot"
             ct = (ic.commission_type or "per_lot").lower()
@@ -131,7 +135,6 @@ async def build_admin_instrument_items(
             elif ct == "percentage":
                 adb = "commission_percentage"
             ch_out = {"type": adb, "value": float(ic.commission_value)}
-        # Effective spread matches runtime: spread_configs only (not instrument_configs.spread_value).
 
         items.append(
             {
@@ -198,20 +201,17 @@ async def upsert_instrument_config(
     )
     ic = ic_q.scalar_one_or_none()
 
-    commission = body.get("commission")
+    # A field being in `body` with value None means "clear the override".
+    # A field being absent from `body` means "leave unchanged".
     commission_type = body.get("commission_type", "commission_per_lot")
-    spread = body.get("spread")
-    spread_type = body.get("spread_type", "fixed")
-    swap_long = body.get("swap_long")
-    swap_short = body.get("swap_short")
-    swap_free = body.get("swap_free", False)
-    price_impact = body.get("price_impact")
+    spread_type = body.get("spread_type", "pips")
 
-    if commission is not None and float(commission) < 0:
+    # Validation (only for non-null values)
+    if body.get("commission") is not None and float(body["commission"]) < 0:
         raise ValueError("Commission cannot be negative")
-    if spread is not None and float(spread) < 0:
+    if body.get("spread") is not None and float(body["spread"]) < 0:
         raise ValueError("Spread cannot be negative")
-    if price_impact is not None and float(price_impact) < 0:
+    if body.get("price_impact") is not None and float(body["price_impact"]) < 0:
         raise ValueError("Price impact cannot be negative")
 
     old_snap = {}
@@ -226,27 +226,100 @@ async def upsert_instrument_config(
         ic = InstrumentConfig(instrument_id=instrument_id)
         db.add(ic)
 
-    if commission is not None:
-        ic.commission_value = Decimal(str(commission))
-        raw_ct = (commission_type or "commission_per_lot").lower()
-        if "trade" in raw_ct:
-            ic.commission_type = "per_trade"
-        elif "percent" in raw_ct:
-            ic.commission_type = "percentage"
+    # Commission: set / clear / skip
+    if "commission" in body:
+        commission = body["commission"]
+        await db.execute(
+            delete(ChargeConfig).where(
+                ChargeConfig.instrument_id == instrument_id,
+                ChargeConfig.scope == "instrument",
+            )
+        )
+        if commission is None:
+            ic.commission_value = None
         else:
-            ic.commission_type = "per_lot"
-    if spread is not None:
-        ic.spread_value = Decimal(str(spread))
-        ic.spread_type = _spread_type_to_db(spread_type)
-    if price_impact is not None:
-        ic.price_impact = Decimal(str(price_impact))
-    elif ic.price_impact is None:
-        ic.price_impact = Decimal("0")
-    if swap_long is not None:
-        ic.swap_long = Decimal(str(swap_long))
-    if swap_short is not None:
-        ic.swap_short = Decimal(str(swap_short))
-    ic.swap_free = bool(swap_free)
+            ic.commission_value = Decimal(str(commission))
+            raw_ct = (commission_type or "commission_per_lot").lower()
+            if "trade" in raw_ct:
+                ic.commission_type = "per_trade"
+            elif "percent" in raw_ct:
+                ic.commission_type = "percentage"
+            else:
+                ic.commission_type = "per_lot"
+            db.add(
+                ChargeConfig(
+                    scope="instrument",
+                    instrument_id=instrument_id,
+                    charge_type=_charge_type_to_db(commission_type),
+                    value=Decimal(str(commission)),
+                    is_enabled=True,
+                )
+            )
+
+    # Spread: set / clear / skip
+    if "spread" in body:
+        spread = body["spread"]
+        await db.execute(
+            delete(SpreadConfig).where(
+                SpreadConfig.instrument_id == instrument_id,
+                SpreadConfig.scope == "instrument",
+            )
+        )
+        if spread is None:
+            ic.spread_value = None
+        else:
+            ic.spread_value = Decimal(str(spread))
+            ic.spread_type = _spread_type_to_db(spread_type)
+            db.add(
+                SpreadConfig(
+                    scope="instrument",
+                    instrument_id=instrument_id,
+                    spread_type=_spread_type_to_db(spread_type),
+                    value=Decimal(str(spread)),
+                    is_enabled=True,
+                )
+            )
+
+    # Price impact: column is NOT NULL — clear means 0
+    if "price_impact" in body:
+        pi = body["price_impact"]
+        ic.price_impact = Decimal("0") if pi is None else Decimal(str(pi))
+
+    # Swap: treat (long null AND short null AND not swap_free) as "clear"
+    swap_touched = "swap_long" in body or "swap_short" in body or "swap_free" in body
+    if swap_touched:
+        sl = body.get("swap_long")
+        ss = body.get("swap_short")
+        sf = bool(body.get("swap_free", False))
+        has_rule = sl is not None or ss is not None or sf
+
+        await db.execute(
+            delete(SwapConfig).where(
+                SwapConfig.instrument_id == instrument_id,
+                SwapConfig.scope == "instrument",
+            )
+        )
+
+        if has_rule:
+            ic.swap_long = Decimal(str(sl)) if sl is not None else Decimal("0")
+            ic.swap_short = Decimal(str(ss)) if ss is not None else Decimal("0")
+            ic.swap_free = sf
+            db.add(
+                SwapConfig(
+                    scope="instrument",
+                    instrument_id=instrument_id,
+                    swap_long=Decimal(str(sl)) if sl is not None else Decimal("0"),
+                    swap_short=Decimal(str(ss)) if ss is not None else Decimal("0"),
+                    triple_swap_day=body.get("triple_swap_day", 3),
+                    swap_free=sf,
+                    is_enabled=True,
+                )
+            )
+        else:
+            ic.swap_long = None
+            ic.swap_short = None
+            ic.swap_free = False
+
     if body.get("min_lot") is not None:
         ic.min_lot_size = Decimal(str(body["min_lot"]))
     if body.get("max_lot") is not None:
@@ -270,60 +343,6 @@ async def upsert_instrument_config(
         ov = old_snap.get(field)
         if ov != new_v and (ov is not None or new_v is not None):
             await _audit(db, instrument_id, field, ov, new_v, admin_id, ip)
-
-    # Sync engine tables (instrument scope) when fields provided
-    if "commission" in body and commission is not None:
-        await db.execute(
-            delete(ChargeConfig).where(
-                ChargeConfig.instrument_id == instrument_id,
-                ChargeConfig.scope == "instrument",
-            )
-        )
-        db.add(
-            ChargeConfig(
-                scope="instrument",
-                instrument_id=instrument_id,
-                charge_type=_charge_type_to_db(commission_type),
-                value=Decimal(str(commission)),
-                is_enabled=True,
-            )
-        )
-
-    if "spread" in body and spread is not None:
-        await db.execute(
-            delete(SpreadConfig).where(
-                SpreadConfig.instrument_id == instrument_id,
-                SpreadConfig.scope == "instrument",
-            )
-        )
-        db.add(
-            SpreadConfig(
-                scope="instrument",
-                instrument_id=instrument_id,
-                spread_type=_spread_type_to_db(spread_type),
-                value=Decimal(str(spread)),
-                is_enabled=True,
-            )
-        )
-
-    if "swap_long" in body or "swap_short" in body or "swap_free" in body:
-        await db.execute(
-            delete(SwapConfig).where(
-                SwapConfig.instrument_id == instrument_id,
-                SwapConfig.scope == "instrument",
-            )
-        )
-        db.add(
-            SwapConfig(
-                scope="instrument",
-                instrument_id=instrument_id,
-                swap_long=Decimal(str(body.get("swap_long", ic.swap_long or 0))),
-                swap_short=Decimal(str(body.get("swap_short", ic.swap_short or 0))),
-                triple_swap_day=body.get("triple_swap_day", 3),
-                swap_free=bool(swap_free),
-                is_enabled=True,
-            )
-        )
 
     from datetime import datetime, timezone
 

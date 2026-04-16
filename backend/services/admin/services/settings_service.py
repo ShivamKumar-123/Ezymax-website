@@ -58,9 +58,15 @@ async def update_settings(
     )
     await db.commit()
 
+    # Invalidate the gateway's settings cache so it picks up new values immediately.
+    # Admin's REDIS_URL is pinned to /1 (rate limits); gateway caches settings in /0,
+    # so we must rewrite the db path to hit the right Redis logical database.
     try:
+        import os
         import redis.asyncio as aioredis
-        r = aioredis.from_url("redis://localhost:6379/0")
+        url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+        base = url.rsplit("/", 1)[0]
+        r = aioredis.from_url(f"{base}/0")
         await r.delete("system_settings_cache")
         await r.close()
     except Exception:

@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
 import '../auth.css';
 
@@ -102,6 +104,15 @@ export default function LoginPage() {
   /* Error dialog */
   const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null);
 
+  /* Platform maintenance status */
+  const maintenance = usePlatformStatusStore((s) => s.maintenance_mode);
+  const fetchStatus = usePlatformStatusStore((s) => s.fetch);
+  useEffect(() => {
+    fetchStatus();
+    const id = setInterval(fetchStatus, 15000);
+    return () => clearInterval(id);
+  }, [fetchStatus]);
+
   /* ── Sign-in handler ── */
   const handleSignIn = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -172,6 +183,31 @@ export default function LoginPage() {
 
   return (
     <div className="auth-wrapper">
+      {maintenance && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            background: 'linear-gradient(90deg, rgba(234,179,8,0.18), rgba(234,179,8,0.08))',
+            borderBottom: '1px solid rgba(234,179,8,0.45)',
+            color: '#fde68a',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 500,
+            backdropFilter: 'blur(6px)',
+          }}
+        >
+          <AlertTriangle size={16} />
+          Platform is under maintenance. Sign-in is temporarily disabled. Please check back soon.
+        </div>
+      )}
       <div className="auth-card-wrapper">
         <div className="auth-card">
           {/* ── LEFT PANEL ── */}
@@ -273,8 +309,8 @@ export default function LoginPage() {
                     )}
 
                     <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.55, duration: 0.4 }}>
-                      <button type="submit" className="auth-btn" disabled={loading || isLoading}>
-                        {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : 'Sign In'}
+                      <button type="submit" className="auth-btn" disabled={loading || isLoading || maintenance}>
+                        {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Sign In')}
                       </button>
                     </motion.div>
 
@@ -304,8 +340,8 @@ export default function LoginPage() {
                     </motion.div>
 
                     <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.45, duration: 0.4 }}>
-                      <button type="button" className="auth-btn" onClick={handleDemo} disabled={demoLoading || isLoading}>
-                        {(demoLoading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : 'Start Demo Trading'}
+                      <button type="button" className="auth-btn" onClick={handleDemo} disabled={demoLoading || isLoading || maintenance}>
+                        {(demoLoading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Start Demo Trading')}
                       </button>
                     </motion.div>
 

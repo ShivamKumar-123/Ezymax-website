@@ -89,6 +89,8 @@ async def _get_bank_for_tier(amount: Decimal, db: AsyncSession) -> BankAccount |
 
 async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(status_code=503, detail="Platform is under maintenance. Deposits are temporarily disabled.")
     if not await get_bool_setting("allow_deposits", True):
         raise HTTPException(status_code=403, detail="Deposits are currently disabled")
 
@@ -232,6 +234,8 @@ async def create_manual_deposit(
 
 async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(status_code=503, detail="Platform is under maintenance. Withdrawals are temporarily disabled.")
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
 

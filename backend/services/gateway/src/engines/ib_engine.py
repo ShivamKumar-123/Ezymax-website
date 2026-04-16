@@ -76,14 +76,33 @@ async def distribute_ib_commission(
         )
         plan = plan_q.scalar_one_or_none()
 
-    if not plan:
+    # Effective per-lot rate: direct IB's custom override beats plan; plan beats nothing.
+    per_lot = None
+    if direct_ib.custom_commission_per_lot is not None and direct_ib.custom_commission_per_lot > 0:
+        per_lot = Decimal(str(direct_ib.custom_commission_per_lot))
+    elif plan and plan.commission_per_lot is not None:
+        per_lot = Decimal(str(plan.commission_per_lot))
+
+    if per_lot is None or per_lot <= 0:
         return
 
-    total_commission = plan.commission_per_lot * lots
+    total_commission = per_lot * lots
     if total_commission <= 0:
         return
 
-    mlm_dist = await get_mlm_distribution(db)
+    # Prefer plan's MLM distribution; fall back to global SystemSetting; then default.
+    mlm_dist: list[int] | None = None
+    if plan and plan.mlm_distribution:
+        raw = plan.mlm_distribution
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                raw = None
+        if isinstance(raw, list) and raw:
+            mlm_dist = [int(x) for x in raw]
+    if mlm_dist is None:
+        mlm_dist = await get_mlm_distribution(db)
 
     current_ib = direct_ib
     for level, pct in enumerate(mlm_dist, start=1):

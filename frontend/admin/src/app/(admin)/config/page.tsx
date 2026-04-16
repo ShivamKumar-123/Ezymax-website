@@ -82,13 +82,13 @@ export default function ConfigPage() {
   const startEdit = (inst: InstrumentConfig) => {
     setEditingId(inst.id);
     setEditState({
-      commission: inst.charge?.value?.toString() ?? '',
+      commission: inst.charge && Number(inst.charge.value) > 0 ? String(inst.charge.value) : '',
       commission_type: inst.charge?.type ?? 'commission_per_lot',
-      spread: inst.spread?.value?.toString() ?? '',
+      spread: inst.spread && Number(inst.spread.value) > 0 ? String(inst.spread.value) : '',
       spread_type: inst.spread?.type ?? 'pips',
-      price_impact: inst.price_impact != null ? String(inst.price_impact) : '',
-      swap_long: inst.swap?.long?.toString() ?? '0',
-      swap_short: inst.swap?.short?.toString() ?? '0',
+      price_impact: inst.price_impact != null && inst.price_impact > 0 ? String(inst.price_impact) : '',
+      swap_long: inst.swap?.long != null ? String(inst.swap.long) : '',
+      swap_short: inst.swap?.short != null ? String(inst.swap.short) : '',
       swap_free: inst.swap?.free ?? false,
     });
   };
@@ -99,24 +99,21 @@ export default function ConfigPage() {
     if (!editState) return;
     setSaving(inst.id);
     try {
-      const body: Record<string, any> = {};
-      // Send the value whenever the field has any text (including "0") so the
-      // user can explicitly clear a rule by typing 0. Previously truthy checks
-      // dropped "0" from the payload, so saving "0" silently did nothing.
-      if (editState.commission !== '') {
-        body.commission = parseFloat(editState.commission) || 0;
-        body.commission_type = editState.commission_type;
-      }
-      if (editState.spread !== '') {
-        body.spread = parseFloat(editState.spread) || 0;
-        body.spread_type = editState.spread_type;
-      }
-      if (editState.price_impact !== '') {
-        body.price_impact = parseFloat(editState.price_impact) || 0;
-      }
-      body.swap_long = parseFloat(editState.swap_long) || 0;
-      body.swap_short = parseFloat(editState.swap_short) || 0;
-      body.swap_free = editState.swap_free;
+      // Empty string = clear the override (send null). Number string = set.
+      // Always include all keys so backend knows the user's intent for each field.
+      const parseNum = (v: string): number | null =>
+        v.trim() === '' ? null : (Number.isFinite(parseFloat(v)) ? parseFloat(v) : null);
+
+      const body: Record<string, any> = {
+        commission: parseNum(editState.commission),
+        commission_type: editState.commission_type,
+        spread: parseNum(editState.spread),
+        spread_type: editState.spread_type,
+        price_impact: parseNum(editState.price_impact),
+        swap_long: parseNum(editState.swap_long),
+        swap_short: parseNum(editState.swap_short),
+        swap_free: editState.swap_free,
+      };
 
       await adminApi.put(`/config/instrument/${inst.id}`, body);
       toast.success(`${inst.symbol} config updated successfully`);

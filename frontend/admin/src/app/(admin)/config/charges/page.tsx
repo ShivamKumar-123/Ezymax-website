@@ -86,12 +86,24 @@ export default function ChargesPage() {
     }));
   };
 
+  // A Per-Instrument row with instrument="All" (null id) is semantically a global
+  // default — re-tag its scope so the engine's priority chain (instrument > segment
+  // > default) can fall through to it for untouched symbols. Same for Per-User
+  // row with instrument="All" → stays user-scope with null instrument (user global).
+  const normalizeRows = (list: ChargeRow[]): ChargeRow[] =>
+    list.map(r =>
+      r.scope === 'instrument' && !r.instrument_id
+        ? { ...r, scope: 'default', segment_id: null }
+        : r,
+    );
+
   const removeRow = async (key: string) => {
     const next = rows.filter(r => r._key !== key);
     setRows(next);
     // Commit delete to backend immediately so the row really disappears.
     try {
-      const cleaned = next.filter(r => !(r.scope === 'user' && !r.user_id) && !(r.scope === 'instrument' && !r.instrument_id));
+      const normalized = normalizeRows(next);
+      const cleaned = normalized.filter(r => !(r.scope === 'user' && !r.user_id));
       await adminApi.put('/config/charges', {
         configs: cleaned.map(r => ({
           scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
@@ -130,7 +142,7 @@ export default function ChargesPage() {
       toast.error('Pick a user for every Per-User rule or remove that row.');
       return;
     }
-    const cleaned = rows.filter(r => !(r.scope === 'instrument' && !r.instrument_id));
+    const cleaned = normalizeRows(rows);
     setSaving(true);
     try {
       await adminApi.put('/config/charges', {

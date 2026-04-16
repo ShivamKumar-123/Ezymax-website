@@ -643,6 +643,29 @@ async def _build_ib_node(ib, db: AsyncSession, depth: int = 0) -> dict:
     }
 
 
+async def get_unassigned_users(page: int, per_page: int, db: AsyncSession) -> dict:
+    """Users who are not referred under any active IB."""
+    from sqlalchemy import not_, exists
+    subq = select(Referral.referred_id).where(Referral.ib_profile_id.isnot(None)).scalar_subquery()
+    query = select(User).where(
+        User.role.notin_(["ib", "sub_broker", "admin", "super_admin", "employee"]),
+        not_(User.id.in_(subq)),
+    )
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    result = await db.execute(
+        query.order_by(User.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
+    )
+    items = []
+    for u in result.scalars().all():
+        items.append({
+            "user_id": str(u.id),
+            "email": u.email,
+            "name": f"{u.first_name or ''} {u.last_name or ''}".strip(),
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        })
+    return {"items": items, "total": total, "page": page, "per_page": per_page}
+
+
 async def get_ib_referrals(ib_id: uuid.UUID, page: int, per_page: int, db: AsyncSession) -> dict:
     """Traders referred by a specific IB with commission data."""
     total = (await db.execute(

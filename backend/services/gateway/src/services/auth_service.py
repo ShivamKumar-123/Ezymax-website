@@ -233,6 +233,10 @@ async def register_user(
     from packages.common.src.settings_store import get_bool_setting
 
     rate_limit_http(request, "register", 15, 3600.0)
+    if await get_bool_setting("maintenance_mode", False):
+        raise AuthServiceError(
+            "Platform is under maintenance. Registrations are temporarily disabled.", 503
+        )
     if not await get_bool_setting("allow_new_registrations", True):
         raise AuthServiceError("New registrations are currently disabled", 403)
 
@@ -285,6 +289,14 @@ async def login_user(
         raise AuthServiceError("Account has been banned", 403)
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
+
+    # Maintenance mode: only admin / super_admin / employee roles may log in.
+    if user.role not in ("admin", "super_admin", "employee"):
+        from packages.common.src.settings_store import get_bool_setting
+        if await get_bool_setting("maintenance_mode", False):
+            raise AuthServiceError(
+                "Platform is under maintenance. Please try again later.", 503
+            )
 
     if user.two_factor_enabled:
         secret = (user.two_factor_secret or "").strip()

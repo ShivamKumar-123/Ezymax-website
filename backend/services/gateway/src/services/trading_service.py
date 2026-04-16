@@ -429,7 +429,17 @@ async def list_orders(account_id: UUID, user_id: UUID, status: str | None, db: A
     return items
 
 
+async def _reject_if_maintenance():
+    from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(
+            status_code=503,
+            detail="Platform is under maintenance. Trading is temporarily disabled.",
+        )
+
+
 async def modify_order(order_id: UUID, req, user_id: UUID, db: AsyncSession) -> dict:
+    await _reject_if_maintenance()
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
     if not order:
@@ -455,6 +465,7 @@ async def modify_order(order_id: UUID, req, user_id: UUID, db: AsyncSession) -> 
 
 
 async def cancel_order(order_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    await _reject_if_maintenance()
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
     if not order:

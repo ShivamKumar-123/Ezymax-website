@@ -129,20 +129,8 @@ export default function SettingsPage() {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await adminApi.get<{ settings: Settings }>('/settings');
-      setSettings(res.settings || {
-        default_leverage: 100,
-        margin_call_level: 80,
-        stop_out_level: 50,
-        max_open_trades: 200,
-        max_pending_orders: 100,
-        max_lot_size: 100,
-        min_lot_size: 0.01,
-        maintenance_mode: false,
-        allow_new_registrations: true,
-        allow_deposits: true,
-        allow_withdrawals: true,
-      });
+      const res = await adminApi.get<SystemSettingRow[]>('/settings');
+      setSettings(rowsToSettings(Array.isArray(res) ? res : []));
     } catch (e: any) {
       toast.error(e.message || 'Failed to load settings');
     } finally {

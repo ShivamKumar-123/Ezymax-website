@@ -181,6 +181,16 @@ async def get_ib_tree(
     return await business_service.get_ib_tree(ib_id=_id, db=db)
 
 
+@router.get("/ib/users/unassigned")
+async def get_unassigned_users(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await business_service.get_unassigned_users(page=page, per_page=per_page, db=db)
+
+
 @router.get("/ib/agents/{agent_id}/referrals")
 async def get_ib_referrals(
     agent_id: uuid.UUID,

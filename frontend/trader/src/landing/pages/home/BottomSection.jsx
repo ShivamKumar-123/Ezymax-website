@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Play, Star, ChevronDown, TrendingUp } from 'lucide-react'
-import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../../components/animations/ScrollReveal'
+import { ArrowRight, Play, ChevronDown, TrendingUp } from 'lucide-react'
+import ScrollReveal from '../../components/animations/ScrollReveal'
 import SectionHeader from '../../components/SectionHeader'
-import { testimonials, faqs } from '../HomeData'
+import { faqs } from '../HomeData'
 
 function FAQItem({ q, a, index }) {
   const [open, setOpen] = useState(false)
@@ -33,41 +33,6 @@ function FAQItem({ q, a, index }) {
 export default function BottomSection() {
   return (
     <>
-      {/* TESTIMONIALS */}
-      <section className="section-padding bg-primary-bg relative overflow-hidden">
-        <div className="container-custom relative z-10">
-          <SectionHeader
-            badge="Testimonials"
-            title="What Our Clients Say"
-            highlight="Clients Say"
-            subtitle="Trusted by thousands of traders worldwide."
-          />
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-14">
-            {testimonials.map((t, i) => (
-              <ScrollRevealItem key={i}>
-                <div className="glass-card p-6 h-full flex flex-col">
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} size={14} style={{ color: '#7B2FFF', fill: '#7B2FFF' }} />
-                    ))}
-                  </div>
-                  <p className="text-text-secondary text-sm leading-relaxed flex-1 mb-5 italic">"{t.quote}"</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                    <div className="w-9 h-9 rounded-full bg-primary-accent/20 flex items-center justify-center text-primary-accent font-bold text-sm">
-                      {t.author[0]}
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold text-sm">{t.author}</div>
-                      <div className="text-text-secondary text-xs">{t.role}</div>
-                    </div>
-                  </div>
-                </div>
-              </ScrollRevealItem>
-            ))}
-          </ScrollRevealGroup>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section className="section-padding bg-primary-secondary relative overflow-hidden">
         <div className="container-custom relative z-10">

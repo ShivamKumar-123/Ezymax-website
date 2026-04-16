@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
@@ -27,33 +28,48 @@ export default function Modal({
   headerClassName,
   bodyClassName,
 }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
   }, [onClose]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (open) {
       document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      // Prevent background scroll while modal is open.
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = prev;
+      };
     }
   }, [open, handleKeyDown]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const widths = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl', '2xl': 'max-w-2xl' };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  // Portal into document.body so an ancestor with `transform`/`will-change`/`filter`
+  // doesn't steal `position: fixed` (CSS containing-block rule). This keeps the
+  // modal centered in the viewport regardless of page scroll position.
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className={cn(
-        'relative w-full bg-bg-tertiary border border-border-primary rounded-lg shadow-modal animate-fade-in',
+        'relative w-full max-h-[90vh] overflow-y-auto bg-bg-tertiary border border-border-primary rounded-lg shadow-modal animate-fade-in',
         widths[width],
         className,
       )}>
         {title && (
           <div
             className={cn(
-              'flex items-center justify-between px-4 py-3 border-b border-border-primary',
+              'flex items-center justify-between px-4 py-3 border-b border-border-primary sticky top-0 bg-bg-tertiary z-10',
               headerClassName,
             )}
           >
@@ -68,6 +84,7 @@ export default function Modal({
         )}
         <div className={cn('p-4', bodyClassName)}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

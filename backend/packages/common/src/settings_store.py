@@ -8,7 +8,7 @@ from .redis_client import redis_client
 logger = logging.getLogger("settings-store")
 
 CACHE_KEY = "system_settings_cache"
-CACHE_TTL = 30
+CACHE_TTL = 5
 
 
 async def get_system_setting(key: str, default: Any = None) -> Any:

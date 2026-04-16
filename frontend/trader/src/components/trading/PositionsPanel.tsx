@@ -508,9 +508,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         'Qty',
         'Open Price',
         'Current',
-        'P&L (gross)',
-        'Charges (at open)',
-        'Net P&L',
+        'P&L',
         'SL',
         'TP',
       ],
@@ -526,8 +524,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         pos.lots,
         pos.open_price.toFixed(d),
         (pos.current_price ?? '').toString() ? Number(pos.current_price).toFixed(d) : '',
-        gross,
-        comm,
         gross - comm,
         pos.stop_loss != null ? pos.stop_loss : '',
         pos.take_profit != null ? pos.take_profit : '',
@@ -566,9 +562,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         'Qty',
         'Open Price',
         'Close Price',
-        'P&L (gross)',
-        'Charges (at open)',
-        'Net P&L',
+        'P&L',
         'Close reason',
         'Closed At',
       ],
@@ -583,8 +577,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         t.lots,
         t.open_price.toFixed(d),
         t.close_price.toFixed(d),
-        gross,
-        comm,
         gross - comm,
         closeReasonBadge(t.close_reason, t.close_price, d).label,
         t.close_time,
@@ -1006,8 +998,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <div><span className="text-text-tertiary">Qty</span> <span className="text-text-primary font-mono">{pos.lots}</span></div>
                             <div><span className="text-text-tertiary">Open</span> <span className="text-text-primary font-mono">{pos.open_price.toFixed(d)}</span></div>
                             <div><span className="text-text-tertiary">Now</span> <span className="text-text-primary font-mono">{pos.current_price != null ? pos.current_price.toFixed(d) : '—'}</span></div>
-                            <div><span className="text-text-tertiary">Gross</span> <span className="font-mono tabular-nums" style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}>{pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span></div>
-                            <div><span className="text-text-tertiary">Fee</span> <span className="font-mono tabular-nums text-warning">${charges.toFixed(2)}</span></div>
                             <div><span className="text-text-tertiary">Acct</span> <span className="text-text-secondary">{accountLabel(pos.account_id)}</span></div>
                           </div>
                           <div className="flex items-center justify-between pt-1 border-t border-border-glass/40">
@@ -1055,15 +1045,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Current</th>
                         <th className={th}>
                           <span className="block">P&amp;L</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">gross</span>
-                        </th>
-                        <th className={th}>
-                          <span className="block">Charges</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">at open</span>
-                        </th>
-                        <th className={th}>
-                          <span className="block">Net P&amp;L</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">gross − charges</span>
                         </th>
                         <th className={th}>SL / TP</th>
                         <th className={clsx(th, 'text-right pr-3')}>Action</th>
@@ -1098,12 +1079,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
                             <td className={clsx(td, 'font-mono')}>
                               {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
-                            </td>
-                            <td className={clsx(td, 'font-mono font-bold')} style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}>
-                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-                            </td>
-                            <td className={clsx(td, 'font-mono text-warning tabular-nums')}>
-                              ${charges.toFixed(2)}
                             </td>
                             <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
@@ -1365,8 +1340,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <div><span className="text-text-tertiary">Qty</span> <span className="text-text-primary font-mono">{trade.lots}</span></div>
                               <div><span className="text-text-tertiary">Open</span> <span className="text-text-primary font-mono">{trade.open_price.toFixed(d)}</span></div>
                               <div><span className="text-text-tertiary">Close</span> <span className="text-text-primary font-mono">{trade.close_price.toFixed(d)}</span></div>
-                              <div><span className="text-text-tertiary">Gross</span> <span className="font-mono tabular-nums" style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}>{pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span></div>
-                              <div><span className="text-text-tertiary">Fee</span> <span className="font-mono tabular-nums text-warning">${charges.toFixed(2)}</span></div>
                               <div>
                                 <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide', exitBadge.className)}>
                                   {exitBadge.label}
@@ -1394,15 +1367,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Close</th>
                         <th className={th}>
                           <span className="block">P&amp;L</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">gross</span>
-                        </th>
-                        <th className={th}>
-                          <span className="block">Charges</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">at open</span>
-                        </th>
-                        <th className={th}>
-                          <span className="block">Net P&amp;L</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">gross − charges</span>
                         </th>
                         <th className={th}>
                           <span className="block">Close</span>
@@ -1439,12 +1403,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={td}>{trade.lots}</td>
                             <td className={clsx(td, 'font-mono')}>{trade.open_price.toFixed(d)}</td>
                             <td className={clsx(td, 'font-mono')}>{trade.close_price.toFixed(d)}</td>
-                            <td className={clsx(td, 'font-mono font-bold')} style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}>
-                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-                            </td>
-                            <td className={clsx(td, 'font-mono text-warning tabular-nums')}>
-                              ${charges.toFixed(2)}
-                            </td>
                             <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
                             </td>

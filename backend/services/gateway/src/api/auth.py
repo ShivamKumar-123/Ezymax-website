@@ -31,6 +31,19 @@ def _handle(coro):
     return coro
 
 
+@router.get("/platform-status")
+async def platform_status():
+    """Public: returns current platform flags so the frontend can gate UI
+    (maintenance banner, register button, etc.). No auth required."""
+    from packages.common.src.settings_store import get_bool_setting
+    return {
+        "maintenance_mode": await get_bool_setting("maintenance_mode", False),
+        "allow_new_registrations": await get_bool_setting("allow_new_registrations", True),
+        "allow_deposits": await get_bool_setting("allow_deposits", True),
+        "allow_withdrawals": await get_bool_setting("allow_withdrawals", True),
+    }
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
     try:

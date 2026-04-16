@@ -1,34 +1,36 @@
-import BlurText from '../../components/BlurText'
-import GradientBlinds from '../../components/GradientBlinds'
+import GooeyText from '../../components/GooeyText'
+import ColorBends from '../../components/ColorBends'
 
 export default function HeroSection() {
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100vh', position: 'relative', background: '#0A0E1A', overflow: 'hidden' }}>
       {/* Text overlay */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-        <BlurText
-          text="Your Edge in Every Market"
-          delay={200}
-          animateBy="words"
-          direction="top"
-          className="text-4xl md:text-6xl lg:text-7xl font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] justify-center"
+      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none pt-20 sm:pt-32 md:pt-40 lg:pt-52">
+        <GooeyText
+          texts={["Your", "Edge", "in", "Every", "Market"]}
+          morphTime={1}
+          cooldownTime={0.25}
+          className="font-bold h-[100px] sm:h-[120px] md:h-[250px] lg:h-[300px] w-full"
+          textClassName="font-bold drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
         />
       </div>
 
-      {/* Background WebGL Gradient */}
-      <GradientBlinds
-        gradientColors={['#FF9FFC', '#5227FF']}
-        angle={0}
-        noise={0.3}
-        blindCount={12}
-        blindMinWidth={50}
-        spotlightRadius={0.5}
-        spotlightSoftness={1}
-        spotlightOpacity={1}
-        mouseDampening={0.15}
-        distortAmount={0}
-        shineDirection="left"
-        mixBlendMode="lighten"
+      {/* Background ColorBends Animation */}
+      <ColorBends
+        colors={['#1A56FF', '#0D3FCC', '#0A2A99']}
+        rotation={90}
+        speed={0.2}
+        scale={1}
+        frequency={1}
+        warpStrength={1}
+        mouseInfluence={1}
+        noise={0.15}
+        parallax={0.5}
+        iterations={1}
+        intensity={1.5}
+        bandWidth={6}
+        transparent
+        autoRotate={0}
       />
     </div>
   )

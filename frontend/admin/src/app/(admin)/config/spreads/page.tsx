@@ -58,11 +58,22 @@ export default function SpreadsPage() {
       return u;
     }));
   };
+  // Per-Instrument row with instrument="All" (null id) is semantically a global
+  // default — re-tag its scope so the engine's priority chain lets it fall through
+  // for symbols that don't have a specific override.
+  const normalizeRows = (list: SpreadRow[]): SpreadRow[] =>
+    list.map(r =>
+      r.scope === 'instrument' && !r.instrument_id
+        ? { ...r, scope: 'default', segment_id: null }
+        : r,
+    );
+
   const removeRow = async (key: string) => {
     const next = rows.filter(r => r._key !== key);
     setRows(next);
     try {
-      const cleaned = next.filter(r => !(r.scope === 'user' && !r.user_id) && !(r.scope === 'instrument' && !r.instrument_id));
+      const normalized = normalizeRows(next);
+      const cleaned = normalized.filter(r => !(r.scope === 'user' && !r.user_id));
       await adminApi.put('/config/spreads', {
         configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, spread_type: r.spread_type, value: r.value, is_enabled: r.is_enabled })),
       });
@@ -86,7 +97,7 @@ export default function SpreadsPage() {
   const saveAll = async () => {
     const badUser = rows.find(r => r.scope === 'user' && !r.user_id);
     if (badUser) { toast.error('Pick a user for every Per-User rule or remove that row.'); return; }
-    const cleaned = rows.filter(r => !(r.scope === 'instrument' && !r.instrument_id));
+    const cleaned = normalizeRows(rows);
     setSaving(true);
     try {
       await adminApi.put('/config/spreads', { configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, spread_type: r.spread_type, value: r.value, is_enabled: r.is_enabled })) });

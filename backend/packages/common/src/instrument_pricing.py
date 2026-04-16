@@ -34,22 +34,29 @@ async def resolve_spread_config(
 ) -> Tuple[Decimal, str, Decimal]:
     """Returns (spread_value, spread_type, price_impact).
 
-    When **Default (all instruments)** exists and is enabled in ``spread_configs``,
-    that value applies to **every** symbol. Per-instrument and per-segment rows are
-    **not** used for pricing (only the global default or a user override).
+    Priority chain (highest → lowest), mirrors ``resolve_commission`` so admin's
+    "All" + specific overrides behave the same across charges and spreads:
+      1. User override for this specific instrument
+      2. User override global (user, null instrument)
+      3. Per-instrument rule (instrument scope, this instrument)
+      4. Per-segment rule (segment scope, this instrument's segment)
+      5. Default (all instruments)
+      6. Zero
 
-    **Optional user** spread overrides still apply when ``user_id`` is provided.
+    A specific instrument rule wins for that symbol; "All" fills in for the rest.
 
-    If there is **no** enabled default (and no matching user row): spread is **0**
-    (no fallback to instrument/segment rows).
-
-    ``instrument_configs.spread_value`` is not used for spread width.
-
-    ``price_impact`` on ``instrument_configs`` is returned for APIs (e.g. trading catalog)
-    but is **not** applied to Redis stream quotes — those widths come only from
-    ``spread_configs`` so the admin default matches the terminal ``Spr`` display.
+    ``price_impact`` on ``instrument_configs`` is returned for APIs but is **not**
+    applied to Redis stream quotes — widths come only from ``spread_configs``
+    so the admin default matches the terminal ``Spr`` display.
     """
     pimp = await _instrument_config_price_impact(db, instrument.id)
+
+    def _to_tuple(row: SpreadConfig) -> Tuple[Decimal, str, Decimal]:
+        return (
+            Decimal(str(row.value or 0)),
+            (row.spread_type or "pips").lower(),
+            pimp,
+        )
 
     if user_id:
         ur = await db.execute(
@@ -64,11 +71,8 @@ async def resolve_spread_config(
         )
         urow = ur.scalar_one_or_none()
         if urow:
-            return (
-                Decimal(str(urow.value or 0)),
-                (urow.spread_type or "pips").lower(),
-                pimp,
-            )
+            return _to_tuple(urow)
+
         ur2 = await db.execute(
             select(SpreadConfig)
             .where(
@@ -81,11 +85,36 @@ async def resolve_spread_config(
         )
         urow2 = ur2.scalar_one_or_none()
         if urow2:
-            return (
-                Decimal(str(urow2.value or 0)),
-                (urow2.spread_type or "pips").lower(),
-                pimp,
+            return _to_tuple(urow2)
+
+    ir = await db.execute(
+        select(SpreadConfig)
+        .where(
+            func.lower(SpreadConfig.scope) == "instrument",
+            SpreadConfig.is_enabled == True,
+            SpreadConfig.user_id.is_(None),
+            SpreadConfig.instrument_id == instrument.id,
+        )
+        .limit(1)
+    )
+    irow = ir.scalar_one_or_none()
+    if irow:
+        return _to_tuple(irow)
+
+    if instrument.segment_id:
+        sr = await db.execute(
+            select(SpreadConfig)
+            .where(
+                func.lower(SpreadConfig.scope) == "segment",
+                SpreadConfig.is_enabled == True,
+                SpreadConfig.user_id.is_(None),
+                SpreadConfig.segment_id == instrument.segment_id,
             )
+            .limit(1)
+        )
+        srow = sr.scalar_one_or_none()
+        if srow:
+            return _to_tuple(srow)
 
     dr = await db.execute(
         select(SpreadConfig)
@@ -101,11 +130,7 @@ async def resolve_spread_config(
     )
     default_cfg = dr.scalar_one_or_none()
     if default_cfg:
-        return (
-            Decimal(str(default_cfg.value or 0)),
-            (default_cfg.spread_type or "pips").lower(),
-            pimp,
-        )
+        return _to_tuple(default_cfg)
 
     return Decimal("0"), "pips", pimp
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Loader2, Save, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface MLMLevel {
@@ -42,6 +42,20 @@ export default function MLMPage() {
 
   const updateLevel = (idx: number, pct: number) => {
     setLevels((prev) => prev.map((l, i) => i === idx ? { ...l, distribution_pct: pct } : l));
+  };
+
+  const addLevel = () => {
+    setLevels((prev) => {
+      if (prev.length >= 20) return prev;
+      return [...prev, { level: prev.length + 1, distribution_pct: 0 }];
+    });
+  };
+
+  const removeLevel = (idx: number) => {
+    setLevels((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== idx).map((l, i) => ({ ...l, level: i + 1 }));
+    });
   };
 
   const handleSave = async () => {
@@ -101,6 +115,7 @@ export default function MLMPage() {
                       <th className="text-left px-3 py-2 text-xxs font-medium text-text-tertiary uppercase tracking-wide">Level</th>
                       <th className="text-left px-3 py-2 text-xxs font-medium text-text-tertiary uppercase tracking-wide">Distribution %</th>
                       <th className="text-right px-3 py-2 text-xxs font-medium text-text-tertiary uppercase tracking-wide">Visual</th>
+                      <th className="w-10" />
                     </tr>
                   </thead>
                   <tbody>
@@ -136,10 +151,28 @@ export default function MLMPage() {
                             </span>
                           </div>
                         </td>
+                        <td className="px-2 py-3 text-right">
+                          <button
+                            onClick={() => removeLevel(idx)}
+                            disabled={levels.length <= 1}
+                            title="Remove level"
+                            className="p-1 rounded text-danger hover:bg-danger/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+
+                <button
+                  onClick={addLevel}
+                  disabled={levels.length >= 20}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xxs font-medium bg-buy/10 text-buy border border-buy/25 hover:bg-buy/20 transition-fast disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={12} /> Add Level
+                </button>
 
                 <div className={cn('mt-4 p-3 rounded-md border flex items-center gap-2', isOverLimit ? 'bg-danger/10 border-danger/30' : 'bg-bg-tertiary border-border-primary')}>
                   {isOverLimit && <AlertTriangle size={14} className="text-danger shrink-0" />}

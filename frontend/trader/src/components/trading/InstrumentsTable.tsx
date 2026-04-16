@@ -6,72 +6,13 @@ import { clsx } from 'clsx';
 import { ChevronDown, Search, Star, Newspaper, BarChart3 } from 'lucide-react';
 import { useTradingStore, type InstrumentInfo } from '@/stores/tradingStore';
 import { tradingTerminalUrl } from '@/lib/tradingNav';
+import SymbolIcon from './SymbolIcon';
 
 type Trend = 'up' | 'down' | 'neutral';
 type Segment = 'All' | 'Forex' | 'Crypto' | 'Indices' | 'Commodities' | 'Metals' | 'Stocks';
 type View = 'instruments' | 'news';
 
 const SEGMENTS: Segment[] = ['All', 'Forex', 'Crypto', 'Indices', 'Commodities', 'Metals', 'Stocks'];
-
-/** Small circular dot icon per symbol — mimics TradeLocker's colored instrument badges. */
-const SYMBOL_DOT: Record<string, string> = {
-  BTCUSD: 'from-orange-400 to-orange-600',
-  ETHUSD: 'from-indigo-400 to-purple-600',
-  LTCUSD: 'from-slate-300 to-slate-500',
-  XRPUSD: 'from-sky-400 to-slate-700',
-  SOLUSD: 'from-purple-500 to-teal-400',
-  DOGUSD: 'from-yellow-400 to-amber-500',
-  DOGEUSD: 'from-yellow-400 to-amber-500',
-  ADAUSD: 'from-blue-400 to-blue-700',
-  BCHUSD: 'from-emerald-400 to-emerald-600',
-  BNBUSD: 'from-yellow-300 to-amber-500',
-  DOTUSD: 'from-pink-500 to-rose-700',
-  LNKUSD: 'from-blue-500 to-indigo-700',
-  EURUSD: 'from-blue-400 to-blue-700',
-  GBPUSD: 'from-red-500 to-blue-700',
-  USDJPY: 'from-red-500 to-white',
-  AUDUSD: 'from-blue-500 to-red-600',
-  USDCAD: 'from-red-500 to-white',
-  USDCHF: 'from-red-500 to-white',
-  NZDUSD: 'from-blue-600 to-red-500',
-  XAUUSD: 'from-amber-300 to-yellow-600',
-  XAGUSD: 'from-slate-200 to-slate-400',
-  USOIL: 'from-slate-700 to-slate-900',
-};
-
-/** Small US/country flag emoji next to the ticker, when it applies. */
-const SYMBOL_FLAG: Record<string, string> = {
-  EURUSD: '🇺🇸',
-  GBPUSD: '🇺🇸',
-  USDJPY: '🇯🇵',
-  AUDUSD: '🇺🇸',
-  USDCAD: '🇨🇦',
-  USDCHF: '🇨🇭',
-  NZDUSD: '🇺🇸',
-  EURGBP: '🇬🇧',
-  EURJPY: '🇯🇵',
-  GBPJPY: '🇯🇵',
-  BTCUSD: '🇺🇸',
-  ETHUSD: '🇺🇸',
-  LTCUSD: '🇺🇸',
-  XRPUSD: '🇺🇸',
-  SOLUSD: '🇺🇸',
-  DOGUSD: '🇺🇸',
-  DOGEUSD: '🇺🇸',
-  ADAUSD: '🇺🇸',
-  BCHUSD: '🇺🇸',
-  BNBUSD: '🇺🇸',
-  DOTUSD: '🇺🇸',
-  LNKUSD: '🇺🇸',
-  XAUUSD: '🇺🇸',
-  XAGUSD: '🇺🇸',
-  USOIL: '🇺🇸',
-  US30: '🇺🇸',
-  US500: '🇺🇸',
-  NAS100: '🇺🇸',
-  UK100: '🇬🇧',
-  GER40: '🇩🇪',
-};
 
 const SYMBOL_DESC: Record<string, string> = {
   EURUSD: 'Euro vs US Dollar',
@@ -383,8 +324,6 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
             const dayLow = dayLowRef.current[symbol];
             const spread = tick ? spreadInPips(symbol, tick.bid, tick.ask, instruments) : null;
             const desc = SYMBOL_DESC[symbol] || '';
-            const flag = SYMBOL_FLAG[symbol] || '';
-            const dot = SYMBOL_DOT[symbol] || 'from-slate-500 to-slate-700';
             const isStarred = starred.has(symbol);
 
             return (
@@ -414,15 +353,8 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   >
                     <Star className="w-3 h-3" fill={isStarred ? 'currentColor' : 'none'} />
                   </span>
-                  <div
-                    className={clsx(
-                      'w-5 h-5 rounded-full shrink-0 bg-gradient-to-br',
-                      dot,
-                    )}
-                    aria-hidden
-                  />
+                  <SymbolIcon symbol={symbol} size={20} />
                   <span className="text-[13px] font-bold text-text-primary font-mono truncate">{symbol}</span>
-                  {flag && <span className="text-xs leading-none shrink-0">{flag}</span>}
                 </div>
 
                 {/* Bid */}
