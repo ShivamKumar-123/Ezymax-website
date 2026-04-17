@@ -219,17 +219,13 @@ export default function AccountsPage() {
     }
   }, [liveAccounts.length, fromKind, toKind]);
 
-  /* Hide follower auto-created sub-accounts (CF/IF) — those are managed by
-     the copy engine and money is tracked via Copy Trading → My Copies.
-     Master pool accounts (CT/PM/MM) always shown so master can fund and
-     trade from them. Inactive (deleted-master) accounts are hidden via
-     the is_active flag which delete_master sets to false. */
+  /* Show all active accounts. CF/IF (follower copy-trade / managed sub-accounts)
+     render with "View Trades" instead of Trade — the copy engine places trades
+     there automatically. Pool accounts (CT/PM/MM) shown for master funding.
+     Inactive accounts are hidden via is_active (delete_master sets this false). */
   const visibleRows = useMemo(() => {
     if (user?.is_demo) return rows.filter((a) => a.is_demo);
-    const HIDDEN_PREFIXES = ['CF', 'IF'];
     return rows.filter((a) => {
-      const num = (a.account_number || '').toUpperCase();
-      if (HIDDEN_PREFIXES.some((p) => num.startsWith(p))) return false;
       if ((a as { is_active?: boolean }).is_active === false) return false;
       return true;
     });
