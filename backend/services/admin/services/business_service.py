@@ -878,8 +878,14 @@ async def delete_master(
     for ct in copy_trades_q.scalars().all():
         ct.status = "closed"
 
+    # Don't hard-delete the MasterAccount row — FK constraints from
+    # investor_allocations & copy_trades prevent it. Mark as 'rejected' instead.
+    # This preserves history (closed allocations still viewable) and allows the
+    # user to re-apply as a master from scratch (become_provider filters out
+    # non-approved rows).
     master_email = master_user.email if master_user else "unknown"
-    await db.delete(master)
+    master.status = "rejected"
+    master.followers_count = 0
 
     await write_audit_log(
         db, admin_id, "delete_master", "master_account", master_id,

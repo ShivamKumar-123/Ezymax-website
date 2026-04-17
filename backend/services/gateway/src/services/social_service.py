@@ -616,8 +616,14 @@ async def become_provider(
         if type_group == "signal_provider"
         else MasterAccount.master_type.in_(["pamm", "mamm"])
     )
+    # Only block re-apply if user has a LIVE provider row (pending/approved/active).
+    # Rejected or suspended rows mean admin closed the master — user can re-apply.
     existing = await db.execute(
-        select(MasterAccount).where(MasterAccount.user_id == user_id, type_filter)
+        select(MasterAccount).where(
+            MasterAccount.user_id == user_id,
+            type_filter,
+            MasterAccount.status.in_(["pending", "approved", "active"]),
+        )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a provider application of this type")
