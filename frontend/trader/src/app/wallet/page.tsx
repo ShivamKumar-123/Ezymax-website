@@ -896,8 +896,86 @@ function WalletPageContent() {
                     </button>
                   </div>
 
-                  {/* Direct deposit — amount + bank details + proof */}
-                  <>
+                  {/* Deposit Method Tabs */}
+                  <div className="flex gap-2 border-b border-border-glass">
+                    {(['crypto', 'manual'] as const).map((method) => {
+                      const active = depositUiSection === method;
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setDepositUiSection(method)}
+                          className={clsx(
+                            'px-4 py-2.5 text-sm font-semibold transition-all border-b-2',
+                            active
+                              ? 'border-accent text-accent'
+                              : 'border-transparent text-text-tertiary hover:text-text-primary'
+                          )}
+                        >
+                          {method === 'crypto' ? 'Crypto (OxaPay)' : 'Manual (Bank/UPI)'}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {depositUiSection === 'crypto' ? (
+                    <>
+                      {/* Crypto deposit via OxaPay */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-secondary">Amount (USD)</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-2">
+                        <p className="text-xs font-bold text-text-primary">Select Cryptocurrency</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {CRYPTO_ASSETS.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => setSelectedCryptoDeposit(c.id)}
+                              className={clsx(
+                                'px-3 py-2 rounded-lg border text-left transition-all',
+                                selectedCryptoDeposit === c.id
+                                  ? 'border-accent bg-accent/10 text-accent'
+                                  : 'border-border-primary text-text-secondary hover:border-accent/30'
+                              )}
+                            >
+                              <div className="text-xs font-bold">{c.label}</div>
+                              <div className="text-[10px] text-text-tertiary">{c.sub}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void submitDeposit()}
+                        disabled={demoFundingBlocked || depositSubmitting || !depositAmount}
+                        className={clsx(
+                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
+                          demoFundingBlocked || depositSubmitting || !depositAmount
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg'
+                        )}
+                      >
+                        {depositSubmitting ? 'Processing…' : 'Pay with Crypto'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Manual deposit — amount + bank details + proof */}
                       <div className="space-y-1">
                         <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
@@ -1039,7 +1117,8 @@ function WalletPageContent() {
                       >
                         {depositSubmitting ? 'Submitting…' : `Deposit${depositAmount ? ` — $${parseFloat(depositAmount || '0').toLocaleString()}` : ''}`}
                       </button>
-                  </>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

@@ -109,6 +109,12 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     bank = await _get_bank_for_tier(req.amount, db)
     db_method = METHOD_MAP.get(req.method, "bank_transfer")
 
+    # For OxaPay, use 'initiated' status until payment is actually started
+    # This prevents showing incomplete payment attempts in history
+    settings = get_settings()
+    crypto_currency = getattr(req, "crypto_currency", None)
+    is_oxapay = db_method == "oxapay" and settings.OXAPAY_MERCHANT_KEY and crypto_currency
+    
     deposit = Deposit(
         user_id=user_id,
         account_id=req.account_id if req.account_id else None,
@@ -119,7 +125,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         crypto_tx_hash=getattr(req, "crypto_tx_hash", None),
         crypto_address=getattr(req, "crypto_address", None),
         bank_account_id=bank.id if bank else None,
-        status="pending",
+        status="initiated" if is_oxapay else "pending",
     )
     db.add(deposit)
     await db.commit()
@@ -127,9 +133,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
 
     # ── OxaPay automated payment ──────────────────────────────────────
     payment_url: str | None = None
-    settings = get_settings()
-    crypto_currency = getattr(req, "crypto_currency", None)
-    if db_method == "oxapay" and settings.OXAPAY_MERCHANT_KEY and crypto_currency:
+    if is_oxapay:
         try:
             ox = await oxapay_service.create_payment(
                 amount=req.amount,
@@ -279,13 +283,20 @@ async def handle_oxapay_webhook(
         logger.warning("OxaPay webhook: deposit not found order_id=%s", order_id)
         return
 
-    # Idempotent — skip if already processed
-    if deposit.status != "pending":
+    # Idempotent — skip if already processed (but allow 'initiated' to transition)
+    if deposit.status not in ("initiated", "pending"):
         logger.info("OxaPay webhook: deposit %s already %s, skipping", order_id, deposit.status)
         return
 
     if track_id:
         deposit.transaction_id = track_id
+
+    # If payment is waiting/confirming, move from 'initiated' to 'pending'
+    if oxapay_status in ("waiting", "confirming") and deposit.status == "initiated":
+        deposit.status = "pending"
+        await db.commit()
+        logger.info("OxaPay webhook: deposit %s → pending (payment started)", order_id)
+        return
 
     if oxapay_status == "paid":
         deposit.status = "auto_approved"
@@ -682,9 +693,13 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
 # ─── Queries ──────────────────────────────────────────────────────────────
 
 async def list_deposits(user_id: UUID, db: AsyncSession) -> dict:
+    # Exclude 'initiated' deposits (OxaPay payments that were never started)
     query = (
         select(Deposit)
-        .where(Deposit.user_id == user_id)
+        .where(
+            Deposit.user_id == user_id,
+            Deposit.status != "initiated"
+        )
         .order_by(Deposit.created_at.desc())
     )
     result = await db.execute(query)
