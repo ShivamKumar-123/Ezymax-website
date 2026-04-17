@@ -429,7 +429,7 @@ CREATE TABLE deposits (
     amount DECIMAL(18,8) NOT NULL,
     currency VARCHAR(10) DEFAULT 'INR',
     method VARCHAR(30) CHECK (method IN ('bank_transfer', 'upi', 'qr', 'crypto_btc', 'crypto_eth', 'crypto_usdt', 'metamask', 'oxapay', 'manual')),
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'auto_approved')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'auto_approved', 'initiated')),
     transaction_id VARCHAR(100),
     screenshot_url TEXT,
     bank_account_id UUID REFERENCES bank_accounts(id),
