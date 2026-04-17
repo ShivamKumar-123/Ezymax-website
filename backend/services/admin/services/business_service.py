@@ -853,10 +853,12 @@ async def delete_master(
                 investor.main_wallet_balance or Decimal("0")
             ) + refund_amount
             total_refunded += refund_amount
+            # Use "transfer" type (already in DB CHECK constraint) to avoid
+            # migration headaches on existing deployments.
             db.add(Transaction(
                 user_id=investor.id,
                 account_id=investor_acct.id if investor_acct else None,
-                type="refund",
+                type="transfer",
                 amount=refund_amount,
                 balance_after=investor.main_wallet_balance,
                 description="Master deleted by admin — copy trade refund to main wallet",
