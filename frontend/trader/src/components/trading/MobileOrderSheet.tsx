@@ -33,6 +33,7 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
   const [pendingSubtype, setPendingSubtype] = useState<PendingSubtype>('buy_limit');
   const [submitting, setSubmitting] = useState(false);
   const [lots, setLots] = useState(0.01);
+  const [lotsInput, setLotsInput] = useState('0.01');
   const [leverage, setLeverage] = useState('1:100');
   const [sl, setSl] = useState('');
   const [tp, setTp] = useState('');
@@ -44,7 +45,11 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
   const spread = price ? (price.ask - price.bid) * Math.pow(10, digits - 1) : 0;
 
   const handleAdjustLots = (delta: number) => {
-    setLots(prev => Math.max(0.01, parseFloat((prev + delta).toFixed(2))));
+    setLots(prev => {
+      const next = Math.max(0.01, parseFloat((prev + delta).toFixed(2)));
+      setLotsInput(next.toString());
+      return next;
+    });
   };
 
   const handlePlaceOrder = async (overrideSide?: 'buy' | 'sell') => {
@@ -255,9 +260,26 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12h14"/></svg>
                 </button>
-                <div className="flex-1 h-11 bg-bg-secondary rounded-xl border border-border-glass flex items-center justify-center text-lg font-black text-text-primary font-mono tabular-nums">
-                  {lots.toFixed(2)}
-                </div>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={lotsInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '' || /^\d*\.?\d*$/.test(raw)) {
+                      setLotsInput(raw);
+                      const v = parseFloat(raw);
+                      if (Number.isFinite(v) && v > 0) setLots(v);
+                    }
+                  }}
+                  onBlur={() => {
+                    const v = parseFloat(lotsInput);
+                    const safe = Number.isFinite(v) && v >= 0.01 ? parseFloat(v.toFixed(2)) : 0.01;
+                    setLots(safe);
+                    setLotsInput(safe.toString());
+                  }}
+                  className="flex-1 h-11 bg-bg-secondary rounded-xl border border-border-glass text-center text-lg font-black text-text-primary font-mono tabular-nums outline-none focus:border-accent"
+                />
                 <button 
                   onClick={() => handleAdjustLots(0.01)}
                   className="w-11 h-11 flex items-center justify-center rounded-xl bg-bg-secondary border border-border-glass text-text-primary active:scale-90 transition-transform shadow-sm"
