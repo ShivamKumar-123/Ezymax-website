@@ -11,7 +11,7 @@ from packages.common.src.config import get_settings
 logger = logging.getLogger("oxapay_service")
 
 OXAPAY_API_URL = "https://api.oxapay.com/merchants/request"
-OXAPAY_SANDBOX_API_URL = "https://api.oxapay.com/merchants/request/sandbox"
+# OxaPay sandbox uses the same URL but with merchant='sandbox' value (see docs.oxapay.com)
 
 # Map frontend crypto asset IDs → OxaPay currency codes.
 CURRENCY_MAP: dict[str, str] = {
@@ -62,11 +62,13 @@ async def create_payment(
     if not settings.OXAPAY_MERCHANT_KEY:
         raise ValueError("OxaPay merchant key not configured")
 
-    api_url = OXAPAY_SANDBOX_API_URL if settings.OXAPAY_SANDBOX else OXAPAY_API_URL
     callback_url = f"{settings.OXAPAY_CALLBACK_BASE_URL.rstrip('/')}/api/v1/webhooks/oxapay"
 
+    # In sandbox mode, OxaPay expects merchant='sandbox' (same API URL)
+    merchant_key = "sandbox" if settings.OXAPAY_SANDBOX else settings.OXAPAY_MERCHANT_KEY
+
     payload: dict = {
-        "merchant": settings.OXAPAY_MERCHANT_KEY,
+        "merchant": merchant_key,
         "amount": float(amount),
         "currency": "USD",
         "orderId": order_id,
@@ -84,9 +86,10 @@ async def create_payment(
             payload["network"] = network
 
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(api_url, json=payload)
+        resp = await client.post(OXAPAY_API_URL, json=payload)
         resp.raise_for_status()
         data = resp.json()
+        logger.info("OxaPay response: %s", data)
 
     if data.get("result") != 100:
         logger.error("OxaPay create_payment failed: %s", data)
