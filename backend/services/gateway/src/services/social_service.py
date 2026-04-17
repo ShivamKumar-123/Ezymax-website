@@ -199,6 +199,10 @@ async def start_copy(
     max_drawdown_pct: Decimal | None, max_lot_override: Decimal | None,
     user_id: UUID, db: AsyncSession,
 ) -> dict:
+    """Follower requests to copy a master. Creates a PENDING allocation only.
+
+    No account is created and no funds are moved until the master approves.
+    """
     master_result = await db.execute(
         select(MasterAccount).where(
             MasterAccount.id == master_id, MasterAccount.status == "approved"
@@ -232,7 +236,7 @@ async def start_copy(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="Provider has reached maximum investors")
 
-    # Deduct from main wallet
+    # Verify user has sufficient balance (but don't deduct yet)
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
     if not user:
@@ -241,19 +245,93 @@ async def start_copy(
     if wallet_bal < amount:
         raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
+    # Check for duplicate (pending or active)
     existing = await db.execute(
         select(InvestorAllocation).where(
             InvestorAllocation.master_id == master_id,
             InvestorAllocation.investor_user_id == user_id,
-            InvestorAllocation.status == "active",
+            InvestorAllocation.status.in_(["active", "pending"]),
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already copying this provider")
+        raise HTTPException(status_code=400, detail="Already copying or pending approval for this provider")
 
-    # Auto-create a dedicated trading account for this copy subscription
+    # Create a PENDING allocation — no account, no fund movement
+    allocation = InvestorAllocation(
+        master_id=master_id,
+        investor_user_id=user_id,
+        investor_account_id=None,
+        copy_type=AllocationCopyType.SIGNAL.value,
+        allocation_amount=amount,
+        max_drawdown_pct=max_drawdown_pct,
+        max_lot_override=max_lot_override,
+        status="pending",
+    )
+    db.add(allocation)
+    await db.commit()
+    await db.refresh(allocation)
+
+    return {
+        "id": str(allocation.id), "master_id": str(master_id),
+        "amount": float(amount),
+        "copy_type": allocation.copy_type, "status": allocation.status,
+        "message": "Follow request sent — waiting for master approval",
+        "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
+    }
+
+
+async def approve_follow_request(
+    allocation_id: UUID, action: str, user_id: UUID, db: AsyncSession,
+) -> dict:
+    """Master approves or rejects a pending follow request.
+
+    On approve: creates investor account, deducts follower wallet, credits master pool.
+    On reject: marks allocation as rejected.
+    """
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Action must be 'approve' or 'reject'")
+
+    # Verify the caller is the master
+    alloc_result = await db.execute(
+        select(InvestorAllocation, MasterAccount)
+        .join(MasterAccount, InvestorAllocation.master_id == MasterAccount.id)
+        .where(InvestorAllocation.id == allocation_id)
+    )
+    row = alloc_result.one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Allocation not found")
+    allocation, master = row
+
+    if master.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Only the master can approve or reject followers")
+
+    if allocation.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Allocation is already '{allocation.status}'")
+
+    if action == "reject":
+        allocation.status = "rejected"
+        await db.commit()
+        return {"id": str(allocation.id), "status": "rejected", "message": "Follow request rejected"}
+
+    # ── Approve: create account, move funds ──────────────────────────
+    investor_user_result = await db.execute(
+        select(User).where(User.id == allocation.investor_user_id)
+    )
+    investor_user = investor_user_result.scalar_one_or_none()
+    if not investor_user:
+        raise HTTPException(status_code=404, detail="Investor user not found")
+
+    amount = allocation.allocation_amount or Decimal("0")
+    wallet_bal = investor_user.main_wallet_balance or Decimal("0")
+    if wallet_bal < amount:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Investor has insufficient balance ({wallet_bal}). Request amount: {amount}",
+        )
+
+    # Create dedicated investor trading account
     investor_account = TradingAccount(
-        user_id=user_id,
+        user_id=allocation.investor_user_id,
         account_number=_gen_investor_account_number("signal"),
         balance=amount,
         equity=amount,
@@ -267,45 +345,70 @@ async def start_copy(
     db.add(investor_account)
     await db.flush()
 
-    # Deduct wallet
-    user.main_wallet_balance = wallet_bal - amount
+    # Deduct from follower wallet — funds land in follower's own CF account only.
+    # Do NOT credit master's pool: signal/copy trade mirrors trades on the follower's
+    # account using follower's own equity. Master funds their CT account separately.
+    investor_user.main_wallet_balance = wallet_bal - amount
     db.add(Transaction(
-        user_id=user_id, account_id=investor_account.id, type="withdrawal",
-        amount=-amount,
+        user_id=allocation.investor_user_id, account_id=investor_account.id,
+        type="withdrawal", amount=-amount,
         description=f"Copy trading investment → account {investor_account.account_number}",
     ))
 
-    # Add funds to master's pool account
-    if master.account_id:
-        pool_account = await db.get(TradingAccount, master.account_id)
-        if pool_account:
-            pool_account.balance = (pool_account.balance or Decimal("0")) + amount
-            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
-            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
-
-    allocation = InvestorAllocation(
-        master_id=master_id,
-        investor_user_id=user_id,
-        investor_account_id=investor_account.id,
-        copy_type=AllocationCopyType.SIGNAL.value,
-        allocation_amount=amount,
-        max_drawdown_pct=max_drawdown_pct,
-        max_lot_override=max_lot_override,
-        status="active",
-    )
-    db.add(allocation)
+    # Activate allocation
+    allocation.investor_account_id = investor_account.id
+    allocation.status = "active"
     master.followers_count = (master.followers_count or 0) + 1
     await db.commit()
-    await db.refresh(allocation)
 
     return {
-        "id": str(allocation.id), "master_id": str(master_id),
+        "id": str(allocation.id),
+        "status": "active",
         "investor_account": investor_account.account_number,
         "amount": float(amount),
-        "wallet_balance": float(user.main_wallet_balance),
-        "copy_type": allocation.copy_type, "status": allocation.status,
-        "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
+        "message": "Follower approved — account created and funded",
     }
+
+
+async def list_follow_requests(user_id: UUID, db: AsyncSession) -> dict:
+    """Master lists all pending follow requests for their signal provider account."""
+    master_result = await db.execute(
+        select(MasterAccount).where(
+            MasterAccount.user_id == user_id,
+            MasterAccount.status.in_(["approved", "active"]),
+        )
+    )
+    masters = master_result.scalars().all()
+    if not masters:
+        return {"items": [], "total": 0}
+
+    master_ids = [m.id for m in masters]
+
+    alloc_result = await db.execute(
+        select(InvestorAllocation, User.first_name, User.last_name, User.email)
+        .join(User, InvestorAllocation.investor_user_id == User.id)
+        .where(
+            InvestorAllocation.master_id.in_(master_ids),
+            InvestorAllocation.status == "pending",
+        )
+        .order_by(InvestorAllocation.created_at.desc())
+    )
+    rows = alloc_result.all()
+
+    items = []
+    for alloc, first_name, last_name, email in rows:
+        items.append({
+            "id": str(alloc.id),
+            "master_id": str(alloc.master_id),
+            "investor_user_id": str(alloc.investor_user_id),
+            "investor_name": f"{first_name or ''} {last_name or ''}".strip() or email,
+            "investor_email": email,
+            "amount": float(alloc.allocation_amount),
+            "copy_type": alloc.copy_type or "signal",
+            "created_at": alloc.created_at.isoformat() if alloc.created_at else None,
+        })
+
+    return {"items": items, "total": len(items)}
 
 
 async def my_copies(user_id: UUID, db: AsyncSession) -> dict:
@@ -315,7 +418,7 @@ async def my_copies(user_id: UUID, db: AsyncSession) -> dict:
         .join(User, MasterAccount.user_id == User.id)
         .where(
             InvestorAllocation.investor_user_id == user_id,
-            InvestorAllocation.status == "active",
+            InvestorAllocation.status.in_(["active", "pending"]),
         )
         .order_by(InvestorAllocation.created_at.desc())
     )
@@ -413,13 +516,8 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
         ))
         copy.status = "closed"
 
-    # Deduct investor's share from master's pool account
-    if master and master.account_id:
-        pool_account = await db.get(TradingAccount, master.account_id)
-        if pool_account:
-            pool_account.balance = max(Decimal("0"), (pool_account.balance or Decimal("0")) - (allocation.allocation_amount or Decimal("0")))
-            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
-            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+    # No master-pool deduct: signal/copy trade keeps follower funds in the follower's
+    # own CF account throughout. Master never held this money.
 
     # Return capital + PnL to main wallet
     user_result = await db.execute(select(User).where(User.id == user_id))
