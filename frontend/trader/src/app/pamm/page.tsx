@@ -355,24 +355,9 @@ export default function PammPage() {
   const submitApply = async () => {
     setApplying(true);
     try {
-      // Auto-create a dedicated zero-balance trading account for this manager role.
-      const groupsRes = await api.get<{ items: { id: string }[] }>('/accounts/available-groups');
-      const firstGroup = groupsRes?.items?.[0];
-      if (!firstGroup?.id) {
-        toast.error('No account types available. Please contact support.');
-        return;
-      }
-      const created = await api.post<{ id: string }>('/accounts/open', {
-        account_group_id: firstGroup.id,
-      });
-      const newAccountId = created?.id;
-      if (!newAccountId) {
-        toast.error('Failed to create trading account');
-        return;
-      }
-
+      // Server auto-creates a dedicated master trading account (PM/MM prefix)
+      // inside become_provider — no need to pre-create or pick one here.
       const params = new URLSearchParams({
-        account_id: newAccountId,
         master_type: applyType,
         performance_fee_pct: applyFee,
         management_fee_pct: applyMgmtFee,
@@ -380,8 +365,15 @@ export default function PammPage() {
         max_investors: applyMaxInv,
         ...(applyDesc ? { description: applyDesc } : {}),
       });
-      await api.post(`/social/become-provider?${params.toString()}`, {});
-      toast.success('Application submitted for review');
+      const res = await api.post<{ account_number?: string }>(
+        `/social/become-provider?${params.toString()}`,
+        {},
+      );
+      toast.success(
+        res?.account_number
+          ? `Application submitted — master account ${res.account_number} created`
+          : 'Application submitted for review',
+      );
       fetchProvider();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to submit');
