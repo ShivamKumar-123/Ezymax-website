@@ -199,6 +199,12 @@ async def start_copy(
     if not master:
         raise HTTPException(status_code=404, detail="Provider not found")
 
+    if master.user_id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot copy your own master account",
+        )
+
     if master.master_type in ("pamm", "mamm"):
         raise HTTPException(
             status_code=400,

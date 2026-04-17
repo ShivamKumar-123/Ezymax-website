@@ -189,13 +189,24 @@ function TraderCard({
             </div>
           </div>
           {isSelf ? (
-            <button
-              type="button"
-              onClick={onViewFollowers}
-              className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-buy/40 text-buy hover:bg-buy/15 transition-all"
-            >
-              {provider.followers_count} Followers
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={onViewFollowers}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-buy/40 text-buy hover:bg-buy/15 transition-all"
+              >
+                {provider.followers_count} Followers
+              </button>
+              {provider.is_copying && (
+                <a
+                  href="/social?tab=my-copies"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-danger/40 text-danger hover:bg-danger/15 transition-all"
+                  title="You're copying your own master — click to stop"
+                >
+                  Stop Self-Copy
+                </a>
+              )}
+            </div>
           ) : provider.is_copying ? (
             <span className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
               Following
