@@ -845,6 +845,7 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
         .where(
             TradingAccount.user_id == user_id,
             TradingAccount.is_demo == False,
+            TradingAccount.is_active == True,
         )
         .order_by(TradingAccount.created_at)
     )
