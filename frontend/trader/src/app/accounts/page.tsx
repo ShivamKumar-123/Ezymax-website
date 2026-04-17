@@ -219,9 +219,27 @@ export default function AccountsPage() {
     }
   }, [liveAccounts.length, fromKind, toKind]);
 
+  /* Hide auto-created copy-trade sub-accounts — they're managed by the copy engine,
+     not directly by the user. Money in these accounts is visible under
+     Copy Trading → My Copies / My Dashboard instead.
+       CF = Copy Fund (follower's signal copy account)
+       IF = Investment Fund (follower's PAMM/MAM investment)
+       CT = Copy Trade Pool (master's signal provider account)
+       PM = PAMM Pool (master's PAMM account)
+       MM = MAM Pool (master's MAM account)
+     Keep master accounts (CT/PM/MM) only when they have a non-zero balance,
+     so active masters still see their trading account; deleted masters'
+     stale zero-balance accounts are hidden. */
   const visibleRows = useMemo(() => {
     if (user?.is_demo) return rows.filter((a) => a.is_demo);
-    return rows;
+    const HIDDEN_PREFIXES_ALWAYS = ['CF', 'IF'];
+    const HIDDEN_IF_ZERO = ['CT', 'PM', 'MM'];
+    return rows.filter((a) => {
+      const num = (a.account_number || '').toUpperCase();
+      if (HIDDEN_PREFIXES_ALWAYS.some((p) => num.startsWith(p))) return false;
+      if (HIDDEN_IF_ZERO.some((p) => num.startsWith(p)) && Number(a.balance || 0) <= 0) return false;
+      return true;
+    });
   }, [rows, user?.is_demo]);
 
   /** Sync store + session before opening terminal (navigation via `<Link href>` so clicks always work). */
