@@ -809,7 +809,10 @@ async def delete_master(
         master_acct.equity = Decimal("0")
         master_acct.free_margin = Decimal("0")
         master_acct.margin_used = Decimal("0")
-        # Keep master trading account active so user can re-apply later using the same account.
+        # Deactivate the deleted master's trading account so it disappears from
+        # the user's accounts list. Re-applying as master creates a fresh
+        # CT/PM/MM trading account automatically.
+        master_acct.is_active = False
 
     # Refund each follower
     allocs_q = await db.execute(

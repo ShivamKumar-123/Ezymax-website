@@ -219,25 +219,18 @@ export default function AccountsPage() {
     }
   }, [liveAccounts.length, fromKind, toKind]);
 
-  /* Hide auto-created copy-trade sub-accounts — they're managed by the copy engine,
-     not directly by the user. Money in these accounts is visible under
-     Copy Trading → My Copies / My Dashboard instead.
-       CF = Copy Fund (follower's signal copy account)
-       IF = Investment Fund (follower's PAMM/MAM investment)
-       CT = Copy Trade Pool (master's signal provider account)
-       PM = PAMM Pool (master's PAMM account)
-       MM = MAM Pool (master's MAM account)
-     Keep master accounts (CT/PM/MM) only when they have a non-zero balance,
-     so active masters still see their trading account; deleted masters'
-     stale zero-balance accounts are hidden. */
+  /* Hide follower auto-created sub-accounts (CF/IF) — those are managed by
+     the copy engine and money is tracked via Copy Trading → My Copies.
+     Master pool accounts (CT/PM/MM) always shown so master can fund and
+     trade from them. Inactive (deleted-master) accounts are hidden via
+     the is_active flag which delete_master sets to false. */
   const visibleRows = useMemo(() => {
     if (user?.is_demo) return rows.filter((a) => a.is_demo);
-    const HIDDEN_PREFIXES_ALWAYS = ['CF', 'IF'];
-    const HIDDEN_IF_ZERO = ['CT', 'PM', 'MM'];
+    const HIDDEN_PREFIXES = ['CF', 'IF'];
     return rows.filter((a) => {
       const num = (a.account_number || '').toUpperCase();
-      if (HIDDEN_PREFIXES_ALWAYS.some((p) => num.startsWith(p))) return false;
-      if (HIDDEN_IF_ZERO.some((p) => num.startsWith(p)) && Number(a.balance || 0) <= 0) return false;
+      if (HIDDEN_PREFIXES.some((p) => num.startsWith(p))) return false;
+      if ((a as { is_active?: boolean }).is_active === false) return false;
       return true;
     });
   }, [rows, user?.is_demo]);
