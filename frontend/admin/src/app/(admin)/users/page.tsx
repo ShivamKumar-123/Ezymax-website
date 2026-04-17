@@ -27,6 +27,7 @@ import {
   Power,
   Search,
   ShieldOff,
+  Trash2,
   UserRound,
   X,
 } from 'lucide-react';
@@ -60,7 +61,7 @@ type FundAction = 'add-fund' | 'deduct-fund' | 'give-credit' | 'take-credit';
 
 // Sentinel select-value representing the user's main wallet for deduct-fund.
 const MAIN_WALLET_ID = '__main_wallet__';
-type ModalType = FundAction | 'ban' | 'unban' | 'kill-switch' | null;
+type ModalType = FundAction | 'ban' | 'unban' | 'kill-switch' | 'delete' | null;
 
 const FUND_LABELS: Record<FundAction, string> = {
   'add-fund': 'Add Fund',
@@ -364,6 +365,21 @@ export default function UsersPage() {
     }
   };
 
+  const submitDeleteUser = async () => {
+    if (!modalUser) return;
+    setModalSubmitting(true);
+    try {
+      await adminApi.delete(`/users/${modalUser.id}`);
+      toast.success(`User ${modalUser.email} deleted`);
+      closeModal();
+      fetchUsers();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Delete failed');
+    } finally {
+      setModalSubmitting(false);
+    }
+  };
+
   const handleLoginAs = async (user: User) => {
     setOpenActionsId(null);
     setMenuPos(null);
@@ -584,6 +600,8 @@ export default function UsersPage() {
           { label: 'Kill Switch', icon: Power, action: () => openModal('kill-switch', u), danger: true },
           { divider: true } as any,
           { label: 'Login As User', icon: LogIn, action: () => handleLoginAs(u) },
+          { divider: true } as any,
+          { label: 'Delete User', icon: Trash2, action: () => openModal('delete', u), danger: true },
         ];
         // Portal the dropdown to document.body so `position: fixed` stays
         // viewport-relative even when an ancestor has a CSS `transform`
@@ -762,6 +780,40 @@ export default function UsersPage() {
             <button type="button" onClick={submitKillSwitch} disabled={modalSubmitting} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-danger text-white hover:bg-sell-light disabled:opacity-50 transition-fast inline-flex items-center gap-2">
               {modalSubmitting && <Loader2 size={14} className="animate-spin" />}
               Activate Kill Switch
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete User Modal */}
+      <Modal open={modalType === 'delete'} onClose={closeModal} title={`Delete ${modalUser?.name}?`}>
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-danger/10 border border-danger/20">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-danger/20 border border-danger/30 flex items-center justify-center shrink-0">
+                <Trash2 size={18} className="text-danger" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-danger">⚠ Permanent delete — cannot be undone</p>
+                <p className="text-xs text-text-secondary mt-1">{modalUser?.email}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-tertiary border border-border-primary text-xs text-text-secondary space-y-1.5">
+            <p className="font-semibold text-text-primary">This will permanently delete:</p>
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li>All trading accounts & their history (trades, orders, positions)</li>
+              <li>Wallet balances, deposits, withdrawals, transactions</li>
+              <li>Copy trade allocations, master accounts, IB profile & commissions</li>
+              <li>KYC documents, support tickets, sessions, notifications</li>
+              <li>The user login itself</li>
+            </ul>
+          </div>
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-lg text-sm font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
+            <button type="button" onClick={submitDeleteUser} disabled={modalSubmitting} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-danger text-white hover:bg-sell-light disabled:opacity-50 transition-fast inline-flex items-center gap-2">
+              {modalSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              Delete User
             </button>
           </div>
         </div>

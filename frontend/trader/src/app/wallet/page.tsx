@@ -769,7 +769,7 @@ function WalletPageContent() {
                         </p>
                         <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">{line}</p>
                       </div>
-                      {!isManaged && !isPool ? (
+                      {!isManaged ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -794,7 +794,7 @@ function WalletPageContent() {
                         <div className="flex items-center justify-center rounded-xl border py-2 text-[10px] font-bold tracking-wide"
                           style={{ borderColor: `rgba(${ac.r},0.15)`, color: `rgba(${ac.r},0.5)`, background: `rgba(${ac.r},0.04)` }}
                         >
-                          {isManaged ? 'Managed' : 'Master'}
+                          Managed
                         </div>
                       )}
                     </div>

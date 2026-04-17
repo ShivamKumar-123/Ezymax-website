@@ -157,3 +157,20 @@ async def login_as_user(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )
+
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(require_permission("users.add_fund")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a user. Closes all open positions/orders, deletes
+    trading accounts, copy-trade allocations, copy trades, deposits, withdrawals,
+    transactions, referrals, IB profile, and finally the user row. Cannot be
+    undone."""
+    return await user_service.delete_user(
+        user_id=user_id, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )

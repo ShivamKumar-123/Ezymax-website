@@ -9,9 +9,14 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
+from sqlalchemy import delete as sql_delete
 from packages.common.src.models import (
     User, TradingAccount, Position, Order, Transaction, Deposit, Withdrawal,
-    PositionStatus, OrderStatus,
+    PositionStatus, OrderStatus, TradeHistory,
+    MasterAccount, InvestorAllocation, CopyTrade,
+    Referral, IBProfile, IBCommission, Notification,
+    UserSession, UserRefreshToken, UserAuditLog, PasswordResetToken,
+    KYCDocument, SupportTicket,
 )
 from packages.common.src.admin_schemas import (
     UserOut, UserDetailOut, TradingAccountOut,
@@ -569,3 +574,107 @@ async def login_as_user(
     await db.commit()
 
     return {"access_token": token, "token_type": "bearer", "user_email": user.email}
+
+
+async def delete_user(
+    user_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Permanently delete a user and all their data.
+
+    Deletes in FK-safe order:
+      dependent child rows → trading accounts → referrals → IB/master data → user.
+    Admin/super_admin roles cannot be deleted by other admins from this endpoint.
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.role in ("super_admin",):
+        raise HTTPException(status_code=403, detail="Cannot delete super_admin user")
+    if user.id == admin_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+    user_email = user.email
+
+    # Collect all trading account ids belonging to this user
+    acc_ids_q = await db.execute(select(TradingAccount.id).where(TradingAccount.user_id == user_id))
+    acc_ids = [row[0] for row in acc_ids_q.all()]
+
+    # 1. Copy trades linked via investor_allocation where investor=user OR via master's allocations
+    # Get allocation ids where user is investor OR where user is master (via master_accounts)
+    master_ids_q = await db.execute(select(MasterAccount.id).where(MasterAccount.user_id == user_id))
+    master_ids = [row[0] for row in master_ids_q.all()]
+
+    alloc_ids_q = await db.execute(
+        select(InvestorAllocation.id).where(
+            or_(
+                InvestorAllocation.investor_user_id == user_id,
+                InvestorAllocation.master_id.in_(master_ids) if master_ids else False,
+            )
+        )
+    )
+    alloc_ids = [row[0] for row in alloc_ids_q.all()]
+
+    if alloc_ids:
+        await db.execute(sql_delete(CopyTrade).where(CopyTrade.investor_allocation_id.in_(alloc_ids)))
+        await db.execute(sql_delete(InvestorAllocation).where(InvestorAllocation.id.in_(alloc_ids)))
+
+    # 2. Delete master accounts owned by user
+    if master_ids:
+        await db.execute(sql_delete(MasterAccount).where(MasterAccount.id.in_(master_ids)))
+
+    # 3. Delete positions/orders/trade_history for their trading accounts
+    if acc_ids:
+        await db.execute(sql_delete(Position).where(Position.account_id.in_(acc_ids)))
+        await db.execute(sql_delete(Order).where(Order.account_id.in_(acc_ids)))
+        await db.execute(sql_delete(TradeHistory).where(TradeHistory.account_id.in_(acc_ids)))
+
+    # 4. Delete deposits, withdrawals, transactions
+    await db.execute(sql_delete(Deposit).where(Deposit.user_id == user_id))
+    await db.execute(sql_delete(Withdrawal).where(Withdrawal.user_id == user_id))
+    await db.execute(sql_delete(Transaction).where(Transaction.user_id == user_id))
+
+    # 5. Delete trading accounts
+    if acc_ids:
+        await db.execute(sql_delete(TradingAccount).where(TradingAccount.id.in_(acc_ids)))
+
+    # 6. IB system: profiles, commissions, referrals
+    ib_ids_q = await db.execute(select(IBProfile.id).where(IBProfile.user_id == user_id))
+    ib_ids = [row[0] for row in ib_ids_q.all()]
+    if ib_ids:
+        await db.execute(sql_delete(IBCommission).where(IBCommission.ib_id.in_(ib_ids)))
+    await db.execute(sql_delete(IBCommission).where(IBCommission.source_user_id == user_id))
+    await db.execute(
+        sql_delete(Referral).where(
+            or_(Referral.referrer_id == user_id, Referral.referred_id == user_id)
+        )
+    )
+    # Null out parent_ib_id on children before deleting this IB row
+    if ib_ids:
+        from sqlalchemy import update
+        await db.execute(
+            update(IBProfile).where(IBProfile.parent_ib_id.in_(ib_ids)).values(parent_ib_id=None)
+        )
+        await db.execute(sql_delete(IBProfile).where(IBProfile.id.in_(ib_ids)))
+
+    # 7. Notifications, sessions, tokens, audit logs, KYC docs, tickets
+    await db.execute(sql_delete(Notification).where(Notification.user_id == user_id))
+    await db.execute(sql_delete(UserSession).where(UserSession.user_id == user_id))
+    await db.execute(sql_delete(UserRefreshToken).where(UserRefreshToken.user_id == user_id))
+    await db.execute(sql_delete(UserAuditLog).where(UserAuditLog.user_id == user_id))
+    await db.execute(sql_delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id))
+    await db.execute(sql_delete(KYCDocument).where(KYCDocument.user_id == user_id))
+    await db.execute(sql_delete(SupportTicket).where(SupportTicket.user_id == user_id))
+
+    # 8. Finally the user row
+    await db.execute(sql_delete(User).where(User.id == user_id))
+
+    await write_audit_log(
+        db, admin_id, "delete_user", "user", user_id,
+        new_values={"email": user_email},
+        ip_address=ip_address,
+    )
+    await db.commit()
+
+    return {"message": f"User {user_email} permanently deleted"}
