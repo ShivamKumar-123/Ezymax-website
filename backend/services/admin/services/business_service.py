@@ -809,7 +809,7 @@ async def delete_master(
         master_acct.equity = Decimal("0")
         master_acct.free_margin = Decimal("0")
         master_acct.margin_used = Decimal("0")
-        master_acct.is_active = False
+        # Keep master trading account active so user can re-apply later using the same account.
 
     # Refund each follower
     allocs_q = await db.execute(
