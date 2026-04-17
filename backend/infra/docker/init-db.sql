@@ -463,7 +463,7 @@ CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id),
     account_id UUID REFERENCES trading_accounts(id),
-    type VARCHAR(30) NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'commission', 'swap', 'bonus', 'credit', 'adjustment', 'ib_commission', 'profit', 'loss', 'transfer')),
+    type VARCHAR(30) NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'commission', 'swap', 'bonus', 'credit', 'adjustment', 'ib_commission', 'profit', 'loss', 'transfer', 'admin_commission', 'performance_fee', 'master_commission', 'refund')),
     amount DECIMAL(18,8) NOT NULL,
     balance_after DECIMAL(18,8),
     reference_id UUID,

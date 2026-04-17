@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
@@ -74,6 +75,20 @@ type TradeTab = 'open' | 'pending' | 'closed';
 const fmt2 = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt5 = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
 
+/** Calculate live P/L from position data when backend returns 0/null. */
+function calcLivePnl(pos: any): number {
+  const pnl = Number(pos.pnl || 0);
+  if (pnl !== 0) return pnl;
+  const open = Number(pos.open_price || 0);
+  const current = Number(pos.current_price || 0);
+  const lots = Number(pos.lots || 0);
+  if (!open || !current || !lots) return 0;
+  const contractSize = pos.symbol?.includes('JPY') ? 1000 : pos.symbol?.startsWith('XAU') ? 100 : pos.symbol?.startsWith('BTC') ? 1 : pos.symbol?.startsWith('ETH') ? 1 : 100000;
+  const side = String(pos.side).toLowerCase();
+  if (side === 'buy') return (current - open) * lots * contractSize;
+  return (open - current) * lots * contractSize;
+}
+
 export default function TradesSection() {
   const [tab, setTab] = useState<TradeTab>('open');
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
@@ -84,8 +99,35 @@ export default function TradesSection() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<null | { kind: TradeTab; data: OpenPosition | PendingOrder | ClosedTrade }>(null);
   const [page, setPage] = useState(1);
+  const [closingId, setClosingId] = useState<string | null>(null);
   const pageSize = 15;
   const loadGen = useRef(0);
+
+  const closePosition = async (posId: string, symbol: string) => {
+    setClosingId(posId);
+    try {
+      await api.post(`/positions/${posId}/close`, {});
+      toast.success(`${symbol} position closed`);
+      void fetchAll(true);
+    } catch (e: any) {
+      toast.error(e instanceof Error ? e.message : 'Close failed');
+    } finally {
+      setClosingId(null);
+    }
+  };
+
+  const cancelOrder = async (orderId: string, symbol: string) => {
+    setClosingId(orderId);
+    try {
+      await api.delete(`/orders/${orderId}`);
+      toast.success(`${symbol} order cancelled`);
+      void fetchAll(true);
+    } catch (e: any) {
+      toast.error(e instanceof Error ? e.message : 'Cancel failed');
+    } finally {
+      setClosingId(null);
+    }
+  };
 
   const fetchAll = useCallback(async (isRefresh = false) => {
     const id = ++loadGen.current;
@@ -144,10 +186,10 @@ export default function TradesSection() {
 
   useEffect(() => {
     void fetchAll();
-    // Refresh open positions every 10s for live P/L
+    // Refresh open positions every 3s for live P/L
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') void fetchAll(true);
-    }, 10000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [fetchAll]);
 
@@ -163,7 +205,7 @@ export default function TradesSection() {
   const safePage = Math.min(page, totalPages);
   const paged = currentList.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const openPnl = openPositions.reduce((acc, p) => acc + (p.pnl || 0), 0);
+  const openPnl = openPositions.reduce((acc, p) => acc + calcLivePnl(p), 0);
   const closedPnl = closedTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
 
   return (
@@ -247,90 +289,172 @@ export default function TradesSection() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border-primary">
-                  <th className="text-left px-4 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Symbol</th>
-                  <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Side</th>
-                  <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Lots</th>
-                  <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                    {tab === 'open' ? 'Open' : tab === 'pending' ? 'Price' : 'Open'}
-                  </th>
-                  {tab !== 'pending' ? (
+          <>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border-primary">
+                    <th className="text-left px-4 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Symbol</th>
+                    <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Side</th>
+                    <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Lots</th>
                     <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                      {tab === 'open' ? 'Current' : 'Close'}
+                      {tab === 'open' ? 'Open' : tab === 'pending' ? 'Price' : 'Open'}
                     </th>
-                  ) : (
-                    <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Type</th>
-                  )}
-                  {tab !== 'pending' && (
-                    <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">P/L</th>
-                  )}
-                  <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider hidden md:table-cell">Account</th>
-                  <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                    {tab === 'closed' ? 'Closed' : tab === 'pending' ? 'Placed' : 'Opened'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((row) => {
-                  const r: any = row;
-                  const pnl = Number(r.pnl || 0);
-                  const isBuy = String(r.side).toLowerCase() === 'buy';
-                  return (
-                    <tr
-                      key={r.id}
-                      onClick={() => setSelected({ kind: tab, data: row })}
-                      className="border-b border-border-primary/30 hover:bg-bg-hover/40 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-3 font-semibold text-text-primary">{r.symbol || '—'}</td>
-                      <td className="px-3 py-3">
-                        <span
-                          className={clsx(
-                            'px-2 py-0.5 rounded text-[10px] font-bold uppercase',
-                            isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell',
-                          )}
-                        >
-                          {r.side}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono text-text-primary">{fmt2(r.lots)}</td>
-                      <td className="px-3 py-3 text-right font-mono text-text-secondary">
-                        {fmt5(r.open_price ?? r.price ?? 0)}
-                      </td>
-                      {tab !== 'pending' ? (
-                        <td className="px-3 py-3 text-right font-mono text-text-secondary">
-                          {fmt5(r.close_price ?? r.current_price ?? 0)}
+                    {tab !== 'pending' ? (
+                      <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
+                        {tab === 'open' ? 'Current' : 'Close'}
+                      </th>
+                    ) : (
+                      <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Type</th>
+                    )}
+                    {tab !== 'pending' && (
+                      <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">P/L</th>
+                    )}
+                    <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Account</th>
+                    <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
+                      {tab === 'closed' ? 'Closed' : tab === 'pending' ? 'Placed' : 'Opened'}
+                    </th>
+                    {tab !== 'closed' && (
+                      <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Action</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map((row) => {
+                    const r: any = row;
+                    const pnl = tab === 'open' ? calcLivePnl(r) : Number(r.pnl || 0);
+                    const isBuy = String(r.side).toLowerCase() === 'buy';
+                    return (
+                      <tr
+                        key={r.id}
+                        onClick={() => setSelected({ kind: tab, data: row })}
+                        className="border-b border-border-primary/30 hover:bg-bg-hover/40 cursor-pointer transition-colors"
+                      >
+                        <td className="px-4 py-3 font-semibold text-text-primary">{r.symbol || '—'}</td>
+                        <td className="px-3 py-3">
+                          <span className={clsx('px-2 py-0.5 rounded text-[10px] font-bold uppercase', isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>{r.side}</span>
                         </td>
-                      ) : (
-                        <td className="px-3 py-3 text-right text-text-tertiary text-[11px] uppercase">{r.order_type || 'limit'}</td>
-                      )}
+                        <td className="px-3 py-3 text-right font-mono text-text-primary">{fmt2(r.lots)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-text-secondary">{fmt5(r.open_price ?? r.price ?? 0)}</td>
+                        {tab !== 'pending' ? (
+                          <td className="px-3 py-3 text-right font-mono text-text-secondary">{fmt5(r.close_price ?? r.current_price ?? 0)}</td>
+                        ) : (
+                          <td className="px-3 py-3 text-right text-text-tertiary text-[11px] uppercase">{r.order_type || 'limit'}</td>
+                        )}
+                        {tab !== 'pending' && (
+                          <td className={clsx('px-3 py-3 text-right font-mono font-bold', pnl >= 0 ? 'text-buy' : 'text-sell')}>
+                            {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
+                          </td>
+                        )}
+                        <td className="px-3 py-3 text-[10px] text-text-tertiary font-mono">{accountNumber(r.account_id)}</td>
+                        <td className="px-3 py-3 text-[10px] text-text-tertiary whitespace-nowrap">
+                          {(() => {
+                            const d = tab === 'closed' ? r.close_time : tab === 'pending' ? r.created_at : r.opened_at;
+                            return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+                          })()}
+                        </td>
+                        {tab === 'open' && (
+                          <td className="px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
+                              disabled={closingId === r.id}
+                              className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50 transition-all"
+                            >
+                              {closingId === r.id ? 'Closing…' : 'Close'}
+                            </button>
+                          </td>
+                        )}
+                        {tab === 'pending' && (
+                          <td className="px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); cancelOrder(r.id, r.symbol); }}
+                              disabled={closingId === r.id}
+                              className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-warning/15 text-warning border border-warning/30 hover:bg-warning/25 disabled:opacity-50 transition-all"
+                            >
+                              {closingId === r.id ? 'Cancelling…' : 'Cancel'}
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card layout */}
+            <div className="md:hidden space-y-2 px-3 py-3">
+              {paged.map((row) => {
+                const r: any = row;
+                const pnl = Number(r.pnl || 0);
+                const isBuy = String(r.side).toLowerCase() === 'buy';
+                const dateStr = tab === 'closed' ? r.close_time : tab === 'pending' ? r.created_at : r.opened_at;
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => setSelected({ kind: tab, data: row })}
+                    className="rounded-xl border border-border-primary p-3 space-y-2 active:bg-bg-hover/40 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-text-primary">{r.symbol || '—'}</span>
+                        <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>{r.side}</span>
+                      </div>
                       {tab !== 'pending' && (
-                        <td
-                          className={clsx(
-                            'px-3 py-3 text-right font-mono font-bold',
-                            pnl >= 0 ? 'text-buy' : 'text-sell',
-                          )}
-                        >
+                        <span className={clsx('text-sm font-bold font-mono tabular-nums', pnl >= 0 ? 'text-buy' : 'text-sell')}>
                           {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
-                        </td>
+                        </span>
                       )}
-                      <td className="px-3 py-3 text-[10px] text-text-tertiary font-mono hidden md:table-cell">
-                        {accountNumber(r.account_id)}
-                      </td>
-                      <td className="px-3 py-3 text-[10px] text-text-tertiary whitespace-nowrap">
-                        {(() => {
-                          const d = tab === 'closed' ? r.close_time : tab === 'pending' ? r.created_at : r.opened_at;
-                          return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-                        })()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-text-tertiary">Lots</span>
+                        <div className="font-mono text-text-primary">{fmt2(r.lots)}</div>
+                      </div>
+                      <div>
+                        <span className="text-text-tertiary">Open</span>
+                        <div className="font-mono text-text-secondary">{fmt5(r.open_price ?? r.price ?? 0)}</div>
+                      </div>
+                      <div>
+                        <span className="text-text-tertiary">{tab === 'open' ? 'Current' : tab === 'closed' ? 'Close' : 'Type'}</span>
+                        <div className="font-mono text-text-secondary">
+                          {tab === 'pending' ? (r.order_type || 'limit').toUpperCase() : fmt5(r.close_price ?? r.current_price ?? 0)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-text-tertiary">
+                        {dateStr ? new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </span>
+                      {tab === 'open' && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
+                          disabled={closingId === r.id}
+                          className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50"
+                        >
+                          {closingId === r.id ? 'Closing…' : 'Close'}
+                        </button>
+                      )}
+                      {tab === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); cancelOrder(r.id, r.symbol); }}
+                          disabled={closingId === r.id}
+                          className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-warning/15 text-warning border border-warning/30 hover:bg-warning/25 disabled:opacity-50"
+                        >
+                          {closingId === r.id ? 'Cancelling…' : 'Cancel'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {currentList.length > pageSize && (
@@ -363,17 +487,17 @@ export default function TradesSection() {
         )}
       </div>
 
-      {/* Detail modal */}
-      {selected && (
+      {/* Detail modal — portal to body to avoid transform containment */}
+      {selected && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setSelected(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-border-primary bg-bg-secondary shadow-2xl overflow-hidden"
+            className="w-full max-w-lg rounded-2xl border border-border-primary bg-bg-secondary shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border-primary">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-primary sticky top-0 bg-bg-secondary z-10">
               <div>
                 <h3 className="text-base font-bold text-text-primary">Trade Details</h3>
                 <p className="text-xs text-text-tertiary mt-0.5 capitalize">{selected.kind} · {(selected.data as any).symbol || '—'}</p>
@@ -387,7 +511,8 @@ export default function TradesSection() {
             </div>
             <TradeDetailBody kind={selected.kind} data={selected.data} accountNumber={accountNumber((selected.data as any).account_id)} />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

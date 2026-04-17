@@ -136,7 +136,7 @@ class CopyTradeEngine:
             except Exception as e:
                 logger.error("Copy engine error: %s", e, exc_info=True)
 
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
     async def _sum_active_allocation_pool(self, master_id: UUID, db: AsyncSession) -> float:
         q = await db.execute(
