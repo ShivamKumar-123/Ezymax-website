@@ -68,6 +68,7 @@ async def list_leaderboard(
     for master, first_name, last_name in rows:
         items.append({
             "id": str(master.id),
+            "user_id": str(master.user_id),
             "provider_name": f"{first_name or ''} {last_name or ''}".strip(),
             "total_return_pct": float(master.total_return_pct),
             "max_drawdown_pct": float(master.max_drawdown_pct),
@@ -652,6 +653,47 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
     )
     trades_row = trades_result.one()
 
+    # Win rate
+    wins_q = await db.execute(
+        select(func.count()).where(
+            TradeHistory.account_id == master.account_id,
+            TradeHistory.profit > 0,
+        )
+    )
+    wins = wins_q.scalar() or 0
+    total_trades_count = trades_row[0] or 0
+    win_rate = (wins / total_trades_count * 100) if total_trades_count > 0 else 0
+
+    # Today's trades
+    from datetime import datetime, timezone, timedelta
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_trades_q = await db.execute(
+        select(func.count(), func.coalesce(func.sum(TradeHistory.profit), 0)).where(
+            TradeHistory.account_id == master.account_id,
+            TradeHistory.closed_at >= today_start,
+        )
+    )
+    today_row = today_trades_q.one()
+
+    # Open positions count
+    open_pos_q = await db.execute(
+        select(func.count()).where(
+            Position.account_id == master.account_id,
+            Position.status == "open",
+        )
+    )
+    open_positions = open_pos_q.scalar() or 0
+
+    # Commission / performance fee earned by this master
+    from packages.common.src.models import Transaction
+    fee_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.user_id == user_id,
+            Transaction.type.in_(["performance_fee", "master_commission", "ib_commission"]),
+        )
+    )
+    commission_earned = float(fee_q.scalar() or 0)
+
     return {
         "id": str(master.id), "status": master.status, "master_type": master.master_type,
         "total_return_pct": float(master.total_return_pct),
@@ -661,8 +703,13 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "active_investors": inv_stats.count,
         "total_aum": float(inv_stats.total_aum),
         "total_investor_profit": float(inv_stats.total_investor_profit),
-        "total_trades": trades_row[0] or 0,
+        "total_trades": total_trades_count,
         "total_profit": float(trades_row[1] or 0),
+        "win_rate": round(win_rate, 1),
+        "today_trades": today_row[0] or 0,
+        "today_profit": float(today_row[1] or 0),
+        "open_positions": open_positions,
+        "commission_earned": commission_earned,
         "performance_fee_pct": float(master.performance_fee_pct),
         "management_fee_pct": float(master.management_fee_pct),
         "min_investment": float(master.min_investment),
@@ -920,6 +967,58 @@ async def get_my_followers(user_id: UUID, db: AsyncSession) -> dict:
 
     return {
         "master_id": str(master.id),
+        "total_followers": len(followers),
+        "total_aum": sum(f["allocation_amount"] for f in followers),
+        "followers": followers,
+    }
+
+
+async def get_provider_followers(provider_id: UUID, db: AsyncSession) -> dict:
+    """Public view of a provider's followers (limited info for privacy)."""
+    master_result = await db.execute(
+        select(MasterAccount).where(
+            MasterAccount.id == provider_id,
+            MasterAccount.status.in_(["approved", "active"]),
+        )
+    )
+    master = master_result.scalar_one_or_none()
+    if not master:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    allocations_result = await db.execute(
+        select(InvestorAllocation, User)
+        .join(User, InvestorAllocation.investor_user_id == User.id)
+        .where(
+            InvestorAllocation.master_id == master.id,
+            InvestorAllocation.status == "active",
+        )
+    )
+    allocations = allocations_result.all()
+
+    followers = []
+    for allocation, user in allocations:
+        copy_trades_result = await db.execute(
+            select(func.count()).where(CopyTrade.investor_allocation_id == allocation.id)
+        )
+        total_copied_trades = copy_trades_result.scalar() or 0
+
+        profit_pct = 0.0
+        if allocation.allocation_amount and allocation.allocation_amount > 0:
+            profit_pct = (float(allocation.total_profit or 0) / float(allocation.allocation_amount)) * 100
+
+        # Public view: hide sensitive info like account numbers
+        followers.append({
+            "id": str(allocation.id),
+            "user_name": f"{user.first_name or ''} {user.last_name or ''}".strip() or "Anonymous",
+            "allocation_amount": float(allocation.allocation_amount or 0),
+            "total_profit": float(allocation.total_profit or 0),
+            "profit_pct": round(profit_pct, 2),
+            "total_copied_trades": total_copied_trades,
+            "joined_at": allocation.created_at.isoformat() if allocation.created_at else None,
+        })
+
+    return {
+        "provider_id": str(master.id),
         "total_followers": len(followers),
         "total_aum": sum(f["allocation_amount"] for f in followers),
         "followers": followers,

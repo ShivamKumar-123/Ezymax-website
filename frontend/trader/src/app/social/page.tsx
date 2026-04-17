@@ -14,6 +14,7 @@ type SortBy = 'total_return_pct' | 'sharpe_ratio' | 'followers_count';
 
 interface Provider {
   id: string;
+  user_id: string;
   provider_name: string;
   total_return_pct: number;
   max_drawdown_pct: number;
@@ -70,8 +71,6 @@ function tabFromQuery(param: string | null): TabId {
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'total_return_pct', label: 'Return' },
-  { value: 'sharpe_ratio', label: 'Sharpe' },
-  { value: 'followers_count', label: 'Followers' },
 ];
 
 function Spinner() {
@@ -135,10 +134,14 @@ function TraderCard({
   provider,
   onClick,
   onCopy,
+  isSelf,
+  onViewFollowers,
 }: {
   provider: Provider;
   onClick: () => void;
   onCopy: (e: React.MouseEvent) => void;
+  isSelf?: boolean;
+  onViewFollowers?: (e: React.MouseEvent) => void;
 }) {
   const initials = provider.provider_name
     .split(/\s+/)
@@ -175,21 +178,35 @@ function TraderCard({
               {initials}
             </div>
             <div className="min-w-0">
-              <span className="text-sm font-semibold text-text-primary truncate block">{provider.provider_name}</span>
-              <div className="text-xxs text-text-tertiary mt-0.5">Fee: {provider.performance_fee_pct}%</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-text-primary truncate">{provider.provider_name}</span>
+                <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-bold uppercase shrink-0">Master</span>
+                {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
+              </div>
+              <div className="text-xxs text-text-tertiary mt-0.5">Fee: {provider.performance_fee_pct}% · {provider.followers_count} followers</div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onCopy}
-            className={clsx(
-              'shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all',
-              'border-accent text-accent hover:bg-accent hover:text-black',
-              '[data-theme="light"]:border-black [data-theme="light"]:text-black [data-theme="light"]:hover:bg-black [data-theme="light"]:hover:text-[#F2EFE9]'
-            )}
-          >
-            Copy
-          </button>
+          {isSelf ? (
+            <button
+              type="button"
+              onClick={onViewFollowers}
+              className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-buy/40 text-buy hover:bg-buy/15 transition-all"
+            >
+              {provider.followers_count} Followers
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onCopy}
+              className={clsx(
+                'shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all',
+                'border-accent text-accent hover:bg-accent hover:text-black',
+                '[data-theme="light"]:border-black [data-theme="light"]:text-black [data-theme="light"]:hover:bg-black [data-theme="light"]:hover:text-[#F2EFE9]'
+              )}
+            >
+              Copy
+            </button>
+          )}
         </div>
 
         <div className="mb-4">
@@ -412,6 +429,8 @@ function CopyModal({
 
 /* ─── Leaderboard Tab ─── */
 function LeaderboardTab() {
+  const { user } = useAuthStore();
+  const currentUserId = user?.id || '';
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -424,6 +443,26 @@ function LeaderboardTab() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [copyTarget, setCopyTarget] = useState<Provider | ProviderDetail | null>(null);
+
+  /* Followers modal */
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+
+  const loadFollowers = async (e: React.MouseEvent, providerId: string, isSelf: boolean) => {
+    e.stopPropagation();
+    setFollowersLoading(true);
+    try {
+      const endpoint = isSelf ? '/followers/my-followers' : `/followers/provider/${providerId}`;
+      const res = await api.get<any>(endpoint);
+      setFollowers(res.followers || []);
+      setShowFollowers(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load followers');
+    } finally {
+      setFollowersLoading(false);
+    }
+  };
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
@@ -492,8 +531,10 @@ function LeaderboardTab() {
               <TraderCard
                 key={p.id}
                 provider={p}
+                isSelf={p.user_id === currentUserId}
                 onClick={() => openDetail(p.id)}
                 onCopy={(e) => { e.stopPropagation(); setCopyTarget(p); }}
+                onViewFollowers={(e) => loadFollowers(e, p.id, p.user_id === currentUserId)}
               />
             ))}
           </div>
@@ -540,6 +581,53 @@ function LeaderboardTab() {
           onClose={() => setCopyTarget(null)}
           onSuccess={() => { setCopyTarget(null); fetchLeaderboard(); }}
         />
+      )}
+
+      {/* Followers modal */}
+      {showFollowers && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
+          <div className="w-full max-w-3xl bg-bg-secondary border border-border-glass rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
+              <h3 className="text-base font-bold text-text-primary">Followers ({followers.length})</h3>
+              <button onClick={() => setShowFollowers(false)} className="text-text-tertiary hover:text-text-primary text-lg">✕</button>
+            </div>
+            <div className="p-5 max-h-[70vh] overflow-y-auto">
+              {followersLoading ? <Spinner /> : followers.length === 0 ? (
+                <div className="text-center py-12 text-sm text-text-tertiary">No followers yet</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border-glass">
+                        {['Follower', 'Investment', 'Profit/Loss', 'Trades', 'Joined'].map(c => (
+                          <th key={c} className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">{c}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {followers.map((f: any) => (
+                        <tr key={f.id} className="border-b border-border-glass/50 hover:bg-bg-hover/30">
+                          <td className="px-3 py-3">
+                            <p className="text-xs font-medium text-text-primary">{f.user_name}</p>
+                            {f.account_number && <p className="text-xxs text-text-tertiary">{f.account_number}</p>}
+                          </td>
+                          <td className="px-3 py-3 text-xs font-mono text-text-primary">${(f.allocation_amount || 0).toLocaleString()}</td>
+                          <td className="px-3 py-3">
+                            <span className={clsx('text-xs font-mono font-bold', (f.total_profit || 0) >= 0 ? 'text-buy' : 'text-sell')}>
+                              {(f.total_profit || 0) >= 0 ? '+' : ''}${(f.total_profit || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-xs font-mono text-text-primary">{f.total_copied_trades || 0}</td>
+                          <td className="px-3 py-3 text-xxs text-text-tertiary">{f.joined_at ? new Date(f.joined_at).toLocaleDateString() : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
@@ -1016,41 +1104,109 @@ function MyDashboardTab() {
   };
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
-  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved signal provider. Apply in the "Become Provider" tab.</div>;
+  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved signal provider. Apply in the &ldquo;Become Provider&rdquo; tab.</div>;
 
-  const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Followers', value: String(data.followers_count || 0), color: 'text-buy', clickable: true, onClick: loadFollowers },
-          { label: 'AUM', value: `$${fmt(data.total_aum || 0)}`, color: 'text-success' },
-          { label: 'Your Earnings', value: `$${fmt(data.total_investor_profit ? data.total_investor_profit * (data.performance_fee_pct / 100) : 0)}`, color: 'text-warning' },
-          { label: 'Total Trades', value: String(data.total_trades || 0), color: 'text-text-primary' },
-        ].map(c => (
-          <div 
-            key={c.label} 
-            onClick={c.clickable ? c.onClick : undefined}
-            className={clsx('glass-card rounded-xl p-3 noise-texture', c.clickable && 'cursor-pointer hover:ring-2 hover:ring-buy/30 transition-all')}
-          >
-            <p className="text-xxs text-text-tertiary">{c.label}</p>
-            <p className={clsx('text-lg font-bold font-mono tabular-nums mt-0.5', c.color)}>{c.value}</p>
+    <div className="space-y-5 max-w-4xl mx-auto">
+      {/* Master badge + name */}
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-lg font-bold">M</div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-text-primary">Master Dashboard</h2>
+            <span className="px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-accent text-[10px] font-bold uppercase tracking-wider">Master</span>
           </div>
-        ))}
+          <p className="text-xs text-text-tertiary">Signal Provider · Since {data.created_at ? new Date(data.created_at).toLocaleDateString() : '—'}</p>
+        </div>
       </div>
 
-      <div className="glass-card rounded-xl p-4 noise-texture">
-        <h3 className="text-sm font-semibold text-text-primary mb-3">Performance Stats</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div><p className="text-text-tertiary">Total Return</p><p className={clsx('font-mono font-bold', data.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>{data.total_return_pct >= 0 ? '+' : ''}{data.total_return_pct?.toFixed(2)}%</p></div>
-          <div><p className="text-text-tertiary">Max Drawdown</p><p className="text-sell font-mono font-bold">{data.max_drawdown_pct?.toFixed(2)}%</p></div>
-          <div><p className="text-text-tertiary">Sharpe Ratio</p><p className="text-text-primary font-mono font-bold">{data.sharpe_ratio?.toFixed(2)}</p></div>
-          <div><p className="text-text-tertiary">Total Profit</p><p className={clsx('font-mono font-bold', data.total_profit >= 0 ? 'text-buy' : 'text-sell')}>${fmt(data.total_profit || 0)}</p></div>
-          <div><p className="text-text-tertiary">Performance Fee</p><p className="text-text-primary font-mono">{data.performance_fee_pct}%</p></div>
-          <div><p className="text-text-tertiary">Active Investors</p><p className="text-text-primary">{data.active_investors} / {data.max_investors}</p></div>
-          <div><p className="text-text-tertiary">Min Investment</p><p className="text-text-primary font-mono">${fmt(data.min_investment || 0)}</p></div>
-          <div><p className="text-text-tertiary">Status</p><p className="text-success capitalize">{data.status}</p></div>
+      {/* Key Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div onClick={loadFollowers} className="rounded-xl border border-border-primary bg-bg-secondary p-3 cursor-pointer hover:ring-2 hover:ring-buy/30 transition-all">
+          <p className="text-xxs text-text-tertiary">Followers</p>
+          <p className="text-xl font-bold font-mono tabular-nums text-buy mt-0.5">{data.followers_count || 0}</p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Active Investors</p>
+          <p className="text-xl font-bold font-mono tabular-nums text-text-primary mt-0.5">{data.active_investors || 0} <span className="text-xs text-text-tertiary font-normal">/ {data.max_investors}</span></p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Total AUM</p>
+          <p className="text-xl font-bold font-mono tabular-nums text-success mt-0.5">${fmt(data.total_aum || 0)}</p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Open Positions</p>
+          <p className="text-xl font-bold font-mono tabular-nums text-text-primary mt-0.5">{data.open_positions || 0}</p>
+        </div>
+      </div>
+
+      {/* Earnings / Profit Sharing Section */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-primary">
+          <h3 className="text-sm font-semibold text-text-primary">Earnings & Profit Sharing</h3>
+          <p className="text-xxs text-text-tertiary mt-0.5">Commission earned from your followers&apos; performance fees</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+          <div>
+            <p className="text-xxs text-text-tertiary">Commission Earned</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-warning">${fmt(data.commission_earned || 0)}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Performance Fee Rate</p>
+            <p className="text-lg font-bold font-mono text-text-primary">{data.performance_fee_pct}%</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Followers&apos; Total Profit</p>
+            <p className={clsx('text-lg font-bold font-mono tabular-nums', (data.total_investor_profit || 0) >= 0 ? 'text-buy' : 'text-sell')}>${fmt(data.total_investor_profit || 0)}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Management Fee</p>
+            <p className="text-lg font-bold font-mono text-text-primary">{data.management_fee_pct || 0}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Trading Activity */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-primary">
+          <h3 className="text-sm font-semibold text-text-primary">Trading Activity</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+          <div>
+            <p className="text-xxs text-text-tertiary">Today&apos;s Trades</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{data.today_trades || 0}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Today&apos;s Profit</p>
+            <p className={clsx('text-lg font-bold font-mono tabular-nums', (data.today_profit || 0) >= 0 ? 'text-buy' : 'text-sell')}>
+              {(data.today_profit || 0) >= 0 ? '+' : ''}${fmt(data.today_profit || 0)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Total Trades</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{data.total_trades || 0}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Win Rate</p>
+            <p className={clsx('text-lg font-bold font-mono tabular-nums', (data.win_rate || 0) >= 50 ? 'text-buy' : 'text-sell')}>{data.win_rate?.toFixed(1) || '0.0'}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Performance Stats */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-primary">
+          <h3 className="text-sm font-semibold text-text-primary">Performance Stats</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 text-xs">
+          <div><p className="text-text-tertiary">Total Return</p><p className={clsx('font-mono font-bold text-base', data.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>{data.total_return_pct >= 0 ? '+' : ''}{data.total_return_pct?.toFixed(2)}%</p></div>
+          <div><p className="text-text-tertiary">Max Drawdown</p><p className="text-sell font-mono font-bold text-base">{data.max_drawdown_pct?.toFixed(2)}%</p></div>
+          <div><p className="text-text-tertiary">Sharpe Ratio</p><p className="text-text-primary font-mono font-bold text-base">{data.sharpe_ratio?.toFixed(2)}</p></div>
+          <div><p className="text-text-tertiary">Total Profit</p><p className={clsx('font-mono font-bold text-base', data.total_profit >= 0 ? 'text-buy' : 'text-sell')}>${fmt(data.total_profit || 0)}</p></div>
+          <div><p className="text-text-tertiary">Min Investment</p><p className="text-text-primary font-mono text-base">${fmt(data.min_investment || 0)}</p></div>
+          <div><p className="text-text-tertiary">Status</p><p className="text-success capitalize text-base font-semibold">{data.status}</p></div>
         </div>
       </div>
 
@@ -1080,6 +1236,7 @@ function MyDashboardTab() {
                     <thead>
                       <tr className="border-b border-border-glass">
                         <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Follower</th>
+                        <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">User ID</th>
                         <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Account</th>
                         <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Investment</th>
                         <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Profit/Loss</th>
@@ -1096,6 +1253,9 @@ function MyDashboardTab() {
                               <p className="text-xs font-medium text-text-primary">{f.user_name}</p>
                               <p className="text-xxs text-text-tertiary">{f.user_email}</p>
                             </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <p className="text-xxs text-text-secondary font-mono">{f.user_id}</p>
                           </td>
                           <td className="px-3 py-3 text-xs text-text-secondary font-mono">{f.account_number}</td>
                           <td className="px-3 py-3 text-right text-xs font-mono text-text-primary">${f.allocation_amount.toLocaleString()}</td>

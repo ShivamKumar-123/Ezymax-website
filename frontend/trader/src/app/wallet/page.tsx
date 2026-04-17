@@ -469,8 +469,9 @@ function WalletPageContent() {
           },
         );
         if (res.payment_url) {
-          window.open(res.payment_url, '_blank');
-          toast.success('Payment page opened — complete the payment in the new tab. Your deposit will be approved automatically.');
+          toast.success('Redirecting to payment page...');
+          window.location.href = res.payment_url;
+          return;
         } else {
           toast.success(`Deposit of $${amt.toLocaleString()} submitted — pending approval`);
         }
@@ -895,124 +896,8 @@ function WalletPageContent() {
                     </button>
                   </div>
 
-                  {/* Payment method sub-tabs */}
-                  <div className="flex gap-1 p-1 rounded-xl bg-bg-secondary border border-border-secondary">
-                    <button
-                      type="button"
-                      onClick={() => setDepositUiSection('crypto')}
-                      className={clsx(
-                        'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
-                        depositUiSection === 'crypto'
-                          ? 'bg-accent text-white'
-                          : 'text-text-tertiary hover:text-text-primary',
-                      )}
-                    >
-                      Crypto
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDepositUiSection('manual')}
-                      className={clsx(
-                        'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
-                        depositUiSection === 'manual'
-                          ? 'bg-accent text-white'
-                          : 'text-text-tertiary hover:text-text-primary',
-                      )}
-                    >
-                      Manual deposit
-                    </button>
-                  </div>
-
-                  {depositUiSection === 'crypto' ? (
-                    <>
-                      <div>
-                        <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">Payment Method</p>
-                        {/* Featured selected coin */}
-                        <div className="rounded-xl border border-border-primary bg-bg-secondary p-4 mb-2">
-                          <p className="text-base font-bold text-text-primary font-mono flex items-center gap-2.5">
-                            <span className="text-xl leading-none" aria-hidden>
-                              {selectedDepositCrypto.id === 'BTC' ? '₿' : '◆'}
-                            </span>
-                            <span>
-                              {selectedDepositCrypto.label}{' '}
-                              <span className="text-text-tertiary text-sm font-normal">({selectedDepositCrypto.sub})</span>
-                            </span>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {CRYPTO_ASSETS.filter((c) => c.id !== selectedDepositCrypto.id).map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => setSelectedCryptoDeposit(c.id)}
-                              className="rounded-xl border border-border-primary bg-bg-secondary p-3.5 text-left transition-colors hover:border-border-secondary hover:bg-bg-hover"
-                            >
-                              <div className="font-bold text-text-primary font-mono text-sm">{c.label}</div>
-                              <div className="text-[11px] text-text-tertiary mt-0.5">({c.sub})</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Amount (USD)</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
-                          <input
-                            type="number"
-                            min="1"
-                            step="0.01"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                          {[100, 500, 1000, 5000].map((amt) => (
-                            <button
-                              key={amt}
-                              type="button"
-                              onClick={() => setDepositAmount(String(amt))}
-                              className="py-2 text-xs font-semibold rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-accent"
-                            >
-                              ${amt >= 1000 ? `${amt / 1000}k` : amt}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-[#2196f3]/25 bg-[#2196f3]/5 px-4 py-3 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <WalletIcon className="w-4 h-4 text-[#2196f3] shrink-0" />
-                          <span className="text-sm font-bold text-text-primary">OxaPay</span>
-                        </div>
-                        <p className="text-[11px] text-text-secondary leading-relaxed">
-                          You&apos;ll be redirected to OxaPay&apos;s secure payment page. Your deposit is approved automatically once confirmed on the blockchain.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => void submitDeposit()}
-                        disabled={demoFundingBlocked || depositSubmitting || !depositAmount}
-                        className={clsx(
-                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
-                          demoFundingBlocked || depositSubmitting || !depositAmount
-                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
-                        )}
-                      >
-                        {depositSubmitting
-                          ? 'Submitting…'
-                          : `Deposit funds${depositAmount ? ` — ${fmt(parseFloat(depositAmount || '0'))}` : ''}`}
-                      </button>
-                      <p className="text-center text-[11px] text-text-tertiary">
-                        Crypto deposits are approved automatically after blockchain confirmation.
-                      </p>
-                    </>
-                  ) : (
-                    <>
+                  {/* Direct deposit — amount + bank details + proof */}
+                  <>
                       <div className="space-y-1">
                         <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
@@ -1152,10 +1037,9 @@ function WalletPageContent() {
                             : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}
                       >
-                        {depositSubmitting ? 'Submitting…' : 'Submit manual deposit'}
+                        {depositSubmitting ? 'Submitting…' : `Deposit${depositAmount ? ` — $${parseFloat(depositAmount || '0').toLocaleString()}` : ''}`}
                       </button>
-                    </>
-                  )}
+                  </>
                 </>
               ) : (
                 <>
