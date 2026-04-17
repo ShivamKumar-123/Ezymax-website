@@ -113,7 +113,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     # This prevents showing incomplete payment attempts in history
     settings = get_settings()
     crypto_currency = getattr(req, "crypto_currency", None)
-    is_oxapay = db_method == "oxapay" and settings.OXAPAY_MERCHANT_KEY and crypto_currency
+    is_oxapay = db_method == "oxapay" and bool(settings.OXAPAY_MERCHANT_KEY)
     
     deposit = Deposit(
         user_id=user_id,
@@ -144,10 +144,17 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             deposit.transaction_id = ox["track_id"]
             payment_url = ox["payment_url"]
             await db.commit()
-        except Exception:
+        except Exception as oxapay_err:
             logger.exception(
-                "OxaPay create_payment failed (deposit %s saved as pending, user can retry)",
+                "OxaPay create_payment failed for deposit %s",
                 deposit.id,
+            )
+            # Delete the initiated deposit since payment creation failed
+            await db.delete(deposit)
+            await db.commit()
+            raise HTTPException(
+                status_code=502,
+                detail=f"OxaPay payment creation failed: {str(oxapay_err)}",
             )
 
     try:

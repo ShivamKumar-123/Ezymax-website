@@ -465,15 +465,15 @@ function WalletPageContent() {
           {
             amount: amt,
             method: OXAPAY_METHOD,
-            crypto_currency: selectedCryptoDeposit,
           },
         );
         if (res.payment_url) {
-          toast.success('Redirecting to payment page...');
+          toast.success('Redirecting to OxaPay...');
           window.location.href = res.payment_url;
           return;
         } else {
-          toast.success(`Deposit of $${amt.toLocaleString()} submitted — pending approval`);
+          toast.error('Failed to create OxaPay payment link. Please try again or contact support.');
+          return;
         }
         void fetchData(true);
       } catch (err) {
@@ -937,26 +937,10 @@ function WalletPageContent() {
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-2">
-                        <p className="text-xs font-bold text-text-primary">Select Cryptocurrency</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {CRYPTO_ASSETS.map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => setSelectedCryptoDeposit(c.id)}
-                              className={clsx(
-                                'px-3 py-2 rounded-lg border text-left transition-all',
-                                selectedCryptoDeposit === c.id
-                                  ? 'border-accent bg-accent/10 text-accent'
-                                  : 'border-border-primary text-text-secondary hover:border-accent/30'
-                              )}
-                            >
-                              <div className="text-xs font-bold">{c.label}</div>
-                              <div className="text-[10px] text-text-tertiary">{c.sub}</div>
-                            </button>
-                          ))}
-                        </div>
+                      <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          You will be redirected to OxaPay to choose your cryptocurrency (BTC, ETH, USDT, USDC, etc.) and complete the payment securely.
+                        </p>
                       </div>
 
                       <button

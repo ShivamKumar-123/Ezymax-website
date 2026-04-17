@@ -48,12 +48,13 @@ def resolve_currency(frontend_id: str) -> tuple[str, str | None]:
 
 async def create_payment(
     amount: Decimal,
-    crypto_currency: str,
+    crypto_currency: str | None,
     order_id: str,
     description: str = "",
 ) -> dict:
     """Create an OxaPay payment invoice.
 
+    If crypto_currency is None, OxaPay shows all supported currencies on its checkout page.
     Returns dict with keys: track_id, payment_url.
     Raises ValueError on configuration or API errors.
     """
@@ -64,21 +65,23 @@ async def create_payment(
     api_url = OXAPAY_SANDBOX_API_URL if settings.OXAPAY_SANDBOX else OXAPAY_API_URL
     callback_url = f"{settings.OXAPAY_CALLBACK_BASE_URL.rstrip('/')}/api/v1/webhooks/oxapay"
 
-    currency, network = resolve_currency(crypto_currency)
-
     payload: dict = {
         "merchant": settings.OXAPAY_MERCHANT_KEY,
         "amount": float(amount),
         "currency": "USD",
-        "payCurrency": currency,
         "orderId": order_id,
         "callbackUrl": callback_url,
         "description": description or f"Deposit {order_id[:8]}",
         "lifeTime": 30,  # minutes
         "feePaidByPayer": 0,
     }
-    if network:
-        payload["network"] = network
+
+    # If user pre-selected a currency, pin it; otherwise let OxaPay show all
+    if crypto_currency:
+        currency, network = resolve_currency(crypto_currency)
+        payload["payCurrency"] = currency
+        if network:
+            payload["network"] = network
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(api_url, json=payload)

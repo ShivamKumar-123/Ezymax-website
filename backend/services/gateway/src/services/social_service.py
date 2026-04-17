@@ -934,9 +934,9 @@ async def get_my_followers(user_id: UUID, db: AsyncSession) -> dict:
         select(MasterAccount).where(
             MasterAccount.user_id == user_id,
             MasterAccount.status.in_(["approved", "active"]),
-        )
+        ).order_by(MasterAccount.created_at.desc())
     )
-    master = master_result.scalar_one_or_none()
+    master = master_result.scalars().first()
     if not master:
         raise HTTPException(status_code=404, detail="You are not a signal provider")
 

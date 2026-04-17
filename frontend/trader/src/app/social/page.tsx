@@ -880,17 +880,17 @@ function SocialPageInner() {
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-          {/* Hero — theme accents (PAMM lives in sidebar) */}
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-4 sm:mb-5">
+          {/* Hero — compact on mobile */}
+          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-3 sm:mb-5">
             <div
               className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
               aria-hidden
             />
-            <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-8">
-              <h1 className="text-xl sm:text-3xl font-bold text-text-primary mb-2 leading-tight">
+            <div className="relative z-10 px-3 sm:px-6 py-3 sm:py-8">
+              <h1 className="text-base sm:text-3xl font-bold text-text-primary mb-1 sm:mb-2 leading-tight">
                 Copy Global Elite Traders
               </h1>
-              <p className="text-sm text-text-secondary max-w-2xl">
+              <p className="text-xs sm:text-sm text-text-secondary max-w-2xl hidden sm:block">
                 Follow top performers and replicate their strategies automatically. For pooled accounts, use{' '}
                 <span className="text-accent font-medium">PAMM</span> in the sidebar.
               </p>
@@ -898,43 +898,28 @@ function SocialPageInner() {
           </section>
 
           <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
-            <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
-              <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                <div
-                  className="absolute top-0 h-full w-1/4 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-                  style={{ transform: `translate3d(${slideIndex * 100}%,0,0)` }}
-                >
-                  <div
-                    className={clsx(
-                      'absolute inset-x-1 top-0 h-full rounded-t-2xl border-2 border-b-0 border-accent bg-card-nested',
-                      'animate-wallet-main-tab-glow',
-                    )}
-                  />
-                </div>
+            <div className="relative border-b border-border-primary bg-card overflow-x-auto scrollbar-none">
+              <div className="flex min-h-[44px] sm:min-h-[52px] min-w-max sm:min-w-0">
+                {TABS.map((tab) => {
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={clsx(
+                        'relative z-10 flex-1 whitespace-nowrap border-0 bg-transparent py-3 sm:py-3.5 px-3 sm:px-4 text-[11px] sm:text-sm font-semibold outline-none',
+                        'transition-colors duration-300',
+                        active
+                          ? 'text-accent border-b-2 border-accent'
+                          : 'text-text-secondary hover:text-text-primary',
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
-              {TABS.map((tab) => {
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={clsx(
-                      'relative z-10 flex-1 min-w-0 border-0 bg-transparent py-3.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold outline-none',
-                      'transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
-                      active ? 'text-accent' : 'text-text-secondary hover:text-text-primary',
-                    )}
-                  >
-                    {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]">
-                        {tab.label}
-                      </span>
-                    ) : (
-                      <span className="relative inline-block truncate">{tab.label}</span>
-                    )}
-                  </button>
-                );
-              })}
             </div>
 
             <div
