@@ -1259,6 +1259,14 @@ function AccountCard({
                   Trade
                   <ExternalLink size={14} />
                 </Link>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCloseModal(true); }}
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-red-400 text-xs sm:text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
+                >
+                  <Trash2 size={14} />
+                  Close Account
+                </button>
               </>
             ) : (
               <>
@@ -1295,9 +1303,22 @@ function AccountCard({
       <Modal open={closeModal} onClose={() => !deleting && setCloseModal(false)} title="Close account">
         <div className="p-4 space-y-4">
           <p className="text-sm text-text-secondary">
-            Permanently remove trading account <span className="font-mono font-semibold">{row.account_number}</span>
-            ? This cannot be undone.
+            Close {accountLabel.toLowerCase()} <span className="font-mono font-semibold">{row.account_number}</span>?
           </p>
+          <ul className="text-xs text-text-tertiary space-y-1 pl-4 list-disc">
+            <li>Any open positions will close at their open price (zero P&amp;L).</li>
+            <li>Pending orders will be cancelled.</li>
+            {row.balance + (row.equity - row.balance) > 0 ? (
+              <li>
+                <span className="text-text-secondary font-semibold">{fmt(row.balance, row.currency)}</span> will transfer to your main wallet.
+              </li>
+            ) : null}
+            {isPoolAccount ? (
+              <li className="text-amber-500">
+                Followers linked to this master will be refunded and stopped copying.
+              </li>
+            ) : null}
+          </ul>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" size="sm" disabled={deleting} onClick={() => setCloseModal(false)}>
               Cancel

@@ -1,30 +1,26 @@
 """Account Service — Trading account CRUD, equity calculation, deletion."""
 import json
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from packages.common.src.models import (
     AccountGroup,
     CopyTrade,
-    Deposit,
-    IBCommission,
     InvestorAllocation,
     MasterAccount,
     Order,
     OrderStatus,
     Position,
     PositionStatus,
-    TradeHistory,
     TradingAccount,
     Transaction,
     User,
-    UserBonus,
-    Withdrawal,
 )
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.redis_client import redis_client, PriceChannel
@@ -330,6 +326,20 @@ async def update_account_leverage(
 async def delete_trading_account(
     account_id: UUID, user_id: UUID, db: AsyncSession,
 ) -> MessageResponse:
+    """Soft-delete a trading account belonging to the current user.
+
+    Flow (works for any account type — live, CT/PM/MM master pool, CF/IF follower sub-account):
+      1. Auto-close every open position at open_price (zero pnl).
+      2. Auto-cancel pending orders.
+      3. If this account is a master pool (MasterAccount row attached):
+           - Close open positions on each active follower's copy account.
+           - Sweep each follower's copy-account balance → follower's main wallet (type='transfer').
+           - Mark allocation.status='closed'; mark master.status='rejected', followers_count=0.
+           - Mark follower copy account is_active=False.
+      4. If this account is itself a follower sub-account (InvestorAllocation row), close that allocation.
+      5. Sweep the account's own balance + credit → owning user's main wallet (type='transfer').
+      6. Set is_active=False so the account disappears from the user's list (kept for history + FK safety).
+    """
     result = await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == account_id,
@@ -343,112 +353,147 @@ async def delete_trading_account(
     if account.is_demo:
         raise HTTPException(
             status_code=400,
-            detail="Demo accounts cannot be deleted. Use a registered live profile to manage your own accounts.",
+            detail="Demo accounts cannot be deleted.",
         )
 
-    open_n = (
-        await db.execute(
-            select(func.count())
-            .select_from(Position)
-            .where(
-                Position.account_id == account_id,
-                Position.status.in_((PositionStatus.OPEN, PositionStatus.PARTIALLY_CLOSED)),
-            )
-        )
-    ).scalar_one()
-    if open_n and int(open_n) > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Close all open positions before deleting this account.",
-        )
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    pending_n = (
-        await db.execute(
-            select(func.count())
-            .select_from(Order)
-            .where(
-                Order.account_id == account_id,
-                Order.status.in_(
-                    (
-                        OrderStatus.PENDING,
-                        OrderStatus.PARTIALLY_FILLED,
-                    )
-                ),
-            )
+    # 1. Close any open/partial positions on this account at open_price (flat pnl).
+    open_pos_q = await db.execute(
+        select(Position).where(
+            Position.account_id == account_id,
+            Position.status.in_((PositionStatus.OPEN.value, PositionStatus.PARTIALLY_CLOSED.value)),
         )
-    ).scalar_one()
-    if pending_n and int(pending_n) > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Cancel or complete pending orders before deleting this account.",
-        )
-
-    bal = account.balance or Decimal("0")
-    cr = account.credit or Decimal("0")
-    if bal > 0 or cr > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Withdraw or transfer your balance and credit to zero before deleting this account.",
-        )
-
-    pos_result = await db.execute(select(Position.id).where(Position.account_id == account_id))
-    pos_ids = [row[0] for row in pos_result.all()]
-
-    if pos_ids:
-        await db.execute(
-            delete(TradeHistory).where(
-                or_(
-                    TradeHistory.account_id == account_id,
-                    TradeHistory.position_id.in_(pos_ids),
-                )
-            )
-        )
-        await db.execute(
-            delete(CopyTrade).where(
-                or_(
-                    CopyTrade.master_position_id.in_(pos_ids),
-                    CopyTrade.investor_position_id.in_(pos_ids),
-                )
-            )
-        )
-    else:
-        await db.execute(delete(TradeHistory).where(TradeHistory.account_id == account_id))
-
-    master_res = await db.execute(select(MasterAccount.id).where(MasterAccount.account_id == account_id))
-    master_ids = [row[0] for row in master_res.all()]
-    if master_ids:
-        alloc_m = await db.execute(
-            select(InvestorAllocation.id).where(InvestorAllocation.master_id.in_(master_ids))
-        )
-        alloc_m_ids = [row[0] for row in alloc_m.all()]
-        if alloc_m_ids:
-            await db.execute(delete(CopyTrade).where(CopyTrade.investor_allocation_id.in_(alloc_m_ids)))
-            await db.execute(delete(InvestorAllocation).where(InvestorAllocation.id.in_(alloc_m_ids)))
-        await db.execute(delete(MasterAccount).where(MasterAccount.id.in_(master_ids)))
-
-    inv_alloc = await db.execute(
-        select(InvestorAllocation.id).where(InvestorAllocation.investor_account_id == account_id)
     )
-    inv_alloc_ids = [row[0] for row in inv_alloc.all()]
-    if inv_alloc_ids:
-        await db.execute(delete(CopyTrade).where(CopyTrade.investor_allocation_id.in_(inv_alloc_ids)))
-        await db.execute(delete(InvestorAllocation).where(InvestorAllocation.id.in_(inv_alloc_ids)))
+    for pos in open_pos_q.scalars().all():
+        pos.status = PositionStatus.CLOSED.value
+        pos.close_price = pos.open_price
+        pos.profit = Decimal("0")
+        pos.closed_at = datetime.utcnow()
 
-    ord_res = await db.execute(select(Order.id).where(Order.account_id == account_id))
-    ord_ids = [row[0] for row in ord_res.all()]
-    if ord_ids:
-        await db.execute(delete(IBCommission).where(IBCommission.source_trade_id.in_(ord_ids)))
+    # 2. Cancel pending orders.
+    await db.execute(
+        update(Order)
+        .where(
+            Order.account_id == account_id,
+            Order.status.in_((OrderStatus.PENDING.value, OrderStatus.PARTIALLY_FILLED.value)),
+        )
+        .values(status=OrderStatus.CANCELLED.value)
+    )
 
-    await db.execute(update(Position).where(Position.account_id == account_id).values(order_id=None))
-    await db.execute(delete(Position).where(Position.account_id == account_id))
-    await db.execute(delete(Order).where(Order.account_id == account_id))
+    # 3. If this account hosts an approved master, run the master-shutdown flow.
+    master_q = await db.execute(
+        select(MasterAccount).where(
+            MasterAccount.account_id == account_id,
+            MasterAccount.status == "approved",
+        )
+    )
+    master = master_q.scalar_one_or_none()
+    followers_refunded = 0
+    total_refunded = Decimal("0")
+    if master:
+        allocs_q = await db.execute(
+            select(InvestorAllocation).where(
+                InvestorAllocation.master_id == master.id,
+                InvestorAllocation.status == "active",
+            )
+        )
+        for alloc in allocs_q.scalars().all():
+            followers_refunded += 1
+            investor = await db.get(User, alloc.investor_user_id)
+            inv_acct = await db.get(TradingAccount, alloc.investor_account_id) if alloc.investor_account_id else None
 
-    await db.execute(delete(UserBonus).where(UserBonus.account_id == account_id))
-    await db.execute(delete(Deposit).where(Deposit.account_id == account_id))
-    await db.execute(delete(Withdrawal).where(Withdrawal.account_id == account_id))
-    await db.execute(delete(Transaction).where(Transaction.account_id == account_id))
+            if inv_acct:
+                inv_open_q = await db.execute(
+                    select(Position).where(
+                        Position.account_id == inv_acct.id,
+                        Position.status.in_((PositionStatus.OPEN.value, PositionStatus.PARTIALLY_CLOSED.value)),
+                    )
+                )
+                for pos in inv_open_q.scalars().all():
+                    pos.status = PositionStatus.CLOSED.value
+                    pos.close_price = pos.open_price
+                    pos.profit = Decimal("0")
+                    pos.closed_at = datetime.utcnow()
 
-    await db.execute(delete(TradingAccount).where(TradingAccount.id == account_id))
+                refund = (inv_acct.balance or Decimal("0")) + (inv_acct.credit or Decimal("0"))
+                inv_acct.balance = Decimal("0")
+                inv_acct.credit = Decimal("0")
+                inv_acct.equity = Decimal("0")
+                inv_acct.free_margin = Decimal("0")
+                inv_acct.margin_used = Decimal("0")
+                inv_acct.is_active = False
+
+                if investor and refund > 0:
+                    investor.main_wallet_balance = (investor.main_wallet_balance or Decimal("0")) + refund
+                    total_refunded += refund
+                    db.add(Transaction(
+                        user_id=investor.id,
+                        account_id=inv_acct.id,
+                        type="transfer",
+                        amount=refund,
+                        balance_after=investor.main_wallet_balance,
+                        description="Master account closed by owner — copy trade refund to main wallet",
+                    ))
+
+            alloc.status = "closed"
+
+        # Close any still-open CopyTrade rows for this master.
+        ct_q = await db.execute(
+            select(CopyTrade)
+            .join(InvestorAllocation, CopyTrade.investor_allocation_id == InvestorAllocation.id)
+            .where(
+                InvestorAllocation.master_id == master.id,
+                CopyTrade.status == "open",
+            )
+        )
+        for ct in ct_q.scalars().all():
+            ct.status = "closed"
+
+        master.status = "rejected"
+        master.followers_count = 0
+
+    # 4. If this account is itself a follower sub-account, close the allocation.
+    follower_alloc_q = await db.execute(
+        select(InvestorAllocation).where(
+            InvestorAllocation.investor_account_id == account_id,
+            InvestorAllocation.status == "active",
+        )
+    )
+    for alloc in follower_alloc_q.scalars().all():
+        alloc.status = "closed"
+
+    # 5. Sweep own balance + credit to owner's main wallet.
+    sweep = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
+    if sweep > 0:
+        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + sweep
+        db.add(Transaction(
+            user_id=user.id,
+            account_id=account.id,
+            type="transfer",
+            amount=sweep,
+            balance_after=user.main_wallet_balance,
+            description="Trading account closed — balance returned to main wallet",
+        ))
+
+    account.balance = Decimal("0")
+    account.credit = Decimal("0")
+    account.equity = Decimal("0")
+    account.free_margin = Decimal("0")
+    account.margin_used = Decimal("0")
+    account.is_active = False
+
     await db.commit()
 
-    return MessageResponse(message="Trading account permanently deleted.")
+    if master and followers_refunded:
+        return MessageResponse(
+            message=(
+                f"Account closed — ${float(sweep):.2f} returned to your main wallet. "
+                f"{followers_refunded} follower(s) refunded (${float(total_refunded):.2f})."
+            )
+        )
+    return MessageResponse(
+        message=f"Account closed — ${float(sweep):.2f} returned to your main wallet."
+    )
