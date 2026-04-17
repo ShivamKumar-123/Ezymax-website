@@ -32,6 +32,7 @@ import {
   transactionTitle,
   PAGE_SIZES,
 } from '@/lib/wallet/transactionHistoryModel';
+import TradesSection from './TradesSection';
 
 interface WalletSummaryResponse {
   main_wallet_balance?: number;
@@ -41,6 +42,7 @@ interface WalletSummaryResponse {
 }
 
 export default function TransactionsPage() {
+  const [mainTab, setMainTab] = useState<'transactions' | 'trades'>('transactions');
   const [currency, setCurrency] = useState('USD');
   const [totalDeposited, setTotalDeposited] = useState(0);
   const [totalWithdrawn, setTotalWithdrawn] = useState(0);
@@ -167,26 +169,58 @@ export default function TransactionsPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
-                Transaction History
+                {mainTab === 'transactions' ? 'Transaction History' : 'Trade History'}
               </h1>
               <p className="text-text-secondary text-xs sm:text-sm mt-1">
-                View all your deposits, withdrawals, transfers, and credits
+                {mainTab === 'transactions'
+                  ? 'View all your deposits, withdrawals, transfers, and credits'
+                  : 'View all your open, pending, and closed trades with full details'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void fetchData(true)}
-              disabled={refreshing}
-              className={clsx(
-                'shrink-0 p-2 rounded-lg border border-border-primary bg-card hover:bg-bg-hover transition-all',
-                refreshing && 'opacity-50 cursor-not-allowed',
-              )}
-              aria-label="Refresh"
-            >
-              <RefreshCcw className={clsx('w-4 h-4 text-text-secondary', refreshing && 'animate-spin')} />
-            </button>
+            {mainTab === 'transactions' && (
+              <button
+                type="button"
+                onClick={() => void fetchData(true)}
+                disabled={refreshing}
+                className={clsx(
+                  'shrink-0 p-2 rounded-lg border border-border-primary bg-card hover:bg-bg-hover transition-all',
+                  refreshing && 'opacity-50 cursor-not-allowed',
+                )}
+                aria-label="Refresh"
+              >
+                <RefreshCcw className={clsx('w-4 h-4 text-text-secondary', refreshing && 'animate-spin')} />
+              </button>
+            )}
           </div>
 
+          {/* Main tab toggle: Transactions / Trades */}
+          <div className="flex items-center gap-1 p-1 rounded-xl border border-border-primary bg-bg-secondary/50 w-fit">
+            {(
+              [
+                ['transactions', 'Transactions'],
+                ['trades', 'Trades'],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setMainTab(k)}
+                className={clsx(
+                  'px-5 py-2 text-sm font-semibold rounded-lg transition-all',
+                  mainTab === k
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-text-tertiary hover:text-text-primary',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {mainTab === 'trades' ? (
+            <TradesSection />
+          ) : (
+          <>
           {loadError && (
             <div className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-text-primary">
               {loadError}
@@ -541,6 +575,8 @@ export default function TransactionsPage() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
     </DashboardShell>
