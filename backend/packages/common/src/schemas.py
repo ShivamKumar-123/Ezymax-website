@@ -202,6 +202,7 @@ class DepositRequest(BaseModel):
     screenshot_url: Optional[str] = None
     crypto_tx_hash: Optional[str] = None
     crypto_address: Optional[str] = None
+    crypto_currency: Optional[str] = None  # e.g. BTC, ETH, USDT_TRC — used for OxaPay payment creation
 
 
 class WithdrawalRequest(BaseModel):

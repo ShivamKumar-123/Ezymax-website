@@ -20,12 +20,13 @@ _redis_prices = aioredis.from_url(_redis_url.rsplit("/", 1)[0] + "/0", decode_re
 
 async def get_book_stats(db: AsyncSession) -> dict:
     """Return A/B book user and trade counts."""
-    # User counts
+    _client_roles = ("user", "ib")
+    # User counts — include all client roles (user + ib), exclude demo
     a_users = (await db.execute(
-        select(func.count(User.id)).where(User.book_type == "A", User.role == "user")
+        select(func.count(User.id)).where(User.book_type == "A", User.role.in_(_client_roles), User.is_demo == False)
     )).scalar() or 0
     b_users = (await db.execute(
-        select(func.count(User.id)).where(User.book_type == "B", User.role == "user")
+        select(func.count(User.id)).where(User.book_type == "B", User.role.in_(_client_roles), User.is_demo == False)
     )).scalar() or 0
 
     # Trade counts (open positions)
@@ -54,8 +55,9 @@ async def list_book_users(
     page: int, per_page: int, search: str | None, book_filter: str | None, db: AsyncSession,
 ) -> dict:
     """Paginated user list with book type, account count, trade count."""
-    base = select(User).where(User.role == "user")
-    count_base = select(func.count(User.id)).where(User.role == "user")
+    _client_roles = ("user", "ib")
+    base = select(User).where(User.role.in_(_client_roles), User.is_demo == False)
+    count_base = select(func.count(User.id)).where(User.role.in_(_client_roles), User.is_demo == False)
 
     if book_filter and book_filter in ("A", "B"):
         base = base.where(User.book_type == book_filter)

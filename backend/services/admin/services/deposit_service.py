@@ -90,7 +90,10 @@ async def list_pending_withdrawals(page: int, per_page: int, db: AsyncSession):
 async def list_all_deposits(page: int, per_page: int, status: str | None, db: AsyncSession):
     query = select(Deposit)
     if status and status != "all":
-        query = query.where(Deposit.status == status)
+        if status == "approved":
+            query = query.where(Deposit.status.in_(["approved", "auto_approved"]))
+        else:
+            query = query.where(Deposit.status == status)
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 

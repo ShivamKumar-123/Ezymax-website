@@ -19,7 +19,7 @@ from packages.common.src.models import TradingAccount
 from packages.common.src.instrumentation import init_sentry, add_middleware_stack
 
 from .api import (
-    auth, orders, positions, accounts, instruments, deposits,
+    auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers,
 )
@@ -125,6 +125,7 @@ app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["
 app.include_router(banners.media_router, prefix="/api/v1/banners", tags=["Banners"])
 app.include_router(banners.router, prefix="/api/v1/banners", tags=["Banners"])
 app.include_router(followers.router, prefix="/api/v1/followers", tags=["Followers"])
+app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 
 
 @app.get("/health")

@@ -29,7 +29,7 @@ interface Deposit {
   method: string;
   transaction_id: string;
   screenshot_url: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'auto_approved' | 'rejected';
   created_at: string;
   note?: string;
   reason?: string;
@@ -98,6 +98,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 function statusBadge(status: string) {
   switch (status) {
     case 'approved':
+    case 'auto_approved':
       return 'bg-success/15 text-success';
     case 'rejected':
       return 'bg-danger/15 text-danger';
@@ -106,6 +107,11 @@ function statusBadge(status: string) {
     default:
       return 'bg-text-tertiary/15 text-text-tertiary';
   }
+}
+
+function statusLabel(status: string) {
+  if (status === 'auto_approved') return 'Auto Approved';
+  return status;
 }
 
 function formatMoney(n: number) {
@@ -495,7 +501,7 @@ export default function DepositsPage() {
                                   statusBadge(d.status),
                                 )}
                               >
-                                {d.status}
+                                {statusLabel(d.status)}
                               </span>
                             </td>
                             <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums whitespace-nowrap">

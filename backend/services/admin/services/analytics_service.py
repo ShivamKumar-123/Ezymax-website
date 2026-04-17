@@ -91,13 +91,31 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
 
     closed_trades_q = await db.execute(select(func.count(TradeHistory.id)))
 
-    copy_rev_q = await db.execute(
+    # Admin commission earned from all sources (PAMM performance fee, copy-trade, etc.)
+    admin_comm_all_q = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.type == "commission",
-            Transaction.description.ilike("%Admin commission%copy%"),
+            Transaction.type == "admin_commission",
         )
     )
-    copy_trade_admin_revenue = abs(float(copy_rev_q.scalar() or 0))
+    total_admin_commission = float(admin_comm_all_q.scalar() or 0)
+
+    # PAMM/MAM specific admin commission (performance + management fees)
+    pamm_admin_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "admin_commission",
+            Transaction.description.ilike("%pamm%") | Transaction.description.ilike("%performance%") | Transaction.description.ilike("%management%"),
+        )
+    )
+    pamm_admin_commission = float(pamm_admin_q.scalar() or 0)
+
+    # Copy trade admin commission
+    copy_rev_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "admin_commission",
+            Transaction.description.ilike("%copy%"),
+        )
+    )
+    copy_trade_admin_revenue = float(copy_rev_q.scalar() or 0)
 
     master_count_q = await db.execute(
         select(func.count(MasterAccount.id)).where(MasterAccount.status.in_(["approved", "active"]))
@@ -131,10 +149,10 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
     )
     active_copies = active_copies_q.scalar() or 0
 
+    # Master earnings — performance fees credited to masters (not admin's share)
     copy_perf_fee_q = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.type == "ib_commission",
-            Transaction.description.ilike("%Performance fee%copy%"),
+            Transaction.type.in_(["ib_commission", "performance_fee", "master_commission"]),
         )
     )
     master_earnings_total = float(copy_perf_fee_q.scalar() or 0)
@@ -171,6 +189,8 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
         "net_deposits": total_deposits - total_withdrawals,
         "open_positions": open_pos_q.scalar() or 0,
         "closed_trades": closed_trades_q.scalar() or 0,
+        "total_admin_commission": total_admin_commission,
+        "pamm_admin_commission": pamm_admin_commission,
         "copy_trade_revenue": copy_trade_admin_revenue,
         "active_masters": master_count_q.scalar() or 0,
         "total_ibs": total_ibs,

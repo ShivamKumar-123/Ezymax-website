@@ -14,19 +14,42 @@ from packages.common.src.admin_schemas import (
 
 async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    from packages.common.src.models import TradingAccount
 
+    # Total Users: matches User Management page — all except admin/super_admin.
     total_users_q = await db.execute(
-        select(func.count(User.id)).where(User.role == "user")
+        select(func.count(User.id)).where(
+            User.role.notin_(["admin", "super_admin"]),
+        )
     )
     total_users = total_users_q.scalar() or 0
 
+    # Active Traders: distinct users who traded in the last 30 days
+    # (opened a position OR closed a trade). Broader than "has open position now".
+    from packages.common.src.models import TradeHistory
+    thirty_days_ago = today_start - timedelta(days=30)
+
+    # Users with positions opened in last 30 days
+    open_users_q = (
+        select(TradingAccount.user_id)
+        .select_from(Position)
+        .join(TradingAccount, TradingAccount.id == Position.account_id)
+        .where(Position.created_at >= thirty_days_ago)
+    )
+    # Users with trades closed in last 30 days
+    closed_users_q = (
+        select(TradingAccount.user_id)
+        .select_from(TradeHistory)
+        .join(TradingAccount, TradingAccount.id == TradeHistory.account_id)
+        .where(TradeHistory.closed_at >= thirty_days_ago)
+    )
+    combined = open_users_q.union(closed_users_q).subquery()
     active_traders_q = await db.execute(
-        select(func.count(func.distinct(Position.account_id))).where(
-            Position.status == PositionStatus.OPEN.value
-        )
+        select(func.count(func.distinct(combined.c.user_id)))
     )
     active_traders = active_traders_q.scalar() or 0
 
+    # Deposits Today: approved deposits since midnight UTC.
     deposits_today_q = await db.execute(
         select(func.coalesce(func.sum(Deposit.amount), 0)).where(
             Deposit.status.in_(["approved", "auto_approved"]),
@@ -35,6 +58,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     )
     deposits_today = float(deposits_today_q.scalar() or 0)
 
+    # Withdrawals Today.
     withdrawals_today_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(
             Withdrawal.status.in_(["approved", "completed"]),
@@ -43,15 +67,25 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     )
     withdrawals_today = float(withdrawals_today_q.scalar() or 0)
 
+    # Platform P&L (all-time): broker wins when traders lose → negate total user profit.
+    # Also add commissions earned (always positive for broker).
     pnl_q = await db.execute(
         select(func.coalesce(func.sum(Position.profit), 0)).where(
             Position.status == PositionStatus.CLOSED.value,
-            Position.closed_at >= today_start,
         )
     )
     user_pnl = float(pnl_q.scalar() or 0)
-    platform_pnl = -user_pnl
 
+    commission_all_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "commission",
+        )
+    )
+    total_commission = float(commission_all_q.scalar() or 0)
+
+    platform_pnl = -user_pnl + total_commission
+
+    # Commission paid today (separate stat, kept for schema compat).
     commission_q = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
             Transaction.type == "commission",
@@ -60,11 +94,13 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     )
     commission_paid = float(commission_q.scalar() or 0)
 
+    # Pending Deposits count.
     pending_deposits_q = await db.execute(
         select(func.count(Deposit.id)).where(Deposit.status == "pending")
     )
     pending_deposits_count = pending_deposits_q.scalar() or 0
 
+    # Open Support Tickets.
     open_tickets_q = await db.execute(
         select(func.count(SupportTicket.id)).where(
             SupportTicket.status.in_(["open", "in_progress"])

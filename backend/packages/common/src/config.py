@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     # Request body size limit (bytes) — 10 MB default
     MAX_REQUEST_SIZE: int = 10 * 1024 * 1024
 
+    # OxaPay crypto payment gateway
+    OXAPAY_MERCHANT_KEY: str = ""
+    OXAPAY_SANDBOX: bool = False
+    OXAPAY_CALLBACK_BASE_URL: str = ""  # public gateway URL for webhooks, e.g. "https://api.yourdomain.com"
+
     # Absolute path recommended in production (writable volume). Relative paths are resolved from gateway CWD.
     KYC_UPLOAD_ROOT: str = "uploads/kyc"
     # Deposit proof screenshots + user payout QR for manual withdrawals (gateway). Mount same path in admin for review.

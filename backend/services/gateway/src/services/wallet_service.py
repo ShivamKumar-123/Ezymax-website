@@ -11,11 +11,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
-    BankAccount, Deposit, Transaction, TradingAccount, User, Withdrawal,
+    BankAccount, BonusOffer, Deposit, Transaction, TradingAccount, User, Withdrawal,
 )
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
+from . import oxapay_service
 
 logger = logging.getLogger("wallet_service")
 
@@ -124,6 +125,27 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     await db.commit()
     await db.refresh(deposit)
 
+    # ── OxaPay automated payment ──────────────────────────────────────
+    payment_url: str | None = None
+    settings = get_settings()
+    crypto_currency = getattr(req, "crypto_currency", None)
+    if db_method == "oxapay" and settings.OXAPAY_MERCHANT_KEY and crypto_currency:
+        try:
+            ox = await oxapay_service.create_payment(
+                amount=req.amount,
+                crypto_currency=crypto_currency,
+                order_id=str(deposit.id),
+                description=f"TrustEdge deposit ${float(req.amount):,.2f}",
+            )
+            deposit.transaction_id = ox["track_id"]
+            payment_url = ox["payment_url"]
+            await db.commit()
+        except Exception:
+            logger.exception(
+                "OxaPay create_payment failed (deposit %s saved as pending, user can retry)",
+                deposit.id,
+            )
+
     try:
         await create_notification(
             db, user_id,
@@ -139,7 +161,10 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         except Exception:
             pass
 
-    return {"id": str(deposit.id), "status": "pending", "amount": float(deposit.amount)}
+    result: dict = {"id": str(deposit.id), "status": "pending", "amount": float(deposit.amount)}
+    if payment_url:
+        result["payment_url"] = payment_url
+    return result
 
 
 async def create_manual_deposit(
@@ -228,6 +253,121 @@ async def create_manual_deposit(
             pass
 
     return {"id": str(deposit.id), "status": "pending", "amount": float(deposit.amount)}
+
+
+# ─── OxaPay Webhook ──────────────────────────────────────────────────────
+
+async def handle_oxapay_webhook(
+    order_id: str,
+    oxapay_status: str,
+    track_id: str | None,
+    payload: dict,
+    db: AsyncSession,
+) -> None:
+    """Process OxaPay webhook callback. Auto-approve on 'paid', reject on 'expired'/'failed'."""
+    from uuid import UUID as UUIDType
+
+    try:
+        deposit_uuid = UUIDType(order_id)
+    except ValueError:
+        logger.warning("OxaPay webhook: invalid order_id=%s", order_id)
+        return
+
+    result = await db.execute(select(Deposit).where(Deposit.id == deposit_uuid))
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        logger.warning("OxaPay webhook: deposit not found order_id=%s", order_id)
+        return
+
+    # Idempotent — skip if already processed
+    if deposit.status != "pending":
+        logger.info("OxaPay webhook: deposit %s already %s, skipping", order_id, deposit.status)
+        return
+
+    if track_id:
+        deposit.transaction_id = track_id
+
+    if oxapay_status == "paid":
+        deposit.status = "auto_approved"
+        deposit.approved_at = datetime.utcnow()
+
+        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+        user_row = user_q.scalar_one_or_none()
+        if not user_row:
+            logger.error("OxaPay webhook: user not found for deposit %s", order_id)
+            return
+
+        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+
+        db.add(Transaction(
+            user_id=deposit.user_id,
+            account_id=None,
+            type="deposit",
+            amount=deposit.amount,
+            balance_after=user_row.main_wallet_balance,
+            reference_id=deposit.id,
+            description=f"Deposit to main wallet - oxapay (auto)",
+        ))
+
+        # Apply bonus offers (mirrors admin approve_deposit logic)
+        bonus_msg = ""
+        now = datetime.utcnow()
+        offers_q = await db.execute(
+            select(BonusOffer).where(
+                BonusOffer.is_active == True,
+                BonusOffer.bonus_type.in_(["deposit", "welcome"]),
+                BonusOffer.min_deposit <= deposit.amount,
+            )
+        )
+        for offer in offers_q.scalars().all():
+            if offer.starts_at and offer.starts_at > now:
+                continue
+            if offer.expires_at and offer.expires_at < now:
+                continue
+            if offer.percentage and offer.percentage > 0:
+                bonus_amount = deposit.amount * offer.percentage / Decimal("100")
+            elif offer.fixed_amount and offer.fixed_amount > 0:
+                bonus_amount = offer.fixed_amount
+            else:
+                continue
+            if offer.max_bonus and bonus_amount > offer.max_bonus:
+                bonus_amount = offer.max_bonus
+
+            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=None,
+                type="bonus",
+                amount=bonus_amount,
+                balance_after=user_row.main_wallet_balance,
+                description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
+            ))
+            bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit approved",
+            message=f"Your deposit of ${float(deposit.amount):,.2f} was approved automatically.{bonus_msg}",
+            notif_type="deposit", action_url="/wallet",
+        )
+
+    elif oxapay_status in ("expired", "failed"):
+        deposit.status = "rejected"
+        deposit.rejection_reason = f"OxaPay payment {oxapay_status}"
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit not completed",
+            message=f"Your ${float(deposit.amount):,.2f} crypto deposit {oxapay_status}. Please try again.",
+            notif_type="deposit", action_url="/wallet",
+        )
+
+    else:
+        # "waiting", "confirming" — informational only
+        logger.info("OxaPay webhook: deposit %s status=%s (no action)", order_id, oxapay_status)
+        return
+
+    await db.commit()
+    logger.info("OxaPay webhook: deposit %s → %s", order_id, deposit.status)
 
 
 # ─── Withdrawals ──────────────────────────────────────────────────────────

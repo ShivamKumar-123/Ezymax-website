@@ -458,18 +458,22 @@ function WalletPageContent() {
       return;
     }
     if (depositChannel === 'oxapay') {
-      const refCombined = [selectedCryptoDeposit ? `[${selectedCryptoDeposit}]` : '', depositTxId.trim()]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
       setDepositSubmitting(true);
       try {
-        await api.post('/wallet/deposit', {
-          amount: amt,
-          method: OXAPAY_METHOD,
-          transaction_id: refCombined || undefined,
-        });
-        toast.success(`Deposit of $${amt.toLocaleString()} submitted — pending approval`);
+        const res = await api.post<{ id: string; status: string; amount: number; payment_url?: string }>(
+          '/wallet/deposit',
+          {
+            amount: amt,
+            method: OXAPAY_METHOD,
+            crypto_currency: selectedCryptoDeposit,
+          },
+        );
+        if (res.payment_url) {
+          window.open(res.payment_url, '_blank');
+          toast.success('Payment page opened — complete the payment in the new tab. Your deposit will be approved automatically.');
+        } else {
+          toast.success(`Deposit of $${amt.toLocaleString()} submitted — pending approval`);
+        }
         void fetchData(true);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Deposit failed');
@@ -984,18 +988,8 @@ function WalletPageContent() {
                           <span className="text-sm font-bold text-text-primary">OxaPay</span>
                         </div>
                         <p className="text-[11px] text-text-secondary leading-relaxed">
-                          Pay via OxaPay, then submit below. Add your reference ID so support can match your payment.
+                          You&apos;ll be redirected to OxaPay&apos;s secure payment page. Your deposit is approved automatically once confirmed on the blockchain.
                         </p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">OxaPay transaction / reference ID (optional)</label>
-                        <input
-                          type="text"
-                          value={depositTxId}
-                          onChange={(e) => setDepositTxId(e.target.value)}
-                          placeholder="Paste OxaPay reference or transaction ID"
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
-                        />
                       </div>
 
                       <button
@@ -1014,7 +1008,7 @@ function WalletPageContent() {
                           : `Deposit funds${depositAmount ? ` — ${fmt(parseFloat(depositAmount || '0'))}` : ''}`}
                       </button>
                       <p className="text-center text-[11px] text-text-tertiary">
-                        Deposits are reviewed and typically approved within 24 hours.
+                        Crypto deposits are approved automatically after blockchain confirmation.
                       </p>
                     </>
                   ) : (

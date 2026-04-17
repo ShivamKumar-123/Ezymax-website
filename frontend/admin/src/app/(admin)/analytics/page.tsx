@@ -113,10 +113,11 @@ export default function AnalyticsPage() {
 
         {/* Platform Overview */}
         {data && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <StatBox label="Total Deposits" value={`$${fmt(data.total_deposits)}`} color="text-success" icon={DollarSign} />
             <StatBox label="Total Withdrawals" value={`$${fmt(data.total_withdrawals)}`} color="text-danger" icon={DollarSign} />
             <StatBox label="Net Deposits" value={`$${fmt(data.net_deposits)}`} color="text-buy" icon={TrendingUp} />
+            <StatBox label="Admin Commission (Total)" value={`$${fmt(data.total_admin_commission || 0)}`} color="text-success" icon={DollarSign} />
             <StatBox label="Open / Closed Trades" value={`${data.open_positions} / ${data.closed_trades}`} icon={BarChart3} />
           </div>
         )}
@@ -153,7 +154,8 @@ export default function AnalyticsPage() {
               <StatBox label="Copy Trades (Total)" value={String(data.total_copy_trades || 0)} icon={BarChart3} />
               <StatBox label="Active Copies" value={String(data.active_copies || 0)} color={data.active_copies > 0 ? 'text-buy' : undefined} icon={TrendingUp} />
               <StatBox label="Master Earnings" value={`$${fmt(data.master_earnings_total || 0)}`} color="text-warning" icon={DollarSign} />
-              <StatBox label="Admin Copy Revenue" value={`$${fmt(data.copy_trade_revenue || 0)}`} color="text-success" icon={DollarSign} />
+              <StatBox label="PAMM Admin Commission" value={`$${fmt(data.pamm_admin_commission || 0)}`} color="text-success" icon={DollarSign} />
+              <StatBox label="Copy Trade Admin Revenue" value={`$${fmt(data.copy_trade_revenue || 0)}`} color="text-success" icon={DollarSign} />
             </div>
           </div>
         )}
