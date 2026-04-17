@@ -21,7 +21,7 @@ async def list_leaderboard(
     current_user: dict = Depends(get_current_user),
 ):
     return await social_service.list_leaderboard(
-        sort_by=sort_by, page=page, per_page=per_page, db=db,
+        sort_by=sort_by, page=page, per_page=per_page, user_id=current_user["user_id"], db=db,
     )
 
 

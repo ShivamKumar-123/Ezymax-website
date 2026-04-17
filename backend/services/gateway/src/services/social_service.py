@@ -32,7 +32,7 @@ async def _calculate_live_return(account_id: UUID) -> dict:
 
 
 async def list_leaderboard(
-    sort_by: str, page: int, per_page: int, db: AsyncSession,
+    sort_by: str, page: int, per_page: int, user_id: UUID, db: AsyncSession,
 ) -> dict:
     count_result = await db.execute(
         select(func.count()).select_from(MasterAccount).where(
@@ -66,6 +66,17 @@ async def list_leaderboard(
 
     items = []
     for master, first_name, last_name in rows:
+        is_copying = False
+        alloc_result = await db.execute(
+            select(InvestorAllocation).where(
+                InvestorAllocation.master_id == master.id,
+                InvestorAllocation.investor_user_id == user_id,
+                InvestorAllocation.status == "active",
+            )
+        )
+        if alloc_result.scalar_one_or_none():
+            is_copying = True
+
         items.append({
             "id": str(master.id),
             "user_id": str(master.user_id),
@@ -78,6 +89,7 @@ async def list_leaderboard(
             "min_investment": float(master.min_investment),
             "description": master.description,
             "created_at": master.created_at.isoformat() if master.created_at else None,
+            "is_copying": is_copying,
         })
 
     return {

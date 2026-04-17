@@ -24,6 +24,7 @@ interface Provider {
   min_investment: number;
   description: string;
   created_at: string;
+  is_copying: boolean;
 }
 
 interface ProviderDetail extends Provider {
@@ -194,6 +195,10 @@ function TraderCard({
             >
               {provider.followers_count} Followers
             </button>
+          ) : provider.is_copying ? (
+            <span className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
+              Following
+            </span>
           ) : (
             <button
               type="button"
@@ -204,7 +209,7 @@ function TraderCard({
                 '[data-theme="light"]:border-black [data-theme="light"]:text-black [data-theme="light"]:hover:bg-black [data-theme="light"]:hover:text-[#F2EFE9]'
               )}
             >
-              Copy
+              Follow
             </button>
           )}
         </div>
