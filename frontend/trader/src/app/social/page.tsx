@@ -961,8 +961,6 @@ export default function SocialPage() {
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
-  const [accounts, setAccounts] = useState<{ id: string; account_number: string; balance: number; is_demo: boolean }[]>([]);
-  const [accountId, setAccountId] = useState('');
   const masterType = 'signal_provider';
   const [perfFee, setPerfFee] = useState('20');
   const [minInvest, setMinInvest] = useState('100');
@@ -976,32 +974,33 @@ function BecomeProviderTab() {
       try {
         let provRes = null;
         try { provRes = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
-        const acctRes = await api.get<{ items: any[] }>('/accounts');
         if (provRes) setExisting(provRes);
-        const items = (acctRes?.items || []).filter((a: any) => !a.is_demo);
-        setAccounts(items);
-        if (items.length > 0) setAccountId(items[0].id);
       } catch {} finally { setLoading(false); }
     })();
   }, []);
 
   const handleSubmit = async () => {
-    if (!accountId) { toast.error('Select an account'); return; }
     setSubmitting(true);
     try {
       const params = new URLSearchParams({
-        account_id: accountId,
         master_type: masterType,
         performance_fee_pct: perfFee,
         min_investment: minInvest,
         max_investors: maxInvestors,
         ...(description ? { description } : {}),
       });
-      await api.post(`/social/become-provider?${params.toString()}`, {});
-      toast.success('Application submitted! Admin will review.');
-      let res = null;
-      try { res = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
-      if (res) setExisting(res);
+      const res = await api.post<{ account_number?: string }>(
+        `/social/become-provider?${params.toString()}`,
+        {},
+      );
+      toast.success(
+        res?.account_number
+          ? `Application submitted! Master trading account ${res.account_number} created.`
+          : 'Application submitted! Admin will review.',
+      );
+      let refreshed = null;
+      try { refreshed = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
+      if (refreshed) setExisting(refreshed);
     } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setSubmitting(false); }
   };
 
@@ -1048,11 +1047,9 @@ function BecomeProviderTab() {
           <a href="/pamm" className="text-buy underline underline-offset-2 whitespace-nowrap">Apply on PAMM page →</a>
         </div>
 
-        <div>
-          <label className="text-xxs text-text-secondary block mb-1">Trading Account</label>
-          <select value={accountId} onChange={e => setAccountId(e.target.value)} className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs">
-            {accounts.map(a => <option key={a.id} value={a.id}>{a.account_number} — ${a.balance?.toLocaleString()}</option>)}
-          </select>
+        <div className="p-3 rounded-xl border border-accent/30 bg-accent/5 text-xxs text-text-secondary">
+          <p className="font-semibold text-accent mb-1">Dedicated Master Trading Account</p>
+          <p>When approved, a dedicated master trading account will be created for you automatically. Fund it from your main wallet to start trading — your followers will mirror only this account.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

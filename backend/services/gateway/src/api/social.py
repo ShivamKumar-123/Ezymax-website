@@ -74,7 +74,6 @@ async def stop_copy(
 
 @router.post("/become-provider", status_code=201)
 async def become_provider(
-    account_id: UUID = Query(...),
     master_type: str = Query("signal_provider"),
     description: str = Query(None),
     performance_fee_pct: Decimal = Query(Decimal("20"), ge=0, le=50),
@@ -84,8 +83,10 @@ async def become_provider(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # account_id removed — server auto-creates a dedicated master trading
+    # account so the user's personal live accounts stay separate.
     return await social_service.become_provider(
-        account_id=account_id, master_type=master_type, description=description,
+        account_id=None, master_type=master_type, description=description,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors,
         user_id=current_user["user_id"], db=db,

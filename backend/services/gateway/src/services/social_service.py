@@ -602,7 +602,7 @@ async def withdraw_managed_account(
 
 
 async def become_provider(
-    account_id: UUID, master_type: str, description: str | None,
+    account_id: UUID | None, master_type: str, description: str | None,
     performance_fee_pct: Decimal, management_fee_pct: Decimal,
     min_investment: Decimal, max_investors: int,
     user_id: UUID, db: AsyncSession,
@@ -628,22 +628,31 @@ async def become_provider(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a provider application of this type")
 
-    acct_result = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.id == account_id, TradingAccount.user_id == user_id,
-        )
+    # Auto-create a dedicated master trading account. The user's existing live
+    # accounts stay private; all copy-trading activity runs through this new
+    # account so followers only mirror the master's dedicated strategy.
+    prefix_map = {"signal_provider": "CT", "pamm": "PM", "mamm": "MM"}
+    prefix = prefix_map.get(normalized_type, "CT")
+    master_account_number = f"{prefix}{secrets.randbelow(90_000_000) + 10_000_000}"
+
+    master_account = TradingAccount(
+        user_id=user_id,
+        account_number=master_account_number,
+        balance=Decimal("0"),
+        equity=Decimal("0"),
+        free_margin=Decimal("0"),
+        margin_used=Decimal("0"),
+        credit=Decimal("0"),
+        leverage=500,
+        is_active=True,
+        is_demo=False,
     )
-    account = acct_result.scalar_one_or_none()
-    if not account:
-        raise HTTPException(status_code=404, detail="Trading account not found")
-    if not account.is_active:
-        raise HTTPException(status_code=403, detail="Account is not active")
-    if account.is_demo:
-        raise HTTPException(status_code=400, detail="Cannot use a demo account as provider")
+    db.add(master_account)
+    await db.flush()
 
     master = MasterAccount(
-        user_id=user_id, account_id=account_id, status="pending",
-        master_type=master_type if master_type in ("signal_provider", "pamm", "mamm") else "signal_provider",
+        user_id=user_id, account_id=master_account.id, status="pending",
+        master_type=normalized_type,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors, description=description,
     )
@@ -651,7 +660,12 @@ async def become_provider(
     await db.commit()
     await db.refresh(master)
 
-    return {"id": str(master.id), "status": master.status, "message": "Application submitted for review"}
+    return {
+        "id": str(master.id),
+        "status": master.status,
+        "account_number": master_account_number,
+        "message": "Application submitted — your master trading account is created. Fund it to start trading.",
+    }
 
 
 async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | None = None) -> dict:
