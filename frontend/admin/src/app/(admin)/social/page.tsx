@@ -127,8 +127,18 @@ export default function SocialPage() {
     if (!deleteModal) return;
     setDeleteLoading(true);
     try {
-      await adminApi.delete(`/social/masters/${deleteModal.id}`);
-      toast.success('Master deleted successfully');
+      // Use the safe delete endpoint that closes open positions and refunds
+      // allocations + master balance to respective main wallets.
+      const res = await adminApi.delete<{
+        message: string;
+        master_sweep: number;
+        followers_refunded: number;
+        total_refunded_to_followers: number;
+      }>(`/business/masters/${deleteModal.id}`);
+      toast.success(
+        `Master deleted — ${res.followers_refunded} follower(s) refunded $${res.total_refunded_to_followers.toFixed(2)}, master wallet +$${res.master_sweep.toFixed(2)}`,
+        { duration: 6000 },
+      );
       setDeleteModal(null);
       fetchData();
     } catch (e: any) { toast.error(e.message); } finally { setDeleteLoading(false); }
@@ -473,21 +483,21 @@ export default function SocialPage() {
             <div className="p-4 space-y-3">
               <div className="p-3 rounded-md bg-danger/10 border border-danger/20">
                 <p className="text-xs text-danger font-medium mb-1">⚠️ Warning: This action cannot be undone</p>
-                <p className="text-xxs text-text-secondary">Deleting this master account will remove all associated data and revoke master trader privileges.</p>
+                <p className="text-xxs text-text-secondary">Deleting this master will close all open positions, refund follower allocations to their main wallets, sweep master balance to main wallet, and permanently remove the master record.</p>
               </div>
               <div className="p-3 rounded-md bg-bg-tertiary border border-border-primary">
                 <p className="text-xs text-text-primary font-medium">{deleteModal.user_name}</p>
                 <p className="text-xxs text-text-tertiary">{deleteModal.user_email} · {deleteModal.account_number}</p>
                 <p className="text-xxs text-text-tertiary mt-1">Type: {deleteModal.master_type?.replace('_', ' ')} · Followers: {deleteModal.active_investors}/{deleteModal.max_investors}</p>
                 {deleteModal.active_investors > 0 && (
-                  <p className="text-xxs text-danger mt-2 font-medium">⚠️ This master has {deleteModal.active_investors} active investor(s). Please close all allocations first.</p>
+                  <p className="text-xxs text-warning mt-2 font-medium">ℹ️ {deleteModal.active_investors} active investor(s) will be refunded automatically.</p>
                 )}
               </div>
               <p className="text-xxs text-text-tertiary">Are you sure you want to delete this master account?</p>
             </div>
             <div className="px-4 py-3 border-t border-border-primary flex justify-end gap-2">
               <button onClick={() => setDeleteModal(null)} className="px-3 py-1.5 text-xs text-text-secondary border border-border-primary rounded-md hover:bg-bg-hover transition-fast">Cancel</button>
-              <button onClick={handleDelete} disabled={deleteLoading || deleteModal.active_investors > 0} className="px-3 py-1.5 text-xs font-medium text-white bg-danger rounded-md hover:bg-danger/80 disabled:opacity-50 transition-fast inline-flex items-center gap-1.5">
+              <button onClick={handleDelete} disabled={deleteLoading} className="px-3 py-1.5 text-xs font-medium text-white bg-danger rounded-md hover:bg-danger/80 disabled:opacity-50 transition-fast inline-flex items-center gap-1.5">
                 {deleteLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete Master
               </button>
             </div>
