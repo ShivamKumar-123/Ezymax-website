@@ -61,6 +61,31 @@ async def my_copies(
     return await social_service.my_copies(user_id=current_user["user_id"], db=db)
 
 
+@router.get("/follow-requests")
+async def follow_requests(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Master sees all pending follow requests for their provider account."""
+    return await social_service.list_follow_requests(
+        user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.post("/follow-requests/{allocation_id}")
+async def approve_follow_request(
+    allocation_id: UUID,
+    action: str = Query(..., pattern="^(approve|reject)$"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Master approves or rejects a pending follow request."""
+    return await social_service.approve_follow_request(
+        allocation_id=allocation_id, action=action,
+        user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.delete("/copy/{allocation_id}")
 async def stop_copy(
     allocation_id: UUID,
