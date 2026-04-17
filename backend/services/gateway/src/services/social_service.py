@@ -199,9 +199,12 @@ async def start_copy(
     max_drawdown_pct: Decimal | None, max_lot_override: Decimal | None,
     user_id: UUID, db: AsyncSession,
 ) -> dict:
-    """Follower requests to copy a master. Creates a PENDING allocation only.
+    """Follower starts copying a master — auto-approved.
 
-    No account is created and no funds are moved until the master approves.
+    Creates a dedicated CF trading account for the follower, debits their main
+    wallet, and activates the allocation in one step so the copy engine starts
+    mirroring the master's trades immediately. Funds stay in the follower's
+    own CF account; the master never touches them.
     """
     master_result = await db.execute(
         select(MasterAccount).where(
@@ -236,7 +239,6 @@ async def start_copy(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="Provider has reached maximum investors")
 
-    # Verify user has sufficient balance (but don't deduct yet)
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
     if not user:
@@ -245,7 +247,6 @@ async def start_copy(
     if wallet_bal < amount:
         raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
-    # Check for duplicate (pending or active)
     existing = await db.execute(
         select(InvestorAllocation).where(
             InvestorAllocation.master_id == master_id,
@@ -254,28 +255,52 @@ async def start_copy(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already copying or pending approval for this provider")
+        raise HTTPException(status_code=400, detail="Already copying this provider")
 
-    # Create a PENDING allocation — no account, no fund movement
+    investor_account = TradingAccount(
+        user_id=user_id,
+        account_number=_gen_investor_account_number("signal"),
+        balance=amount,
+        equity=amount,
+        free_margin=amount,
+        margin_used=Decimal("0"),
+        leverage=500,
+        currency="USD",
+        is_demo=False,
+        is_active=True,
+    )
+    db.add(investor_account)
+    await db.flush()
+
+    user.main_wallet_balance = wallet_bal - amount
+    db.add(Transaction(
+        user_id=user_id, account_id=investor_account.id,
+        type="withdrawal", amount=-amount,
+        description=f"Copy trading investment → account {investor_account.account_number}",
+    ))
+
     allocation = InvestorAllocation(
         master_id=master_id,
         investor_user_id=user_id,
-        investor_account_id=None,
+        investor_account_id=investor_account.id,
         copy_type=AllocationCopyType.SIGNAL.value,
         allocation_amount=amount,
         max_drawdown_pct=max_drawdown_pct,
         max_lot_override=max_lot_override,
-        status="pending",
+        status="active",
     )
     db.add(allocation)
+    master.followers_count = (master.followers_count or 0) + 1
     await db.commit()
     await db.refresh(allocation)
 
     return {
         "id": str(allocation.id), "master_id": str(master_id),
+        "investor_account": investor_account.account_number,
         "amount": float(amount),
         "copy_type": allocation.copy_type, "status": allocation.status,
-        "message": "Follow request sent — waiting for master approval",
+        "wallet_balance": float(user.main_wallet_balance),
+        "message": f"Now copying — account {investor_account.account_number} funded with ${amount}",
         "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
     }
 
