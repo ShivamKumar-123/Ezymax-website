@@ -751,30 +751,13 @@ async def become_provider(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a provider application of this type")
 
-    # Auto-create a dedicated master trading account. The user's existing live
-    # accounts stay private; all copy-trading activity runs through this new
-    # account so followers only mirror the master's dedicated strategy.
-    prefix_map = {"signal_provider": "CT", "pamm": "PM", "mamm": "MM"}
-    prefix = prefix_map.get(normalized_type, "CT")
-    master_account_number = f"{prefix}{secrets.randbelow(90_000_000) + 10_000_000}"
-
-    master_account = TradingAccount(
-        user_id=user_id,
-        account_number=master_account_number,
-        balance=Decimal("0"),
-        equity=Decimal("0"),
-        free_margin=Decimal("0"),
-        margin_used=Decimal("0"),
-        credit=Decimal("0"),
-        leverage=500,
-        is_active=True,
-        is_demo=False,
-    )
-    db.add(master_account)
-    await db.flush()
-
+    # Pool trading account is created on admin approval, not here — otherwise
+    # a pending row would leave an orphan CT/PM/MM account if the admin
+    # rejects, and approve_master_request() would create a second one and
+    # overwrite master.account_id, stranding the first. Keep account_id=None
+    # until approved.
     master = MasterAccount(
-        user_id=user_id, account_id=master_account.id, status="pending",
+        user_id=user_id, account_id=None, status="pending",
         master_type=normalized_type,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors, description=description,
@@ -786,8 +769,8 @@ async def become_provider(
     return {
         "id": str(master.id),
         "status": master.status,
-        "account_number": master_account_number,
-        "message": "Application submitted — your master trading account is created. Fund it to start trading.",
+        "account_number": None,
+        "message": "Application submitted — your pool trading account will be created after admin approval.",
     }
 
 
