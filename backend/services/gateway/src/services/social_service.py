@@ -77,6 +77,15 @@ async def list_leaderboard(
         if alloc_result.scalar_one_or_none():
             is_copying = True
 
+        # Real follower count = count of ACTIVE allocations (excludes closed/paused/etc)
+        real_followers_q = await db.execute(
+            select(func.count()).select_from(InvestorAllocation).where(
+                InvestorAllocation.master_id == master.id,
+                InvestorAllocation.status == "active",
+            )
+        )
+        real_followers = real_followers_q.scalar() or 0
+
         items.append({
             "id": str(master.id),
             "user_id": str(master.user_id),
@@ -84,7 +93,7 @@ async def list_leaderboard(
             "total_return_pct": float(master.total_return_pct),
             "max_drawdown_pct": float(master.max_drawdown_pct),
             "sharpe_ratio": float(master.sharpe_ratio),
-            "followers_count": master.followers_count,
+            "followers_count": real_followers,
             "performance_fee_pct": float(master.performance_fee_pct),
             "min_investment": float(master.min_investment),
             "description": master.description,
@@ -169,7 +178,7 @@ async def get_provider_detail(
         "total_return_pct": float(master.total_return_pct),
         "max_drawdown_pct": float(master.max_drawdown_pct),
         "sharpe_ratio": float(master.sharpe_ratio),
-        "followers_count": master.followers_count,
+        "followers_count": active_investors,  # actual count from allocations, not stale counter
         "active_investors": active_investors,
         "performance_fee_pct": float(master.performance_fee_pct),
         "management_fee_pct": float(master.management_fee_pct),
@@ -717,7 +726,7 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "total_return_pct": float(master.total_return_pct),
         "max_drawdown_pct": float(master.max_drawdown_pct),
         "sharpe_ratio": float(master.sharpe_ratio),
-        "followers_count": master.followers_count,
+        "followers_count": inv_stats.count,  # actual active allocations, not stale counter
         "active_investors": inv_stats.count,
         "total_aum": float(inv_stats.total_aum),
         "total_investor_profit": float(inv_stats.total_investor_profit),

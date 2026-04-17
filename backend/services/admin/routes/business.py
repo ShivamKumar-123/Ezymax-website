@@ -280,3 +280,32 @@ async def list_sub_brokers(
     db: AsyncSession = Depends(get_db),
 ):
     return await business_service.list_sub_brokers(page=page, per_page=per_page, db=db)
+
+
+# ─── Copy-Trade Master Management ──────────────────────────────
+
+@router.get("/masters")
+async def list_masters(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all copy-trade masters (signal_provider, pamm, mamm)."""
+    return await business_service.list_masters(page=page, per_page=per_page, db=db)
+
+
+@router.delete("/masters/{master_id}")
+async def delete_master(
+    master_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(require_permission("ib.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a copy-trade master. Closes all open copy positions, refunds
+    allocation amounts to each follower's main wallet, and sweeps the master's
+    trading account balance back to the master user's main wallet."""
+    return await business_service.delete_master(
+        master_id=master_id, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )

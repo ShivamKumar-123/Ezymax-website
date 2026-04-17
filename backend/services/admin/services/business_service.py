@@ -2,6 +2,7 @@
 import uuid
 import secrets
 import string
+from decimal import Decimal
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -11,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.models import (
     User, IBApplication, IBProfile, IBCommission, Referral,
     IBCommissionPlan, SystemSetting,
+    MasterAccount, InvestorAllocation, CopyTrade,
+    TradingAccount, Position, PositionStatus, TradeHistory, Transaction,
 )
 from packages.common.src.admin_schemas import (
     IBApplicationOut, IBProfileOut, PaginatedResponse,
@@ -696,3 +699,201 @@ async def get_ib_referrals(ib_id: uuid.UUID, page: int, per_page: int, db: Async
             "joined_at": user.created_at.isoformat() if user.created_at else None,
         })
     return {"referrals": items, "total": total, "page": page}
+
+
+# ─── Copy-Trade Master Management ──────────────────────────────
+
+async def list_masters(page: int, per_page: int, db: AsyncSession) -> dict:
+    """List all copy-trade masters (signal_provider, pamm, mamm) with stats."""
+    count_q = await db.execute(select(func.count(MasterAccount.id)))
+    total = count_q.scalar() or 0
+
+    result = await db.execute(
+        select(MasterAccount, User.first_name, User.last_name, User.email)
+        .join(User, MasterAccount.user_id == User.id)
+        .order_by(MasterAccount.created_at.desc())
+        .offset((page - 1) * per_page).limit(per_page)
+    )
+    rows = result.all()
+
+    items = []
+    for master, first_name, last_name, email in rows:
+        active_q = await db.execute(
+            select(func.count()).select_from(InvestorAllocation).where(
+                InvestorAllocation.master_id == master.id,
+                InvestorAllocation.status == "active",
+            )
+        )
+        active_allocations = active_q.scalar() or 0
+
+        pool_q = await db.execute(
+            select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+                InvestorAllocation.master_id == master.id,
+                InvestorAllocation.status == "active",
+            )
+        )
+        total_aum = float(pool_q.scalar() or 0)
+
+        items.append({
+            "id": str(master.id),
+            "user_id": str(master.user_id),
+            "account_id": str(master.account_id) if master.account_id else None,
+            "provider_name": f"{first_name or ''} {last_name or ''}".strip() or email,
+            "email": email,
+            "master_type": master.master_type or "signal_provider",
+            "status": master.status,
+            "active_followers": active_allocations,
+            "total_aum": total_aum,
+            "total_return_pct": float(master.total_return_pct or 0),
+            "performance_fee_pct": float(master.performance_fee_pct or 0),
+            "created_at": master.created_at.isoformat() if master.created_at else None,
+        })
+
+    return {
+        "items": items, "total": total, "page": page, "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page if total else 0,
+    }
+
+
+async def delete_master(
+    master_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Safely delete a copy-trade master. Flow:
+      1. Close all open positions on master trading account (at open price, 0 pnl).
+      2. Sweep master's trading account balance → master user's main wallet.
+      3. For each active follower allocation:
+         - Close open positions on investor copy account.
+         - Refund investor copy account balance → follower's main wallet.
+         - Mark allocation status = 'closed'.
+      4. Close all open CopyTrade rows for this master.
+      5. Delete the MasterAccount row.
+    """
+    master_q = await db.execute(select(MasterAccount).where(MasterAccount.id == master_id))
+    master = master_q.scalar_one_or_none()
+    if not master:
+        raise HTTPException(status_code=404, detail="Master not found")
+
+    master_acct = await db.get(TradingAccount, master.account_id) if master.account_id else None
+    master_user = await db.get(User, master.user_id)
+    master_sweep = Decimal("0")
+
+    if master_acct:
+        # Close open positions on master account
+        master_open_q = await db.execute(
+            select(Position).where(
+                Position.account_id == master_acct.id,
+                Position.status == PositionStatus.OPEN.value,
+            )
+        )
+        for pos in master_open_q.scalars().all():
+            pos.status = PositionStatus.CLOSED.value
+            pos.close_price = pos.open_price
+            pos.profit = Decimal("0")
+            pos.closed_at = datetime.utcnow()
+
+        master_sweep = (master_acct.balance or Decimal("0")) + (master_acct.credit or Decimal("0"))
+        if master_user and master_sweep > 0:
+            master_user.main_wallet_balance = (
+                master_user.main_wallet_balance or Decimal("0")
+            ) + master_sweep
+            db.add(Transaction(
+                user_id=master_user.id,
+                account_id=master_acct.id,
+                type="transfer",
+                amount=master_sweep,
+                balance_after=master_user.main_wallet_balance,
+                description="Master account closed by admin — funds returned to main wallet",
+            ))
+        master_acct.balance = Decimal("0")
+        master_acct.credit = Decimal("0")
+        master_acct.equity = Decimal("0")
+        master_acct.free_margin = Decimal("0")
+        master_acct.margin_used = Decimal("0")
+        master_acct.is_active = False
+
+    # Refund each follower
+    allocs_q = await db.execute(
+        select(InvestorAllocation).where(
+            InvestorAllocation.master_id == master_id,
+            InvestorAllocation.status == "active",
+        )
+    )
+    follower_count = 0
+    total_refunded = Decimal("0")
+    for alloc in allocs_q.scalars().all():
+        follower_count += 1
+        investor = await db.get(User, alloc.investor_user_id)
+        investor_acct = await db.get(TradingAccount, alloc.investor_account_id) if alloc.investor_account_id else None
+
+        if investor_acct:
+            inv_open_q = await db.execute(
+                select(Position).where(
+                    Position.account_id == investor_acct.id,
+                    Position.status == PositionStatus.OPEN.value,
+                )
+            )
+            for pos in inv_open_q.scalars().all():
+                pos.status = PositionStatus.CLOSED.value
+                pos.close_price = pos.open_price
+                pos.profit = Decimal("0")
+                pos.closed_at = datetime.utcnow()
+
+        refund_amount = Decimal("0")
+        if investor_acct:
+            refund_amount = (investor_acct.balance or Decimal("0")) + (investor_acct.credit or Decimal("0"))
+            investor_acct.balance = Decimal("0")
+            investor_acct.credit = Decimal("0")
+            investor_acct.equity = Decimal("0")
+            investor_acct.free_margin = Decimal("0")
+            investor_acct.margin_used = Decimal("0")
+            investor_acct.is_active = False
+
+        if investor and refund_amount > 0:
+            investor.main_wallet_balance = (
+                investor.main_wallet_balance or Decimal("0")
+            ) + refund_amount
+            total_refunded += refund_amount
+            db.add(Transaction(
+                user_id=investor.id,
+                account_id=investor_acct.id if investor_acct else None,
+                type="refund",
+                amount=refund_amount,
+                balance_after=investor.main_wallet_balance,
+                description="Master deleted by admin — copy trade refund to main wallet",
+            ))
+
+        alloc.status = "closed"
+
+    # Close open CopyTrade rows for this master
+    copy_trades_q = await db.execute(
+        select(CopyTrade)
+        .join(InvestorAllocation, CopyTrade.investor_allocation_id == InvestorAllocation.id)
+        .where(
+            InvestorAllocation.master_id == master_id,
+            CopyTrade.status == "open",
+        )
+    )
+    for ct in copy_trades_q.scalars().all():
+        ct.status = "closed"
+
+    master_email = master_user.email if master_user else "unknown"
+    await db.delete(master)
+
+    await write_audit_log(
+        db, admin_id, "delete_master", "master_account", master_id,
+        new_values={
+            "master_email": master_email,
+            "master_sweep": float(master_sweep),
+            "followers_refunded": follower_count,
+            "total_refunded_to_followers": float(total_refunded),
+        },
+        ip_address=ip_address,
+    )
+    await db.commit()
+
+    return {
+        "message": f"Master deleted — {follower_count} follower(s) refunded",
+        "master_sweep": float(master_sweep),
+        "followers_refunded": follower_count,
+        "total_refunded_to_followers": float(total_refunded),
+    }
