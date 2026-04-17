@@ -156,9 +156,6 @@ async def wipe(execute: bool):
                     description="Copy trade wipe refund (capital + P&L)",
                 ))
 
-            if execute:
-                alloc.status = "stopped"
-
         masters_q = await db.execute(select(MasterAccount))
         masters = masters_q.scalars().all()
         logger.info("Masters to close: %d", len(masters))
