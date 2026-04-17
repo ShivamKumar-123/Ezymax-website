@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
@@ -252,12 +253,13 @@ function DetailModal({
   onClose: () => void;
   onCopy: () => void;
 }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg rounded-2xl bg-bg-secondary border border-border-glass p-6 overflow-y-auto max-h-[90vh] [data-theme='light']:bg-bg-tertiary [data-theme='light']:border-black"
+        className="relative w-full max-w-lg rounded-2xl bg-bg-secondary border border-border-glass p-6 overflow-y-auto max-h-[90vh]"
       >
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
 
@@ -316,7 +318,8 @@ function DetailModal({
           </>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -384,12 +387,13 @@ function CopyModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6 [data-theme='light']:bg-bg-tertiary [data-theme='light']:border-black"
+        className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6"
       >
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
         <h3 className="text-sm font-semibold text-text-primary mb-1">Copy {provider.provider_name}</h3>
@@ -428,7 +432,8 @@ function CopyModal({
           {submitting ? 'Processing…' : 'Start Copying'}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -589,8 +594,8 @@ function LeaderboardTab() {
       )}
 
       {/* Followers modal */}
-      {showFollowers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
+      {showFollowers && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
           <div className="w-full max-w-3xl bg-bg-secondary border border-border-glass rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
               <h3 className="text-base font-bold text-text-primary">Followers ({followers.length})</h3>
@@ -632,7 +637,8 @@ function LeaderboardTab() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
@@ -1092,16 +1098,21 @@ function MyDashboardTab() {
       try { res = await api.get<any>('/social/my-provider'); } catch {}
       setData(res);
       setLoading(false);
+      if (res && res.status === 'approved') {
+        loadFollowers();
+      }
     })();
   }, []);
 
   const loadFollowers = async () => {
     setFollowersLoading(true);
     try {
+      console.log('Loading followers...');
       const res = await api.get<any>('/followers/my-followers');
+      console.log('Followers response:', res);
       setFollowers(res.followers || []);
-      setShowFollowers(true);
     } catch (e: any) {
+      console.error('Failed to load followers:', e);
       toast.error(e.message || 'Failed to load followers');
     } finally {
       setFollowersLoading(false);
@@ -1215,9 +1226,79 @@ function MyDashboardTab() {
         </div>
       </div>
 
+      {/* My Followers Section */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary">My Followers</h3>
+            <p className="text-xxs text-text-tertiary mt-0.5">Users currently copying your trades</p>
+          </div>
+          <button
+            onClick={loadFollowers}
+            disabled={followersLoading}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-accent/40 text-accent hover:bg-accent/10 transition-all disabled:opacity-50"
+          >
+            {followersLoading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="p-4">
+          {followersLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : followers.length === 0 ? (
+            <div className="text-center py-8 text-sm text-text-tertiary">No followers yet</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border-glass">
+                    <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Follower</th>
+                    <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">User ID</th>
+                    <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Account</th>
+                    <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Investment</th>
+                    <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Profit/Loss</th>
+                    <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">ROI %</th>
+                    <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {followers.map((f) => (
+                    <tr key={f.id} className="border-b border-border-glass/50 hover:bg-bg-hover/30 transition-colors">
+                      <td className="px-3 py-3">
+                        <div>
+                          <p className="text-xs font-medium text-text-primary">{f.user_name}</p>
+                          <p className="text-xxs text-text-tertiary">{f.user_email}</p>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <p className="text-xxs text-accent font-mono font-semibold">{f.user_id}</p>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-text-secondary font-mono">{f.account_number}</td>
+                      <td className="px-3 py-3 text-right text-xs font-mono text-text-primary">${f.allocation_amount.toLocaleString()}</td>
+                      <td className="px-3 py-3 text-right">
+                        <span className={clsx('text-xs font-mono font-bold', f.total_profit >= 0 ? 'text-buy' : 'text-sell')}>
+                          {f.total_profit >= 0 ? '+' : ''}${f.total_profit.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <span className={clsx('text-xs font-mono font-bold', f.profit_pct >= 0 ? 'text-buy' : 'text-sell')}>
+                          {f.profit_pct >= 0 ? '+' : ''}{f.profit_pct}%
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-xxs text-text-tertiary">{new Date(f.joined_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Followers Modal */}
-      {showFollowers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
+      {showFollowers && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
           <div className="w-full max-w-4xl bg-bg-secondary border border-border-glass rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass bg-bg-tertiary/50">
               <h3 className="text-base font-bold text-text-primary">My Followers ({followers.length})</h3>
@@ -1227,7 +1308,7 @@ function MyDashboardTab() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="p-5 max-h-[70vh] overflow-y-auto">
               {followersLoading ? (
                 <div className="flex justify-center py-12">
@@ -1284,7 +1365,8 @@ function MyDashboardTab() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
