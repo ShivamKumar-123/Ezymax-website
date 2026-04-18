@@ -131,7 +131,7 @@ interface TradingState {
 
 const DEFAULT_WATCHLIST = [
   'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD',
-  'XAUUSD', 'USOIL', 'BTCUSD', 'ETHUSD', 'SOLUSD',
+  'XAUUSD', 'XAGUSD', 'USOIL', 'BTCUSD', 'ETHUSD', 'SOLUSD',
   'US30', 'NAS100', 'GER40', 'EURJPY', 'GBPJPY',
 ];
 

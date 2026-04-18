@@ -35,9 +35,19 @@ export default function OrderPanelSymbolPicker({
   const grouped = useMemo(() => {
     const needle = q.trim().toUpperCase();
     const map = new Map<string, string[]>();
-    for (const sym of watchlist) {
-      if (needle && !sym.toUpperCase().includes(needle)) continue;
+    /* When searching, broaden to all loaded instruments so "gold"/"silver"
+       can find XAUUSD/XAGUSD even if they aren't in the user's watchlist.
+       With no query, show only the watchlist. */
+    const source = needle ? instruments.map((i) => i.symbol) : watchlist;
+    const seen = new Set<string>();
+    for (const sym of source) {
+      if (seen.has(sym)) continue;
+      seen.add(sym);
       const inst = instruments.find((i: InstrumentInfo) => i.symbol === sym);
+      if (needle) {
+        const hay = `${sym} ${inst?.display_name || ''}`.toUpperCase();
+        if (!hay.includes(needle)) continue;
+      }
       const seg = normalizeSegment(inst?.segment);
       if (!map.has(seg)) map.set(seg, []);
       map.get(seg)!.push(sym);
