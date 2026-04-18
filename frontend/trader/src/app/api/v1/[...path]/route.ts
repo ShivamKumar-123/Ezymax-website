@@ -135,6 +135,14 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   const out = new Headers();
   const ctOut = res.headers.get('content-type');
   if (ctOut) out.set('content-type', ctOut);
+  /* Forward CORS headers from gateway — without these, browser preflight and
+     cross-origin responses fail for callers like algo.trustedgefx.com. */
+  for (const h of ['access-control-allow-origin', 'access-control-allow-credentials',
+                   'access-control-allow-methods', 'access-control-allow-headers',
+                   'access-control-expose-headers', 'access-control-max-age', 'vary']) {
+    const v = res.headers.get(h);
+    if (v) out.set(h, v);
+  }
   const setCookies =
     typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [];
   if (setCookies.length > 0) {
@@ -177,5 +185,9 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
 }
 
 export async function DELETE(req: NextRequest, ctx: RouteCtx) {
+  return proxy(req, await segmentsFromCtx(ctx));
+}
+
+export async function OPTIONS(req: NextRequest, ctx: RouteCtx) {
   return proxy(req, await segmentsFromCtx(ctx));
 }
