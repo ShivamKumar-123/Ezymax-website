@@ -58,6 +58,15 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   if (xff) headers.set('x-forwarded-for', xff);
   const xri = req.headers.get('x-real-ip');
   if (xri) headers.set('x-real-ip', xri);
+  /* Forward CORS preflight headers so the gateway's CORSMiddleware can
+     recognize cross-origin calls from the algo subdomain etc. Without
+     Origin, FastAPI falls through to the router and returns 405 on OPTIONS. */
+  const origin = req.headers.get('origin');
+  if (origin) headers.set('origin', origin);
+  const acrm = req.headers.get('access-control-request-method');
+  if (acrm) headers.set('access-control-request-method', acrm);
+  const acrh = req.headers.get('access-control-request-headers');
+  if (acrh) headers.set('access-control-request-headers', acrh);
 
   const method = req.method.toUpperCase();
   const hasBody = !['GET', 'HEAD'].includes(method);
