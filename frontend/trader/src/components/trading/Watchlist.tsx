@@ -61,6 +61,24 @@ function terminalGroup(symbol: string, instruments: InstrumentInfo[]): TerminalG
 
 const SEGMENTS = ['All', 'Forex', 'Crypto', 'Indices', 'Commodities', 'Metals', 'Stocks'];
 
+/** True if `query` appears in symbol, backend display_name, or SYMBOL_META.display.
+    Lets users find XAUUSD/XAGUSD by typing 'gold'/'silver' etc. */
+function matchesSearch(
+  symbol: string,
+  query: string,
+  instruments: InstrumentInfo[],
+  meta: Record<string, { display: string; segment: string }>,
+): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (symbol.toLowerCase().includes(q)) return true;
+  const inst = instruments.find((i) => i.symbol === symbol);
+  if (inst?.display_name && inst.display_name.toLowerCase().includes(q)) return true;
+  const m = meta[symbol];
+  if (m?.display && m.display.toLowerCase().includes(q)) return true;
+  return false;
+}
+
 const SYMBOL_META: Record<string, { display: string; segment: string }> = {
   EURUSD: { display: 'EUR/USD', segment: 'Forex' },
   GBPUSD: { display: 'GBP/USD', segment: 'Forex' },
@@ -286,7 +304,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   }, [watchlist, instruments, priceCount]);
 
   const filtered = allSymbols.filter((s: string) => {
-    if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+    if (!matchesSearch(s, search, instruments, SYMBOL_META)) return false;
     if (segment === 'Starred') return watchlist.includes(s);
     if (segment !== 'All') {
       const meta = SYMBOL_META[s];
@@ -300,7 +318,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   });
 
   const filteredTerminal = allSymbols.filter((s: string) => {
-    if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+    if (!matchesSearch(s, search, instruments, SYMBOL_META)) return false;
     return true;
   });
 
@@ -554,7 +572,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
             {(() => {
               // Filter symbols by search + segment
               const displaySymbols = allSymbols.filter((s: string) => {
-                if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+                if (!matchesSearch(s, search, instruments, SYMBOL_META)) return false;
                 if (segment === 'Starred') return watchlist.includes(s);
                 if (segment !== 'All') {
                   const g = terminalGroup(s, instruments);

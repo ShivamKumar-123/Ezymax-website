@@ -164,10 +164,22 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
   }, [segOpen]);
 
   const rows = useMemo(() => {
-    return watchlist
+    /* When the user is searching, broaden the source to every priced
+       instrument so terms like 'silver'/'gold'/'bitcoin' can find symbols
+       that aren't already on the watchlist. */
+    const hasQuery = search.trim().length > 0;
+    const source: string[] = hasQuery
+      ? Array.from(new Set([...watchlist, ...instruments.map((i) => i.symbol)]))
+      : watchlist;
+    const q = search.toLowerCase();
+    return source
       .filter((s) => prices[s] != null)
       .filter((s) => {
-        if (search && !s.toLowerCase().includes(search.toLowerCase())) return false;
+        if (hasQuery) {
+          const inst = instruments.find((i) => i.symbol === s);
+          const hay = `${s} ${inst?.display_name || ''} ${SYMBOL_DESC[s] || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
         if (starredOnly && !starred.has(s)) return false;
         if (segment !== 'All' && segmentOf(s, instruments) !== segment) return false;
         return true;
