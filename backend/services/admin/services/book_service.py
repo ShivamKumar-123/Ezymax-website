@@ -121,8 +121,16 @@ async def change_user_book_type(
     user.book_type = book_type
     await db.commit()
 
-    await write_audit_log(db, admin_id, "BOOK_TYPE_CHANGED", ip,
-                          f"User {user.email}: {old} → {book_type}")
+    try:
+        await write_audit_log(
+            db, admin_id, "BOOK_TYPE_CHANGED", "user", user.id,
+            old_values={"book_type": old},
+            new_values={"book_type": book_type, "email": user.email},
+            ip_address=ip,
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
 
     return {"id": str(user.id), "email": user.email, "book_type": book_type, "previous": old}
 
@@ -136,8 +144,15 @@ async def bulk_change_book_type(
     )
     await db.commit()
 
-    await write_audit_log(db, admin_id, "BULK_BOOK_TYPE_CHANGED", ip,
-                          f"{len(user_ids)} users → {book_type}-Book")
+    try:
+        await write_audit_log(
+            db, admin_id, "BULK_BOOK_TYPE_CHANGED", "user", None,
+            new_values={"user_count": len(user_ids), "book_type": book_type},
+            ip_address=ip,
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
 
     return {"modified_count": len(user_ids), "book_type": book_type}
 
@@ -150,18 +165,24 @@ async def get_lp_status(db: AsyncSession) -> dict:
 async def get_lp_settings(db: AsyncSession) -> dict:
     """Read LP settings from system_settings table."""
     keys = ["lp_api_url", "lp_ws_url", "lp_api_key", "lp_api_secret"]
-    settings = {}
+    settings: dict = {}
     for key in keys:
-        result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
-        row = result.scalar_one_or_none()
-        if row:
-            val = row.value
-            # Mask secrets
-            if key in ("lp_api_key", "lp_api_secret") and val and len(val) > 4:
-                val = "●" * (len(val) - 4) + val[-4:]
-            settings[key] = val
-        else:
+        try:
+            result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
+            row = result.scalar_one_or_none()
+        except Exception:
+            # Table missing or read error — return empty values rather than 500.
             settings[key] = ""
+            continue
+        if not row:
+            settings[key] = ""
+            continue
+        raw = row.value
+        val = raw if isinstance(raw, str) else (json.dumps(raw) if raw is not None else "")
+        # Mask secrets
+        if key in ("lp_api_key", "lp_api_secret") and val and len(val) > 4:
+            val = "●" * (len(val) - 4) + val[-4:]
+        settings[key] = val
     return settings
 
 
@@ -179,13 +200,27 @@ async def save_lp_settings(
     for key, value in pairs.items():
         result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
         row = result.scalar_one_or_none()
+        # JSONB column: store as a JSON string value so reads round-trip to Python str.
+        json_value = value if isinstance(value, str) else json.dumps(value)
         if row:
-            row.value = value
+            row.value = json_value
+            row.updated_by = admin_id
+            row.updated_at = datetime.utcnow()
         else:
-            db.add(SystemSetting(key=key, value=value))
+            db.add(SystemSetting(key=key, value=json_value, updated_by=admin_id))
     await db.commit()
 
-    await write_audit_log(db, admin_id, "LP_SETTINGS_UPDATED", ip, f"LP URL: {api_url}")
+    try:
+        await write_audit_log(
+            db, admin_id, "LP_SETTINGS_UPDATED", "system_setting", None,
+            new_values={"lp_api_url": api_url, "lp_ws_url": ws_url},
+            ip_address=ip,
+        )
+        await db.commit()
+    except Exception:
+        # Audit log is best-effort — don't 500 the save if it fails.
+        await db.rollback()
+
     return {"success": True, "message": "LP settings saved"}
 
 

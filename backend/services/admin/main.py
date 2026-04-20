@@ -41,6 +41,17 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "ALTER TABLE employees ADD COLUMN IF NOT EXISTS extra_permissions JSONB DEFAULT '[]'::jsonb"
             ))
+            # Book-management LP settings read/write this table. Create if the
+            # baseline migration hasn't been applied so GET/PUT don't 500.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key VARCHAR(100) PRIMARY KEY,
+                    value JSONB NOT NULL,
+                    description TEXT,
+                    updated_by UUID REFERENCES users(id),
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 
