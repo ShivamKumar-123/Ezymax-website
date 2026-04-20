@@ -113,7 +113,7 @@ export default function AlgoConnectorPage() {
         </div>
 
         {/* ─── Account Selector + Generate ─── */}
-        <div className="rounded-xl border border-border-primary bg-bg-card">
+        <div className="rounded-xl border border-border-primary bg-card">
           <div className="px-5 py-4 border-b border-border-primary">
             <h2 className="text-sm font-semibold text-text-primary">Select Trading Account</h2>
             <p className="text-xs text-text-tertiary mt-0.5">Choose an account to generate or manage API keys</p>
@@ -160,7 +160,7 @@ export default function AlgoConnectorPage() {
                                 'px-3 py-2.5 rounded-lg border text-xs font-medium transition-all',
                                 copied === 'key'
                                   ? 'border-green-500/40 bg-green-500/10 text-green-500'
-                                  : 'border-border-primary bg-bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
+                                  : 'border-border-primary bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
                               )}
                             >
                               {copied === 'key' ? <Check size={14} /> : <Copy size={14} />}
@@ -207,7 +207,7 @@ export default function AlgoConnectorPage() {
 
         {/* ─── Connected Accounts Summary ─── */}
         {connectedKeys.length > 0 && (
-          <div className="rounded-xl border border-border-primary bg-bg-card overflow-hidden">
+          <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
             <div className="px-5 py-4 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary">Connected Accounts ({connectedKeys.length})</h2>
             </div>
@@ -232,7 +232,7 @@ export default function AlgoConnectorPage() {
         {/* ─── Generated Secret Modal ─── */}
         {generatedKey && (
           <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setGeneratedKey(null)}>
-            <div className="bg-bg-card border border-border-primary rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-card border border-border-primary rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
                   <AlertTriangle size={20} className="text-amber-500" />
@@ -258,7 +258,7 @@ export default function AlgoConnectorPage() {
                         'px-3 py-2.5 rounded-lg border text-xs font-medium transition-all shrink-0',
                         copied === 'modal-key'
                           ? 'border-green-500/40 bg-green-500/10 text-green-500'
-                          : 'border-border-primary bg-bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
+                          : 'border-border-primary bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
                       )}
                     >
                       {copied === 'modal-key' ? <Check size={14} /> : <Copy size={14} />}
@@ -275,7 +275,7 @@ export default function AlgoConnectorPage() {
                         'px-3 py-2.5 rounded-lg border text-xs font-medium transition-all shrink-0',
                         copied === 'modal-secret'
                           ? 'border-green-500/40 bg-green-500/10 text-green-500'
-                          : 'border-border-primary bg-bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
+                          : 'border-border-primary bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
                       )}
                     >
                       {copied === 'modal-secret' ? <Check size={14} /> : <Copy size={14} />}
@@ -308,7 +308,7 @@ export default function AlgoConnectorPage() {
         )}
 
         {/* ─── API Documentation ─── */}
-        <div className="rounded-xl border border-border-primary bg-bg-card overflow-hidden">
+        <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border-primary flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield size={16} className="text-accent" />
