@@ -34,17 +34,31 @@ class AlgoSignalRequest(BaseModel):
     tp: Optional[float] = None
 
 
-async def _get_valid_secret(db) -> str:
-    """Return the active webhook secret (DB-stored takes priority over .env)."""
+async def _get_db_setting(db, key: str):
+    """Read a system_setting value from DB (returns dict or None)."""
     try:
         row = (await db.execute(
-            select(SystemSetting).where(SystemSetting.key == "algo_webhook_secret")
+            select(SystemSetting).where(SystemSetting.key == key)
         )).scalar_one_or_none()
-        if row and row.value and row.value.get("v"):
-            return row.value["v"]
+        return row.value if row and row.value else None
     except Exception:
-        pass
+        return None
+
+
+async def _get_valid_secret(db) -> str:
+    """Return the active webhook secret (DB-stored takes priority over .env)."""
+    data = await _get_db_setting(db, "algo_webhook_secret")
+    if data and data.get("v"):
+        return data["v"]
     return get_settings().ALGO_WEBHOOK_SECRET
+
+
+async def _is_auto_execute(db) -> bool:
+    """Return auto-execute mode (DB takes priority over .env)."""
+    data = await _get_db_setting(db, "algo_auto_execute")
+    if data and "v" in data:
+        return bool(data["v"])
+    return get_settings().ALGO_AUTO_EXECUTE
 
 
 @router.post("/signal")
@@ -52,8 +66,6 @@ async def receive_signal(
     body: AlgoSignalRequest,
     x_algo_secret: str = Header(default="", alias="X-Algo-Secret"),
 ):
-    settings = get_settings()
-
     async with AsyncSessionLocal() as db:
         valid_secret = await _get_valid_secret(db)
 
@@ -77,7 +89,8 @@ async def receive_signal(
         await db.flush()
         signal_id = str(signal.id)
 
-        if settings.ALGO_AUTO_EXECUTE:
+        auto = await _is_auto_execute(db)
+        if auto:
             result = await execute_signal(signal, db)
             await db.commit()
             return {

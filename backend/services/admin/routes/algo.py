@@ -11,6 +11,7 @@ from services.algo_service import (
     list_signals, execute_signal, reject_signal,
     list_algo_masters, toggle_algo_master,
     get_algo_settings, regenerate_webhook_secret, get_signal_stats,
+    toggle_auto_execute,
 )
 
 router = APIRouter(prefix="/algo", tags=["Algo Trading"])
@@ -111,3 +112,16 @@ async def regen_secret(
     db: AsyncSession = Depends(get_db),
 ):
     return await regenerate_webhook_secret(str(admin.id), db)
+
+
+class AutoExecuteRequest(BaseModel):
+    enabled: bool
+
+
+@router.post("/settings/auto-execute")
+async def set_auto_execute(
+    body: AutoExecuteRequest,
+    admin: User = Depends(require_permission("config.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await toggle_auto_execute(body.enabled, str(admin.id), db)

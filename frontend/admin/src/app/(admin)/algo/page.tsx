@@ -385,14 +385,32 @@ export default function AlgoPage() {
           <div className="glass-card rounded-lg p-4 space-y-2">
             <h3 className="text-sm font-semibold flex items-center gap-2"><Zap size={16} className="text-accent" /> Execution Mode</h3>
             <div className="flex items-center gap-4">
-              <div className={cn('flex items-center gap-2 px-3 py-2 rounded border text-xs', settings.auto_execute ? 'border-buy/40 bg-buy/10 text-buy' : 'border-border-primary text-text-tertiary')}>
+              <button
+                onClick={async () => {
+                  try {
+                    await adminApi.post('/algo/settings/auto-execute', { enabled: true });
+                    setSettings(s => s ? { ...s, auto_execute: true } : s);
+                    toast.success('Switched to Auto Execute');
+                  } catch (e: any) { toast.error(e.message); }
+                }}
+                className={cn('flex items-center gap-2 px-3 py-2 rounded border text-xs cursor-pointer transition-fast', settings.auto_execute ? 'border-buy/40 bg-buy/10 text-buy' : 'border-border-primary text-text-tertiary hover:border-buy/30 hover:text-buy/70')}
+              >
                 <Zap size={12} /> Auto Execute {settings.auto_execute && <Check size={12} />}
-              </div>
-              <div className={cn('flex items-center gap-2 px-3 py-2 rounded border text-xs', !settings.auto_execute ? 'border-amber-400/40 bg-amber-500/10 text-amber-400' : 'border-border-primary text-text-tertiary')}>
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await adminApi.post('/algo/settings/auto-execute', { enabled: false });
+                    setSettings(s => s ? { ...s, auto_execute: false } : s);
+                    toast.success('Switched to Manual Approval');
+                  } catch (e: any) { toast.error(e.message); }
+                }}
+                className={cn('flex items-center gap-2 px-3 py-2 rounded border text-xs cursor-pointer transition-fast', !settings.auto_execute ? 'border-amber-400/40 bg-amber-500/10 text-amber-400' : 'border-border-primary text-text-tertiary hover:border-amber-400/30 hover:text-amber-300/70')}
+              >
                 <Shield size={12} /> Manual Approval {!settings.auto_execute && <Check size={12} />}
-              </div>
+              </button>
             </div>
-            <p className="text-xxs text-text-tertiary">Change in .env: <code className="text-accent">ALGO_AUTO_EXECUTE=true</code> then restart gateway</p>
+            <p className="text-xxs text-text-tertiary">Click to switch mode. Signal aate hi auto execute ya admin approval — your choice.</p>
           </div>
 
           {/* API Docs */}
