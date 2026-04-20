@@ -73,6 +73,14 @@ class Settings(BaseSettings):
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
     CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
+    # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
+    # a position, TrustEdge pushes the trade to Corecen's broker API for LP routing.
+    # These credentials are the API key/secret registered in Corecen's admin panel
+    # for the TrustEdge broker account.
+    CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
+    CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
+    CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
+
     MARGIN_CALL_LEVEL: float = 80.0
     STOP_OUT_LEVEL: float = 50.0
     MAX_OPEN_TRADES: int = 200

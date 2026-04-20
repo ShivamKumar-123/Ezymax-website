@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade, Position, PositionStatus,
-    TradingAccount, TradeHistory, Transaction,
+    TradingAccount, TradeHistory, Transaction, Order,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.admin_fees import credit_admin_fee
@@ -312,9 +312,27 @@ class CopyTradeEngine:
 
         comment = f"{COPY_COMMENT_PREFIX}{master_pos.id}"
 
+        # Create an Order row so the copy trade is first-class in trading history
+        # and so IBCommission.source_trade_id (FK → orders.id) can reference it.
+        order = Order(
+            account_id=investor_account.id,
+            instrument_id=master_pos.instrument_id,
+            order_type="market",
+            side=side_val,
+            status="filled",
+            lots=Decimal(str(copy_lots)),
+            filled_price=master_pos.open_price,
+            filled_at=datetime.now(timezone.utc),
+            commission=Decimal("0"),
+            comment=comment,
+        )
+        db.add(order)
+        await db.flush()
+
         position = Position(
             account_id=investor_account.id,
             instrument_id=master_pos.instrument_id,
+            order_id=order.id,
             side=side_val,
             status=PositionStatus.OPEN.value,
             lots=Decimal(str(copy_lots)),
@@ -337,6 +355,23 @@ class CopyTradeEngine:
 
         investor_account.margin_used = (investor_account.margin_used or Decimal("0")) + required_margin
         investor_account.free_margin = investor_account.equity - investor_account.margin_used
+
+        # Copy trades count as real trading volume — flow IB commission up the
+        # investor's referrer chain (same rate as regular trades).
+        try:
+            from .ib_engine import distribute_ib_commission
+            await distribute_ib_commission(
+                db,
+                investor_account.user_id,
+                order.id,
+                Decimal(str(copy_lots)),
+                instrument.symbol,
+            )
+        except Exception as e:
+            logger.error(
+                "IB commission distribute failed for copy trade investor=%s order=%s: %s",
+                investor.id, order.id, e,
+            )
 
         logger.info(
             "Copy opened: %s %s %s lots investor=%s master_pos=%s copy_type=%s (master %s lots)",

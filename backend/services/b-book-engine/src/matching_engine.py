@@ -20,10 +20,11 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig, ChargeConfig, Transaction
+    SpreadConfig, ChargeConfig, Transaction, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
+from packages.common.src import corecen_trade_client
 
 logger = logging.getLogger("b-book-engine")
 
@@ -314,3 +315,30 @@ class MatchingEngine:
             "symbol": instrument.symbol,
             "profit": str(profit),
         })
+
+        # ── A-Book: forward SL/TP close to Corecen LP ────────────────────
+        _pos_id = str(pos.id)
+        _cp = float(close_price)
+        _pnl = float(profit)
+        _reason_upper = reason.upper()
+        _user_id = account.user_id if account else None
+
+        async def _forward_sltp_close():
+            try:
+                if not _user_id:
+                    return
+                async with AsyncSessionLocal() as bg_db:
+                    u = (await bg_db.execute(
+                        select(User).where(User.id == _user_id)
+                    )).scalar_one_or_none()
+                    if u and (u.book_type or "B") == "A":
+                        await corecen_trade_client.forward_trade_close(
+                            position_id=_pos_id,
+                            close_price=_cp,
+                            pnl=_pnl,
+                            closed_by=_reason_upper,
+                        )
+            except Exception as exc:
+                logger.error("[A-BOOK] B-book engine SL/TP close forward failed: %s", exc)
+
+        asyncio.create_task(_forward_sltp_close())

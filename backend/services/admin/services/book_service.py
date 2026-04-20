@@ -27,13 +27,13 @@ LP_FRESH_WINDOW_MS = 10_000                # consider LP "connected" for 10s aft
 
 async def get_book_stats(db: AsyncSession) -> dict:
     """Return A/B book user and trade counts."""
-    _client_roles = ("user", "ib")
-    # User counts — include all client roles (user + ib), exclude demo
+    _admin_roles = ("admin", "super_admin")
+    # User counts — include all non-admin roles, exclude demo
     a_users = (await db.execute(
-        select(func.count(User.id)).where(User.book_type == "A", User.role.in_(_client_roles), User.is_demo == False)
+        select(func.count(User.id)).where(User.book_type == "A", User.role.notin_(_admin_roles), User.is_demo == False)
     )).scalar() or 0
     b_users = (await db.execute(
-        select(func.count(User.id)).where(User.book_type == "B", User.role.in_(_client_roles), User.is_demo == False)
+        select(func.count(User.id)).where(User.book_type == "B", User.role.notin_(_admin_roles), User.is_demo == False)
     )).scalar() or 0
 
     # Trade counts (open positions)
@@ -62,9 +62,9 @@ async def list_book_users(
     page: int, per_page: int, search: str | None, book_filter: str | None, db: AsyncSession,
 ) -> dict:
     """Paginated user list with book type, account count, trade count."""
-    _client_roles = ("user", "ib")
-    base = select(User).where(User.role.in_(_client_roles), User.is_demo == False)
-    count_base = select(func.count(User.id)).where(User.role.in_(_client_roles), User.is_demo == False)
+    _admin_roles = ("admin", "super_admin")
+    base = select(User).where(User.role.notin_(_admin_roles), User.is_demo == False)
+    count_base = select(func.count(User.id)).where(User.role.notin_(_admin_roles), User.is_demo == False)
 
     if book_filter and book_filter in ("A", "B"):
         base = base.where(User.book_type == book_filter)

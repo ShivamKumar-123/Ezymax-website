@@ -19,11 +19,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Position, PositionStatus, TradingAccount, Instrument,
-    OrderSide, SwapConfig, Notification, Transaction
+    OrderSide, SwapConfig, Notification, Transaction, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.config import get_settings
+from packages.common.src import corecen_trade_client
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("risk-engine")
@@ -172,6 +173,27 @@ class RiskEngine:
             }))
 
             logger.info(f"Stop-out closed {pos.instrument.symbol} {pos.side.value}, profit: {profit}")
+
+            # ── A-Book: forward stop-out close to Corecen LP ─────────────
+            _pos_id = str(pos.id)
+            _cp = float(close_price)
+            _pnl = float(profit)
+
+            async def _forward_stopout(pid=_pos_id, cp=_cp, pnl=_pnl):
+                try:
+                    async with AsyncSessionLocal() as bg_db:
+                        u = (await bg_db.execute(
+                            select(User).where(User.id == account.user_id)
+                        )).scalar_one_or_none()
+                        if u and (u.book_type or "B") == "A":
+                            await corecen_trade_client.forward_trade_close(
+                                position_id=pid, close_price=cp,
+                                pnl=pnl, closed_by="STOP_OUT",
+                            )
+                except Exception as exc:
+                    logger.error("[A-BOOK] Stop-out close forward failed: %s", exc)
+
+            asyncio.create_task(_forward_stopout())
 
             margin_level = (account.equity / account.margin_used * 100) if account.margin_used > 0 else Decimal("9999")
             from packages.common.src.settings_store import get_float_setting as _gfs

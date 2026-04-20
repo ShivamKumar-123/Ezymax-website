@@ -76,7 +76,7 @@ async def list_users(
     status_filter: str | None, kyc_filter: str | None,
     group_id: str | None, db: AsyncSession,
 ) -> dict:
-    query = select(User).where(User.role.notin_(["admin", "super_admin"]))
+    query = select(User).where(User.role.notin_(["admin", "super_admin"]), User.is_demo == False)
 
     if search:
         term = f"%{search}%"
@@ -109,7 +109,10 @@ async def list_users(
                 func.coalesce(func.sum(TradingAccount.balance), 0).label("total_balance"),
                 func.coalesce(func.sum(TradingAccount.equity), 0).label("total_equity"),
             )
-            .where(TradingAccount.user_id.in_(user_ids))
+            .where(
+                TradingAccount.user_id.in_(user_ids),
+                TradingAccount.is_demo.is_(False),
+            )
             .group_by(TradingAccount.user_id)
         )
         for row in acc_q.all():
@@ -152,7 +155,10 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
         raise HTTPException(status_code=404, detail="User not found")
 
     accounts_q = await db.execute(
-        select(TradingAccount).where(TradingAccount.user_id == user_id)
+        select(TradingAccount).where(
+            TradingAccount.user_id == user_id,
+            TradingAccount.is_demo.is_(False),
+        )
     )
     accounts = accounts_q.scalars().all()
 

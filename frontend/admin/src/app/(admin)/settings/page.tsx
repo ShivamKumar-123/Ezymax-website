@@ -140,8 +140,23 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
+  const validateSettings = (s: Settings): string | null => {
+    if (s.default_leverage < 1 || s.default_leverage > 5000) return 'Default leverage must be between 1 and 5000';
+    if (s.margin_call_level <= 0 || s.margin_call_level > 500) return 'Margin call level must be between 1% and 500%';
+    if (s.stop_out_level <= 0 || s.stop_out_level > 500) return 'Stop out level must be between 1% and 500%';
+    if (s.stop_out_level >= s.margin_call_level) return 'Stop out level must be below margin call level';
+    if (s.max_open_trades < 1) return 'Max open trades must be at least 1';
+    if (s.max_pending_orders < 1) return 'Max pending orders must be at least 1';
+    if (s.min_lot_size <= 0) return 'Min lot size must be greater than 0';
+    if (s.max_lot_size <= 0) return 'Max lot size must be greater than 0';
+    if (s.min_lot_size >= s.max_lot_size) return 'Min lot size must be less than max lot size';
+    return null;
+  };
+
   const handleSave = async () => {
     if (!settings) return;
+    const err = validateSettings(settings);
+    if (err) { toast.error(err); return; }
     setSaving(true);
     try {
       await adminApi.put('/settings', { settings: settingsToPayload(settings) });
@@ -153,8 +168,16 @@ export default function SettingsPage() {
     }
   };
 
+  // Keep raw string while typing so users can clear/retype without the value
+  // snapping to 0 mid-edit (parseFloat('') is NaN → old code stored 0).
   const updateNum = (key: string, val: string) => {
-    setSettings((s) => s ? { ...s, [key]: parseFloat(val) || 0 } : null);
+    if (val === '') {
+      setSettings((s) => s ? { ...s, [key]: 0 } : null);
+      return;
+    }
+    const n = parseFloat(val);
+    if (!Number.isFinite(n)) return;
+    setSettings((s) => s ? { ...s, [key]: n } : null);
   };
 
   const updateBool = (key: string, val: boolean) => {
@@ -216,6 +239,7 @@ export default function SettingsPage() {
                         <input
                           type="number"
                           step={field.step}
+                          min="0"
                           value={settings[field.key] as number}
                           onChange={(e) => updateNum(field.key, e.target.value)}
                           className="w-24 text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md font-mono tabular-nums text-right"

@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus, Position, PositionStatus,
     TradingAccount, Instrument, InstrumentConfig,
-    TradeHistory, Transaction, CopyTrade, UserAuditLog,
+    TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.database import AsyncSessionLocal
@@ -22,6 +22,7 @@ from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
 from packages.common.src.market_hours import is_market_open
+from packages.common.src import corecen_trade_client
 
 logger = logging.getLogger("trading_service")
 
@@ -95,13 +96,17 @@ async def place_order(
     ip_address: str | None,
     db: AsyncSession,
 ) -> dict:
-    from packages.common.src.settings_store import get_bool_setting, get_int_setting
+    from packages.common.src.settings_store import get_bool_setting, get_int_setting, get_float_setting
     from ..engines.ib_engine import distribute_ib_commission
 
     # --- Parallel: settings from Redis (no DB session needed) ---
-    maintenance, max_trades = await asyncio.gather(
+    # Global platform caps sit on top of per-instrument limits (InstrumentConfig).
+    maintenance, max_trades, max_pending, global_max_lot, global_min_lot = await asyncio.gather(
         get_bool_setting("maintenance_mode", False),
         get_int_setting("max_open_trades", 200),
+        get_int_setting("max_pending_orders", 100),
+        get_float_setting("max_lot_size", 100.0),
+        get_float_setting("min_lot_size", 0.01),
     )
     if maintenance:
         raise HTTPException(status_code=503, detail="Platform is under maintenance. Trading is temporarily disabled.")
@@ -130,6 +135,33 @@ async def place_order(
     )
     if (open_count_q.scalar() or 0) >= max_trades:
         raise HTTPException(status_code=400, detail=f"Maximum open trades ({max_trades}) reached")
+
+    # Global pending-order cap (in addition to open-trade cap above).
+    if req.order_type != "market":
+        pending_count_q = await db.execute(
+            select(func.count(Order.id)).where(
+                Order.account_id == account.id,
+                Order.status == "pending",
+            )
+        )
+        if (pending_count_q.scalar() or 0) >= max_pending:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximum pending orders ({max_pending}) reached",
+            )
+
+    # Global lot-size caps (platform-wide floor/ceiling on top of per-instrument limits).
+    lots_f = float(req.lots)
+    if lots_f > global_max_lot:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Lot size exceeds platform maximum ({global_max_lot})",
+        )
+    if lots_f < global_min_lot:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Lot size below platform minimum ({global_min_lot})",
+        )
 
     if req.order_type == "market":
         segment_name = instrument.segment.name if instrument.segment else ""
@@ -332,6 +364,45 @@ async def place_order(
 
     # Fire-and-forget: notification + IB commission run in background (don't block response)
     if req.order_type == "market":
+        # ── A-Book: forward trade to Corecen LP ──────────────────────────
+        _pos_id_for_lp = str(position.id)
+        _user_id_str = str(user_id)
+        _symbol = instrument.symbol
+        _side = req.side
+        _lots = float(req.lots)
+        _fill_price = float(fill_price)
+        _sl = float(req.stop_loss) if req.stop_loss else None
+        _tp = float(req.take_profit) if req.take_profit else None
+        _leverage = account.leverage
+        _contract_size = float(instrument.contract_size or 100000)
+        _acct_id_str = str(account.id)
+
+        async def _maybe_forward_to_corecen():
+            try:
+                async with AsyncSessionLocal() as bg_db:
+                    u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+                    if u and (u.book_type or "B") == "A":
+                        user_name = " ".join(filter(None, [u.first_name, u.last_name])) or ""
+                        await corecen_trade_client.forward_trade_open(
+                            position_id=_pos_id_for_lp,
+                            user_id=_user_id_str,
+                            user_email=u.email,
+                            user_name=user_name,
+                            symbol=_symbol,
+                            side=_side,
+                            volume=_lots,
+                            open_price=_fill_price,
+                            sl=_sl,
+                            tp=_tp,
+                            leverage=_leverage,
+                            contract_size=_contract_size,
+                            trading_account_id=_acct_id_str,
+                        )
+            except Exception as e:
+                logger.error("[A-BOOK] Failed to forward trade open to Corecen: %s", e)
+
+        asyncio.create_task(_maybe_forward_to_corecen())
+
         async def _post_order_tasks():
             async with AsyncSessionLocal() as bg_db:
                 try:
@@ -590,6 +661,26 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     if updated:
         await db.commit()
 
+        # ── A-Book: forward SL/TP update to Corecen LP ──────────────────
+        _pos_id_str = str(position_id)
+        _new_sl = float(pos.stop_loss) if pos.stop_loss else None
+        _new_tp = float(pos.take_profit) if pos.take_profit else None
+
+        async def _maybe_forward_update_to_corecen():
+            try:
+                async with AsyncSessionLocal() as bg_db:
+                    u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+                    if u and (u.book_type or "B") == "A":
+                        await corecen_trade_client.forward_trade_update(
+                            position_id=_pos_id_str,
+                            sl=_new_sl,
+                            tp=_new_tp,
+                        )
+            except Exception as e:
+                logger.error("[A-BOOK] Failed to forward SL/TP update to Corecen: %s", e)
+
+        asyncio.create_task(_maybe_forward_update_to_corecen())
+
     return {
         "message": "Position modified",
         "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
@@ -760,6 +851,27 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         "profit": _profit_str,
         "partial": is_partial,
     }))
+
+    # ── A-Book: forward close to Corecen LP ──────────────────────────
+    _close_price_f = float(close_price)
+    _result_profit_f = float(result_profit)
+    _close_reason = detected_reason.upper() if detected_reason != "manual" else "USER"
+
+    async def _maybe_forward_close_to_corecen():
+        try:
+            async with AsyncSessionLocal() as bg_db:
+                u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+                if u and (u.book_type or "B") == "A":
+                    await corecen_trade_client.forward_trade_close(
+                        position_id=_pos_id,
+                        close_price=_close_price_f,
+                        pnl=_result_profit_f,
+                        closed_by=_close_reason,
+                    )
+        except Exception as e:
+            logger.error("[A-BOOK] Failed to forward trade close to Corecen: %s", e)
+
+    asyncio.create_task(_maybe_forward_close_to_corecen())
 
     return {
         "message": result_msg,
