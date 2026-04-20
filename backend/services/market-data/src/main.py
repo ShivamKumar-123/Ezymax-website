@@ -18,6 +18,7 @@ from packages.common.src.kafka_client import close_producer
 from .feed_handler import FeedSimulator, INSTRUMENTS
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
+from .corecen_lp_feed import CorecenLPFeed
 from .bar_aggregator import BarAggregator
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
@@ -45,7 +46,15 @@ class MarketDataService:
         raw_key = (settings.INFOWAY_API_KEY or "").strip()
         self._tick_count = 0
         self._infoway_watchdog_armed = False
-        if usable_infoway_api_key(raw_key):
+        if getattr(settings, "CORECEN_LP_ENABLED", False):
+            if not settings.CORECEN_LP_API_KEY or not settings.CORECEN_LP_API_SECRET:
+                logger.error(
+                    "CORECEN_LP_ENABLED=true but CORECEN_LP_API_KEY / CORECEN_LP_API_SECRET "
+                    "are not set — gateway will reject LP pushes and no ticks will arrive."
+                )
+            self.feed = CorecenLPFeed()
+            logger.info("Price feed: Corecen LP (receiving pushes on /api/lp/prices/batch)")
+        elif usable_infoway_api_key(raw_key):
             self.feed = InfowayFeed(raw_key, INSTRUMENTS)
             self._infoway_watchdog_armed = True
             logger.info("Price feed: Infoway WebSocket (depth)")

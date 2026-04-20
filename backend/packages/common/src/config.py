@@ -59,9 +59,19 @@ class Settings(BaseSettings):
     SMTP_FROM: str = ""
     SMTP_USE_TLS: bool = True
 
-    # Market data provider (Infoway.io)
+    # Market data provider (Infoway.io) — fallback when Corecen LP not configured
     INFOWAY_API_KEY: str = ""
     INFOWAY_API_URL: str = "https://api.infoway.io"
+
+    # Corecen LP (primary market data source). When CORECEN_LP_ENABLED=true the
+    # market-data service stops running its own Infoway / simulator feed and
+    # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
+    CORECEN_LP_ENABLED: bool = False
+    # HMAC credentials — must match TRUSTEDGE_API_KEY / TRUSTEDGE_API_SECRET in the Corecen .env.
+    CORECEN_LP_API_KEY: str = ""
+    CORECEN_LP_API_SECRET: str = ""
+    # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
+    CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
     MARGIN_CALL_LEVEL: float = 80.0
     STOP_OUT_LEVEL: float = 50.0
