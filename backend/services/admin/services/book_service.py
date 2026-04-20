@@ -179,13 +179,15 @@ async def get_lp_status(db: AsyncSession) -> dict:
     last_batch_at: int | None = None
     queue_size: int = 0
     try:
-        raw = await _redis.get(LP_HEARTBEAT_KEY)
+        # Gateway writes LP heartbeat to Redis DB 0; admin service may use DB 1,
+        # so always query _redis_prices which is pinned to DB 0.
+        raw = await _redis_prices.get(LP_HEARTBEAT_KEY)
         if raw is not None:
             try:
                 last_batch_at = int(raw)
             except (TypeError, ValueError):
                 last_batch_at = None
-        queue_size = int(await _redis.llen(LP_QUEUE_KEY) or 0)
+        queue_size = int(await _redis_prices.llen(LP_QUEUE_KEY) or 0)
     except Exception:
         # Redis unreachable — treat as disconnected but don't 500.
         pass
