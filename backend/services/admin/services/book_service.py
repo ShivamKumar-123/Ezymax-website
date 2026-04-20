@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.config import get_settings
 from packages.common.src.models import (
     User, TradingAccount, Position, TradeHistory, SystemSetting,
 )
@@ -16,6 +17,12 @@ from dependencies import write_audit_log
 _redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
 _redis = aioredis.from_url(_redis_url, decode_responses=True)
 _redis_prices = aioredis.from_url(_redis_url.rsplit("/", 1)[0] + "/0", decode_responses=True)
+
+# Keys populated by the gateway LP receiver (see api/lp_receiver.py).
+# When Corecen is pushing prices these get updated on every batch.
+LP_HEARTBEAT_KEY = "lp:last_batch_at"      # unix ms of the last accepted batch
+LP_QUEUE_KEY = "lp:incoming_ticks"         # queue drained by market-data service
+LP_FRESH_WINDOW_MS = 10_000                # consider LP "connected" for 10s after last push
 
 
 async def get_book_stats(db: AsyncSession) -> dict:
@@ -158,8 +165,52 @@ async def bulk_change_book_type(
 
 
 async def get_lp_status(db: AsyncSession) -> dict:
-    """Check LP connection status (stub — always disconnected until LP integrated)."""
-    return {"connected": False, "message": "LP integration not connected", "last_checked": datetime.utcnow().isoformat()}
+    """Report live LP connection state based on the gateway's LP receiver heartbeat.
+
+    Corecen pushes price batches to `/api/lp/prices/batch`; every accepted batch
+    sets a Redis key with `int(time.time() * 1000)`. If the most recent batch is
+    within LP_FRESH_WINDOW_MS, report CONNECTED so the Book Management badge
+    reflects reality instead of the previous stub.
+    """
+    settings = get_settings()
+    lp_enabled = bool(getattr(settings, "CORECEN_LP_ENABLED", False))
+    now_ms = int(datetime.utcnow().timestamp() * 1000)
+
+    last_batch_at: int | None = None
+    queue_size: int = 0
+    try:
+        raw = await _redis.get(LP_HEARTBEAT_KEY)
+        if raw is not None:
+            try:
+                last_batch_at = int(raw)
+            except (TypeError, ValueError):
+                last_batch_at = None
+        queue_size = int(await _redis.llen(LP_QUEUE_KEY) or 0)
+    except Exception:
+        # Redis unreachable — treat as disconnected but don't 500.
+        pass
+
+    age_ms = (now_ms - last_batch_at) if last_batch_at else None
+    connected = bool(lp_enabled and age_ms is not None and age_ms <= LP_FRESH_WINDOW_MS)
+
+    if not lp_enabled:
+        message = "CORECEN_LP_ENABLED is false — TrustEdge is not configured to receive LP prices"
+    elif last_batch_at is None:
+        message = "Waiting for Corecen to push the first price batch (check TRUSTEDGE_API_URL + HMAC keys on the Corecen side)"
+    elif connected:
+        message = f"Receiving prices from Corecen ({age_ms} ms since last batch)"
+    else:
+        message = f"Stale — last batch {age_ms} ms ago (threshold {LP_FRESH_WINDOW_MS} ms)"
+
+    return {
+        "connected": connected,
+        "lp_enabled": lp_enabled,
+        "last_batch_at_ms": last_batch_at,
+        "last_batch_age_ms": age_ms,
+        "queue_size": queue_size,
+        "message": message,
+        "last_checked": datetime.utcnow().isoformat(),
+    }
 
 
 async def get_lp_settings(db: AsyncSession) -> dict:
@@ -225,8 +276,13 @@ async def save_lp_settings(
 
 
 async def test_lp_connection(db: AsyncSession) -> dict:
-    """Test LP connection (stub)."""
-    return {"success": False, "message": "LP integration not yet implemented. Settings saved for future use."}
+    """Report whether Corecen LP is actively pushing price batches."""
+    status = await get_lp_status(db)
+    return {
+        "success": bool(status.get("connected")),
+        "message": status.get("message") or "Unknown LP state",
+        **status,
+    }
 
 
 async def get_abook_positions(page: int, per_page: int, db: AsyncSession) -> dict:

@@ -113,6 +113,8 @@ function BookTab() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lpConnected, setLpConnected] = useState(false);
   const [lpChecking, setLpChecking] = useState(false);
+  const [lpMessage, setLpMessage] = useState<string>('');
+  const [lpAgeMs, setLpAgeMs] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [lpSettings, setLpSettings] = useState({ api_url: '', ws_url: '', api_key: '', api_secret: '' });
   const [showSecret, setShowSecret] = useState(false);
@@ -148,9 +150,19 @@ function BookTab() {
   const checkLpStatus = useCallback(async () => {
     setLpChecking(true);
     try {
-      const data = await adminApi.get<{ connected: boolean }>('/book/lp-status');
+      const data = await adminApi.get<{
+        connected: boolean;
+        message?: string;
+        last_batch_age_ms?: number | null;
+      }>('/book/lp-status');
       setLpConnected(data.connected);
-    } catch { setLpConnected(false); }
+      setLpMessage(data.message || '');
+      setLpAgeMs(typeof data.last_batch_age_ms === 'number' ? data.last_batch_age_ms : null);
+    } catch {
+      setLpConnected(false);
+      setLpMessage('Failed to reach admin API');
+      setLpAgeMs(null);
+    }
     finally { setLpChecking(false); }
   }, []);
 
@@ -246,21 +258,27 @@ function BookTab() {
       {/* LP Connection Banner */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-2.5 rounded-md border text-xs',
+          'flex flex-col gap-1 px-4 py-2.5 rounded-md border text-xs',
           lpConnected
             ? 'bg-buy/10 border-buy/30 text-buy'
             : 'bg-sell/10 border-sell/30 text-sell',
         )}
       >
-        <div className="flex items-center gap-2">
-          {lpConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span className="font-medium">
-            LP Connection: {lpChecking ? 'Checking...' : lpConnected ? 'Connected' : 'Disconnected'}
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {lpConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+            <span className="font-medium">
+              LP Connection: {lpChecking ? 'Checking...' : lpConnected ? 'Connected' : 'Disconnected'}
+            </span>
+            {lpAgeMs !== null && (
+              <span className="opacity-70">· last push {Math.max(0, Math.round(lpAgeMs / 1000))}s ago</span>
+            )}
+          </div>
+          <button onClick={checkLpStatus} disabled={lpChecking} className="text-xxs underline hover:no-underline">
+            {lpChecking ? <Loader2 size={12} className="animate-spin" /> : 'Refresh'}
+          </button>
         </div>
-        <button onClick={checkLpStatus} disabled={lpChecking} className="text-xxs underline hover:no-underline">
-          {lpChecking ? <Loader2 size={12} className="animate-spin" /> : 'Refresh'}
-        </button>
+        {lpMessage && <div className="opacity-80 text-[11px]">{lpMessage}</div>}
       </div>
 
       {/* LP Settings (collapsible) */}
