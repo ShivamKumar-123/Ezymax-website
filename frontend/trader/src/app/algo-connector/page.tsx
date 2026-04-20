@@ -17,6 +17,7 @@ interface AccountWithKey {
   equity: number;
   is_demo: boolean;
   currency: string;
+  account_type: string;
   has_key: boolean;
   key_id: string | null;
   api_key: string | null;
@@ -135,7 +136,7 @@ export default function AlgoConnectorPage() {
                 >
                   {accounts.map(a => (
                     <option key={a.account_id} value={a.account_id}>
-                      {a.account_number} — ${fmt(a.balance)} {a.is_demo ? '(Demo)' : ''} {a.has_key ? '✓ Connected' : ''}
+                      {a.account_number} — {a.account_type}{a.is_demo ? ' (Demo)' : ''} — ${fmt(a.balance)} {a.has_key ? ' ✓ Connected' : ''}
                     </option>
                   ))}
                 </select>
