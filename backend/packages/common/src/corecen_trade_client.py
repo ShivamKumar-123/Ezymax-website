@@ -14,7 +14,9 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import time
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -22,6 +24,30 @@ import httpx
 from packages.common.src.config import get_settings
 
 logger = logging.getLogger("corecen_trade_client")
+
+# ---------------------------------------------------------------------------
+# JSON serialisation that matches JavaScript's JSON.stringify exactly.
+# Python: json.dumps(3.0) → '3.0'   JS: JSON.stringify(3.0) → '3'
+# Python: json.dumps(Decimal('5')) → error   JS: never sees Decimal
+# ---------------------------------------------------------------------------
+
+def _js_val(v: Any) -> Any:
+    """Convert a single value so json.dumps matches JS JSON.stringify."""
+    if isinstance(v, Decimal):
+        return int(v) if v == int(v) else float(v)
+    if isinstance(v, float) and not math.isnan(v) and not math.isinf(v):
+        return int(v) if v == int(v) else v
+    if isinstance(v, dict):
+        return {k: _js_val(val) for k, val in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_js_val(i) for i in v]
+    return v
+
+
+def _js_dumps(obj: Any) -> str:
+    """Compact JSON identical to JS JSON.stringify."""
+    return json.dumps(_js_val(obj), separators=(",", ":"), default=str)
+
 
 # ---------------------------------------------------------------------------
 # HMAC signing — matches Corecen's hmac.middleware.ts
@@ -46,7 +72,7 @@ async def _request(method: str, path: str, payload: dict[str, Any] | None = None
         return {"skipped": True}
 
     url = s.CORECEN_BROKER_API_URL.rstrip("/") + path
-    body = json.dumps(payload, separators=(",", ":"), default=str) if payload else ""
+    body = _js_dumps(payload) if payload else ""
     timestamp = str(int(time.time() * 1000))
     signature = _sign(s.CORECEN_BROKER_API_SECRET, timestamp, method, path, body)
 
