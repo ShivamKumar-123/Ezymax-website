@@ -48,7 +48,6 @@ export default function AlgoConnectorPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [generatedKey, setGeneratedKey] = useState<GeneratedKey | null>(null);
   const [selectedAccId, setSelectedAccId] = useState<string>('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -99,7 +98,7 @@ export default function AlgoConnectorPage() {
 
   return (
     <DashboardShell>
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10 space-y-8">
+      <div className="w-full px-4 sm:px-8 py-6 sm:py-10 space-y-8">
 
         {/* ─── Hero Header ─── */}
         <div className="text-center space-y-2">
@@ -127,55 +126,19 @@ export default function AlgoConnectorPage() {
               <p className="text-sm text-text-tertiary text-center py-8">No trading accounts found. Create one first.</p>
             ) : (
               <>
-                {/* Dropdown */}
-                <div className="relative z-30">
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-border-primary bg-bg-input text-left hover:border-accent/40 transition-colors"
-                  >
-                    {selected ? (
-                      <div className="flex items-center justify-between flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={clsx('w-2 h-2 rounded-full shrink-0', selected.has_key ? 'bg-green-500' : 'bg-text-tertiary')} />
-                          <span className="text-sm font-medium text-text-primary">{selected.account_number}</span>
-                          {selected.is_demo && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500">DEMO</span>}
-                        </div>
-                        <span className="text-sm text-text-secondary tabular-nums">${fmt(selected.balance)}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-text-tertiary">Select account…</span>
-                    )}
-                    <ChevronDown size={16} className={clsx('text-text-tertiary shrink-0 transition-transform', dropdownOpen && 'rotate-180')} />
-                  </button>
-                  {dropdownOpen && (
-                    <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-border-primary bg-bg-card shadow-lg max-h-60 overflow-y-auto">
-                      {accounts.map(a => (
-                        <button
-                          key={a.account_id}
-                          type="button"
-                          onClick={() => { setSelectedAccId(a.account_id); setDropdownOpen(false); }}
-                          className={clsx(
-                            'w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors',
-                            a.account_id === selectedAccId ? 'bg-accent/8' : 'hover:bg-bg-hover',
-                          )}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={clsx('w-2 h-2 rounded-full shrink-0', a.has_key ? 'bg-green-500' : 'bg-text-tertiary')} />
-                            <span className="text-sm font-medium text-text-primary">{a.account_number}</span>
-                            {a.is_demo && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500">DEMO</span>}
-                            {a.has_key && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/12 text-green-500">Connected</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-text-secondary tabular-nums">${fmt(a.balance)}</span>
-                            {a.account_id === selectedAccId && <Check size={14} className="text-accent" />}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Account Select */}
+                <select
+                  value={selectedAccId}
+                  onChange={e => setSelectedAccId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-border-primary bg-bg-input text-sm font-medium text-text-primary appearance-none cursor-pointer hover:border-accent/40 transition-colors focus:outline-none focus:border-accent/60"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                >
+                  {accounts.map(a => (
+                    <option key={a.account_id} value={a.account_id}>
+                      {a.account_number} — ${fmt(a.balance)} {a.is_demo ? '(Demo)' : ''} {a.has_key ? '✓ Connected' : ''}
+                    </option>
+                  ))}
+                </select>
 
                 {/* Selected account action area */}
                 {selected && (
