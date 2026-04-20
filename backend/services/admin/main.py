@@ -15,7 +15,7 @@ logger = logging.getLogger("admin-api")
 from routes import (
     auth, dashboard, users, trades, deposits, banks, book,
     config as routes_config, instruments_admin, business, social, analytics, bonus, banners,
-    support, employees, settings, transactions, kyc, account_types, user_audit_logs,
+    support, employees, settings, transactions, kyc, account_types, user_audit_logs, algo,
 )
 
 app_settings = get_settings()
@@ -52,6 +52,31 @@ async def _apply_startup_ddl():
                     updated_at TIMESTAMPTZ DEFAULT now()
                 )
             """))
+            # Algo bot signals table
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS algo_signals (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    action VARCHAR(10) NOT NULL,
+                    symbol VARCHAR(20) NOT NULL,
+                    volume NUMERIC(10,4),
+                    stop_loss NUMERIC(18,8),
+                    take_profit NUMERIC(18,8),
+                    status VARCHAR(20) DEFAULT 'pending',
+                    executed_by UUID REFERENCES users(id),
+                    executed_at TIMESTAMPTZ,
+                    masters_executed INTEGER DEFAULT 0,
+                    execution_details JSONB,
+                    reject_reason TEXT,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
+            # Algo columns on master_accounts
+            await conn.execute(text(
+                "ALTER TABLE master_accounts ADD COLUMN IF NOT EXISTS algo_enabled BOOLEAN DEFAULT false"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE master_accounts ADD COLUMN IF NOT EXISTS algo_volume_multiplier NUMERIC(10,4) DEFAULT 1"
+            ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 
@@ -116,6 +141,7 @@ app.include_router(transactions.router, prefix=prefix)
 app.include_router(kyc.router, prefix=prefix)
 app.include_router(account_types.router, prefix=prefix)
 app.include_router(user_audit_logs.router, prefix=prefix)
+app.include_router(algo.router, prefix=prefix)
 
 
 @app.get("/health")
