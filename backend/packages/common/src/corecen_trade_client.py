@@ -46,7 +46,7 @@ async def _request(method: str, path: str, payload: dict[str, Any] | None = None
         return {"skipped": True}
 
     url = s.CORECEN_BROKER_API_URL.rstrip("/") + path
-    body = json.dumps(payload, default=str) if payload else ""
+    body = json.dumps(payload, separators=(",", ":"), default=str) if payload else ""
     timestamp = str(int(time.time() * 1000))
     signature = _sign(s.CORECEN_BROKER_API_SECRET, timestamp, method, path, body)
 
