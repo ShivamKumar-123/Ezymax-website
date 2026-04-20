@@ -81,10 +81,6 @@ class Settings(BaseSettings):
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
 
-    # Algo bot webhook — external algo bots push signals via POST /api/algo/signal.
-    ALGO_WEBHOOK_SECRET: str = ""            # shared secret the bot sends in X-Algo-Secret header
-    ALGO_AUTO_EXECUTE: bool = False          # true = execute immediately, false = admin approval
-
     MARGIN_CALL_LEVEL: float = 80.0
     STOP_OUT_LEVEL: float = 50.0
     MAX_OPEN_TRADES: int = 200

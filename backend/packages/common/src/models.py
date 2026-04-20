@@ -509,8 +509,6 @@ class MasterAccount(Base):
     sharpe_ratio = Column(Numeric(10, 4), default=0)
     followers_count = Column(Integer, default=0)
     total_fee_earned = Column(Numeric(18, 8), default=0)
-    algo_enabled = Column(Boolean, default=False)
-    algo_volume_multiplier = Column(Numeric(10, 4), default=1)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     user = relationship("User", lazy="selectin")
@@ -778,26 +776,22 @@ class Employee(Base):
     user = relationship("User", lazy="selectin")
 
 
-# ============================================
-# ALGO BOT SIGNALS
-# ============================================
-
-class AlgoSignal(Base):
-    __tablename__ = "algo_signals"
+class AlgoApiKey(Base):
+    __tablename__ = "algo_api_keys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    action = Column(String(10), nullable=False)          # BUY, SELL, CLOSE
-    symbol = Column(String(20), nullable=False)
-    volume = Column(Numeric(10, 4), nullable=True)       # null for CLOSE
-    stop_loss = Column(Numeric(18, 8), nullable=True)
-    take_profit = Column(Numeric(18, 8), nullable=True)
-    status = Column(String(20), default="pending")        # pending, executed, rejected
-    executed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    executed_at = Column(DateTime(timezone=True), nullable=True)
-    masters_executed = Column(Integer, default=0)
-    execution_details = Column(JSONB, nullable=True)      # per-master results
-    reject_reason = Column(Text, nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
+    api_key = Column(String(64), unique=True, nullable=False, index=True)
+    secret_hash = Column(String(128), nullable=False)
+    label = Column(String(100), default="")
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    trades_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user = relationship("User", lazy="selectin")
+    account = relationship("TradingAccount", lazy="selectin")
 
 
 class SystemSetting(Base):

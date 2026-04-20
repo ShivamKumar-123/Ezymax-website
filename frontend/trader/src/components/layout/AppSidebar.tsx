@@ -23,6 +23,7 @@ import {
   Headphones,
   Receipt,
   Calculator,
+  Plug,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { label: 'TrustEdge Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
+  { label: 'Algo Connector', href: '/algo-connector', icon: Plug },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Settings', href: '/profile', icon: Settings },
 ] as const;

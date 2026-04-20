@@ -21,7 +21,8 @@ from packages.common.src.instrumentation import init_sentry, add_middleware_stac
 from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
-    notifications, banners, trading_catalog, followers, lp_receiver, algo_webhook,
+    notifications, banners, trading_catalog, followers, lp_receiver,
+    algo_connector, algo_keys,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
@@ -129,7 +130,8 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"]
 # Corecen LP price push receiver — HMAC-secured, public (no JWT). Path mirrors
 # Corecen's sender (axios POST baseURL + '/api/lp/prices/batch').
 app.include_router(lp_receiver.router, prefix="/api/lp", tags=["LP Receiver"])
-app.include_router(algo_webhook.router, prefix="/api/algo", tags=["Algo Webhook"])
+app.include_router(algo_connector.router, prefix="/api/algo", tags=["Algo Connector"])
+app.include_router(algo_keys.router, prefix="/api/v1/algo", tags=["Algo Keys"])
 
 
 @app.get("/health")
