@@ -69,6 +69,9 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_algo_api_keys_api_key ON algo_api_keys(api_key)"
             ))
+            await conn.execute(text(
+                "ALTER TABLE algo_api_keys ADD COLUMN IF NOT EXISTS api_secret VARCHAR(128)"
+            ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 

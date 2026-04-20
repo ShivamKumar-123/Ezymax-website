@@ -784,6 +784,7 @@ class AlgoApiKey(Base):
     account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
     api_key = Column(String(64), unique=True, nullable=False, index=True)
     secret_hash = Column(String(128), nullable=False)
+    api_secret = Column(String(128), nullable=True)
     label = Column(String(100), default="")
     is_active = Column(Boolean, default=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)

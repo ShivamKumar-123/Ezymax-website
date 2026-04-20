@@ -144,6 +144,7 @@ async def list_accounts_with_keys(
             "has_key": k is not None,
             "key_id": str(k.id) if k else None,
             "api_key": k.api_key if k else None,
+            "api_secret": k.api_secret if k else None,
             "label": k.label if k else "",
             "trades_count": k.trades_count if k else 0,
             "last_used_at": k.last_used_at.isoformat() if k and k.last_used_at else None,
@@ -191,6 +192,7 @@ async def generate_key(
         account_id=body.account_id,
         api_key=api_key,
         secret_hash=_hash_secret(raw_secret),
+        api_secret=raw_secret,
         label=body.label or f"Algo - {account.account_number}",
     )
     db.add(new_key)

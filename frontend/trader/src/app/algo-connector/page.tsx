@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import {
   Plug, Key, Copy, RefreshCw, Trash2, Loader2,
-  Clock, Zap, Shield, AlertTriangle, ChevronDown, Check,
+  Clock, Zap, Shield, AlertTriangle, ChevronDown, Check, Eye, EyeOff,
 } from 'lucide-react';
 
 interface AccountWithKey {
@@ -21,6 +21,7 @@ interface AccountWithKey {
   has_key: boolean;
   key_id: string | null;
   api_key: string | null;
+  api_secret: string | null;
   label: string;
   trades_count: number;
   last_used_at: string | null;
@@ -50,6 +51,7 @@ export default function AlgoConnectorPage() {
   const [generatedKey, setGeneratedKey] = useState<GeneratedKey | null>(null);
   const [selectedAccId, setSelectedAccId] = useState<string>('');
   const [copied, setCopied] = useState<string | null>(null);
+  const [showSecret, setShowSecret] = useState<Record<string, boolean>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -167,6 +169,31 @@ export default function AlgoConnectorPage() {
                             </button>
                           </div>
                         </div>
+                        <div>
+                          <label className="text-xs text-text-tertiary block mb-1.5">API Secret</label>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 text-xs bg-bg-input border border-border-primary rounded-lg px-3 py-2.5 font-mono text-text-primary truncate">
+                              {showSecret[selected.account_id] ? (selected.api_secret || '—') : '••••••••••••••••••••••••••••••••'}
+                            </code>
+                            <button
+                              onClick={() => setShowSecret(p => ({ ...p, [selected.account_id]: !p[selected.account_id] }))}
+                              className="px-3 py-2.5 rounded-lg border border-border-primary bg-card text-text-secondary hover:text-text-primary hover:border-accent/40 transition-all"
+                            >
+                              {showSecret[selected.account_id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button
+                              onClick={() => copyText(selected.api_secret || '', 'secret')}
+                              className={clsx(
+                                'px-3 py-2.5 rounded-lg border text-xs font-medium transition-all',
+                                copied === 'secret'
+                                  ? 'border-green-500/40 bg-green-500/10 text-green-500'
+                                  : 'border-border-primary bg-card text-text-secondary hover:text-text-primary hover:border-accent/40',
+                              )}
+                            >
+                              {copied === 'secret' ? <Check size={14} /> : <Copy size={14} />}
+                            </button>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-4 text-xs text-text-tertiary pt-1">
                           <span className="flex items-center gap-1.5"><Zap size={12} className="text-accent" /> {selected.trades_count} trades</span>
                           <span className="flex items-center gap-1.5"><Clock size={12} /> Last used: {ago(selected.last_used_at)}</span>
@@ -212,19 +239,75 @@ export default function AlgoConnectorPage() {
               <h2 className="text-sm font-semibold text-text-primary">Connected Accounts ({connectedKeys.length})</h2>
             </div>
             <div className="divide-y divide-border-primary">
-              {connectedKeys.map(a => (
-                <div key={a.account_id} className="flex items-center justify-between px-5 py-3 hover:bg-bg-hover/50 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                    <span className="text-sm font-medium text-text-primary">{a.account_number}</span>
-                    {a.is_demo && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500">DEMO</span>}
+              {connectedKeys.map(a => {
+                const isOpen = showSecret[`list-${a.account_id}`];
+                return (
+                  <div key={a.account_id}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSecret(p => ({ ...p, [`list-${a.account_id}`]: !p[`list-${a.account_id}`] }))}
+                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-bg-hover/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                        <span className="text-sm font-medium text-text-primary">{a.account_number}</span>
+                        <span className="text-xs text-text-tertiary">{a.account_type}</span>
+                        {a.is_demo && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500">DEMO</span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-text-tertiary">{a.trades_count} trades</span>
+                        <Eye size={14} className={clsx('text-text-tertiary transition-transform', isOpen && 'text-accent')} />
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="px-5 pb-4 pt-1 space-y-2">
+                        <div>
+                          <label className="text-xs text-text-tertiary block mb-1">API Key</label>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 text-xs bg-bg-input border border-border-primary rounded-lg px-3 py-2 font-mono text-text-primary truncate">{a.api_key}</code>
+                            <button
+                              onClick={() => copyText(a.api_key || '', `list-key-${a.account_id}`)}
+                              className={clsx(
+                                'px-2.5 py-2 rounded-lg border text-xs transition-all',
+                                copied === `list-key-${a.account_id}`
+                                  ? 'border-green-500/40 bg-green-500/10 text-green-500'
+                                  : 'border-border-primary text-text-tertiary hover:text-text-primary',
+                              )}
+                            >
+                              {copied === `list-key-${a.account_id}` ? <Check size={12} /> : <Copy size={12} />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-text-tertiary block mb-1">API Secret</label>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 text-xs bg-bg-input border border-border-primary rounded-lg px-3 py-2 font-mono text-text-primary truncate">
+                              {showSecret[`list-secret-${a.account_id}`] ? (a.api_secret || '—') : '••••••••••••••••••••••••••••••••'}
+                            </code>
+                            <button
+                              onClick={() => setShowSecret(p => ({ ...p, [`list-secret-${a.account_id}`]: !p[`list-secret-${a.account_id}`] }))}
+                              className="px-2.5 py-2 rounded-lg border border-border-primary text-text-tertiary hover:text-text-primary transition-all"
+                            >
+                              {showSecret[`list-secret-${a.account_id}`] ? <EyeOff size={12} /> : <Eye size={12} />}
+                            </button>
+                            <button
+                              onClick={() => copyText(a.api_secret || '', `list-secret-copy-${a.account_id}`)}
+                              className={clsx(
+                                'px-2.5 py-2 rounded-lg border text-xs transition-all',
+                                copied === `list-secret-copy-${a.account_id}`
+                                  ? 'border-green-500/40 bg-green-500/10 text-green-500'
+                                  : 'border-border-primary text-text-tertiary hover:text-text-primary',
+                              )}
+                            >
+                              {copied === `list-secret-copy-${a.account_id}` ? <Check size={12} /> : <Copy size={12} />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-text-tertiary">
-                    <span>{a.trades_count} trades</span>
-                    <span>{ago(a.last_used_at)}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
