@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import {
   Plug, Key, Copy, RefreshCw, Trash2, Loader2,
-  Clock, Zap, Shield, AlertTriangle, ChevronDown, Check, Eye, EyeOff,
+  Clock, Zap, AlertTriangle, Check, Eye, EyeOff,
 } from 'lucide-react';
 
 interface AccountWithKey {
@@ -96,8 +96,6 @@ export default function AlgoConnectorPage() {
     setTimeout(() => setCopied(null), 1500);
     toast.success('Copied to clipboard');
   };
-
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   return (
     <DashboardShell>
@@ -390,92 +388,6 @@ export default function AlgoConnectorPage() {
           </div>
         )}
 
-        {/* ─── API Documentation ─── */}
-        <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
-          <div className="px-5 py-4 border-b border-border-primary flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Shield size={16} className="text-accent" />
-              <h2 className="text-sm font-semibold text-text-primary">API Documentation</h2>
-            </div>
-            <button
-              onClick={() => copyText(`POST ${baseUrl}/api/algo/trade\n\nHeaders:\n  X-Api-Key: <your-api-key>\n  X-Api-Secret: <your-api-secret>\n  Content-Type: application/json\n\nBUY:\n${JSON.stringify({ action: "BUY", symbol: "XAUUSD", volume: 0.1, sl: 4750, tp: 4850 }, null, 2)}\n\nCLOSE:\n${JSON.stringify({ action: "CLOSE", symbol: "XAUUSD" }, null, 2)}`, 'docs')}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
-                copied === 'docs'
-                  ? 'border-green-500/40 bg-green-500/10 text-green-500'
-                  : 'border-border-primary text-text-secondary hover:text-accent hover:border-accent/40',
-              )}
-            >
-              {copied === 'docs' ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy Docs</>}
-            </button>
-          </div>
-          <div className="p-5 space-y-4">
-            <p className="text-xs text-text-tertiary">Share this with your algo bot developer. Each API key is linked to one trading account.</p>
-
-            <div className="rounded-lg bg-bg-secondary border border-border-primary p-4 text-xs font-mono space-y-3 overflow-x-auto">
-              <div><span className="text-accent font-bold">POST</span> <span className="text-text-primary">{baseUrl}/api/algo/trade</span></div>
-
-              <div className="text-text-tertiary">Headers:</div>
-              <div className="pl-3 space-y-0.5">
-                <div><span className="text-amber-500">X-Api-Key</span>: <span className="text-text-secondary">ak_your_api_key_here</span></div>
-                <div><span className="text-amber-500">X-Api-Secret</span>: <span className="text-text-secondary">as_your_api_secret_here</span></div>
-                <div><span className="text-amber-500">Content-Type</span>: <span className="text-text-secondary">application/json</span></div>
-              </div>
-
-              <div className="border-t border-border-primary pt-3 text-text-tertiary">Open Trade (BUY / SELL):</div>
-              <pre className="pl-3 text-green-500/80 whitespace-pre-wrap">{JSON.stringify({ action: "BUY", symbol: "XAUUSD", volume: 0.1, sl: 4750.0, tp: 4850.0 }, null, 2)}</pre>
-
-              <div className="text-text-tertiary">Close All Positions:</div>
-              <pre className="pl-3 text-red-400/80 whitespace-pre-wrap">{JSON.stringify({ action: "CLOSE", symbol: "XAUUSD" }, null, 2)}</pre>
-            </div>
-
-            {/* Python Example */}
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-text-primary py-2">
-                <span>Python Example</span>
-                <ChevronDown size={14} className="text-text-tertiary transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="mt-2 rounded-lg bg-bg-secondary border border-border-primary p-4 text-xs font-mono overflow-x-auto relative">
-                <button
-                  onClick={() => copyText(`import requests\n\nurl = "${baseUrl}/api/algo/trade"\nheaders = {\n    "X-Api-Key": "ak_your_key",\n    "X-Api-Secret": "as_your_secret",\n    "Content-Type": "application/json"\n}\n\nr = requests.post(url, json={"action": "BUY", "symbol": "XAUUSD", "volume": 0.1, "sl": 4750, "tp": 4850}, headers=headers)\nprint(r.json())`, 'python')}
-                  className={clsx(
-                    'absolute top-2 right-2 px-2 py-1 rounded border text-[10px] font-medium transition-all',
-                    copied === 'python'
-                      ? 'border-green-500/40 bg-green-500/10 text-green-500'
-                      : 'border-border-primary text-text-tertiary hover:text-text-secondary',
-                  )}
-                >
-                  {copied === 'python' ? 'Copied!' : 'Copy'}
-                </button>
-                <pre className="text-text-secondary whitespace-pre-wrap">{`import requests
-
-url = "${baseUrl}/api/algo/trade"
-headers = {
-    "X-Api-Key": "ak_your_key",
-    "X-Api-Secret": "as_your_secret",
-    "Content-Type": "application/json"
-}
-
-# Buy 0.1 lot XAUUSD
-r = requests.post(url, json={
-    "action": "BUY",
-    "symbol": "XAUUSD",
-    "volume": 0.1,
-    "sl": 4750,
-    "tp": 4850
-}, headers=headers)
-print(r.json())
-
-# Close all XAUUSD positions
-r = requests.post(url, json={
-    "action": "CLOSE",
-    "symbol": "XAUUSD"
-}, headers=headers)
-print(r.json())`}</pre>
-              </div>
-            </details>
-          </div>
-        </div>
 
       </div>
     </DashboardShell>
