@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
     CORS_ALLOW_METHODS: str = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    CORS_ALLOW_HEADERS: str = "Authorization,Content-Type,X-Requested-With,Accept"
+    CORS_ALLOW_HEADERS: str = "Authorization,Content-Type,X-Requested-With,Accept,X-Api-Key,X-Api-Secret"
 
     # Public trader app URL (password reset links). No trailing slash.
     TRADER_APP_URL: str = "http://localhost:3000"
