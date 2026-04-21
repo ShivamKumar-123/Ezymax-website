@@ -110,6 +110,7 @@ export default function AccountsPage() {
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSubmitting, setTransferSubmitting] = useState(false);
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
+  const [kycGateOpen, setKycGateOpen] = useState(false);
   /** After creating an account, open-account sets sessionStorage; expand that card on Accounts. */
   const [expandAccountId, setExpandAccountId] = useState<string | null>(null);
   const [fromKind, setFromKind] = useState<TransferEndKind>('trading');
@@ -435,6 +436,17 @@ export default function AccountsPage() {
   const newAccountCtaClass =
     'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#2196f3] text-[#2196f3] text-sm font-bold hover:bg-[#2196f3]/10 transition-colors shrink-0';
 
+  /** Open the live account picker only if KYC is approved; otherwise show the KYC gate modal. */
+  const handleOpenNewAccount = () => {
+    const kyc = (user?.kyc_status || '').toLowerCase();
+    const approved = kyc === 'approved' || kyc === 'verified';
+    if (!approved) {
+      setKycGateOpen(true);
+      return;
+    }
+    setAccountPickerOpen(true);
+  };
+
   return (
     <DashboardShell>
       <AccountTypePickerModal
@@ -442,6 +454,57 @@ export default function AccountsPage() {
         onClose={() => setAccountPickerOpen(false)}
         onCreated={() => void fetchAccounts()}
       />
+      <Modal
+        open={kycGateOpen}
+        onClose={() => setKycGateOpen(false)}
+        title="Complete KYC to open a live account"
+        width="md"
+        className="border border-border-primary bg-bg-card shadow-2xl"
+      >
+        <div className="space-y-4 p-1">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            Live trading accounts are only available after your identity verification is approved. Submit your KYC documents and wait for review to continue.
+          </p>
+          {(() => {
+            const kyc = (user?.kyc_status || 'pending').toLowerCase();
+            const label =
+              kyc === 'pending' || !kyc
+                ? 'Not started'
+                : kyc === 'submitted' || kyc === 'under_review'
+                  ? 'Under review'
+                  : kyc === 'rejected' || kyc === 'failed'
+                    ? 'Rejected — please resubmit'
+                    : kyc;
+            const color =
+              kyc === 'rejected' || kyc === 'failed'
+                ? 'text-sell bg-sell/10 border-sell/30'
+                : kyc === 'submitted' || kyc === 'under_review'
+                  ? 'text-warning bg-warning/10 border-warning/30'
+                  : 'text-text-secondary bg-bg-tertiary border-border-primary';
+            return (
+              <div className={clsx('rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wider inline-flex', color)}>
+                KYC status: {label}
+              </div>
+            );
+          })()}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border-primary">
+            <button
+              type="button"
+              onClick={() => setKycGateOpen(false)}
+              className="px-5 py-2.5 rounded-lg border border-border-primary bg-bg-card text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
+            >
+              Close
+            </button>
+            <Link
+              href="/kyc"
+              onClick={() => setKycGateOpen(false)}
+              className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors text-center"
+            >
+              Complete KYC
+            </Link>
+          </div>
+        </div>
+      </Modal>
       {/* Accounts / Internal Transfer — full-width edge-to-edge, straight top line
           meeting the sidebar's right border; only the active-tab indicator curves. */}
       <div className="relative -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-8">
@@ -528,7 +591,7 @@ export default function AccountsPage() {
                       New Account
                     </Link>
                   ) : (
-                    <button type="button" onClick={() => setAccountPickerOpen(true)} className={newAccountCtaClass}>
+                    <button type="button" onClick={handleOpenNewAccount} className={newAccountCtaClass}>
                       <span className="text-lg leading-none">+</span>
                       New Account
                     </button>
@@ -561,7 +624,7 @@ export default function AccountsPage() {
                     {!user?.is_demo && (
                       <button
                         type="button"
-                        onClick={() => setAccountPickerOpen(true)}
+                        onClick={handleOpenNewAccount}
                         className="inline-flex items-center justify-center rounded-lg border-2 border-accent px-5 py-2.5 text-sm font-bold text-accent hover:bg-accent/10"
                       >
                         + New Account
@@ -621,7 +684,7 @@ export default function AccountsPage() {
                       type="button"
                       onClick={() => {
                         setTab('accounts');
-                        setAccountPickerOpen(true);
+                        handleOpenNewAccount();
                       }}
                       className="text-sm font-bold text-[#2196f3] hover:underline"
                     >

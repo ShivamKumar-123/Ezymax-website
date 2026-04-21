@@ -80,6 +80,15 @@ async def open_live_account(
     if not group:
         raise HTTPException(status_code=400, detail="Invalid or inactive account type")
 
+    # Live accounts require KYC approval. Demo users skip this gate.
+    if not user_is_demo:
+        kyc = (user.kyc_status or "pending").lower()
+        if kyc not in ("approved", "verified"):
+            raise HTTPException(
+                status_code=403,
+                detail="KYC_REQUIRED",
+            )
+
     min_d = Decimal(str(group.minimum_deposit or 0))
 
     new_balance = Decimal("0")

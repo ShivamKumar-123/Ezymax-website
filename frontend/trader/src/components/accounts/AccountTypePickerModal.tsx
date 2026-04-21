@@ -78,7 +78,14 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
         onCreated?.(res.id);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not open account');
+      const msg = e instanceof Error ? e.message : '';
+      // Backend returns detail="KYC_REQUIRED" when KYC is not approved — show a friendly message.
+      if (msg === 'KYC_REQUIRED') {
+        toast.error('Please complete KYC verification before opening a live account.');
+        onClose();
+      } else {
+        toast.error(msg || 'Could not open account');
+      }
     } finally {
       setCreating(false);
     }
