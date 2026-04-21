@@ -75,6 +75,28 @@ type TradeTab = 'open' | 'pending' | 'closed';
 const fmt2 = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt5 = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
 
+/** Maps backend close_reason → short label + badge style. Includes trigger price for SL/TP hits. */
+function closeReasonBadge(
+  reason: string | null | undefined,
+  triggerPrice?: number,
+): { label: string; className: string } {
+  const r = (reason || 'manual').toLowerCase();
+  const priceStr = triggerPrice != null && Number.isFinite(triggerPrice) ? ` @ ${fmt5(triggerPrice)}` : '';
+  if (r === 'sl' || r === 'stop_loss')
+    return { label: `SL${priceStr}`, className: 'bg-sell/15 text-sell border border-sell/30' };
+  if (r === 'tp' || r === 'take_profit')
+    return { label: `TP${priceStr}`, className: 'bg-buy/15 text-buy border border-buy/30' };
+  if (r === 'admin')
+    return { label: 'Admin', className: 'bg-warning/15 text-warning border border-warning/30' };
+  if (r === 'margin' || r === 'liquidation' || r === 'margin_call')
+    return { label: 'Margin', className: 'bg-sell/20 text-sell border border-sell/30' };
+  if (r === 'copy_close' || r === 'copy' || r === 'copy_stopped' || r === 'managed_withdrawal')
+    return { label: 'Copy close', className: 'bg-info/15 text-info border border-info/30' };
+  if (r === 'algo_close')
+    return { label: 'Algo', className: 'bg-info/15 text-info border border-info/30' };
+  return { label: 'Manual', className: 'bg-text-tertiary/15 text-text-tertiary border border-border-primary' };
+}
+
 /** Calculate live P/L from position data when backend returns 0/null. */
 function calcLivePnl(pos: any): number {
   const pnl = Number(pos.pnl || 0);
@@ -311,6 +333,9 @@ export default function TradesSection() {
                     {tab !== 'pending' && (
                       <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">P/L</th>
                     )}
+                    {tab === 'closed' && (
+                      <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Reason</th>
+                    )}
                     <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Account</th>
                     <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
                       {tab === 'closed' ? 'Closed' : tab === 'pending' ? 'Placed' : 'Opened'}
@@ -347,6 +372,16 @@ export default function TradesSection() {
                             {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
                           </td>
                         )}
+                        {tab === 'closed' && (() => {
+                          const badge = closeReasonBadge(r.close_reason, r.close_price);
+                          return (
+                            <td className="px-3 py-3">
+                              <span className={clsx('inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide whitespace-nowrap', badge.className)}>
+                                {badge.label}
+                              </span>
+                            </td>
+                          );
+                        })()}
                         <td className="px-3 py-3 text-[10px] text-text-tertiary font-mono">{accountNumber(r.account_id)}</td>
                         <td className="px-3 py-3 text-[10px] text-text-tertiary whitespace-nowrap">
                           {(() => {
@@ -425,6 +460,17 @@ export default function TradesSection() {
                         </div>
                       </div>
                     </div>
+                    {tab === 'closed' && (() => {
+                      const badge = closeReasonBadge(r.close_reason, r.close_price);
+                      return (
+                        <div className="flex items-center gap-2 text-[10px]">
+                          <span className="text-text-tertiary">Reason</span>
+                          <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide', badge.className)}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-text-tertiary">
                         {dateStr ? new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -547,11 +593,12 @@ function TradeDetailBody({ kind, data, accountNumber }: { kind: TradeTab; data: 
   }
   if (kind === 'closed') {
     items.push({ label: 'Close Price', value: <span className="font-mono text-text-secondary">{fmt5(data.close_price || 0)}</span> });
+    const badge = closeReasonBadge(data.close_reason, data.close_price);
     items.push({
       label: 'Close Reason',
       value: (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-bg-tertiary text-text-secondary border border-border-primary">
-          {data.close_reason || 'manual'}
+        <span className={clsx('px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', badge.className)}>
+          {badge.label}
         </span>
       ),
     });
