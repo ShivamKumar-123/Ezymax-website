@@ -22,8 +22,10 @@ import {
   LayoutGrid,
   LayoutList,
   ArrowRight,
+  Share2,
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
+import ShareTradeModal from '@/components/trading/ShareTradeModal';
 
 interface ClosedTrade {
   id: string;
@@ -318,6 +320,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const bulkMenuRef = useRef<HTMLDivElement>(null);
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
+  const [sharePosition, setSharePosition] = useState<Position | null>(null);
 
   const totalPnl = positions.reduce((s, p) => s + (p.profit || 0), 0);
 
@@ -1022,9 +1025,19 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 </button>
                               )}
                             </div>
-                            <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
-                              Close
-                            </button>
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSharePosition(pos)}
+                                className="p-1.5 rounded-lg text-text-tertiary active:text-text-primary"
+                                aria-label="Share trade"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                              <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
+                                Close
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1147,21 +1160,31 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               )}
                             </td>
                             <td className={clsx(td, 'text-right pr-2')}>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setCloseModal({
-                                    id: pos.id,
-                                    symbol: pos.symbol,
-                                    side: pos.side,
-                                    lots: pos.lots,
-                                    closeLots: String(pos.lots),
-                                  })
-                                }
-                                className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
-                              >
-                                Close
-                              </button>
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSharePosition(pos)}
+                                  title="Share trade"
+                                  className="p-1 rounded-md text-text-tertiary hover:bg-bg-hover hover:text-text-primary transition-fast"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setCloseModal({
+                                      id: pos.id,
+                                      symbol: pos.symbol,
+                                      side: pos.side,
+                                      lots: pos.lots,
+                                      closeLots: String(pos.lots),
+                                    })
+                                  }
+                                  className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
+                                >
+                                  Close
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1785,6 +1808,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
           </div>,
           document.body,
         )}
+
+      <ShareTradeModal
+        open={!!sharePosition}
+        onClose={() => setSharePosition(null)}
+        position={sharePosition}
+        leverage={Number(activeAccount?.leverage) || 100}
+      />
     </div>
   );
 }

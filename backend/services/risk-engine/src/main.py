@@ -178,8 +178,12 @@ class RiskEngine:
             _pos_id = str(pos.id)
             _cp = float(close_price)
             _pnl = float(profit)
+            _is_demo = bool(account.is_demo)
 
-            async def _forward_stopout(pid=_pos_id, cp=_cp, pnl=_pnl):
+            async def _forward_stopout(pid=_pos_id, cp=_cp, pnl=_pnl, is_demo=_is_demo):
+                # Demo account stop-outs never hit LP.
+                if is_demo:
+                    return
                 try:
                     async with AsyncSessionLocal() as bg_db:
                         u = (await bg_db.execute(

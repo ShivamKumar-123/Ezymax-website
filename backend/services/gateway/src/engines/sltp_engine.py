@@ -225,10 +225,11 @@ class SLTPEngine:
         _pnl = float(profit)
         _reason_upper = reason.upper()
         _user_id = account.user_id if account else None
+        _is_demo = bool(account.is_demo) if account else True
 
         async def _forward_sltp_close():
             try:
-                if not _user_id:
+                if not _user_id or _is_demo:
                     return
                 async with AsyncSessionLocal() as bg_db:
                     u = (await bg_db.execute(select(User).where(User.id == _user_id))).scalar_one_or_none()

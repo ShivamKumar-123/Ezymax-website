@@ -376,8 +376,13 @@ async def place_order(
         _leverage = account.leverage
         _contract_size = float(instrument.contract_size or 100000)
         _acct_id_str = str(account.id)
+        _is_demo = bool(account.is_demo)
 
         async def _maybe_forward_to_corecen():
+            # Demo account trades are always B-book — never forward to LP,
+            # regardless of the user's A/B book_type flag.
+            if _is_demo:
+                return
             try:
                 async with AsyncSessionLocal() as bg_db:
                     u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
@@ -632,7 +637,8 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
             TradingAccount.user_id == user_id,
         )
     )
-    if not acct_result.scalar_one_or_none():
+    acct_row = acct_result.scalar_one_or_none()
+    if not acct_row:
         raise HTTPException(status_code=403, detail="Not your position")
 
     pos_status = pos.status.value if hasattr(pos.status, 'value') else str(pos.status)
@@ -665,8 +671,11 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
         _pos_id_str = str(position_id)
         _new_sl = float(pos.stop_loss) if pos.stop_loss else None
         _new_tp = float(pos.take_profit) if pos.take_profit else None
+        _is_demo = bool(acct_row.is_demo)
 
         async def _maybe_forward_update_to_corecen():
+            if _is_demo:
+                return
             try:
                 async with AsyncSessionLocal() as bg_db:
                     u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
@@ -856,8 +865,11 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     _close_price_f = float(close_price)
     _result_profit_f = float(result_profit)
     _close_reason = detected_reason.upper() if detected_reason != "manual" else "USER"
+    _is_demo = bool(account.is_demo)
 
     async def _maybe_forward_close_to_corecen():
+        if _is_demo:
+            return
         try:
             async with AsyncSessionLocal() as bg_db:
                 u = (await bg_db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()

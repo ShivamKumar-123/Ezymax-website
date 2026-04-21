@@ -322,10 +322,12 @@ class MatchingEngine:
         _pnl = float(profit)
         _reason_upper = reason.upper()
         _user_id = account.user_id if account else None
+        _is_demo = bool(account.is_demo) if account else True
 
         async def _forward_sltp_close():
             try:
-                if not _user_id:
+                # Demo accounts never route to LP, regardless of user's book_type.
+                if not _user_id or _is_demo:
                     return
                 async with AsyncSessionLocal() as bg_db:
                     u = (await bg_db.execute(
