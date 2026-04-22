@@ -806,21 +806,15 @@ async def become_provider(
     min_investment: Decimal, max_investors: int,
     user_id: UUID, db: AsyncSession,
 ) -> dict:
-    # Each account type is independent — a user can have one signal_provider
-    # AND one pamm/mamm account simultaneously.
+    # Each master type is independent — a user can hold one PAMM, one MAM,
+    # and one signal_provider application simultaneously. Block re-apply only
+    # if a LIVE row (pending/approved/active) of the SAME type already exists.
     normalized_type = master_type if master_type in ("signal_provider", "pamm", "mamm") else "signal_provider"
-    type_group = "signal_provider" if normalized_type == "signal_provider" else "managed"
-    type_filter = (
-        MasterAccount.master_type == "signal_provider"
-        if type_group == "signal_provider"
-        else MasterAccount.master_type.in_(["pamm", "mamm"])
-    )
-    # Only block re-apply if user has a LIVE provider row (pending/approved/active).
-    # Rejected or suspended rows mean admin closed the master — user can re-apply.
+
     existing = await db.execute(
         select(MasterAccount).where(
             MasterAccount.user_id == user_id,
-            type_filter,
+            MasterAccount.master_type == normalized_type,
             MasterAccount.status.in_(["pending", "approved", "active"]),
         )
     )
@@ -852,10 +846,10 @@ async def become_provider(
 
 async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | None = None) -> dict:
     filters = [MasterAccount.user_id == user_id]
-    if master_type == "signal_provider":
-        filters.append(MasterAccount.master_type == "signal_provider")
-    elif master_type in ("pamm", "mamm"):
-        filters.append(MasterAccount.master_type.in_(["pamm", "mamm"]))
+    # Exact-type match — a user can hold one PAMM master AND one MAM master
+    # simultaneously, and each page must see only its own application.
+    if master_type in ("signal_provider", "pamm", "mamm"):
+        filters.append(MasterAccount.master_type == master_type)
     result = await db.execute(
         select(MasterAccount).where(*filters).order_by(MasterAccount.created_at.desc())
     )

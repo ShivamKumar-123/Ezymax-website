@@ -290,7 +290,8 @@ export default function PammPage() {
 
   const fetchProvider = useCallback(async () => {
     try {
-      const res = await api.get<MyProvider>('/social/my-provider');
+      // PAMM page shows only the user's PAMM manager application — MAM lives on /social.
+      const res = await api.get<MyProvider>('/social/my-provider?master_type=pamm');
       setMyProvider(res);
     } catch {
       setMyProvider(null);
