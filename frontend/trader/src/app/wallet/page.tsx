@@ -726,10 +726,10 @@ function WalletPageContent() {
                 const isManaged = num.startsWith('IF') || num.startsWith('CF');
                 const isPool = num.startsWith('PM') || num.startsWith('MM') || num.startsWith('CT');
                 const cardLabel = num.startsWith('IF') ? 'PAMM Investment'
-                  : num.startsWith('CF') ? 'Copy Trade'
-                  : num.startsWith('PM') ? 'PAMM Pool'
-                  : num.startsWith('MM') ? 'MAM Pool'
-                  : num.startsWith('CT') ? 'Copy Pool'
+                  : num.startsWith('CF') ? 'MAM Account'
+                  : num.startsWith('PM') ? 'PAMM Master Pool'
+                  : num.startsWith('MM') ? 'MAM Master Pool'
+                  : num.startsWith('CT') ? 'MAM Master Pool'
                   : num;
                 const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '33,150,243', hex: '#2196f3' };
 
