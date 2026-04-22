@@ -77,7 +77,7 @@ def upgrade() -> None:
             gen_random_uuid(), p.id, p.account_id, p.instrument_id, p.side, p.lots,
             p.open_price, p.open_price,
             COALESCE(p.swap, 0), COALESCE(p.commission, 0), 0,
-            'duplicate_copy_cleanup', p.created_at, NOW()
+            'dup_copy_cleanup', p.created_at, NOW()
         FROM positions p
         JOIN dup_copies d ON d.investor_position_id = p.id
         WHERE NOT EXISTS (SELECT 1 FROM trade_history th WHERE th.position_id = p.id);
