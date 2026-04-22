@@ -728,7 +728,6 @@ function WalletPageContent() {
                 const cardLabel = num.startsWith('IF') ? 'PAMM Investment'
                   : num.startsWith('CF') ? 'MAM Account'
                   : num.startsWith('PM') ? 'PAMM Master Pool'
-                  : num.startsWith('MM') ? 'MAM Master Pool'
                   : num.startsWith('CT') ? 'MAM Master Pool'
                   : num;
                 const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '33,150,243', hex: '#2196f3' };
