@@ -961,8 +961,9 @@ export default function SocialPage() {
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
-  // MAM Trading section — MAM-only applications. PAMM applications live on /pamm.
-  const masterType = 'mamm';
+  // MAM Trading section — applies as signal_provider (the master_type that
+  // drives copy/mirror trading). PAMM applications live on /pamm.
+  const masterType = 'signal_provider';
   const [perfFee, setPerfFee] = useState('20');
   const [minInvest, setMinInvest] = useState('100');
   const [maxInvestors, setMaxInvestors] = useState('100');
@@ -974,7 +975,7 @@ function BecomeProviderTab() {
       setLoading(true);
       try {
         let provRes = null;
-        try { provRes = await api.get<any>('/social/my-provider?master_type=mamm'); } catch {}
+        try { provRes = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
         if (provRes) setExisting(provRes);
       } catch {} finally { setLoading(false); }
     })();
@@ -1000,7 +1001,7 @@ function BecomeProviderTab() {
           : 'Application submitted! Admin will review.',
       );
       let refreshed = null;
-      try { refreshed = await api.get<any>('/social/my-provider?master_type=mamm'); } catch {}
+      try { refreshed = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
       if (refreshed) setExisting(refreshed);
     } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setSubmitting(false); }
   };

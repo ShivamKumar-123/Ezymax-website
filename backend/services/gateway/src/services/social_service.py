@@ -806,10 +806,12 @@ async def become_provider(
     min_investment: Decimal, max_investors: int,
     user_id: UUID, db: AsyncSession,
 ) -> dict:
-    # Each master type is independent — a user can hold one PAMM, one MAM,
-    # and one signal_provider application simultaneously. Block re-apply only
-    # if a LIVE row (pending/approved/active) of the SAME type already exists.
-    normalized_type = master_type if master_type in ("signal_provider", "pamm", "mamm") else "signal_provider"
+    # Retired "mamm" master type — callers that still send it get remapped
+    # to signal_provider so no new MAMM rows are created. Users may hold one
+    # PAMM and one signal_provider application simultaneously.
+    if master_type == "mamm":
+        master_type = "signal_provider"
+    normalized_type = master_type if master_type in ("signal_provider", "pamm") else "signal_provider"
 
     existing = await db.execute(
         select(MasterAccount).where(
@@ -943,10 +945,13 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
 
 
 async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> dict:
+    # /pamm Browse shows PAMM pools only. Legacy "MAMM" master type has
+    # been retired — MAM Trading now lives under /social (signal_provider
+    # master_type) with its own leaderboard.
     count_result = await db.execute(
         select(func.count()).select_from(MasterAccount).where(
             MasterAccount.status == "approved",
-            MasterAccount.master_type.in_(["mamm", "pamm"]),
+            MasterAccount.master_type == "pamm",
         )
     )
     total = count_result.scalar()
@@ -956,7 +961,7 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
         .join(User, MasterAccount.user_id == User.id)
         .where(
             MasterAccount.status == "approved",
-            MasterAccount.master_type.in_(["mamm", "pamm"]),
+            MasterAccount.master_type == "pamm",
         )
         .order_by(MasterAccount.total_return_pct.desc())
         .offset((page - 1) * per_page).limit(per_page)
