@@ -59,7 +59,7 @@ interface PaginatedResponse<T> {
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'leaderboard', label: 'Leaderboard' },
-  { id: 'my-copies', label: 'My Copies' },
+  { id: 'my-copies', label: 'My Subscriptions' },
   { id: 'become-provider', label: 'Become Provider' },
   { id: 'my-dashboard', label: 'My Dashboard' },
 ];
@@ -201,9 +201,9 @@ function TraderCard({
                 <a
                   href="/social?tab=my-copies"
                   className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-danger/40 text-danger hover:bg-danger/15 transition-all"
-                  title="You're copying your own master — click to stop"
+                  title="You're mirroring your own master — click to stop"
                 >
-                  Stop Self-Copy
+                  Stop Self-Follow
                 </a>
               )}
             </div>
@@ -324,7 +324,7 @@ function DetailModal({
                   : 'bg-accent text-black hover:bg-accent/90'
               )}
             >
-              {detail.is_copying ? 'Already Copying' : 'Copy This Trader'}
+              {detail.is_copying ? 'Already Following' : 'Follow Manager'}
             </button>
           </>
         ) : null}
@@ -389,10 +389,10 @@ function CopyModal({
       // account_id is sent for API compat but backend auto-creates a dedicated account
       const acctId = accounts.length > 0 ? accounts[0].id : '00000000-0000-0000-0000-000000000000';
       await api.post(`/social/copy?master_id=${provider.id}&account_id=${acctId}&amount=${amt}`, {});
-      toast.success(`Now copying ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
+      toast.success(`Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
       onSuccess();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start copy');
+      toast.error(err instanceof Error ? err.message : 'Failed to start subscription');
     } finally {
       setSubmitting(false);
     }
@@ -407,7 +407,7 @@ function CopyModal({
         className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6"
       >
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
-        <h3 className="text-sm font-semibold text-text-primary mb-1">Copy {provider.provider_name}</h3>
+        <h3 className="text-sm font-semibold text-text-primary mb-1">Follow {provider.provider_name}</h3>
         <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
 
         {/* Wallet balance */}
@@ -420,7 +420,7 @@ function CopyModal({
         </div>
 
         <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
-          A dedicated trading account will be auto-created for this copy subscription. Copied trades will appear there.
+          A dedicated trading account will be auto-created for this MAM subscription. Mirrored trades will appear there.
         </div>
 
         <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
@@ -440,7 +440,7 @@ function CopyModal({
           disabled={submitting || accounts.length === 0}
           className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-black transition-all hover:bg-accent/90 disabled:opacity-50"
         >
-          {submitting ? 'Processing…' : 'Start Copying'}
+          {submitting ? 'Processing…' : 'Start Following'}
         </button>
       </div>
     </div>,
@@ -693,10 +693,10 @@ function MyCopiesTab() {
     try {
       const res = await api.delete<{ returned_to_wallet?: number }>(`/social/copy/${id}`);
       const returned = res?.returned_to_wallet;
-      toast.success(returned != null ? `Stopped copying ${name} — $${returned.toFixed(2)} returned to wallet` : `Stopped copying ${name}`);
+      toast.success(returned != null ? `Stopped following ${name} — $${returned.toFixed(2)} returned to wallet` : `Stopped following ${name}`);
       setCopies((prev) => prev.filter((c) => c.id !== id));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to stop copy');
+      toast.error(err instanceof Error ? err.message : 'Failed to stop subscription');
     } finally {
       setStoppingId(null);
     }
@@ -754,7 +754,7 @@ function MyCopiesTab() {
 
   if (loading) return <Spinner />;
   if (error) return <ErrorBanner message={error} onRetry={fetchCopies} />;
-  if (copies.length === 0) return <EmptyState message="You are not copying anyone yet" />;
+  if (copies.length === 0) return <EmptyState message="No active MAM subscriptions yet" />;
 
   return (
     <div className="space-y-3">
@@ -878,8 +878,8 @@ function SocialPageInner() {
     return (
       <DashboardShell>
         <DemoLockGate
-          feature="Copy Trading"
-          description="Copy trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
+          feature="MAM Trading"
+          description="MAM trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
         >
           <></>
         </DemoLockGate>
@@ -899,7 +899,7 @@ function SocialPageInner() {
             />
             <div className="relative z-10 px-3 sm:px-6 py-3 sm:py-8">
               <h1 className="text-base sm:text-3xl font-bold text-text-primary mb-1 sm:mb-2 leading-tight">
-                Copy Global Elite Traders
+                MAM Trading — Follow Global Elite Traders
               </h1>
               <p className="text-xs sm:text-sm text-text-secondary max-w-2xl hidden sm:block">
                 Follow top performers and replicate their strategies automatically. For pooled accounts, use{' '}
@@ -1038,8 +1038,8 @@ function BecomeProviderTab() {
 
         {/* Provider Type */}
         <div className="p-3 rounded-xl border border-buy/30 bg-buy/5">
-          <p className="text-xs font-semibold text-buy">Signal Provider</p>
-          <p className="text-xxs text-text-tertiary mt-0.5">Your followers automatically copy your trades in real time</p>
+          <p className="text-xs font-semibold text-buy">MAM Provider</p>
+          <p className="text-xxs text-text-tertiary mt-0.5">Your followers automatically mirror your trades in real time</p>
         </div>
 
         <div className="p-3 rounded-xl border border-border-glass bg-bg-secondary text-xxs text-text-tertiary flex items-center justify-between gap-3">
@@ -1224,7 +1224,7 @@ function MyDashboardTab() {
         <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-text-primary">My Followers</h3>
-            <p className="text-xxs text-text-tertiary mt-0.5">Users currently copying your trades</p>
+            <p className="text-xxs text-text-tertiary mt-0.5">Users currently following your trades</p>
           </div>
           <button
             onClick={loadFollowers}

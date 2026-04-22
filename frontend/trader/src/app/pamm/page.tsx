@@ -179,7 +179,8 @@ export default function PammPage() {
 
   // Apply form state
   const [applyAccount, setApplyAccount] = useState('');
-  const [applyType, setApplyType] = useState<'pamm' | 'mamm'>('pamm');
+  // PAMM page applies only for PAMM manager type; MAM applications live in /social.
+  const applyType = 'pamm' as const;
   const [applyFee, setApplyFee] = useState('20');
   const [applyMgmtFee, setApplyMgmtFee] = useState('0');
   const [applyMinInv, setApplyMinInv] = useState('100');
@@ -395,7 +396,7 @@ export default function PammPage() {
     return (
       <DashboardShell>
         <DemoLockGate
-          feature="PAMM / MAM"
+          feature="PAMM"
           description="Managed-account investing is only available on real trading accounts. Register a live account to allocate funds to a manager."
         >
           <></>
@@ -410,8 +411,8 @@ export default function PammPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold text-text-primary">PAMM / MAM</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Managed account investing and trading</p>
+          <h1 className="text-xl font-bold text-text-primary">PAMM</h1>
+          <p className="text-sm text-text-secondary mt-0.5">Pooled managed-account investing</p>
         </div>
 
         {/* Tab bar */}
@@ -451,7 +452,7 @@ export default function PammPage() {
                   <TrendingUp size={24} className="text-text-tertiary" />
                 </div>
                 <p className="text-text-primary font-medium">No managed accounts available</p>
-                <p className="text-sm text-text-tertiary mt-1">PAMM/MAM managers will appear here once approved</p>
+                <p className="text-sm text-text-tertiary mt-1">PAMM managers will appear here once approved</p>
               </div>
             )}
             {!browseLoading && !browseError && accounts.length > 0 && (
@@ -620,7 +621,7 @@ export default function PammPage() {
                     <Clock size={24} className="text-[#2196f3]" />
                   </div>
                   <p className="text-text-primary font-semibold text-lg">Application Under Review</p>
-                  <p className="text-sm text-text-tertiary mt-2 max-w-sm">Your PAMM/MAM manager application has been submitted. Our team will review it shortly.</p>
+                  <p className="text-sm text-text-tertiary mt-2 max-w-sm">Your PAMM manager application has been submitted. Our team will review it shortly.</p>
                 </div>
               ) : myProvider.status === 'approved' && ['pamm', 'mamm'].includes(myProvider.master_type) ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -649,7 +650,7 @@ export default function PammPage() {
             ) : (
               <div className="max-w-lg mx-auto bg-card border border-border-primary rounded-xl p-6 space-y-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                 <div>
-                  <h2 className="text-base font-bold text-text-primary">Apply as PAMM/MAM Manager</h2>
+                  <h2 className="text-base font-bold text-text-primary">Apply as PAMM Manager</h2>
                   <p className="text-xs text-text-tertiary mt-1">Submit your application for admin review</p>
                 </div>
 
@@ -660,27 +661,11 @@ export default function PammPage() {
 
                   <div>
                     <label className="block text-xs text-text-secondary mb-1.5">Manager Type</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['pamm', 'mamm'] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setApplyType(t)}
-                          className={clsx(
-                            'py-2.5 rounded-lg border text-sm font-semibold transition-colors',
-                            applyType === t
-                              ? 'bg-[#2196f3]/10 border-[#2196f3]/40 text-[#2196f3]'
-                              : 'border-border-primary text-text-tertiary hover:text-text-primary hover:border-border-secondary',
-                          )}
-                        >
-                          {t.toUpperCase()}
-                        </button>
-                      ))}
+                    <div className="py-2.5 rounded-lg border border-[#2196f3]/40 bg-[#2196f3]/10 text-[#2196f3] text-sm font-semibold text-center">
+                      PAMM
                     </div>
                     <p className="text-[10px] text-text-tertiary mt-1.5">
-                      {applyType === 'pamm'
-                        ? 'Pooled fund — proportional profit distribution per cycle'
-                        : 'Individual accounts — proportional lot mirroring per trade'}
+                      Pooled fund — proportional profit distribution per cycle
                     </p>
                   </div>
 
@@ -761,7 +746,7 @@ export default function PammPage() {
                   <BarChart2 size={24} className="text-text-tertiary" />
                 </div>
                 <p className="text-text-primary font-medium">No manager dashboard available</p>
-                <p className="text-sm text-text-tertiary mt-1">Apply as a PAMM/MAM manager to access this tab</p>
+                <p className="text-sm text-text-tertiary mt-1">Apply as a PAMM manager to access this tab</p>
                 <button
                   type="button"
                   onClick={() => setActiveTab('apply')}

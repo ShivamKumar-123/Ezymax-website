@@ -77,7 +77,7 @@ const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon
   { name: 'Deposit', path: '/wallet', color: '#2196f3', icon: ArrowDownToLine },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
-  { name: 'Copy Trade', path: '/social', color: '#f59e0b', icon: Copy },
+  { name: 'MAM Trading', path: '/social', color: '#f59e0b', icon: Copy },
   { name: 'Affiliates', path: '/business', color: '#ec4899', icon: Users },
   { name: 'PAMM', path: '/pamm', color: '#06b6d4', icon: TrendingUp },
   { name: 'History', path: '/transactions', color: '#a855f7', icon: HistoryIcon },

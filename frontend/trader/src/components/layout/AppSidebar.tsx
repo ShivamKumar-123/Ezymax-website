@@ -33,7 +33,7 @@ const NAV_ITEMS = [
   { label: 'Transactions', href: '/transactions', icon: History },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
-  { label: 'Copy Trading', href: '/social', icon: Copy },
+  { label: 'MAM Trading', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
   { label: 'TrustEdge Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
