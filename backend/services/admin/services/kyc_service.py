@@ -1,14 +1,32 @@
 """Admin KYC Service — document review, approval, rejection workflows."""
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, KYCDocument
 from packages.common.src.notify import create_notification
 from dependencies import write_audit_log
+
+
+async def get_kyc_file(document_id: uuid.UUID, db: AsyncSession) -> FileResponse:
+    """Stream a KYC document for admin review (no user-ownership check)."""
+    result = await db.execute(
+        select(KYCDocument).where(KYCDocument.id == document_id)
+    )
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = Path(doc.file_url)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    return FileResponse(str(file_path), filename=file_path.name)
 
 
 async def list_kyc_pending(page: int, per_page: int, db: AsyncSession) -> dict:

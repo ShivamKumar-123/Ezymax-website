@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { adminApi } from '@/lib/api';
+import { adminApi, getAdminApiBase } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Check, X, Loader2, FileText, Eye, AlertCircle } from 'lucide-react';
 
@@ -48,6 +48,35 @@ export default function KYCPage() {
   const [approveModal, setApproveModal] = useState<KYCUser | null>(null);
   const [rejectModal, setRejectModal] = useState<KYCUser | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
+
+  /** KYC files are behind admin auth — fetch with Bearer token and open as blob URL. */
+  const openKycDocument = async (docId: string) => {
+    setOpeningDocId(docId);
+    // Open the window synchronously inside the click so popup blockers allow it.
+    const win = window.open('about:blank', '_blank');
+    try {
+      const token = adminApi.getToken();
+      const res = await fetch(`${getAdminApiBase()}/kyc/file/${docId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(res.status === 404 ? 'File not found' : `Error ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (win && !win.closed) {
+        win.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+      // Revoke after a short delay so the tab has time to load it.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      if (win && !win.closed) win.close();
+      toast.error(e instanceof Error ? e.message : 'Failed to open document');
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -304,14 +333,15 @@ export default function KYCPage() {
                           {doc.status}
                         </span>
                       </div>
-                      <a
-                        href={doc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xxs text-buy hover:underline inline-flex items-center gap-1"
+                      <button
+                        type="button"
+                        onClick={() => void openKycDocument(doc.id)}
+                        disabled={openingDocId === doc.id}
+                        className="text-xxs text-buy hover:underline inline-flex items-center gap-1 disabled:opacity-50"
                       >
-                        <Eye size={10} /> View Document
-                      </a>
+                        {openingDocId === doc.id ? <Loader2 size={10} className="animate-spin" /> : <Eye size={10} />}
+                        {openingDocId === doc.id ? 'Opening…' : 'View Document'}
+                      </button>
                       {doc.rejection_reason && (
                         <p className="text-xxs text-danger mt-2">Reason: {doc.rejection_reason}</p>
                       )}

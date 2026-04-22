@@ -82,3 +82,13 @@ async def reject_kyc(
         user_id=user_id, reason=body.reason, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )
+
+
+@router.get("/file/{doc_id}")
+async def view_kyc_file(
+    doc_id: uuid.UUID,
+    admin: User = Depends(require_permission("kyc.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve a user's KYC document for admin review (inline image/PDF)."""
+    return await kyc_service.get_kyc_file(document_id=doc_id, db=db)
