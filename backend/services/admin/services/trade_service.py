@@ -65,12 +65,19 @@ async def list_positions(
 
         user_email = None
         account_number = None
+        book_type = None
+        is_demo = False
         if acc:
             account_number = acc.account_number
+            is_demo = bool(acc.is_demo)
             user_q = await db.execute(select(User).where(User.id == acc.user_id))
             usr = user_q.scalar_one_or_none()
             if usr:
                 user_email = usr.email
+                book_type = (usr.book_type or "B").upper()
+        # LP-forwarded when a LIVE account belongs to an A-book user —
+        # demo trades always stay internal (b-book engine), never hit LP.
+        is_lp_forwarded = (book_type == "A") and not is_demo
 
         inst_q = await db.execute(select(Instrument).where(Instrument.id == pos.instrument_id))
         inst = inst_q.scalar_one_or_none()
@@ -111,6 +118,9 @@ async def list_positions(
             created_at=pos.created_at,
             user_email=user_email,
             account_number=account_number,
+            book_type=book_type,
+            is_demo=is_demo,
+            is_lp_forwarded=is_lp_forwarded,
         ))
 
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
@@ -236,6 +246,20 @@ async def modify_position(
         raise HTTPException(status_code=404, detail="Position not found")
     if (pos.status.value if hasattr(pos.status, 'value') else pos.status) != PositionStatus.OPEN.value:
         raise HTTPException(status_code=400, detail="Position is not open")
+
+    # A-book guard: positions on a non-demo account whose owner is book_type='A'
+    # are forwarded to the LP — admin cannot edit them locally because the
+    # broker no longer owns the risk. Only B-book (internal) trades are editable.
+    acc_q = await db.execute(select(TradingAccount).where(TradingAccount.id == pos.account_id))
+    acc = acc_q.scalar_one_or_none()
+    if acc and not acc.is_demo:
+        usr_q = await db.execute(select(User).where(User.id == acc.user_id))
+        usr = usr_q.scalar_one_or_none()
+        if usr and (usr.book_type or "B").upper() == "A":
+            raise HTTPException(
+                status_code=403,
+                detail="A-book trade — forwarded to LP, cannot be edited from admin.",
+            )
 
     old_values = {
         "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,

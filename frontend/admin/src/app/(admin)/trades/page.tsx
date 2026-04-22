@@ -37,6 +37,9 @@ interface Position {
   created_at: string;
   user_email?: string;
   account_number?: string;
+  book_type?: string;
+  is_demo?: boolean;
+  is_lp_forwarded?: boolean;
 }
 
 interface PendingOrder {
@@ -565,9 +568,18 @@ export default function TradesPage() {
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => openModifyModal(p)} className="px-2 py-1 text-xxs font-medium text-text-secondary bg-bg-hover border border-border-primary rounded hover:text-buy hover:border-buy/30 transition-fast" title="Edit Trade">
-                              <Edit3 size={11} className="inline mr-0.5" />Edit
-                            </button>
+                            {p.is_lp_forwarded ? (
+                              <span
+                                className="px-2 py-1 text-xxs font-bold uppercase tracking-wide text-info bg-info/10 border border-info/30 rounded"
+                                title="A-book trade — forwarded to LP, admin cannot edit"
+                              >
+                                A-book · LP
+                              </span>
+                            ) : (
+                              <button onClick={() => openModifyModal(p)} className="px-2 py-1 text-xxs font-medium text-text-secondary bg-bg-hover border border-border-primary rounded hover:text-buy hover:border-buy/30 transition-fast" title="Edit Trade">
+                                <Edit3 size={11} className="inline mr-0.5" />Edit
+                              </button>
+                            )}
                             <button onClick={() => openCloseModal(p)} className="px-2 py-1 text-xxs font-medium text-sell bg-sell/10 border border-sell/20 rounded hover:bg-sell/20 transition-fast" title="Close Position">
                               <Trash2 size={11} className="inline mr-0.5" />Close
                             </button>

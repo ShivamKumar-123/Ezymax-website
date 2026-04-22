@@ -170,6 +170,9 @@ class PositionOut(BaseModel):
     created_at: Optional[datetime] = None
     user_email: Optional[str] = None
     account_number: Optional[str] = None
+    book_type: Optional[str] = None       # 'A' (forwarded to LP) or 'B'
+    is_demo: bool = False
+    is_lp_forwarded: bool = False         # True when non-demo + book_type == 'A'
 
     class Config:
         from_attributes = True
