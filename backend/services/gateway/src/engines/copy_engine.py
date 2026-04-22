@@ -141,6 +141,12 @@ class CopyTradeEngine:
                     continue
 
                 async with AsyncSessionLocal() as db:
+                    # Global orphan sweep — close any follower mirror whose
+                    # master position is already closed, even if the master
+                    # has no active followers left (e.g. last investor
+                    # withdrew while master still had open positions).
+                    await self._global_orphan_sweep(db)
+
                     masters = await db.execute(
                         select(MasterAccount).where(
                             MasterAccount.status.in_(["approved", "active"]),
@@ -160,6 +166,31 @@ class CopyTradeEngine:
                         pass
 
             await asyncio.sleep(1)
+
+    async def _global_orphan_sweep(self, db: AsyncSession) -> None:
+        """Close any open CopyTrade whose master Position is already closed,
+        regardless of which master it belongs to. Guarantees stuck follower
+        mirrors recover even if the master has been deactivated or has zero
+        active followers now."""
+        q = await db.execute(
+            select(CopyTrade, MasterAccount)
+            .join(Position, CopyTrade.master_position_id == Position.id)
+            .join(InvestorAllocation, CopyTrade.investor_allocation_id == InvestorAllocation.id)
+            .join(MasterAccount, InvestorAllocation.master_id == MasterAccount.id)
+            .where(
+                CopyTrade.status == "open",
+                Position.status != "open",
+            )
+        )
+        rows = list(q.all())
+        if not rows:
+            return
+        logger.info("Global orphan sweep: closing %d stuck copy mirror(s)", len(rows))
+        for copy, master in rows:
+            try:
+                await self._close_copy(copy, master, db)
+            except Exception as e:
+                logger.error("Global orphan sweep failed for copy=%s: %s", copy.id, e)
 
     async def _sum_active_allocation_pool(self, master_id: UUID, db: AsyncSession) -> float:
         q = await db.execute(
@@ -256,22 +287,29 @@ class CopyTradeEngine:
 
         # ── Orphan catch-up ────────────────────────────────────────────────
         # In-memory diff (prev vs current) misses closes that happened while
-        # the engine was not running (gateway restart, crash, or first boot).
-        # Self-heal by closing any CopyTrade whose master position is no
-        # longer open but which is still marked open on the follower side.
+        # the engine was not running (gateway restart, crash, leader rotation
+        # when --workers=N + redis lock). Self-heal by closing any CopyTrade
+        # whose master position is no longer open but whose follower mirror
+        # is still marked open.
         orphan_copies_q = await db.execute(
             select(CopyTrade)
             .join(Position, CopyTrade.master_position_id == Position.id)
             .where(
                 Position.account_id == master.account_id,
                 CopyTrade.status == "open",
-                Position.status != PositionStatus.OPEN,
+                Position.status != "open",
             )
         )
-        for copy in orphan_copies_q.scalars().all():
+        orphans = list(orphan_copies_q.scalars().all())
+        if orphans:
             logger.info(
-                "Closing orphaned copy: investor_allocation=%s master_pos=%s (master already closed)",
-                copy.investor_allocation_id, copy.master_position_id,
+                "process_master master=%s: found %d orphaned copy(ies) to close",
+                master_id_str, len(orphans),
+            )
+        for copy in orphans:
+            logger.info(
+                "Closing orphaned copy: copy_id=%s investor_allocation=%s master_pos=%s",
+                copy.id, copy.investor_allocation_id, copy.master_position_id,
             )
             await self._close_copy(copy, master, db)
 
@@ -451,14 +489,41 @@ class CopyTradeEngine:
             logger.warning("Close copy: no instrument on investor position %s", investor_pos.id)
             return
 
-        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
-        if not tick_data:
-            logger.warning("Close copy: no tick for %s, deferring", instrument.symbol)
-            return
-
-        tick = json.loads(tick_data)
         side_val = investor_pos.side.value if hasattr(investor_pos.side, "value") else str(investor_pos.side)
-        close_price = Decimal(str(tick["bid"])) if side_val == "buy" else Decimal(str(tick["ask"]))
+        close_price = None
+
+        # Prefer the live tick so in-progress closes mirror the master's
+        # exit price tightly.
+        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
+        if tick_data:
+            try:
+                tick = json.loads(tick_data)
+                close_price = Decimal(str(tick["bid"])) if side_val == "buy" else Decimal(str(tick["ask"]))
+            except (json.JSONDecodeError, KeyError, ValueError):
+                close_price = None
+
+        # Orphan catch-up (gateway restart, market closed, tick expired): the
+        # master has already closed — use the master position's own close_price
+        # so the follower books out at the same level instead of getting stuck
+        # forever waiting for a tick.
+        if close_price is None:
+            master_pos = await db.get(Position, copy.master_position_id)
+            if master_pos and master_pos.close_price is not None:
+                close_price = master_pos.close_price
+                logger.info(
+                    "Close copy: using master close_price=%s for %s (no live tick)",
+                    close_price, instrument.symbol,
+                )
+
+        # Last resort: close at the investor's own open price (zero P&L) rather
+        # than leave the position stuck open indefinitely.
+        if close_price is None:
+            close_price = investor_pos.open_price
+            logger.warning(
+                "Close copy: no tick and no master close_price for %s — closing at open_price (zero P&L)",
+                instrument.symbol,
+            )
+
         contract_size = instrument.contract_size or Decimal("100000")
 
         if side_val == "buy":
