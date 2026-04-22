@@ -199,6 +199,11 @@ class CopyTradeEngine:
         for pos_id in new_positions:
             master_pos = master_open[pos_id]
             for investor in active_investors:
+                # PAMM investors have no sub-account — funds are pooled on the
+                # master's account directly. Profit is distributed to their main
+                # wallet when the master closes the trade (see trading_service).
+                if resolve_copy_type(investor, master) == "pamm":
+                    continue
                 investor_account = await db.get(TradingAccount, investor.investor_account_id)
                 if not investor_account or not investor_account.is_active:
                     logger.info(

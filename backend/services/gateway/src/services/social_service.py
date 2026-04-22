@@ -609,6 +609,82 @@ async def withdraw_managed_account(
     )
     master = master_result.scalar_one_or_none()
 
+    # ─── PAMM withdrawal ────────────────────────────────────────────────
+    # Pooled-fund model: investor has no sub-account. Their share of the
+    # master's pool = (allocation_amount / sum(active allocations)) *
+    # master.balance. Deduct that cash from master, credit investor wallet,
+    # apply performance fee on any profit component.
+    if allocation.copy_type == "pamm":
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+
+        pool_account = await db.get(TradingAccount, master.account_id) if (master and master.account_id) else None
+        if not pool_account:
+            raise HTTPException(status_code=500, detail="Master pool account missing")
+
+        total_alloc_q = await db.execute(
+            select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+                InvestorAllocation.master_id == allocation.master_id,
+                InvestorAllocation.status == "active",
+                InvestorAllocation.copy_type == "pamm",
+            )
+        )
+        total_alloc = Decimal(str(total_alloc_q.scalar() or 0))
+        alloc_amt = allocation.allocation_amount or Decimal("0")
+        pool_balance = pool_account.balance or Decimal("0")
+
+        if total_alloc <= 0 or alloc_amt <= 0:
+            share_value = Decimal("0")
+        else:
+            share_value = (pool_balance * alloc_amt) / total_alloc
+
+        gross_profit = share_value - alloc_amt  # paper P&L so far
+        perf_fee = Decimal("0")
+        if gross_profit > 0 and master and master.performance_fee_pct:
+            perf_fee = gross_profit * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
+
+        return_amount = share_value - perf_fee
+        if return_amount < 0:
+            return_amount = Decimal("0")
+
+        # Deduct investor's share from pool, performance fee stays with master.
+        pool_account.balance = max(Decimal("0"), pool_balance - return_amount - perf_fee)
+        pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+        pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+        # Performance fee returns to master's balance (already there as part of the pool);
+        # the net deduction above only removes investor's net share, so fee naturally stays.
+        if perf_fee > 0:
+            pool_account.balance = pool_account.balance + perf_fee
+            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
+            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
+
+        if user:
+            user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
+            db.add(Transaction(
+                user_id=user_id, account_id=None, type="deposit",
+                amount=return_amount,
+                description=f"Withdrawal from PAMM pool (share: ${float(share_value):.2f}, fee: ${float(perf_fee):.2f})",
+            ))
+
+        allocation.status = "withdrawn"
+        allocation.total_profit = gross_profit - perf_fee
+        if master and master.followers_count and master.followers_count > 0:
+            master.followers_count -= 1
+
+        await db.commit()
+        return {
+            "message": "PAMM withdrawal complete — funds returned to wallet",
+            "allocation_id": str(allocation_id),
+            "positions_closed": 0,
+            "share_value": float(share_value),
+            "performance_fee": float(perf_fee),
+            "returned_to_wallet": float(return_amount),
+            "total_pnl": float(gross_profit),
+            "total_profit": float(allocation.total_profit),
+            "wallet_balance": float(user.main_wallet_balance) if user else None,
+        }
+
+    # ─── MAM withdrawal (legacy) ────────────────────────────────────────
     # Close any open copied positions for this allocation
     from packages.common.src.models import CopyTrade, Position, PositionStatus
     import json
@@ -982,25 +1058,40 @@ async def invest_managed_account(
 
     label = 'PAMM' if master.master_type == 'pamm' else 'MAM'
 
+    # PAMM is a pooled fund — investors do NOT get a sub-account. Funds live
+    # on the master's pool account, allocation tracks each investor's share,
+    # and P&L is settled to the investor's main wallet when the master closes
+    # a trade (see trading_service.close_position → distribute_pamm_profit).
+    is_pamm = master.master_type == "pamm"
+
     if existing_alloc:
-        # ── Top-up: add funds to existing investor account ──
+        # ── Top-up: add funds to existing allocation ──
         existing_alloc.allocation_amount = (existing_alloc.allocation_amount or Decimal("0")) + amount
         if volume_scaling_pct and master.master_type == "mamm":
             existing_alloc.allocation_pct = volume_scaling_pct
         if max_drawdown_pct is not None:
             existing_alloc.max_drawdown_pct = max_drawdown_pct
 
-        inv_acct = await db.get(TradingAccount, existing_alloc.investor_account_id)
-        if inv_acct:
-            inv_acct.balance = (inv_acct.balance or Decimal("0")) + amount
-            inv_acct.equity = inv_acct.balance + (inv_acct.credit or Decimal("0"))
-            inv_acct.free_margin = inv_acct.equity - (inv_acct.margin_used or Decimal("0"))
+        inv_acct = None
+        if is_pamm:
+            # No sub-account — transaction is logged against main wallet.
+            db.add(Transaction(
+                user_id=user_id, account_id=None, type="withdrawal",
+                amount=-amount,
+                description=f"Top-up {label} investment (total: {existing_alloc.allocation_amount})",
+            ))
+        else:
+            inv_acct = await db.get(TradingAccount, existing_alloc.investor_account_id)
+            if inv_acct:
+                inv_acct.balance = (inv_acct.balance or Decimal("0")) + amount
+                inv_acct.equity = inv_acct.balance + (inv_acct.credit or Decimal("0"))
+                inv_acct.free_margin = inv_acct.equity - (inv_acct.margin_used or Decimal("0"))
 
-        db.add(Transaction(
-            user_id=user_id, account_id=existing_alloc.investor_account_id, type="withdrawal",
-            amount=-amount,
-            description=f"Top-up {label} investment (total: {existing_alloc.allocation_amount})",
-        ))
+            db.add(Transaction(
+                user_id=user_id, account_id=existing_alloc.investor_account_id, type="withdrawal",
+                amount=-amount,
+                description=f"Top-up {label} investment (total: {existing_alloc.allocation_amount})",
+            ))
 
         await db.commit()
         await db.refresh(existing_alloc)
@@ -1016,38 +1107,47 @@ async def invest_managed_account(
             "created_at": existing_alloc.created_at.isoformat() if existing_alloc.created_at else None,
         }
     else:
-        # ── New allocation: auto-create dedicated investor account ──
-        ct = "pamm" if master.master_type == "pamm" else "mam"
-        investor_account = TradingAccount(
-            user_id=user_id,
-            account_number=_gen_investor_account_number(ct),
-            balance=amount,
-            equity=amount,
-            free_margin=amount,
-            margin_used=Decimal("0"),
-            leverage=500,
-            currency="USD",
-            is_demo=False,
-            is_active=True,
-        )
-        db.add(investor_account)
-        await db.flush()
+        investor_account = None
+        if not is_pamm:
+            # MAM allocation: auto-create dedicated sub-account for position mirroring.
+            investor_account = TradingAccount(
+                user_id=user_id,
+                account_number=_gen_investor_account_number("mam"),
+                balance=amount,
+                equity=amount,
+                free_margin=amount,
+                margin_used=Decimal("0"),
+                leverage=500,
+                currency="USD",
+                is_demo=False,
+                is_active=True,
+            )
+            db.add(investor_account)
+            await db.flush()
 
-        db.add(Transaction(
-            user_id=user_id, account_id=investor_account.id, type="withdrawal",
-            amount=-amount,
-            description=f"Investment in {label} → account {investor_account.account_number}",
-        ))
+            db.add(Transaction(
+                user_id=user_id, account_id=investor_account.id, type="withdrawal",
+                amount=-amount,
+                description=f"Investment in {label} → account {investor_account.account_number}",
+            ))
+        else:
+            # PAMM allocation: no sub-account, funds sit in master's pool.
+            db.add(Transaction(
+                user_id=user_id, account_id=None, type="withdrawal",
+                amount=-amount,
+                description=f"Investment in {label} pool (master: {master.id})",
+            ))
 
         alloc_pct = volume_scaling_pct if master.master_type == "mamm" else None
         copy_type_val = (
-            AllocationCopyType.PAMM.value if master.master_type == "pamm"
+            AllocationCopyType.PAMM.value if is_pamm
             else AllocationCopyType.MAM.value
         )
 
         allocation = InvestorAllocation(
             master_id=master_id, investor_user_id=user_id,
-            investor_account_id=investor_account.id, copy_type=copy_type_val,
+            investor_account_id=(investor_account.id if investor_account else None),
+            copy_type=copy_type_val,
             allocation_amount=amount, allocation_pct=alloc_pct,
             max_drawdown_pct=max_drawdown_pct, status="active",
         )
@@ -1059,7 +1159,7 @@ async def invest_managed_account(
         out = {
             "id": str(allocation.id), "master_id": str(master_id),
             "master_type": master.master_type, "copy_type": allocation.copy_type,
-            "investor_account": investor_account.account_number,
+            "investor_account": investor_account.account_number if investor_account else None,
             "amount": float(amount),
             "wallet_balance": float(user.main_wallet_balance),
             "status": allocation.status,
@@ -1194,19 +1294,38 @@ async def my_allocations(user_id: UUID, db: AsyncSession) -> dict:
 
     items = []
     for alloc, master, manager in rows:
-        open_copies = await db.execute(
-            select(CopyTrade, Position)
-            .join(Position, CopyTrade.investor_position_id == Position.id)
-            .where(
-                CopyTrade.investor_allocation_id == alloc.id,
-                CopyTrade.status == "open",
-            )
-        )
-        unrealized_pnl = sum(float(pos.profit or 0) for _, pos in open_copies.all())
-        realized_pnl = float(alloc.total_profit or 0)
-        total_pnl = realized_pnl + unrealized_pnl
         invested = float(alloc.allocation_amount or 0)
-        current_value = invested + total_pnl
+
+        if alloc.copy_type == "pamm":
+            # PAMM: no sub-account, live value = proportional share of master pool.
+            pool_account = await db.get(TradingAccount, master.account_id) if master.account_id else None
+            pool_balance = float(pool_account.balance or 0) if pool_account else 0.0
+            total_alloc_q = await db.execute(
+                select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+                    InvestorAllocation.master_id == master.id,
+                    InvestorAllocation.status == "active",
+                    InvestorAllocation.copy_type == "pamm",
+                )
+            )
+            total_alloc = float(total_alloc_q.scalar() or 0)
+            current_value = (pool_balance * invested / total_alloc) if total_alloc > 0 else invested
+            total_pnl = current_value - invested
+            realized_pnl = total_pnl  # PAMM has no separate realized/unrealized split
+            unrealized_pnl = 0.0
+        else:
+            open_copies = await db.execute(
+                select(CopyTrade, Position)
+                .join(Position, CopyTrade.investor_position_id == Position.id)
+                .where(
+                    CopyTrade.investor_allocation_id == alloc.id,
+                    CopyTrade.status == "open",
+                )
+            )
+            unrealized_pnl = sum(float(pos.profit or 0) for _, pos in open_copies.all())
+            realized_pnl = float(alloc.total_profit or 0)
+            total_pnl = realized_pnl + unrealized_pnl
+            current_value = invested + total_pnl
+
         pnl_pct = (total_pnl / invested * 100) if invested > 0 else 0.0
 
         items.append({
@@ -1214,6 +1333,7 @@ async def my_allocations(user_id: UUID, db: AsyncSession) -> dict:
             "master_id": str(master.id),
             "manager_name": f"{manager.first_name or ''} {manager.last_name or ''}".strip() or manager.email,
             "master_type": master.master_type,
+            "copy_type": alloc.copy_type,
             "allocation_amount": round(invested, 2),
             "current_value": round(current_value, 2),
             "realized_pnl": round(realized_pnl, 2),
@@ -1238,6 +1358,98 @@ async def my_allocations(user_id: UUID, db: AsyncSession) -> dict:
             "total_pnl": round(total_pnl_all, 2),
             "overall_pnl_pct": round(overall_pct, 2),
         },
+    }
+
+
+async def pamm_master_trades(
+    allocation_id: UUID, user_id: UUID, db: AsyncSession,
+) -> dict:
+    """Return the PAMM master's open + closed trades, visible to the investor
+    who owns this allocation. Each trade shows gross P&L (master's view) and
+    the investor's proportional share based on their allocation ratio."""
+    from packages.common.src.models import Position, TradeHistory, Instrument
+
+    alloc_q = await db.execute(
+        select(InvestorAllocation).where(
+            InvestorAllocation.id == allocation_id,
+            InvestorAllocation.investor_user_id == user_id,
+        )
+    )
+    allocation = alloc_q.scalar_one_or_none()
+    if not allocation or allocation.copy_type != "pamm":
+        raise HTTPException(status_code=404, detail="PAMM allocation not found")
+
+    master = await db.get(MasterAccount, allocation.master_id)
+    if not master or not master.account_id:
+        raise HTTPException(status_code=404, detail="Master account not found")
+
+    total_alloc_q = await db.execute(
+        select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+            InvestorAllocation.master_id == master.id,
+            InvestorAllocation.status == "active",
+            InvestorAllocation.copy_type == "pamm",
+        )
+    )
+    total_alloc = Decimal(str(total_alloc_q.scalar() or 0))
+    alloc_amt = allocation.allocation_amount or Decimal("0")
+    ratio = float(alloc_amt / total_alloc) if total_alloc > 0 else 0.0
+
+    # Open positions on master's pool
+    open_q = await db.execute(
+        select(Position, Instrument)
+        .join(Instrument, Position.instrument_id == Instrument.id)
+        .where(
+            Position.account_id == master.account_id,
+            Position.status == "open",
+        )
+        .order_by(Position.created_at.desc())
+    )
+    open_trades = []
+    for pos, inst in open_q.all():
+        profit = float(pos.profit or 0)
+        open_trades.append({
+            "id": str(pos.id),
+            "symbol": inst.symbol,
+            "side": pos.side.value if hasattr(pos.side, "value") else str(pos.side),
+            "lots": float(pos.lots),
+            "open_price": float(pos.open_price),
+            "opened_at": pos.created_at.isoformat() if pos.created_at else None,
+            "master_pnl": profit,
+            "your_share": round(profit * ratio, 2),
+            "status": "open",
+        })
+
+    # Closed trades from master's history
+    closed_q = await db.execute(
+        select(TradeHistory, Instrument)
+        .join(Instrument, TradeHistory.instrument_id == Instrument.id)
+        .where(TradeHistory.account_id == master.account_id)
+        .order_by(TradeHistory.closed_at.desc())
+        .limit(200)
+    )
+    closed_trades = []
+    for th, inst in closed_q.all():
+        profit = float(th.profit or 0)
+        closed_trades.append({
+            "id": str(th.id),
+            "symbol": inst.symbol,
+            "side": th.side.value if hasattr(th.side, "value") else str(th.side),
+            "lots": float(th.lots),
+            "open_price": float(th.open_price),
+            "close_price": float(th.close_price),
+            "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+            "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+            "master_pnl": profit,
+            "your_share": round(profit * ratio, 2),
+            "close_reason": th.close_reason,
+            "status": "closed",
+        })
+
+    return {
+        "allocation_id": str(allocation_id),
+        "your_ratio_pct": round(ratio * 100, 4),
+        "open_trades": open_trades,
+        "closed_trades": closed_trades,
     }
 
 

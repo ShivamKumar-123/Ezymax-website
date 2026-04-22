@@ -184,6 +184,19 @@ async def my_allocations(
     )
 
 
+@router.get("/pamm/{allocation_id}/trades")
+async def pamm_master_trades(
+    allocation_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """PAMM investor's view: master's open + recent closed trades, with
+    each trade's master P&L and the investor's proportional share."""
+    return await social_service.pamm_master_trades(
+        allocation_id=allocation_id, user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.get("/master-investors")
 async def master_investors(
     current_user: dict = Depends(get_current_user),

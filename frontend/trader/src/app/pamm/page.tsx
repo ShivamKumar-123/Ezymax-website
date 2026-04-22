@@ -135,6 +135,39 @@ function Spinner() {
   return <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2196f3] border-t-transparent" />;
 }
 
+function TradeRow({ t }: { t: { symbol: string; side: string; lots: number; open_price: number; close_price?: number; master_pnl: number; your_share: number; status: string; opened_at?: string; closed_at?: string } }) {
+  const isBuy = t.side?.toLowerCase() === 'buy';
+  const pnlColor = t.master_pnl >= 0 ? 'text-[#2196f3]' : 'text-red-400';
+  return (
+    <div className="rounded-lg bg-bg-secondary border border-border-primary px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={clsx('text-[9px] font-bold uppercase px-1.5 py-0.5 rounded', isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>
+            {t.side}
+          </span>
+          <span className="text-xs font-semibold text-text-primary">{t.symbol}</span>
+          <span className="text-[10px] text-text-tertiary">{t.lots} lots</span>
+          {t.status === 'open' && <span className="text-[9px] font-bold uppercase px-1 py-0.5 rounded bg-warning/15 text-warning">Live</span>}
+        </div>
+        <span className={clsx('text-xs font-bold tabular-nums', pnlColor)}>
+          {t.master_pnl >= 0 ? '+' : ''}${fmt(t.master_pnl)}
+        </span>
+      </div>
+      <div className="flex items-center justify-between mt-1.5 text-[10px] text-text-tertiary">
+        <span className="font-mono">
+          {t.open_price.toFixed(5)}
+          {t.close_price != null && ` → ${t.close_price.toFixed(5)}`}
+        </span>
+        <span>
+          Your share: <span className={clsx('font-mono font-semibold', t.your_share >= 0 ? 'text-[#2196f3]' : 'text-red-400')}>
+            {t.your_share >= 0 ? '+' : ''}${fmt(t.your_share)}
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 export default function PammPage() {
@@ -152,6 +185,30 @@ export default function PammPage() {
   const [allocLoading, setAllocLoading] = useState(false);
   const [withdrawTarget, setWithdrawTarget] = useState<MyAllocation | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [expandedAlloc, setExpandedAlloc] = useState<string | null>(null);
+  const [allocTrades, setAllocTrades] = useState<Record<string, { open_trades: any[]; closed_trades: any[]; your_ratio_pct: number }>>({});
+  const [tradesLoading, setTradesLoading] = useState<string | null>(null);
+
+  const toggleAllocTrades = async (alloc: MyAllocation) => {
+    if (expandedAlloc === alloc.id) {
+      setExpandedAlloc(null);
+      return;
+    }
+    setExpandedAlloc(alloc.id);
+    if (alloc.master_type !== 'pamm') return; // only PAMM has master trades view
+    if (allocTrades[alloc.id]) return; // cached
+    setTradesLoading(alloc.id);
+    try {
+      const res = await api.get<{ open_trades: any[]; closed_trades: any[]; your_ratio_pct: number }>(
+        `/social/pamm/${alloc.id}/trades`,
+      );
+      setAllocTrades((prev) => ({ ...prev, [alloc.id]: res }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load trades');
+    } finally {
+      setTradesLoading(null);
+    }
+  };
 
   // My Dashboard
   const [performance, setPerformance] = useState<MasterPerformance | null>(null);
@@ -600,6 +657,44 @@ export default function PammPage() {
                           <span>Fee: {a.performance_fee_pct}%</span>
                           <span>Joined {new Date(a.joined_at).toLocaleDateString()}</span>
                         </div>
+
+                        {a.master_type === 'pamm' && (
+                          <button
+                            type="button"
+                            onClick={() => void toggleAllocTrades(a)}
+                            className="mt-3 w-full text-center text-xs font-semibold text-[#2196f3] hover:bg-[#2196f3]/10 rounded-lg py-2 transition-colors"
+                          >
+                            {expandedAlloc === a.id ? 'Hide Master Trades' : 'View Master Trades'}
+                          </button>
+                        )}
+
+                        {expandedAlloc === a.id && a.master_type === 'pamm' && (
+                          <div className="mt-3 pt-3 border-t border-border-primary max-h-64 overflow-y-auto">
+                            {tradesLoading === a.id ? (
+                              <div className="flex justify-center py-4"><Spinner /></div>
+                            ) : allocTrades[a.id] ? (
+                              <div className="space-y-2">
+                                <p className="text-[10px] text-text-tertiary mb-1">
+                                  Your pool share: <span className="font-mono text-text-primary">{allocTrades[a.id].your_ratio_pct.toFixed(2)}%</span>
+                                </p>
+                                {[...allocTrades[a.id].open_trades, ...allocTrades[a.id].closed_trades].length === 0 ? (
+                                  <p className="text-[11px] text-text-tertiary text-center py-3">Master has no trades yet</p>
+                                ) : (
+                                  <>
+                                    {allocTrades[a.id].open_trades.map((t: any) => (
+                                      <TradeRow key={t.id} t={t} />
+                                    ))}
+                                    {allocTrades[a.id].closed_trades.map((t: any) => (
+                                      <TradeRow key={t.id} t={t} />
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-text-tertiary text-center py-3">No data</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
