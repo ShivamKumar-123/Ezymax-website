@@ -38,6 +38,7 @@ interface OpenPosition {
   commission?: number;
   pnl?: number;
   opened_at?: string;
+  trade_type?: string;
 }
 
 interface PendingOrder {
@@ -95,6 +96,19 @@ function closeReasonBadge(
   if (r === 'algo_close')
     return { label: 'Algo', className: 'bg-info/15 text-info border border-info/30' };
   return { label: 'Manual', className: 'bg-text-tertiary/15 text-text-tertiary border border-border-primary' };
+}
+
+/** Distinguish real (self-placed) trades from MAM/PAMM mirrored trades. */
+function tradeSourceBadge(tradeType: string | null | undefined, accountNumber?: string): { label: string; className: string } {
+  const t = (tradeType || '').toLowerCase();
+  // Backend tags: self_trade = user placed it, copy_trade = mirrored from master.
+  // Legacy rows may have no trade_type — infer from account prefix (CF/IF = investor sub-account).
+  const acct = (accountNumber || '').toUpperCase();
+  const looksInvestor = acct.startsWith('CF') || acct.startsWith('IF');
+  if (t === 'copy_trade' || t === 'mam' || t === 'pamm' || looksInvestor) {
+    return { label: 'MAM', className: 'bg-info/15 text-info border border-info/30' };
+  }
+  return { label: 'Real', className: 'bg-success/15 text-success border border-success/30' };
 }
 
 /** Calculate live P/L from position data when backend returns 0/null. */
@@ -318,6 +332,9 @@ export default function TradesSection() {
                 <thead>
                   <tr className="border-b border-border-primary">
                     <th className="text-left px-4 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Symbol</th>
+                    {tab !== 'pending' && (
+                      <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Source</th>
+                    )}
                     <th className="text-left px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Side</th>
                     <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Lots</th>
                     <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
@@ -357,6 +374,16 @@ export default function TradesSection() {
                         className="border-b border-border-primary/30 hover:bg-bg-hover/40 cursor-pointer transition-colors"
                       >
                         <td className="px-4 py-3 font-semibold text-text-primary">{r.symbol || '—'}</td>
+                        {tab !== 'pending' && (() => {
+                          const src = tradeSourceBadge(r.trade_type, accountNumber(r.account_id));
+                          return (
+                            <td className="px-3 py-3">
+                              <span className={clsx('px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', src.className)}>
+                                {src.label}
+                              </span>
+                            </td>
+                          );
+                        })()}
                         <td className="px-3 py-3">
                           <span className={clsx('px-2 py-0.5 rounded text-[10px] font-bold uppercase', isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>{r.side}</span>
                         </td>
@@ -434,9 +461,17 @@ export default function TradesSection() {
                     className="rounded-xl border border-border-primary p-3 space-y-2 active:bg-bg-hover/40 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-bold text-text-primary">{r.symbol || '—'}</span>
                         <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', isBuy ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>{r.side}</span>
+                        {tab !== 'pending' && (() => {
+                          const src = tradeSourceBadge(r.trade_type, accountNumber(r.account_id));
+                          return (
+                            <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide', src.className)}>
+                              {src.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       {tab !== 'pending' && (
                         <span className={clsx('text-sm font-bold font-mono tabular-nums', pnl >= 0 ? 'text-buy' : 'text-sell')}>

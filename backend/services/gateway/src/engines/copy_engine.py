@@ -231,6 +231,27 @@ class CopyTradeEngine:
             for copy in copies.scalars().all():
                 await self._close_copy(copy, master, db)
 
+        # ── Orphan catch-up ────────────────────────────────────────────────
+        # In-memory diff (prev vs current) misses closes that happened while
+        # the engine was not running (gateway restart, crash, or first boot).
+        # Self-heal by closing any CopyTrade whose master position is no
+        # longer open but which is still marked open on the follower side.
+        orphan_copies_q = await db.execute(
+            select(CopyTrade)
+            .join(Position, CopyTrade.master_position_id == Position.id)
+            .where(
+                Position.account_id == master.account_id,
+                CopyTrade.status == "open",
+                Position.status != PositionStatus.OPEN,
+            )
+        )
+        for copy in orphan_copies_q.scalars().all():
+            logger.info(
+                "Closing orphaned copy: investor_allocation=%s master_pos=%s (master already closed)",
+                copy.investor_allocation_id, copy.master_position_id,
+            )
+            await self._close_copy(copy, master, db)
+
         self._master_positions[master_id_str] = current_master_pos_ids
 
     async def _open_copy(
