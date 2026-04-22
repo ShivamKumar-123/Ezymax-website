@@ -367,6 +367,10 @@ export default function TradesSection() {
                     const r: any = row;
                     const pnl = tab === 'open' ? calcLivePnl(r) : Number(r.pnl || 0);
                     const isBuy = String(r.side).toLowerCase() === 'buy';
+                    const acctNum = accountNumber(r.account_id);
+                    const isMamFollower =
+                      ((r.trade_type || '').toLowerCase() === 'copy_trade') ||
+                      acctNum?.startsWith('CF') || acctNum?.startsWith('IF');
                     return (
                       <tr
                         key={r.id}
@@ -418,14 +422,20 @@ export default function TradesSection() {
                         </td>
                         {tab === 'open' && (
                           <td className="px-3 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
-                              disabled={closingId === r.id}
-                              className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50 transition-all"
-                            >
-                              {closingId === r.id ? 'Closing…' : 'Close'}
-                            </button>
+                            {isMamFollower ? (
+                              <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="This is a MAM mirrored trade — only the master can close it">
+                                MAM · Master closes
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
+                                disabled={closingId === r.id}
+                                className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50 transition-all"
+                              >
+                                {closingId === r.id ? 'Closing…' : 'Close'}
+                              </button>
+                            )}
                           </td>
                         )}
                         {tab === 'pending' && (
@@ -454,6 +464,10 @@ export default function TradesSection() {
                 const pnl = Number(r.pnl || 0);
                 const isBuy = String(r.side).toLowerCase() === 'buy';
                 const dateStr = tab === 'closed' ? r.close_time : tab === 'pending' ? r.created_at : r.opened_at;
+                const acctNum = accountNumber(r.account_id);
+                const isMamFollower =
+                  ((r.trade_type || '').toLowerCase() === 'copy_trade') ||
+                  acctNum?.startsWith('CF') || acctNum?.startsWith('IF');
                 return (
                   <div
                     key={r.id}
@@ -511,14 +525,20 @@ export default function TradesSection() {
                         {dateStr ? new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
                       {tab === 'open' && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
-                          disabled={closingId === r.id}
-                          className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50"
-                        >
-                          {closingId === r.id ? 'Closing…' : 'Close'}
-                        </button>
+                        isMamFollower ? (
+                          <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="MAM trade — only master can close">
+                            MAM · Master closes
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); closePosition(r.id, r.symbol); }}
+                            disabled={closingId === r.id}
+                            className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25 disabled:opacity-50"
+                          >
+                            {closingId === r.id ? 'Closing…' : 'Close'}
+                          </button>
+                        )
                       )}
                       {tab === 'pending' && (
                         <button

@@ -645,6 +645,17 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
+    # MAM follower lock: mirrored positions inherit SL/TP from master; followers
+    # cannot modify them independently.
+    copy_q = await db.execute(
+        select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
+    )
+    if copy_q.scalar_one_or_none():
+        raise HTTPException(
+            status_code=403,
+            detail="This is a MAM mirrored trade. SL/TP is controlled by the master.",
+        )
+
     sv = side_val(pos.side)
     updated = False
 
@@ -716,6 +727,17 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     pos_status = pos.status.value if hasattr(pos.status, 'value') else str(pos.status)
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
+
+    # MAM follower lock: mirrored positions can only be closed by the master
+    # (via the copy engine when the master closes their original position).
+    copy_q = await db.execute(
+        select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
+    )
+    if copy_q.scalar_one_or_none():
+        raise HTTPException(
+            status_code=403,
+            detail="This is a MAM mirrored trade. Only the master can close it.",
+        )
 
     tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
     if not tick_data:

@@ -1034,9 +1034,15 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               >
                                 <Share2 className="w-4 h-4" />
                               </button>
-                              <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
-                                Close
-                              </button>
+                              {pos.trade_type === 'copy_trade' ? (
+                                <span className="px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase bg-info/15 text-info border border-info/30" title="MAM trade — only master can close">
+                                  MAM
+                                </span>
+                              ) : (
+                                <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
+                                  Close
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1169,21 +1175,30 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setCloseModal({
-                                      id: pos.id,
-                                      symbol: pos.symbol,
-                                      side: pos.side,
-                                      lots: pos.lots,
-                                      closeLots: String(pos.lots),
-                                    })
-                                  }
-                                  className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
-                                >
-                                  Close
-                                </button>
+                                {pos.trade_type === 'copy_trade' ? (
+                                  <span
+                                    className="px-2 py-1 rounded-md text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30"
+                                    title="MAM trade — only master can close"
+                                  >
+                                    MAM
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setCloseModal({
+                                        id: pos.id,
+                                        symbol: pos.symbol,
+                                        side: pos.side,
+                                        lots: pos.lots,
+                                        closeLots: String(pos.lots),
+                                      })
+                                    }
+                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
+                                  >
+                                    Close
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
