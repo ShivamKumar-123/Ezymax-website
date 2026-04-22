@@ -36,6 +36,10 @@ logger = logging.getLogger("copy-engine")
 
 MIN_COPY_LOT = 0.01
 COPY_COMMENT_PREFIX = "Copy of master position "
+# Cluster-wide lock key so only one gateway worker processes copy trades at a
+# time — with --workers=N each worker would otherwise duplicate every mirror.
+COPY_ENGINE_LOCK_KEY = "copy_engine:cycle_lock"
+COPY_ENGINE_LOCK_TTL = 10
 
 
 def resolve_copy_type(allocation: InvestorAllocation, master: MasterAccount) -> str:
@@ -122,7 +126,20 @@ class CopyTradeEngine:
 
     async def _run(self):
         while self._running:
+            lock_acquired = False
             try:
+                # Cluster-wide leader lock — prevents duplicate mirroring when
+                # gateway runs with --workers=N.
+                lock_acquired = bool(
+                    await redis_client.set(
+                        COPY_ENGINE_LOCK_KEY, "1",
+                        ex=COPY_ENGINE_LOCK_TTL, nx=True,
+                    )
+                )
+                if not lock_acquired:
+                    await asyncio.sleep(1)
+                    continue
+
                 async with AsyncSessionLocal() as db:
                     masters = await db.execute(
                         select(MasterAccount).where(
@@ -135,6 +152,12 @@ class CopyTradeEngine:
                     await db.commit()
             except Exception as e:
                 logger.error("Copy engine error: %s", e, exc_info=True)
+            finally:
+                if lock_acquired:
+                    try:
+                        await redis_client.delete(COPY_ENGINE_LOCK_KEY)
+                    except Exception:
+                        pass
 
             await asyncio.sleep(1)
 
