@@ -60,7 +60,7 @@ interface PaginatedResponse<T> {
 const TABS: { id: TabId; label: string }[] = [
   { id: 'leaderboard', label: 'Leaderboard' },
   { id: 'my-copies', label: 'My Subscriptions' },
-  { id: 'become-provider', label: 'Become Provider' },
+  { id: 'become-provider', label: 'Become MAM Master' },
   { id: 'my-dashboard', label: 'My Dashboard' },
 ];
 
@@ -961,7 +961,8 @@ export default function SocialPage() {
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
-  const masterType = 'signal_provider';
+  // MAM Trading section — MAM-only applications. PAMM applications live on /pamm.
+  const masterType = 'mamm';
   const [perfFee, setPerfFee] = useState('20');
   const [minInvest, setMinInvest] = useState('100');
   const [maxInvestors, setMaxInvestors] = useState('100');
@@ -973,7 +974,7 @@ function BecomeProviderTab() {
       setLoading(true);
       try {
         let provRes = null;
-        try { provRes = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
+        try { provRes = await api.get<any>('/social/my-provider?master_type=mamm'); } catch {}
         if (provRes) setExisting(provRes);
       } catch {} finally { setLoading(false); }
     })();
@@ -999,7 +1000,7 @@ function BecomeProviderTab() {
           : 'Application submitted! Admin will review.',
       );
       let refreshed = null;
-      try { refreshed = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
+      try { refreshed = await api.get<any>('/social/my-provider?master_type=mamm'); } catch {}
       if (refreshed) setExisting(refreshed);
     } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setSubmitting(false); }
   };
@@ -1033,17 +1034,17 @@ function BecomeProviderTab() {
   return (
     <div className="max-w-lg mx-auto space-y-4">
       <div className="glass-card rounded-xl p-5 noise-texture space-y-4">
-        <h3 className="text-sm font-semibold text-text-primary">Apply to Become a Provider</h3>
+        <h3 className="text-sm font-semibold text-text-primary">Apply to Become a MAM Master</h3>
         <p className="text-xxs text-text-tertiary">Choose your provider type, set your fees, and start earning from followers.</p>
 
         {/* Provider Type */}
         <div className="p-3 rounded-xl border border-buy/30 bg-buy/5">
-          <p className="text-xs font-semibold text-buy">MAM Provider</p>
-          <p className="text-xxs text-text-tertiary mt-0.5">Your followers automatically mirror your trades in real time</p>
+          <p className="text-xs font-semibold text-buy">MAM Master</p>
+          <p className="text-xxs text-text-tertiary mt-0.5">Individual accounts — your followers automatically mirror your trades in real time (proportional lot size per investor)</p>
         </div>
 
         <div className="p-3 rounded-xl border border-border-glass bg-bg-secondary text-xxs text-text-tertiary flex items-center justify-between gap-3">
-          <span>Want pooled managed accounts instead?</span>
+          <span>Want to run a pooled PAMM fund instead?</span>
           <a href="/pamm" className="text-buy underline underline-offset-2 whitespace-nowrap">Apply on PAMM page →</a>
         </div>
 
@@ -1113,7 +1114,7 @@ function MyDashboardTab() {
   };
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
-  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved signal provider. Apply in the &ldquo;Become Provider&rdquo; tab.</div>;
+  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved MAM master. Apply in the &ldquo;Become MAM Master&rdquo; tab.</div>;
 
   const fmt = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
