@@ -31,7 +31,10 @@ function buildTimelineIframeSrc(
   const u = new URL(TIMELINE_EMBED_ORIGIN);
   u.searchParams.set('locale', 'en');
   u.searchParams.set('symbol', tvSymbol);
-  u.hash = encodeURIComponent(JSON.stringify(settings));
+  // TradingView expects literal `{` `}` in the fragment (URL setter only escapes quotes etc).
+  // Pre-encoding with encodeURIComponent breaks parsing and the widget silently falls back
+  // to its default (dark) theme — which masked the bug until light mode was exercised.
+  u.hash = JSON.stringify(settings);
   return u.toString();
 }
 
