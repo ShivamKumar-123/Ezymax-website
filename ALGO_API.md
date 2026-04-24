@@ -1,13 +1,20 @@
 # TrustEdge Algo Trading API
 
-Connect any algo bot / EA / script to a TrustEdge trading account over a simple HTTPS JSON API.
+Connect any algo bot / EA / script / trading dashboard to a TrustEdge trading account over a simple HTTPS JSON API.
 
-Two endpoints:
+### Endpoints at a glance
 
-| Method | URL                                        | Purpose                              |
-|--------|--------------------------------------------|--------------------------------------|
-| POST   | `https://trustedgefx.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order     |
-| GET    | `https://trustedgefx.com/api/algo/account` | Read balance, equity, margin         |
+| Method | URL                                        | Purpose                                      |
+|--------|--------------------------------------------|----------------------------------------------|
+| POST   | `https://trustedgefx.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
+| GET    | `https://trustedgefx.com/api/algo/account` | Read balance, equity, margin                 |
+| GET    | `https://trustedgefx.com/api/algo/symbols` | List every supported instrument              |
+| GET    | `https://trustedgefx.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
+| GET    | `https://trustedgefx.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
+| GET    | `https://trustedgefx.com/api/algo/bars`    | Historical OHLC bars (1m–1d)                 |
+| WS     | `wss://trustedgefx.com/ws/algo/prices`     | Live tick stream (all symbols, push)         |
+
+**Market data = same feed as the TrustEdge web platform.** Whatever the internal charts show, your bot sees — same LP source, same spread, same timestamps.
 
 ---
 
@@ -160,12 +167,15 @@ No request body. Just send the auth headers. Returns the current state of the tr
 |--------|---------------------------------|-----------------------------------------|
 | 400    | Bad input                       | `"volume required for BUY/SELL"`        |
 | 400    | Below minimum lot               | `"Minimum lot size is 0.01"`            |
-| 400    | No live price for symbol        | `"No price data for XAUUSD"`            |
+| 400    | Bad timeframe                   | `"timeframe must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d"` |
+| 400    | Bad limit                       | `"limit must be between 1 and 1000"`    |
+| 400    | Too many symbols                | `"symbols list cannot exceed 50 items"` |
 | 400    | Not enough free margin          | `"Insufficient margin"`                 |
 | 401    | Missing headers                 | `"Missing X-Api-Key or X-Api-Secret"`   |
 | 401    | Wrong key/secret                | `"Invalid API credentials"`             |
 | 403    | Account disabled                | `"Trading account is inactive"`         |
 | 404    | Unknown symbol                  | `"Instrument XAUUSD not found"`         |
+| 503    | No live price yet (fresh feed)  | `"No price data for XAUUSD"`            |
 
 Error body format:
 
@@ -243,7 +253,234 @@ print(r.status_code, r.json())
 
 ---
 
-## 8. Rules & notes
+## 8. Market Data — Symbol List
+
+```
+GET https://trustedgefx.com/api/algo/symbols
+```
+
+No body. Send the standard auth headers. Returns every instrument the platform supports along with its trading spec. Call this once at bot startup and cache the result — it doesn't change often.
+
+### Success response (200)
+
+```json
+{
+  "symbols": [
+    {
+      "symbol": "XAUUSD",
+      "display_name": "Gold / US Dollar",
+      "category": "commodity",
+      "digits": 2,
+      "min_lot": 0.01,
+      "max_lot": 100,
+      "lot_step": 0.01,
+      "contract_size": 100
+    },
+    {
+      "symbol": "EURUSD",
+      "display_name": "Euro / US Dollar",
+      "category": "forex_major",
+      "digits": 5,
+      "min_lot": 0.01,
+      "max_lot": 100,
+      "lot_step": 0.01,
+      "contract_size": 100000
+    }
+    // ...
+  ],
+  "count": 29
+}
+```
+
+---
+
+## 9. Market Data — Single-symbol snapshot
+
+```
+GET https://trustedgefx.com/api/algo/price?symbol=XAUUSD
+```
+
+Current bid/ask for one symbol, served from Redis (sub-millisecond). Safe to poll at up to a few per second.
+
+### Success response (200)
+
+```json
+{
+  "symbol": "XAUUSD",
+  "bid": 2650.45,
+  "ask": 2650.60,
+  "spread": 0.15,
+  "timestamp": "2026-04-24T14:35:22.123Z"
+}
+```
+
+### Errors
+
+| Status | Meaning                                |
+|--------|----------------------------------------|
+| 404    | `Instrument XYZABC not found`          |
+| 503    | `No price data for XAUUSD` (fresh — wait for next tick) |
+
+---
+
+## 10. Market Data — Multi-symbol snapshot
+
+```
+GET https://trustedgefx.com/api/algo/prices?symbols=XAUUSD,EURUSD,BTCUSD
+```
+
+One call for many symbols. `symbols` is optional — omit it to receive every supported instrument.
+
+- Max 50 symbols per request.
+- Symbols with no current tick are silently **omitted** (not an error). Cross-check against `/symbols` if you need a full list.
+
+### Success response (200)
+
+```json
+{
+  "prices": [
+    { "symbol": "XAUUSD", "bid": 2650.45, "ask": 2650.60, "spread": 0.15,   "timestamp": "2026-04-24T14:35:22.123Z" },
+    { "symbol": "EURUSD", "bid": 1.0823,  "ask": 1.0824,  "spread": 0.0001, "timestamp": "2026-04-24T14:35:22.119Z" },
+    { "symbol": "BTCUSD", "bid": 67234.5, "ask": 67241.2, "spread": 6.7,    "timestamp": "2026-04-24T14:35:22.130Z" }
+  ],
+  "count": 3
+}
+```
+
+### Errors
+
+| Status | Meaning                                          |
+|--------|--------------------------------------------------|
+| 400    | `symbols list cannot exceed 50 items`            |
+| 404    | `Unknown instrument(s): FAKE1,FAKE2`             |
+
+---
+
+## 11. Market Data — Historical OHLC bars
+
+```
+GET https://trustedgefx.com/api/algo/bars?symbol=XAUUSD&timeframe=1m&limit=500
+```
+
+### Query params
+
+| Param       | Required | Description                                                 |
+|-------------|----------|-------------------------------------------------------------|
+| `symbol`    | yes      | Instrument symbol                                           |
+| `timeframe` | yes      | One of `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`           |
+| `limit`     | no       | Number of bars (default `100`, max `1000`)                  |
+
+Bars are returned **newest first**. Up to 1000 most-recent bars are kept per (symbol, timeframe) — older history is rolled off.
+
+### Success response (200)
+
+```json
+{
+  "symbol": "XAUUSD",
+  "timeframe": "1m",
+  "bars": [
+    { "time": "2026-04-24T14:35:00Z", "open": 2650.45, "high": 2650.80, "low": 2650.30, "close": 2650.60, "volume": 1247 },
+    { "time": "2026-04-24T14:34:00Z", "open": 2650.10, "high": 2650.50, "low": 2649.95, "close": 2650.45, "volume":  982 }
+  ],
+  "count": 500
+}
+```
+
+### Errors
+
+| Status | Meaning                                          |
+|--------|--------------------------------------------------|
+| 400    | `timeframe must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d` |
+| 400    | `limit must be between 1 and 1000`               |
+| 404    | `Instrument XYZABC not found`                    |
+
+---
+
+## 12. Market Data — Live tick stream (WebSocket)
+
+```
+wss://trustedgefx.com/ws/algo/prices
+```
+
+The easiest way to keep a bot's internal state in sync with the market — the server pushes every tick as soon as the LP delivers it. Same data the internal TrustEdge charts use.
+
+### Authentication (first-message)
+
+Auth is **not** in the URL (so secrets never hit server logs). Connect first, then send an auth message within 5 seconds:
+
+```json
+{ "action": "auth", "api_key": "YOUR_KEY", "api_secret": "YOUR_SECRET" }
+```
+
+On success, the server replies once:
+
+```json
+{ "status": "authenticated", "account": "100245" }
+```
+
+…and then ticks start flowing.
+
+### Tick shape
+
+```json
+{ "type": "tick", "symbol": "XAUUSD", "bid": 2650.45, "ask": 2650.60, "spread": 0.15, "timestamp": "2026-04-24T14:35:22.123Z" }
+```
+
+All 29 supported symbols stream on the same connection — filter client-side for the ones you care about. Typical throughput: ~30–100 ticks/second across all symbols.
+
+### Heartbeat
+
+Every 30 seconds the server sends `{"type": "ping"}`. Client pongs are optional (the connection survives without them), but sending `{"type": "pong"}` back is the standard courtesy.
+
+### Close codes
+
+| Code | Meaning                                                     |
+|------|-------------------------------------------------------------|
+| 4001 | `auth_timeout` — no first message within 5 seconds          |
+| 4002 | `bad_auth_message` — malformed JSON or missing fields       |
+| 4003 | `invalid_credentials` — key/secret don't match              |
+| 4004 | `account_inactive` — key valid, but trading account disabled |
+
+### Example — Python
+
+```python
+import asyncio, json, websockets
+
+async def stream():
+    async with websockets.connect("wss://trustedgefx.com/ws/algo/prices") as ws:
+        await ws.send(json.dumps({
+            "action": "auth",
+            "api_key":    "YOUR_KEY",
+            "api_secret": "YOUR_SECRET",
+        }))
+        auth = json.loads(await ws.recv())
+        if auth.get("status") != "authenticated":
+            raise SystemExit(auth)
+        print("connected; account:", auth["account"])
+
+        async for raw in ws:
+            msg = json.loads(raw)
+            if msg.get("type") == "tick":
+                print(msg["symbol"], msg["bid"], msg["ask"])
+            elif msg.get("type") == "ping":
+                await ws.send(json.dumps({"type": "pong"}))
+
+asyncio.run(stream())
+```
+
+### Testing in Postman
+
+1. **New → WebSocket Request** (not HTTP).
+2. URL: `wss://trustedgefx.com/ws/algo/prices` → **Connect**.
+3. In the Message box paste and send:
+   ```json
+   {"action":"auth","api_key":"YOUR_KEY","api_secret":"YOUR_SECRET"}
+   ```
+4. First message back will be `{"status":"authenticated","account":"..."}`; after that, live ticks stream in.
+
+---
+
+## 13. Rules & notes
 
 - **Execution** is market-only — orders fill at the current ask (BUY) / bid (SELL).
 - **Symbol** is case-insensitive (`xauusd` = `XAUUSD`).
@@ -252,4 +489,8 @@ print(r.status_code, r.json())
 - **CLOSE** closes every open position for that symbol on the account — partial close is not supported on this endpoint.
 - **SL / TP** are optional; you can add/modify them from the dashboard later.
 - **`/account`** is read-only and safe to poll, but don't hammer it — once every few seconds is more than enough.
+- **Market data endpoints** (`/symbols`, `/price`, `/prices`, `/bars`) share the same auth headers as the trading endpoints — one key, everything.
+- **Prefer the WebSocket stream** over polling `/price` or `/prices` — pushes are free, polling is wasted CPU.
+- **Bar history** is capped at the most-recent 1000 bars per (symbol, timeframe). Older history is rolled off automatically.
+- **Market data matches the TrustEdge web platform** — same LP feed, same spread widening, same timestamps. If your bot shows a different price than the web chart, check your clock sync and timezone handling before blaming the feed.
 - Keep the secret out of git, logs, and client-side code. If leaked, rotate it immediately from the dashboard.
