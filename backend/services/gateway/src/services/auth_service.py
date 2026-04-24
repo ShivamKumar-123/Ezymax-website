@@ -338,16 +338,16 @@ async def _ensure_shared_demo_user(db: AsyncSession) -> User:
     await db.flush()
 
     default_group = await db.execute(
-        select(AccountGroup).where(AccountGroup.name == "Standard", AccountGroup.is_demo == False)
+        select(AccountGroup).where(AccountGroup.name == "Standard", AccountGroup.is_demo == False).limit(1)
     )
-    group = default_group.scalar_one_or_none()
+    group = default_group.scalars().first()
     db.add(TradingAccount(
         user_id=user.id, account_group_id=group.id if group else None,
         account_number=generate_account_number(), leverage=default_leverage, currency="USD", is_demo=False,
     ))
 
-    demo_group = await db.execute(select(AccountGroup).where(AccountGroup.name == "Demo"))
-    dg = demo_group.scalar_one_or_none()
+    demo_group = await db.execute(select(AccountGroup).where(AccountGroup.name == "Demo").limit(1))
+    dg = demo_group.scalars().first()
     db.add(TradingAccount(
         user_id=user.id, account_group_id=dg.id if dg else None,
         account_number=generate_account_number(),
@@ -359,13 +359,18 @@ async def _ensure_shared_demo_user(db: AsyncSession) -> User:
 
 
 async def _ensure_demo_trading_account(db: AsyncSession, user: User) -> None:
+    # NOTE: admin can provision multiple demo accounts for a user, so this
+    # existence check MUST tolerate multiple rows — use .first(), not
+    # scalar_one_or_none() which raises MultipleResultsFound on 2+ matches.
     q = await db.execute(
-        select(TradingAccount).where(TradingAccount.user_id == user.id, TradingAccount.is_demo == True)
+        select(TradingAccount.id)
+        .where(TradingAccount.user_id == user.id, TradingAccount.is_demo == True)
+        .limit(1)
     )
-    if q.scalar_one_or_none():
+    if q.scalars().first() is not None:
         return
-    demo_group = await db.execute(select(AccountGroup).where(AccountGroup.name == "Demo"))
-    dg = demo_group.scalar_one_or_none()
+    demo_group = await db.execute(select(AccountGroup).where(AccountGroup.name == "Demo").limit(1))
+    dg = demo_group.scalars().first()
     db.add(TradingAccount(
         user_id=user.id, account_group_id=dg.id if dg else None,
         account_number=generate_account_number(),
