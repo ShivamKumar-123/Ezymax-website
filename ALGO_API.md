@@ -6,15 +6,17 @@ Connect any algo bot / EA / script / trading dashboard to a TrustEdge trading ac
 
 | Method | URL                                        | Purpose                                      |
 |--------|--------------------------------------------|----------------------------------------------|
-| POST   | `https://trustedgefx.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
-| GET    | `https://trustedgefx.com/api/algo/account` | Read balance, equity, margin                 |
-| GET    | `https://trustedgefx.com/api/algo/symbols` | List every supported instrument              |
-| GET    | `https://trustedgefx.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
-| GET    | `https://trustedgefx.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
-| GET    | `https://trustedgefx.com/api/algo/bars`    | Historical OHLC bars (1m–1d)                 |
-| WS     | `wss://trustedgefx.com/ws/algo/prices`     | Live tick stream (all symbols, push)         |
+| POST   | `https://api.trustedgefx.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
+| GET    | `https://api.trustedgefx.com/api/algo/account` | Read balance, equity, margin                 |
+| GET    | `https://api.trustedgefx.com/api/algo/symbols` | List every supported instrument              |
+| GET    | `https://api.trustedgefx.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
+| GET    | `https://api.trustedgefx.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
+| GET    | `https://api.trustedgefx.com/api/algo/bars`    | Historical OHLC bars (1m–1d)                 |
+| WS     | `wss://api.trustedgefx.com/ws/algo/prices`     | Live tick stream (all symbols, push)         |
 
 **Market data = same feed as the TrustEdge web platform.** Whatever the internal charts show, your bot sees — same LP source, same spread, same timestamps.
+
+> **Host note:** all algo endpoints live on the `api.` subdomain (`api.trustedgefx.com`). The main `trustedgefx.com` host serves the web frontend and proxies REST requests to the gateway, but it **cannot** handle WebSocket connections — the `wss://` stream must use `api.trustedgefx.com` directly.
 
 ---
 
@@ -120,7 +122,7 @@ Closes **all open positions** for the given symbol on the linked account.
 ## 4. Account Info (balance, equity, margin)
 
 ```
-GET https://trustedgefx.com/api/algo/account
+GET https://api.trustedgefx.com/api/algo/account
 ```
 
 No request body. Just send the auth headers. Returns the current state of the trading account linked to your API key.
@@ -190,7 +192,7 @@ Error body format:
 ### BUY
 
 ```bash
-curl -X POST https://trustedgefx.com/api/algo/trade \
+curl -X POST https://api.trustedgefx.com/api/algo/trade \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET" \
   -H "Content-Type: application/json" \
@@ -200,7 +202,7 @@ curl -X POST https://trustedgefx.com/api/algo/trade \
 ### CLOSE
 
 ```bash
-curl -X POST https://trustedgefx.com/api/algo/trade \
+curl -X POST https://api.trustedgefx.com/api/algo/trade \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET" \
   -H "Content-Type: application/json" \
@@ -210,7 +212,7 @@ curl -X POST https://trustedgefx.com/api/algo/trade \
 ### Account info
 
 ```bash
-curl https://trustedgefx.com/api/algo/account \
+curl https://api.trustedgefx.com/api/algo/account \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET"
 ```
@@ -222,7 +224,7 @@ curl https://trustedgefx.com/api/algo/account \
 ```python
 import requests
 
-BASE = "https://trustedgefx.com/api/algo"
+BASE = "https://api.trustedgefx.com/api/algo"
 HEADERS = {
     "X-Api-Key": "YOUR_KEY",
     "X-Api-Secret": "YOUR_SECRET",
@@ -256,7 +258,7 @@ print(r.status_code, r.json())
 ## 8. Market Data — Symbol List
 
 ```
-GET https://trustedgefx.com/api/algo/symbols
+GET https://api.trustedgefx.com/api/algo/symbols
 ```
 
 No body. Send the standard auth headers. Returns every instrument the platform supports along with its trading spec. Call this once at bot startup and cache the result — it doesn't change often.
@@ -297,7 +299,7 @@ No body. Send the standard auth headers. Returns every instrument the platform s
 ## 9. Market Data — Single-symbol snapshot
 
 ```
-GET https://trustedgefx.com/api/algo/price?symbol=XAUUSD
+GET https://api.trustedgefx.com/api/algo/price?symbol=XAUUSD
 ```
 
 Current bid/ask for one symbol, served from Redis (sub-millisecond). Safe to poll at up to a few per second.
@@ -326,7 +328,7 @@ Current bid/ask for one symbol, served from Redis (sub-millisecond). Safe to pol
 ## 10. Market Data — Multi-symbol snapshot
 
 ```
-GET https://trustedgefx.com/api/algo/prices?symbols=XAUUSD,EURUSD,BTCUSD
+GET https://api.trustedgefx.com/api/algo/prices?symbols=XAUUSD,EURUSD,BTCUSD
 ```
 
 One call for many symbols. `symbols` is optional — omit it to receive every supported instrument.
@@ -359,7 +361,7 @@ One call for many symbols. `symbols` is optional — omit it to receive every su
 ## 11. Market Data — Historical OHLC bars
 
 ```
-GET https://trustedgefx.com/api/algo/bars?symbol=XAUUSD&timeframe=1m&limit=500
+GET https://api.trustedgefx.com/api/algo/bars?symbol=XAUUSD&timeframe=1m&limit=500
 ```
 
 ### Query params
@@ -399,7 +401,7 @@ Bars are returned **newest first**. Up to 1000 most-recent bars are kept per (sy
 ## 12. Market Data — Live tick stream (WebSocket)
 
 ```
-wss://trustedgefx.com/ws/algo/prices
+wss://api.trustedgefx.com/ws/algo/prices
 ```
 
 The easiest way to keep a bot's internal state in sync with the market — the server pushes every tick as soon as the LP delivers it. Same data the internal TrustEdge charts use.
@@ -447,7 +449,7 @@ Every 30 seconds the server sends `{"type": "ping"}`. Client pongs are optional 
 import asyncio, json, websockets
 
 async def stream():
-    async with websockets.connect("wss://trustedgefx.com/ws/algo/prices") as ws:
+    async with websockets.connect("wss://api.trustedgefx.com/ws/algo/prices") as ws:
         await ws.send(json.dumps({
             "action": "auth",
             "api_key":    "YOUR_KEY",
@@ -471,7 +473,7 @@ asyncio.run(stream())
 ### Testing in Postman
 
 1. **New → WebSocket Request** (not HTTP).
-2. URL: `wss://trustedgefx.com/ws/algo/prices` → **Connect**.
+2. URL: `wss://api.trustedgefx.com/ws/algo/prices` → **Connect**.
 3. In the Message box paste and send:
    ```json
    {"action":"auth","api_key":"YOUR_KEY","api_secret":"YOUR_SECRET"}
