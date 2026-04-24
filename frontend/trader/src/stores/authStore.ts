@@ -24,7 +24,6 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   login: (email: string, password: string, totpCode?: string) => Promise<void>;
-  demoLogin: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   register: (data: {
     email: string;
@@ -55,18 +54,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
         password,
         totp_code: totpCode,
       });
-      const user = await api.get<User>('/auth/me');
-      set({ user, isAuthenticated: true, isLoading: false, token: null });
-    } catch (e) {
-      set({ isLoading: false });
-      throw e;
-    }
-  },
-
-  demoLogin: async () => {
-    set({ isLoading: true });
-    try {
-      await api.post<{ access_token: string; user_id: string; role: string }>('/auth/demo-login', {});
       const user = await api.get<User>('/auth/me');
       set({ user, isAuthenticated: true, isLoading: false, token: null });
     } catch (e) {

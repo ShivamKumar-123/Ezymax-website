@@ -24,14 +24,12 @@ const formVariants = {
 /* ── step config ── */
 const STEPS = [
   { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Demo Account' },
-  { number: 3, label: 'Sign up your account' },
+  { number: 2, label: 'Sign up your account' },
 ];
 
 const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
   1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
-  2: { title: 'Try It Out', subtitle: 'Explore the app with a demo account.' },
-  3: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
+  2: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
 };
 
 /* ── Input Field ── */
@@ -131,7 +129,7 @@ function RegisterContent() {
 
   /* ── Step change ── */
   const handleStepClick = (step: number) => {
-    if (step === 1 || step === 2) {
+    if (step === 1) {
       router.push('/auth/login');
       return;
     }
@@ -155,16 +153,16 @@ function RegisterContent() {
             />
             <div className="auth-left__content">
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>
-                {LEFT_CONFIG[3].title}
+                {LEFT_CONFIG[2].title}
               </motion.h1>
               <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>
-                {LEFT_CONFIG[3].subtitle}
+                {LEFT_CONFIG[2].subtitle}
               </motion.p>
               <div className="auth-left__steps">
                 {STEPS.map((s, i) => (
                   <motion.div key={s.number} {...fadeUp(0.45 + i * 0.08)}>
                     <div
-                      className={`auth-step ${s.number === 3 ? 'auth-step--active' : 'auth-step--inactive'}`}
+                      className={`auth-step ${s.number === 2 ? 'auth-step--active' : 'auth-step--inactive'}`}
                       onClick={() => handleStepClick(s.number)}
                     >
                       <span className="auth-step__num">{s.number}</span>

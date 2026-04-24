@@ -111,6 +111,7 @@ export default function AccountsPage() {
   const [transferSubmitting, setTransferSubmitting] = useState(false);
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
   const [kycGateOpen, setKycGateOpen] = useState(false);
+  const [demoUpgradeOpen, setDemoUpgradeOpen] = useState(false);
   /** After creating an account, open-account sets sessionStorage; expand that card on Accounts. */
   const [expandAccountId, setExpandAccountId] = useState<string | null>(null);
   const [fromKind, setFromKind] = useState<TransferEndKind>('trading');
@@ -505,6 +506,35 @@ export default function AccountsPage() {
           </div>
         </div>
       </Modal>
+      <Modal
+        open={demoUpgradeOpen}
+        onClose={() => setDemoUpgradeOpen(false)}
+        title="Register a real account"
+        width="md"
+        className="border border-border-primary bg-bg-card shadow-2xl"
+      >
+        <div className="space-y-4 p-1">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            Demo accounts are provisioned by our team and cannot add new trading accounts. To open additional accounts, please register a real account.
+          </p>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border-primary">
+            <button
+              type="button"
+              onClick={() => setDemoUpgradeOpen(false)}
+              className="px-5 py-2.5 rounded-lg border border-border-primary bg-bg-card text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
+            >
+              Close
+            </button>
+            <Link
+              href="/auth/register"
+              onClick={() => setDemoUpgradeOpen(false)}
+              className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors text-center"
+            >
+              Register Real Account
+            </Link>
+          </div>
+        </div>
+      </Modal>
       {/* Accounts / Internal Transfer — full-width edge-to-edge, straight top line
           meeting the sidebar's right border; only the active-tab indicator curves. */}
       <div className="relative -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-8">
@@ -586,10 +616,10 @@ export default function AccountsPage() {
                     <p className="mt-1 text-sm text-text-secondary">Manage your trading accounts</p>
                   </div>
                   {user?.is_demo ? (
-                    <Link href="/trading/open-account" className={newAccountCtaClass}>
+                    <button type="button" onClick={() => setDemoUpgradeOpen(true)} className={newAccountCtaClass}>
                       <span className="text-lg leading-none">+</span>
                       New Account
-                    </Link>
+                    </button>
                   ) : (
                     <button type="button" onClick={handleOpenNewAccount} className={newAccountCtaClass}>
                       <span className="text-lg leading-none">+</span>
