@@ -1,4 +1,6 @@
 """Authentication API — Register, Login, 2FA, Password Change, Demo login, Password reset."""
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +19,8 @@ from ..services.auth_service import (
     change_password as _change_password, get_me as _get_me, logout_user,
     client_ip_for_inet,
 )
+
+logger = logging.getLogger("auth_api")
 
 router = APIRouter()
 
@@ -75,6 +79,16 @@ async def demo_login(request: Request, db: AsyncSession = Depends(get_db)):
         return await _demo_login(request=request, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.exception("demo-login failed unexpectedly")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail=f"Demo sign-in failed — {type(e).__name__}: {e}",
+        )
 
 
 @router.post("/refresh")
