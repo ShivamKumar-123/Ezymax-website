@@ -27,16 +27,18 @@ const formVariants = {
 /* ── step config ── */
 const STEPS = [
   { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Sign up your account' },
+  { number: 2, label: 'Demo Account' },
+  { number: 3, label: 'Sign up your account' },
 ];
 
 const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
   1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
-  2: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
+  2: { title: 'Try It Out', subtitle: 'Explore the app with a demo account.' },
+  3: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
 };
 
 /* ── error helper ── */
-function authErrorMessage(err: unknown, kind: 'login' | 'forgot'): string {
+function authErrorMessage(err: unknown, kind: 'login' | 'demo' | 'forgot'): string {
   const raw = err instanceof Error ? err.message.trim() : 'Something went wrong.';
   const lower = raw.toLowerCase();
   if (kind === 'login' && (raw === 'Invalid credentials' || lower === 'invalid credentials'))
@@ -79,7 +81,7 @@ function AuthInput({
 /* ═══════ PAGE ═══════ */
 export default function LoginPage() {
   const router = useRouter();
-  const { login, forgotPassword, isLoading } = useAuthStore();
+  const { login, demoLogin, forgotPassword, isLoading } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
 
   /* Sign-in state */
@@ -90,6 +92,9 @@ export default function LoginPage() {
   const [need2FA, setNeed2FA] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  /* Demo state */
+  const [demoLoading, setDemoLoading] = useState(false);
 
   /* Forgot state */
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -134,6 +139,20 @@ export default function LoginPage() {
     }
   };
 
+  /* ── Demo handler ── */
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await demoLogin();
+      toast.success('Welcome — demo account');
+      router.push('/accounts');
+    } catch (err: unknown) {
+      setErrorDialog({ title: 'Demo sign-in failed', message: authErrorMessage(err, 'demo') });
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   /* ── Forgot handler ── */
   const handleForgot = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -151,9 +170,9 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Step change: 2 → go to register ── */
+  /* ── Step change: 3 → go to register ── */
   const handleStepClick = (step: number) => {
-    if (step === 2) {
+    if (step === 3) {
       router.push('/auth/register');
       return;
     }
@@ -297,9 +316,40 @@ export default function LoginPage() {
 
                     <motion.p className="auth-footer" {...fadeUp(0.62)}>
                       Don&apos;t have an account?{' '}
-                      <a onClick={() => handleStepClick(2)}>Sign Up</a>
+                      <a onClick={() => handleStepClick(3)}>Sign Up</a>
                     </motion.p>
                   </form>
+                )}
+
+                {/* ── DEMO ── */}
+                {activeStep === 2 && (
+                  <div className="auth-form">
+                    <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
+                      <img src="/images/Trustedgefx logo.png" alt="TrustEdgeFX" className="w-16 h-16 object-contain" />
+                    </motion.div>
+                    <motion.div {...fadeUp(0.3)}>
+                      <h2 className="auth-form__title">Demo Account</h2>
+                      <p className="auth-form__subtitle">Try the platform instantly with a demo account.</p>
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.37)}>
+                      <div className="auth-demo-badge">
+                        <span className="auth-demo-badge__dot" />
+                        <span>One-click access — no registration needed</span>
+                      </div>
+                    </motion.div>
+
+                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.45, duration: 0.4 }}>
+                      <button type="button" className="auth-btn" onClick={handleDemo} disabled={demoLoading || isLoading || maintenance}>
+                        {(demoLoading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Start Demo Trading')}
+                      </button>
+                    </motion.div>
+
+                    <motion.p className="auth-footer" {...fadeUp(0.55)}>
+                      Want full access?{' '}
+                      <a onClick={() => handleStepClick(3)}>Sign Up</a>
+                    </motion.p>
+                  </div>
                 )}
               </motion.div>
             </AnimatePresence>
