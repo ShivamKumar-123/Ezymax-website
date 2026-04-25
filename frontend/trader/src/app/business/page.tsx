@@ -309,8 +309,6 @@ function IBTab() {
 
         <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
 
-        <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Earn commissions on every trade your referrals make. Multi-level rewards with our MLM system.</p>
-
         <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md mx-auto text-xs">
 
           <div className="rounded-xl border border-border-primary bg-bg-secondary p-3 sm:p-4">

@@ -140,11 +140,11 @@ export default function AnalyticsPage() {
           </>
         )}
 
-        {/* Copy Trading / MAMM / PAMM Section */}
+        {/* Copy Trading / PAMM Section */}
         {data && (
           <div className="bg-bg-secondary border border-border-primary rounded-md">
             <div className="px-4 py-3 border-b border-border-primary">
-              <h2 className="text-sm font-medium text-text-primary">Copy Trading / MAMM / PAMM</h2>
+              <h2 className="text-sm font-medium text-text-primary">MAMM Trading / PAMM</h2>
               <p className="text-xxs text-text-tertiary mt-0.5">Signal providers, managed accounts, and copy trade performance</p>
             </div>
             <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">

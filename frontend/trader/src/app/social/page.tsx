@@ -878,8 +878,8 @@ function SocialPageInner() {
     return (
       <DashboardShell>
         <DemoLockGate
-          feature="MAM Trading"
-          description="MAM trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
+          feature="MAMM Trading"
+          description="MAMM trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
         >
           <></>
         </DemoLockGate>
@@ -899,7 +899,7 @@ function SocialPageInner() {
             />
             <div className="relative z-10 px-3 sm:px-6 py-3 sm:py-8">
               <h1 className="text-base sm:text-3xl font-bold text-text-primary mb-1 sm:mb-2 leading-tight">
-                MAM Trading — Follow Global Elite Traders
+                MAMM Trading — Follow Global Elite Traders
               </h1>
               <p className="text-xs sm:text-sm text-text-secondary max-w-2xl hidden sm:block">
                 Follow top performers and replicate their strategies automatically. For pooled accounts, use{' '}
@@ -961,7 +961,7 @@ export default function SocialPage() {
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
-  // MAM Trading section — applies as signal_provider (the master_type that
+  // MAMM Trading section — applies as signal_provider (the master_type that
   // drives copy/mirror trading). PAMM applications live on /pamm.
   const masterType = 'signal_provider';
   const [perfFee, setPerfFee] = useState('20');
