@@ -309,34 +309,6 @@ function IBTab() {
 
         <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md mx-auto text-xs">
-
-          <div className="rounded-xl border border-border-primary bg-bg-secondary p-3 sm:p-4">
-
-            <p className="text-text-tertiary text-[10px] sm:text-xxs uppercase tracking-wide">Per Lot</p>
-
-            <p className="text-accent font-bold font-mono text-base sm:text-lg mt-1">$7</p>
-
-          </div>
-
-          <div className="rounded-xl border border-border-primary bg-bg-secondary p-3 sm:p-4">
-
-            <p className="text-text-tertiary text-[10px] sm:text-xxs uppercase tracking-wide">MLM Levels</p>
-
-            <p className="text-accent font-bold font-mono text-base sm:text-lg mt-1">5</p>
-
-          </div>
-
-          <div className="rounded-xl border border-border-primary bg-bg-secondary p-3 sm:p-4">
-
-            <p className="text-text-tertiary text-[10px] sm:text-xxs uppercase tracking-wide">Lifetime</p>
-
-            <p className="text-accent font-bold text-sm sm:text-base mt-1">Earnings</p>
-
-          </div>
-
-        </div>
-
         <button
 
           type="button"
