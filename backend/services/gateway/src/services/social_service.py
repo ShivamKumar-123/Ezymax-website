@@ -97,7 +97,7 @@ async def list_leaderboard(
             "performance_fee_pct": float(master.performance_fee_pct),
             "min_investment": float(master.min_investment),
             "description": master.description,
-            "strategy_info": master.strategy_info,
+            "strategy_info": getattr(master, "strategy_info", None),
             "created_at": master.created_at.isoformat() if master.created_at else None,
             "is_copying": is_copying,
         })
@@ -186,7 +186,7 @@ async def get_provider_detail(
         "min_investment": float(master.min_investment),
         "max_investors": master.max_investors,
         "description": master.description,
-        "strategy_info": master.strategy_info,
+        "strategy_info": getattr(master, "strategy_info", None),
         "total_trades": total_trades,
         "total_profit": total_profit,
         "win_rate": round(win_rate, 2),
@@ -960,7 +960,7 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "min_investment": float(master.min_investment),
         "max_investors": master.max_investors,
         "description": master.description,
-        "strategy_info": master.strategy_info,
+        "strategy_info": getattr(master, "strategy_info", None),
         "created_at": master.created_at.isoformat() if master.created_at else None,
     }
 
