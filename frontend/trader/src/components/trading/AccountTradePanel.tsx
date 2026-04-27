@@ -192,7 +192,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
     setLots((prev) => parseFloat(Math.max(0.01, prev + delta).toFixed(2)));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     unlockAudio();
     if (orderTab === 'market' && !marketStatus.isOpen) {
       toast.error(marketStatus.reason || 'Market is closed');
@@ -202,10 +202,23 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       toast.error(`Insufficient margin`);
       return;
     }
-    // Optimistic: instant feedback, API fires in background
+    // MT5-style: instant sound + optimistic position, no button disable
     sounds.orderPlaced();
-    toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`);
-    setSubmitting(true);
+    toast.success(`${side.toUpperCase()} ${lots} ${selectedSymbol}`, { duration: 1500 });
+
+    // Optimistic position injection for instant visual feedback
+    if (orderTab === 'market' && tick) {
+      const optimisticPos: MiniPosition = {
+        id: `optim-${Date.now().toString(36)}`,
+        symbol: selectedSymbol,
+        side,
+        lots,
+        open_price: execPrice,
+        profit: 0,
+      };
+      setPositions((prev) => [optimisticPos, ...prev]);
+    }
+
     api.post('/orders/', {
       account_id: account.id,
       symbol: selectedSymbol,
@@ -218,8 +231,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       void fetchPositions();
     }).catch((e: any) => {
       toast.error(e.message || 'Order failed');
-    }).finally(() => {
-      setSubmitting(false);
+      void fetchPositions(); // rollback: re-fetch real state
     });
   };
 
@@ -478,25 +490,15 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !hasEnoughMargin || (orderTab === 'market' && !marketStatus.isOpen)}
-              className="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              disabled={!hasEnoughMargin || (orderTab === 'market' && !marketStatus.isOpen)}
+              className="w-full py-3.5 rounded-xl text-sm font-bold transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
                 background: side === 'buy' ? '#2196f3' : '#ef5350',
                 color: side === 'buy' ? '#000' : '#fff',
                 boxShadow: side === 'buy' ? '0 4px 20px rgba(33,150,243,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
               }}
             >
-              {submitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Placing...
-                </span>
-              ) : (
-                `${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`
-              )}
+              {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
             </button>
 
             {!marketStatus.isOpen && orderTab === 'market' && (

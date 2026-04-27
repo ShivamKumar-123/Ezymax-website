@@ -223,7 +223,7 @@ export default function TradingTerminalPage() {
   }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
   const [lotSize, setLotSize] = useState('0.01');
   const [chartTabs, setChartTabs] = useState<string[]>([]);
-  const [orderSubmitting, setOrderSubmitting] = useState(false);
+  // orderSubmitting removed — MT5-style: never block rapid-fire clicks
   const [mobileSymbolSearch, setMobileSymbolSearch] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const mobileSearchRef = useRef<HTMLInputElement>(null);
@@ -308,7 +308,7 @@ export default function TradingTerminalPage() {
       setLotSize(next.toFixed(2));
     };
 
-    const placeMarketOrder = async (side: 'buy' | 'sell') => {
+    const placeMarketOrder = (side: 'buy' | 'sell') => {
       unlockAudio();
       if (!activeAccount) {
         toast.error('No account selected');
@@ -327,10 +327,9 @@ export default function TradingTerminalPage() {
         toast.error('Invalid lot size');
         return;
       }
-      // Optimistic: instant feedback, API fires in background
+      // MT5-style: instant sound + optimistic position, no button disable
       sounds.orderPlaced();
-      toast.success(`${side.toUpperCase()} ${lotSize} ${selectedSymbol}`);
-      setOrderSubmitting(true);
+      toast.success(`${side.toUpperCase()} ${lotSize} ${selectedSymbol}`, { duration: 1500 });
       placeOrder({
         account_id: activeAccount.id,
         symbol: selectedSymbol,
@@ -339,8 +338,6 @@ export default function TradingTerminalPage() {
         lots,
       }).catch((e: unknown) => {
         toast.error(e instanceof Error ? e.message : 'Order failed');
-      }).finally(() => {
-        setOrderSubmitting(false);
       });
     };
 
@@ -536,9 +533,9 @@ export default function TradingTerminalPage() {
                    {/* SELL button */}
                    <button
                      type="button"
-                     disabled={orderSubmitting || !mobileMarketStatus.isOpen}
+                     disabled={!mobileMarketStatus.isOpen}
                      onClick={() => placeMarketOrder('sell')}
-                     className="flex-1 h-full bg-sell rounded-xl flex flex-col items-center justify-center shadow-lg shadow-sell/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none min-w-0"
+                     className="flex-1 h-full bg-sell rounded-xl flex flex-col items-center justify-center shadow-lg shadow-sell/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Sell</span>
                      <span className="text-white/70 text-[10px] font-mono font-bold leading-tight">{price?.bid.toFixed(digits) || '--'}</span>
@@ -581,9 +578,9 @@ export default function TradingTerminalPage() {
                    {/* BUY button */}
                    <button
                      type="button"
-                     disabled={orderSubmitting || !mobileMarketStatus.isOpen}
+                     disabled={!mobileMarketStatus.isOpen}
                      onClick={() => placeMarketOrder('buy')}
-                     className="flex-1 h-full bg-buy rounded-xl flex flex-col items-center justify-center shadow-lg shadow-buy/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none min-w-0"
+                     className="flex-1 h-full bg-buy rounded-xl flex flex-col items-center justify-center shadow-lg shadow-buy/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Buy</span>
                      <span className="text-white/70 text-[10px] font-mono font-bold leading-tight">{price?.ask.toFixed(digits) || '--'}</span>

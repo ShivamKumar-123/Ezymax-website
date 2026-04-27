@@ -183,7 +183,6 @@ export default function OrderPanel() {
       rollback = () => setPositions(prev);
     }
 
-    setSubmitting(true);
     api.post('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
@@ -198,8 +197,6 @@ export default function OrderPanel() {
     }).catch((e: any) => {
       if (rollback) rollback();
       toast.error(e.message || 'Order failed');
-    }).finally(() => {
-      setSubmitting(false);
     });
   };
 
@@ -521,25 +518,15 @@ export default function OrderPanel() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={submitting || !hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
-                className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
+                className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
                 style={{
                   background: side === 'buy' ? '#2196f3' : '#ef5350',
                   color: '#fff',
                   boxShadow: side === 'buy' ? '0 4px 20px rgba(33,150,243,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
                 }}
               >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Processing
-                  </span>
-                ) : (
-                  `${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`
-                )}
+                {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
               </button>
               {!marketStatus.isOpen && orderTab === 'market' && (
                 <div className="mt-4 rounded-lg px-3 py-2 text-[11px] text-red-400 leading-snug text-center" style={{ background: 'rgba(239,83,80,0.1)', border: '1px solid rgba(239,83,80,0.2)' }}>
@@ -577,25 +564,15 @@ export default function OrderPanel() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
-              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
+              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
                 background: side === 'buy' ? '#2196f3' : '#ef5350',
                 color: '#fff',
                 boxShadow: side === 'buy' ? '0 2px 12px rgba(33,150,243,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
               }}
             >
-              {submitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Processing
-                </span>
-              ) : (
-                `${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`
-              )}
+              {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
             </button>
             {!marketStatus.isOpen && orderTab === 'market' && (
               <div
