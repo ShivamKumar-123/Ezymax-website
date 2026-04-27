@@ -91,6 +91,7 @@ async def _close_open_copy_positions(allocation, db, execute: bool) -> Decimal:
             getattr(inst, "base_currency", None) if inst else None,
             getattr(inst, "quote_currency", None) if inst else None,
             close_price,
+            symbol=getattr(inst, "symbol", None) if inst else None,
         )
 
         perf_fee = gross * perf_fee_pct / Decimal("100") if gross > 0 else Decimal("0")

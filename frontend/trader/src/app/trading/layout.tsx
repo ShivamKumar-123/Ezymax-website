@@ -96,6 +96,8 @@ function TradingSession({ children }: { children: React.ReactNode }) {
               max_lot: Number(i.max_lot ?? 100),
               lot_step: Number(i.lot_step ?? 0.01),
               contract_size: Number(i.contract_size ?? 100000),
+              base_currency: i.base_currency ? String(i.base_currency) : null,
+              quote_currency: i.quote_currency ? String(i.quote_currency) : null,
             })),
           );
         }

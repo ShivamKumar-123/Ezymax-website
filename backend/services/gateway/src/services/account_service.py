@@ -275,6 +275,7 @@ async def get_account_summary(
                 getattr(pos.instrument, "base_currency", None),
                 getattr(pos.instrument, "quote_currency", None),
                 current_price,
+                symbol=getattr(pos.instrument, "symbol", None),
             )
             unrealized_pnl += pnl
 

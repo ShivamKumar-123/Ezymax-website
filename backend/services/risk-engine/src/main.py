@@ -99,6 +99,7 @@ class RiskEngine:
                                 getattr(pos.instrument, "base_currency", None),
                                 getattr(pos.instrument, "quote_currency", None),
                                 current_price,
+                                symbol=getattr(pos.instrument, "symbol", None),
                             )
                             unrealized_pnl += pnl
 
@@ -166,6 +167,7 @@ class RiskEngine:
                 getattr(pos.instrument, "base_currency", None),
                 getattr(pos.instrument, "quote_currency", None),
                 close_price,
+                symbol=getattr(pos.instrument, "symbol", None),
             )
 
             pos.status = PositionStatus.CLOSED

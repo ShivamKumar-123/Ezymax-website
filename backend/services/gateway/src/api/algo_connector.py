@@ -269,6 +269,7 @@ async def _close_trades(symbol: str, account: TradingAccount, key_row: AlgoApiKe
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
+            symbol=getattr(instrument, "symbol", None),
         )
 
         pos.status = PositionStatus.CLOSED.value

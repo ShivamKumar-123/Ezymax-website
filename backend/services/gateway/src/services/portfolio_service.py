@@ -45,6 +45,7 @@ def _compute_pnl(pos: Position, current_price: Decimal) -> Decimal:
         getattr(pos.instrument, "base_currency", None),
         getattr(pos.instrument, "quote_currency", None),
         current_price,
+        symbol=getattr(pos.instrument, "symbol", None),
     )
 
 

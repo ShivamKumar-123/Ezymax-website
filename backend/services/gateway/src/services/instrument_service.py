@@ -31,6 +31,8 @@ async def list_instruments(
             symbol=inst.symbol,
             display_name=inst.display_name,
             segment=inst.segment.name if inst.segment else None,
+            base_currency=inst.base_currency or (inst.symbol[:3] if inst.symbol and len(inst.symbol) >= 6 else None),
+            quote_currency=inst.quote_currency or (inst.symbol[3:6] if inst.symbol and len(inst.symbol) >= 6 else None),
             digits=inst.digits,
             pip_size=inst.pip_size,
             min_lot=inst.min_lot,

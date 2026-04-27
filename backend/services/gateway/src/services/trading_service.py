@@ -97,6 +97,7 @@ def calc_pnl(
         getattr(instrument, "quote_currency", None),
         close_price,
         account_currency,
+        symbol=getattr(instrument, "symbol", None),
     )
 
 

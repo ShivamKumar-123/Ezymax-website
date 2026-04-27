@@ -373,6 +373,7 @@ async def close_position(
         getattr(inst, "base_currency", None),
         getattr(inst, "quote_currency", None),
         close_price,
+        symbol=getattr(inst, "symbol", None),
     )
 
     pos.status = PositionStatus.CLOSED.value

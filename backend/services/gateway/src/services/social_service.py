@@ -523,6 +523,7 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
+            symbol=getattr(instrument, "symbol", None),
         )
 
         perf_fee = Decimal("0")
@@ -736,6 +737,7 @@ async def withdraw_managed_account(
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
+            symbol=getattr(instrument, "symbol", None),
         )
 
         perf_fee = Decimal("0")

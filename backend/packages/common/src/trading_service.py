@@ -111,12 +111,24 @@ def calc_free_margin(account: TradingAccount) -> Decimal:
 
 # ─── P&L ──────────────────────────────────────────────────────────────────
 
+def _derive_currencies(symbol: str | None) -> tuple[str | None, str | None]:
+    """Derive base/quote currencies from a standard symbol like USDJPY, XAUUSD.
+
+    Standard forex (6-char) and metals/crypto follow BASE(3)+QUOTE(3) convention.
+    Returns (None, None) for indices or non-standard symbols.
+    """
+    if not symbol or len(symbol) < 6:
+        return None, None
+    return symbol[:3].upper(), symbol[3:6].upper()
+
+
 def quote_to_account_pnl(
     quote_pnl: Decimal,
     base_currency: str | None,
     quote_currency: str | None,
     ref_price: Decimal,
     account_currency: str = "USD",
+    symbol: str | None = None,
 ) -> Decimal:
     """Convert a P&L value expressed in the instrument's quote currency to
     the account currency (default USD).
@@ -126,11 +138,18 @@ def quote_to_account_pnl(
     that must be divided by the current rate to express in USD; otherwise
     e.g. a 17 JPY profit is shown as $17. Crypto / metals / indices already
     quote in USD so the helper short-circuits.
+
+    If base/quote currencies are unknown (NULL in DB), attempt to derive them
+    from the *symbol* name (e.g. USDJPY → USD / JPY).
     """
     if quote_pnl == 0:
         return quote_pnl
     base = (base_currency or "").upper()
     quote = (quote_currency or "").upper()
+    if not base or not quote:
+        fb_base, fb_quote = _derive_currencies(symbol)
+        base = base or (fb_base or "")
+        quote = quote or (fb_quote or "")
     acct = (account_currency or "USD").upper()
     if quote == acct or not quote:
         return quote_pnl
@@ -166,6 +185,7 @@ def calc_position_pnl(
         getattr(instrument, "quote_currency", None),
         current_price,
         account_currency,
+        symbol=getattr(instrument, "symbol", None),
     )
 
 
@@ -192,6 +212,7 @@ async def calc_account_equity(
             unrealised += calc_position_pnl(
                 pos.side, pos.open_price, price,
                 pos.lots, pos.instrument.contract_size,
+                instrument=pos.instrument,
             )
         except TradingServiceError:
             continue

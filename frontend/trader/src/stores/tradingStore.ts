@@ -256,8 +256,8 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         // the account currency (USD) so e.g. USDJPY shows ~$0.006 instead of
         // 1 JPY rendered as "$1". For pairs already quoted in USD (EURUSD,
         // GBPUSD, XAUUSD, BTCUSD…) this is a no-op.
-        const base = (inst?.base_currency || '').toUpperCase();
-        const quote = (inst?.quote_currency || '').toUpperCase();
+        const base = (inst?.base_currency || (sym.length >= 6 ? sym.slice(0, 3) : '')).toUpperCase();
+        const quote = (inst?.quote_currency || (sym.length >= 6 ? sym.slice(3, 6) : '')).toUpperCase();
         if (quote && quote !== 'USD') {
           if (base === 'USD' && cp) {
             pnl = pnl / cp;

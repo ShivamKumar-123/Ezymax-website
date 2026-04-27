@@ -536,6 +536,7 @@ class CopyTradeEngine:
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
+            symbol=getattr(instrument, "symbol", None),
         )
 
         performance_fee = Decimal("0")

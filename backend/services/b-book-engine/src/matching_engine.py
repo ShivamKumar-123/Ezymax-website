@@ -287,6 +287,7 @@ class MatchingEngine:
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
+            symbol=getattr(instrument, "symbol", None),
         )
 
         pos.status = PositionStatus.CLOSED
