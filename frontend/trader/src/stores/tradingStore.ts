@@ -302,7 +302,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         swap: 0,
         commission: 0,
         profit: 0,
-        trade_type: 'market',
+        trade_type: 'self_trade',
         created_at: new Date().toISOString(),
       } as (typeof s.positions)[number];
       set({ positions: [optimisticPos, ...prev] });

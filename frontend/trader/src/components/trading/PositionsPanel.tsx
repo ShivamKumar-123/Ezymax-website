@@ -990,7 +990,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <span className="text-sm font-bold text-text-primary">{pos.symbol}</span>
                               <span className={clsx('text-[10px] font-bold uppercase', pos.side === 'buy' ? 'text-buy' : 'text-sell')}>{pos.side}</span>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Self'}
+                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                               </span>
                             </div>
                             <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
@@ -1081,7 +1081,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>{pos.symbol}</td>
                             <td className={td}>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Self'}
+                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                               </span>
                             </td>
                             <td className={td}>
@@ -1367,7 +1367,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 <span className="text-sm font-bold text-text-primary">{trade.symbol}</span>
                                 <span className={clsx('text-[10px] font-bold uppercase', trade.side === 'buy' ? 'text-buy' : 'text-sell')}>{trade.side}</span>
                                 <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                  {trade.trade_type === 'copy_trade' ? 'Copy' : 'Self'}
+                                  {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                                 </span>
                               </div>
                               <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
@@ -1425,7 +1425,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>{trade.symbol}</td>
                             <td className={td}>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {trade.trade_type === 'copy_trade' ? 'Copy' : 'Self'}
+                                {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                               </span>
                             </td>
                             <td className={td}>
