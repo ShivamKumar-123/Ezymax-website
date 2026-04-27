@@ -17,15 +17,12 @@ import {
   Settings,
   X,
   FileText,
-  Globe,
-  ChevronDown,
   HelpCircle,
   Headphones,
   Receipt,
   Calculator,
   Plug,
 } from 'lucide-react';
-import { useState } from 'react';
 
 const NAV_ITEMS = [
   { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
@@ -33,7 +30,7 @@ const NAV_ITEMS = [
   { label: 'Transactions', href: '/transactions', icon: History },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
-  { label: 'MAMM Trading', href: '/social', icon: Copy },
+  { label: 'MAMM', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
   { label: 'TrustEdge Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
@@ -43,13 +40,9 @@ const NAV_ITEMS = [
   { label: 'Settings', href: '/profile', icon: Settings },
 ] as const;
 
-const LANGUAGES = ['English', 'Español', 'Français', 'Deutsch', 'Português'];
-
 export default function AppSidebar() {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useShellStore();
-  const [langOpen, setLangOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('English');
 
   return (
     <>
@@ -128,43 +121,6 @@ export default function AppSidebar() {
             <FileText size={14} className="text-accent shrink-0 opacity-90" />
             <span>Terms & Conditions</span>
           </Link>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-2 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2.5 text-xs text-text-secondary hover:text-text-primary hover:border-border-accent w-full transition-colors"
-            >
-              <Globe size={14} className="text-accent shrink-0 opacity-90" />
-              <span>{selectedLang}</span>
-              <ChevronDown
-                size={12}
-                className={cn('ml-auto text-text-tertiary transition-transform shrink-0', langOpen && 'rotate-180')}
-              />
-            </button>
-            {langOpen && (
-              <div className="absolute bottom-full left-0 mb-1.5 w-full bg-bg-secondary border border-border-primary rounded-lg py-1 z-50 max-h-[200px] overflow-y-auto sidebar-scroll shadow-lg">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => {
-                      setSelectedLang(lang);
-                      setLangOpen(false);
-                    }}
-                    className={cn(
-                      'w-full text-left px-3 py-2 text-xs transition-colors',
-                      lang === selectedLang
-                        ? 'text-accent bg-accent/8'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
-                    )}
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
           <div className="rounded-xl p-3.5 border border-border-primary bg-card-nested">
             <div className="flex items-center gap-1.5 mb-1">
