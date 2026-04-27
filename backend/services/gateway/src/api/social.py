@@ -2,7 +2,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -105,6 +105,7 @@ async def become_provider(
     management_fee_pct: Decimal = Query(Decimal("0"), ge=0, le=10),
     min_investment: Decimal = Query(Decimal("100"), gt=0),
     max_investors: int = Query(100, ge=1, le=1000),
+    strategy_info: dict | None = Body(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -114,6 +115,7 @@ async def become_provider(
         account_id=None, master_type=master_type, description=description,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors,
+        strategy_info=strategy_info,
         user_id=current_user["user_id"], db=db,
     )
 

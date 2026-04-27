@@ -97,6 +97,7 @@ async def list_leaderboard(
             "performance_fee_pct": float(master.performance_fee_pct),
             "min_investment": float(master.min_investment),
             "description": master.description,
+            "strategy_info": master.strategy_info,
             "created_at": master.created_at.isoformat() if master.created_at else None,
             "is_copying": is_copying,
         })
@@ -185,6 +186,7 @@ async def get_provider_detail(
         "min_investment": float(master.min_investment),
         "max_investors": master.max_investors,
         "description": master.description,
+        "strategy_info": master.strategy_info,
         "total_trades": total_trades,
         "total_profit": total_profit,
         "win_rate": round(win_rate, 2),
@@ -821,6 +823,7 @@ async def become_provider(
     performance_fee_pct: Decimal, management_fee_pct: Decimal,
     min_investment: Decimal, max_investors: int,
     user_id: UUID, db: AsyncSession,
+    strategy_info: dict | None = None,
 ) -> dict:
     # Retired "mamm" master type — callers that still send it get remapped
     # to signal_provider so no new MAMM rows are created. Users may hold one
@@ -849,6 +852,7 @@ async def become_provider(
         master_type=normalized_type,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors, description=description,
+        strategy_info=strategy_info,
     )
     db.add(master)
     await db.commit()
@@ -956,6 +960,7 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "min_investment": float(master.min_investment),
         "max_investors": master.max_investors,
         "description": master.description,
+        "strategy_info": master.strategy_info,
         "created_at": master.created_at.isoformat() if master.created_at else None,
     }
 

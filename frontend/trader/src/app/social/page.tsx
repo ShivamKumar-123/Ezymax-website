@@ -24,6 +24,7 @@ interface Provider {
   performance_fee_pct: number;
   min_investment: number;
   description: string;
+  strategy_info: Record<string, string> | null;
   created_at: string;
   is_copying: boolean;
 }
@@ -233,6 +234,24 @@ function TraderCard({
           </div>
         </div>
 
+        {provider.strategy_info?.strategy_name && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {provider.strategy_info.market && (
+              <span className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-medium text-accent">{provider.strategy_info.market}</span>
+            )}
+            {provider.strategy_info.risk_profile && (
+              <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-medium',
+                (provider.strategy_info.risk_profile || '').toLowerCase() === 'moderate' ? 'bg-warning/15 text-warning border border-warning/20' :
+                ['low', 'conservative'].includes((provider.strategy_info.risk_profile || '').toLowerCase()) ? 'bg-success/15 text-success border border-success/20' :
+                'bg-sell/15 text-sell border border-sell/20'
+              )}>{provider.strategy_info.risk_profile}</span>
+            )}
+            {provider.strategy_info.expected_returns && (
+              <span className="px-2 py-0.5 rounded-full bg-buy/10 border border-buy/20 text-[10px] font-medium text-buy">{provider.strategy_info.expected_returns}</span>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 mt-auto pt-3 border-t border-border-glass [data-theme='light']:border-black">
           <div>
             <div className="text-xxs text-text-tertiary">Drawdown</div>
@@ -309,6 +328,10 @@ function DetailModal({
 
             {detail.description && (
               <p className="text-xs text-text-secondary mb-4">{detail.description}</p>
+            )}
+
+            {detail.strategy_info && Object.keys(detail.strategy_info).length > 0 && (
+              <div className="mb-4"><StrategyInfoCard info={detail.strategy_info} /></div>
             )}
 
             <MonthlyChart data={detail.monthly_breakdown} />
@@ -958,6 +981,48 @@ export default function SocialPage() {
 }
 
 
+function StrategyInfoCard({ info }: { info: Record<string, string> }) {
+  if (!info || Object.keys(info).length === 0) return null;
+  const fields = [
+    { key: 'strategy_name', label: 'Strategy Name' },
+    { key: 'market', label: 'Market' },
+    { key: 'risk_profile', label: 'Risk Profile' },
+    { key: 'max_drawdown', label: 'Max Drawdown' },
+    { key: 'recommended_capital', label: 'Recommended Capital' },
+    { key: 'avg_trades', label: 'Avg Trades / Month' },
+    { key: 'expected_returns', label: 'Expected Returns' },
+  ];
+  const riskColor = (r: string) => {
+    const v = (r || '').toLowerCase();
+    if (v === 'low' || v === 'conservative') return 'text-success bg-success/15';
+    if (v === 'moderate') return 'text-warning bg-warning/15';
+    return 'text-sell bg-sell/15';
+  };
+  return (
+    <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-lg bg-accent/15 flex items-center justify-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+        </div>
+        <span className="text-xs font-semibold text-text-primary">{info.strategy_name || 'Strategy Details'}</span>
+      </div>
+      {info.description && <p className="text-xxs text-text-secondary leading-relaxed">{info.description}</p>}
+      <div className="grid grid-cols-2 gap-2">
+        {fields.filter(f => f.key !== 'strategy_name' && info[f.key]).map(f => (
+          <div key={f.key} className="p-2 rounded-lg bg-bg-base/60 border border-border-glass">
+            <p className="text-[10px] text-text-tertiary mb-0.5">{f.label}</p>
+            {f.key === 'risk_profile' ? (
+              <span className={clsx('inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold', riskColor(info[f.key]))}>{info[f.key]}</span>
+            ) : (
+              <p className="text-xs font-medium text-text-primary">{info[f.key]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
@@ -969,6 +1034,16 @@ function BecomeProviderTab() {
   const [maxInvestors, setMaxInvestors] = useState('100');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Strategy Info fields
+  const [strategyName, setStrategyName] = useState('');
+  const [market, setMarket] = useState('');
+  const [riskProfile, setRiskProfile] = useState('Moderate');
+  const [maxDrawdown, setMaxDrawdown] = useState('');
+  const [recommendedCapital, setRecommendedCapital] = useState('');
+  const [avgTrades, setAvgTrades] = useState('');
+  const [expectedReturns, setExpectedReturns] = useState('');
+  const [strategyDescription, setStrategyDescription] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -984,6 +1059,16 @@ function BecomeProviderTab() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const strategyInfo: Record<string, string> = {};
+      if (strategyName) strategyInfo.strategy_name = strategyName;
+      if (market) strategyInfo.market = market;
+      if (riskProfile) strategyInfo.risk_profile = riskProfile;
+      if (maxDrawdown) strategyInfo.max_drawdown = maxDrawdown;
+      if (recommendedCapital) strategyInfo.recommended_capital = recommendedCapital;
+      if (avgTrades) strategyInfo.avg_trades = avgTrades;
+      if (expectedReturns) strategyInfo.expected_returns = expectedReturns;
+      if (strategyDescription) strategyInfo.description = strategyDescription;
+
       const params = new URLSearchParams({
         master_type: masterType,
         performance_fee_pct: perfFee,
@@ -993,7 +1078,7 @@ function BecomeProviderTab() {
       });
       const res = await api.post<{ account_number?: string }>(
         `/social/become-provider?${params.toString()}`,
-        {},
+        Object.keys(strategyInfo).length > 0 ? strategyInfo : null,
       );
       toast.success(
         res?.account_number
@@ -1025,6 +1110,7 @@ function BecomeProviderTab() {
             <div><p className="text-text-tertiary">Followers</p><p className="text-text-primary">{existing.followers_count || 0}</p></div>
             <div><p className="text-text-tertiary">Total Trades</p><p className="text-text-primary">{existing.total_trades || 0}</p></div>
           </div>
+          {existing.strategy_info && <div className="mt-4"><StrategyInfoCard info={existing.strategy_info} /></div>}
           {existing.status === 'pending' && <p className="text-xxs text-warning mt-3">Your application is under review by the admin team.</p>}
           {existing.status === 'rejected' && <p className="text-xxs text-danger mt-3">Your application was rejected. Contact support for details.</p>}
         </div>
@@ -1071,6 +1157,57 @@ function BecomeProviderTab() {
           <label className="text-xxs text-text-secondary block mb-1">Description / Strategy</label>
           <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Describe your trading strategy..." className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs resize-none" />
         </div>
+
+        {/* Strategy Info Section */}
+        <div className="border-t border-border-glass pt-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            <h4 className="text-xs font-semibold text-text-primary">Strategy Details</h4>
+            <span className="text-[10px] text-text-tertiary">(shown to investors)</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-xxs text-text-secondary block mb-1">Strategy Name</label>
+              <input type="text" value={strategyName} onChange={e => setStrategyName(e.target.value)} placeholder="e.g. BTCUSD Momentum Strategy" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Market / Instrument</label>
+              <input type="text" value={market} onChange={e => setMarket(e.target.value)} placeholder="e.g. BTCUSD, XAUUSD" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Risk Profile</label>
+              <select value={riskProfile} onChange={e => setRiskProfile(e.target.value)} className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs">
+                <option value="Conservative">Conservative</option>
+                <option value="Low">Low</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Aggressive">Aggressive</option>
+                <option value="High Risk">High Risk</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Max Drawdown</label>
+              <input type="text" value={maxDrawdown} onChange={e => setMaxDrawdown(e.target.value)} placeholder="e.g. 10-15%" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Recommended Capital</label>
+              <input type="text" value={recommendedCapital} onChange={e => setRecommendedCapital(e.target.value)} placeholder="e.g. $500" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs font-mono" />
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Avg Trades / Month</label>
+              <input type="text" value={avgTrades} onChange={e => setAvgTrades(e.target.value)} placeholder="e.g. 10-40" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
+            </div>
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Expected Returns</label>
+              <input type="text" value={expectedReturns} onChange={e => setExpectedReturns(e.target.value)} placeholder="e.g. ~3-5% monthly" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xxs text-text-secondary block mb-1">Strategy Description</label>
+              <textarea value={strategyDescription} onChange={e => setStrategyDescription(e.target.value)} rows={3} placeholder="Describe your strategy in detail — approach, indicators, market conditions, etc." className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs resize-none" />
+            </div>
+          </div>
+        </div>
+
         <button onClick={handleSubmit} disabled={submitting} className={clsx('w-full py-3 rounded-xl text-sm font-semibold text-white transition-all', submitting ? 'opacity-50' : 'skeu-btn-buy')}>
           {submitting ? 'Submitting...' : 'Submit Application'}
         </button>

@@ -503,6 +503,7 @@ class MasterAccount(Base):
     admin_commission_pct = Column(Numeric(5, 2), default=0)
     max_investors = Column(Integer, default=100)
     description = Column(Text)
+    strategy_info = Column(JSONB, default=None)
     min_investment = Column(Numeric(18, 8), default=100)
     total_return_pct = Column(Numeric(10, 4), default=0)
     max_drawdown_pct = Column(Numeric(10, 4), default=0)
