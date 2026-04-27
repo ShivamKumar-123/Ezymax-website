@@ -78,6 +78,8 @@ export interface InstrumentInfo {
   max_lot: number;
   lot_step: number;
   contract_size: number;
+  base_currency?: string | null;
+  quote_currency?: string | null;
 }
 
 /** One-shot prefill for order panel (clone from open position). */
@@ -247,9 +249,22 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
           state.instruments.find((i) => i.symbol === sym) ||
           state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
         const cs = inst?.contract_size || 100000;
-        const pnl = pos.side === 'buy'
+        let pnl = pos.side === 'buy'
           ? (cp - pos.open_price) * pos.lots * cs
           : (pos.open_price - cp) * pos.lots * cs;
+        // Forex P&L formula yields a value in the QUOTE currency. Convert to
+        // the account currency (USD) so e.g. USDJPY shows ~$0.006 instead of
+        // 1 JPY rendered as "$1". For pairs already quoted in USD (EURUSD,
+        // GBPUSD, XAUUSD, BTCUSD…) this is a no-op.
+        const base = (inst?.base_currency || '').toUpperCase();
+        const quote = (inst?.quote_currency || '').toUpperCase();
+        if (quote && quote !== 'USD') {
+          if (base === 'USD' && cp) {
+            pnl = pnl / cp;
+          }
+          // cross pair (no USD on either side) — leave raw until we have a
+          // cross-rate feed; backend will reconcile on close.
+        }
         return { ...pos, current_price: cp, profit: pnl };
       }),
     };

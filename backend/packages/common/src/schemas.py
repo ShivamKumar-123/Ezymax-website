@@ -287,6 +287,8 @@ class InstrumentResponse(BaseModel):
     symbol: str
     display_name: Optional[str]
     segment: Optional[str]
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
     digits: int
     pip_size: Decimal
     min_lot: Decimal
