@@ -85,6 +85,13 @@ async def _close_open_copy_positions(allocation, db, execute: bool) -> Decimal:
             gross = (close_price - pos.open_price) * pos.lots * contract_size
         else:
             gross = (pos.open_price - close_price) * pos.lots * contract_size
+        from packages.common.src.trading_service import quote_to_account_pnl
+        gross = quote_to_account_pnl(
+            gross,
+            getattr(inst, "base_currency", None) if inst else None,
+            getattr(inst, "quote_currency", None) if inst else None,
+            close_price,
+        )
 
         perf_fee = gross * perf_fee_pct / Decimal("100") if gross > 0 else Decimal("0")
         net = gross - perf_fee

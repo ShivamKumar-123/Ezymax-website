@@ -517,6 +517,13 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             gross = (close_price - investor_pos.open_price) * investor_pos.lots * contract_size
         else:
             gross = (investor_pos.open_price - close_price) * investor_pos.lots * contract_size
+        from packages.common.src.trading_service import quote_to_account_pnl
+        gross = quote_to_account_pnl(
+            gross,
+            getattr(instrument, "base_currency", None),
+            getattr(instrument, "quote_currency", None),
+            close_price,
+        )
 
         perf_fee = Decimal("0")
         if gross > 0 and master:
@@ -723,6 +730,13 @@ async def withdraw_managed_account(
             gross = (close_price - investor_pos.open_price) * investor_pos.lots * contract_size
         else:
             gross = (investor_pos.open_price - close_price) * investor_pos.lots * contract_size
+        from packages.common.src.trading_service import quote_to_account_pnl
+        gross = quote_to_account_pnl(
+            gross,
+            getattr(instrument, "base_currency", None),
+            getattr(instrument, "quote_currency", None),
+            close_price,
+        )
 
         perf_fee = Decimal("0")
         if gross > 0 and master:

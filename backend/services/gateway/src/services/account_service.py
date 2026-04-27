@@ -259,6 +259,7 @@ async def get_account_summary(
     )
     open_positions = positions_result.scalars().all()
 
+    from .trading_service import quote_to_account_pnl
     unrealized_pnl = Decimal("0")
     for pos in open_positions:
         tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
@@ -269,6 +270,12 @@ async def get_account_summary(
                 pnl = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
             else:
                 pnl = (pos.open_price - current_price) * pos.lots * pos.instrument.contract_size
+            pnl = quote_to_account_pnl(
+                pnl,
+                getattr(pos.instrument, "base_currency", None),
+                getattr(pos.instrument, "quote_currency", None),
+                current_price,
+            )
             unrealized_pnl += pnl
 
     equity = account.balance + account.credit + unrealized_pnl

@@ -36,8 +36,16 @@ async def _get_current_price(symbol: str) -> tuple[Decimal, Decimal] | None:
 
 def _compute_pnl(pos: Position, current_price: Decimal) -> Decimal:
     if pos.side == OrderSide.BUY or pos.side.value == "buy":
-        return (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
-    return (pos.open_price - current_price) * pos.lots * pos.instrument.contract_size
+        raw = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
+    else:
+        raw = (pos.open_price - current_price) * pos.lots * pos.instrument.contract_size
+    from .trading_service import quote_to_account_pnl
+    return quote_to_account_pnl(
+        raw,
+        getattr(pos.instrument, "base_currency", None),
+        getattr(pos.instrument, "quote_currency", None),
+        current_price,
+    )
 
 
 async def portfolio_summary(user_id: UUID, account_id: UUID | None, db: AsyncSession) -> dict:

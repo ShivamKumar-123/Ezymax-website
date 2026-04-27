@@ -367,6 +367,13 @@ async def close_position(
         profit = (close_price - open_price) * lots * contract_size
     else:
         profit = (open_price - close_price) * lots * contract_size
+    from packages.common.src.trading_service import quote_to_account_pnl
+    profit = quote_to_account_pnl(
+        profit,
+        getattr(inst, "base_currency", None),
+        getattr(inst, "quote_currency", None),
+        close_price,
+    )
 
     pos.status = PositionStatus.CLOSED.value
     pos.close_price = close_price

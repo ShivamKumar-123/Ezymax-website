@@ -276,11 +276,18 @@ class MatchingEngine:
             await asyncio.sleep(0.1)
 
     async def _close_position(self, pos: Position, close_price: Decimal, reason: str, db: AsyncSession):
+        from packages.common.src.trading_service import quote_to_account_pnl
         instrument = pos.instrument
         if pos.side == OrderSide.BUY:
             profit = (close_price - pos.open_price) * pos.lots * instrument.contract_size
         else:
             profit = (pos.open_price - close_price) * pos.lots * instrument.contract_size
+        profit = quote_to_account_pnl(
+            profit,
+            getattr(instrument, "base_currency", None),
+            getattr(instrument, "quote_currency", None),
+            close_price,
+        )
 
         pos.status = PositionStatus.CLOSED
         pos.close_price = close_price

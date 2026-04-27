@@ -93,6 +93,13 @@ class RiskEngine:
                                 pnl = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
                             else:
                                 pnl = (pos.open_price - current_price) * pos.lots * pos.instrument.contract_size
+                            from packages.common.src.trading_service import quote_to_account_pnl
+                            pnl = quote_to_account_pnl(
+                                pnl,
+                                getattr(pos.instrument, "base_currency", None),
+                                getattr(pos.instrument, "quote_currency", None),
+                                current_price,
+                            )
                             unrealized_pnl += pnl
 
                         equity = account.balance + account.credit + unrealized_pnl
@@ -153,6 +160,13 @@ class RiskEngine:
                 profit = (close_price - pos.open_price) * pos.lots * pos.instrument.contract_size
             else:
                 profit = (pos.open_price - close_price) * pos.lots * pos.instrument.contract_size
+            from packages.common.src.trading_service import quote_to_account_pnl
+            profit = quote_to_account_pnl(
+                profit,
+                getattr(pos.instrument, "base_currency", None),
+                getattr(pos.instrument, "quote_currency", None),
+                close_price,
+            )
 
             pos.status = PositionStatus.CLOSED
             pos.close_price = close_price

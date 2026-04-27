@@ -111,17 +111,62 @@ def calc_free_margin(account: TradingAccount) -> Decimal:
 
 # ─── P&L ──────────────────────────────────────────────────────────────────
 
+def quote_to_account_pnl(
+    quote_pnl: Decimal,
+    base_currency: str | None,
+    quote_currency: str | None,
+    ref_price: Decimal,
+    account_currency: str = "USD",
+) -> Decimal:
+    """Convert a P&L value expressed in the instrument's quote currency to
+    the account currency (default USD).
+
+    Forex P&L formula (price_diff * lots * contract_size) yields a value in
+    the QUOTE currency, not USD. For USD-base pairs (USDJPY, USDCAD, USDCHF)
+    that must be divided by the current rate to express in USD; otherwise
+    e.g. a 17 JPY profit is shown as $17. Crypto / metals / indices already
+    quote in USD so the helper short-circuits.
+    """
+    if quote_pnl == 0:
+        return quote_pnl
+    base = (base_currency or "").upper()
+    quote = (quote_currency or "").upper()
+    acct = (account_currency or "USD").upper()
+    if quote == acct or not quote:
+        return quote_pnl
+    if base == acct:
+        if ref_price and ref_price != 0:
+            return quote_pnl / ref_price
+        return quote_pnl
+    # Cross pair: no cross rate available here; fall back to raw quote pnl.
+    return quote_pnl
+
+
 def calc_position_pnl(
     side: OrderSide,
     open_price: Decimal,
     current_price: Decimal,
     lots: Decimal,
     contract_size: Decimal,
+    instrument=None,
+    account_currency: str = "USD",
 ) -> Decimal:
-    """Calculate unrealised P&L for a single position."""
+    """Calculate unrealised P&L for a single position. When ``instrument``
+    is supplied the result is converted from quote currency to the account
+    currency; otherwise the raw quote-currency value is returned."""
     if side == OrderSide.BUY:
-        return (current_price - open_price) * lots * contract_size
-    return (open_price - current_price) * lots * contract_size
+        raw = (current_price - open_price) * lots * contract_size
+    else:
+        raw = (open_price - current_price) * lots * contract_size
+    if instrument is None:
+        return raw
+    return quote_to_account_pnl(
+        raw,
+        getattr(instrument, "base_currency", None),
+        getattr(instrument, "quote_currency", None),
+        current_price,
+        account_currency,
+    )
 
 
 async def calc_account_equity(

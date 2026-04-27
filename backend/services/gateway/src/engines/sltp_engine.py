@@ -143,6 +143,13 @@ class SLTPEngine:
             profit = (close_price - pos.open_price) * pos.lots * contract_size
         else:
             profit = (pos.open_price - close_price) * pos.lots * contract_size
+        from ..services.trading_service import quote_to_account_pnl
+        profit = quote_to_account_pnl(
+            profit,
+            getattr(pos.instrument, "base_currency", None),
+            getattr(pos.instrument, "quote_currency", None),
+            close_price,
+        )
 
         pos.status = "closed"
         pos.close_price = close_price

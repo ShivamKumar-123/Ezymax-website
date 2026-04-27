@@ -139,6 +139,12 @@ async def get_public_share(code: str, db: AsyncSession) -> dict:
     else:
         gross_pnl = (open_price - current_price) * lots * contract_size
         pip_diff = (open_price - current_price) / pip_size if pip_size > 0 else 0
+    # Convert quote-currency P&L to account currency (USD)
+    base_ccy = (getattr(instrument, "base_currency", None) or "").upper()
+    quote_ccy = (getattr(instrument, "quote_currency", None) or "").upper()
+    if quote_ccy and quote_ccy != "USD":
+        if base_ccy == "USD" and current_price:
+            gross_pnl = gross_pnl / current_price
 
     # Margin snapshot: lots * contract_size * open_price / leverage
     leverage = int(account.leverage or 100)

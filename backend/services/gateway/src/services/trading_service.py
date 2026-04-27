@@ -72,12 +72,32 @@ def side_val(side) -> str:
     return side.value if hasattr(side, 'value') else str(side)
 
 
-def calc_pnl(side, open_price: Decimal, close_price: Decimal, lots: Decimal, contract_size: Decimal) -> Decimal:
+from packages.common.src.trading_service import quote_to_account_pnl
+
+
+def calc_pnl(
+    side,
+    open_price: Decimal,
+    close_price: Decimal,
+    lots: Decimal,
+    contract_size: Decimal,
+    instrument=None,
+    account_currency: str = "USD",
+) -> Decimal:
     sv = side_val(side)
     if sv == "buy":
-        return (close_price - open_price) * lots * contract_size
+        raw = (close_price - open_price) * lots * contract_size
     else:
-        return (open_price - close_price) * lots * contract_size
+        raw = (open_price - close_price) * lots * contract_size
+    if instrument is None:
+        return raw
+    return quote_to_account_pnl(
+        raw,
+        getattr(instrument, "base_currency", None),
+        getattr(instrument, "quote_currency", None),
+        close_price,
+        account_currency,
+    )
 
 
 async def fire_event(topic, key, data):
@@ -593,7 +613,7 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
         if tick_data and pos_status == "open":
             tick = json.loads(tick_data)
             current_price = float(tick["bid"]) if sv == "buy" else float(tick["ask"])
-            profit = float(calc_pnl(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size))
+            profit = float(calc_pnl(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size, instrument=pos.instrument))
 
         copy_trade_q = await db.execute(
             select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
@@ -751,7 +771,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     close_lots = Decimal(str(req.lots)) if req.lots and Decimal(str(req.lots)) < pos.lots else pos.lots
     is_partial = close_lots < pos.lots
 
-    full_profit = calc_pnl(pos.side, pos.open_price, close_price, pos.lots, contract_size)
+    full_profit = calc_pnl(pos.side, pos.open_price, close_price, pos.lots, contract_size, instrument=pos.instrument)
 
     # If the market price has already crossed the position's SL/TP level, label
     # this close as SL/TP in trade history instead of "manual" — covers the case
