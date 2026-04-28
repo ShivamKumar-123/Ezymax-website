@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://trustedge:trustedge_dev@localhost:5432/trustedge"
-    TIMESCALE_URL: str = "postgresql+asyncpg://trustedge:trustedge_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha"
+    TIMESCALE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 
@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
-    ADMIN_EMAIL: str = "admin@trustedge.com"
-    ADMIN_PASSWORD: str = "TrustEdgeAdmin2025!"
+    ADMIN_EMAIL: str = "admin@fxartha.com"
+    ADMIN_PASSWORD: str = "FXArthaAdmin2025!"
     USER_JWT_SECRET: str = "dev-secret-change-in-production"
     USER_JWT_ALGORITHM: str = "HS256"
 
@@ -67,16 +67,16 @@ class Settings(BaseSettings):
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
     CORECEN_LP_ENABLED: bool = False
-    # HMAC credentials — must match TRUSTEDGE_API_KEY / TRUSTEDGE_API_SECRET in the Corecen .env.
+    # HMAC credentials — must match FXARTHA_API_KEY / FXARTHA_API_SECRET in the Corecen .env.
     CORECEN_LP_API_KEY: str = ""
     CORECEN_LP_API_SECRET: str = ""
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
     CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
-    # a position, TrustEdge pushes the trade to Corecen's broker API for LP routing.
+    # a position, FXArtha pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel
-    # for the TrustEdge broker account.
+    # for the FXArtha broker account.
     CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys

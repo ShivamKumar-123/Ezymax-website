@@ -71,7 +71,7 @@ export const PopupProvider = ({ children }) => {
                     <Shield className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Get Started with TrustEdgeFX</h2>
+                    <h2 className="text-2xl font-bold text-white">Get Started with FXArtha</h2>
                   </div>
                 </div>
                 <p className="text-text-secondary mb-6">Fill in your details and our team will get you trading in minutes.</p>

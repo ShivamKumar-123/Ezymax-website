@@ -101,7 +101,7 @@ export async function downloadTradeStatementPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('TrustEdge', margin, 7);
+  doc.text('FXArtha', margin, 7);
 
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(16);
@@ -226,7 +226,7 @@ export async function downloadTradeStatementPdf(
         doc.internal.pageSize.getHeight() - 6,
       );
       doc.text(
-        'TrustEdge — for information only. Not tax or legal advice.',
+        'FXArtha — for information only. Not tax or legal advice.',
         margin,
         doc.internal.pageSize.getHeight() - 6,
       );
@@ -234,5 +234,5 @@ export async function downloadTradeStatementPdf(
   });
 
   const safeDate = new Date().toISOString().slice(0, 10);
-  doc.save(`trustedge-trade-statement-${safeDate}.pdf`);
+  doc.save(`fxartha-trade-statement-${safeDate}.pdf`);
 }

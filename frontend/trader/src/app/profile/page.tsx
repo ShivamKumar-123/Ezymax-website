@@ -239,7 +239,7 @@ export default function ProfilePage() {
             <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Profile, security, notifications, and active sessions — aligned with TrustEdge.
+                Profile, security, notifications, and active sessions — aligned with FXArtha.
               </p>
             </div>
           </section>

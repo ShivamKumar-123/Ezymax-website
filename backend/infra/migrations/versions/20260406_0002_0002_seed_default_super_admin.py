@@ -13,8 +13,8 @@ down_revision = "0001"
 branch_labels = None
 depends_on = None
 
-_ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@trustedge.com")
-_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "TrustEdgeAdmin2025!")
+_ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@fxartha.com")
+_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "FXArthaAdmin2025!")
 _DEFAULT_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt(12)).decode()
 
 

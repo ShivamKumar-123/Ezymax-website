@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
-import { trustEdgeDatafeed } from '@/lib/charting/datafeed';
+import { fxArthaDatafeed } from '@/lib/charting/datafeed';
 import { createBroker } from '@/lib/charting/broker';
 
 /**
@@ -79,7 +79,7 @@ function AdvancedChartInner() {
       container: containerRef.current,
       locale: 'en',
       library_path: '/charting_library/',
-      datafeed: trustEdgeDatafeed,
+      datafeed: fxArthaDatafeed,
       symbol: symbolRef.current,
       interval,
       timezone: 'Etc/UTC',

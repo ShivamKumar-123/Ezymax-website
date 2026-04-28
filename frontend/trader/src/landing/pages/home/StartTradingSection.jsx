@@ -17,7 +17,7 @@ export default function StartTradingSection() {
           badge="Get Started"
           title="Start Trading in 3 Simple Steps"
           highlight="3 Simple Steps"
-          subtitle="Begin your trading journey with TrustEdgeFX today"
+          subtitle="Begin your trading journey with FXArtha today"
         />
 
         <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">

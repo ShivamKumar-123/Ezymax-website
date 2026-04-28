@@ -111,7 +111,7 @@ export default function ShareTradeCard({
               <path d="M12 2L3 6V12C3 17.5 6.8 22.3 12 23C17.2 22.3 21 17.5 21 12V6L12 2Z" stroke="white" strokeWidth="1.6" fill="none" />
               <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="text-white text-[10px] font-bold tracking-[0.25em]">TRUSTEDGE FX</span>
+            <span className="text-white text-[10px] font-bold tracking-[0.25em]">FXARTHA</span>
           </div>
         </div>
 

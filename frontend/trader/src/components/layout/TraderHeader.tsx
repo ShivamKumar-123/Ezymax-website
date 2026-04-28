@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { TrustEdgeWordmark } from '@/components/layout/TrustEdgeWordmark';
+import { FXArthaWordmark } from '@/components/layout/FXArthaWordmark';
 
 const NAV = [
   { label: 'Dashboard', href: '/dashboard' },
@@ -23,7 +23,7 @@ export function TraderHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-border bg-bg-secondary">
       <div className="flex flex-wrap items-center gap-4">
-        <TrustEdgeWordmark href="/dashboard" textClassName="text-xl" />
+        <FXArthaWordmark href="/dashboard" textClassName="text-xl" />
         <nav className="flex flex-wrap gap-1 ml-0 sm:ml-6">
           {NAV.map((item) => {
             const active = pathname === item.href;
@@ -45,7 +45,7 @@ export function TraderHeader() {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm text-text-muted truncate max-w-[200px]">
-          {user?.email || 'demo@trustedge.com'}
+          {user?.email || 'demo@fxartha.com'}
         </span>
         <Link
           href="/profile"

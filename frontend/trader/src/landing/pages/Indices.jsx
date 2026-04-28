@@ -12,7 +12,7 @@ const Indices = () => {
     ],
     about: {
       title: 'What are Index CFDs?',
-      description: 'Index trading allows you to speculate on the performance of entire markets or sectors without buying individual stocks. Trade popular indices like the S&P 500, NASDAQ 100, FTSE 100, and DAX 40 with TrustEdgeFX. Benefit from lower margin requirements, extended trading hours, and the ability to go long or short on market movements.'
+      description: 'Index trading allows you to speculate on the performance of entire markets or sectors without buying individual stocks. Trade popular indices like the S&P 500, NASDAQ 100, FTSE 100, and DAX 40 with FXArtha. Benefit from lower margin requirements, extended trading hours, and the ability to go long or short on market movements.'
     },
     instruments: [
       { symbol: 'US500 (S&P 500)', spread: '0.4 pips', leverage: '1:200', margin: '0.5%' },

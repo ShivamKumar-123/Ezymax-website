@@ -145,7 +145,7 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   const ctOut = res.headers.get('content-type');
   if (ctOut) out.set('content-type', ctOut);
   /* Forward CORS headers from gateway — without these, browser preflight and
-     cross-origin responses fail for callers like algo.trustedgefx.com. */
+     cross-origin responses fail for callers like algo.fxartha.com. */
   for (const h of ['access-control-allow-origin', 'access-control-allow-credentials',
                    'access-control-allow-methods', 'access-control-allow-headers',
                    'access-control-expose-headers', 'access-control-max-age', 'vary']) {

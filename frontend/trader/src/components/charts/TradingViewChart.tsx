@@ -37,7 +37,7 @@ function buildWidgetEmbedUrl(
     enabled_features: '[]',
     disabled_features: '[]',
     locale: 'en',
-    utm_source: typeof window !== 'undefined' ? window.location.hostname || 'trustedge' : 'trustedge',
+    utm_source: typeof window !== 'undefined' ? window.location.hostname || 'fxartha' : 'fxartha',
     utm_medium: 'widget',
     utm_campaign: 'chart',
     utm_term: tvSymbol,

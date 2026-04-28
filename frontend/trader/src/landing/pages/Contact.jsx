@@ -15,7 +15,7 @@ const Contact = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const [messages, setMessages] = useState([
-    { from: 'agent', text: 'Hi there! 👋 I\'m Sarah from TrustEdgeFX Support. How can I help you today?', time: 'now' }
+    { from: 'agent', text: 'Hi there! 👋 I\'m Sarah from FXArtha Support. How can I help you today?', time: 'now' }
   ])
   const chatEndRef = useRef(null)
 
@@ -60,8 +60,8 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      content: 'support@trustedgefx.com',
-      link: 'mailto:support@trustedgefx.com'
+      content: 'support@fxartha.com',
+      link: 'mailto:support@fxartha.com'
     },
     {
       icon: Phone,
@@ -175,7 +175,7 @@ const Contact = () => {
               <div>
                 <h2 className="text-3xl font-bold text-white mb-6">Our Office</h2>
                 <Card className="p-8 mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">TrustEdgeFX Ltd</h3>
+                  <h3 className="text-xl font-semibold text-white mb-4">FXArtha Ltd</h3>
                   <p className="text-text-secondary mb-4">
                     123 Financial District<br />
                     London, EC2N 2DL<br />
@@ -186,7 +186,7 @@ const Contact = () => {
                       <span className="text-white font-semibold">Phone:</span> +44 20 1234 5678
                     </p>
                     <p className="text-text-secondary">
-                      <span className="text-white font-semibold">Email:</span> support@trustedgefx.com
+                      <span className="text-white font-semibold">Email:</span> support@fxartha.com
                     </p>
                     <p className="text-text-secondary">
                       <span className="text-white font-semibold">Hours:</span> Mon-Fri, 9:00 AM - 6:00 PM GMT

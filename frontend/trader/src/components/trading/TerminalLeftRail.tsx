@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrustEdgeWordmark } from '@/components/layout/TrustEdgeWordmark';
+import { FXArthaWordmark } from '@/components/layout/FXArthaWordmark';
 import {
   Search,
   Plus,
@@ -131,7 +131,7 @@ export default function TerminalLeftRail({
     >
       <div className="flex flex-col items-center gap-0.5 pt-2 pb-1 px-1.5 border-b border-border-primary">
         <div className="mb-1 flex justify-center w-full">
-          <TrustEdgeWordmark href="/accounts" variant="rail" />
+          <FXArthaWordmark href="/accounts" variant="rail" />
         </div>
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>
           <Search size={17} strokeWidth={1.75} />

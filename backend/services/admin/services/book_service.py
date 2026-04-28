@@ -196,9 +196,9 @@ async def get_lp_status(db: AsyncSession) -> dict:
     connected = bool(lp_enabled and age_ms is not None and age_ms <= LP_FRESH_WINDOW_MS)
 
     if not lp_enabled:
-        message = "CORECEN_LP_ENABLED is false — TrustEdge is not configured to receive LP prices"
+        message = "CORECEN_LP_ENABLED is false — FXArtha is not configured to receive LP prices"
     elif last_batch_at is None:
-        message = "Waiting for Corecen to push the first price batch (check TRUSTEDGE_API_URL + HMAC keys on the Corecen side)"
+        message = "Waiting for Corecen to push the first price batch (check FXARTHA_API_URL + HMAC keys on the Corecen side)"
     elif connected:
         message = f"Receiving prices from Corecen ({age_ms} ms since last batch)"
     else:

@@ -138,7 +138,7 @@ const DEFAULT_WATCHLIST = [
 ];
 
 const DEFAULT_SYMBOL = 'XAUUSD';
-const SYMBOL_STORAGE_KEY = 'trustedge-selected-symbol';
+const SYMBOL_STORAGE_KEY = 'fxartha-selected-symbol';
 
 function getPersistedSymbol(): string {
   if (typeof window === 'undefined') return DEFAULT_SYMBOL;

@@ -82,8 +82,8 @@ export default function AppHeader() {
           aria-label="Toggle menu"
         >
           <img
-            src="/images/Trustedgefx logo.png"
-            alt="TrustEdgeFX"
+            src="/images/fxartha-logo.png"
+            alt="FXArtha"
             className="w-10 h-10 object-contain"
           />
         </button>

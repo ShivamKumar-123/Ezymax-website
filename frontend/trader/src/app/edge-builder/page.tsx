@@ -27,7 +27,7 @@ export default function EdgeBuilderPage() {
             </h2>
             <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
               Our powerful algo trading platform lets you create custom strategies, backtest them against historical data, 
-              and deploy them live on your TrustEdgeFX accounts — all without writing a single line of code.
+              and deploy them live on your FXArtha accounts — all without writing a single line of code.
             </p>
 
             {/* Feature Pills */}
@@ -51,7 +51,7 @@ export default function EdgeBuilderPage() {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <a
-                href="https://algo.trustedgefx.com/auth/login"
+                href="https://algo.fxartha.com/auth/login"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#2196f3] hover:bg-[#1976d2] text-white text-sm font-semibold shadow-lg shadow-[#2196f3]/20 transition-all hover:shadow-[#2196f3]/30 active:scale-[0.98]"
@@ -61,7 +61,7 @@ export default function EdgeBuilderPage() {
                 <ExternalLink size={13} className="opacity-60" />
               </a>
               <a
-                href="https://algo.trustedgefx.com/auth/register"
+                href="https://algo.fxartha.com/auth/register"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-[#2196f3]/30 hover:border-[#2196f3]/60 bg-[#2196f3]/5 hover:bg-[#2196f3]/10 text-[#2196f3] text-sm font-semibold transition-all active:scale-[0.98]"
@@ -84,7 +84,7 @@ export default function EdgeBuilderPage() {
             },
             {
               title: 'Real-Time Execution',
-              desc: 'Strategies execute directly on your TrustEdgeFX live or demo accounts.',
+              desc: 'Strategies execute directly on your FXArtha live or demo accounts.',
               icon: Zap,
             },
             {
@@ -110,7 +110,7 @@ export default function EdgeBuilderPage() {
         <div className="rounded-xl border border-border-primary bg-bg-secondary/50 p-4 flex items-start gap-3">
           <Shield size={16} className="text-[#2196f3] shrink-0 mt-0.5" />
           <p className="text-xs text-text-tertiary leading-relaxed">
-            Edge Builder is a separate platform integrated with your TrustEdgeFX account. 
+            Edge Builder is a separate platform integrated with your FXArtha account. 
             Your API credentials from <span className="text-text-secondary font-medium">Algo Connector</span> are 
             used to connect your strategies to your trading accounts securely.
           </p>

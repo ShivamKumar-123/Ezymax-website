@@ -111,7 +111,7 @@ const MT4 = () => {
           <ScrollReveal variant="fadeUp">
             <h2 className="text-4xl font-bold text-white mb-6">Ready to Start Trading on MT4?</h2>
             <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Download MetaTrader 4 and connect to your TrustEdgeFX account in minutes.
+              Download MetaTrader 4 and connect to your FXArtha account in minutes.
             </p>
             <Link to="/accounts/demo">
               <Button variant="primary">Open Account Now</Button>

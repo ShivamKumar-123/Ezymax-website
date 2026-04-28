@@ -86,8 +86,8 @@ export const stats = [
 ]
 
 export const testimonials = [
-  { quote: "TrustEdgeFX provides one of the fastest executions I've experienced. The platform is clean and the spreads are consistently tight.", author: 'Michael R.', role: 'Professional Forex Trader', rating: 5 },
-  { quote: "Clean platform, tight spreads, and reliable support. I've been trading with TrustEdgeFX for over a year and the experience has been excellent.", author: 'Sarah K.', role: 'Active Forex Trader', rating: 5 },
+  { quote: "FXArtha provides one of the fastest executions I've experienced. The platform is clean and the spreads are consistently tight.", author: 'Michael R.', role: 'Professional Forex Trader', rating: 5 },
+  { quote: "Clean platform, tight spreads, and reliable support. I've been trading with FXArtha for over a year and the experience has been excellent.", author: 'Sarah K.', role: 'Active Forex Trader', rating: 5 },
   { quote: "The ECN Raw account is perfect for my scalping strategy. Zero requotes and lightning-fast execution every time.", author: 'David L.', role: 'Scalp Trader', rating: 5 },
 ]
 

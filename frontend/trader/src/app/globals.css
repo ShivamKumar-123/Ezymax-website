@@ -500,8 +500,8 @@ html {
 @keyframes flashAccent { 0% { background-color: rgba(33,150,243,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
-/* react-hot-toast — library defaults can look white; force TrustEdge dark surface */
-.trustedge-hot-toast {
+/* react-hot-toast — library defaults can look white; force FXArtha dark surface */
+.fxartha-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;

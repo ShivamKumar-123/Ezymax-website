@@ -8,8 +8,8 @@ export default function WhySection() {
       <div className="container-custom relative z-10">
         <SectionHeader
           badge="Why Choose Us"
-          title="Why Choose TrustEdgeFX"
-          highlight="TrustEdgeFX"
+          title="Why Choose FXArtha"
+          highlight="FXArtha"
           subtitle="We combine institutional-grade technology with trader-friendly conditions to give you the edge in global markets."
         />
 

@@ -101,7 +101,7 @@ const Navbar = () => {
             <Link href="/" className="flex items-center flex-shrink-0 group">
               <img
                 src="/images/logo2.png"
-                alt="TrustEdgeFX"
+                alt="FXArtha"
                 className="h-12 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(26,86,255,0.6)]"
               />
             </Link>
@@ -321,7 +321,7 @@ const Navbar = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-                <p className="text-text-secondary text-sm">Login to your TrustEdgeFX account</p>
+                <p className="text-text-secondary text-sm">Login to your FXArtha account</p>
               </div>
             </div>
 

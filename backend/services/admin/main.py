@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ProTrader Admin API",
+    title="FXArtha Admin API",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs" if app_settings.ENVIRONMENT == "development" else None,

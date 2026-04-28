@@ -18,7 +18,7 @@ const AboutUs = () => {
       <section className="section-padding hero-banner">
         <div className="container-custom text-center">
           <ScrollReveal variant="fadeUp">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Who We Are — TrustEdgeFX</h1>
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Who We Are — FXArtha</h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto">
               A globally regulated forex and CFD broker committed to transparency, innovation, and excellence.
             </p>
@@ -31,10 +31,10 @@ const AboutUs = () => {
           <ScrollReveal variant="fadeUp">
             <div className="max-w-4xl mx-auto mb-16">
               <p className="text-lg text-text-secondary leading-relaxed mb-6">
-                Founded in 2010, TrustEdgeFX is a globally regulated forex and CFD broker headquartered in London, UK. With over 500,000 clients across 150+ countries, we've built our reputation on transparency, speed, and trust.
+                Founded in 2010, FXArtha is a globally regulated forex and CFD broker headquartered in London, UK. With over 500,000 clients across 150+ countries, we've built our reputation on transparency, speed, and trust.
               </p>
               <p className="text-lg text-text-secondary leading-relaxed">
-                Our mission is to democratize access to global financial markets by providing cutting-edge technology, competitive pricing, and world-class support. Whether you're a beginner taking your first steps in trading or a seasoned professional, TrustEdgeFX provides the tools, platforms, and expertise you need to succeed.
+                Our mission is to democratize access to global financial markets by providing cutting-edge technology, competitive pricing, and world-class support. Whether you're a beginner taking your first steps in trading or a seasoned professional, FXArtha provides the tools, platforms, and expertise you need to succeed.
               </p>
             </div>
           </ScrollReveal>
@@ -140,7 +140,7 @@ const AboutUs = () => {
       <section className="section-padding bg-gradient-hero">
         <div className="container-custom text-center">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-4xl font-bold text-white mb-6">Join the TrustEdgeFX Family</h2>
+            <h2 className="text-4xl font-bold text-white mb-6">Join the FXArtha Family</h2>
             <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
               Experience the difference of trading with a broker that puts your success first.
             </p>

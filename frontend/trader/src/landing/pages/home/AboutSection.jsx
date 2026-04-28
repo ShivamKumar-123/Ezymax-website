@@ -20,7 +20,7 @@ export default function AboutSection() {
               <div className="relative rounded-lg overflow-hidden aspect-square w-full max-w-md mx-auto border border-white/[0.08]">
                 <img
                   src="/images/image1.png"
-                  alt="TrustEdgeFX Trading"
+                  alt="FXArtha Trading"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary-bg/80 via-transparent to-transparent" />
@@ -53,7 +53,7 @@ export default function AboutSection() {
           <ScrollReveal variant="fadeRight" delay={0.2}>
             <div className="inline-flex items-center gap-2 mb-5">
               <div className="w-5 h-px bg-primary-accent" />
-              <span className="text-primary-accent text-xs font-bold uppercase tracking-[0.2em]">About TrustEdgeFX</span>
+              <span className="text-primary-accent text-xs font-bold uppercase tracking-[0.2em]">About FXArtha</span>
               <div className="w-5 h-px bg-primary-accent" />
             </div>
 
@@ -69,13 +69,13 @@ export default function AboutSection() {
 
             <div className="space-y-4 mb-8">
               <p className="text-text-secondary leading-relaxed">
-                TrustEdgeFX was founded with a clear vision — to give traders around the world access to professional-grade trading infrastructure, transparent pricing, and reliable support.
+                FXArtha was founded with a clear vision — to give traders around the world access to professional-grade trading infrastructure, transparent pricing, and reliable support.
               </p>
               <p className="text-text-secondary leading-relaxed">
                 Our platform combines advanced technology with deep liquidity to deliver a seamless trading experience powered by global financial expertise.
               </p>
               <p className="text-text-secondary leading-relaxed">
-                From beginners entering financial markets to professional algorithmic traders, TrustEdgeFX provides the tools, speed, and reliability needed to trade with confidence in global markets.
+                From beginners entering financial markets to professional algorithmic traders, FXArtha provides the tools, speed, and reliability needed to trade with confidence in global markets.
               </p>
             </div>
 

@@ -175,7 +175,7 @@ const CONFIG: DatafeedConfiguration = {
   supported_resolutions: SUPPORTED_RESOLUTIONS,
   exchanges: [
     { value: '', name: 'All', desc: 'All exchanges' },
-    { value: 'TrustEdge', name: 'TrustEdge', desc: 'TrustEdge' },
+    { value: 'FXArtha', name: 'FXArtha', desc: 'FXArtha' },
   ],
   symbols_types: [
     { name: 'All', value: '' },
@@ -217,7 +217,7 @@ function segmentToSymbolType(segment: string | undefined): string {
 
 /* ═══════════ DATAFEED ═══════════ */
 
-export const trustEdgeDatafeed: IBasicDataFeed = {
+export const fxArthaDatafeed: IBasicDataFeed = {
   onReady: (cb) => {
     setTimeout(() => cb(CONFIG), 0);
   },
@@ -237,7 +237,7 @@ export const trustEdgeDatafeed: IBasicDataFeed = {
       .map((i) => ({
         symbol: i.symbol, full_name: i.symbol,
         description: i.display_name || i.symbol,
-        exchange: 'TrustEdge', ticker: i.symbol,
+        exchange: 'FXArtha', ticker: i.symbol,
         type: segmentToSymbolType(i.segment) || 'forex',
       }));
     onResult(result);
@@ -253,7 +253,7 @@ export const trustEdgeDatafeed: IBasicDataFeed = {
       description: inst?.display_name || sym,
       type: segmentToSymbolType(inst?.segment) || 'forex',
       session: '24x7', timezone: 'Etc/UTC',
-      exchange: 'TrustEdge', listed_exchange: 'TrustEdge',
+      exchange: 'FXArtha', listed_exchange: 'FXArtha',
       format: 'price', pricescale: Math.pow(10, digits), minmov: 1,
       has_intraday: true, has_daily: true, has_weekly_and_monthly: false,
       supported_resolutions: SUPPORTED_RESOLUTIONS,

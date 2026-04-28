@@ -67,7 +67,7 @@ const Home = () => {
       icon: BarChart3
     },
     {
-      name: 'TrustEdgeFX Web Platform',
+      name: 'FXArtha Web Platform',
       description: 'No download needed — trade from any browser',
       features: [
         'Clean UI, real-time charts, one-click trading',
@@ -124,7 +124,7 @@ const Home = () => {
         <div className="container-custom">
           <div className="text-center mb-16">
             <div className="inline-block text-primary-accent text-sm font-semibold mb-4 tracking-wider uppercase">
-              Why Choose TrustEdgeFX
+              Why Choose FXArtha
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Everything You Need to Trade Like a Pro
@@ -138,7 +138,7 @@ const Home = () => {
           </div>
           
           <div className="text-center">
-            <Link to="/company/why-trustedge" className="inline-flex items-center gap-2 text-primary-accent hover:text-white transition-colors font-semibold text-lg">
+            <Link to="/company/why-fxartha" className="inline-flex items-center gap-2 text-primary-accent hover:text-white transition-colors font-semibold text-lg">
               Explore All Features
               <ArrowRight className="w-5 h-5" />
             </Link>

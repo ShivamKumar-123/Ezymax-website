@@ -8,7 +8,7 @@ export default function LandingFooter() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           <div className="lg:col-span-2">
-            <img src="/images/logo2.png" alt="TrustEdgeFX" className="h-9 w-auto mb-4" />
+            <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-9 w-auto mb-4" />
             <p className="text-gray-500 text-sm leading-relaxed mb-3 max-w-sm">
               Professional multi-asset trading platform. Licensed under Investment Dealer Licence No. MAK21098161, St. Lucia.
             </p>
@@ -50,7 +50,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} TrustEdgeFX. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} FXArtha. All rights reserved.</p>
           <div className="flex items-center gap-5 text-sm text-gray-400">
             <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link>

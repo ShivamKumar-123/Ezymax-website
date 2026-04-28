@@ -1,3 +1,3 @@
 'use client'
-import WhyTrustEdgeFX from '@/landing/pages/WhyTrustEdgeFX'
-export default function WhyTrustEdgeFXPage() { return <WhyTrustEdgeFX /> }
+import WhyFXArtha from '@/landing/pages/WhyFXArtha'
+export default function WhyFXArthaPage() { return <WhyFXArtha /> }

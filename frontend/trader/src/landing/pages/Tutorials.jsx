@@ -31,7 +31,7 @@ const Tutorials = () => {
     },
     {
       title: 'Algorithmic & Copy Trading',
-      description: 'Learn to set up automated strategies and copy trading on TrustEdgeFX.',
+      description: 'Learn to set up automated strategies and copy trading on FXArtha.',
       duration: '5 hours',
       level: 'Advanced',
       lessons: 25,
@@ -115,7 +115,7 @@ const Tutorials = () => {
           <ScrollReveal variant="fadeUp">
             <div className="glass-card p-12 text-center max-w-4xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Why Learn with TrustEdgeFX?
+                Why Learn with FXArtha?
               </h2>
               <div className="grid md:grid-cols-3 gap-8 mb-8">
                 <div>

@@ -1,20 +1,20 @@
-# TrustEdge-only stack (project name → container/volume prefix). Not tied to ptd2 or other paths.
-name: trustedge
+# FXArtha stack (project name → container/volume prefix).
+name: fxartha
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-trustedge}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trustedge_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-trustedge}
+      POSTGRES_USER: ${POSTGRES_USER:-fxartha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fxartha_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-fxartha}
     # No host port binding — all services connect via Docker network (postgres:5432)
-    # For local dev access: docker compose exec postgres psql -U trustedge
+    # For local dev access: docker compose exec postgres psql -U fxartha
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trustedge"]
+      test: ["CMD-SHELL", "pg_isready -U fxartha"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -22,15 +22,15 @@ services:
   timescaledb:
     image: timescale/timescaledb:latest-pg16
     environment:
-      POSTGRES_USER: ${TIMESCALE_USER:-trustedge}
-      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-trustedge_dev}
+      POSTGRES_USER: ${TIMESCALE_USER:-fxartha}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-fxartha_dev}
       POSTGRES_DB: ${TIMESCALE_DB:-marketdata}
     # No host port binding — all services connect via Docker network (timescaledb:5432)
     volumes:
       - ts_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trustedge"]
+      test: ["CMD-SHELL", "pg_isready -U fxartha"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -79,7 +79,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: trustedge
+      KAFKA_CLUSTERS_0_NAME: fxartha
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
   # Admin dashboard API (port 8001)
@@ -101,7 +101,7 @@ services:
     environment:
       # Override: shared backend/.env uses REDIS_URL for gateway (db 0); admin service must use db 1
       REDIS_URL: redis://redis:6379/1
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-trustedge}:${POSTGRES_PASSWORD:-trustedge_dev}@postgres:5432/${POSTGRES_DB:-trustedge}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-fxartha}:${POSTGRES_PASSWORD:-fxartha_dev}@postgres:5432/${POSTGRES_DB:-fxartha}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?Set ADMIN_JWT_SECRET in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
@@ -243,7 +243,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://trustedge:trustedge_dev@postgres:5432/trustedge}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://fxartha:fxartha_dev@postgres:5432/fxartha}
     volumes:
       - ./backend:/app
     profiles:

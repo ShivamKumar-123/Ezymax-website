@@ -12,7 +12,7 @@ const Commodities = () => {
     ],
     about: {
       title: 'Why Trade Commodities?',
-      description: 'Commodities offer excellent diversification opportunities and act as a hedge against inflation. Trade precious metals like gold and silver, energy commodities like crude oil and natural gas, and agricultural products with TrustEdgeFX. Benefit from competitive spreads, flexible leverage, and access to global commodity markets 23 hours a day.'
+      description: 'Commodities offer excellent diversification opportunities and act as a hedge against inflation. Trade precious metals like gold and silver, energy commodities like crude oil and natural gas, and agricultural products with FXArtha. Benefit from competitive spreads, flexible leverage, and access to global commodity markets 23 hours a day.'
     },
     instruments: [
       { symbol: 'XAU/USD (Gold)', spread: '0.3 pips', leverage: '1:200', margin: '0.5%' },

@@ -27,7 +27,7 @@ export default function IslamicAccountSection() {
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <p className="text-text-secondary leading-relaxed mb-6">
-                    TrustEdgeFX offers a fully Shariah-compliant trading account designed for traders who require swap-free trading.
+                    FXArtha offers a fully Shariah-compliant trading account designed for traders who require swap-free trading.
                   </p>
 
                   <div className="space-y-3 mb-6">

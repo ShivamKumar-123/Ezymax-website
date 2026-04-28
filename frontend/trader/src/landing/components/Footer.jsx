@@ -23,7 +23,7 @@ const Footer = () => {
     ],
     company: [
       { name: 'About Us', path: '/company/about' },
-      { name: 'Why TrustEdgeFX', path: '/company/why-trustedge' },
+      { name: 'Why FXArtha', path: '/company/why-fxartha' },
       { name: 'Contact', path: '/company/contact' },
     ],
     education: [
@@ -48,10 +48,10 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <ScrollReveal variant="fadeLeft">
               <Link to="/" className="inline-block mb-4">
-                <img src="/images/logo2.png" alt="TrustEdgeFX" className="h-10 w-auto" />
+                <img src="/images/logo2.png" alt="FXArtha" className="h-10 w-auto" />
               </Link>
               <p className="text-text-secondary text-sm mb-6">
-                Trade with confidence. Trade with TrustEdgeFX.
+                Trade with confidence. Trade with FXArtha.
               </p>
               <ScrollRevealGroup className="flex space-x-3" delay={0.4}>
                 {socialLinks.map((social) => (
@@ -137,7 +137,7 @@ const Footer = () => {
         <ScrollReveal variant="fadeIn" delay={0.5}>
           <div className="pt-8 border-t border-white/5">
             <p className="text-text-secondary text-xs text-center">
-              © 2025 TrustEdgeFX Ltd. All rights reserved. | Risk Warning: Trading involves significant risk of loss.
+              © 2025 FXArtha Ltd. All rights reserved. | Risk Warning: Trading involves significant risk of loss.
             </p>
           </div>
         </ScrollReveal>

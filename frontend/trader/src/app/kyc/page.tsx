@@ -221,7 +221,7 @@ export default function KycPage() {
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">KYC Verification</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-2xl">
                 Complete identity verification to unlock deposits, withdrawals, and live trading — same secure styling as
-                the rest of TrustEdge.
+                the rest of FXArtha.
               </p>
             </div>
           </section>

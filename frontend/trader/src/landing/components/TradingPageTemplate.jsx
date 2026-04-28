@@ -82,7 +82,7 @@ const TradingPageTemplate = ({
         <div className="container-custom">
           <ScrollReveal variant="fadeUp">
             <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
-              Why Trade with TrustEdgeFX
+              Why Trade with FXArtha
             </h2>
           </ScrollReveal>
           <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -104,7 +104,7 @@ const TradingPageTemplate = ({
           <ScrollReveal variant="fadeUp">
             <h2 className="text-4xl font-bold text-white mb-6">Ready to Start Trading?</h2>
             <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Open your account today and access global markets with TrustEdgeFX.
+              Open your account today and access global markets with FXArtha.
             </p>
             <Link to="/accounts/demo">
               <Button variant="primary">Open Account Now</Button>

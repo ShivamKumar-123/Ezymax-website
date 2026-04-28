@@ -1,6 +1,6 @@
-# TrustEdgeFX
+# FXArtha
 
-A premium multi-page Forex brokerage website built with React, Vite, Tailwind CSS, and Framer Motion.
+A premium multi-page Forex brokerage website by FXArtha, built with React, Vite, Tailwind CSS, and Framer Motion.
 
 ## Setup
 

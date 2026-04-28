@@ -49,7 +49,7 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
-        localStorage.removeItem('trustedge-auth');
+        localStorage.removeItem('fxartha-auth');
       } catch {
         /* ignore */
       }

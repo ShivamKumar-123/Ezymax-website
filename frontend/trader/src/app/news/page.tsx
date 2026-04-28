@@ -226,7 +226,7 @@ export default function EconomicNewsPage() {
                 <div className="min-w-0">
                   <h1 className="text-lg sm:text-2xl font-bold text-text-primary tracking-tight">Economic News</h1>
                   <p className="text-xs sm:text-sm text-text-secondary mt-0.5">
-                    Calendar events and live headlines — TrustEdge theme
+                    Calendar events and live headlines — FXArtha theme
                   </p>
                 </div>
               </div>
