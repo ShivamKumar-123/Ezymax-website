@@ -219,9 +219,10 @@ export default function LoginPage() {
           >
             <motion.div
               className="auth-left__bg"
-              animate={{ scale: [1, 1.25, 1], y: [0, -30, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ scale: [1, 1.18, 1], y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
             />
+            <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>{cfg.title}</motion.h1>
               <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>{cfg.subtitle}</motion.p>
