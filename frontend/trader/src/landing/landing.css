@@ -309,6 +309,22 @@
     from { transform: rotate(0); }
     to { transform: rotate(360deg); }
   }
+
+  @keyframes fxFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+
+  .fx-marquee {
+    display: flex;
+    gap: 3rem;
+    animation: fxMarquee 40s linear infinite;
+    width: max-content;
+  }
+  @keyframes fxMarquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */

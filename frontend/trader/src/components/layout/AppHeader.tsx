@@ -103,11 +103,11 @@ export default function AppHeader() {
           {/* Balance pill */}
           <Link
             href="/wallet"
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#2196f3]/30 bg-[#2196f3]/5 hover:bg-[#2196f3]/10 transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
           >
-            <Wallet size={14} className="text-[#2196f3] shrink-0" />
-            <span className="text-[#2196f3] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
-            <ChevronDown size={12} className="text-[#2196f3]/60 shrink-0 hidden sm:block" />
+            <Wallet size={14} className="text-[#d6a93d] shrink-0" />
+            <span className="text-[#d6a93d] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
+            <ChevronDown size={12} className="text-[#d6a93d]/60 shrink-0 hidden sm:block" />
           </Link>
 
           {/* Notification bell */}
@@ -120,7 +120,7 @@ export default function AppHeader() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#2196f3]/20 border border-[#2196f3]/30 flex items-center justify-center text-[#2196f3] text-[10px] sm:text-xs font-bold uppercase">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase">
                 {initials}
               </div>
               <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>

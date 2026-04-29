@@ -37,11 +37,11 @@ const config: Config = {
           inverse: 'var(--text-inverse)',
         },
         buy: {
-          DEFAULT: '#2196f3',
-          light: '#64b5f6',
-          dark: '#1976d2',
-          bg: 'rgba(33,150,243,0.1)',
-          glow: 'rgba(33,150,243,0.22)',
+          DEFAULT: '#d6a93d',
+          light: '#ecc657',
+          dark: '#9b7d3a',
+          bg: 'rgba(214,169,61,0.1)',
+          glow: 'rgba(214,169,61,0.22)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -50,8 +50,8 @@ const config: Config = {
           bg: 'rgba(239,68,68,0.1)',
           glow: 'rgba(239,68,68,0.2)',
         },
-        accent: { DEFAULT: '#2196f3', light: '#64b5f6', dark: '#1976d2' },
-        success: '#1976d2',
+        accent: { DEFAULT: '#d6a93d', light: '#ecc657', dark: '#9b7d3a' },
+        success: '#9b7d3a',
         warning: '#FFB300',
         info: '#29B6F6',
         danger: '#FF1744',
@@ -117,30 +117,30 @@ const config: Config = {
         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         slideDown: { '0%': { opacity: '0', transform: 'translateY(-8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-        flashBlue: { '0%': { backgroundColor: 'rgba(33,150,243,0.22)' }, '100%': { backgroundColor: 'transparent' } },
+        flashBlue: { '0%': { backgroundColor: 'rgba(214,169,61,0.22)' }, '100%': { backgroundColor: 'transparent' } },
         flashRed: { '0%': { backgroundColor: 'rgba(239,68,68,0.2)' }, '100%': { backgroundColor: 'transparent' } },
-        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(33,150,243,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(33,150,243,0.32)' } },
+        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(214,169,61,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(214,169,61,0.32)' } },
         float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
         shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
         walletNeonTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -1px 20px rgba(33, 150, 243, 0.22), 0 0 32px rgba(33, 150, 243, 0.12), inset 0 0 24px rgba(33, 150, 243, 0.04)',
+              '0 -1px 20px rgba(214, 169, 61, 0.22), 0 0 32px rgba(214, 169, 61, 0.12), inset 0 0 24px rgba(214, 169, 61, 0.04)',
           },
           '50%': {
             boxShadow:
-              '0 -1px 36px rgba(33, 150, 243, 0.45), 0 0 52px rgba(33, 150, 243, 0.22), inset 0 0 32px rgba(33, 150, 243, 0.08)',
+              '0 -1px 36px rgba(214, 169, 61, 0.45), 0 0 52px rgba(214, 169, 61, 0.22), inset 0 0 32px rgba(214, 169, 61, 0.08)',
           },
         },
         /** Deposit / Withdraw main tabs — stronger pulsing glow */
         walletMainTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -6px 40px rgba(33, 150, 243, 0.38), 0 0 56px rgba(33, 150, 243, 0.2), inset 0 1px 0 rgba(33, 150, 243, 0.14)',
+              '0 -6px 40px rgba(214, 169, 61, 0.38), 0 0 56px rgba(214, 169, 61, 0.2), inset 0 1px 0 rgba(214, 169, 61, 0.14)',
           },
           '50%': {
             boxShadow:
-              '0 -10px 64px rgba(33, 150, 243, 0.62), 0 0 88px rgba(33, 150, 243, 0.32), inset 0 1px 0 rgba(33, 150, 243, 0.22)',
+              '0 -10px 64px rgba(214, 169, 61, 0.62), 0 0 88px rgba(214, 169, 61, 0.32), inset 0 1px 0 rgba(214, 169, 61, 0.22)',
           },
         },
         walletMainTabText: {
@@ -168,10 +168,10 @@ const config: Config = {
         'glass-lg': '0 16px 48px 0 rgba(0,0,0,0.5)',
         'inner-light': 'inset 0 1px 0 0 rgba(255,255,255,0.05)',
         'skeu': 'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3)',
-        'glow-blue': '0 0 20px rgba(33,150,243,0.28), 0 0 60px rgba(33,150,243,0.1)',
+        'glow-blue': '0 0 20px rgba(214,169,61,0.28), 0 0 60px rgba(214,169,61,0.1)',
         'glow-red': '0 0 20px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.1)',
-        'neon-green-sm': '0 0 20px rgba(33, 150, 243, 0.25), 0 0 48px rgba(33, 150, 243, 0.08)',
-        'neon-green-lg': '0 0 28px rgba(33, 150, 243, 0.4), 0 0 64px rgba(33, 150, 243, 0.15)',
+        'neon-green-sm': '0 0 20px rgba(214, 169, 61, 0.25), 0 0 48px rgba(214, 169, 61, 0.08)',
+        'neon-green-lg': '0 0 28px rgba(214, 169, 61, 0.4), 0 0 64px rgba(214, 169, 61, 0.15)',
       },
     },
   },

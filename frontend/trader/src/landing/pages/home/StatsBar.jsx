@@ -1,41 +1,63 @@
-import CountUp from 'react-countup'
-import { useInView } from 'react-intersection-observer'
-import ScrollReveal from '../../components/animations/ScrollReveal'
-import { stats } from '../HomeData'
+/**
+ * Live ticker strip — instrument prices scrolling horizontally.
+ * Replaces the old "stats counter" StatsBar with what the reference design shows.
+ */
 
-function StatCounter({ value, suffix, label, decimals }) {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.3 })
+const tickers = [
+  { sym: 'EUR/USD', px: '1.09745', chg: '+0.35%', up: true  },
+  { sym: 'GBP/USD', px: '1.27658', chg: '+0.28%', up: true  },
+  { sym: 'XAU/USD', px: '2332.45', chg: '+0.62%', up: true  },
+  { sym: 'USD/JPY', px: '156.743', chg: '-0.12%', up: false },
+  { sym: 'BTC/USD', px: '71245.6', chg: '+1.35%', up: true  },
+  { sym: 'USOIL',   px: '78.62',   chg: '+0.18%', up: true  },
+  { sym: 'NAS100',  px: '17240.3', chg: '+0.42%', up: true  },
+  { sym: 'AUD/USD', px: '0.66218', chg: '-0.21%', up: false },
+]
+
+function TickerItem({ sym, px, chg, up }) {
   return (
-    <div ref={ref} className="text-center md:text-left">
-      <div className="text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight fx-gold-text">
-        {inView
-          ? <CountUp end={value} duration={2.5} decimals={decimals} suffix={suffix} />
-          : <span>0{suffix}</span>
-        }
-      </div>
-      <p
-        className="mt-2 text-[11px] md:text-xs uppercase tracking-[0.18em] font-medium"
-        style={{ color: 'var(--fx-text-3)' }}
+    <div className="flex items-center gap-3 whitespace-nowrap">
+      <span className="text-sm font-semibold tracking-wide" style={{ color: 'var(--fx-text)' }}>
+        {sym}
+      </span>
+      <span className="text-sm font-mono" style={{ color: 'var(--fx-text-2)' }}>
+        {px}
+      </span>
+      <span
+        className="text-xs font-medium"
+        style={{ color: up ? '#22c55e' : '#ef4444' }}
       >
-        {label}
-      </p>
+        {chg}
+      </span>
+      <svg
+        width="36" height="14" viewBox="0 0 36 14" fill="none"
+        style={{ color: up ? '#22c55e' : '#ef4444' }}
+      >
+        <path
+          d={up ? 'M0 11 L9 7 L18 9 L27 4 L36 1' : 'M0 3 L9 6 L18 4 L27 9 L36 12'}
+          stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"
+        />
+      </svg>
     </div>
   )
 }
 
 export default function StatsBar() {
+  /* Render the list twice for an infinite-loop marquee effect */
   return (
     <section
       className="relative overflow-hidden"
-      style={{ borderTop: '1px solid var(--fx-line)', borderBottom: '1px solid var(--fx-line)' }}
+      style={{
+        background: 'var(--fx-bg-elev)',
+        borderTop: '1px solid var(--fx-line)',
+        borderBottom: '1px solid var(--fx-line)',
+      }}
     >
       <div className="fx-divider-gold absolute top-0 left-0 right-0" />
-      <div className="fx-container relative py-10 md:py-14">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
-          {stats.map((stat, i) => (
-            <ScrollReveal key={stat.label} variant="fadeUp" delay={i * 0.08}>
-              <StatCounter {...stat} />
-            </ScrollReveal>
+      <div className="py-4 md:py-5 overflow-hidden">
+        <div className="fx-marquee">
+          {[...tickers, ...tickers].map((t, i) => (
+            <TickerItem key={`${t.sym}-${i}`} {...t} />
           ))}
         </div>
       </div>

@@ -73,13 +73,21 @@ export default function Navbar() {
       <div className="fx-container">
         <div className="flex items-center justify-between h-16 md:h-[72px]">
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center flex-shrink-0 group" aria-label="FXArtha home">
+          {/* Logo + wordmark */}
+          <Link href="/" className="flex items-center gap-3 flex-shrink-0 group" aria-label="FXArtha home">
             <img
               src="/images/fxartha-logo.png"
               alt="FXArtha"
-              className="h-9 md:h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-10 md:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             />
+            <span className="hidden md:flex flex-col leading-tight">
+              <span className="text-base font-extrabold tracking-wide" style={{ color: 'var(--fx-text)' }}>
+                FX<span className="fx-gold-text">ARTHA</span>
+              </span>
+              <span className="text-[10px] tracking-[0.18em] font-medium" style={{ color: 'var(--fx-text-3)' }}>
+                TRADE. GROW. PROSPER.
+              </span>
+            </span>
           </Link>
 
           {/* Desktop nav */}

@@ -13,7 +13,7 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #2196f3 accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #d6a93d accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -47,11 +47,11 @@
   --input-bg: #111111;
   --input-border: #1f1f1f;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(33, 150, 243, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(33, 150, 243, 0.12), 0 0 0 3px rgba(33, 150, 243, 0.12);
+  --input-focus-border: rgba(214, 169, 61, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(214, 169, 61, 0.12), 0 0 0 3px rgba(214, 169, 61, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(33, 150, 243, 0.22);
+  --selection-bg: rgba(214, 169, 61, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
@@ -60,7 +60,7 @@
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(33, 150, 243, 0.28);
+  --toast-border: rgba(214, 169, 61, 0.28);
 
   color-scheme: dark;
 }
@@ -152,12 +152,12 @@
   --scrollbar-hover: #3a3a3a;
   --input-bg: #111111;
   --input-border: #1f1f1f;
-  --input-focus-border: rgba(33, 150, 243, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(33, 150, 243, 0.12);
-  --selection-bg: rgba(33, 150, 243, 0.22);
+  --input-focus-border: rgba(214, 169, 61, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(214, 169, 61, 0.12);
+  --selection-bg: rgba(214, 169, 61, 0.22);
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(33, 150, 243, 0.28);
+  --toast-border: rgba(214, 169, 61, 0.28);
   color-scheme: dark;
 }
 
@@ -397,30 +397,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #64b5f6 0%, #2196f3 50%, #1976d2 100%);
+  background: linear-gradient(180deg, #ecc657 0%, #d6a93d 50%, #9b7d3a 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(33,150,243,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #90caf9 0%, #64b5f6 50%, #2196f3 100%);
+  background: linear-gradient(180deg, #f5d984 0%, #ecc657 50%, #d6a93d 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(33,150,243,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #2196f3 0%, #1976d2 100%);
+  background: linear-gradient(180deg, #d6a93d 0%, #9b7d3a 100%);
   box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(33,150,243,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #2196f3;
+  background: #d6a93d;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 2px 8px rgba(214, 169, 61, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #1976d2;
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  background: #9b7d3a;
+  box-shadow: 0 4px 12px rgba(214, 169, 61, 0.4);
 }
 
 .skeu-btn-sell {
@@ -532,7 +532,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #2196f3; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #d6a93d; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -689,8 +689,8 @@ html {
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(33, 150, 243, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+    border-color: rgba(214, 169, 61, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(214, 169, 61, 0.2) !important;
   }
   .accounts-native-select option {
     background-color: var(--bg-secondary);
