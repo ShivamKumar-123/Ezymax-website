@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect } from 'react';
 import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -182,6 +182,7 @@ export default function LoginPage() {
   const cfg = LEFT_CONFIG[activeStep];
 
   return (
+    <MotionConfig reducedMotion="always">
     <div className="auth-wrapper">
       {maintenance && (
         <div
@@ -394,5 +395,6 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+    </MotionConfig>
   );
 }

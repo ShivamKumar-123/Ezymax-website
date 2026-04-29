@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
@@ -138,6 +138,7 @@ function RegisterContent() {
   };
 
   return (
+    <MotionConfig reducedMotion="always">
     <div className="auth-wrapper">
       <div className="auth-card-wrapper">
         <div className="auth-card">
@@ -300,5 +301,6 @@ function RegisterContent() {
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 }

@@ -34,16 +34,6 @@
   color-scheme: dark;
 }
 
-/* Animated border rotation angle */
-@property --border-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes rotateBorder {
-  to { --border-angle: 360deg; }
-}
 
 .auth-card-wrapper {
   position: relative;
@@ -52,16 +42,12 @@
   height: min(92vh, 780px);
   border-radius: 24px;
   padding: 1px;
-  background: conic-gradient(
-    from var(--border-angle),
-    rgba(236, 198, 87, 0.85) 0%,
-    rgba(214, 169, 61, 0.55) 15%,
-    transparent 40%,
-    transparent 60%,
-    rgba(155, 125, 58, 0.35) 85%,
-    rgba(236, 198, 87, 0.85) 100%
+  background: linear-gradient(
+    135deg,
+    rgba(236, 198, 87, 0.55) 0%,
+    rgba(214, 169, 61, 0.30) 50%,
+    rgba(155, 125, 58, 0.20) 100%
   );
-  animation: rotateBorder 6s linear infinite;
   box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.3),
     0 16px 48px rgba(0, 0, 0, 0.55),
@@ -147,7 +133,7 @@
     var(--auth-bg);
 }
 
-/* Faded mandala motif on the left panel */
+/* Faded mandala motif on the left panel — static, no rotation */
 .auth-left__mandala {
   position: absolute;
   inset: 0;
@@ -158,11 +144,6 @@
   opacity: 0.06;
   pointer-events: none;
   z-index: 1;
-  animation: authMandalaSpin 180s linear infinite;
-  transform-origin: center 38%;
-}
-@keyframes authMandalaSpin {
-  to { transform: rotate(360deg); }
 }
 
 .auth-left__bg::after {
