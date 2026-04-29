@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 success: {
                   duration: 1500,
                   className: 'fxartha-hot-toast',
-                  iconTheme: { primary: '#2196f3', secondary: 'var(--toast-bg)' },
+                  iconTheme: { primary: '#d6a93d', secondary: 'var(--toast-bg)' },
                 },
                 error: {
                   duration: 2500,

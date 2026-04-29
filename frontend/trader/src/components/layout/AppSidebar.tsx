@@ -105,8 +105,8 @@ export default function AppSidebar() {
                   className={cn(
                     'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#d6a93d]',
                     isActive
-                      ? 'drop-shadow-[0_0_8px_rgba(33,150,243,0.55)]'
-                      : 'drop-shadow-[0_0_6px_rgba(33,150,243,0.35)]',
+                      ? 'drop-shadow-[0_0_8px_rgba(214,169,61,0.55)]'
+                      : 'drop-shadow-[0_0_6px_rgba(214,169,61,0.35)]',
                   )}
                 />
                 <span className="truncate">{item.label}</span>

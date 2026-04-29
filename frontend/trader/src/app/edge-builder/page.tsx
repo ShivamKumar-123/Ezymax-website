@@ -10,7 +10,7 @@ export default function EdgeBuilderPage() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-            <Blocks size={20} className="text-[#2196f3]" />
+            <Blocks size={20} className="text-[#d6a93d]" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-text-primary">Edge Builder</h1>
@@ -19,11 +19,11 @@ export default function EdgeBuilderPage() {
         </div>
 
         {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-border-primary bg-gradient-to-br from-[#2196f3]/5 via-bg-secondary to-bg-secondary p-6 sm:p-8">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#2196f3]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="relative overflow-hidden rounded-2xl border border-border-primary bg-gradient-to-br from-[#d6a93d]/5 via-bg-secondary to-bg-secondary p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#d6a93d]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
           <div className="relative space-y-4">
             <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
-              Automate Your Trading with <span className="text-[#2196f3]">Edge Builder</span>
+              Automate Your Trading with <span className="text-[#d6a93d]">Edge Builder</span>
             </h2>
             <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
               Our powerful algo trading platform lets you create custom strategies, backtest them against historical data, 
@@ -42,7 +42,7 @@ export default function EdgeBuilderPage() {
                   key={label}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-bg-base/80 border border-border-primary text-text-secondary"
                 >
-                  <Icon size={13} className="text-[#2196f3]" />
+                  <Icon size={13} className="text-[#d6a93d]" />
                   {label}
                 </span>
               ))}
@@ -54,7 +54,7 @@ export default function EdgeBuilderPage() {
                 href="https://algo.fxartha.com/auth/login"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#2196f3] hover:bg-[#1976d2] text-white text-sm font-semibold shadow-lg shadow-[#2196f3]/20 transition-all hover:shadow-[#2196f3]/30 active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#d6a93d] hover:bg-[#9b7d3a] text-white text-sm font-semibold shadow-lg shadow-[#d6a93d]/20 transition-all hover:shadow-[#d6a93d]/30 active:scale-[0.98]"
               >
                 <LogIn size={16} />
                 Login to Edge Builder
@@ -64,7 +64,7 @@ export default function EdgeBuilderPage() {
                 href="https://algo.fxartha.com/auth/register"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-[#2196f3]/30 hover:border-[#2196f3]/60 bg-[#2196f3]/5 hover:bg-[#2196f3]/10 text-[#2196f3] text-sm font-semibold transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-[#d6a93d]/30 hover:border-[#d6a93d]/60 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 text-[#d6a93d] text-sm font-semibold transition-all active:scale-[0.98]"
               >
                 <UserPlus size={16} />
                 Create Account
@@ -97,8 +97,8 @@ export default function EdgeBuilderPage() {
               key={title}
               className="rounded-xl border border-border-primary bg-bg-secondary p-4 space-y-2"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#2196f3]/10 flex items-center justify-center">
-                <Icon size={16} className="text-[#2196f3]" />
+              <div className="w-8 h-8 rounded-lg bg-[#d6a93d]/10 flex items-center justify-center">
+                <Icon size={16} className="text-[#d6a93d]" />
               </div>
               <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
               <p className="text-xs text-text-tertiary leading-relaxed">{desc}</p>
@@ -108,7 +108,7 @@ export default function EdgeBuilderPage() {
 
         {/* Footer Note */}
         <div className="rounded-xl border border-border-primary bg-bg-secondary/50 p-4 flex items-start gap-3">
-          <Shield size={16} className="text-[#2196f3] shrink-0 mt-0.5" />
+          <Shield size={16} className="text-[#d6a93d] shrink-0 mt-0.5" />
           <p className="text-xs text-text-tertiary leading-relaxed">
             Edge Builder is a separate platform integrated with your FXArtha account. 
             Your API credentials from <span className="text-text-secondary font-medium">Algo Connector</span> are 

@@ -108,7 +108,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
 
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-text-secondary">Loading account types…</span>
           </div>
         ) : groups.length === 0 ? (
@@ -130,8 +130,8 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     className={clsx(
                       'w-full text-left rounded-xl border-2 p-4 sm:p-5 transition-all',
                       isSel
-                        ? 'border-[#2196f3] bg-[#2196f3]/[0.06] shadow-[0_0_0_3px_rgba(33,150,243,0.15)]'
-                        : 'border-border-primary bg-bg-secondary hover:border-[#2196f3]/40 hover:bg-bg-hover',
+                        ? 'border-[#d6a93d] bg-[#d6a93d]/[0.06] shadow-[0_0_0_3px_rgba(214,169,61,0.15)]'
+                        : 'border-border-primary bg-bg-secondary hover:border-[#d6a93d]/40 hover:bg-bg-hover',
                     )}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -139,7 +139,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-base font-bold text-text-primary">{g.name}</span>
                           {g.swap_free ? (
-                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#2196f3]/15 text-[#2196f3] border border-[#2196f3]/25">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#d6a93d]/15 text-[#d6a93d] border border-[#d6a93d]/25">
                               Swap-free
                             </span>
                           ) : null}
@@ -178,7 +178,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         className={clsx(
                           'shrink-0 mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
                           isSel
-                            ? 'border-[#2196f3] bg-[#2196f3]'
+                            ? 'border-[#d6a93d] bg-[#d6a93d]'
                             : 'border-border-secondary bg-bg-card',
                         )}
                       >
@@ -204,7 +204,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             type="button"
             disabled={loading || creating || groups.length === 0 || !selectedId}
             onClick={() => void handleContinue()}
-            className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-[0_2px_8px_rgba(33,150,243,0.25)]"
+            className="px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-[0_2px_8px_rgba(214,169,61,0.25)]"
           >
             {creating ? 'Creating…' : 'Open Account'}
           </button>

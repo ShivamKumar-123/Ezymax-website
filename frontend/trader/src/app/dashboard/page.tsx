@@ -285,7 +285,7 @@ export default function DashboardPage() {
     return (
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading dashboard...</span>
         </div>
       </DashboardShell>

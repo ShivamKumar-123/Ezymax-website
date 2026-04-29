@@ -290,7 +290,7 @@ export default function EconomicNewsPage() {
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(214,169,61,0.7)]">
                         {label}
                       </span>
                     ) : (
@@ -401,7 +401,7 @@ export default function EconomicNewsPage() {
                       >
                         {tab.label}
                         {dayTab === tab.id && (
-                          <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-accent shadow-[0_0_10px_rgba(33,150,243,0.5)]" />
+                          <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-accent shadow-[0_0_10px_rgba(214,169,61,0.5)]" />
                         )}
                       </button>
                     ))}

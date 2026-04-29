@@ -186,7 +186,7 @@ function TerminalPositionStaticCard({
             <span
               className={clsx(
                 'text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded',
-                pos.side === 'buy' ? 'bg-[#2196f3]/18 text-[#2196f3]' : 'bg-[#ff5252]/18 text-[#ff5252]',
+                pos.side === 'buy' ? 'bg-[#d6a93d]/18 text-[#d6a93d]' : 'bg-[#ff5252]/18 text-[#ff5252]',
               )}
             >
               {pos.side}
@@ -199,7 +199,7 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-green-500/10 border-green-500/20 text-[#2196f3]'
+                ? 'bg-green-500/10 border-green-500/20 text-[#d6a93d]'
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
@@ -233,7 +233,7 @@ function TerminalPositionStaticCard({
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#2196f3]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#d6a93d]" aria-hidden />
               ))}
           </div>
         </div>
@@ -721,7 +721,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       <span
                         className={clsx(
                           'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]',
+                          totalPnl >= 0 ? 'text-[#d6a93d]' : 'text-[#ef5350]',
                         )}
                       >
                         {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
@@ -866,7 +866,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#2196f3]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#d6a93d]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',
