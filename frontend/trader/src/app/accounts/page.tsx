@@ -1330,15 +1330,16 @@ function AccountCard({
                   <BookOpen size={16} />
                   Trade History
                 </Link>
-                <Link
+                <a
                   href={tradeHref}
-                  prefetch
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
                   className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
-                </Link>
+                </a>
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setCloseModal(true); }}
@@ -1357,15 +1358,16 @@ function AccountCard({
                 >
                   Trading Journal
                 </Link>
-                <Link
+                <a
                   href={tradeHref}
-                  prefetch
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#d6a93d] text-white text-xs sm:text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />
-                </Link>
+                </a>
                 <button
                   type="button"
                   onClick={() => setCloseModal(true)}
