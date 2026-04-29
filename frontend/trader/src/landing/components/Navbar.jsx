@@ -14,7 +14,6 @@ const navItems = [
     dropdown: [
       { name: 'Web Platform',   path: '/platforms/web' },
       { name: 'Copy Trading',   path: '/platforms/copy-trading' },
-      { name: 'Prop Trading',   path: '/platforms/prop-trading' },
       { name: 'IB Management',  path: '/platforms/ib-management' },
     ],
   },
