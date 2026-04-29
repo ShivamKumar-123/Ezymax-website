@@ -74,19 +74,29 @@ export default function AppHeader() {
       <header
         className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
       >
-        {/* LEFT — logo (opens sidebar) */}
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="shrink-0"
-          aria-label="Toggle menu"
-        >
-          <img
-            src="/images/fxartha-logo.png"
-            alt="FXArtha"
-            className="w-10 h-10 object-contain"
-          />
-        </button>
+        {/* LEFT — hamburger + logo (both toggle sidebar) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-text-primary hover:bg-bg-hover transition-colors"
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="hidden sm:block"
+            aria-label="Toggle menu"
+          >
+            <img
+              src="/images/fxartha-logo.png"
+              alt="FXArtha"
+              className="w-9 h-9 object-contain"
+            />
+          </button>
+        </div>
 
         {/* RIGHT — balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
