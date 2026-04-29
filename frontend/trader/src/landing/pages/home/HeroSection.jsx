@@ -1,4 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { useAuthStore } from '@/stores/authStore'
 import {
   ArrowRight,
   Zap,
@@ -7,6 +13,7 @@ import {
   TrendingUp,
   Award,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react'
 
 const featurePills = [
@@ -23,6 +30,23 @@ const trustBadges = [
 ]
 
 export default function HeroSection() {
+  const router = useRouter()
+  const demoLogin = useAuthStore((s) => s.demoLogin)
+  const [demoLoading, setDemoLoading] = useState(false)
+
+  const handleDemo = async () => {
+    setDemoLoading(true)
+    try {
+      await demoLogin()
+      toast.success('Welcome — demo account')
+      router.push('/accounts')
+    } catch (err) {
+      toast.error(err?.message || 'Demo sign-in failed')
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
   return (
     <section className="relative overflow-hidden" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-grid-bg" aria-hidden="true" />
@@ -76,9 +100,14 @@ export default function HeroSection() {
                 Open Live Account
                 <ArrowRight size={18} />
               </Link>
-              <Link to="/accounts/demo" className="fx-btn-ghost justify-center">
-                Try Demo Account
-              </Link>
+              <button
+                type="button"
+                onClick={handleDemo}
+                disabled={demoLoading}
+                className="fx-btn-ghost justify-center disabled:opacity-60"
+              >
+                {demoLoading ? <Loader2 size={16} className="animate-spin" /> : 'Try with Demo Account'}
+              </button>
             </div>
 
             {/* Trust badges */}
