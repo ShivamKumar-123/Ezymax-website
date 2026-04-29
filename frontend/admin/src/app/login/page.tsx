@@ -63,7 +63,7 @@ export default function LoginPage() {
             <img src="/logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-xl font-bold text-text-primary">
-            <span>FX</span><span style={{ color: '#00e676' }}>Artha</span> Admin
+            <span>FX</span><span style={{ color: '#d6a93d' }}>Artha</span> Admin
           </h1>
           <p className="text-xs text-text-tertiary mt-1">Broker Administration Panel</p>
         </div>
@@ -129,8 +129,9 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className={cn(
-              'w-full py-2.5 text-sm font-medium rounded-md transition-fast',
-              'bg-buy text-white hover:bg-buy-light disabled:opacity-50 disabled:cursor-not-allowed',
+              'w-full py-2.5 text-sm font-bold rounded-md transition-fast',
+              'bg-gradient-to-b from-buy-light to-buy text-[#1a1408] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed',
+              'shadow-[0_8px_24px_rgba(214,169,61,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]',
             )}
           >
             {loading ? (
