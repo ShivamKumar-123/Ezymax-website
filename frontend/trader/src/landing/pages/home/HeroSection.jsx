@@ -1,51 +1,115 @@
-import ColorBends from '../../components/ColorBends'
-import ShimmerText from '../../components/ShimmerText'
+import { Link } from 'react-router-dom'
+import { ArrowRight, ShieldCheck, Zap, TrendingUp } from 'lucide-react'
 
 export default function HeroSection() {
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative', background: '#0A0E1A', overflow: 'hidden' }}>
-      {/* Text overlay — left aligned, vertically centered */}
-      <div className="absolute inset-0 z-10 flex items-center pointer-events-none px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32">
-        <div className="w-full max-w-7xl text-left pointer-events-auto">
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            <ShimmerText
-              className="text-[28px] sm:text-[36px] md:text-[45px] lg:text-[56px] xl:text-[67px] font-extrabold text-white leading-[1.08] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.7)]"
-              duration={1.5}
-              delay={0.5}
-            >
-              Execution trade with lightning speed
-            </ShimmerText>
-            <ShimmerText
-              className="text-[28px] sm:text-[36px] md:text-[45px] lg:text-[56px] xl:text-[67px] font-extrabold text-white leading-[1.08] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.7)]"
-              duration={1.5}
-              delay={1.5}
-            >
-              Trade with confidence
-            </ShimmerText>
+    <section className="relative overflow-hidden" style={{ background: 'var(--fx-bg)' }}>
+      {/* Decorative layers */}
+      <div className="fx-grid-bg" aria-hidden="true" />
+      <div className="fx-glow-gold" aria-hidden="true" />
+
+      {/* Mandala backdrop — subtle, slowly rotating */}
+      <div
+        className="absolute pointer-events-none select-none opacity-[0.06] hidden md:block"
+        style={{
+          right: '-12%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 'min(900px, 70vw)',
+          height: 'min(900px, 70vw)',
+        }}
+        aria-hidden="true"
+      >
+        <img
+          src="/images/fxartha-logo.png"
+          alt=""
+          className="w-full h-full object-contain fx-mandala-spin"
+        />
+      </div>
+
+      <div className="fx-container relative z-10 pt-28 pb-20 md:pt-36 md:pb-28 lg:pt-44 lg:pb-36">
+        <div className="max-w-3xl">
+          <p className="fx-eyebrow fx-fade-up">
+            FXArtha — Forex &amp; CFD Brokerage
+          </p>
+
+          <h1 className="fx-headline mt-6 text-[40px] sm:text-[52px] md:text-[64px] lg:text-[76px] xl:text-[84px] fx-fade-up fx-fade-up-d1">
+            Trade with{' '}
+            <span className="fx-gold-text">intelligence.</span>
+            <br />
+            Trade with <span className="fx-gold-text">Artha.</span>
+          </h1>
+
+          <p
+            className="mt-6 md:mt-8 max-w-2xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            Institutional-grade execution, raw spreads from 0.0 pips, and a trading
+            terminal built for serious traders. Forex, indices, commodities, and
+            crypto — one platform, one account.
+          </p>
+
+          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
+            <Link to="/auth/register" className="fx-btn-primary justify-center">
+              Open Live Account
+              <ArrowRight size={18} />
+            </Link>
+            <Link to="/accounts/demo" className="fx-btn-ghost justify-center">
+              Try Free Demo
+            </Link>
           </div>
-          <h6 className="mt-5 sm:mt-6 md:mt-8 text-sm sm:text-base md:text-lg text-white/60 max-w-3xl leading-relaxed font-normal whitespace-normal">
-            Trade smarter with ultra-fast execution, tight spreads, and powerful brokerage tools that ensure precision, stability, and confidence in every transaction.
-          </h6>
+
+          {/* Trust strip */}
+          <ul className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 fx-fade-up fx-fade-up-d4">
+            <TrustItem
+              icon={Zap}
+              title="< 30 ms execution"
+              sub="Co-located matching engine"
+            />
+            <TrustItem
+              icon={ShieldCheck}
+              title="Segregated funds"
+              sub="Tier-1 banking partners"
+            />
+            <TrustItem
+              icon={TrendingUp}
+              title="0.0 pip spreads"
+              sub="On EUR/USD, GBP/USD, USD/JPY"
+            />
+          </ul>
         </div>
       </div>
 
-      {/* Background ColorBends Animation */}
-      <ColorBends
-        colors={['#1A56FF', '#0D3FCC', '#0A2A99']}
-        rotation={90}
-        speed={0.2}
-        scale={1}
-        frequency={1}
-        warpStrength={1}
-        mouseInfluence={1}
-        noise={0.15}
-        parallax={0.5}
-        iterations={1}
-        intensity={1.5}
-        bandWidth={6}
-        transparent
-        autoRotate={0}
+      {/* Bottom fade into next section */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
+        style={{ background: 'linear-gradient(180deg, transparent, var(--fx-bg))' }}
+        aria-hidden="true"
       />
-    </div>
+    </section>
+  )
+}
+
+function TrustItem({ icon: Icon, title, sub }) {
+  return (
+    <li className="flex items-start gap-3">
+      <div
+        className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+        style={{
+          background: 'var(--fx-gold-soft)',
+          border: '1px solid rgba(214,169,61,0.25)',
+        }}
+      >
+        <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold" style={{ color: 'var(--fx-text)' }}>
+          {title}
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--fx-text-3)' }}>
+          {sub}
+        </p>
+      </div>
+    </li>
   )
 }

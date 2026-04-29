@@ -64,19 +64,19 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette */
+        /* Landing-page palette — FXArtha gold-on-black brand */
         'primary': {
-          bg: '#0A0E1A',
-          secondary: '#0F1628',
-          accent: '#1A56FF',
-          purple: '#7B2FFF',
+          bg: '#08090b',
+          secondary: '#101114',
+          accent: '#d6a93d',
+          purple: '#9b7d3a',
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #7B2FFF, #1A56FF)',
-        'gradient-hero': 'linear-gradient(135deg, #0A0E1A 0%, #1A1F3A 50%, #2A1F4A 100%)',
-        'gradient-section': 'linear-gradient(180deg, #0A0E1A 0%, #0F1628 100%)',
-        'gradient-section-alt': 'linear-gradient(180deg, #0F1628 0%, #0A0E1A 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #ecc657 0%, #d6a93d 50%, #9b7d3a 100%)',
+        'gradient-hero': 'linear-gradient(135deg, #08090b 0%, #0e0d09 50%, #08090b 100%)',
+        'gradient-section': 'linear-gradient(180deg, #08090b 0%, #101114 100%)',
+        'gradient-section-alt': 'linear-gradient(180deg, #101114 0%, #08090b 100%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

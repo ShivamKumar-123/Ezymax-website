@@ -12,8 +12,8 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
   useEffect(() => {
     const html = document.documentElement
     html.setAttribute('data-theme', 'dark')
-    html.style.backgroundColor = '#0A0E1A'
-    html.style.color = '#ffffff'
+    html.style.backgroundColor = '#08090b'
+    html.style.color = '#f5f5f5'
     return () => {
       html.setAttribute('data-theme', 'light')
       html.style.backgroundColor = '#F2EFE9'
@@ -24,7 +24,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
   return (
     <PopupProvider>
       <ScrollProgress />
-      <div className="landing-root min-h-screen bg-[#0A0E1A] text-white">
+      <div className="landing-root min-h-screen bg-[#08090b] text-white">
         <Navbar />
         {children}
         <Footer />

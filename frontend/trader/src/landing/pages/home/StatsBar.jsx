@@ -6,38 +6,40 @@ import { stats } from '../HomeData'
 function StatCounter({ value, suffix, label, decimals }) {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.3 })
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-3xl md:text-4xl font-bold mb-1 gradient-text">
+    <div ref={ref} className="text-center md:text-left">
+      <div className="text-3xl md:text-4xl xl:text-5xl font-bold tracking-tight fx-gold-text">
         {inView
           ? <CountUp end={value} duration={2.5} decimals={decimals} suffix={suffix} />
           : <span>0{suffix}</span>
         }
       </div>
-      <p className="text-text-secondary text-xs uppercase tracking-wider">{label}</p>
+      <p
+        className="mt-2 text-[11px] md:text-xs uppercase tracking-[0.18em] font-medium"
+        style={{ color: 'var(--fx-text-3)' }}
+      >
+        {label}
+      </p>
     </div>
   )
 }
 
 export default function StatsBar() {
   return (
-    <section className="relative py-10 border-y border-white/5 overflow-hidden bg-white/[0.02] backdrop-blur-xl">
-      <div
-        className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(26,86,255,0.3), transparent)' }}
-      />
-      <div className="container-custom relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+    <section
+      className="relative overflow-hidden"
+      style={{ borderTop: '1px solid var(--fx-line)', borderBottom: '1px solid var(--fx-line)' }}
+    >
+      <div className="fx-divider-gold absolute top-0 left-0 right-0" />
+      <div className="fx-container relative py-10 md:py-14">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
           {stats.map((stat, i) => (
-            <ScrollReveal key={stat.label} variant="fadeUp" delay={i * 0.1}>
+            <ScrollReveal key={stat.label} variant="fadeUp" delay={i * 0.08}>
               <StatCounter {...stat} />
             </ScrollReveal>
           ))}
         </div>
       </div>
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(26,86,255,0.3), transparent)' }}
-      />
+      <div className="fx-divider-gold absolute bottom-0 left-0 right-0" />
     </section>
   )
 }
