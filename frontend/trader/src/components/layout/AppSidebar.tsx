@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { label: 'Transactions', href: '/transactions', icon: History },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'Rewards', href: '/rewards', icon: Gift },
+  { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
   { label: 'MAMM', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },

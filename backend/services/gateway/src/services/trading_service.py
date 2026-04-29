@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -473,6 +474,7 @@ async def place_order(
 
     return {
         "id": str(order.id),
+        "position_id": str(position.id) if req.order_type == "market" else None,
         "account_id": str(order.account_id),
         "symbol": instrument.symbol,
         "order_type": otype_val,
@@ -865,6 +867,11 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         description=f"{'Partial ' if is_partial else ''}Close {pos.instrument.symbol} {sv} {close_lots} lots @ {close_price}",
     )
     db.add(tx)
+
+    # Trade insurance — only evaluate on FULL close. `maybe_pay` swallows its
+    # own exceptions so a payout failure can never block the close.
+    if not is_partial:
+        await insurance_maybe_pay(db=db, position=pos, history=history)
 
     await db.commit()
 

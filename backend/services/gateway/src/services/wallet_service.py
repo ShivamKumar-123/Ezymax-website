@@ -955,3 +955,46 @@ async def get_bank_info(amount: Decimal, db: AsyncSession) -> dict:
         "upi_id": bank.upi_id,
         "qr_code_url": bank.qr_code_url,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Trade insurance — fee debit
+# (Payouts are credited inside packages.common.src.insurance.claims so
+#  the credit + InsuranceClaim INSERT are atomic with position close.)
+# ─────────────────────────────────────────────────────────────────────
+
+async def charge_insurance_fee(
+    *,
+    db: AsyncSession,
+    user_id: UUID,
+    amount: Decimal,
+    policy_id: UUID,
+    description: str,
+) -> Decimal:
+    """Debit `amount` from the user's main wallet for an insurance fee.
+    Caller is responsible for `db.commit()`. Raises 402 if balance is short.
+
+    Returns the user's new main_wallet_balance.
+    """
+    user = (await db.execute(select(User).where(User.id == user_id).with_for_update())).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    bal = Decimal(str(user.main_wallet_balance or 0))
+    if bal < amount:
+        raise HTTPException(status_code=402, detail="insufficient_balance")
+
+    new_balance = bal - amount
+    user.main_wallet_balance = new_balance
+
+    db.add(Transaction(
+        id=uuid_lib.uuid4(),
+        user_id=user_id,
+        account_id=None,
+        type="insurance_fee",
+        amount=-amount,
+        balance_after=new_balance,
+        reference_id=policy_id,
+        description=description,
+    ))
+    return new_balance

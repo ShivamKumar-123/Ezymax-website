@@ -13,6 +13,8 @@ import { getDigits } from '@/lib/utils';
 import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
+import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
+import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
@@ -52,6 +54,7 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [symbolPickerOpen, setSymbolPickerOpen] = useState(false);
+  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; fee: number } | null>(null);
   const [wsStatus, setWsStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -183,7 +186,9 @@ export default function OrderPanel() {
       rollback = () => setPositions(prev);
     }
 
-    api.post('/orders/', {
+    const insuranceChoice = insuranceSelection;
+
+    api.post<{ id: string; position_id: string | null }>('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
       order_type: orderTab === 'market' ? 'market' : 'limit',
@@ -191,7 +196,19 @@ export default function OrderPanel() {
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
-    }).then(() => {
+    }).then(async (resp) => {
+      // Insurance — only for market orders that immediately produced a position_id.
+      if (insuranceChoice && resp?.position_id) {
+        try {
+          await insuranceApi.activate(resp.position_id, insuranceChoice.tier);
+          toast.success(`Insured ($${insuranceChoice.fee.toFixed(2)} fee)`);
+        } catch (e: any) {
+          const detail = e?.response?.data?.detail || e?.message || 'insurance_failed';
+          toast.error(`Insurance not activated: ${detail}`);
+        }
+      }
+      // Reset the picker so the next order starts fresh.
+      setInsuranceSelection(null);
       // Reconcile with server-authoritative state (replaces the optimistic row).
       Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
     }).catch((e: any) => {
@@ -489,6 +506,22 @@ export default function OrderPanel() {
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
                 className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#d6a93d]/30 text-[#d6a93d]"
+              />
+            </div>
+          )}
+
+          {/* Trade Insurance — only on market orders */}
+          {orderTab === 'market' && activeAccount && (
+            <div className="pt-2">
+              <InsuranceTierPicker
+                accountId={activeAccount.id}
+                symbol={selectedSymbol}
+                side={side}
+                lots={lotsNum}
+                leverage={(activeAccount as any).leverage || 100}
+                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
+                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
+                onSelect={setInsuranceSelection}
               />
             </div>
           )}
