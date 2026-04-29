@@ -29,9 +29,9 @@ export default function HeroSection() {
       <div className="fx-glow-gold" aria-hidden="true" />
 
       <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          {/* LEFT — text + CTAs */}
-          <div className="lg:col-span-7">
+        <div className="max-w-3xl">
+          {/* Text + CTAs */}
+          <div>
             <h1 className="fx-headline text-[44px] sm:text-[56px] md:text-[64px] lg:text-[72px] xl:text-[82px] fx-fade-up">
               Trade Globally
               <br />
@@ -99,49 +99,6 @@ export default function HeroSection() {
             </ul>
           </div>
 
-          {/* RIGHT — hero visual (oversized mandala + glow) */}
-          <div className="lg:col-span-5 relative hidden md:block">
-            <div className="relative aspect-square w-full max-w-[560px] mx-auto">
-              {/* Glow halo */}
-              <div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(closest-side, rgba(214,169,61,0.35) 0%, rgba(214,169,61,0.08) 45%, transparent 70%)',
-                  filter: 'blur(20px)',
-                }}
-                aria-hidden="true"
-              />
-              {/* Outer rotating mandala */}
-              <img
-                src="/images/fxartha-logo.png"
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-contain fx-mandala-spin opacity-90"
-              />
-              {/* Floating currency badges */}
-              <FloatingBadge
-                label="$"
-                color="#22c55e"
-                style={{ top: '6%', left: '52%', width: 78, height: 78 }}
-              />
-              <FloatingBadge
-                label="€"
-                color="#eab308"
-                style={{ top: '36%', left: '8%', width: 68, height: 68 }}
-              />
-              <FloatingBadge
-                label="£"
-                color="#3b82f6"
-                style={{ top: '46%', right: '4%', width: 78, height: 78 }}
-              />
-              <FloatingBadge
-                label="¥"
-                color="#f97316"
-                style={{ bottom: '8%', right: '14%', width: 64, height: 64 }}
-              />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -151,25 +108,5 @@ export default function HeroSection() {
         aria-hidden="true"
       />
     </section>
-  )
-}
-
-function FloatingBadge({ label, color, style }) {
-  return (
-    <div
-      className="absolute rounded-full flex items-center justify-center font-bold text-2xl select-none"
-      style={{
-        ...style,
-        background: 'rgba(15, 15, 18, 0.85)',
-        border: `2px solid ${color}`,
-        color,
-        boxShadow: `0 0 24px ${color}33, inset 0 0 18px ${color}22`,
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fxFloat 6s ease-in-out infinite',
-      }}
-    >
-      {label}
-    </div>
   )
 }
