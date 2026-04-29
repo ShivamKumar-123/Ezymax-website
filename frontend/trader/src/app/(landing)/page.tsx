@@ -1,7 +1,6 @@
 'use client'
 
 import HeroSection from '@/landing/pages/home/HeroSection'
-import StatsBar from '@/landing/pages/home/StatsBar'
 import WhySection from '@/landing/pages/home/WhySection'
 import MarketsSection from '@/landing/pages/home/MarketsSection'
 import AccountsSection from '@/landing/pages/home/AccountsSection'
@@ -23,7 +22,6 @@ export default function LandingHomePage() {
   return (
     <>
       <HeroSection />
-      <StatsBar />
       <WhySection />
       <MarketsSection />
       <AccountsSection />
