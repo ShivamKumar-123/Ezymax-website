@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"  # lax | strict | none
     # If None, Secure flag follows the incoming request (HTTPS / X-Forwarded-Proto).
     COOKIE_SECURE: bool | None = None
+    # Cookie Domain attribute. Set to a parent domain (e.g. ".fxartha.com") to share
+    # the auth session across the apex and subdomains (trade.*, etc.). Leave empty to
+    # let the browser set a host-only cookie (works for single-host dev/local setups).
+    COOKIE_DOMAIN: str = ""
 
     ADMIN_JWT_SECRET: str = "admin-secret-change-in-production"
     ADMIN_JWT_ALGORITHM: str = "HS256"

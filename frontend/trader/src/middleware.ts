@@ -1,34 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const MARKETING_PATHS = new Set<string>([
-  '/',
-  '/about',
-  '/contact',
-  '/privacy',
-  '/terms',
-  '/risk',
-  '/platforms',
-  '/white-label',
-  '/trading/forex',
-  '/trading/commodities',
-  '/trading/indices',
-  '/trading/crypto',
-  '/platforms/web',
-  '/platforms/copy-trading',
-  '/platforms/prop-trading',
-  '/platforms/ib-management',
-  '/platforms/super-admin',
-  '/accounts/standard',
-  '/accounts/pro',
-  '/accounts/demo',
-]);
-const MARKETING_PREFIXES = ['/company/', '/education/'];
+/**
+ * Domain split:
+ *   - fxartha.com (apex): marketing + auth + ALL user-app pages
+ *     (dashboard, wallet, kyc, accounts, portfolio, profile, etc.)
+ *   - trade.fxartha.com: ONLY the trading terminal (/trading/terminal/*)
+ *
+ * The auth cookie is set with Domain=.fxartha.com (see backend COOKIE_DOMAIN env)
+ * so the same session works across the apex and the trade subdomain.
+ *
+ * If NEXT_PUBLIC_MARKETING_HOST or NEXT_PUBLIC_TRADE_HOST is unset (local dev),
+ * this middleware no-ops and a single host serves every route.
+ */
+
+const TRADE_PREFIXES = ['/trading/terminal'];
 const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/'];
 const NEUTRAL_EXACT = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
 
-function isMarketing(path: string): boolean {
-  if (MARKETING_PATHS.has(path)) return true;
-  return MARKETING_PREFIXES.some((p) => path.startsWith(p));
+function isTradePath(path: string): boolean {
+  return TRADE_PREFIXES.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'));
 }
 
 function isNeutral(path: string): boolean {
@@ -49,13 +39,15 @@ export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   if (isNeutral(pathname)) return NextResponse.next();
 
-  const marketing = isMarketing(pathname);
+  const trade = isTradePath(pathname);
 
-  if (onTrade && marketing) {
-    return NextResponse.redirect(`https://${marketingHost}${pathname}${search}`, 308);
-  }
-  if (onMarketing && !marketing) {
+  // Terminal route on apex → bounce to trade subdomain
+  if (onMarketing && trade) {
     return NextResponse.redirect(`https://${tradeHost}${pathname}${search}`, 308);
+  }
+  // Anything that isn't the terminal must live on the apex
+  if (onTrade && !trade) {
+    return NextResponse.redirect(`https://${marketingHost}${pathname}${search}`, 308);
   }
   return NextResponse.next();
 }

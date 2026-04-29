@@ -39,6 +39,7 @@ services:
     restart: always
     environment:
       CORS_ORIGINS: https://fxartha.com,https://trade.fxartha.com,https://admin.fxartha.com
+      COOKIE_DOMAIN: .fxartha.com
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
 
   market-data:

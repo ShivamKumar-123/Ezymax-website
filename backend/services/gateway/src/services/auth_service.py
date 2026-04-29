@@ -103,6 +103,11 @@ def _cookie_samesite() -> str:
     return v
 
 
+def _cookie_domain() -> str | None:
+    d = get_settings().COOKIE_DOMAIN.strip()
+    return d or None
+
+
 def attach_auth_cookies(
     response: JSONResponse,
     request: Request,
@@ -114,6 +119,7 @@ def attach_auth_cookies(
     st = get_settings()
     secure = _cookie_secure_flag(request)
     ss = _cookie_samesite()
+    domain = _cookie_domain()
     exp = access_expires_at
     if exp.tzinfo is None:
         exp = exp.replace(tzinfo=timezone.utc)
@@ -127,6 +133,8 @@ def attach_auth_cookies(
         "samesite": ss,
         "path": "/",
     }
+    if domain:
+        access_kw["domain"] = domain
     if not st.JWT_REFRESH_SESSION_COOKIE:
         access_kw["max_age"] = max_age_access
     response.set_cookie(**access_kw)
@@ -138,6 +146,8 @@ def attach_auth_cookies(
         "samesite": ss,
         "path": "/",
     }
+    if domain:
+        refresh_kw["domain"] = domain
     if not st.JWT_REFRESH_SESSION_COOKIE:
         refresh_kw["max_age"] = max_age_refresh
     response.set_cookie(**refresh_kw)
@@ -147,8 +157,14 @@ def clear_auth_cookies(response: JSONResponse, request: Request) -> None:
     st = get_settings()
     secure = _cookie_secure_flag(request)
     ss = _cookie_samesite()
-    response.delete_cookie(st.ACCESS_TOKEN_COOKIE_NAME, path="/", samesite=ss, secure=secure)
-    response.delete_cookie(st.REFRESH_TOKEN_COOKIE_NAME, path="/", samesite=ss, secure=secure)
+    domain = _cookie_domain()
+    delete_kw_a = dict(path="/", samesite=ss, secure=secure)
+    delete_kw_r = dict(path="/", samesite=ss, secure=secure)
+    if domain:
+        delete_kw_a["domain"] = domain
+        delete_kw_r["domain"] = domain
+    response.delete_cookie(st.ACCESS_TOKEN_COOKIE_NAME, **delete_kw_a)
+    response.delete_cookie(st.REFRESH_TOKEN_COOKIE_NAME, **delete_kw_r)
 
 
 # ─── Utility: account number ─────────────────────────────────────────────
