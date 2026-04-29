@@ -645,21 +645,12 @@ export default function AccountsPage() {
                 )}
 
                 {!loading && !error && visibleRows.length === 0 && (
-                  <div className="space-y-4 rounded-xl border border-border-primary bg-card-nested p-8 text-center">
+                  <div className="rounded-xl border border-border-primary bg-card-nested p-8 text-center">
                     <p className="text-sm text-text-secondary">
                       {user?.is_demo
                         ? 'No demo trading account is linked yet.'
-                        : 'You do not have a trading account yet. Open one to start.'}
+                        : 'You do not have a trading account yet. Use the "New Account" button above to open one.'}
                     </p>
-                    {!user?.is_demo && (
-                      <button
-                        type="button"
-                        onClick={handleOpenNewAccount}
-                        className="inline-flex items-center justify-center rounded-lg border-2 border-accent px-5 py-2.5 text-sm font-bold text-accent hover:bg-accent/10"
-                      >
-                        + New Account
-                      </button>
-                    )}
                   </div>
                 )}
 
