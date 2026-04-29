@@ -23,6 +23,7 @@ import {
   Calculator,
   Plug,
   Blocks,
+  Gift,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
   { label: 'Transactions', href: '/transactions', icon: History },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
+  { label: 'Rewards', href: '/rewards', icon: Gift },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
   { label: 'MAMM', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
