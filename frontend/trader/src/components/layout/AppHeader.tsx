@@ -7,7 +7,7 @@ import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import api from '@/lib/api/client';
-import { Menu, ChevronDown, Wallet } from 'lucide-react';
+import { ChevronDown, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -74,29 +74,19 @@ export default function AppHeader() {
       <header
         className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
       >
-        {/* LEFT — hamburger + logo (both toggle sidebar) */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-text-primary hover:bg-bg-hover transition-colors"
-            aria-label="Toggle menu"
-          >
-            <Menu size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="hidden sm:block"
-            aria-label="Toggle menu"
-          >
-            <img
-              src="/images/fxartha-logo.png"
-              alt="FXArtha"
-              className="w-9 h-9 object-contain"
-            />
-          </button>
-        </div>
+        {/* LEFT — fxartha mark toggles the sidebar (no hamburger) */}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors"
+          aria-label="Toggle menu"
+        >
+          <img
+            src="/images/fxartha_icon.png"
+            alt="FXArtha"
+            className="w-9 h-9 object-contain"
+          />
+        </button>
 
         {/* RIGHT — balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
