@@ -92,6 +92,36 @@ class BarAggregator:
         await redis_client.lpush(list_key, json.dumps(bar_data))
         await redis_client.ltrim(list_key, 0, 999)
 
+        # ATR(14) — used by trade insurance pricing. Computed only on 1m bars
+        # because that's the timeframe insurance quotes care about.
+        if timeframe == "1m":
+            await self._update_atr14(symbol)
+
+    async def _update_atr14(self, symbol: str):
+        """Compute the 14-period True-Range average from the most recent 1m
+        bars and cache at `atr:<SYMBOL>:14` with a 5-minute TTL."""
+        import json
+        try:
+            raw = await redis_client.lrange(f"bars:{symbol}:1m", 0, 14)
+            if len(raw) < 15:
+                return  # need 14 TR values → 15 bars
+            bars = [json.loads(b) for b in raw]
+            # bars[0] is newest. We need TR for bars[0..13] using bars[i+1] as prev.
+            tr_total = 0.0
+            for i in range(14):
+                cur = bars[i]
+                prev_close = bars[i + 1]["close"]
+                tr = max(
+                    cur["high"] - cur["low"],
+                    abs(cur["high"] - prev_close),
+                    abs(cur["low"] - prev_close),
+                )
+                tr_total += tr
+            atr = tr_total / 14
+            await redis_client.set(f"atr:{symbol.upper()}:14", f"{atr:.8f}", ex=300)
+        except Exception as exc:
+            logger.debug("ATR update failed for %s: %s", symbol, exc)
+
     async def run_aggregation_loop(self):
         """Periodically publish current bar state to Redis for chart consumers."""
         import json

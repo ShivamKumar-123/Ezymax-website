@@ -868,10 +868,12 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     )
     db.add(tx)
 
-    # Trade insurance — only evaluate on FULL close. `maybe_pay` swallows its
-    # own exceptions so a payout failure can never block the close.
-    if not is_partial:
-        await insurance_maybe_pay(db=db, position=pos, history=history)
+    # Trade insurance — evaluate on full AND partial close. `maybe_pay`
+    # swallows its own exceptions so a payout failure can never block the
+    # close. For partial close, the claim is naturally proportional because
+    # `history.profit` reflects only the partial lots; the policy's
+    # remaining cap is enforced inside evaluate_claim.
+    await insurance_maybe_pay(db=db, position=pos, history=history)
 
     await db.commit()
 

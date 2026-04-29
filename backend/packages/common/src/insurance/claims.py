@@ -122,7 +122,19 @@ async def evaluate_claim(
     loss_abs = -profit
     coverage_frac = Decimal(str(policy.coverage_pct)) / Decimal("100")
     raw_claim = loss_abs * coverage_frac
-    claim_amount = min(raw_claim, Decimal(str(policy.max_cap)))
+
+    # Subtract any prior partial-close payouts on this same policy from the cap
+    # so the total never exceeds the policy's max_cap, even across many partials.
+    paid_so_far_q = await db.execute(
+        select(func.coalesce(func.sum(InsuranceClaim.claim_amount), 0))
+        .where(InsuranceClaim.policy_id == policy.id)
+    )
+    paid_so_far = Decimal(str(paid_so_far_q.scalar_one() or 0))
+    remaining_cap = Decimal(str(policy.max_cap)) - paid_so_far
+    if remaining_cap <= 0:
+        return False, Decimal("0"), "cap_exhausted"
+
+    claim_amount = min(raw_claim, remaining_cap)
 
     # Cap by remaining daily payout headroom
     remaining = Decimal(str(cfg.daily_payout_limit)) - payout_24h
@@ -218,12 +230,18 @@ async def maybe_pay(
         )
         db.add(claim)
 
-        policy.status = "claimed"
-        policy.settled_at = claim.paid_at
+        # Mark "claimed" only when the underlying position is fully closed
+        # OR the policy's coverage cap is now exhausted. Otherwise the policy
+        # stays active to absorb subsequent partial closes.
+        position_done = position.status == "closed"
+        cap_exhausted = (Decimal(str(policy.max_cap)) - paid_so_far - claim_amount) <= 0
+        if position_done or cap_exhausted:
+            policy.status = "claimed"
+            policy.settled_at = claim.paid_at
 
         logger.info(
-            "Insurance claim paid policy=%s user=%s amount=%s",
-            policy.id, policy.user_id, claim_amount,
+            "Insurance claim paid policy=%s user=%s amount=%s position_done=%s",
+            policy.id, policy.user_id, claim_amount, position_done,
         )
         return claim
 
