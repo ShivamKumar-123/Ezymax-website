@@ -1,6 +1,6 @@
 """Corecen Broker API client — forwards A-Book trades to Corecen LP.
 
-When a TrustEdge user with book_type='A' opens, closes, or modifies a
+When an FXArtha user with book_type='A' opens, closes, or modifies a
 position, this client pushes the event to Corecen's broker API so Corecen
 can route it to the real LP.
 

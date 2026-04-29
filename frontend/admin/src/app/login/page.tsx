@@ -60,10 +60,10 @@ export default function LoginPage() {
         {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="TrustEdgeFX" className="w-16 h-16 object-contain" />
+            <img src="/logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-xl font-bold text-text-primary">
-            <span>TrustEdge</span><span style={{ color: '#00e676' }}>FX</span> Admin
+            <span>FX</span><span style={{ color: '#00e676' }}>Artha</span> Admin
           </h1>
           <p className="text-xs text-text-tertiary mt-1">Broker Administration Panel</p>
         </div>
@@ -84,7 +84,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@trustedge.com"
+                placeholder="admin@fxartha.com"
                 required
                 className="w-full pl-9 pr-3 py-2 text-sm bg-bg-input border border-border-primary rounded-md focus:border-buy transition-fast"
               />
@@ -145,7 +145,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xxs text-text-tertiary mt-6">
-          TrustEdge Admin v1.0 &middot; Secure Access Only
+          FXArtha Admin v1.0 &middot; Secure Access Only
         </p>
       </div>
     </div>

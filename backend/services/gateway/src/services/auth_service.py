@@ -506,7 +506,7 @@ async def setup_2fa(user_id: UUID, db: AsyncSession) -> dict:
     user = result.scalar_one_or_none()
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="TrustEdge")
+    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="FXArtha")
     user.two_factor_secret = secret
     await db.commit()
     return {"secret": secret, "qr_uri": provisioning_uri}

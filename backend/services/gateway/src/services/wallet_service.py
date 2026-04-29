@@ -139,7 +139,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 amount=req.amount,
                 crypto_currency=crypto_currency,
                 order_id=str(deposit.id),
-                description=f"TrustEdge deposit ${float(req.amount):,.2f}",
+                description=f"FXArtha deposit ${float(req.amount):,.2f}",
             )
             deposit.transaction_id = ox["track_id"]
             payment_url = ox["payment_url"]
