@@ -232,7 +232,7 @@ function RegisterContent() {
                     <AuthInput
                       label="Email"
                       type="email"
-                      placeholder="eg. johnfrans@gmail.com"
+                      placeholder=""
                       value={form.email}
                       onChange={(e) => update('email', e.target.value)}
                       error={errors.email}

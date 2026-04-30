@@ -104,7 +104,7 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@fxartha.com"
+                    placeholder=""
                     required
                     className="auth-field__input"
                     style={{ paddingLeft: '2.5rem' }}

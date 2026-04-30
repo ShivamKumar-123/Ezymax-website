@@ -269,7 +269,7 @@ export default function LoginPage() {
                       <AuthInput
                         label="Email"
                         type="email"
-                        placeholder="eg. john@example.com"
+                        placeholder=""
                         value={email}
                         onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })); }}
                         error={errors.email}
@@ -359,7 +359,7 @@ export default function LoginPage() {
               <AuthInput
                 label="Email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder=""
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
               />
