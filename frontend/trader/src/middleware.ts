@@ -14,7 +14,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 
 const TRADE_PREFIXES = ['/trading/terminal'];
-const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/'];
+const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/', '/images/', '/frames/', '/charting_library/', '/datafeeds/'];
 const NEUTRAL_EXACT = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
 
 function isTradePath(path: string): boolean {
@@ -45,13 +45,21 @@ export function middleware(req: NextRequest) {
   if (onMarketing && trade) {
     return NextResponse.redirect(`https://${tradeHost}${pathname}${search}`, 308);
   }
-  // Anything that isn't the terminal must live on the apex
+  // Anything that isn't the terminal must live on the apex — but only
+  // redirect real top-level navigations.  Sub-resource fetches (RSC data,
+  // scripts, prefetches) must resolve on the current origin to avoid CORS.
   if (onTrade && !trade) {
+    const rsc = req.headers.get('rsc');
+    const prefetch = req.headers.get('next-router-prefetch');
+    const mode = req.headers.get('sec-fetch-mode');
+    if (rsc || prefetch || (mode && mode !== 'navigate')) {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(`https://${marketingHost}${pathname}${search}`, 308);
   }
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|images/|frames/|charting_library/|datafeeds/).*)'],
 };

@@ -125,7 +125,7 @@ export default function LoginPage() {
     try {
       await login(email, password, totpCode || undefined);
       toast.success('Welcome back!');
-      router.push('/accounts');
+      router.push('/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('2FA') && !msg.includes('Invalid')) {
@@ -144,7 +144,7 @@ export default function LoginPage() {
     try {
       await demoLogin();
       toast.success('Welcome — demo account');
-      router.push('/accounts');
+      router.push('/dashboard');
     } catch (err: unknown) {
       setErrorDialog({ title: 'Demo sign-in failed', message: authErrorMessage(err, 'demo') });
     } finally {

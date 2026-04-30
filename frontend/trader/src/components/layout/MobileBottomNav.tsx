@@ -156,7 +156,7 @@ export default function MobileBottomNav() {
     ? tradingTerminalUrl(tradingAccountId, { view: 'order' })
     : '/trading';
 
-  const isHome = pathname === '/accounts' || pathname === '/dashboard';
+  const isHome = pathname === '/dashboard';
   const isMarket = isTradingArea && (currentView === 'watchlist' || (!currentView && pathname === '/trading'));
   const isChart = isTradingArea && (currentView === 'chart' || (pathname?.includes('/terminal') && !currentView));
   const isOrders = isTradingArea && currentView === 'order';
@@ -175,7 +175,7 @@ export default function MobileBottomNav() {
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
-            <Link href="/accounts" className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
+            <Link href="/dashboard" className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
               <span className={clsx('transition-colors', isHome ? 'text-accent' : 'text-text-tertiary')}>
                 <IconHome active={isHome} />
               </span>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useShellStore } from '@/stores/shellStore';
 import { cn } from '@/lib/utils';
 import {
+  Home,
   LayoutGrid,
   Wallet,
   History,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
+  { label: 'Dashboard', href: '/dashboard', icon: Home },
   { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
   { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
   { label: 'Transactions', href: '/transactions', icon: History },

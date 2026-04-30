@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (isAuthenticated && (isAuthPage || pathname === '/')) {
         // Do not redirect authenticated users away from public share pages —
         // the short link should open the same card regardless of auth state.
-        if (!isSharePage) router.push('/accounts');
+        if (!isSharePage) router.push('/dashboard');
       }
     }
   }, [isInitialized, isAuthenticated, pathname, router]);
