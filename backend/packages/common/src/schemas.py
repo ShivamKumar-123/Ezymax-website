@@ -43,6 +43,7 @@ class BootstrapSessionRequest(BaseModel):
 
 class OpenLiveAccountRequest(BaseModel):
     account_group_id: UUID
+    leverage: Optional[int] = Field(default=None, ge=1, le=2000)
 
 
 class TokenResponse(BaseModel):
