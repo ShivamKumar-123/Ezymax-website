@@ -18,6 +18,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
+from . import rewards_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -874,6 +875,20 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     # `history.profit` reflects only the partial lots; the policy's
     # remaining cap is enforced inside evaluate_claim.
     await insurance_maybe_pay(db=db, position=pos, history=history)
+
+    # Rewards — bump every mission whose action_kind matches this event.
+    # Errors here must never block the close, so swallow.
+    try:
+        await rewards_service.mark_progress(db, user_id, "place_trades", 1)
+        # Trade-volume mission counts USD volume traded on close (lots × contract × open price).
+        try:
+            volume_usd = int(float(close_lots) * float(contract_size) * float(pos.open_price))
+            if volume_usd > 0:
+                await rewards_service.mark_progress(db, user_id, "trade_volume_usd", volume_usd)
+        except Exception:
+            pass
+    except Exception as _exc:
+        logger.debug("rewards mark_progress failed: %s", _exc)
 
     await db.commit()
 
