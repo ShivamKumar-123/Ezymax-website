@@ -123,7 +123,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       open={open}
       onClose={onClose}
       title="Set up account details"
-      width="3xl"
+      width="2xl"
       className="border border-border-primary bg-bg-card max-h-[92vh] flex flex-col shadow-2xl"
       headerClassName="border-b border-border-primary bg-bg-card [&_h3]:text-text-primary"
       bodyClassName="bg-bg-card p-5 sm:p-6"
