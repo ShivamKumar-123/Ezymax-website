@@ -159,7 +159,6 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {groups.map((g, i) => {
                 const sel = selectedId === g.id;
-                const recommended = i === 0;
                 const stocks = /stock/i.test(g.name + ' ' + g.description);
                 return (
                   <button
@@ -175,8 +174,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       border: `1px solid ${sel ? '#d6a93d' : 'var(--border-primary)'}`,
                     }}
                   >
-                    {recommended && <Badge color="#22c55e">Recommended</Badge>}
-                    {!recommended && stocks && <Badge color="#f59e0b">Trading on stocks</Badge>}
+                    {stocks && <Badge color="#f59e0b">Trading on stocks</Badge>}
 
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm mb-3"
