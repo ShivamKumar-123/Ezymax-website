@@ -22,7 +22,7 @@ from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers, lp_receiver,
-    algo_connector, algo_keys, algo_market_data, share, insurance, rewards,
+    share, insurance, rewards,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
@@ -130,9 +130,6 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"]
 # Corecen LP price push receiver — HMAC-secured, public (no JWT). Path mirrors
 # Corecen's sender (axios POST baseURL + '/api/lp/prices/batch').
 app.include_router(lp_receiver.router, prefix="/api/lp", tags=["LP Receiver"])
-app.include_router(algo_connector.router, prefix="/api/algo", tags=["Algo Connector"])
-app.include_router(algo_market_data.router, prefix="/api/algo", tags=["Algo Market Data"])
-app.include_router(algo_keys.router, prefix="/api/v1/algo", tags=["Algo Keys"])
 app.include_router(share.router, prefix="/api/v1", tags=["Share Trade"])
 app.include_router(share.public_router, prefix="/api/v1/public", tags=["Public Share"])
 app.include_router(insurance.router, prefix="/api/v1/insurance", tags=["Trade Insurance"])
@@ -157,13 +154,6 @@ def _verify_ws_token(token: str | None) -> dict | None:
         return {"user_id": UUID(payload["sub"]), "role": payload["role"]}
     except Exception:
         return None
-
-
-@app.websocket("/ws/algo/prices")
-async def algo_prices_stream(websocket: WebSocket):
-    """Live tick stream for external algo bots — first-message auth via X-Api-Key + X-Api-Secret.
-    Broadcasts every tick from the LP pipeline (same source the frontend consumes)."""
-    await algo_market_data.algo_prices_ws(websocket)
 
 
 @app.websocket("/ws/prices")

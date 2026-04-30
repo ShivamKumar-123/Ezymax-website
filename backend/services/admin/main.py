@@ -53,26 +53,6 @@ async def _apply_startup_ddl():
                     updated_at TIMESTAMPTZ DEFAULT now()
                 )
             """))
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS algo_api_keys (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    account_id UUID REFERENCES trading_accounts(id) ON DELETE CASCADE,
-                    api_key VARCHAR(64) UNIQUE NOT NULL,
-                    secret_hash VARCHAR(128) NOT NULL,
-                    label VARCHAR(100) DEFAULT '',
-                    is_active BOOLEAN DEFAULT true,
-                    last_used_at TIMESTAMPTZ,
-                    trades_count INTEGER DEFAULT 0,
-                    created_at TIMESTAMPTZ DEFAULT now()
-                )
-            """))
-            await conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_algo_api_keys_api_key ON algo_api_keys(api_key)"
-            ))
-            await conn.execute(text(
-                "ALTER TABLE algo_api_keys ADD COLUMN IF NOT EXISTS api_secret VARCHAR(128)"
-            ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 

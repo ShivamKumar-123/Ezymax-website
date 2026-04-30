@@ -777,25 +777,6 @@ class Employee(Base):
     user = relationship("User", lazy="selectin")
 
 
-class AlgoApiKey(Base):
-    __tablename__ = "algo_api_keys"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
-    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
-    api_key = Column(String(64), unique=True, nullable=False, index=True)
-    secret_hash = Column(String(128), nullable=False)
-    api_secret = Column(String(128), nullable=True)
-    label = Column(String(100), default="")
-    is_active = Column(Boolean, default=True)
-    last_used_at = Column(DateTime(timezone=True), nullable=True)
-    trades_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-
-    user = relationship("User", lazy="selectin")
-    account = relationship("TradingAccount", lazy="selectin")
-
-
 class SystemSetting(Base):
     __tablename__ = "system_settings"
 
