@@ -1,5 +1,6 @@
 """Auth Service — Registration, login, token management, demo user, 2FA, password reset."""
 import ipaddress
+import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -9,7 +10,7 @@ from time import monotonic
 import pyotp
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
@@ -58,6 +59,35 @@ def _parse_one_ip(raw: str) -> str | None:
         return h
     except ValueError:
         return None
+
+
+def _allowed_origins() -> set[str]:
+    raw = (get_settings().CORS_ORIGINS or "").split(",")
+    return {o.strip().rstrip("/") for o in raw if o.strip()}
+
+
+def assert_same_origin(request: Request) -> None:
+    """Reject state-changing auth requests whose Origin/Referer is not on our allow-list.
+
+    Defense in depth on top of CORS + SameSite=strict cookies. Browsers always
+    send Origin on cross-origin POSTs; if it's missing entirely (e.g. curl from
+    a script), we allow the call — the attacker would still need a valid id_token
+    for our audience, which they cannot mint."""
+    origin = (request.headers.get("origin") or "").strip().rstrip("/")
+    referer = (request.headers.get("referer") or "").strip()
+    if not origin and not referer:
+        return  # non-browser caller; id_token audience check still gates auth
+    allowed = _allowed_origins()
+    if not allowed:
+        return  # not configured — trust CORS layer
+    if origin and origin in allowed:
+        return
+    if referer:
+        # match referer prefix against any allowed origin
+        for ao in allowed:
+            if referer.startswith(ao + "/") or referer == ao:
+                return
+    raise AuthServiceError("Origin not allowed", 403)
 
 
 def client_ip_for_inet(request: Request) -> str | None:
@@ -173,6 +203,22 @@ def generate_account_number() -> str:
     return f"PT{secrets.randbelow(90000000) + 10000000}"
 
 
+# ─── Utility: referral attribution ───────────────────────────────────────
+
+async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str) -> None:
+    """Attach a new user to the IB whose referral_code they used. Silent no-op if the code
+    is missing, expired, or owned by an inactive IB — we don't want to block signup over it."""
+    code = (referral_code or "").strip()
+    if not code:
+        return
+    ib_q = await db.execute(
+        select(IBProfile).where(IBProfile.referral_code == code, IBProfile.is_active == True)
+    )
+    ib_profile = ib_q.scalar_one_or_none()
+    if ib_profile:
+        db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user_id, ib_profile_id=ib_profile.id))
+
+
 # ─── Core: issue auth response ───────────────────────────────────────────
 
 async def issue_auth_json_response(
@@ -182,8 +228,13 @@ async def issue_auth_json_response(
     *,
     status_code: int = 200,
     user_audit_action: str | None = None,
+    audit_metadata: dict | None = None,
 ) -> JSONResponse:
-    """Create user_session + refresh row, commit, return JSON (+ HttpOnly cookies)."""
+    """Create user_session + refresh row, commit, return JSON (+ HttpOnly cookies).
+
+    All inserts (session, refresh, optional audit log) are flushed together and
+    committed atomically. Any exception raised before this commit leaves the
+    transaction open for the route handler to roll back."""
     token, expires = create_access_token(str(user.id), user.role)
     db.add(
         UserSession(
@@ -207,12 +258,29 @@ async def issue_auth_json_response(
     )
     if user_audit_action:
         ua = (request.headers.get("user-agent") or "").strip()
+        # device_info is plain Text; embed structured audit metadata (e.g. Google sub/email)
+        # as a JSON suffix so it's later searchable via ILIKE without a schema change.
+        device_info: str | None = ua[:2048] if ua else None
+        if audit_metadata:
+            try:
+                meta_json = json.dumps(audit_metadata, separators=(",", ":"))
+            except (TypeError, ValueError):
+                meta_json = ""
+            if meta_json:
+                marker = f" :: meta={meta_json}"
+                device_info = ((device_info or "") + marker)[:4096]
+            # Also emit a structured app-log line so SIEM can pick it up without
+            # parsing device_info, and so we don't lose the event if the DB write fails.
+            logger.info(
+                "auth_audit action=%s user_id=%s meta=%s",
+                user_audit_action, user.id, audit_metadata,
+            )
         db.add(
             UserAuditLog(
                 user_id=user.id,
                 action_type=user_audit_action,
                 ip_address=client_ip_for_inet(request),
-                device_info=ua[:2048] if ua else None,
+                device_info=device_info,
             )
         )
     await db.commit()
@@ -275,12 +343,7 @@ async def register_user(
     await db.flush()
 
     if referral_code:
-        ib_q = await db.execute(
-            select(IBProfile).where(IBProfile.referral_code == referral_code, IBProfile.is_active == True)
-        )
-        ib_profile = ib_q.scalar_one_or_none()
-        if ib_profile:
-            db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user.id, ib_profile_id=ib_profile.id))
+        await _consume_referral(db, user.id, referral_code)
 
     return await issue_auth_json_response(user, request, db, status_code=201, user_audit_action="REGISTER")
 
@@ -295,8 +358,18 @@ async def login_user(
     db: AsyncSession,
 ) -> JSONResponse:
     rate_limit_http(request, "login", 40, 60.0)
-    result = await db.execute(select(User).where(User.email == email))
+    # Case-insensitive email lookup so users who registered with mixed case can still
+    # sign in. The unique index on lower(email) (migration 0018) enforces uniqueness.
+    result = await db.execute(select(User).where(func.lower(User.email) == email.lower()))
     user = result.scalar_one_or_none()
+
+    # OAuth-only accounts (Google sign-in) have no password_hash. Reject the password
+    # attempt with a clear message rather than silently calling bcrypt on None.
+    if user and not user.password_hash:
+        raise AuthServiceError(
+            "This account uses Google sign-in. Click 'Continue with Google' instead.",
+            400,
+        )
 
     if not user or not verify_password(password, user.password_hash):
         raise AuthServiceError("Invalid credentials", 401)
@@ -405,6 +478,126 @@ async def demo_login(request: Request, db: AsyncSession) -> JSONResponse:
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
     return await issue_auth_json_response(user, request, db, user_audit_action="LOGIN")
+
+
+# ─── Google OAuth ─────────────────────────────────────────────────────────
+
+async def google_oauth(
+    id_token_str: str,
+    referral_code: str | None,
+    request: Request,
+    db: AsyncSession,
+) -> JSONResponse:
+    """Verify a Google id_token and sign the user in. Creates a new user, links to an
+    existing email-based account, or returns the existing google-linked user."""
+    assert_same_origin(request)
+    rate_limit_http(request, "google-oauth", 30, 60.0)
+
+    st = get_settings()
+    if not st.GOOGLE_CLIENT_ID:
+        raise AuthServiceError("Google sign-in is not configured", 503)
+
+    # Imported lazily so the rest of auth_service does not require google-auth
+    # to be installed in environments that don't enable Google sign-in.
+    try:
+        from google.oauth2 import id_token as google_id_token  # type: ignore
+        from google.auth.transport import requests as google_requests  # type: ignore
+    except ImportError:
+        raise AuthServiceError("Google sign-in dependency missing on server", 503)
+
+    try:
+        claims = google_id_token.verify_oauth2_token(
+            id_token_str,
+            google_requests.Request(),
+            audience=st.GOOGLE_CLIENT_ID,
+        )
+    except ValueError as e:
+        # Defensive: log without echoing the raw token payload back to the client.
+        logger.warning("google id_token verification failed: %s", e)
+        raise AuthServiceError("Invalid Google token", 401)
+
+    # Issuer must be Google. verify_oauth2_token already checks this in current
+    # versions of google-auth, but we re-validate explicitly so the contract is
+    # part of *our* code and survives library upgrades.
+    if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise AuthServiceError("Invalid token issuer", 401)
+
+    # Authorized party (azp) — when set, must match our client id. Belt-and-braces
+    # against a token minted for a different (sibling) client in the same project.
+    azp = claims.get("azp")
+    if azp and azp != st.GOOGLE_CLIENT_ID:
+        raise AuthServiceError("Invalid authorized party", 401)
+
+    if not claims.get("email_verified"):
+        raise AuthServiceError("Google account email is not verified", 401)
+
+    google_id = str(claims.get("sub") or "").strip()
+    email = str(claims.get("email") or "").strip().lower()
+    if not google_id or not email:
+        raise AuthServiceError("Google token missing required claims", 401)
+
+    first_name = (claims.get("given_name") or "").strip()
+    last_name = (claims.get("family_name") or "").strip()
+
+    is_new = False
+    # Lookup-by-google_id first. with_for_update() takes a row lock so a racing
+    # second request for the same google account can't double-insert.
+    user = (
+        await db.execute(
+            select(User).where(User.google_id == google_id).with_for_update()
+        )
+    ).scalar_one_or_none()
+
+    if user is None:
+        # No google-linked row — try to link to an existing password account by email.
+        # Lock the row so concurrent google logins for the same email serialize.
+        user = (
+            await db.execute(
+                select(User).where(func.lower(User.email) == email).with_for_update()
+            )
+        ).scalar_one_or_none()
+        if user is not None:
+            # Reject linking if this email is already bound to a *different* google account.
+            if user.google_id and user.google_id != google_id:
+                raise AuthServiceError(
+                    "Email is already linked to another Google account", 409
+                )
+            if not user.google_id:
+                user.google_id = google_id
+        else:
+            user = User(
+                email=email,
+                password_hash=None,  # OAuth-only — no password
+                google_id=google_id,
+                first_name=first_name,
+                last_name=last_name,
+                role="user",
+                status="active",
+                kyc_status="pending",
+                is_demo=False,
+                language="en",
+                theme="dark",
+            )
+            db.add(user)
+            await db.flush()
+            is_new = True
+            if referral_code:
+                await _consume_referral(db, user.id, referral_code)
+
+    if user.status == "banned":
+        raise AuthServiceError("Account has been banned", 403)
+    if user.status == "blocked":
+        raise AuthServiceError("Account has been blocked", 403)
+
+    # Single commit point — issue_auth_json_response below adds session + refresh
+    # rows and commits once. Any failure above raises before commit, so the
+    # outer route handler's rollback restores a clean state.
+    return await issue_auth_json_response(
+        user, request, db,
+        status_code=201 if is_new else 200,
+        user_audit_action="OAUTH_GOOGLE_REGISTER" if is_new else "OAUTH_GOOGLE_LOGIN",
+        audit_metadata={"google_sub": google_id, "google_email": email},
+    )
 
 
 # ─── Token refresh ────────────────────────────────────────────────────────

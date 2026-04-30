@@ -6,6 +6,7 @@ import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -300,6 +301,16 @@ function RegisterContent() {
                     <button type="submit" className="auth-btn" disabled={loading || isLoading}>
                       {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : 'Sign Up'}
                     </button>
+                  </motion.div>
+
+                  <motion.div className="auth-divider" {...fadeUp(0.74)}>
+                    <span className="auth-divider__line" />
+                    <span className="auth-divider__text">or</span>
+                    <span className="auth-divider__line" />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.75)}>
+                    <GoogleAuthButton disabled={loading || isLoading || demoLoading} />
                   </motion.div>
 
                   <motion.div {...fadeUp(0.76)}>

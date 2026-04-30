@@ -37,6 +37,13 @@ class BootstrapSessionRequest(BaseModel):
     access_token: str = Field(min_length=20, max_length=4096)
 
 
+class GoogleAuthRequest(BaseModel):
+    """Sign in or sign up with Google. id_token is the JWT returned by Google Sign-In on the client."""
+
+    id_token: str = Field(min_length=20, max_length=8192)
+    referral_code: Optional[str] = None
+
+
 class OpenLiveAccountRequest(BaseModel):
     account_group_id: UUID
     leverage: Optional[int] = Field(default=None, ge=1, le=2000)

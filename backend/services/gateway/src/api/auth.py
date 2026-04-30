@@ -8,11 +8,13 @@ from packages.common.src.database import get_db
 from packages.common.src.schemas import (
     RegisterRequest, LoginRequest, UserResponse,
     ForgotPasswordRequest, ResetPasswordRequest, MessageResponse, BootstrapSessionRequest,
+    GoogleAuthRequest,
 )
 from packages.common.src.auth import get_current_user
 from ..services.auth_service import (
     AuthServiceError,
     register_user, login_user, demo_login as _demo_login,
+    google_oauth as _google_oauth,
     refresh_token as _refresh_token, bootstrap_session as _bootstrap_session,
     forgot_password as _forgot_password, reset_password as _reset_password,
     setup_2fa as _setup_2fa, verify_2fa as _verify_2fa,
@@ -88,6 +90,29 @@ async def demo_login(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=500,
             detail=f"Demo sign-in failed — {type(e).__name__}: {e}",
+        )
+
+
+@router.post("/google")
+async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        return await _google_oauth(
+            id_token_str=req.id_token,
+            referral_code=req.referral_code,
+            request=request,
+            db=db,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.exception("google sign-in failed unexpectedly")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail=f"Google sign-in failed — {type(e).__name__}: {e}",
         )
 
 

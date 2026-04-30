@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
 import NotificationListener from '@/components/NotificationListener';
 import TopLoader from '@/components/TopLoader';
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Suspense>
         <ThemeProvider>
           <AuthProvider>
+            <GoogleAuthProvider>
             <NotificationListener />
             {children}
             <Suspense fallback={null}>
@@ -74,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 loading: { className: 'fxartha-hot-toast' },
               }}
             />
+            </GoogleAuthProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

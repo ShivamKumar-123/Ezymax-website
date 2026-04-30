@@ -25,6 +25,7 @@ interface AuthState {
   isInitialized: boolean;
   login: (email: string, password: string, totpCode?: string) => Promise<void>;
   demoLogin: () => Promise<void>;
+  googleLogin: (idToken: string, referralCode?: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   register: (data: {
     email: string;
@@ -67,6 +68,21 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ isLoading: true });
     try {
       await api.post<{ access_token: string; user_id: string; role: string }>('/auth/demo-login', {});
+      const user = await api.get<User>('/auth/me');
+      set({ user, isAuthenticated: true, isLoading: false, token: null });
+    } catch (e) {
+      set({ isLoading: false });
+      throw e;
+    }
+  },
+
+  googleLogin: async (idToken, referralCode) => {
+    set({ isLoading: true });
+    try {
+      await api.post<{ access_token: string; user_id: string; role: string }>('/auth/google', {
+        id_token: idToken,
+        referral_code: referralCode,
+      });
       const user = await api.get<User>('/auth/me');
       set({ user, isAuthenticated: true, isLoading: false, token: null });
     } catch (e) {

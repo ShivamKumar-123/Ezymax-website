@@ -17,7 +17,8 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     phone = Column(String(20))
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # nullable for OAuth-only users
+    google_id = Column(String(64), nullable=True, index=True)  # Google `sub` claim if signed in via Google
     first_name = Column(String(100))
     last_name = Column(String(100))
     date_of_birth = Column(DateTime)

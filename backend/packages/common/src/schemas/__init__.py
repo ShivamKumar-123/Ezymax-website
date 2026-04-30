@@ -7,7 +7,7 @@ here so call sites don't change.
 
 from .auth import (
     RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest,
-    BootstrapSessionRequest, OpenLiveAccountRequest,
+    BootstrapSessionRequest, OpenLiveAccountRequest, GoogleAuthRequest,
     TokenResponse, UserResponse, MessageResponse,
 )
 from .trading import (
@@ -34,7 +34,7 @@ from .insurance import (
 __all__ = [
     # auth
     "RegisterRequest", "LoginRequest", "ForgotPasswordRequest", "ResetPasswordRequest",
-    "BootstrapSessionRequest", "OpenLiveAccountRequest",
+    "BootstrapSessionRequest", "OpenLiveAccountRequest", "GoogleAuthRequest",
     "TokenResponse", "UserResponse", "MessageResponse",
     # trading
     "TradingAccountResponse", "AccountSummary",

@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     # let the browser set a host-only cookie (works for single-host dev/local setups).
     COOKIE_DOMAIN: str = ""
 
+    # Google OAuth (Sign in / Sign up with Google). Verifies id_token audience offline
+    # against Google's JWKS — no client secret stored on our infra. When empty, the
+    # /auth/google endpoint returns 503 and the frontend hides the button.
+    GOOGLE_CLIENT_ID: str = ""
+
     ADMIN_JWT_SECRET: str = "admin-secret-change-in-production"
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8

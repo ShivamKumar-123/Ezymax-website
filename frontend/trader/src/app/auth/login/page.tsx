@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
@@ -9,6 +9,7 @@ import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -313,6 +314,18 @@ export default function LoginPage() {
                       <button type="submit" className="auth-btn" disabled={loading || isLoading || maintenance}>
                         {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Sign In')}
                       </button>
+                    </motion.div>
+
+                    <motion.div className="auth-divider" {...fadeUp(0.58)}>
+                      <span className="auth-divider__line" />
+                      <span className="auth-divider__text">or</span>
+                      <span className="auth-divider__line" />
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.59)}>
+                      <Suspense fallback={null}>
+                        <GoogleAuthButton disabled={loading || isLoading || demoLoading || maintenance} />
+                      </Suspense>
                     </motion.div>
 
                     <motion.div {...fadeUp(0.6)}>
