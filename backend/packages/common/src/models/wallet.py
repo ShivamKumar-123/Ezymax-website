@@ -1,0 +1,137 @@
+"""Wallet ledger — banks, deposits, withdrawals, transactions, charge/spread/swap configs."""
+import uuid
+from datetime import datetime
+
+from sqlalchemy import (
+    Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
+)
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
+
+from ..database import Base
+
+
+class BankAccount(Base):
+    __tablename__ = "bank_accounts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_name = Column(String(100))
+    account_number = Column(String(50))
+    bank_name = Column(String(100))
+    ifsc_code = Column(String(20))
+    upi_id = Column(String(100))
+    qr_code_url = Column(Text)
+    tier = Column(Integer, default=1)
+    min_amount = Column(Numeric(18, 2), default=0)
+    max_amount = Column(Numeric(18, 2), default=999999999)
+    is_active = Column(Boolean, default=True)
+    rotation_order = Column(Integer, default=0)
+    last_used_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class Deposit(Base):
+    __tablename__ = "deposits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id"), nullable=True)
+    amount = Column(Numeric(18, 8), nullable=False)
+    currency = Column(String(10), default="USD")
+    method = Column(String(30))
+    status = Column(String(20), default="pending")
+    transaction_id = Column(String(100))
+    screenshot_url = Column(Text)
+    bank_account_id = Column(UUID(as_uuid=True), ForeignKey("bank_accounts.id"), nullable=True)
+    crypto_tx_hash = Column(String(200))
+    crypto_address = Column(String(200))
+    rejection_reason = Column(Text)
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    approved_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id], lazy="selectin")
+
+
+class Withdrawal(Base):
+    __tablename__ = "withdrawals"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id"), nullable=True)
+    amount = Column(Numeric(18, 8), nullable=False)
+    currency = Column(String(10), default="USD")
+    method = Column(String(30))
+    status = Column(String(20), default="pending")
+    bank_details = Column(JSONB)
+    crypto_address = Column(String(200))
+    crypto_tx_hash = Column(String(200))
+    rejection_reason = Column(Text)
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    approved_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id], lazy="selectin")
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id"), nullable=True)
+    type = Column(String(30), nullable=False)
+    amount = Column(Numeric(18, 8), nullable=False)
+    balance_after = Column(Numeric(18, 8))
+    reference_id = Column(UUID(as_uuid=True))
+    description = Column(Text)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class ChargeConfig(Base):
+    __tablename__ = "charge_configs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope = Column(String(20), nullable=False)
+    segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    charge_type = Column(String(30), nullable=False)
+    value = Column(Numeric(18, 8), nullable=False)
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SpreadConfig(Base):
+    __tablename__ = "spread_configs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope = Column(String(20), nullable=False)
+    segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    spread_type = Column(String(20), nullable=False)
+    value = Column(Numeric(18, 8), nullable=False)
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SwapConfig(Base):
+    __tablename__ = "swap_configs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope = Column(String(20), nullable=False)
+    segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    swap_long = Column(Numeric(18, 8), default=0)
+    swap_short = Column(Numeric(18, 8), default=0)
+    triple_swap_day = Column(Integer, default=3)
+    swap_free = Column(Boolean, default=False)
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

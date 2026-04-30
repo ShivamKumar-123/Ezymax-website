@@ -1,0 +1,83 @@
+"""Rewards engine — XP / Artha Coins / Power Score, missions, store, audit."""
+import uuid
+from datetime import datetime
+from decimal import Decimal
+
+from sqlalchemy import (
+    Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
+)
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from ..database import Base
+
+
+class RewardsUserState(Base):
+    """Per-user XP, AC balance, Power Score."""
+    __tablename__ = "rewards_user_state"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    xp = Column(Integer, nullable=False, default=0, server_default="0")
+    ac_balance = Column(Numeric(18, 2), nullable=False, default=Decimal("0"), server_default="0")
+    ps = Column(Integer, nullable=False, default=0, server_default="0")
+    last_updated = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class RewardsMission(Base):
+    """Mission template (catalogue), shared by all users for a given period."""
+    __tablename__ = "rewards_missions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug = Column(String(60), unique=True, nullable=False)
+    period = Column(String(10), nullable=False)  # daily | weekly
+    title = Column(String(120), nullable=False)
+    description = Column(Text, nullable=False)
+    action_kind = Column(String(40), nullable=False)
+    target_count = Column(Integer, nullable=False, default=1)
+    xp_reward = Column(Integer, nullable=False, default=0)
+    ac_reward = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    display_order = Column(Integer, nullable=False, default=0)
+
+
+class RewardsUserMissionProgress(Base):
+    """Per-user, per-period progress against a mission. Composite PK on
+    (user_id, mission_id, period_key) so daily/weekly resets fall out
+    naturally — period_key is a date or ISO-week string."""
+    __tablename__ = "rewards_user_mission_progress"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    mission_id = Column(UUID(as_uuid=True), ForeignKey("rewards_missions.id", ondelete="CASCADE"), primary_key=True)
+    period_key = Column(String(20), primary_key=True)
+    progress = Column(Integer, nullable=False, default=0)
+    completed_at = Column(DateTime(timezone=True))
+    claimed_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class RewardStoreItem(Base):
+    """Items in the AC reward store."""
+    __tablename__ = "reward_store_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug = Column(String(60), unique=True, nullable=False)
+    category = Column(String(20), nullable=False)  # cashback | bonus | perk | tool
+    label = Column(String(120), nullable=False)
+    description = Column(Text)
+    ac_price = Column(Numeric(18, 2), nullable=False)
+    payload = Column(JSONB, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    display_order = Column(Integer, nullable=False, default=0)
+
+
+class RewardsTransaction(Base):
+    """Audit log of XP/AC events."""
+    __tablename__ = "rewards_transactions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    type = Column(String(30), nullable=False)  # mission_claim | redeem | adjust
+    xp_delta = Column(Integer, nullable=False, default=0)
+    ac_delta = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+    source = Column(String(60))
+    reference_id = Column(UUID(as_uuid=True))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
