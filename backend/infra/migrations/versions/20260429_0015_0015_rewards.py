@@ -3,6 +3,9 @@
 Revision ID: 0015
 Revises: 0014
 """
+import json
+
+import sqlalchemy as sa
 from alembic import op
 
 
@@ -90,10 +93,6 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_rewards_tx_user_created ON rewards_transactions(user_id, created_at DESC);")
 
     # Seed default missions (idempotent — only insert if slug not present).
-    def _esc(v: str) -> str:
-        """Escape single quotes for raw-SQL embedding."""
-        return v.replace("'", "''")
-
     seeds = [
         ("daily_place_trades", "daily", "Place 3 Trades",
          "Execute any 3 trades in any market.", "place_trades", 3, 20, 10, 1),
@@ -108,37 +107,47 @@ def upgrade() -> None:
         ("weekly_deposit", "weekly", "Deposit $500",
          "Top up your wallet by $500 this week.", "deposit_usd", 500, 80, 50, 2),
     ]
+    mission_stmt = sa.text("""
+        INSERT INTO rewards_missions
+          (slug, period, title, description, action_kind, target_count, xp_reward, ac_reward, display_order)
+        VALUES
+          (:slug, :period, :title, :description, :action_kind, :target_count, :xp_reward, :ac_reward, :display_order)
+        ON CONFLICT (slug) DO NOTHING
+    """)
+    bind = op.get_bind()
     for s in seeds:
-        op.execute(
-            f"""
-            INSERT INTO rewards_missions
-              (slug, period, title, description, action_kind, target_count, xp_reward, ac_reward, display_order)
-            VALUES
-              ('{_esc(s[0])}', '{_esc(s[1])}', '{_esc(s[2])}', '{_esc(s[3])}', '{_esc(s[4])}', {s[5]}, {s[6]}, {s[7]}, {s[8]})
-            ON CONFLICT (slug) DO NOTHING;
-            """
-        )
+        bind.execute(mission_stmt, dict(
+            slug=s[0], period=s[1], title=s[2], description=s[3],
+            action_kind=s[4], target_count=s[5], xp_reward=s[6],
+            ac_reward=s[7], display_order=s[8],
+        ))
 
     store_seeds = [
-        ("cashback_100", "cashback", "Cashback 100",
-         "Get a 100 cashback credited to your main wallet.", 200, '{"kind":"cashback","amount":100}', 1),
-        ("bonus_500", "bonus", "Trading Bonus 500",
-         "Add a 500 trading bonus to a chosen account.", 800, '{"kind":"trading_bonus","amount":500}', 2),
-        ("zero_brokerage_1d", "perk", "Zero Brokerage 1 Day Pass",
-         "24h commission-free trading on all instruments.", 1000, '{"kind":"zero_commission_hours","hours":24}', 3),
-        ("premium_signals_1mo", "tool", "Premium Signals 1 Month",
-         "Daily curated trade ideas for one month.", 1500, '{"kind":"signals_days","days":30}', 4),
+        ("cashback_100",        "cashback", "Cashback 100",
+         "Get a 100 cashback credited to your main wallet.", 200,
+         {"kind": "cashback", "amount": 100}, 1),
+        ("bonus_500",           "bonus",    "Trading Bonus 500",
+         "Add a 500 trading bonus to a chosen account.", 800,
+         {"kind": "trading_bonus", "amount": 500}, 2),
+        ("zero_brokerage_1d",   "perk",     "Zero Brokerage 1 Day Pass",
+         "24h commission-free trading on all instruments.", 1000,
+         {"kind": "zero_commission_hours", "hours": 24}, 3),
+        ("premium_signals_1mo", "tool",     "Premium Signals 1 Month",
+         "Daily curated trade ideas for one month.", 1500,
+         {"kind": "signals_days", "days": 30}, 4),
     ]
+    store_stmt = sa.text("""
+        INSERT INTO reward_store_items
+          (slug, category, label, description, ac_price, payload, display_order)
+        VALUES
+          (:slug, :category, :label, :description, :ac_price, CAST(:payload AS JSONB), :display_order)
+        ON CONFLICT (slug) DO NOTHING
+    """)
     for s in store_seeds:
-        op.execute(
-            f"""
-            INSERT INTO reward_store_items
-              (slug, category, label, description, ac_price, payload, display_order)
-            VALUES
-              ('{_esc(s[0])}', '{_esc(s[1])}', '{_esc(s[2])}', '{_esc(s[3])}', {s[4]}, '{s[5]}'::jsonb, {s[6]})
-            ON CONFLICT (slug) DO NOTHING;
-            """
-        )
+        bind.execute(store_stmt, dict(
+            slug=s[0], category=s[1], label=s[2], description=s[3],
+            ac_price=s[4], payload=json.dumps(s[5]), display_order=s[6],
+        ))
 
 
 def downgrade() -> None:
