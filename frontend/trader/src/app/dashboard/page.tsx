@@ -137,10 +137,7 @@ function BrokerHome() {
         onChangeAccount={setActiveId}
         loading={loading}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <DepositMethodsCard />
-        <TopMoversCard movers={movers} />
-      </div>
+      <TopMoversCard movers={movers} />
       <StatusProgramCard />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <InviteFriendsCard />
@@ -282,41 +279,6 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
         {value}
       </p>
     </div>
-  );
-}
-
-function DepositMethodsCard() {
-  const methods = [
-    { name: 'Skrill', sub: 'Card / wallet', color: '#7c3aed', glyph: 'S' },
-    { name: 'Tether (TRC20)', sub: 'USDT on Tron', color: '#22c55e', glyph: '₮' },
-    { name: 'Tether (ERC20)', sub: 'USDT on Ethereum', color: '#22c55e', glyph: '₮' },
-  ];
-  return (
-    <Card title="Popular deposit methods">
-      <ul className="space-y-2">
-        {methods.map((m) => (
-          <li key={m.name}>
-            <Link
-              href="/wallet"
-              className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-bg-hover"
-              style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
-            >
-              <span
-                className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm"
-                style={{ background: `${m.color}1f`, color: m.color, border: `1px solid ${m.color}55` }}
-              >
-                {m.glyph}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-text-primary leading-tight">{m.name}</p>
-                <p className="text-xs text-text-tertiary leading-tight">{m.sub}</p>
-              </div>
-              <ArrowRight size={14} className="text-text-tertiary shrink-0" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Card>
   );
 }
 
