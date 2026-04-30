@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"import ast; ast.parse\\(open\\('backend/infra/migrations/versions/20260429_0015_0015_rewards.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
-    ]
-  }
-}

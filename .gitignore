@@ -58,3 +58,23 @@ build/
 # Misc
 *.local
 *.tsbuildinfo
+
+# Claude Code agent state (never commit)
+.claude/
+
+# Binary specs / drafts / office docs — kept locally, not tracked
+*.docx
+*.doc
+*.pdf
+*.xlsx
+*.xls
+*.ppt
+*.pptx
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.bak
+~$*
