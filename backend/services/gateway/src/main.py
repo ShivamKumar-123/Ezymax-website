@@ -29,6 +29,7 @@ from .engines.copy_engine import copy_engine
 from .engines.stats_engine import stats_engine
 from .engines.staking_engine import staking_engine
 from .engines.play_zone_engine import play_zone_engine
+from .engines.overnight_fee_engine import overnight_fee_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -84,7 +85,9 @@ async def lifespan(app: FastAPI):
     await stats_engine.start()
     await staking_engine.start()
     await play_zone_engine.start()
+    await overnight_fee_engine.start()
     yield
+    await overnight_fee_engine.stop()
     await play_zone_engine.stop()
     await staking_engine.stop()
     await stats_engine.stop()

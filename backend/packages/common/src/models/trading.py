@@ -108,6 +108,10 @@ class Position(Base):
     stop_loss = Column(Numeric(18, 8))
     take_profit = Column(Numeric(18, 8))
     swap = Column(Numeric(18, 8), default=0)
+    # Last time the overnight leverage fee was applied to this position.
+    # NULL until first charge; the engine compares (now - last_swap_at) to
+    # decide whether ≥24h have elapsed and another daily charge is due.
+    last_swap_at = Column(DateTime(timezone=True), nullable=True)
     commission = Column(Numeric(18, 8), default=0)
     profit = Column(Numeric(18, 8), default=0)
     closed_at = Column(DateTime(timezone=True))
