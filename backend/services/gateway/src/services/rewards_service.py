@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
-    RewardStoreItem, RewardsTransaction,
+    RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
     User, TradeHistory, TradingAccount,
     Referral,
 )
@@ -623,6 +623,18 @@ async def redeem(db: AsyncSession, user_id, item_id) -> dict:
         xp_delta=0, ac_delta=-price,
         source=item.slug, reference_id=item.id,
     ))
+
+    # Lifestyle items also enter the manual-fulfillment queue so admins can
+    # ship physical goods / book travel without grepping rewards_transactions.
+    if (item.category or "").lower() == "lifestyle":
+        db.add(LifestyleFulfillment(
+            user_id=user_id,
+            item_id=item.id,
+            ac_paid=price,
+            user_ps_at_redeem=int(state.ps or 0),
+            status="queued",
+        ))
+
     await db.commit()
     return {
         "redeemed": item.label,

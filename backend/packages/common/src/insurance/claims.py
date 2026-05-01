@@ -24,14 +24,11 @@ Cross-checked against Trade_Insurance.docx (May 2026):
               (extreme-vol kill switch — added in this commit)
   ✓ Slide 18  Partial close → proportional via paid_so_far accounting
 
-Documented gaps NOT yet implemented:
-  ✗ Slide 16  "Frequent claims → reduce coverage" — only fee surcharges
-              are applied today. Coverage reduction would need claim-rate
-              lookup at quote time + db pass-through to quote_all_tiers.
-  ✗ Slide 18  "Copy trading → optional higher fee" — copy-traded positions
-              don't currently open insurance policies (followers mirror
-              the master's order without a per-trade insurance toggle), so
-              this is moot until the copy flow exposes it.
+Slide 16 frequent-claim coverage reduction now applies in
+quote_all_tiers when ≥ insurance_frequent_claim_count claims have been
+paid in the last insurance_frequent_claim_window_days. Slide 18
+copy-trade fee surcharge applies when callers pass is_copy_trade=True
+to the quote function. All other slides remain ✓ as listed above.
 """
 from __future__ import annotations
 

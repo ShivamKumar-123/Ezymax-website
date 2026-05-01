@@ -97,3 +97,27 @@ class RewardsTransaction(Base):
     source = Column(String(60))
     reference_id = Column(UUID(as_uuid=True))
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class LifestyleFulfillment(Base):
+    """Manual fulfillment queue for PS-gated lifestyle redemptions
+    (smartphones, Dubai trips, branded merch, etc.). Created when a user
+    redeems a reward_store_items row with category='lifestyle'."""
+    __tablename__ = "lifestyle_fulfillments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    item_id = Column(UUID(as_uuid=True), ForeignKey("reward_store_items.id"), nullable=False)
+    ac_paid = Column(Numeric(18, 2), nullable=False)
+    user_ps_at_redeem = Column(Integer, nullable=False, default=0)
+    shipping_address = Column(Text, nullable=True)
+    tracking_number = Column(String(120), nullable=True)
+    # queued | processing | shipped | delivered | cancelled
+    status = Column(String(20), nullable=False, default="queued")
+    note = Column(Text, nullable=True)
+    requested_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+    shipped_at = Column(DateTime(timezone=True), nullable=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+    handled_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

@@ -31,6 +31,10 @@ class User(Base):
     # When TRUE the trader is routed to swap-free (Islamic) account groups
     # by default and is exempt from the overnight leverage fee engine.
     is_islamic = Column(Boolean, default=False, server_default="false")
+    # Set to TRUE when the user holds an active VipPass (mirrored on User
+    # for fast lookup at reward-application time). Gated by
+    # system_settings.vip_pass_enabled until token economics land.
+    is_vip = Column(Boolean, default=False, server_default="false")
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(255))
     language = Column(String(10), default="en")

@@ -69,7 +69,7 @@ async def quote(
 
     win_rate = await _user_win_rate(db, current_user["user_id"])
 
-    quotes = quote_all_tiers(
+    quotes = await quote_all_tiers(
         cfg=cfg,
         leverage=float(req.leverage),
         atr=atr,
@@ -78,6 +78,8 @@ async def quote(
         has_stop_loss=req.stop_loss is not None,
         sl_distance=sl_distance,
         win_rate=win_rate,
+        db=db,
+        user_id=current_user["user_id"],
     )
     return quotes
 
@@ -137,7 +139,7 @@ async def activate(
 
     win_rate = await _user_win_rate(db, user_id)
 
-    quotes = quote_all_tiers(
+    quotes = await quote_all_tiers(
         cfg=cfg,
         leverage=float(acct.leverage or 100),
         atr=atr,
@@ -146,6 +148,8 @@ async def activate(
         has_stop_loss=pos.stop_loss is not None,
         sl_distance=sl_distance,
         win_rate=win_rate,
+        db=db,
+        user_id=user_id,
     )
 
     chosen = next((q for q in quotes if q["tier"] == req.tier), None)

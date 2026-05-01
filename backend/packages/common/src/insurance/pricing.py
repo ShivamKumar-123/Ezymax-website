@@ -1,13 +1,45 @@
 """Tier pricing engine — produce the four-quote response for `/insurance/quote`."""
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional, TypedDict
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import InsuranceConfig
 from .risk import risk_score
 
 TIERS: tuple[str, ...] = ("basic", "advanced", "pro", "elite")
+
+
+async def _frequent_claim_reduction(
+    db: AsyncSession, user_id: Optional[UUID], cfg: InsuranceConfig,
+) -> float:
+    """Returns the coverage multiplier (≤1.0) for frequent claimers.
+    1.0 = no reduction. Best-effort: returns 1.0 if anything fails."""
+    if user_id is None:
+        return 1.0
+    try:
+        # Local import — avoid circular load when this module is read at
+        # gateway boot before models/__init__ finishes.
+        from ..models import InsuranceClaim
+        since = datetime.now(timezone.utc) - timedelta(days=cfg.frequent_claim_window_days)
+        cnt = (await db.execute(
+            select(func.count())
+            .select_from(InsuranceClaim)
+            .where(
+                InsuranceClaim.user_id == user_id,
+                InsuranceClaim.paid_at >= since,
+            )
+        )).scalar() or 0
+        if int(cnt) >= cfg.frequent_claim_count:
+            return max(0.0, 1.0 - float(cfg.frequent_claim_coverage_reduction_pct))
+    except Exception:
+        pass
+    return 1.0
 
 
 class TierQuote(TypedDict):
@@ -37,7 +69,7 @@ def _estimated_refund(
     return float(sl_distance * position_value_usd * (coverage_pct / 100.0))
 
 
-def quote_all_tiers(
+async def quote_all_tiers(
     *,
     cfg: InsuranceConfig,
     leverage: float,
@@ -47,10 +79,17 @@ def quote_all_tiers(
     has_stop_loss: bool,
     sl_distance: Optional[float],
     win_rate: float,
+    db: Optional[AsyncSession] = None,
+    user_id: Optional[UUID] = None,
+    is_copy_trade: bool = False,
 ) -> list[TierQuote]:
     """Return the four tiered quotes. Caller is expected to pre-check
-    `cfg.enabled`, news blackout, and ATR floor — this function only
-    does the math."""
+    `cfg.enabled`, news blackout, and ATR bounds — this function only
+    does the math.
+
+    `db` + `user_id` are optional but enable the slide-16 frequent-claim
+    coverage reduction. `is_copy_trade=True` adds slide-18's copy-trade
+    fee surcharge."""
     rs = risk_score(leverage, atr, lots)
     base_fee = rs * cfg.base_constant
 
@@ -65,6 +104,14 @@ def quote_all_tiers(
         surcharge += cfg.no_sl_surcharge
     if win_rate >= cfg.winrate_threshold:
         surcharge += cfg.winrate_surcharge
+    if is_copy_trade:
+        surcharge += cfg.copy_trade_surcharge
+
+    # Slide 16 — frequent-claim coverage reduction. Caller must pass db +
+    # user_id for the lookup to fire; otherwise the multiplier is 1.0.
+    coverage_multiplier = 1.0
+    if db is not None and user_id is not None:
+        coverage_multiplier = await _frequent_claim_reduction(db, user_id, cfg)
 
     quotes: list[TierQuote] = []
     for tier in TIERS:
@@ -72,7 +119,8 @@ def quote_all_tiers(
         tier_fee = base_fee * mult * (1 + surcharge)
         final_fee = min(tier_fee, fee_cap)
 
-        coverage = cfg.coverage_pct.get(tier, 0)
+        rack_coverage = cfg.coverage_pct.get(tier, 0)
+        coverage = rack_coverage * coverage_multiplier
         max_cap = _max_cap_for(tier, trade_size_usd, cfg)
         est_refund = _estimated_refund(
             coverage_pct=coverage,

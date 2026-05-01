@@ -36,6 +36,16 @@ class InsuranceConfig:
     # extreme (the inverse of atr_floor). NULL means "no ceiling" — keeps
     # the existing behaviour for installs that don't care about vol caps.
     atr_ceiling: Optional[float]
+    # Slide 16 — frequent-claim coverage reduction. When a user has had
+    # ≥ frequent_claim_count claims in the last frequent_claim_window_days
+    # days, the offered coverage_pct on every tier is multiplied by
+    # (1 - frequent_claim_coverage_reduction_pct).
+    frequent_claim_count: int
+    frequent_claim_window_days: int
+    frequent_claim_coverage_reduction_pct: float
+    # Slide 18 — copy-trade fee surcharge. Multiplies fee by (1 + this)
+    # when caller marks the quote as a copy-trade context.
+    copy_trade_surcharge: float
     news_blackout_until: Optional[datetime]
 
 
@@ -64,6 +74,10 @@ _DEFAULTS = InsuranceConfig(
     winrate_surcharge=0.15,
     atr_floor=0.0001,
     atr_ceiling=None,
+    frequent_claim_count=4,                      # 4+ claims in 30d → reduce
+    frequent_claim_window_days=30,
+    frequent_claim_coverage_reduction_pct=0.25,  # 25% off coverage
+    copy_trade_surcharge=0.10,                   # +10% fee on copy trades
     news_blackout_until=None,
 )
 
@@ -105,5 +119,9 @@ async def load_config() -> InsuranceConfig:
             if (await _get("insurance_disable_atr_ceiling", None)) is not None
             else None
         ),
+        frequent_claim_count=int(await _get("insurance_frequent_claim_count", _DEFAULTS.frequent_claim_count)),
+        frequent_claim_window_days=int(await _get("insurance_frequent_claim_window_days", _DEFAULTS.frequent_claim_window_days)),
+        frequent_claim_coverage_reduction_pct=float(await _get("insurance_frequent_claim_coverage_reduction_pct", _DEFAULTS.frequent_claim_coverage_reduction_pct)),
+        copy_trade_surcharge=float(await _get("insurance_copy_trade_surcharge", _DEFAULTS.copy_trade_surcharge)),
         news_blackout_until=blackout,
     )

@@ -56,7 +56,7 @@ from .insurance import (
 )
 from .rewards import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
-    RewardStoreItem, RewardsTransaction,
+    RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
 )
 from .play_zone import (
     SpinWheelPrize, SpinResult,
@@ -66,6 +66,7 @@ from .play_zone import (
 from .staking import (
     StakingPlan, StakingPosition, StakingRewardAccrual,
 )
+from .vip import VipPass
 from .share import SharedTrade
 
 
@@ -95,13 +96,15 @@ __all__ = [
     "InsurancePolicy", "InsuranceClaim",
     # rewards
     "RewardsUserState", "RewardsMission", "RewardsUserMissionProgress",
-    "RewardStoreItem", "RewardsTransaction",
+    "RewardStoreItem", "RewardsTransaction", "LifestyleFulfillment",
     # play zone
     "SpinWheelPrize", "SpinResult",
     "LotteryRound", "LotteryTicket",
     "BiddingRound", "Bid",
     # staking
     "StakingPlan", "StakingPosition", "StakingRewardAccrual",
+    # vip
+    "VipPass",
     # share
     "SharedTrade",
 ]
