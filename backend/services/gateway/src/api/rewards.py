@@ -35,9 +35,21 @@ async def missions(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
-    if period not in ("daily", "weekly"):
+    if period not in ("daily", "weekly", "bonus", "flash", "achievement"):
         period = "daily"
     return await rewards_service.list_missions(db, current_user["user_id"], period)
+
+
+@router.post("/streak/check-in")
+async def streak_check_in(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Idempotent per UTC day. Bumps the daily-login streak; awards a flat XP
+    nudge each call and a bigger bonus every 7 consecutive days."""
+    result = await rewards_service.daily_login_check_in(db, current_user["user_id"])
+    await db.commit()
+    return result
 
 
 @router.post("/missions/{mission_id}/claim")

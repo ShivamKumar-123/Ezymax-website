@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import logging
 import uuid as uuid_lib
-from datetime import datetime, timezone
+from datetime import datetime, date, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
 from fastapi import HTTPException
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
@@ -74,7 +74,18 @@ def _period_key(period: str, when: Optional[datetime] = None) -> str:
     if period == "weekly":
         iso = when.isocalendar()
         return f"{iso[0]}-W{iso[1]:02d}"
+    if period in ("bonus", "flash", "achievement"):
+        # One-shot per user — single row per (user, mission) regardless of when.
+        return "lifetime"
     return when.strftime("%Y-%m-%d")
+
+
+# Day 7 streak reward (per Repeatable_task.docx "REWARD DAY"): 50 XP + 20 AC.
+STREAK_BONUS_DAYS = 7
+STREAK_BONUS_XP = 50
+STREAK_BONUS_AC = Decimal("20")
+# Daily login itself awards a small XP nudge (Day 1: +5 XP per the doc).
+STREAK_DAILY_XP = 5
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -98,6 +109,13 @@ async def get_state(db: AsyncSession, user_id) -> dict:
     ps = int(state.ps or 0)
     level, label, into, need = _level_for_xp(xp)
     next_ps, next_ps_label = _next_ps_milestone(ps)
+    today = date.today()
+    last = state.last_streak_date
+    # The visible streak count is the on-record value, but if the user has skipped
+    # a day the streak is *effectively* broken — show 0 until they check in again.
+    visible_streak = int(state.streak_count or 0)
+    if last is not None and (today - last).days > 1:
+        visible_streak = 0
     return {
         "level": level,
         "level_label": label,
@@ -109,6 +127,71 @@ async def get_state(db: AsyncSession, user_id) -> dict:
         "ps_rank": _rank_for_ps(ps),
         "ps_next_milestone": next_ps,
         "ps_next_milestone_label": next_ps_label,
+        "streak_count": visible_streak,
+        "streak_checked_in_today": last is not None and last == today,
+        "streak_bonus_days": STREAK_BONUS_DAYS,
+        "streak_bonus_xp": STREAK_BONUS_XP,
+        "streak_bonus_ac": float(STREAK_BONUS_AC),
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Daily login streak
+# ─────────────────────────────────────────────────────────────────────
+
+async def daily_login_check_in(db: AsyncSession, user_id) -> dict:
+    """Idempotent per UTC day. Increments the streak if the user checked in
+    yesterday (or starts a fresh streak otherwise). Awards a flat XP nudge
+    every day plus a bigger bonus on day 7 (then resets to 0 so the cycle
+    repeats). Caller commits."""
+    state = await _get_or_create_state(db, user_id)
+    today = date.today()
+    last = state.last_streak_date
+
+    if last == today:
+        # Already checked in — return current state without granting again.
+        return {
+            "streak_count": int(state.streak_count or 0),
+            "checked_in_today": True,
+            "xp_earned": 0,
+            "ac_earned": 0.0,
+            "bonus_awarded": False,
+        }
+
+    if last is not None and (today - last).days == 1:
+        new_streak = int(state.streak_count or 0) + 1
+    else:
+        # First-ever check-in OR user skipped a day → restart at 1.
+        new_streak = 1
+
+    xp_gain = STREAK_DAILY_XP
+    ac_gain = Decimal("0")
+    bonus = False
+    if new_streak >= STREAK_BONUS_DAYS:
+        xp_gain += STREAK_BONUS_XP
+        ac_gain += STREAK_BONUS_AC
+        bonus = True
+        new_streak = 0  # reset so the user can begin a fresh 7-day cycle tomorrow
+
+    state.streak_count = new_streak
+    state.last_streak_date = today
+    state.xp = int(state.xp or 0) + xp_gain
+    state.ac_balance = Decimal(str(state.ac_balance or 0)) + ac_gain
+    state.last_updated = datetime.now(timezone.utc)
+
+    db.add(RewardsTransaction(
+        user_id=user_id, type="streak_check_in",
+        xp_delta=xp_gain, ac_delta=ac_gain,
+        source=f"streak_day_{new_streak if new_streak else STREAK_BONUS_DAYS}",
+    ))
+    return {
+        "streak_count": new_streak,
+        "checked_in_today": True,
+        "xp_earned": xp_gain,
+        "ac_earned": float(ac_gain),
+        "bonus_awarded": bonus,
+        "new_xp": int(state.xp),
+        "new_ac_balance": float(state.ac_balance),
     }
 
 
@@ -116,14 +199,23 @@ async def get_state(db: AsyncSession, user_id) -> dict:
 # Missions
 # ─────────────────────────────────────────────────────────────────────
 
+_VALID_PERIODS = ("daily", "weekly", "bonus", "flash", "achievement")
+
+
 async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
+    if period not in _VALID_PERIODS:
+        raise HTTPException(status_code=400, detail="invalid_period")
     now = datetime.now(timezone.utc)
     pkey = _period_key(period, now)
-    missions = (await db.execute(
+    stmt = (
         select(RewardsMission)
         .where(RewardsMission.is_active.is_(True), RewardsMission.period == period)
-        .order_by(RewardsMission.display_order, RewardsMission.title)
-    )).scalars().all()
+    )
+    # Flash missions auto-hide once expires_at is past. Other periods ignore expiry.
+    if period == "flash":
+        stmt = stmt.where(or_(RewardsMission.expires_at.is_(None), RewardsMission.expires_at > now))
+    stmt = stmt.order_by(RewardsMission.display_order, RewardsMission.title)
+    missions = (await db.execute(stmt)).scalars().all()
     if not missions:
         return []
     progress_rows = (await db.execute(
@@ -153,6 +245,7 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
             "completed": completed,
             "claimed": claimed,
             "period_key": pkey,
+            "expires_at": m.expires_at.isoformat() if m.expires_at else None,
         })
     return out
 

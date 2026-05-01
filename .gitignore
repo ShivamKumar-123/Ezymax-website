@@ -63,6 +63,9 @@ build/
 # Claude Code agent state (never commit)
 .claude/
 
+# Local working notes (extracted client doc text, scratch files)
+.clientdocs/
+
 # Binary specs / drafts / office docs — kept locally, not tracked
 *.docx
 *.doc
@@ -79,3 +82,7 @@ build/
 *.rar
 *.bak
 ~$*
+
+# Client reference mockups dropped at the repo root (kept locally only)
+/ChatGPT Image*.png
+/ChatGPT Image*.jpg

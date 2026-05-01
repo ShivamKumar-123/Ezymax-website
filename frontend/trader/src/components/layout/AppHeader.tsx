@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
+import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
 import { ChevronDown, Wallet } from 'lucide-react';
 
@@ -88,8 +89,11 @@ export default function AppHeader() {
           />
         </button>
 
-        {/* RIGHT — balance + bell + user */}
+        {/* RIGHT — XP/Coin chip + balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* XP + AC chip — links to /earn/tasks */}
+          <EarnChip />
+
           {/* Balance pill */}
           <Link
             href="/wallet"

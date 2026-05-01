@@ -1,10 +1,10 @@
 """Rewards engine — XP / Artha Coins / Power Score, missions, store, audit."""
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 from sqlalchemy import (
-    Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
+    Column, String, Boolean, Integer, DateTime, Date, ForeignKey, Text, Numeric,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
@@ -12,13 +12,18 @@ from ..database import Base
 
 
 class RewardsUserState(Base):
-    """Per-user XP, AC balance, Power Score."""
+    """Per-user XP, AC balance, Power Score, and daily login streak."""
     __tablename__ = "rewards_user_state"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     xp = Column(Integer, nullable=False, default=0, server_default="0")
     ac_balance = Column(Numeric(18, 2), nullable=False, default=Decimal("0"), server_default="0")
     ps = Column(Integer, nullable=False, default=0, server_default="0")
+    # Daily login streak (resets if the user skips a day). last_streak_date is
+    # NULL until the first check-in, then set to the date of the most recent
+    # increment so we can decide today vs. yesterday vs. older on next check-in.
+    streak_count = Column(Integer, nullable=False, default=0, server_default="0")
+    last_streak_date = Column(Date, nullable=True)
     last_updated = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
 
@@ -28,7 +33,8 @@ class RewardsMission(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug = Column(String(60), unique=True, nullable=False)
-    period = Column(String(10), nullable=False)  # daily | weekly
+    # daily | weekly | bonus | flash | achievement
+    period = Column(String(20), nullable=False)
     title = Column(String(120), nullable=False)
     description = Column(Text, nullable=False)
     action_kind = Column(String(40), nullable=False)
@@ -37,6 +43,9 @@ class RewardsMission(Base):
     ac_reward = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     display_order = Column(Integer, nullable=False, default=0)
+    # When set, the mission stops being offered after this timestamp (used by
+    # flash + event missions). NULL means the mission is evergreen.
+    expires_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class RewardsUserMissionProgress(Base):
