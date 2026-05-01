@@ -61,6 +61,9 @@ from .rewards import (
 from .play_zone import (
     SpinWheelPrize, SpinResult,
 )
+from .staking import (
+    StakingPlan, StakingPosition, StakingRewardAccrual,
+)
 from .share import SharedTrade
 
 
@@ -93,6 +96,8 @@ __all__ = [
     "RewardStoreItem", "RewardsTransaction",
     # play zone
     "SpinWheelPrize", "SpinResult",
+    # staking
+    "StakingPlan", "StakingPosition", "StakingRewardAccrual",
     # share
     "SharedTrade",
 ]
