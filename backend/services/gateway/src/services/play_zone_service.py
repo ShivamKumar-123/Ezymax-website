@@ -232,6 +232,70 @@ async def buy_lottery_ticket(db: AsyncSession, user_id, round_id) -> dict:
     }
 
 
+async def refund_lottery_round(db: AsyncSession, rnd: LotteryRound) -> int:
+    """Refund every ticket purchase on a round and write a ledger row.
+    Used by admin cancel. Caller commits."""
+    tickets = (await db.execute(
+        select(LotteryTicket).where(LotteryTicket.round_id == rnd.id)
+    )).scalars().all()
+    if not tickets:
+        return 0
+    refunds_by_user: dict = {}
+    for t in tickets:
+        refunds_by_user[t.user_id] = refunds_by_user.get(t.user_id, Decimal("0")) + Decimal(str(t.ac_paid or 0))
+    now = datetime.now(timezone.utc)
+    for uid, total in refunds_by_user.items():
+        s_q = await db.execute(
+            select(RewardsUserState).where(RewardsUserState.user_id == uid).with_for_update()
+        )
+        s = s_q.scalar_one_or_none()
+        if s is None:
+            s = RewardsUserState(user_id=uid)
+            db.add(s)
+            await db.flush()
+        s.ac_balance = Decimal(str(s.ac_balance or 0)) + total
+        s.last_updated = now
+        db.add(RewardsTransaction(
+            user_id=uid, type="lottery_refund",
+            xp_delta=0, ac_delta=total,
+            source=rnd.slug, reference_id=rnd.id,
+        ))
+    return len(tickets)
+
+
+async def refund_bidding_round(db: AsyncSession, rnd: BiddingRound) -> int:
+    """Refund every bid on a round at 100% (admin cancel) — distinct from
+    the close-with-50%-refund path. Caller commits."""
+    bids = (await db.execute(
+        select(Bid).where(Bid.round_id == rnd.id)
+    )).scalars().all()
+    if not bids:
+        return 0
+    refunds_by_user: dict = {}
+    for b in bids:
+        amt = Decimal(str(b.ac_amount or 0))
+        b.refunded_ac = amt
+        refunds_by_user[b.user_id] = refunds_by_user.get(b.user_id, Decimal("0")) + amt
+    now = datetime.now(timezone.utc)
+    for uid, total in refunds_by_user.items():
+        s_q = await db.execute(
+            select(RewardsUserState).where(RewardsUserState.user_id == uid).with_for_update()
+        )
+        s = s_q.scalar_one_or_none()
+        if s is None:
+            s = RewardsUserState(user_id=uid)
+            db.add(s)
+            await db.flush()
+        s.ac_balance = Decimal(str(s.ac_balance or 0)) + total
+        s.last_updated = now
+        db.add(RewardsTransaction(
+            user_id=uid, type="bid_cancel_refund",
+            xp_delta=0, ac_delta=total,
+            source=rnd.slug, reference_id=rnd.id,
+        ))
+    return len(bids)
+
+
 async def close_due_lottery_rounds(db: AsyncSession, now: Optional[datetime] = None) -> int:
     """Cron-friendly: pick a winner for every round whose draws_at has passed
     and is still 'open'. Credits the prize to the winner. Returns the
