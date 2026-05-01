@@ -197,6 +197,31 @@ def clear_auth_cookies(response: JSONResponse, request: Request) -> None:
     response.delete_cookie(st.REFRESH_TOKEN_COOKIE_NAME, **delete_kw_r)
 
 
+# ─── Utility: transactional email senders ────────────────────────────────
+
+
+def _send_welcome_email(user: User, *, via_google: bool) -> None:
+    """Schedule a welcome email after a successful signup. Fire-and-forget:
+    SMTP latency or failure must never delay the API response or roll back
+    the signup."""
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        if not smtp_configured():
+            return
+        from packages.common.src.email_templates import render_welcome
+        st = get_settings()
+        subject, html, text = render_welcome(
+            first_name=user.first_name,
+            trader_app_url=st.TRADER_APP_URL or "https://trade.fxartha.com",
+            via_google=via_google,
+        )
+        fire_and_forget(send_email(user.email, subject, html, text=text))
+    except Exception as e:
+        logger.warning("welcome email scheduling failed for %s: %s", user.email, e)
+
+
 # ─── Utility: account number ─────────────────────────────────────────────
 
 def generate_account_number() -> str:
@@ -355,7 +380,13 @@ async def register_user(
     if referral_code:
         await _consume_referral(db, user.id, referral_code)
 
-    return await issue_auth_json_response(user, request, db, status_code=201, user_audit_action="REGISTER")
+    response = await issue_auth_json_response(
+        user, request, db, status_code=201, user_audit_action="REGISTER",
+    )
+    # Fire-and-forget welcome email after the commit — never blocks the
+    # signup response and a delivery failure can't roll back the account.
+    _send_welcome_email(user, via_google=False)
+    return response
 
 
 # ─── Login ────────────────────────────────────────────────────────────────
@@ -602,12 +633,17 @@ async def google_oauth(
     # Single commit point — issue_auth_json_response below adds session + refresh
     # rows and commits once. Any failure above raises before commit, so the
     # outer route handler's rollback restores a clean state.
-    return await issue_auth_json_response(
+    response = await issue_auth_json_response(
         user, request, db,
         status_code=201 if is_new else 200,
         user_audit_action="OAUTH_GOOGLE_REGISTER" if is_new else "OAUTH_GOOGLE_LOGIN",
         audit_metadata={"google_sub": google_id, "google_email": email},
     )
+    # Welcome email only for first-time Google signups — returning users
+    # logging in via Google have already received it.
+    if is_new:
+        _send_welcome_email(user, via_google=True)
+    return response
 
 
 # ─── Token refresh ────────────────────────────────────────────────────────

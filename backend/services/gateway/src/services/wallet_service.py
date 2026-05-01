@@ -369,6 +369,27 @@ async def handle_oxapay_webhook(
             notif_type="deposit", action_url="/wallet",
         )
 
+        # Email the user — best-effort.
+        try:
+            from packages.common.src.smtp_mail import (
+                send_email, smtp_configured, fire_and_forget,
+            )
+            from packages.common.src.email_templates import render_deposit_confirmed
+            from packages.common.src.config import get_settings as _gs
+            if smtp_configured() and user_row.email:
+                subject, html, text = render_deposit_confirmed(
+                    first_name=user_row.first_name,
+                    amount=deposit.amount,
+                    currency="USD",
+                    method="Crypto (OxaPay)",
+                    reference=str(deposit.id),
+                    new_balance=user_row.main_wallet_balance,
+                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                )
+                fire_and_forget(send_email(user_row.email, subject, html, text=text))
+        except Exception as _e:
+            logger.warning("oxapay deposit email failed: %s", _e)
+
     elif oxapay_status in ("expired", "failed"):
         deposit.status = "rejected"
         deposit.rejection_reason = f"OxaPay payment {oxapay_status}"
@@ -432,6 +453,36 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
         notif_type="withdrawal", action_url="/wallet",
     )
     await db.commit()
+
+    # Confirmation email — fire-and-forget so SMTP never blocks the response.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_withdrawal_requested
+        from packages.common.src.config import get_settings as _gs
+        if smtp_configured() and user_row.email:
+            destination_str: str | None = None
+            if withdrawal.crypto_address:
+                ca = str(withdrawal.crypto_address)
+                # Mask middle of crypto address for the email log.
+                destination_str = f"{ca[:6]}…{ca[-4:]}" if len(ca) > 12 else ca
+            elif withdrawal.bank_details and isinstance(withdrawal.bank_details, dict):
+                acct = withdrawal.bank_details.get("account_number") or ""
+                if acct:
+                    destination_str = f"Bank ****{str(acct)[-4:]}"
+            subject, html, text = render_withdrawal_requested(
+                first_name=user_row.first_name,
+                amount=req.amount,
+                currency="USD",
+                method=req.method,
+                destination=destination_str,
+                request_id=str(withdrawal.id),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(user_row.email, subject, html, text=text))
+    except Exception as _e:
+        logger.warning("withdrawal-requested email failed: %s", _e)
 
     return {"id": str(withdrawal.id), "status": "pending", "amount": float(withdrawal.amount)}
 

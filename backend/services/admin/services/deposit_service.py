@@ -220,6 +220,29 @@ async def approve_deposit(
         commit=False,
     )
     await db.commit()
+    # Email — fire-and-forget after commit so SMTP latency doesn't delay the
+    # admin's response and a delivery failure can't roll back the approval.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_deposit_confirmed
+        from packages.common.src.config import get_settings as _get_settings
+        if smtp_configured() and user_row.email:
+            subject, html, text = render_deposit_confirmed(
+                first_name=user_row.first_name,
+                amount=deposit.amount,
+                currency="USD",
+                method=deposit.method or "Manual",
+                reference=str(deposit.id),
+                new_balance=user_row.main_wallet_balance,
+                trader_app_url=(_get_settings().TRADER_APP_URL or "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(user_row.email, subject, html, text=text))
+    except Exception as _e:
+        # Logger isn't always imported at module top here; deferred lookup.
+        import logging as _logging
+        _logging.getLogger("admin.deposit").warning("deposit email failed: %s", _e)
     return {"message": f"Deposit approved successfully{bonus_msg}"}
 
 
@@ -336,6 +359,36 @@ async def approve_withdrawal(
         commit=False,
     )
     await db.commit()
+    # Approval email — fire-and-forget.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_withdrawal_approved
+        from packages.common.src.config import get_settings as _gs
+        u = (await db.execute(select(User).where(User.id == withdrawal.user_id))).scalar_one_or_none()
+        if smtp_configured() and u and u.email:
+            destination_str: str | None = None
+            if withdrawal.crypto_address:
+                ca = str(withdrawal.crypto_address)
+                destination_str = f"{ca[:6]}…{ca[-4:]}" if len(ca) > 12 else ca
+            elif withdrawal.bank_details and isinstance(withdrawal.bank_details, dict):
+                acct = withdrawal.bank_details.get("account_number") or ""
+                if acct:
+                    destination_str = f"Bank ****{str(acct)[-4:]}"
+            subject, html, text = render_withdrawal_approved(
+                first_name=u.first_name,
+                amount=withdrawal.amount,
+                currency="USD",
+                method=withdrawal.method or "Manual",
+                destination=destination_str,
+                request_id=str(withdrawal.id),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(u.email, subject, html, text=text))
+    except Exception as _e:
+        import logging as _logging
+        _logging.getLogger("admin.withdraw").warning("withdrawal approve email failed: %s", _e)
     return {"message": "Withdrawal approved successfully"}
 
 
@@ -372,6 +425,27 @@ async def reject_withdrawal(
         commit=False,
     )
     await db.commit()
+    # Rejection email — fire-and-forget.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_withdrawal_rejected
+        from packages.common.src.config import get_settings as _gs
+        u = (await db.execute(select(User).where(User.id == withdrawal.user_id))).scalar_one_or_none()
+        if smtp_configured() and u and u.email:
+            subject, html, text = render_withdrawal_rejected(
+                first_name=u.first_name,
+                amount=withdrawal.amount,
+                currency="USD",
+                reason=reason_str or None,
+                request_id=str(withdrawal.id),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(u.email, subject, html, text=text))
+    except Exception as _e:
+        import logging as _logging
+        _logging.getLogger("admin.withdraw").warning("withdrawal reject email failed: %s", _e)
     return {"message": "Withdrawal rejected"}
 
 
