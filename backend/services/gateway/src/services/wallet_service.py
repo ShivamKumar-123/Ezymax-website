@@ -16,7 +16,7 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
-from . import oxapay_service
+from . import oxapay_service, nowpayments_service
 
 logger = logging.getLogger("wallet_service")
 
@@ -35,6 +35,7 @@ METHOD_MAP = {
     "metamask": "metamask",
     "card": "bank_transfer",
     "oxapay": "oxapay",
+    "nowpayments": "nowpayments",
     "manual": "manual",
 }
 
@@ -109,12 +110,16 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     bank = await _get_bank_for_tier(req.amount, db)
     db_method = METHOD_MAP.get(req.method, "bank_transfer")
 
-    # For OxaPay, use 'initiated' status until payment is actually started
-    # This prevents showing incomplete payment attempts in history
+    # For automated crypto methods, use 'initiated' status until payment is
+    # actually started. This prevents showing incomplete payment attempts in
+    # history. NOWPayments is the current default; OxaPay is kept mounted for
+    # in-flight + historical deposits.
     settings = get_settings()
     crypto_currency = getattr(req, "crypto_currency", None)
     is_oxapay = db_method == "oxapay" and bool(settings.OXAPAY_MERCHANT_KEY)
-    
+    is_nowpayments = db_method == "nowpayments" and bool(settings.NOWPAYMENTS_API_KEY)
+    is_automated_crypto = is_oxapay or is_nowpayments
+
     deposit = Deposit(
         user_id=user_id,
         account_id=req.account_id if req.account_id else None,
@@ -125,13 +130,13 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         crypto_tx_hash=getattr(req, "crypto_tx_hash", None),
         crypto_address=getattr(req, "crypto_address", None),
         bank_account_id=bank.id if bank else None,
-        status="initiated" if is_oxapay else "pending",
+        status="initiated" if is_automated_crypto else "pending",
     )
     db.add(deposit)
     await db.commit()
     await db.refresh(deposit)
 
-    # ── OxaPay automated payment ──────────────────────────────────────
+    # ── Automated crypto payment ──────────────────────────────────────
     payment_url: str | None = None
     if is_oxapay:
         try:
@@ -155,6 +160,29 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             raise HTTPException(
                 status_code=502,
                 detail=f"OxaPay payment creation failed: {str(oxapay_err)}",
+            )
+    elif is_nowpayments:
+        try:
+            np = await nowpayments_service.create_payment(
+                amount=req.amount,
+                crypto_currency=crypto_currency,
+                order_id=str(deposit.id),
+                description=f"FXArtha deposit ${float(req.amount):,.2f}",
+            )
+            deposit.transaction_id = np["invoice_id"]
+            payment_url = np["payment_url"]
+            await db.commit()
+        except Exception as np_err:
+            logger.exception(
+                "NOWPayments create_payment failed for deposit %s",
+                deposit.id,
+            )
+            # Delete the initiated deposit since payment creation failed
+            await db.delete(deposit)
+            await db.commit()
+            raise HTTPException(
+                status_code=502,
+                detail=f"NOWPayments payment creation failed: {str(np_err)}",
             )
 
     try:
@@ -407,6 +435,165 @@ async def handle_oxapay_webhook(
 
     await db.commit()
     logger.info("OxaPay webhook: deposit %s → %s", order_id, deposit.status)
+
+
+# ─── NOWPayments Webhook ─────────────────────────────────────────────────
+
+# NOWPayments status terminals — mapping decided by client spec:
+#   waiting / confirming / sending → 'pending'   (in flight)
+#   confirmed / finished           → 'auto_approved' (credit balance)
+#   failed / expired / refunded /
+#     partially_paid               → 'rejected'   (no credit)
+
+
+async def handle_nowpayments_webhook(
+    order_id: str,
+    np_status: str,
+    payment_id: str | None,
+    payload: dict,
+    db: AsyncSession,
+) -> None:
+    """Process a NOWPayments IPN. Auto-approve on 'finished'/'confirmed';
+    reject on terminal failures; otherwise just bump 'initiated' → 'pending'.
+    Idempotent — already-settled rows are left alone."""
+    from uuid import UUID as UUIDType
+
+    try:
+        deposit_uuid = UUIDType(order_id)
+    except ValueError:
+        logger.warning("NOWPayments webhook: invalid order_id=%s", order_id)
+        return
+
+    result = await db.execute(select(Deposit).where(Deposit.id == deposit_uuid))
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        logger.warning("NOWPayments webhook: deposit not found order_id=%s", order_id)
+        return
+
+    # Idempotent — skip if already terminal.
+    if deposit.status not in ("initiated", "pending"):
+        logger.info("NOWPayments webhook: deposit %s already %s, skipping", order_id, deposit.status)
+        return
+
+    if payment_id:
+        deposit.transaction_id = str(payment_id)
+
+    status = (np_status or "").lower()
+
+    in_flight = ("waiting", "confirming", "sending")
+    success = ("confirmed", "finished")
+    failure = ("failed", "expired", "refunded", "partially_paid")
+
+    # Move 'initiated' → 'pending' on first signal that the user actually paid.
+    if status in in_flight and deposit.status == "initiated":
+        deposit.status = "pending"
+        await db.commit()
+        logger.info("NOWPayments webhook: deposit %s → pending (status=%s)", order_id, status)
+        return
+
+    if status in success:
+        deposit.status = "auto_approved"
+        deposit.approved_at = datetime.utcnow()
+
+        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+        user_row = user_q.scalar_one_or_none()
+        if not user_row:
+            logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
+            return
+
+        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+
+        db.add(Transaction(
+            user_id=deposit.user_id,
+            account_id=None,
+            type="deposit",
+            amount=deposit.amount,
+            balance_after=user_row.main_wallet_balance,
+            reference_id=deposit.id,
+            description="Deposit to main wallet - nowpayments (auto)",
+        ))
+
+        # Apply active bonus offers — mirrors the OxaPay path so promo
+        # behaviour is identical regardless of provider.
+        bonus_msg = ""
+        now = datetime.utcnow()
+        offers_q = await db.execute(
+            select(BonusOffer).where(
+                BonusOffer.is_active == True,
+                BonusOffer.bonus_type.in_(["deposit", "welcome"]),
+                BonusOffer.min_deposit <= deposit.amount,
+            )
+        )
+        for offer in offers_q.scalars().all():
+            if offer.starts_at and offer.starts_at > now:
+                continue
+            if offer.expires_at and offer.expires_at < now:
+                continue
+            if offer.percentage and offer.percentage > 0:
+                bonus_amount = deposit.amount * offer.percentage / Decimal("100")
+            elif offer.fixed_amount and offer.fixed_amount > 0:
+                bonus_amount = offer.fixed_amount
+            else:
+                continue
+            if offer.max_bonus and bonus_amount > offer.max_bonus:
+                bonus_amount = offer.max_bonus
+
+            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=None,
+                type="bonus",
+                amount=bonus_amount,
+                balance_after=user_row.main_wallet_balance,
+                description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
+            ))
+            bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit approved",
+            message=f"Your deposit of ${float(deposit.amount):,.2f} was approved automatically.{bonus_msg}",
+            notif_type="deposit", action_url="/wallet",
+        )
+
+        # Best-effort email — never blocks settlement.
+        try:
+            from packages.common.src.smtp_mail import (
+                send_email, smtp_configured, fire_and_forget,
+            )
+            from packages.common.src.email_templates import render_deposit_confirmed
+            from packages.common.src.config import get_settings as _gs
+            if smtp_configured() and user_row.email:
+                subject, html, text = render_deposit_confirmed(
+                    first_name=user_row.first_name,
+                    amount=deposit.amount,
+                    currency="USD",
+                    method="Crypto (NOWPayments)",
+                    reference=str(deposit.id),
+                    new_balance=user_row.main_wallet_balance,
+                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                )
+                fire_and_forget(send_email(user_row.email, subject, html, text=text))
+        except Exception as _e:
+            logger.warning("nowpayments deposit email failed: %s", _e)
+
+    elif status in failure:
+        deposit.status = "rejected"
+        deposit.rejection_reason = f"NOWPayments payment {status}"
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit not completed",
+            message=f"Your ${float(deposit.amount):,.2f} crypto deposit {status}. Please try again.",
+            notif_type="deposit", action_url="/wallet",
+        )
+
+    else:
+        # Unknown / informational — log and bail without mutating state.
+        logger.info("NOWPayments webhook: deposit %s status=%s (no action)", order_id, status)
+        return
+
+    await db.commit()
+    logger.info("NOWPayments webhook: deposit %s → %s", order_id, deposit.status)
 
 
 # ─── Withdrawals ──────────────────────────────────────────────────────────

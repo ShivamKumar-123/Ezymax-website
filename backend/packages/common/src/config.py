@@ -109,10 +109,16 @@ class Settings(BaseSettings):
     # Request body size limit (bytes) — 10 MB default
     MAX_REQUEST_SIZE: int = 10 * 1024 * 1024
 
-    # OxaPay crypto payment gateway
+    # OxaPay crypto payment gateway (legacy — kept mounted for in-flight + historical deposits)
     OXAPAY_MERCHANT_KEY: str = ""
     OXAPAY_SANDBOX: bool = False
     OXAPAY_CALLBACK_BASE_URL: str = ""  # public gateway URL for webhooks, e.g. "https://api.yourdomain.com"
+
+    # NOWPayments crypto payment gateway (current default for new deposits).
+    NOWPAYMENTS_API_KEY: str = ""
+    NOWPAYMENTS_IPN_SECRET: str = ""    # IPN HMAC secret from dashboard
+    NOWPAYMENTS_SANDBOX: bool = False
+    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
 
     # Absolute path recommended in production (writable volume). Relative paths are resolved from gateway CWD.
     KYC_UPLOAD_ROOT: str = "uploads/kyc"

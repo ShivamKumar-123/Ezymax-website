@@ -1,0 +1,143 @@
+"""NOWPayments crypto payment gateway integration.
+
+Mirrors `oxapay_service` shape so wallet_service can swap providers with a
+one-line dispatch change. Uses the hosted-invoice flow:
+  POST /v1/invoice → user redirected to invoice_url → user pays →
+  NOWPayments POSTs IPN (signed via HMAC-SHA512) to our webhook.
+"""
+import hashlib
+import hmac
+import json
+import logging
+from decimal import Decimal
+from typing import Optional
+
+import httpx
+
+from packages.common.src.config import get_settings
+
+logger = logging.getLogger("nowpayments_service")
+
+NOWPAYMENTS_PROD_URL = "https://api.nowpayments.io/v1"
+NOWPAYMENTS_SANDBOX_URL = "https://api-sandbox.nowpayments.io/v1"
+
+
+# Map frontend crypto asset IDs → NOWPayments pay_currency codes.
+# NOWPayments uses lowercase chain-suffixed codes for stablecoins
+# (e.g. "usdttrc20", "usdcerc20"). See https://nowpayments.io/supported-coins.
+CURRENCY_MAP: dict[str, str] = {
+    "BTC": "btc",
+    "ETH": "eth",
+    "USDT_ERC": "usdterc20",
+    "USDC_ERC": "usdcerc20",
+    "TRX": "trx",
+    "USDT_TRC": "usdttrc20",
+    "USDC_TRC": "usdctrc20",
+    "USDT_SOL": "usdtsol",
+    "USDC_SOL": "usdcsol",
+    "SOL": "sol",
+    "XRP": "xrp",
+}
+
+
+def resolve_currency(frontend_id: str) -> str:
+    """Return NOWPayments pay_currency code for a frontend asset ID, or
+    the raw input lowercased as a best-effort fallback."""
+    return CURRENCY_MAP.get(frontend_id, (frontend_id or "").lower())
+
+
+def _api_base() -> str:
+    return NOWPAYMENTS_SANDBOX_URL if get_settings().NOWPAYMENTS_SANDBOX else NOWPAYMENTS_PROD_URL
+
+
+async def create_payment(
+    amount: Decimal,
+    crypto_currency: Optional[str],
+    order_id: str,
+    description: str = "",
+    *,
+    success_url: Optional[str] = None,
+    cancel_url: Optional[str] = None,
+) -> dict:
+    """Create a NOWPayments hosted invoice.
+
+    If `crypto_currency` is None, NOWPayments shows its full currency picker
+    on the hosted page. When set, the page is pre-locked to that asset.
+
+    Returns: {"invoice_id": str, "payment_url": str}.
+    Raises ValueError on configuration or API errors.
+    """
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        raise ValueError("NOWPayments API key not configured")
+
+    callback_base = (settings.NOWPAYMENTS_CALLBACK_BASE_URL or "").rstrip("/")
+    if not callback_base:
+        raise ValueError("NOWPAYMENTS_CALLBACK_BASE_URL not configured")
+    ipn_url = f"{callback_base}/api/v1/webhooks/nowpayments"
+
+    payload: dict = {
+        "price_amount": float(amount),
+        "price_currency": "usd",
+        "order_id": order_id,
+        "order_description": description or f"Deposit {order_id[:8]}",
+        "ipn_callback_url": ipn_url,
+        # NOWPayments shows these on the hosted page so the user can return
+        # to our app after paying or cancelling.
+        "success_url": success_url or "https://trade.fxartha.com/wallet",
+        "cancel_url": cancel_url or "https://trade.fxartha.com/wallet",
+        "is_fixed_rate": False,
+        "is_fee_paid_by_user": True,
+    }
+    if crypto_currency:
+        payload["pay_currency"] = resolve_currency(crypto_currency)
+
+    headers = {
+        "x-api-key": settings.NOWPAYMENTS_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(f"{_api_base()}/invoice", headers=headers, json=payload)
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"raw": resp.text}
+        if resp.status_code >= 400:
+            logger.error("NOWPayments create invoice failed status=%s body=%s", resp.status_code, data)
+            raise ValueError(f"NOWPayments error {resp.status_code}: {data}")
+        logger.info("NOWPayments invoice created: order=%s id=%s", order_id, data.get("id"))
+
+    payment_url = data.get("invoice_url")
+    invoice_id = data.get("id")
+    if not payment_url or not invoice_id:
+        raise ValueError(f"NOWPayments returned no invoice_url/id: {data}")
+    return {"invoice_id": str(invoice_id), "payment_url": payment_url}
+
+
+def verify_webhook_signature(raw_body: bytes, received_hmac: str) -> bool:
+    """Verify the IPN HMAC-SHA512 signature.
+
+    NOWPayments documents that the signature is computed over the JSON body
+    re-serialised with **keys sorted alphabetically** (no whitespace) using
+    `IPN_SECRET` as the HMAC key. Constant-time compare against the
+    `x-nowpayments-sig` header.
+    """
+    settings = get_settings()
+    secret = (settings.NOWPAYMENTS_IPN_SECRET or "").strip()
+    if not secret:
+        # Fail closed: if the operator hasn't configured a secret, no IPN
+        # is trusted. Better than silently accepting forged callbacks.
+        logger.error("NOWPayments IPN secret not configured — refusing webhook")
+        return False
+    if not received_hmac:
+        return False
+    try:
+        # Re-serialise sorted to match NOWPayments' canonicalisation.
+        parsed = json.loads(raw_body.decode("utf-8"))
+        canonical = json.dumps(parsed, sort_keys=True, separators=(",", ":"))
+    except Exception as e:
+        logger.warning("NOWPayments webhook body unparseable: %s", e)
+        return False
+    computed = hmac.new(secret.encode(), canonical.encode(), hashlib.sha512).hexdigest()
+    return hmac.compare_digest(computed, received_hmac)

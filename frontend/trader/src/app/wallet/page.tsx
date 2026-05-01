@@ -73,9 +73,15 @@ interface WalletListItem {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
 
-const OXAPAY_METHOD = 'oxapay';
+// Provider used for new deposits. NOWPayments replaced OxaPay in this build;
+// the OxaPay backend code stays mounted so historical / in-flight OxaPay
+// deposits still settle, but new deposits are always created against
+// NOWPayments. Withdrawals still echo the OxaPay-style payout payload (only
+// the inbound deposit channel changed).
+const CRYPTO_DEPOSIT_METHOD = 'nowpayments';
+const CRYPTO_WITHDRAW_METHOD = 'oxapay';
 
-/** UI grid — selection is sent with OxaPay / payout details for finance matching. */
+/** UI grid — selection is sent with NOWPayments / payout details for finance matching. */
 const CRYPTO_ASSETS = [
   { id: 'BTC', label: 'BTC', sub: 'Bitcoin' },
   { id: 'ETH', label: 'ETH', sub: 'Ethereum' },
@@ -90,7 +96,9 @@ const CRYPTO_ASSETS = [
   { id: 'XRP', label: 'XRP', sub: 'XRP' },
 ] as const;
 
-type FundingChannel = 'oxapay' | 'manual';
+// 'crypto' = automated provider flow (NOWPayments for deposits, OxaPay-style
+// payout details for withdrawals). 'manual' = legacy bank/UPI manual path.
+type FundingChannel = 'crypto' | 'manual';
 
 interface ManualBankDetailsResponse {
   bank_name?: string;
@@ -126,14 +134,14 @@ function WalletPageContent() {
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
   const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
 
-  const [depositChannel, setDepositChannel] = useState<FundingChannel>('oxapay');
+  const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
   const [depositAmount, setDepositAmount] = useState('');
   const [depositTxId, setDepositTxId] = useState('');
   const [depositProofFile, setDepositProofFile] = useState<File | null>(null);
   const [manualBankInfo, setManualBankInfo] = useState<ManualBankDetailsResponse | null>(null);
   const [depositSubmitting, setDepositSubmitting] = useState(false);
 
-  const [withdrawChannel, setWithdrawChannel] = useState<FundingChannel>('oxapay');
+  const [withdrawChannel, setWithdrawChannel] = useState<FundingChannel>('crypto');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawOxapayDetails, setWithdrawOxapayDetails] = useState('');
   const [manualWithdrawUpi, setManualWithdrawUpi] = useState('');
@@ -273,11 +281,11 @@ function WalletPageContent() {
   const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
-    setDepositChannel(depositUiSection === 'crypto' ? 'oxapay' : 'manual');
+    setDepositChannel(depositUiSection === 'crypto' ? 'crypto' : 'manual');
   }, [depositUiSection]);
 
   useEffect(() => {
-    setWithdrawChannel(withdrawUiSection === 'crypto' ? 'oxapay' : 'manual');
+    setWithdrawChannel(withdrawUiSection === 'crypto' ? 'crypto' : 'manual');
   }, [withdrawUiSection]);
 
   const loadManualBankDetails = useCallback(async () => {
@@ -372,25 +380,18 @@ function WalletPageContent() {
       toast.error('Enter a valid amount');
       return;
     }
-    if (withdrawChannel === 'oxapay') {
+    if (withdrawChannel === 'crypto') {
       const detail = withdrawOxapayDetails.trim();
       if (!detail) {
-        toast.error(
-          withdrawUiSection === 'crypto'
-            ? 'Enter your wallet address or payout details'
-            : 'Enter OxaPay payout details',
-        );
+        toast.error('Enter your wallet address or payout details');
         return;
       }
-      const payout =
-        withdrawUiSection === 'crypto'
-          ? [`[${selectedCryptoWithdraw}]`, detail].join(' ').trim()
-          : detail;
+      const payout = [`[${selectedCryptoWithdraw}]`, detail].join(' ').trim();
       setWithdrawSubmitting(true);
       try {
         await api.post('/wallet/withdraw', {
           amount: amt,
-          method: OXAPAY_METHOD,
+          method: CRYPTO_WITHDRAW_METHOD,
           bank_details: { oxapay_payout: payout },
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
@@ -457,22 +458,23 @@ function WalletPageContent() {
       toast.error('Enter a valid amount');
       return;
     }
-    if (depositChannel === 'oxapay') {
+    if (depositChannel === 'crypto') {
       setDepositSubmitting(true);
       try {
         const res = await api.post<{ id: string; status: string; amount: number; payment_url?: string }>(
           '/wallet/deposit',
           {
             amount: amt,
-            method: OXAPAY_METHOD,
+            method: CRYPTO_DEPOSIT_METHOD,
+            crypto_currency: selectedCryptoDeposit,
           },
         );
         if (res.payment_url) {
-          toast.success('Redirecting to OxaPay...');
+          toast.success('Redirecting to crypto payment…');
           window.location.href = res.payment_url;
           return;
         } else {
-          toast.error('Failed to create OxaPay payment link. Please try again or contact support.');
+          toast.error('Failed to create crypto payment link. Please try again or contact support.');
           return;
         }
         void fetchData(true);
