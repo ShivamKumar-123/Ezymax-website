@@ -46,6 +46,10 @@ class RewardsMission(Base):
     # When set, the mission stops being offered after this timestamp (used by
     # flash + event missions). NULL means the mission is evergreen.
     expires_at = Column(DateTime(timezone=True), nullable=True)
+    # Day-of-streak gate (1..7) for daily missions. NULL = show every day.
+    # Repeatable_task.docx defines a 7-day cycle where each day has its own
+    # headline mission; this column lets the listing filter pick today's.
+    streak_day = Column(Integer, nullable=True)
 
 
 class RewardsUserMissionProgress(Base):

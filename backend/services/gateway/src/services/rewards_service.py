@@ -418,6 +418,22 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
     # Flash missions auto-hide once expires_at is past. Other periods ignore expiry.
     if period == "flash":
         stmt = stmt.where(or_(RewardsMission.expires_at.is_(None), RewardsMission.expires_at > now))
+    # Daily missions can be tagged with streak_day (1..7) per the
+    # Repeatable_task.docx 7-day cycle. Show only the missions matching the
+    # user's current streak day, plus all day-agnostic ones (streak_day NULL).
+    if period == "daily":
+        state = (await db.execute(
+            select(RewardsUserState).where(RewardsUserState.user_id == user_id)
+        )).scalar_one_or_none()
+        # Map streak_count → today's day-of-cycle:
+        #   0 (fresh / just-reset) → 1
+        #   1..7 → as-is
+        sc = int(state.streak_count or 0) if state else 0
+        current_day = sc if sc >= 1 else 1
+        stmt = stmt.where(or_(
+            RewardsMission.streak_day.is_(None),
+            RewardsMission.streak_day == current_day,
+        ))
     stmt = stmt.order_by(RewardsMission.display_order, RewardsMission.title)
     missions = (await db.execute(stmt)).scalars().all()
     if not missions:
@@ -450,6 +466,7 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
             "claimed": claimed,
             "period_key": pkey,
             "expires_at": m.expires_at.isoformat() if m.expires_at else None,
+            "streak_day": int(m.streak_day) if m.streak_day is not None else None,
         })
     return out
 
