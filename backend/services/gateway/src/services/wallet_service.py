@@ -437,6 +437,156 @@ async def handle_oxapay_webhook(
     logger.info("OxaPay webhook: deposit %s → %s", order_id, deposit.status)
 
 
+# ─── On-site wallet-connect deposit (NOWPayments /v1/payment) ───────────
+
+
+async def create_wallet_deposit(
+    *,
+    amount: Decimal,
+    crypto_currency: str,
+    user_id: UUID,
+    db: AsyncSession,
+) -> dict:
+    """Create a Deposit row + a NOWPayments direct payment for the
+    wallet-connect flow. Returns the address + exact crypto amount the
+    frontend renders. No payment_url — user pays from their connected
+    wallet directly. Settlement still gates on the IPN webhook."""
+    from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(status_code=503, detail="Platform is under maintenance.")
+    if not await get_bool_setting("allow_deposits", True):
+        raise HTTPException(status_code=403, detail="Deposits are currently disabled")
+
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        raise HTTPException(status_code=503, detail="Crypto deposits are not configured")
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+
+    deposit = Deposit(
+        user_id=user_id,
+        account_id=None,
+        amount=amount,
+        method="nowpayments",
+        status="initiated",
+    )
+    db.add(deposit)
+    await db.commit()
+    await db.refresh(deposit)
+
+    try:
+        np = await nowpayments_service.create_direct_payment(
+            amount_usd=amount,
+            crypto_currency=crypto_currency,
+            order_id=str(deposit.id),
+            description=f"FXArtha deposit ${float(amount):,.2f}",
+        )
+    except Exception as e:
+        logger.exception("NOWPayments create_direct_payment failed for deposit %s", deposit.id)
+        await db.delete(deposit)
+        await db.commit()
+        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
+
+    deposit.transaction_id = np["payment_id"]
+    deposit.crypto_address = np["pay_address"]
+    deposit.pay_amount = Decimal(np["pay_amount"])
+    deposit.pay_currency = np["pay_currency"]
+    deposit.network = np["network"] or None
+    if np.get("expires_at"):
+        try:
+            from datetime import datetime as _dt
+            deposit.expires_at = _dt.fromisoformat(np["expires_at"].replace("Z", "+00:00"))
+        except Exception:
+            deposit.expires_at = None
+    await db.commit()
+    await db.refresh(deposit)
+
+    return {
+        "id": str(deposit.id),
+        "status": deposit.status,
+        "amount_usd": float(deposit.amount),
+        "pay_address": deposit.crypto_address,
+        "pay_amount": str(deposit.pay_amount),
+        "pay_currency": deposit.pay_currency,
+        "network": deposit.network,
+        "expires_at": deposit.expires_at.isoformat() if deposit.expires_at else None,
+        "payment_id": deposit.transaction_id,
+    }
+
+
+async def get_wallet_deposit_status(
+    *, deposit_id: UUID, user_id: UUID, db: AsyncSession,
+) -> dict:
+    """Polled by the wallet-connect UI. Returns local row status + a fresh
+    NOWPayments status (best-effort) so the UI can show confirmation
+    progress before the IPN lands."""
+    q = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id, Deposit.user_id == user_id)
+    )
+    deposit = q.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+
+    np_status: str | None = None
+    confirmations = None
+    if deposit.transaction_id and deposit.method == "nowpayments":
+        try:
+            data = await nowpayments_service.get_payment_status(deposit.transaction_id)
+            np_status = data.get("payment_status")
+            confirmations = data.get("confirmations")
+            # Side-effect: if NOWPayments says we're past 'waiting' but our
+            # local row is still 'initiated' (missed IPN), bump to 'pending'
+            # so the UI moves. Settlement still requires the IPN.
+            if (
+                deposit.status == "initiated"
+                and np_status in ("confirming", "sending", "waiting")
+            ):
+                deposit.status = "pending"
+                await db.commit()
+        except Exception as e:
+            logger.warning("NOWPayments status fetch failed for deposit %s: %s", deposit.id, e)
+
+    return {
+        "id": str(deposit.id),
+        "status": deposit.status,
+        "amount_usd": float(deposit.amount or 0),
+        "pay_address": deposit.crypto_address,
+        "pay_amount": str(deposit.pay_amount) if deposit.pay_amount is not None else None,
+        "pay_currency": deposit.pay_currency,
+        "network": deposit.network,
+        "tx_hash": deposit.crypto_tx_hash,
+        "expires_at": deposit.expires_at.isoformat() if deposit.expires_at else None,
+        "nowpayments_status": np_status,
+        "confirmations": confirmations,
+    }
+
+
+async def save_wallet_deposit_tx_hash(
+    *, deposit_id: UUID, tx_hash: str, user_id: UUID, db: AsyncSession,
+) -> dict:
+    """Persist the on-chain tx hash the user's wallet returned after broadcast.
+    Strictly informational — balance credit still gates on the IPN."""
+    th = (tx_hash or "").strip()
+    if not th or len(th) < 10 or len(th) > 200:
+        raise HTTPException(status_code=400, detail="Invalid tx hash")
+
+    q = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id, Deposit.user_id == user_id)
+    )
+    deposit = q.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    if deposit.status not in ("initiated", "pending"):
+        return {"id": str(deposit.id), "saved": False, "status": deposit.status}
+
+    deposit.crypto_tx_hash = th
+    if deposit.status == "initiated":
+        deposit.status = "pending"
+    await db.commit()
+    return {"id": str(deposit.id), "saved": True, "status": deposit.status}
+
+
 # ─── NOWPayments Webhook ─────────────────────────────────────────────────
 
 # NOWPayments status terminals — mapping decided by client spec:

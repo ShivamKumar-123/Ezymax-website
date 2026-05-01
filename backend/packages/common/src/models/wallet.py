@@ -45,6 +45,14 @@ class Deposit(Base):
     bank_account_id = Column(UUID(as_uuid=True), ForeignKey("bank_accounts.id"), nullable=True)
     crypto_tx_hash = Column(String(200))
     crypto_address = Column(String(200))
+    # NOWPayments wallet-connect flow (migration 0032). `pay_amount` is the
+    # exact crypto amount the user must send to `crypto_address`; `pay_currency`
+    # is the NOWPayments code (usdterc20, eth, …); `network` is the chain we
+    # surface to wagmi/RainbowKit; `expires_at` is the invoice TTL.
+    pay_amount = Column(Numeric(36, 18), nullable=True)
+    pay_currency = Column(String(20), nullable=True)
+    network = Column(String(20), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     rejection_reason = Column(Text)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     approved_at = Column(DateTime(timezone=True))

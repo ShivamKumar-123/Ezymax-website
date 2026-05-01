@@ -49,6 +49,69 @@ async def create_manual_deposit(
     )
 
 
+# ─── On-site wallet-connect deposits (NOWPayments /v1/payment) ────────────
+
+
+class WalletDepositRequest(BaseModel):
+    amount: Decimal
+    crypto_currency: str  # frontend asset id, e.g. "USDT_ERC", "ETH"
+
+
+class TxHashSaveRequest(BaseModel):
+    tx_hash: str
+
+
+@router.post("/deposit/wallet", status_code=201)
+async def create_wallet_deposit(
+    req: WalletDepositRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a NOWPayments direct payment (no hosted-page redirect).
+
+    Returns the deposit row id + the pay_address / pay_amount / network /
+    expires_at the frontend needs to drive the on-site wallet-connect UI.
+    Settlement still happens via the same IPN webhook + handle_nowpayments_webhook
+    path — balance is never credited from this endpoint."""
+    return await wallet_service.create_wallet_deposit(
+        amount=req.amount,
+        crypto_currency=req.crypto_currency,
+        user_id=current_user["user_id"],
+        db=db,
+    )
+
+
+@router.get("/deposit/{deposit_id}/status")
+async def get_wallet_deposit_status(
+    deposit_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Read-only status check for the wallet-connect UI's polling loop.
+    Combines local deposit status + a fresh NOWPayments status fetch so the
+    UI can show "waiting → confirming → finished" without waiting for the
+    IPN."""
+    return await wallet_service.get_wallet_deposit_status(
+        deposit_id=deposit_id, user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.post("/deposit/{deposit_id}/tx-hash")
+async def save_wallet_deposit_tx_hash(
+    deposit_id: UUID,
+    req: TxHashSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record the on-chain tx hash the user's wallet returned. Purely
+    informational — settlement still gates on the NOWPayments IPN, never
+    on a client-supplied hash."""
+    return await wallet_service.save_wallet_deposit_tx_hash(
+        deposit_id=deposit_id, tx_hash=req.tx_hash,
+        user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.post("/withdraw", status_code=201)
 async def create_withdrawal(
     req: WithdrawalRequest,

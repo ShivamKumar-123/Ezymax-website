@@ -115,6 +115,133 @@ async def create_payment(
     return {"invoice_id": str(invoice_id), "payment_url": payment_url}
 
 
+# ─── Direct payment (wallet-connect flow) ───────────────────────────
+#
+# /v1/payment returns a single pay_address + pay_amount + expires_at,
+# rather than redirecting the user to NOWPayments' hosted page. The
+# trader keeps the user on FXArtha and shows the address + a wallet-
+# connect button (wagmi/RainbowKit) that signs the transfer.
+
+# Frontend network IDs we surface back to the wallet-connect layer so
+# it can pre-switch the user's wallet to the right chain. Maps from the
+# user's selected asset → chain slug.
+NETWORK_MAP: dict[str, str] = {
+    "ETH": "eth",
+    "USDT_ERC": "eth",
+    "USDC_ERC": "eth",
+    "USDT_TRC": "tron",
+    "USDC_TRC": "tron",
+    "USDT_SOL": "sol",
+    "USDC_SOL": "sol",
+    "SOL": "sol",
+    "BTC": "btc",
+    "TRX": "tron",
+    "XRP": "xrp",
+    "BNB": "bsc",
+    "USDT_BSC": "bsc",
+    "USDC_BSC": "bsc",
+    "MATIC": "polygon",
+    "USDT_MATIC": "polygon",
+    "USDC_MATIC": "polygon",
+    "ARB": "arbitrum",
+    "USDT_ARB": "arbitrum",
+    "USDC_ARB": "arbitrum",
+}
+
+
+async def create_direct_payment(
+    amount_usd: Decimal,
+    crypto_currency: str,
+    order_id: str,
+    description: str = "",
+) -> dict:
+    """Create a NOWPayments direct payment (no hosted page).
+
+    Returns dict with the fields the frontend needs to render the
+    deposit screen entirely on our site:
+      payment_id     — NOWPayments id (stored in deposits.transaction_id)
+      pay_address    — admin's deposit address
+      pay_amount     — exact crypto amount (string, preserves precision)
+      pay_currency   — NOWPayments code (usdterc20, eth, …)
+      network        — wagmi-friendly slug (eth, bsc, …)
+      expires_at     — ISO timestamp string from NOWPayments
+    Raises ValueError on missing config or non-2xx response.
+    """
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        raise ValueError("NOWPayments API key not configured")
+
+    pay_currency = resolve_currency(crypto_currency)
+    callback_base = (settings.NOWPAYMENTS_CALLBACK_BASE_URL or "").rstrip("/")
+    if not callback_base:
+        raise ValueError("NOWPAYMENTS_CALLBACK_BASE_URL not configured")
+    ipn_url = f"{callback_base}/api/v1/webhooks/nowpayments"
+
+    payload = {
+        "price_amount": float(amount_usd),
+        "price_currency": "usd",
+        "pay_currency": pay_currency,
+        "order_id": order_id,
+        "order_description": description or f"Deposit {order_id[:8]}",
+        "ipn_callback_url": ipn_url,
+        "is_fixed_rate": False,
+        "is_fee_paid_by_user": True,
+    }
+
+    headers = {
+        "x-api-key": settings.NOWPAYMENTS_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(f"{_api_base()}/payment", headers=headers, json=payload)
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"raw": resp.text}
+        if resp.status_code >= 400:
+            logger.error("NOWPayments create payment failed status=%s body=%s", resp.status_code, data)
+            raise ValueError(f"NOWPayments error {resp.status_code}: {data}")
+        logger.info(
+            "NOWPayments payment created: order=%s id=%s currency=%s",
+            order_id, data.get("payment_id"), pay_currency,
+        )
+
+    payment_id = data.get("payment_id") or data.get("id")
+    pay_address = data.get("pay_address")
+    pay_amount = data.get("pay_amount")
+    if not (payment_id and pay_address and pay_amount):
+        raise ValueError(f"NOWPayments returned incomplete payment: {data}")
+
+    return {
+        "payment_id": str(payment_id),
+        "pay_address": str(pay_address),
+        "pay_amount": str(pay_amount),
+        "pay_currency": pay_currency,
+        "network": NETWORK_MAP.get(crypto_currency, ""),
+        "expires_at": data.get("valid_until") or data.get("expiration_estimate_date"),
+    }
+
+
+async def get_payment_status(payment_id: str) -> dict:
+    """Read-only status check used for client-side polling. Returns the
+    raw NOWPayments payload so the API route can surface confirmation
+    progress to the UI. Never credits balance — that's webhook-only."""
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        raise ValueError("NOWPayments API key not configured")
+    headers = {"x-api-key": settings.NOWPAYMENTS_API_KEY}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(f"{_api_base()}/payment/{payment_id}", headers=headers)
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"raw": resp.text}
+        if resp.status_code >= 400:
+            raise ValueError(f"NOWPayments status fetch failed {resp.status_code}: {data}")
+    return data
+
+
 def verify_webhook_signature(raw_body: bytes, received_hmac: str) -> bool:
     """Verify the IPN HMAC-SHA512 signature.
 
