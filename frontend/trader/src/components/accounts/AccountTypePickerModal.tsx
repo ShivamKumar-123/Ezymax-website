@@ -13,9 +13,13 @@ export interface AvailableAccountGroup {
   name: string;
   description: string;
   leverage_default: number;
+  /** Hard cap from migration 0020 — falls back to leverage_default for legacy rows. */
+  max_leverage?: number;
   minimum_deposit: number;
   spread_markup: number;
   commission_per_lot: number;
+  /** Percentage brokerage fee (e.g. 0.0006 = 0.06%) from migration 0020. May be null on legacy rows. */
+  commission_pct?: number | null;
   swap_free: boolean;
 }
 
@@ -72,17 +76,23 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     [groups, selectedId],
   );
 
+  // The hard cap is `max_leverage`; fall back to `leverage_default` so legacy
+  // rows (pre-migration-0020) still work.
+  const groupMaxLeverage = (g: AvailableAccountGroup) =>
+    Number(g.max_leverage ?? g.leverage_default ?? 100);
+
   /** When the user picks a different group, clamp leverage to its max. */
   useEffect(() => {
     if (!selected) return;
-    if (leverage == null || leverage > selected.leverage_default) {
-      setLeverage(selected.leverage_default);
+    const maxLev = groupMaxLeverage(selected);
+    if (leverage == null || leverage > maxLev) {
+      setLeverage(maxLev);
     }
   }, [selected]);
 
   const leverageOptions = useMemo(() => {
     if (!selected) return [] as number[];
-    const max = selected.leverage_default;
+    const max = groupMaxLeverage(selected);
     const opts = LEVERAGE_OPTIONS.filter((l) => l <= max);
     if (!opts.includes(max)) opts.push(max);
     return Array.from(new Set(opts)).sort((a, b) => a - b);
@@ -193,7 +203,13 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                              sub={g.description || 'Currencies, indices, metals, energies, crypto'} />
                     <CardRow
                       label={`Min deposit ${fmtMoney(g.minimum_deposit || 0)}`}
-                      sub={g.swap_free ? 'Swap-free, Islamic-friendly' : `Commission ${fmtMoney(g.commission_per_lot || 0)} / lot`}
+                      sub={
+                        g.swap_free
+                          ? 'Swap-free, Islamic-friendly'
+                          : g.commission_pct != null
+                            ? `Brokerage ${(g.commission_pct * 100).toFixed(2)}% · Up to 1:${groupMaxLeverage(g)}`
+                            : `Commission ${fmtMoney(g.commission_per_lot || 0)} / lot · Up to 1:${groupMaxLeverage(g)}`
+                      }
                       last
                     />
                   </button>
@@ -221,7 +237,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
           </div>
           {selected && (
             <p className="mt-2 text-xs text-text-tertiary">
-              Capped at this account type&apos;s maximum: 1:{selected.leverage_default}
+              Capped at this account type&apos;s maximum: 1:{groupMaxLeverage(selected)}
             </p>
           )}
         </Section>

@@ -22,8 +22,16 @@ class AccountGroup(Base):
     name = Column(String(50), nullable=False)
     description = Column(Text)
     leverage_default = Column(Integer, default=100)
+    # Hard ceiling on leverage for accounts in this group. NULL falls back to
+    # leverage_default for legacy callers; the picker + order-placement guard
+    # always enforce the smaller of (max_leverage, leverage_default).
+    max_leverage = Column(Integer, nullable=True)
     spread_markup_default = Column(Numeric(10, 5), default=0)
     commission_default = Column(Numeric(10, 5), default=0)
+    # Percentage brokerage fee (e.g. 0.0006 = 0.06%) per Trading_Mechanism.docx.
+    # Used by the order pipeline once Phase 4 wires the smart-fee engine; until
+    # then it's surfaced in the picker as the headline rate.
+    commission_pct = Column(Numeric(6, 4), nullable=True)
     minimum_deposit = Column(Numeric(18, 8), default=0)
     swap_free = Column(Boolean, default=False)
     is_demo = Column(Boolean, default=False)

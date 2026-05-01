@@ -48,9 +48,11 @@ async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
                 "name": g.name,
                 "description": g.description or "",
                 "leverage_default": int(g.leverage_default or 100),
+                "max_leverage": int(g.max_leverage or g.leverage_default or 100),
                 "minimum_deposit": float(g.minimum_deposit or 0),
                 "spread_markup": float(g.spread_markup_default or 0),
                 "commission_per_lot": float(g.commission_default or 0),
+                "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
                 "swap_free": bool(g.swap_free),
             }
             for g in rows
@@ -127,7 +129,9 @@ async def open_live_account(
             new_balance = min_d
 
     num = generate_account_number()
-    max_lev = int(group.leverage_default or 100)
+    # max_leverage was added in migration 0020 — fall back to leverage_default
+    # for legacy rows where it's still NULL.
+    max_lev = int(group.max_leverage or group.leverage_default or 100)
     if req.leverage is not None:
         if req.leverage < 1 or req.leverage > max_lev:
             raise HTTPException(
@@ -136,7 +140,7 @@ async def open_live_account(
             )
         lev = int(req.leverage)
     else:
-        lev = max_lev
+        lev = int(group.leverage_default or max_lev)
     new_acc = TradingAccount(
         user_id=user_id,
         account_group_id=group.id,
@@ -209,9 +213,11 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                 "name": g.name,
                 "spread_markup": float(g.spread_markup_default or 0),
                 "commission_per_lot": float(g.commission_default or 0),
+                "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
                 "minimum_deposit": float(g.minimum_deposit or 0),
                 "swap_free": bool(g.swap_free),
                 "leverage_default": int(g.leverage_default or 100),
+                "max_leverage": int(g.max_leverage or g.leverage_default or 100),
             }
 
         items.append({
@@ -305,7 +311,7 @@ async def get_account_summary(
 async def update_account_leverage(
     account_id: UUID, user_id: UUID, leverage: int, db: AsyncSession,
 ) -> dict:
-    """Update leverage on an account the user owns, capped at the group's leverage_default."""
+    """Update leverage on an account the user owns, capped at the group's max_leverage."""
     if leverage < 1:
         raise HTTPException(status_code=400, detail="leverage must be at least 1")
 
@@ -319,7 +325,13 @@ async def update_account_leverage(
         raise HTTPException(status_code=404, detail="Trading account not found")
 
     group = account.account_group
-    max_lev = int((group.leverage_default if group else None) or 500)
+    # Prefer the new max_leverage column; fall back to leverage_default for
+    # legacy rows still on the pre-0020 schema.
+    max_lev = int(
+        (group.max_leverage if group else None)
+        or (group.leverage_default if group else None)
+        or 500
+    )
     if leverage > max_lev:
         raise HTTPException(
             status_code=400,
