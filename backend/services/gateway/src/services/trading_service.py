@@ -240,7 +240,14 @@ async def place_order(
             if req.side == "sell" and req.take_profit >= fill_price:
                 raise HTTPException(status_code=400, detail="SELL TP must be below entry price")
 
-        commission = await resolve_commission(db, instrument, req.lots, fill_price, user_id=user_id)
+        # Pass account_group_id so the commission_pct on the user's account
+        # tier (Micro/Standard/Pro/Elite) acts as the fallback rack rate when
+        # no admin ChargeConfig matches. XP discount also applies.
+        commission = await resolve_commission(
+            db, instrument, req.lots, fill_price,
+            user_id=user_id,
+            account_group_id=account.account_group_id,
+        )
 
         contract_size = instrument.contract_size or Decimal("100000")
         required_margin = calc_margin(req.lots, fill_price, contract_size, account.leverage)

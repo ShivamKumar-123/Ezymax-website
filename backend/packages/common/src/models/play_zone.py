@@ -1,7 +1,5 @@
-"""Play Zone — Spin & Win catalogue + audit log.
-
-Lottery and Bidding will land in Phase 6 in this same module.
-"""
+"""Play Zone — Spin & Win catalogue + audit log; Lottery rounds + tickets;
+Bidding rounds + bids."""
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -40,3 +38,66 @@ class SpinResult(Base):
     payout_kind = Column(String(20), nullable=False)
     payout_amount = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
     awarded_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+# ─── Lottery ─────────────────────────────────────────────────────────
+
+
+class LotteryRound(Base):
+    __tablename__ = "lottery_rounds"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug = Column(String(80), nullable=False)
+    prize_label = Column(String(120), nullable=False)
+    # xp | ac | cashback | external (admin handles fulfillment)
+    prize_kind = Column(String(20), nullable=False)
+    prize_amount = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+    ticket_cost_ac = Column(Numeric(18, 2), nullable=False, default=Decimal("100"))
+    opens_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    draws_at = Column(DateTime(timezone=True), nullable=False)
+    # open | drawing | closed | cancelled
+    state = Column(String(20), nullable=False, default="open")
+    winning_ticket_id = Column(UUID(as_uuid=True), nullable=True)
+    ticket_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class LotteryTicket(Base):
+    __tablename__ = "lottery_tickets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    round_id = Column(UUID(as_uuid=True), ForeignKey("lottery_rounds.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    ac_paid = Column(Numeric(18, 2), nullable=False)
+    purchased_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+# ─── Bidding ─────────────────────────────────────────────────────────
+
+
+class BiddingRound(Base):
+    __tablename__ = "bidding_rounds"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug = Column(String(80), nullable=False)
+    prize_label = Column(String(120), nullable=False)
+    prize_kind = Column(String(20), nullable=False)
+    prize_amount = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+    min_bid_ac = Column(Numeric(18, 2), nullable=False, default=Decimal("100"))
+    opens_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    closes_at = Column(DateTime(timezone=True), nullable=False)
+    state = Column(String(20), nullable=False, default="open")
+    winning_bid_id = Column(UUID(as_uuid=True), nullable=True)
+    bid_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class Bid(Base):
+    __tablename__ = "bids"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    round_id = Column(UUID(as_uuid=True), ForeignKey("bidding_rounds.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    ac_amount = Column(Numeric(18, 2), nullable=False)
+    placed_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    refunded_ac = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))

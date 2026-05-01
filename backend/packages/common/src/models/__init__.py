@@ -60,6 +60,8 @@ from .rewards import (
 )
 from .play_zone import (
     SpinWheelPrize, SpinResult,
+    LotteryRound, LotteryTicket,
+    BiddingRound, Bid,
 )
 from .staking import (
     StakingPlan, StakingPosition, StakingRewardAccrual,
@@ -96,6 +98,8 @@ __all__ = [
     "RewardStoreItem", "RewardsTransaction",
     # play zone
     "SpinWheelPrize", "SpinResult",
+    "LotteryRound", "LotteryTicket",
+    "BiddingRound", "Bid",
     # staking
     "StakingPlan", "StakingPosition", "StakingRewardAccrual",
     # share

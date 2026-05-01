@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Ticket, Gavel, Clock, ArrowRight } from 'lucide-react';
+import { Sparkles, Ticket, Gavel, ArrowRight } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 
 export default function EarnPlayZonePage() {
@@ -22,17 +22,17 @@ export default function EarnPlayZonePage() {
             blurb="30 AC per spin. Win up to 500 AC instantly."
             href="/earn/play-zone/spin"
           />
-          <ComingSoonCard
+          <ActiveCard
             icon={Ticket}
             title="Lottery"
-            tag="Soon"
             blurb="100 AC per ticket. Weekly draws for big rewards."
+            href="/earn/play-zone/lottery"
           />
-          <ComingSoonCard
+          <ActiveCard
             icon={Gavel}
             title="Bidding"
-            tag="Soon"
             blurb="Bid Artha Coins on premium prizes. Losers refunded 50%."
+            href="/earn/play-zone/bidding"
           />
         </div>
       </div>
@@ -63,19 +63,3 @@ function ActiveCard({
   );
 }
 
-function ComingSoonCard({
-  icon: Icon, title, tag, blurb,
-}: { icon: any; title: string; tag: string; blurb: string }) {
-  return (
-    <div className="rounded-xl border border-border-primary bg-bg-secondary p-5">
-      <div className="flex items-center justify-between">
-        <Icon size={22} className="text-[#d6a93d]" />
-        <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wider text-amber-400/85 border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 rounded-full">
-          <Clock size={11} /> {tag}
-        </span>
-      </div>
-      <h3 className="text-base font-semibold text-text-primary mt-3">{title}</h3>
-      <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">{blurb}</p>
-    </div>
-  );
-}
