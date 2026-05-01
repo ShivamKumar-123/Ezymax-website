@@ -57,17 +57,18 @@ export default function HeroSection() {
           {/* Text + CTAs */}
           <div>
             <h1 className="fx-headline text-[44px] sm:text-[56px] md:text-[64px] lg:text-[72px] xl:text-[82px] fx-fade-up">
-              Trade Globally
+              Trade Without Giving
               <br />
-              <span className="fx-gold-text">Prosper Limitlessly</span>
+              Your Money to <span className="fx-gold-text">Any Broker</span>
             </h1>
 
             <p
               className="mt-5 md:mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d1"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              Experience next-level trading with FXArtha — where institutional
-              technology meets the opportunity of global markets.
+              Your funds move through a secure smart contract — not into a
+              broker&apos;s account. You control access. The system handles
+              execution. Your Money. Your Wallet. Your Control.
             </p>
 
             {/* Feature pills row */}
