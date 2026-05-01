@@ -58,6 +58,9 @@ from .rewards import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
     RewardStoreItem, RewardsTransaction,
 )
+from .play_zone import (
+    SpinWheelPrize, SpinResult,
+)
 from .share import SharedTrade
 
 
@@ -88,6 +91,8 @@ __all__ = [
     # rewards
     "RewardsUserState", "RewardsMission", "RewardsUserMissionProgress",
     "RewardStoreItem", "RewardsTransaction",
+    # play zone
+    "SpinWheelPrize", "SpinResult",
     # share
     "SharedTrade",
 ]
