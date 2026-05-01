@@ -13,6 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
+    Referral, RewardsTransaction,
 )
 from packages.common.src.redis_client import redis_client
 
@@ -948,6 +949,86 @@ async def apply_as_master(
         db=db,
         strategy_info=strategy_info,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Copy-trade platform-fee 50% network distribution
+# (XP_Reward_mechanism slide 6 / table 3)
+#
+# When a follower's copy trade closes profitably and the platform takes
+# its share of the master's fee, half of that platform-take is
+# distributed up the FOLLOWER's referral chain across 10 levels using
+# the same percentages as the trade-volume distribution (35/15/10/10/
+# 5×6). The other 50% stays as platform profit.
+# ─────────────────────────────────────────────────────────────────────
+
+COPY_TRADE_NETWORK_SHARE = Decimal("0.5")  # 50% of the platform-take is redistributed
+COPY_TRADE_LEVEL_PCT = [
+    Decimal("0.35"), Decimal("0.15"), Decimal("0.10"), Decimal("0.10"),
+    Decimal("0.05"), Decimal("0.05"), Decimal("0.05"), Decimal("0.05"),
+    Decimal("0.05"), Decimal("0.05"),
+]
+
+
+async def distribute_copy_trade_platform_fee(
+    db: AsyncSession,
+    *,
+    follower_user_id: UUID,
+    platform_fee: Decimal,
+    reference_id: UUID,
+) -> Decimal:
+    """Walk up to 10 levels from the follower and credit each ancestor in
+    USD (added to main_wallet_balance). Returns the total amount paid out
+    so the caller can subtract it from platform retained earnings if
+    they want exact accounting.
+
+    The pool here is `platform_fee × 50%` — the other 50% stays as
+    platform profit (already credited via credit_admin_fee on the call
+    site)."""
+    if platform_fee <= 0:
+        return Decimal("0")
+    pool = (Decimal(str(platform_fee)) * COPY_TRADE_NETWORK_SHARE).quantize(Decimal("0.01"))
+    if pool <= 0:
+        return Decimal("0")
+
+    paid_out = Decimal("0")
+    current = follower_user_id
+    visited: set = set()
+    for level_idx in range(10):
+        row = (await db.execute(
+            select(Referral).where(Referral.referred_id == current).limit(1)
+        )).scalar_one_or_none()
+        if row is None:
+            break
+        ancestor_id = row.referrer_id
+        if ancestor_id in visited or ancestor_id == follower_user_id:
+            break
+        visited.add(ancestor_id)
+
+        share = COPY_TRADE_LEVEL_PCT[level_idx]
+        payout = (pool * share).quantize(Decimal("0.01"))
+        if payout <= 0:
+            current = ancestor_id
+            continue
+
+        anc = (await db.execute(
+            select(User).where(User.id == ancestor_id).with_for_update()
+        )).scalar_one_or_none()
+        if anc is None:
+            break
+        anc.main_wallet_balance = Decimal(str(anc.main_wallet_balance or 0)) + payout
+        paid_out += payout
+
+        db.add(RewardsTransaction(
+            user_id=ancestor_id,
+            type=f"copy_fee_referral_l{level_idx + 1}",
+            xp_delta=0,
+            ac_delta=Decimal("0"),
+            source="copy_trade_platform_fee",
+            reference_id=reference_id,
+        ))
+        current = ancestor_id
+    return paid_out
 
 
 async def become_provider(

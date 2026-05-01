@@ -28,7 +28,7 @@ from sqlalchemy.orm import selectinload
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     AccountGroup, InstrumentConfig, Position, PositionStatus,
-    TradingAccount, Transaction,
+    TradingAccount, Transaction, User,
 )
 
 logger = logging.getLogger("overnight-fee-engine")
@@ -101,11 +101,23 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
         if account is None:
             continue
 
-        # Skip swap-free account groups (Islamic).
+        # Skip swap-free account groups (Islamic group).
         ag: AccountGroup | None = account.account_group if account else None
         if ag is not None and bool(ag.swap_free):
             pos.last_swap_at = now  # mark seen so we don't re-walk it every tick
             continue
+
+        # Skip users who self-identify as Islamic (User.is_islamic) — they're
+        # exempt from overnight charges even if they wound up on a non-Islamic
+        # group. Cheap because we already loaded account → User isn't loaded
+        # eagerly here, so issue a small lookup once.
+        if account.user_id is not None:
+            is_islamic = (await db.execute(
+                select(User.is_islamic).where(User.id == account.user_id)
+            )).scalar_one_or_none()
+            if bool(is_islamic):
+                pos.last_swap_at = now
+                continue
 
         # Skip swap-free instruments.
         ic = (await db.execute(

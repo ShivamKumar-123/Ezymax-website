@@ -100,6 +100,7 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
         "two_factor_enabled": user.two_factor_enabled,
         "language": user.language,
         "theme": user.theme,
+        "is_islamic": bool(getattr(user, "is_islamic", False)),
         "kyc_documents": kyc_documents,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }

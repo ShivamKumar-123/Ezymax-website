@@ -24,10 +24,80 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     StakingPlan, StakingPosition, StakingRewardAccrual,
-    User, TradingAccount,
+    User, TradingAccount, Referral, RewardsTransaction, RewardsUserState,
+    Transaction,
 )
 
 logger = logging.getLogger("staking_service")
+
+
+# ─── Staking referral payout (XP_Reward_mechanism slide 17 / table 9) ─
+# When a user opens a stake, the upline gets a one-time USD payout based
+# on stake amount (NOT on rewards). 10 levels deep, total max 30% of the
+# principal — paid into the upline's main_wallet_balance.
+STAKING_REFERRAL_PCT = [
+    Decimal("0.10"),   # L1
+    Decimal("0.05"),   # L2
+    Decimal("0.03"),   # L3
+    Decimal("0.02"),   # L4
+    Decimal("0.02"),   # L5
+    Decimal("0.02"),   # L6
+    Decimal("0.02"),   # L7
+    Decimal("0.015"),  # L8
+    Decimal("0.015"),  # L9
+    Decimal("0.01"),   # L10
+]
+
+
+async def _distribute_staking_referral(
+    db: AsyncSession,
+    leaf_user_id: UUID,
+    principal: Decimal,
+    position_id: UUID,
+) -> None:
+    """Walk up to 10 levels of the Referral chain from the staker and credit
+    each ancestor a one-time USD payout. Failures are non-fatal — they're
+    logged but the stake itself is not rolled back."""
+    if principal <= 0:
+        return
+    current = leaf_user_id
+    visited: set = set()
+    for level_idx in range(10):
+        row = (await db.execute(
+            select(Referral).where(Referral.referred_id == current).limit(1)
+        )).scalar_one_or_none()
+        if row is None:
+            break
+        ancestor_id = row.referrer_id
+        if ancestor_id in visited or ancestor_id == leaf_user_id:
+            break
+        visited.add(ancestor_id)
+
+        share = STAKING_REFERRAL_PCT[level_idx]
+        payout = (principal * share).quantize(Decimal("0.01"))
+        if payout <= 0:
+            current = ancestor_id
+            continue
+
+        # Lock + credit the ancestor's main_wallet_balance.
+        anc = (await db.execute(
+            select(User).where(User.id == ancestor_id).with_for_update()
+        )).scalar_one_or_none()
+        if anc is None:
+            break
+        anc.main_wallet_balance = Decimal(str(anc.main_wallet_balance or 0)) + payout
+
+        # Audit row in rewards_transactions (no XP/AC change — pure USD).
+        # We log it via type='staking_referral_l{N}' so reports can group by level.
+        db.add(RewardsTransaction(
+            user_id=ancestor_id,
+            type=f"staking_referral_l{level_idx + 1}",
+            xp_delta=0,
+            ac_delta=Decimal("0"),
+            source="staking_open",
+            reference_id=position_id,
+        ))
+        current = ancestor_id
 
 
 # ─── Catalogue ───────────────────────────────────────────────────────
@@ -188,6 +258,12 @@ async def open_position(
                 "stake %s opened with trading_bonus_active but no live trading account exists for user %s",
                 pos.id, user_id,
             )
+
+    # Staking referral payout — best-effort; never block the stake.
+    try:
+        await _distribute_staking_referral(db, leaf_user_id=user_id, principal=amount, position_id=pos.id)
+    except Exception as _e:
+        logger.warning("staking referral distribution failed for position %s: %s", pos.id, _e)
 
     return {
         "position_id": str(pos.id),

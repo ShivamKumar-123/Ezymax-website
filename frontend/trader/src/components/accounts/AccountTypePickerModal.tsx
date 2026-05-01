@@ -15,6 +15,14 @@ export interface AvailableAccountGroup {
   leverage_default: number;
   /** Hard cap from migration 0020 — falls back to leverage_default for legacy rows. */
   max_leverage?: number;
+  /** Per-user effective ceiling: the smaller of group cap, KYC gate (1:50 until verified),
+   *  and XP gate (Starter 1:50 → Active 1:100 → Skilled 1:200 → Pro 1:300 → Elite 1:500). */
+  effective_max_leverage?: number;
+  /** UI hints for why the dropdown is locked below the group's hard cap. */
+  kyc_unlock_required?: boolean;
+  xp_unlock_required?: boolean;
+  xp_for_next_unlock?: number | null;
+  next_unlock_leverage?: number | null;
   minimum_deposit: number;
   spread_markup: number;
   commission_per_lot: number;
@@ -76,10 +84,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     [groups, selectedId],
   );
 
-  // The hard cap is `max_leverage`; fall back to `leverage_default` so legacy
-  // rows (pre-migration-0020) still work.
+  // The user-effective cap is what actually limits the dropdown — it's the
+  // smaller of the group's hard cap (max_leverage), the KYC gate, and the
+  // XP gate. Falls back to leverage_default for legacy rows.
   const groupMaxLeverage = (g: AvailableAccountGroup) =>
-    Number(g.max_leverage ?? g.leverage_default ?? 100);
+    Number(g.effective_max_leverage ?? g.max_leverage ?? g.leverage_default ?? 100);
 
   /** When the user picks a different group, clamp leverage to its max. */
   useEffect(() => {
@@ -236,9 +245,19 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
           </div>
           {selected && (
-            <p className="mt-2 text-xs text-text-tertiary">
-              Capped at this account type&apos;s maximum: 1:{groupMaxLeverage(selected)}
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-text-tertiary">
+                Capped at this account type&apos;s maximum: 1:{groupMaxLeverage(selected)}
+              </p>
+              {(selected.kyc_unlock_required || selected.xp_unlock_required) && (
+                <p className="text-xs text-amber-400/85">
+                  {selected.kyc_unlock_required && 'Complete KYC to unlock higher leverage. '}
+                  {selected.xp_unlock_required && selected.xp_for_next_unlock && selected.next_unlock_leverage
+                    ? `Reach ${selected.xp_for_next_unlock} XP to unlock 1:${selected.next_unlock_leverage}.`
+                    : ''}
+                </p>
+              )}
+            </div>
           )}
         </Section>
 

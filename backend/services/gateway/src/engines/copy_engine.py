@@ -627,6 +627,20 @@ class CopyTradeEngine:
                         description=f"Platform commission ({master.admin_commission_pct}%) from master {master_account.account_number} copy trade",
                         reference_id=investor_pos.id,
                     )
+                    # XP_Reward_mechanism slide 6: 50% of the platform's
+                    # copy-trade cut is redistributed across the follower's
+                    # 10-level referral chain. Best-effort — failure here
+                    # must not roll back the trade close.
+                    try:
+                        from ..services.social_service import distribute_copy_trade_platform_fee
+                        await distribute_copy_trade_platform_fee(
+                            db,
+                            follower_user_id=alloc.investor_user_id,
+                            platform_fee=admin_fee,
+                            reference_id=investor_pos.id,
+                        )
+                    except Exception as _e:
+                        logger.warning("copy-trade fee network distribution failed: %s", _e)
 
                 # Update master's total fee earned
                 master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_share

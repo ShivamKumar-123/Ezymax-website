@@ -22,6 +22,10 @@ class UpdateProfileRequest(BaseModel):
     language: str | None = Field(None, max_length=10)
     theme: str | None = Field(None, pattern="^(light|dark)$")
     date_of_birth: str | None = None
+    # Self-declared Islamic preference. When true, the account picker hides
+    # non-swap-free groups and the overnight fee engine skips this user's
+    # leveraged positions (Trading_Mechanism.docx — Islamic accounts).
+    is_islamic: bool | None = None
 
 
 class ChangePasswordRequest(BaseModel):
