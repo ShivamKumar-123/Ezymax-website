@@ -2,6 +2,36 @@
 
 Wired into `trading_service.close_position` immediately before its final
 `db.commit()` so the close + payout are atomic.
+
+Cross-checked against Trade_Insurance.docx (May 2026):
+  ✓ Slide 4   RiskScore = LeverageFactor × VolatilityFactor × TradeSizeFactor
+              implemented in insurance/risk.py
+  ✓ Slide 5   BaseFee = RiskScore × BaseConstant ($1.2 default)
+  ✓ Slide 6   Tier multipliers Basic 1× / Advanced 2× / Pro 3× / Elite 4×
+  ✓ Slide 7   Fee cap $6 (normal) / $12 (high-volume ≥5 lots)
+  ✓ Slide 8   Coverage 20 / 30 / 40 / 50 %
+  ✓ Slide 9   Claim = min(Loss × Coverage%, MaxCap)
+  ✓ Slide 10  MaxCap rules — flat OR % of trade size, whichever is smaller
+  ✓ Slide 11  EstimatedRefund (display-only) in pricing.py
+  ✓ Slide 13  Trigger gates — close in loss, ≥5 min duration, no hedge,
+              policy was active, news-blackout, ATR floor (low-vol disable)
+  ✓ Slide 14  Instant wallet credit — Transaction(insurance_payout)
+  ✓ Slide 15  Anti-abuse — 2 claims/day, 12h cooldown, $2000/day cap,
+              hedge guard
+  ✓ Slide 16  Dynamic surcharges — high leverage (+20%), no SL (+15%),
+              high winrate (+15%) in pricing.quote_all_tiers
+  ✓ Slide 17  News blackout (admin-set) + ATR floor + ATR ceiling
+              (extreme-vol kill switch — added in this commit)
+  ✓ Slide 18  Partial close → proportional via paid_so_far accounting
+
+Documented gaps NOT yet implemented:
+  ✗ Slide 16  "Frequent claims → reduce coverage" — only fee surcharges
+              are applied today. Coverage reduction would need claim-rate
+              lookup at quote time + db pass-through to quote_all_tiers.
+  ✗ Slide 18  "Copy trading → optional higher fee" — copy-traded positions
+              don't currently open insurance policies (followers mirror
+              the master's order without a per-trade insurance toggle), so
+              this is moot until the copy flow exposes it.
 """
 from __future__ import annotations
 
@@ -95,11 +125,15 @@ async def evaluate_claim(
         if (closed - opened).total_seconds() < cfg.min_trade_duration_seconds:
             return False, Decimal("0"), "min_duration"
 
-    # ATR floor (extreme-vol kill switch)
+    # Volatility kill switches (Trade_Insurance.docx slide 17):
+    #  - atr_floor: low-vol → likely-zero claims, system risk, disable.
+    #  - atr_ceiling: extreme spike → unbounded payouts, disable.
     symbol = (position.instrument.symbol if position.instrument else "")
     atr = await get_atr(symbol)
     if atr < cfg.atr_floor:
         return False, Decimal("0"), "vol_too_low"
+    if cfg.atr_ceiling is not None and atr > cfg.atr_ceiling:
+        return False, Decimal("0"), "vol_too_high"
 
     # Hedge check
     if await _hedge_exists(db=db, position=position):
@@ -182,8 +216,8 @@ async def maybe_pay(
         if not eligible:
             policy.status = "denied" if reason in (
                 "hedge", "min_duration", "cooldown", "daily_claim_limit",
-                "daily_payout_limit", "vol_too_low", "news_blackout",
-                "insurance_disabled",
+                "daily_payout_limit", "vol_too_low", "vol_too_high",
+                "news_blackout", "insurance_disabled",
             ) else "expired"
             policy.settled_at = datetime.now(timezone.utc)
             logger.info(

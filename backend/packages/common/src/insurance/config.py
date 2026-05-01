@@ -32,6 +32,10 @@ class InsuranceConfig:
     winrate_threshold: float
     winrate_surcharge: float
     atr_floor: float
+    # Trade_Insurance.docx slide 17: disable insurance when volatility is
+    # extreme (the inverse of atr_floor). NULL means "no ceiling" — keeps
+    # the existing behaviour for installs that don't care about vol caps.
+    atr_ceiling: Optional[float]
     news_blackout_until: Optional[datetime]
 
 
@@ -59,6 +63,7 @@ _DEFAULTS = InsuranceConfig(
     winrate_threshold=0.65,
     winrate_surcharge=0.15,
     atr_floor=0.0001,
+    atr_ceiling=None,
     news_blackout_until=None,
 )
 
@@ -95,5 +100,10 @@ async def load_config() -> InsuranceConfig:
         winrate_threshold=float(await _get("insurance_dynamic_winrate_threshold", _DEFAULTS.winrate_threshold)),
         winrate_surcharge=float(await _get("insurance_dynamic_winrate_surcharge", _DEFAULTS.winrate_surcharge)),
         atr_floor=float(await _get("insurance_disable_atr_floor", _DEFAULTS.atr_floor)),
+        atr_ceiling=(
+            float(await _get("insurance_disable_atr_ceiling", _DEFAULTS.atr_ceiling))
+            if (await _get("insurance_disable_atr_ceiling", None)) is not None
+            else None
+        ),
         news_blackout_until=blackout,
     )

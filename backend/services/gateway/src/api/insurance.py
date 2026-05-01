@@ -54,6 +54,8 @@ async def quote(
     atr = await get_atr(req.symbol)
     if atr < cfg.atr_floor:
         raise HTTPException(status_code=409, detail="vol_too_low")
+    if cfg.atr_ceiling is not None and atr > cfg.atr_ceiling:
+        raise HTTPException(status_code=409, detail="vol_too_high")
 
     # Trade-size in USD ≈ lots × contract_size × price.
     bid, ask = await trading_service.get_current_price(req.symbol)
