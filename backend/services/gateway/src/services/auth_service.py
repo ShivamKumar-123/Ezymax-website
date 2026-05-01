@@ -207,7 +207,9 @@ def generate_account_number() -> str:
 
 async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str) -> None:
     """Attach a new user to the IB whose referral_code they used. Silent no-op if the code
-    is missing, expired, or owned by an inactive IB — we don't want to block signup over it."""
+    is missing, expired, or owned by an inactive IB — we don't want to block signup over it.
+    On a successful link, also credits the IB referrer the signup bonus (XP/AC/PS)
+    per XP_Reward_mechanism slide 4."""
     code = (referral_code or "").strip()
     if not code:
         return
@@ -217,6 +219,14 @@ async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str)
     ib_profile = ib_q.scalar_one_or_none()
     if ib_profile:
         db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user_id, ib_profile_id=ib_profile.id))
+        # Best-effort: a rewards-side failure must not block the signup itself.
+        try:
+            from . import rewards_service
+            await rewards_service.award_signup_referral_bonus(
+                db, referrer_user_id=ib_profile.user_id, referred_user_id=user_id,
+            )
+        except Exception as _e:
+            logger.debug("signup referral bonus failed: %s", _e)
 
 
 # ─── Core: issue auth response ───────────────────────────────────────────

@@ -20,6 +20,7 @@ from packages.common.src.models import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
     RewardStoreItem, RewardsTransaction,
     User, TradeHistory, TradingAccount,
+    Referral,
 )
 
 logger = logging.getLogger("rewards_service")
@@ -193,6 +194,209 @@ async def daily_login_check_in(db: AsyncSession, user_id) -> dict:
         "new_xp": int(state.xp),
         "new_ac_balance": float(state.ac_balance),
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Core ledger helper — every XP/AC/PS mutation funnels through this so
+# RewardsTransaction stays a complete audit trail.
+# ─────────────────────────────────────────────────────────────────────
+
+async def _award(
+    db: AsyncSession,
+    user_id,
+    *,
+    xp: int = 0,
+    ac: Decimal = Decimal("0"),
+    ps: int = 0,
+    type: str,
+    source: str,
+    reference_id=None,
+) -> None:
+    """Add XP/AC/PS to a user's state and write a RewardsTransaction row.
+    Caller is responsible for db.commit() — typically batched with the
+    underlying event (trade close, signup, etc.)."""
+    if xp <= 0 and ac <= 0 and ps <= 0:
+        return
+    state_q = await db.execute(
+        select(RewardsUserState).where(RewardsUserState.user_id == user_id).with_for_update()
+    )
+    state = state_q.scalar_one_or_none()
+    if state is None:
+        state = RewardsUserState(user_id=user_id)
+        db.add(state)
+        await db.flush()
+    if xp:
+        state.xp = int(state.xp or 0) + int(xp)
+    if ac:
+        state.ac_balance = Decimal(str(state.ac_balance or 0)) + Decimal(str(ac))
+    if ps:
+        state.ps = int(state.ps or 0) + int(ps)
+    state.last_updated = datetime.now(timezone.utc)
+
+    db.add(RewardsTransaction(
+        user_id=user_id, type=type,
+        xp_delta=int(xp), ac_delta=Decimal(str(ac)),
+        source=source, reference_id=reference_id,
+    ))
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Trading-volume rewards (XP_Reward_mechanism slide 3)
+# Per $1,000 traded → 10 XP, 5 AC, 1000 PS for the trader themselves.
+# Then the same notional flows through the 10-level referral chain.
+# ─────────────────────────────────────────────────────────────────────
+
+XP_PER_1K_USD = 10
+AC_PER_1K_USD = Decimal("5")
+PS_PER_1K_USD = 1000
+
+# Slide 5 / table 1: 10-level XP/AC/PS distribution from downline trades.
+# Indexed L1..L10 → fraction of the trader's earned XP/AC/PS the upline
+# receives. Numbers add up to 100% so the whole pool is distributed.
+REFERRAL_LEVEL_PCT = [
+    Decimal("0.35"),  # L1
+    Decimal("0.15"),  # L2
+    Decimal("0.10"),  # L3
+    Decimal("0.10"),  # L4
+    Decimal("0.05"),  # L5
+    Decimal("0.05"),  # L6
+    Decimal("0.05"),  # L7
+    Decimal("0.05"),  # L8
+    Decimal("0.05"),  # L9
+    Decimal("0.05"),  # L10
+]
+
+# Slide 18 / table 4: XP-tier-gated referral depth. A referrer's own XP
+# decides how deep into their downline they can earn from.
+def _referral_depth_cap_for_xp(xp: int) -> int:
+    if xp >= 7000:  return 10  # Elite
+    if xp >= 3000:  return 8   # Pro
+    if xp >= 1000:  return 6   # Skilled
+    if xp >= 300:   return 4   # Active
+    return 2                    # Starter
+
+
+async def award_trading_volume_rewards(
+    db: AsyncSession,
+    user_id,
+    notional_usd: Decimal,
+    *,
+    reference_id=None,
+) -> None:
+    """Credit the trader for their trade volume + walk the referral chain
+    crediting their uplines. Idempotent only via call-site discipline:
+    intended to fire exactly once per trade close."""
+    if notional_usd <= 0:
+        return
+    # The trader's own slice.
+    blocks = (notional_usd / Decimal("1000"))
+    own_xp = int(blocks * XP_PER_1K_USD)
+    own_ac = (blocks * AC_PER_1K_USD).quantize(Decimal("0.01"))
+    own_ps = int(blocks * PS_PER_1K_USD)
+    if own_xp <= 0 and own_ac <= 0 and own_ps <= 0:
+        return
+    await _award(
+        db, user_id,
+        xp=own_xp, ac=own_ac, ps=own_ps,
+        type="trade_volume",
+        source="trade_close",
+        reference_id=reference_id,
+    )
+    # Walk uplines.
+    await _distribute_to_referral_chain(
+        db,
+        leaf_user_id=user_id,
+        base_xp=own_xp,
+        base_ac=own_ac,
+        base_ps=own_ps,
+        type_prefix="referral_trade",
+        source="trade_close",
+        reference_id=reference_id,
+    )
+
+
+async def _distribute_to_referral_chain(
+    db: AsyncSession,
+    *,
+    leaf_user_id,
+    base_xp: int,
+    base_ac: Decimal,
+    base_ps: int,
+    type_prefix: str,
+    source: str,
+    reference_id=None,
+) -> None:
+    """Walk up the Referral chain from leaf_user_id (the actor whose
+    activity is being distributed). For each ancestor, award them
+    base × REFERRAL_LEVEL_PCT[level] *if* their own XP tier covers this
+    depth (XP-tier-gated referral depth)."""
+    current = leaf_user_id
+    visited: set = set()  # cycle guard — referral table is user-modifiable
+    for level_idx in range(10):
+        # Find the user who referred `current`.
+        row = (await db.execute(
+            select(Referral).where(Referral.referred_id == current).limit(1)
+        )).scalar_one_or_none()
+        if row is None:
+            break
+        ancestor_id = row.referrer_id
+        if ancestor_id in visited or ancestor_id == leaf_user_id:
+            break
+        visited.add(ancestor_id)
+
+        # Look up the ancestor's XP to apply the depth cap.
+        anc_xp = (await db.execute(
+            select(RewardsUserState.xp).where(RewardsUserState.user_id == ancestor_id)
+        )).scalar_one_or_none()
+        cap = _referral_depth_cap_for_xp(int(anc_xp or 0))
+        if (level_idx + 1) > cap:
+            # Ancestor isn't qualified to earn at this depth — skip them but
+            # keep walking, since L+1 ancestors at deeper depth still get
+            # nothing (their cap is no looser than this one's).
+            current = ancestor_id
+            continue
+
+        share = REFERRAL_LEVEL_PCT[level_idx]
+        anc_xp_award = int(Decimal(base_xp) * share)
+        anc_ac_award = (Decimal(base_ac) * share).quantize(Decimal("0.01"))
+        anc_ps_award = int(Decimal(base_ps) * share)
+        await _award(
+            db, ancestor_id,
+            xp=anc_xp_award, ac=anc_ac_award, ps=anc_ps_award,
+            type=f"{type_prefix}_l{level_idx + 1}",
+            source=source,
+            reference_id=reference_id,
+        )
+        current = ancestor_id
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Signup referral bonus (XP_Reward_mechanism slide 4)
+# Direct + flat: when a referred user signs up, the IB referrer gets a
+# one-time +30 XP / +20 AC / +500 PS — same shape as the daily
+# refer_friend mission so it's not double-paying the IB.
+# ─────────────────────────────────────────────────────────────────────
+
+SIGNUP_REFERRAL_XP = 30
+SIGNUP_REFERRAL_AC = Decimal("20")
+SIGNUP_REFERRAL_PS = 500
+
+
+async def award_signup_referral_bonus(
+    db: AsyncSession,
+    referrer_user_id,
+    referred_user_id,
+) -> None:
+    """Credit the IB referrer when a downline signs up. Caller commits."""
+    await _award(
+        db, referrer_user_id,
+        xp=SIGNUP_REFERRAL_XP,
+        ac=SIGNUP_REFERRAL_AC,
+        ps=SIGNUP_REFERRAL_PS,
+        type="referral_signup",
+        source="signup",
+        reference_id=referred_user_id,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────
