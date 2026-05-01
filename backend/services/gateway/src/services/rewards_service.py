@@ -415,8 +415,11 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
         select(RewardsMission)
         .where(RewardsMission.is_active.is_(True), RewardsMission.period == period)
     )
-    # Flash missions auto-hide once expires_at is past. Other periods ignore expiry.
-    if period == "flash":
+    # Flash + bonus missions auto-hide outside their (starts_at, expires_at)
+    # window so seeded festival missions don't pile up in the UI before
+    # their event opens. Other periods ignore both bounds.
+    if period in ("flash", "bonus"):
+        stmt = stmt.where(or_(RewardsMission.starts_at.is_(None), RewardsMission.starts_at <= now))
         stmt = stmt.where(or_(RewardsMission.expires_at.is_(None), RewardsMission.expires_at > now))
     # Daily missions can be tagged with streak_day (1..7) per the
     # Repeatable_task.docx 7-day cycle. Show only the missions matching the
@@ -465,6 +468,7 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
             "completed": completed,
             "claimed": claimed,
             "period_key": pkey,
+            "starts_at": m.starts_at.isoformat() if m.starts_at else None,
             "expires_at": m.expires_at.isoformat() if m.expires_at else None,
             "streak_day": int(m.streak_day) if m.streak_day is not None else None,
         })

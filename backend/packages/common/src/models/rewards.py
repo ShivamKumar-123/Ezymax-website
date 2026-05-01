@@ -43,6 +43,9 @@ class RewardsMission(Base):
     ac_reward = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     display_order = Column(Integer, nullable=False, default=0)
+    # When set, the mission only opens after this timestamp (used by event +
+    # flash missions). NULL means "always open as of seed time".
+    starts_at = Column(DateTime(timezone=True), nullable=True)
     # When set, the mission stops being offered after this timestamp (used by
     # flash + event missions). NULL means the mission is evergreen.
     expires_at = Column(DateTime(timezone=True), nullable=True)
