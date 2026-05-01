@@ -24,7 +24,13 @@ def upgrade() -> None:
             ADD COLUMN IF NOT EXISTS last_streak_date DATE;
     """)
 
-    # --- 2. Extend rewards_missions.period enum to include bonus/flash/achievement ---
+    # --- 2. Widen `period` from VARCHAR(10) to VARCHAR(20). 'achievement' is
+    #         11 characters and the original column was capped at 10, so
+    #         seed inserts below would fail with StringDataRightTruncation
+    #         until the column itself is widened.
+    op.execute("ALTER TABLE rewards_missions ALTER COLUMN period TYPE VARCHAR(20);")
+
+    # --- 3. Extend rewards_missions.period enum to include bonus/flash/achievement.
     # The original CHECK was defined inline without a name; Postgres assigns an auto
     # name like "rewards_missions_period_check". Drop-if-exists then re-add the
     # widened constraint so the migration is safe to run on databases where the
@@ -110,5 +116,6 @@ def downgrade() -> None:
           ADD CONSTRAINT rewards_missions_period_check
           CHECK (period IN ('daily','weekly'));
     """)
+    op.execute("ALTER TABLE rewards_missions ALTER COLUMN period TYPE VARCHAR(10);")
     op.execute("ALTER TABLE rewards_user_state DROP COLUMN IF EXISTS last_streak_date;")
     op.execute("ALTER TABLE rewards_user_state DROP COLUMN IF EXISTS streak_count;")
