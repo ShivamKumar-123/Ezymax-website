@@ -10,6 +10,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import WalletDepositModal from '@/components/wallet/WalletDepositModal';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -135,6 +136,12 @@ function WalletPageContent() {
   const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
 
   const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
+  // On-site wallet-connect deposit modal — opened from the deposit form's
+  // submit handler when depositChannel === 'crypto'. The modal owns the
+  // /wallet/deposit/wallet POST + the polling loop.
+  const [walletDepositOpen, setWalletDepositOpen] = useState(false);
+  const [walletDepositAmount, setWalletDepositAmount] = useState(0);
+  const [walletDepositAsset, setWalletDepositAsset] = useState<string>(CRYPTO_ASSETS[0].id);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositTxId, setDepositTxId] = useState('');
   const [depositProofFile, setDepositProofFile] = useState<File | null>(null);
@@ -459,30 +466,14 @@ function WalletPageContent() {
       return;
     }
     if (depositChannel === 'crypto') {
-      setDepositSubmitting(true);
-      try {
-        const res = await api.post<{ id: string; status: string; amount: number; payment_url?: string }>(
-          '/wallet/deposit',
-          {
-            amount: amt,
-            method: CRYPTO_DEPOSIT_METHOD,
-            crypto_currency: selectedCryptoDeposit,
-          },
-        );
-        if (res.payment_url) {
-          toast.success('Redirecting to crypto payment…');
-          window.location.href = res.payment_url;
-          return;
-        } else {
-          toast.error('Failed to create crypto payment link. Please try again or contact support.');
-          return;
-        }
-        void fetchData(true);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Deposit failed');
-      } finally {
-        setDepositSubmitting(false);
-      }
+      // On-site wallet-connect flow: open the modal which calls
+      // POST /wallet/deposit/wallet itself, renders the QR + connect button,
+      // and polls the status. The legacy hosted-redirect path stays mounted
+      // on the backend as a manual fallback (Pay manually link inside the
+      // modal — copy address to any external wallet/exchange).
+      setWalletDepositAmount(amt);
+      setWalletDepositAsset(selectedCryptoDeposit);
+      setWalletDepositOpen(true);
       return;
     }
 
@@ -1503,6 +1494,18 @@ function WalletPageContent() {
           </div>
         </div>
       )}
+
+      <WalletDepositModal
+        open={walletDepositOpen}
+        onClose={() => setWalletDepositOpen(false)}
+        amountUsd={walletDepositAmount}
+        cryptoAsset={walletDepositAsset}
+        onSettled={() => {
+          // The IPN webhook already credited balance + sent the email; just
+          // refresh the wallet view so the user sees the new total.
+          void fetchData(true);
+        }}
+      />
 
     </DashboardShell>
   );
