@@ -9,6 +9,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import MasterEligibilityBanner from '@/components/social/MasterEligibilityBanner';
 
 type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard';
 type SortBy = 'total_return_pct' | 'sharpe_ratio' | 'followers_count';
@@ -1120,6 +1121,7 @@ function BecomeProviderTab() {
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
+      <MasterEligibilityBanner />
       <div className="glass-card rounded-xl p-5 noise-texture space-y-4">
         <h3 className="text-sm font-semibold text-text-primary">Apply to Become a MAM Master</h3>
         <p className="text-xxs text-text-tertiary">Choose your provider type, set your fees, and start earning from followers.</p>

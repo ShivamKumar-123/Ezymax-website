@@ -379,6 +379,18 @@ async def redeem(db: AsyncSession, user_id, item_id) -> dict:
     price = Decimal(str(item.ac_price))
     if bal < price:
         raise HTTPException(status_code=402, detail="insufficient_ac")
+
+    # Lifestyle rewards (smartphone, Dubai trip, etc.) are PS-gated. The PS
+    # threshold is stored on the item's payload so admins can re-balance the
+    # ladder without a code change.
+    payload = dict(item.payload or {})
+    fulfillment_kind = "instant"
+    if (item.category or "").lower() == "lifestyle":
+        min_ps = int(payload.get("min_ps") or 0)
+        if int(state.ps or 0) < min_ps:
+            raise HTTPException(status_code=403, detail="insufficient_ps")
+        fulfillment_kind = str(payload.get("fulfillment") or "manual")
+
     state.ac_balance = bal - price
     state.last_updated = datetime.now(timezone.utc)
     db.add(RewardsTransaction(
@@ -391,6 +403,7 @@ async def redeem(db: AsyncSession, user_id, item_id) -> dict:
         "redeemed": item.label,
         "ac_spent": float(price),
         "new_ac_balance": float(state.ac_balance),
+        "fulfillment": fulfillment_kind,
     }
 
 

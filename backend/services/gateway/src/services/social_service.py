@@ -1,6 +1,7 @@
 """Social Trading Service — Leaderboard, copy trading, MAM/PAMM, followers."""
 import json
 import secrets
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -816,6 +817,137 @@ async def withdraw_managed_account(
         "total_profit": float(allocation.total_profit),
         "wallet_balance": float(user.main_wallet_balance) if user else None,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Master Trader eligibility (COPY_TRADING_PAGE.docx)
+# ─────────────────────────────────────────────────────────────────────
+#
+# Two paths:
+#   1. Verified external P&L  — submit a track-record URL; admin reviews.
+#   2. Qualify via FXArtha    — meet all four criteria below over the
+#      user's lifetime trading on the platform.
+
+MASTER_MIN_ACTIVE_DAYS = 30
+MASTER_MIN_VOLUME_USD = Decimal("100000")
+MASTER_MIN_TRADES = 100
+
+
+async def check_master_eligibility(user_id: UUID, db: AsyncSession) -> dict:
+    """Compute the four eligibility metrics + a per-criterion pass flag.
+
+    Volume is sum(lots × open_price × 100k) over closed trades — same notional
+    convention used elsewhere (see stats_engine). All checks consider live
+    accounts only; demo trades don't count toward eligibility.
+    """
+    # Live trading accounts only.
+    accounts_q = await db.execute(
+        select(TradingAccount.id)
+        .where(
+            TradingAccount.user_id == user_id,
+            TradingAccount.is_demo.is_(False),
+        )
+    )
+    account_ids = [row[0] for row in accounts_q.all()]
+
+    if not account_ids:
+        return {
+            "active_days": 0, "active_days_required": MASTER_MIN_ACTIVE_DAYS, "active_days_ok": False,
+            "profitable": False, "profitable_ok": False, "total_pnl_usd": 0.0,
+            "trade_volume_usd": 0.0, "trade_volume_required": float(MASTER_MIN_VOLUME_USD), "trade_volume_ok": False,
+            "trade_count": 0, "trade_count_required": MASTER_MIN_TRADES, "trade_count_ok": False,
+            "all_passed": False,
+        }
+
+    stats_q = await db.execute(
+        select(
+            func.count().label("cnt"),
+            func.coalesce(func.sum(TradeHistory.profit), 0).label("pnl"),
+            func.coalesce(
+                func.sum(TradeHistory.lots * TradeHistory.open_price * 100000),
+                0,
+            ).label("volume"),
+            func.min(TradeHistory.closed_at).label("first_close"),
+        )
+        .where(TradeHistory.account_id.in_(account_ids))
+    )
+    row = stats_q.one()
+    trade_count = int(row.cnt or 0)
+    total_pnl = Decimal(str(row.pnl or 0))
+    volume = Decimal(str(row.volume or 0))
+    first_close = row.first_close
+
+    if first_close is not None:
+        if first_close.tzinfo is None:
+            first_close = first_close.replace(tzinfo=timezone.utc)
+        active_days = max(0, (datetime.now(timezone.utc) - first_close).days)
+    else:
+        active_days = 0
+
+    profitable = total_pnl > 0
+    return {
+        "active_days": active_days,
+        "active_days_required": MASTER_MIN_ACTIVE_DAYS,
+        "active_days_ok": active_days >= MASTER_MIN_ACTIVE_DAYS,
+        "profitable": profitable,
+        "profitable_ok": profitable,
+        "total_pnl_usd": float(total_pnl),
+        "trade_volume_usd": float(volume),
+        "trade_volume_required": float(MASTER_MIN_VOLUME_USD),
+        "trade_volume_ok": volume >= MASTER_MIN_VOLUME_USD,
+        "trade_count": trade_count,
+        "trade_count_required": MASTER_MIN_TRADES,
+        "trade_count_ok": trade_count >= MASTER_MIN_TRADES,
+        "all_passed": (
+            active_days >= MASTER_MIN_ACTIVE_DAYS
+            and profitable
+            and volume >= MASTER_MIN_VOLUME_USD
+            and trade_count >= MASTER_MIN_TRADES
+        ),
+    }
+
+
+async def apply_as_master(
+    user_id: UUID,
+    db: AsyncSession,
+    *,
+    master_type: str = "signal_provider",
+    description: str | None = None,
+    performance_fee_pct: Decimal = Decimal("25"),
+    management_fee_pct: Decimal = Decimal("0"),
+    min_investment: Decimal = Decimal("100"),
+    max_investors: int = 100,
+    external_pnl_url: str | None = None,
+) -> dict:
+    """Apply as a Master Trader. Either eligibility passes (auto-create
+    pending application) or an external_pnl_url is supplied for admin review.
+    Reuses the existing become_provider() to write the row so all of the
+    existing admin-approval plumbing keeps working unchanged."""
+    if not external_pnl_url:
+        elig = await check_master_eligibility(user_id, db)
+        if not elig["all_passed"]:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "not_eligible",
+                    "eligibility": elig,
+                },
+            )
+    strategy_info = None
+    if external_pnl_url:
+        strategy_info = {"external_pnl_url": external_pnl_url}
+    return await become_provider(
+        account_id=None,
+        master_type=master_type,
+        description=description,
+        performance_fee_pct=performance_fee_pct,
+        management_fee_pct=management_fee_pct,
+        min_investment=min_investment,
+        max_investors=max_investors,
+        user_id=user_id,
+        db=db,
+        strategy_info=strategy_info,
+    )
 
 
 async def become_provider(

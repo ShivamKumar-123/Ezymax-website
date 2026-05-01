@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
-import { ShieldCheck, Loader2 } from 'lucide-react';
+import { ShieldCheck, Loader2, HelpCircle } from 'lucide-react';
 import { insuranceApi, type PolicyOut, type ClaimOut } from '@/lib/api/insurance';
+import InsuranceOnboardingModal from '@/components/insurance/InsuranceOnboardingModal';
 
 const STATUS_COLOR: Record<PolicyOut['status'], string> = {
   active: '#d6a93d',
@@ -44,15 +45,26 @@ export default function InsurancePage() {
 
   return (
     <DashboardShell>
+      <InsuranceOnboardingModal />
       <div className="space-y-5 pb-8">
-        <div>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             <ShieldCheck size={22} className="text-[#d6a93d]" /> Trade Insurance
           </h1>
-          <p className="text-sm text-text-secondary mt-1">
-            Per-trade protection. Pay a small fee to recover part of any loss on insured trades.
-          </p>
+          <button
+            type="button"
+            onClick={() => {
+              try { localStorage.removeItem('fx-insurance-onboarded'); } catch { /* private mode */ }
+              window.location.reload();
+            }}
+            className="text-xs text-text-tertiary hover:text-text-primary inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border-primary hover:border-[#d6a93d]/40"
+          >
+            <HelpCircle size={13} /> How it works
+          </button>
         </div>
+        <p className="text-sm text-text-secondary -mt-1">
+          Per-trade protection. Pay a small fee to recover part of any loss on insured trades.
+        </p>
 
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-text-secondary py-10 justify-center">
