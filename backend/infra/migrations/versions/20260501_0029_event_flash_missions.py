@@ -19,6 +19,8 @@ Festival windows (UTC, today = 2026-05-01):
 Revision ID: 0029
 Revises: 0028
 """
+from datetime import datetime, timezone
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -27,6 +29,12 @@ revision = "0029"
 down_revision = "0028"
 branch_labels = None
 depends_on = None
+
+
+def _ts(s: str) -> datetime:
+    """asyncpg requires datetime objects (not ISO strings) for TIMESTAMPTZ
+    bind parameters, so coerce here."""
+    return datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
 
 
 def upgrade() -> None:
@@ -72,7 +80,7 @@ def upgrade() -> None:
         bind.execute(stmt, dict(
             slug=s[0], title=s[1], description=s[2], action_kind=s[3],
             target_count=s[4], xp_reward=s[5], ac_reward=s[6],
-            starts_at=s[7], expires_at=s[8],
+            starts_at=_ts(s[7]), expires_at=_ts(s[8]),
         ))
 
 
