@@ -1241,12 +1241,9 @@ function MyDashboardTab() {
   const loadFollowers = async () => {
     setFollowersLoading(true);
     try {
-      console.log('Loading followers...');
       const res = await api.get<any>('/followers/my-followers');
-      console.log('Followers response:', res);
       setFollowers(res.followers || []);
     } catch (e: any) {
-      console.error('Failed to load followers:', e);
       toast.error(e.message || 'Failed to load followers');
     } finally {
       setFollowersLoading(false);

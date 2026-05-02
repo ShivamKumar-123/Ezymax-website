@@ -27,7 +27,6 @@ class PriceSocket {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
-        console.log('Price socket connected');
       };
 
       this.ws.onmessage = (event) => {

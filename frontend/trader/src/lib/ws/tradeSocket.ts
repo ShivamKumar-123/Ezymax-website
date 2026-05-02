@@ -23,10 +23,6 @@ class TradeSocket {
 
     this.ws = new WebSocket(wsUrl);
 
-    this.ws.onopen = () => {
-      console.log(`Trade socket connected for account ${accountId}`);
-    };
-
     this.ws.onmessage = (event) => {
       try {
         const data: TradeEvent = JSON.parse(event.data);

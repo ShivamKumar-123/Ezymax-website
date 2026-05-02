@@ -34,11 +34,6 @@ router = APIRouter()
 _client_ip_for_inet = client_ip_for_inet
 
 
-def _handle(coro):
-    """Wrapper is not needed — service raises AuthServiceError which routes catch below."""
-    return coro
-
-
 @router.get("/platform-status")
 async def platform_status():
     """Public: returns current platform flags so the frontend can gate UI
