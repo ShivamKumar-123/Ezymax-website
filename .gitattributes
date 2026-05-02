@@ -1,0 +1,10 @@
+# Force LF line endings on shell scripts and config files that get
+# executed on Linux containers / servers. Without this, git on Windows
+# converts to CRLF on checkout and the bash interpreter rejects the
+# carriage returns ("/usr/bin/env: 'bash\r': No such file or directory").
+*.sh             text eol=lf
+Dockerfile       text eol=lf
+*.dockerfile     text eol=lf
+docker-compose*.yml  text eol=lf
+.env.example     text eol=lf
+*.py             text eol=lf
