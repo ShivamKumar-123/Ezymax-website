@@ -99,6 +99,9 @@ class UserResponse(BaseModel):
     phone: Optional[str]
     country: Optional[str]
     address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
     date_of_birth: Optional[datetime] = None
     role: str
     status: str

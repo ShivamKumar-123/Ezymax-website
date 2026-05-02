@@ -24,6 +24,9 @@ class UpdateProfileRequest(BaseModel):
     phone: str | None = Field(None, max_length=20)
     country: str | None = Field(None, max_length=100)
     address: str | None = None
+    city: str | None = Field(None, max_length=100)
+    state: str | None = Field(None, max_length=100)
+    postal_code: str | None = Field(None, max_length=20)
     language: str | None = Field(None, max_length=10)
     theme: str | None = Field(None, pattern="^(light|dark)$")
     date_of_birth: str | None = None

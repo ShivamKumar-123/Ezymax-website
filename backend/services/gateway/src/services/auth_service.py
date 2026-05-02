@@ -883,6 +883,10 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
             and (user.last_name or "").strip()
             and (user.phone or "").strip()
             and (user.country or "").strip()
+            and (user.address or "").strip()
+            and (user.city or "").strip()
+            and (user.state or "").strip()
+            and (user.postal_code or "").strip()
             and user.date_of_birth is not None
         )
 
@@ -894,6 +898,9 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
         "phone": user.phone,
         "country": user.country,
         "address": user.address,
+        "city": user.city,
+        "state": user.state,
+        "postal_code": user.postal_code,
         "date_of_birth": user.date_of_birth,
         "role": user.role,
         "status": user.status,

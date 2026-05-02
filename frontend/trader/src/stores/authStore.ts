@@ -12,6 +12,9 @@ interface User {
   phone?: string | null;
   country?: string | null;
   address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
   date_of_birth?: string | null;
   role: string;
   status: string;

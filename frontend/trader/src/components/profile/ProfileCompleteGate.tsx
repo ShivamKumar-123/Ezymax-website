@@ -27,6 +27,10 @@ type FormState = {
   last_name: string;
   phone: string;
   country: string;
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
   date_of_birth: string;
 };
 
@@ -91,6 +95,10 @@ export default function ProfileCompleteGate() {
     last_name: '',
     phone: '',
     country: '',
+    address: '',
+    city: '',
+    state: '',
+    postal_code: '',
     date_of_birth: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -104,6 +112,10 @@ export default function ProfileCompleteGate() {
       last_name: user.last_name || '',
       phone: user.phone || '',
       country: user.country || '',
+      address: user.address || '',
+      city: user.city || '',
+      state: user.state || '',
+      postal_code: user.postal_code || '',
       date_of_birth: _toDateInput(user.date_of_birth),
     });
   }, [shouldRender, user?.id]);
@@ -114,6 +126,10 @@ export default function ProfileCompleteGate() {
     if (!form.last_name.trim()) n++;
     if (!form.phone.trim()) n++;
     if (!form.country.trim()) n++;
+    if (!form.address.trim()) n++;
+    if (!form.city.trim()) n++;
+    if (!form.state.trim()) n++;
+    if (!form.postal_code.trim()) n++;
     if (!form.date_of_birth.trim()) n++;
     return n;
   }, [form]);
@@ -150,6 +166,10 @@ export default function ProfileCompleteGate() {
         last_name: form.last_name.trim(),
         phone: form.phone.trim(),
         country: form.country.trim(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postal_code: form.postal_code.trim(),
         date_of_birth: form.date_of_birth,
       });
       await refreshUser();
@@ -243,15 +263,62 @@ export default function ProfileCompleteGate() {
             </select>
           </Field>
 
-          <Field label="Date of birth" required hint="You must be 18+ to trade.">
+          <Field label="Street address" required>
             <input
-              type="date"
-              value={form.date_of_birth}
-              onChange={handleChange('date_of_birth')}
-              max={new Date().toISOString().slice(0, 10)}
-              className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary outline-none focus:border-[#d6a93d]/50 text-sm"
+              type="text"
+              value={form.address}
+              onChange={handleChange('address')}
+              placeholder="House / flat / street"
+              autoComplete="street-address"
+              maxLength={200}
+              className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#d6a93d]/50 text-sm"
             />
           </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="City" required>
+              <input
+                type="text"
+                value={form.city}
+                onChange={handleChange('city')}
+                autoComplete="address-level2"
+                maxLength={100}
+                className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#d6a93d]/50 text-sm"
+              />
+            </Field>
+            <Field label="State / province" required>
+              <input
+                type="text"
+                value={form.state}
+                onChange={handleChange('state')}
+                autoComplete="address-level1"
+                maxLength={100}
+                className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#d6a93d]/50 text-sm"
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Postal / ZIP code" required>
+              <input
+                type="text"
+                value={form.postal_code}
+                onChange={handleChange('postal_code')}
+                autoComplete="postal-code"
+                maxLength={20}
+                className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#d6a93d]/50 text-sm"
+              />
+            </Field>
+            <Field label="Date of birth" required hint="18+ to trade.">
+              <input
+                type="date"
+                value={form.date_of_birth}
+                onChange={handleChange('date_of_birth')}
+                max={new Date().toISOString().slice(0, 10)}
+                className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-text-primary outline-none focus:border-[#d6a93d]/50 text-sm"
+              />
+            </Field>
+          </div>
 
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
