@@ -91,24 +91,18 @@ export default function GoogleAuthButton({ disabled }: { disabled?: boolean }) {
   const fallbackParentRef = useRef<HTMLDivElement | null>(null);
 
   /* The GIS SDK is loaded by <GoogleOAuthProvider> on app boot. Poll for
-   * its presence on window; once available, initialize() once. */
+   * its presence — but DO NOT initialize() on mount. Initializing too
+   * early causes Google's FedCM SDK to auto-display its white "Continue
+   * as <name>" personalized card on top of the page (it ignores our
+   * dark theme). We defer init until the user actually clicks our dark
+   * button, then call initialize() + prompt() back-to-back. Net result:
+   * Google's UI only ever shows after an explicit user action. */
   useEffect(() => {
     if (!CLIENT_ID) return;
     let cancelled = false;
     const check = () => {
       if (cancelled) return;
-      const id = window.google?.accounts?.id;
-      if (id) {
-        if (!initializedRef.current) {
-          id.initialize({
-            client_id: CLIENT_ID,
-            callback: handleCredential,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-            use_fedcm_for_prompt: true,
-          });
-          initializedRef.current = true;
-        }
+      if (window.google?.accounts?.id) {
         setSdkReady(true);
       } else {
         setTimeout(check, 200);
@@ -117,6 +111,13 @@ export default function GoogleAuthButton({ disabled }: { disabled?: boolean }) {
     check();
     return () => {
       cancelled = true;
+      // Belt-and-braces: dismiss any FedCM card that snuck through (e.g.
+      // mounted by a stale bundle) when this component unmounts.
+      try {
+        window.google?.accounts?.id?.cancel();
+      } catch {
+        /* SDK not loaded; nothing to cancel */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -149,9 +150,26 @@ export default function GoogleAuthButton({ disabled }: { disabled?: boolean }) {
   const handleClick = () => {
     if (loading || disabled || !sdkReady) return;
     const id = window.google?.accounts?.id;
-    if (!id) {
+    if (!id || !CLIENT_ID) {
       toast.error('Google sign-in is loading — please try again in a moment.');
       return;
+    }
+    // Lazy initialize on first click. cancel() any pending FedCM card
+    // first so we never have two stacked.
+    try {
+      id.cancel();
+    } catch {
+      /* nothing to cancel */
+    }
+    if (!initializedRef.current) {
+      id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
+      });
+      initializedRef.current = true;
     }
     id.prompt((notification) => {
       // FedCM / One Tap may refuse to show for a few reasons:
