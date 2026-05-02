@@ -1,6 +1,7 @@
 """Profile Service — User profile CRUD, KYC document handling, session management."""
 import logging
 import uuid as _uuid
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -113,6 +114,23 @@ async def update_profile(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # date_of_birth arrives from the HTML <input type="date"> as a YYYY-MM-DD
+    # string. The User column is a DateTime so we coerce here — asyncpg
+    # otherwise raises DataError on commit.
+    if "date_of_birth" in update_data:
+        dob_raw = update_data["date_of_birth"]
+        if dob_raw is None or (isinstance(dob_raw, str) and not dob_raw.strip()):
+            update_data["date_of_birth"] = None
+        elif isinstance(dob_raw, str):
+            try:
+                # Accept either "YYYY-MM-DD" or full ISO 8601.
+                update_data["date_of_birth"] = datetime.fromisoformat(dob_raw[:10])
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid date of birth — expected YYYY-MM-DD.",
+                )
 
     for field, value in update_data.items():
         if value is not None:
