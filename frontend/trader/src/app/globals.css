@@ -500,12 +500,53 @@ html {
 @keyframes flashAccent { 0% { background-color: rgba(214,169,61,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
-/* react-hot-toast — library defaults can look white; force FXArtha dark surface */
+/* react-hot-toast — library defaults are washed-out white squares; reskin
+ * to the FXArtha dark surface with proper padding, gap, and typography so
+ * single-line errors don't wrap mid-word and the icon doesn't crash into
+ * the text. */
 .fxartha-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  min-height: 44px;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The internal status icon (✓ / ✕) — give it a soft circular halo so it
+ * reads as a status badge rather than a punched-out hole. */
+.fxartha-hot-toast > div[role="status"] {
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+/* The text container — react-hot-toast wraps content in a child div; make
+ * sure long error strings flow nicely instead of orphaning a single word. */
+.fxartha-hot-toast > div:not([role="status"]) {
+  flex: 1 1 auto;
+  margin: 0 !important;
+  word-break: break-word;
+}
+
+/* Tighten the close-button (×) for toasts that ship with one. */
+.fxartha-hot-toast button {
+  flex-shrink: 0;
+  color: var(--toast-fg) !important;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.fxartha-hot-toast button:hover {
+  opacity: 1;
 }
 
 /* Page fade-in — applied to main content area on route change */

@@ -54,28 +54,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Toaster
               position="top-center"
               containerClassName="fxartha-toaster"
+              gutter={10}
               toastOptions={{
-                duration: 1500,
+                duration: 2500,
                 className: 'fxartha-hot-toast',
                 style: {
                   background: 'var(--toast-bg)',
                   color: 'var(--toast-fg)',
                   border: '1px solid var(--toast-border)',
-                  fontSize: '13px',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 },
                 success: {
-                  duration: 1500,
+                  duration: 2200,
+                  className: 'fxartha-hot-toast',
+                  // White check on a gold disc reads as "good" instantly on
+                  // dark surface without losing the brand accent.
+                  iconTheme: { primary: '#d6a93d', secondary: '#1a1408' },
+                },
+                error: {
+                  duration: 4000,
+                  className: 'fxartha-hot-toast',
+                  // White X on a saturated red disc — high contrast on the
+                  // dark toast background, no fade-out into the BG colour.
+                  iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
+                },
+                loading: {
+                  duration: Infinity,
                   className: 'fxartha-hot-toast',
                   iconTheme: { primary: '#d6a93d', secondary: 'var(--toast-bg)' },
                 },
-                error: {
-                  duration: 2500,
-                  className: 'fxartha-hot-toast',
-                  iconTheme: { primary: '#f87171', secondary: 'var(--toast-bg)' },
-                },
-                loading: { className: 'fxartha-hot-toast' },
               }}
             />
             </GoogleAuthProvider>
