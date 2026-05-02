@@ -904,7 +904,7 @@ function WalletPageContent() {
                               : 'border-transparent text-text-tertiary hover:text-text-primary'
                           )}
                         >
-                          {method === 'crypto' ? 'Crypto (OxaPay)' : 'Manual (Bank/UPI)'}
+                          {method === 'crypto' ? 'Crypto (Wallet Connect)' : 'Manual (Bank/UPI)'}
                         </button>
                       );
                     })}
@@ -912,7 +912,7 @@ function WalletPageContent() {
 
                   {depositUiSection === 'crypto' ? (
                     <>
-                      {/* Crypto deposit via OxaPay */}
+                      {/* Crypto deposit via NOWPayments wallet-connect modal */}
                       <div className="space-y-1">
                         <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
@@ -931,7 +931,7 @@ function WalletPageContent() {
 
                       <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
                         <p className="text-xs text-text-secondary leading-relaxed">
-                          You will be redirected to OxaPay to choose your cryptocurrency (BTC, ETH, USDT, USDC, etc.) and complete the payment securely.
+                          Pay directly from your wallet (MetaMask, Trust, Rainbow, etc.) on Ethereum, BSC, Polygon, or Arbitrum. We'll show a QR code + on-site payment screen — no third-party redirect.
                         </p>
                       </div>
 
@@ -1215,8 +1215,8 @@ function WalletPageContent() {
                           onChange={(e) => setWithdrawOxapayDetails(e.target.value)}
                           placeholder={
                             withdrawUiSection === 'crypto'
-                              ? 'Your crypto wallet address or OxaPay payout details'
-                              : 'OxaPay ID, email, or instructions'
+                              ? 'Your crypto wallet address (network must match the withdrawal asset)'
+                              : 'Bank account / UPI ID / payout instructions'
                           }
                           rows={3}
                           className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm resize-none"
@@ -1384,7 +1384,7 @@ function WalletPageContent() {
             <div>
               <h5 className="text-text-primary font-bold text-xs uppercase tracking-wide">Processing Time</h5>
               <p className="text-text-tertiary text-[10px] leading-relaxed mt-0.5">
-                OxaPay and manual bank/UPI options are reviewed by finance; most requests are processed within 24 hours.
+                Crypto and manual bank/UPI withdrawals are reviewed by finance; most requests are processed within 24 hours.
               </p>
             </div>
           </div>

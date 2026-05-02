@@ -191,6 +191,23 @@ async def approve_kyc(
         commit=False,
     )
     await db.commit()
+
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_kyc_approved
+        from packages.common.src.config import get_settings
+        if smtp_configured() and user.email:
+            settings = get_settings()
+            subject, html, text = render_kyc_approved(
+                first_name=user.first_name,
+                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(user.email, subject, html, text=text))
+    except Exception:
+        pass
+
     return {"message": "KYC approved successfully"}
 
 
@@ -236,4 +253,22 @@ async def reject_kyc(
         commit=False,
     )
     await db.commit()
+
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_kyc_rejected
+        from packages.common.src.config import get_settings
+        if smtp_configured() and user.email:
+            settings = get_settings()
+            subject, html, text = render_kyc_rejected(
+                first_name=user.first_name,
+                reason=reason_str or None,
+                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.fxartha.com"),
+            )
+            fire_and_forget(send_email(user.email, subject, html, text=text))
+    except Exception:
+        pass
+
     return {"message": "KYC rejected"}

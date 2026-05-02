@@ -23,6 +23,7 @@ class StakingEngine:
     def __init__(self):
         self._running = False
         self._last_run_day: str | None = None
+        self._last_digest_iso_week: str | None = None
 
     async def start(self):
         self._running = True
@@ -35,7 +36,8 @@ class StakingEngine:
     async def _run(self):
         while self._running:
             try:
-                today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                now = datetime.now(timezone.utc)
+                today_key = now.strftime("%Y-%m-%d")
                 if self._last_run_day != today_key:
                     async with AsyncSessionLocal() as db:
                         inserted = await staking_service.accrue_daily(db)
@@ -43,6 +45,16 @@ class StakingEngine:
                     self._last_run_day = today_key
                     if inserted:
                         logger.info("Staking accrual: inserted %d reward rows", inserted)
+
+                # Weekly digest — Monday after 00:00 UTC, once per ISO week.
+                iso = now.isocalendar()
+                week_key = f"{iso[0]}-W{iso[1]:02d}"
+                if now.weekday() == 0 and self._last_digest_iso_week != week_key:
+                    async with AsyncSessionLocal() as db:
+                        sent = await staking_service.weekly_digest(db)
+                    self._last_digest_iso_week = week_key
+                    if sent:
+                        logger.info("Staking digest: emailed %d users", sent)
             except Exception as e:
                 logger.error("Staking engine error: %s", e, exc_info=True)
             await asyncio.sleep(TICK_INTERVAL)

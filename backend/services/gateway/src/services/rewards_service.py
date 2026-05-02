@@ -495,11 +495,13 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
         raise HTTPException(status_code=409, detail="already_claimed")
 
     state = await _get_or_create_state(db, user_id)
-    state.xp = int(state.xp or 0) + int(mission.xp_reward)
+    old_xp = int(state.xp or 0)
+    state.xp = old_xp + int(mission.xp_reward)
     state.ac_balance = (Decimal(str(state.ac_balance or 0)) + Decimal(str(mission.ac_reward)))
     # Mission completion also bumps PS — flat 100 per claim, gives the rank a meaningful curve.
     state.ps = int(state.ps or 0) + 100
     state.last_updated = datetime.now(timezone.utc)
+    new_xp = state.xp
 
     progress.claimed_at = datetime.now(timezone.utc)
     db.add(RewardsTransaction(
@@ -508,6 +510,17 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
         source=mission.slug, reference_id=mission.id,
     ))
     await db.commit()
+
+    # Best-effort email — never blocks the claim response.
+    try:
+        await _send_mission_email(db, user_id, mission)
+    except Exception:
+        pass
+    try:
+        await _maybe_send_tier_upgrade_email(db, user_id, old_xp, new_xp)
+    except Exception:
+        pass
+
     return {
         "xp_earned": int(mission.xp_reward),
         "ac_earned": float(mission.ac_reward),
@@ -515,6 +528,71 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
         "new_ac_balance": float(state.ac_balance),
         "new_ps": int(state.ps),
     }
+
+
+async def _maybe_send_tier_upgrade_email(
+    db: AsyncSession,
+    user_id,
+    old_xp: int,
+    new_xp: int,
+) -> None:
+    """If the XP delta crossed a level threshold, email the user. Quiet
+    no-op when the level is unchanged."""
+    old_level, _, _, _ = _level_for_xp(int(old_xp or 0))
+    new_level, new_label, _, _ = _level_for_xp(int(new_xp or 0))
+    if new_level <= old_level:
+        return
+    from packages.common.src.smtp_mail import (
+        send_email, smtp_configured, fire_and_forget,
+    )
+    if not smtp_configured():
+        return
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user or not user.email:
+        return
+    from packages.common.src.email_templates import render_tier_upgraded
+    from packages.common.src.config import get_settings as _gs
+    app_url = (_gs().TRADER_APP_URL or "https://trade.fxartha.com")
+    prev_label = LEVEL_LABELS[old_level - 1] if 0 < old_level <= len(LEVEL_LABELS) else None
+    perks = [
+        "Higher daily mission caps",
+        "Better Spin & Win odds",
+        "Priority support queue",
+    ]
+    subject, html, text = render_tier_upgraded(
+        first_name=user.first_name,
+        new_tier=new_label,
+        previous_tier=prev_label,
+        perks=perks,
+        trader_app_url=app_url,
+    )
+    fire_and_forget(send_email(user.email, subject, html, text=text))
+
+
+async def _send_mission_email(db: AsyncSession, user_id, mission: "RewardsMission") -> None:
+    """Fire the mission-completed email after a successful claim. Quiet
+    no-op on SMTP misconfiguration or missing email."""
+    from packages.common.src.smtp_mail import (
+        send_email, smtp_configured, fire_and_forget,
+    )
+    if not smtp_configured():
+        return
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user or not user.email:
+        return
+    from packages.common.src.email_templates import render_mission_completed
+    from packages.common.src.config import get_settings as _gs
+    app_url = (_gs().TRADER_APP_URL or "https://trade.fxartha.com")
+    title = (mission.title or mission.slug or "Mission").strip()
+    subject, html, text = render_mission_completed(
+        first_name=user.first_name,
+        mission_title=title,
+        reward_xp=int(mission.xp_reward) if mission.xp_reward else None,
+        reward_amount=Decimal(str(mission.ac_reward)) if mission.ac_reward else None,
+        reward_currency="USD",
+        trader_app_url=app_url,
+    )
+    fire_and_forget(send_email(user.email, subject, html, text=text))
 
 
 async def mark_progress(

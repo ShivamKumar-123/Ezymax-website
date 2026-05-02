@@ -354,6 +354,79 @@ async def claim_rewards(db: AsyncSession, user_id: UUID, position_id: UUID) -> d
 
 # ─── Daily accrual scheduler ─────────────────────────────────────────
 
+async def weekly_digest(db: AsyncSession, now: Optional[datetime] = None) -> int:
+    """For every user with at least one staking accrual in the trailing 7
+    days, fire a weekly summary email. Idempotent only on the engine side
+    (this function emails every time it's called)."""
+    now = now or datetime.now(timezone.utc)
+    period_end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    period_start = period_end - timedelta(days=7)
+
+    # Per-user totals across active staking positions.
+    rows = (await db.execute(
+        select(
+            StakingPosition.user_id.label("user_id"),
+            func.sum(StakingRewardAccrual.reward_amount).label("earned"),
+            func.sum(StakingPosition.principal).label("principal"),
+            func.max(StakingPlan.apy_bps).label("apy_bps"),
+        )
+        .select_from(StakingRewardAccrual)
+        .join(StakingPosition, StakingPosition.id == StakingRewardAccrual.position_id)
+        .join(StakingPlan, StakingPlan.id == StakingPosition.plan_id)
+        .where(
+            StakingRewardAccrual.period_start >= period_start,
+            StakingRewardAccrual.period_end <= period_end,
+        )
+        .group_by(StakingPosition.user_id)
+    )).all()
+
+    if not rows:
+        return 0
+
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_staking_digest
+        from packages.common.src.config import get_settings
+    except Exception as e:
+        logger.warning("staking digest setup failed: %s", e)
+        return 0
+
+    if not smtp_configured():
+        return 0
+
+    sent = 0
+    app_url = (get_settings().TRADER_APP_URL or "https://trade.fxartha.com")
+    period_label = "Weekly"
+    period_end_str = period_end.strftime("%Y-%m-%d")
+
+    for r in rows:
+        user_id = r.user_id
+        earned = Decimal(str(r.earned or 0))
+        principal = Decimal(str(r.principal or 0))
+        apy_bps = int(r.apy_bps or 0)
+        apy_pct = apy_bps / 100.0
+        if earned <= 0:
+            continue
+        user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if not user or not user.email:
+            continue
+        subject, html, text = render_staking_digest(
+            first_name=user.first_name,
+            period_label=period_label,
+            accrued_amount=earned,
+            staked_principal=principal,
+            apy_pct=apy_pct,
+            period_end=period_end_str,
+            currency="USD",
+            trader_app_url=app_url,
+        )
+        fire_and_forget(send_email(user.email, subject, html, text=text))
+        sent += 1
+    return sent
+
+
 async def accrue_daily(db: AsyncSession, now: Optional[datetime] = None) -> int:
     """Insert one accrual row per active position for the just-elapsed 24h
     window. Idempotent: the unique index on (position_id, period_start,

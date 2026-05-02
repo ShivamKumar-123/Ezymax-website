@@ -222,6 +222,68 @@ def _send_welcome_email(user: User, *, via_google: bool) -> None:
         logger.warning("welcome email scheduling failed for %s: %s", user.email, e)
 
 
+async def _maybe_send_new_login_email(
+    user: User,
+    request: Request,
+    db: AsyncSession,
+    new_session_id: UUID,
+) -> None:
+    """If this login is from a device we haven't seen before, email the user.
+
+    "Unrecognized" = no prior UserSession (older than this one) shares the
+    same user_agent string for this user. We compare on user-agent rather
+    than IP to avoid noisy alerts for users on mobile networks where the
+    IP changes constantly. Best-effort, fire-and-forget — never blocks the
+    login response or rolls anything back."""
+    try:
+        ua = (request.headers.get("user-agent") or "").strip()
+        if not ua:
+            return
+        prior_q = await db.execute(
+            select(UserSession.id)
+            .where(
+                UserSession.user_id == user.id,
+                UserSession.id != new_session_id,
+                UserSession.user_agent == ua,
+            )
+            .limit(1)
+        )
+        if prior_q.scalar_one_or_none() is not None:
+            return  # known device — no email
+
+        # Also skip if this is the user's very first session ever (no point
+        # warning them about their own initial login from registration).
+        first_q = await db.execute(
+            select(func.count())
+            .select_from(UserSession)
+            .where(UserSession.user_id == user.id)
+        )
+        if (first_q.scalar() or 0) <= 1:
+            return
+
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        if not smtp_configured() or not user.email:
+            return
+        from packages.common.src.email_templates import render_new_login
+
+        ip = client_ip_for_inet(request) or None
+        when_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        st = get_settings()
+        subject, html, text = render_new_login(
+            first_name=user.first_name,
+            ip_address=str(ip) if ip else None,
+            user_agent=ua,
+            location=None,
+            when_utc=when_utc,
+            trader_app_url=st.TRADER_APP_URL or "https://trade.fxartha.com",
+        )
+        fire_and_forget(send_email(user.email, subject, html, text=text))
+    except Exception as e:
+        logger.debug("new-login email check failed for %s: %s", getattr(user, "email", "?"), e)
+
+
 # ─── Utility: account number ─────────────────────────────────────────────
 
 def generate_account_number() -> str:
@@ -271,15 +333,14 @@ async def issue_auth_json_response(
     committed atomically. Any exception raised before this commit leaves the
     transaction open for the route handler to roll back."""
     token, expires = create_access_token(str(user.id), user.role)
-    db.add(
-        UserSession(
-            user_id=user.id,
-            token_hash=hash_token(token),
-            ip_address=client_ip_for_inet(request),
-            user_agent=request.headers.get("user-agent"),
-            expires_at=expires,
-        )
+    new_session = UserSession(
+        user_id=user.id,
+        token_hash=hash_token(token),
+        ip_address=client_ip_for_inet(request),
+        user_agent=request.headers.get("user-agent"),
+        expires_at=expires,
     )
+    db.add(new_session)
     st = get_settings()
     raw_refresh = secrets.token_urlsafe(48)
     ref_exp = datetime.now(timezone.utc) + timedelta(days=st.JWT_REFRESH_EXPIRY_DAYS)
@@ -319,6 +380,15 @@ async def issue_auth_json_response(
             )
         )
     await db.commit()
+
+    # Best-effort: if the action is a LOGIN and this device hasn't been seen
+    # before, fire a "new sign-in" email. Never raises into the login path.
+    if user_audit_action == "LOGIN":
+        try:
+            await _maybe_send_new_login_email(user, request, db, new_session.id)
+        except Exception:
+            pass
+
     display_token = token if st.JWT_INCLUDE_LEGACY_JSON_TOKEN else ""
     body = TokenResponse(
         access_token=display_token,

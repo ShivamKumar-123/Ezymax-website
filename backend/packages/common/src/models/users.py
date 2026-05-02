@@ -27,6 +27,9 @@ class User(Base):
     role = Column(String(20), default="user")
     status = Column(String(20), default="active")
     kyc_status = Column(String(20), default="pending")
+    # KYC reminder cadence stage: 0 = none sent, 1 = 3-day reminder fired,
+    # 2 = 7-day reminder fired (terminal — no further reminders).
+    kyc_reminder_stage = Column(Integer, default=0, server_default="0", nullable=False)
     is_demo = Column(Boolean, default=False)
     # When TRUE the trader is routed to swap-free (Islamic) account groups
     # by default and is exempt from the overnight leverage fee engine.

@@ -40,6 +40,74 @@ METHOD_MAP = {
 }
 
 
+# ─── Email helpers (best-effort, fire-and-forget) ─────────────────────────
+
+
+def _send_bonus_emails_for_user(
+    user_row: User,
+    applied_bonuses: list[tuple[str, Decimal]],
+) -> None:
+    """Send one bonus-credited email per applied bonus offer. Caller has
+    already fired the deposit-confirmation email; this tells the user
+    explicitly which promo credited them. Silent no-op if SMTP isn't
+    configured or no bonus was applied."""
+    if not applied_bonuses:
+        return
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        if not smtp_configured() or not user_row.email:
+            return
+        from packages.common.src.email_templates import render_bonus_credited
+        st = get_settings()
+        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com")
+        for offer_name, bonus_amount in applied_bonuses:
+            subject, html, text = render_bonus_credited(
+                first_name=user_row.first_name,
+                bonus_amount=bonus_amount,
+                bonus_label=offer_name,
+                currency="USD",
+                new_bonus_balance=user_row.main_wallet_balance,
+                trader_app_url=app_url,
+            )
+            fire_and_forget(send_email(user_row.email, subject, html, text=text))
+    except Exception as _e:
+        logger.warning("bonus credited email failed: %s", _e)
+
+
+def _send_deposit_failed_email(
+    user_row: User,
+    deposit: Deposit,
+    reason_code: str,
+    *,
+    method_label: str,
+) -> None:
+    """Fire-and-forget 'deposit not completed' email when a crypto provider
+    reports expired / failed / refunded / partially_paid."""
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        if not smtp_configured() or not user_row.email:
+            return
+        from packages.common.src.email_templates import render_deposit_failed
+        st = get_settings()
+        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com")
+        subject, html, text = render_deposit_failed(
+            first_name=user_row.first_name,
+            amount=deposit.amount,
+            currency="USD",
+            method=method_label,
+            reason_code=reason_code,
+            reference=str(deposit.id),
+            trader_app_url=app_url,
+        )
+        fire_and_forget(send_email(user_row.email, subject, html, text=text))
+    except Exception as _e:
+        logger.warning("deposit failed email send failed: %s", _e)
+
+
 def _wallet_upload_root() -> Path:
     raw = get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
     p = Path(raw)
@@ -357,6 +425,7 @@ async def handle_oxapay_webhook(
 
         # Apply bonus offers (mirrors admin approve_deposit logic)
         bonus_msg = ""
+        applied_bonuses: list[tuple[str, Decimal]] = []
         now = datetime.utcnow()
         offers_q = await db.execute(
             select(BonusOffer).where(
@@ -389,6 +458,7 @@ async def handle_oxapay_webhook(
                 description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
             ))
             bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+            applied_bonuses.append((offer.name, bonus_amount))
 
         await create_notification(
             db, deposit.user_id,
@@ -415,6 +485,7 @@ async def handle_oxapay_webhook(
                     trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
                 )
                 fire_and_forget(send_email(user_row.email, subject, html, text=text))
+                _send_bonus_emails_for_user(user_row, applied_bonuses)
         except Exception as _e:
             logger.warning("oxapay deposit email failed: %s", _e)
 
@@ -426,6 +497,9 @@ async def handle_oxapay_webhook(
             title="Deposit not completed",
             message=f"Your ${float(deposit.amount):,.2f} crypto deposit {oxapay_status}. Please try again.",
             notif_type="deposit", action_url="/wallet",
+        )
+        _send_deposit_failed_email(
+            user_row, deposit, oxapay_status, method_label="Crypto (OxaPay)",
         )
 
     else:
@@ -666,6 +740,7 @@ async def handle_nowpayments_webhook(
         # Apply active bonus offers — mirrors the OxaPay path so promo
         # behaviour is identical regardless of provider.
         bonus_msg = ""
+        applied_bonuses: list[tuple[str, Decimal]] = []
         now = datetime.utcnow()
         offers_q = await db.execute(
             select(BonusOffer).where(
@@ -698,6 +773,7 @@ async def handle_nowpayments_webhook(
                 description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
             ))
             bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+            applied_bonuses.append((offer.name, bonus_amount))
 
         await create_notification(
             db, deposit.user_id,
@@ -724,12 +800,16 @@ async def handle_nowpayments_webhook(
                     trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
                 )
                 fire_and_forget(send_email(user_row.email, subject, html, text=text))
+                _send_bonus_emails_for_user(user_row, applied_bonuses)
         except Exception as _e:
             logger.warning("nowpayments deposit email failed: %s", _e)
 
     elif status in failure:
         deposit.status = "rejected"
         deposit.rejection_reason = f"NOWPayments payment {status}"
+        _send_deposit_failed_email(
+            user_row, deposit, status, method_label="Crypto (NOWPayments)",
+        )
         await create_notification(
             db, deposit.user_id,
             title="Deposit not completed",

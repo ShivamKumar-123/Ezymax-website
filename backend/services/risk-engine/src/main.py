@@ -133,6 +133,18 @@ class RiskEngine:
                                     "type": "margin_call",
                                     "margin_level": str(margin_level),
                                 }))
+
+                                # Email the user — fire-and-forget, never blocks
+                                # the risk loop on SMTP latency.
+                                if not bool(account.is_demo):
+                                    await self._send_margin_call_email(
+                                        account=account,
+                                        margin_level=margin_level,
+                                        equity=equity,
+                                        used_margin=account.margin_used,
+                                        free_margin=account.free_margin,
+                                        db=db,
+                                    )
                         else:
                             self._margin_call_sent.discard(str(account.id))
 
@@ -146,6 +158,9 @@ class RiskEngine:
     async def _execute_stop_out(self, account: TradingAccount, positions: list[Position], db: AsyncSession):
         """Close positions until margin level is restored above stop-out."""
         logger.warning(f"Stop-out triggered for account {account.account_number}")
+
+        closed_count = 0
+        realized_pnl = Decimal("0")
 
         sorted_positions = sorted(positions, key=lambda p: p.profit)
 
@@ -180,6 +195,9 @@ class RiskEngine:
             account.margin_used = max(Decimal("0"), account.margin_used - margin_release)
             account.equity = account.balance + account.credit
             account.free_margin = account.equity - account.margin_used
+
+            closed_count += 1
+            realized_pnl += profit
 
             await redis_client.publish(f"account:{account.id}", json.dumps({
                 "type": "stop_out",
@@ -220,6 +238,88 @@ class RiskEngine:
             _so = await _gfs("stop_out_level", settings.STOP_OUT_LEVEL)
             if margin_level > Decimal(str(_so)):
                 break
+
+        # After the stop-out loop ends — email the user a summary. Skipped on
+        # demo accounts, and on the no-op case where nothing was actually
+        # closed (defensive — shouldn't happen but cheap to guard).
+        if closed_count > 0 and not bool(account.is_demo):
+            await self._send_stop_out_email(
+                account=account,
+                closed_count=closed_count,
+                realized_pnl=realized_pnl,
+                new_equity=account.equity,
+                db=db,
+            )
+
+    async def _send_margin_call_email(
+        self,
+        *,
+        account: TradingAccount,
+        margin_level: Decimal,
+        equity: Decimal,
+        used_margin: Decimal,
+        free_margin: Decimal,
+        db: AsyncSession,
+    ) -> None:
+        try:
+            from packages.common.src.smtp_mail import (
+                send_email, smtp_configured, fire_and_forget,
+            )
+            if not smtp_configured():
+                return
+            user_q = await db.execute(select(User).where(User.id == account.user_id))
+            user = user_q.scalar_one_or_none()
+            if not user or not user.email:
+                return
+            from packages.common.src.email_templates import render_margin_call
+            st = get_settings()
+            subject, html, text = render_margin_call(
+                first_name=user.first_name,
+                account_number=account.account_number,
+                margin_level_pct=float(margin_level),
+                equity=equity,
+                used_margin=used_margin,
+                free_margin=free_margin,
+                currency=account.currency or "USD",
+                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com",
+            )
+            fire_and_forget(send_email(user.email, subject, html, text=text))
+        except Exception as e:
+            logger.debug("margin call email failed acct=%s: %s", account.account_number, e)
+
+    async def _send_stop_out_email(
+        self,
+        *,
+        account: TradingAccount,
+        closed_count: int,
+        realized_pnl: Decimal,
+        new_equity: Decimal,
+        db: AsyncSession,
+    ) -> None:
+        try:
+            from packages.common.src.smtp_mail import (
+                send_email, smtp_configured, fire_and_forget,
+            )
+            if not smtp_configured():
+                return
+            user_q = await db.execute(select(User).where(User.id == account.user_id))
+            user = user_q.scalar_one_or_none()
+            if not user or not user.email:
+                return
+            from packages.common.src.email_templates import render_stop_out
+            st = get_settings()
+            subject, html, text = render_stop_out(
+                first_name=user.first_name,
+                account_number=account.account_number,
+                closed_count=closed_count,
+                realized_pnl=realized_pnl,
+                new_equity=new_equity,
+                currency=account.currency or "USD",
+                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com",
+            )
+            fire_and_forget(send_email(user.email, subject, html, text=text))
+        except Exception as e:
+            logger.debug("stop-out email failed acct=%s: %s", account.account_number, e)
 
     async def _exposure_monitor(self):
         """Track the admin's net exposure per instrument (B-book risk)."""

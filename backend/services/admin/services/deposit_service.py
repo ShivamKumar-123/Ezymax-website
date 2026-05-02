@@ -165,6 +165,7 @@ async def approve_deposit(
     )
 
     bonus_msg = ""
+    applied_bonuses: list[tuple[str, Decimal]] = []
     now = datetime.utcnow()
     offers_q = await db.execute(
         select(BonusOffer).where(
@@ -202,6 +203,7 @@ async def approve_deposit(
             )
         )
         bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+        applied_bonuses.append((offer.name, bonus_amount))
 
     await write_audit_log(
         db, admin_id, "approve_deposit", "deposit", deposit_id,
@@ -226,9 +228,12 @@ async def approve_deposit(
         from packages.common.src.smtp_mail import (
             send_email, smtp_configured, fire_and_forget,
         )
-        from packages.common.src.email_templates import render_deposit_confirmed
+        from packages.common.src.email_templates import (
+            render_deposit_confirmed, render_bonus_credited,
+        )
         from packages.common.src.config import get_settings as _get_settings
         if smtp_configured() and user_row.email:
+            app_url = (_get_settings().TRADER_APP_URL or "https://trade.fxartha.com")
             subject, html, text = render_deposit_confirmed(
                 first_name=user_row.first_name,
                 amount=deposit.amount,
@@ -236,9 +241,19 @@ async def approve_deposit(
                 method=deposit.method or "Manual",
                 reference=str(deposit.id),
                 new_balance=user_row.main_wallet_balance,
-                trader_app_url=(_get_settings().TRADER_APP_URL or "https://trade.fxartha.com"),
+                trader_app_url=app_url,
             )
             fire_and_forget(send_email(user_row.email, subject, html, text=text))
+            for offer_name, bonus_amount in applied_bonuses:
+                bsubject, bhtml, btext = render_bonus_credited(
+                    first_name=user_row.first_name,
+                    bonus_amount=bonus_amount,
+                    bonus_label=offer_name,
+                    currency="USD",
+                    new_bonus_balance=user_row.main_wallet_balance,
+                    trader_app_url=app_url,
+                )
+                fire_and_forget(send_email(user_row.email, bsubject, bhtml, text=btext))
     except Exception as _e:
         # Logger isn't always imported at module top here; deferred lookup.
         import logging as _logging
