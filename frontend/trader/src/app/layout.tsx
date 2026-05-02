@@ -7,6 +7,7 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
 import NotificationListener from '@/components/NotificationListener';
+import ProfileCompleteGate from '@/components/profile/ProfileCompleteGate';
 import TopLoader from '@/components/TopLoader';
 
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <GoogleAuthProvider>
             <NotificationListener />
+            <ProfileCompleteGate />
             {children}
             <Suspense fallback={null}>
               <MobileBottomNav />

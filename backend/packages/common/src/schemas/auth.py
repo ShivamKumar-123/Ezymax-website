@@ -44,6 +44,40 @@ class GoogleAuthRequest(BaseModel):
     referral_code: Optional[str] = None
 
 
+# ─── Wallet (SIWE / EIP-4361) sign-in ────────────────────────────────
+
+
+class WalletNonceRequest(BaseModel):
+    """Issued before the user signs a SIWE message. The address is the
+    EVM account they're about to sign with."""
+
+    address: str = Field(..., min_length=42, max_length=42, pattern=r"^0x[0-9a-fA-F]{40}$")
+    chain_id: int = Field(..., ge=1)
+
+
+class WalletNonceResponse(BaseModel):
+    """Server tells the client what to put inside the SIWE message so the
+    server-side validator and the client stay in lock-step. The client
+    builds the SIWE message locally with these fields, then asks the
+    wallet to sign it."""
+
+    nonce: str
+    issued_at: str   # ISO-8601 UTC
+    expires_at: str
+    domain: str
+    statement: str
+
+
+class WalletVerifyRequest(BaseModel):
+    """Submitted after the wallet returns a signature. The full SIWE
+    message is required because the server re-parses it (don't trust the
+    client's interpretation of nonce/address/chain)."""
+
+    message: str = Field(..., min_length=20, max_length=4096)
+    signature: str = Field(..., pattern=r"^0x[0-9a-fA-F]{130}$")
+    referral_code: Optional[str] = None
+
+
 class OpenLiveAccountRequest(BaseModel):
     account_group_id: UUID
     leverage: Optional[int] = Field(default=None, ge=1, le=2000)
@@ -64,6 +98,8 @@ class UserResponse(BaseModel):
     last_name: Optional[str]
     phone: Optional[str]
     country: Optional[str]
+    address: Optional[str] = None
+    date_of_birth: Optional[datetime] = None
     role: str
     status: str
     kyc_status: str
@@ -72,6 +108,19 @@ class UserResponse(BaseModel):
     two_factor_enabled: bool
     language: str
     theme: str
+    # True when all the required fields needed before a user can deposit /
+    # trade are populated (first/last name, phone, country, DOB). Derived
+    # in auth_service.get_me — the frontend uses it to gate the
+    # profile-completion modal.
+    profile_complete: bool = False
+    # Linked SIWE wallet address (lowercase). Null when the user hasn't
+    # connected one. Drives the LinkedWalletCard UI.
+    wallet_address: Optional[str] = None
+    # Whether the account has each non-wallet sign-in method available —
+    # used by the FE to disable the "unlink wallet" button when wallet is
+    # the user's only credential.
+    has_password: bool = False
+    has_google: bool = False
     created_at: datetime
 
     class Config:

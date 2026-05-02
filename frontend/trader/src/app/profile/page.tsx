@@ -7,6 +7,7 @@ import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette } from 'l
 import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
+import LinkedWalletCard from '@/components/profile/LinkedWalletCard';
 import api from '@/lib/api/client';
 
 interface Profile {
@@ -497,6 +498,8 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            <LinkedWalletCard />
           </div>
         )}
 

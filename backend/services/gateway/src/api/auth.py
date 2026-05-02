@@ -9,6 +9,7 @@ from packages.common.src.schemas import (
     RegisterRequest, LoginRequest, UserResponse,
     ForgotPasswordRequest, ResetPasswordRequest, MessageResponse, BootstrapSessionRequest,
     GoogleAuthRequest,
+    WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
 )
 from packages.common.src.auth import get_current_user
 from ..services.auth_service import (
@@ -21,6 +22,7 @@ from ..services.auth_service import (
     change_password as _change_password, get_me as _get_me, logout_user,
     client_ip_for_inet,
 )
+from ..services import wallet_auth_service
 
 logger = logging.getLogger("auth_api")
 
@@ -113,6 +115,47 @@ async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession
         raise HTTPException(
             status_code=500,
             detail=f"Google sign-in failed — {type(e).__name__}: {e}",
+        )
+
+
+@router.post("/wallet/nonce", response_model=WalletNonceResponse)
+async def wallet_nonce(
+    req: WalletNonceRequest, request: Request, db: AsyncSession = Depends(get_db),
+):
+    """Issue a single-use SIWE nonce for the given wallet address. The
+    client embeds it in the SIWE message and the wallet signs it. The
+    nonce expires in 5 minutes and is consumed exactly once on verify."""
+    try:
+        return await wallet_auth_service.issue_nonce(
+            req.address, req.chain_id, request, db,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+@router.post("/wallet/verify")
+async def wallet_verify(
+    req: WalletVerifyRequest, request: Request, db: AsyncSession = Depends(get_db),
+):
+    """Verify a SIWE signature, find or create the user, and issue cookies.
+    Reuses `issue_auth_json_response()` so wallet sessions are
+    indistinguishable from email/Google sessions for downstream routes."""
+    try:
+        return await wallet_auth_service.login_or_register_with_wallet(
+            req.message, req.signature, request, db,
+            referral_code=req.referral_code,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.exception("wallet verify failed unexpectedly")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail=f"Wallet sign-in failed — {type(e).__name__}: {e}",
         )
 
 

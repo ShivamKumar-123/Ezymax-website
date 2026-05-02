@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import ConnectWalletButton from '@/components/auth/ConnectWalletButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -311,6 +312,13 @@ function RegisterContent() {
 
                   <motion.div {...fadeUp(0.75)}>
                     <GoogleAuthButton disabled={loading || isLoading || demoLoading} />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.755)}>
+                    <ConnectWalletButton
+                      variant="login"
+                      disabled={loading || isLoading || demoLoading}
+                    />
                   </motion.div>
 
                   <motion.div {...fadeUp(0.76)}>

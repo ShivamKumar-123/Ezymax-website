@@ -29,7 +29,7 @@ from ._enums import (
 # ── Domain modules (eagerly imported so SQLAlchemy registers every class) ──
 from .users import (
     User, UserSession, PasswordResetToken, UserRefreshToken, KYCDocument,
-    IPLog, AuditLog, UserAuditLog, Employee,
+    IPLog, AuditLog, UserAuditLog, Employee, WalletAuthNonce,
 )
 from .instruments import (
     InstrumentSegment, Instrument, InstrumentConfig, InstrumentConfigAudit,
@@ -77,7 +77,7 @@ __all__ = [
     "order_type_enum", "order_side_enum", "order_status_enum", "position_status_enum",
     # users
     "User", "UserSession", "PasswordResetToken", "UserRefreshToken", "KYCDocument",
-    "IPLog", "AuditLog", "UserAuditLog", "Employee",
+    "IPLog", "AuditLog", "UserAuditLog", "Employee", "WalletAuthNonce",
     # instruments
     "InstrumentSegment", "Instrument", "InstrumentConfig", "InstrumentConfigAudit",
     # trading

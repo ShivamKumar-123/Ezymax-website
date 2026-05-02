@@ -864,12 +864,51 @@ async def change_password(user_id: UUID, old_password: str, new_password: str, d
 
 # ─── Get current user profile ─────────────────────────────────────────────
 
-async def get_me(user_id: UUID, db: AsyncSession) -> User:
+async def get_me(user_id: UUID, db: AsyncSession) -> dict:
+    """Return the user row plus the computed `profile_complete` flag.
+
+    A profile is "complete" when all the fields the trader UI needs before
+    deposits / trading become available are populated. Demo accounts and
+    staff (admin/employee) auto-pass — they don't need to fill the gate."""
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise AuthServiceError("User not found", 404)
-    return user
+
+    if user.is_demo or user.role in ("admin", "super_admin", "employee", "manager", "support"):
+        complete = True
+    else:
+        complete = bool(
+            (user.first_name or "").strip()
+            and (user.last_name or "").strip()
+            and (user.phone or "").strip()
+            and (user.country or "").strip()
+            and user.date_of_birth is not None
+        )
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "phone": user.phone,
+        "country": user.country,
+        "address": user.address,
+        "date_of_birth": user.date_of_birth,
+        "role": user.role,
+        "status": user.status,
+        "kyc_status": user.kyc_status,
+        "is_demo": bool(user.is_demo),
+        "main_wallet_balance": float(user.main_wallet_balance or 0),
+        "two_factor_enabled": bool(user.two_factor_enabled),
+        "language": user.language or "en",
+        "theme": user.theme or "dark",
+        "profile_complete": complete,
+        "wallet_address": user.wallet_address,
+        "has_password": bool(user.password_hash),
+        "has_google": bool(user.google_id),
+        "created_at": user.created_at,
+    }
 
 
 # ─── Logout ───────────────────────────────────────────────────────────────

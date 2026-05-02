@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import ConnectWalletButton from '@/components/auth/ConnectWalletButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -326,6 +327,13 @@ export default function LoginPage() {
                       <Suspense fallback={null}>
                         <GoogleAuthButton disabled={loading || isLoading || demoLoading || maintenance} />
                       </Suspense>
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.595)}>
+                      <ConnectWalletButton
+                        variant="login"
+                        disabled={loading || isLoading || demoLoading || maintenance}
+                      />
                     </motion.div>
 
                     <motion.div {...fadeUp(0.6)}>

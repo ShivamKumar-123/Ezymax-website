@@ -45,6 +45,10 @@ class User(Base):
     book_type = Column(String(1), default="B", server_default="B")  # 'A' (LP routed) or 'B' (internal)
     trading_blocked_until = Column(DateTime(timezone=True))
     main_wallet_balance = Column(Numeric(18, 8), nullable=False, default=0)
+    # Lowercased EVM address (0x + 40 hex). Unique via the partial index
+    # ix_users_wallet_address_lower (migration 0034). Set on first SIWE
+    # sign-in or after a manual link from /profile/wallet/link.
+    wallet_address = Column(String(42), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -94,6 +98,30 @@ class UserRefreshToken(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     user = relationship("User", back_populates="refresh_tokens")
+
+
+class WalletAuthNonce(Base):
+    """Single-use nonces for SIWE (EIP-4361) sign-in and account-link flows.
+
+    A row is inserted by `wallet_auth_service.issue_nonce()` and consumed by
+    a single atomic `UPDATE … RETURNING` in `verify_signature()`. After
+    consume, `consumed_at` is set so a replay of the same SIWE message
+    returns 401. `expires_at` (default 5 min from creation) prevents stale
+    nonces from accumulating; a periodic cleanup is not strictly required.
+    """
+    __tablename__ = "wallet_auth_nonces"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    address = Column(String(42), nullable=False)
+    nonce = Column(String(64), nullable=False, unique=True)
+    chain_id = Column(Integer, nullable=False)
+    issued_for = Column(String(20), nullable=False, default="login")
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    ip_address = Column(INET)
+    user_agent_hash = Column(String(64))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    consumed_at = Column(DateTime(timezone=True))
 
 
 class KYCDocument(Base):

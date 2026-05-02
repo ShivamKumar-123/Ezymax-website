@@ -19,3 +19,6 @@ slowapi>=0.1.9
 prometheus-client>=0.20.0
 google-auth>=2.30.0
 requests>=2.32.0
+siwe>=4.2.0
+eth-account>=0.13.0
+eth-utils>=4.0.0
