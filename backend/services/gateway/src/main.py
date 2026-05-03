@@ -170,10 +170,27 @@ def _verify_ws_token(token: str | None) -> dict | None:
         return None
 
 
+def _ws_token_from_websocket(ws: WebSocket, fallback_query_token: str | None) -> str | None:
+    """Extract the access JWT for a WebSocket handshake.
+
+    Preferred path: HttpOnly `pt_access` cookie (browser sends it
+    automatically — never leaks into URLs / logs / browser history).
+    Fallback: ?token= query string for legacy mobile clients that can't
+    attach cookies. The query path is retained for backward
+    compatibility but the trader frontend has been switched to cookies
+    so its access token never appears in nginx access logs (audit H4)."""
+    cookie_name = (get_settings().ACCESS_TOKEN_COOKIE_NAME or "pt_access").strip()
+    cookie_token = ws.cookies.get(cookie_name)
+    if cookie_token:
+        return cookie_token
+    return fallback_query_token
+
+
 @app.websocket("/ws/prices")
 async def price_stream(websocket: WebSocket, token: str | None = Query(default=None)):
-    if token:
-        user = _verify_ws_token(token)
+    effective = _ws_token_from_websocket(websocket, token)
+    if effective:
+        user = _verify_ws_token(effective)
         if not user:
             await websocket.close(code=4001, reason="Invalid token")
             return
@@ -204,8 +221,9 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
 
 
 @app.websocket("/ws/trades/{account_id}")
-async def trade_stream(websocket: WebSocket, account_id: str, token: str = Query()):
-    user = _verify_ws_token(token)
+async def trade_stream(websocket: WebSocket, account_id: str, token: str | None = Query(default=None)):
+    effective = _ws_token_from_websocket(websocket, token)
+    user = _verify_ws_token(effective)
     if not user:
         await websocket.close(code=4001, reason="Invalid token")
         return

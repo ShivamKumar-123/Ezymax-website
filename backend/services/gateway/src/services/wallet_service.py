@@ -313,6 +313,21 @@ async def create_manual_deposit(
     if len(content) > MAX_PROOF_BYTES:
         raise HTTPException(status_code=400, detail="File too large (max 10 MB)")
 
+    # Magic-byte validation — extension + Content-Type are spoofable.
+    # A polyglot (e.g. valid JPEG header followed by PHP) gets through
+    # extension checks alone and lets an attacker host malicious code
+    # under a wallet/uploads/ URL. The leading bytes are much harder to
+    # fake without breaking the format itself.
+    from packages.common.src.file_validation import validate_upload
+    try:
+        suffix = validate_upload(
+            content, suffix,
+            allowed_extensions=DEPOSIT_PROOF_EXT,
+            label="Payment screenshot",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     bank = await _get_bank_for_tier(amount, db)
     try:
         user_dir = safe_join_under_base(_wallet_upload_root(), "deposits", str(user_id))
@@ -688,7 +703,11 @@ async def handle_nowpayments_webhook(
         logger.warning("NOWPayments webhook: invalid order_id=%s", order_id)
         return
 
-    result = await db.execute(select(Deposit).where(Deposit.id == deposit_uuid))
+    # Lock the deposit row so a concurrent admin approval can't credit
+    # twice when the IPN lands at the same moment as a manual flip.
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_uuid).with_for_update()
+    )
     deposit = result.scalar_one_or_none()
     if not deposit:
         logger.warning("NOWPayments webhook: deposit not found order_id=%s", order_id)

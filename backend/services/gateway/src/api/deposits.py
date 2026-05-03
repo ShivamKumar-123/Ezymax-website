@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,6 +64,7 @@ class TxHashSaveRequest(BaseModel):
 @router.post("/deposit/wallet", status_code=201)
 async def create_wallet_deposit(
     req: WalletDepositRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -72,13 +73,32 @@ async def create_wallet_deposit(
     Returns the deposit row id + the pay_address / pay_amount / network /
     expires_at the frontend needs to drive the on-site wallet-connect UI.
     Settlement still happens via the same IPN webhook + handle_nowpayments_webhook
-    path — balance is never credited from this endpoint."""
-    return await wallet_service.create_wallet_deposit(
+    path — balance is never credited from this endpoint.
+
+    Honours the `Idempotency-Key` header — a network-blip retry of the
+    same key returns the same response without creating a second
+    NOWPayments invoice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="deposit_wallet_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await wallet_service.create_wallet_deposit(
         amount=req.amount,
         crypto_currency=req.crypto_currency,
         user_id=current_user["user_id"],
         db=db,
     )
+    await store_response(
+        request, scope="deposit_wallet_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
 
 
 @router.get("/deposit/{deposit_id}/status")

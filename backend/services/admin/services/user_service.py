@@ -18,7 +18,7 @@ from packages.common.src.models import (
     UserSession, UserRefreshToken, UserAuditLog, PasswordResetToken,
     KYCDocument, SupportTicket, TicketMessage, UserBonus, Employee,
     ChargeConfig, InstrumentConfig, InstrumentConfigAudit, SystemSetting,
-    AuditLog,
+    AuditLog, FundMoveApproval,
 )
 from packages.common.src.admin_schemas import (
     UserOut, UserDetailOut, TradingAccountOut,
@@ -205,20 +205,90 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
     )
 
 
+async def _two_person_threshold(db: AsyncSession) -> Decimal:
+    """USD amount above which add-fund / deduct-fund requires a second
+    admin to approve. Adjustable from system_settings without a deploy."""
+    from packages.common.src.settings_store import get_float_setting
+    return Decimal(str(await get_float_setting("fund_move_two_person_threshold", 500.0)))
+
+
+async def _consume_fund_approval(
+    db: AsyncSession,
+    *,
+    approval_id: uuid.UUID,
+    expected_action: str,
+    expected_user_id: uuid.UUID,
+    expected_amount: Decimal,
+    executor_admin_id: uuid.UUID,
+) -> FundMoveApproval:
+    """Validate + atomically claim a previously-approved request. Locks
+    the row so two concurrent executors can't both fire on the same
+    approval. The executing admin must NOT be the same one who
+    requested OR approved (defence in depth)."""
+    res = await db.execute(
+        select(FundMoveApproval).where(FundMoveApproval.id == approval_id).with_for_update()
+    )
+    appr = res.scalar_one_or_none()
+    if appr is None:
+        raise HTTPException(status_code=404, detail="Approval request not found")
+    if appr.status != "approved":
+        raise HTTPException(status_code=409, detail=f"Approval is in '{appr.status}' state")
+    if appr.action != expected_action:
+        raise HTTPException(status_code=409, detail="Approval action mismatch")
+    if appr.target_user_id != expected_user_id:
+        raise HTTPException(status_code=409, detail="Approval target mismatch")
+    if Decimal(str(appr.amount)) != expected_amount:
+        raise HTTPException(status_code=409, detail="Approval amount mismatch")
+    if executor_admin_id in (appr.requested_by, appr.approved_by):
+        raise HTTPException(
+            status_code=403,
+            detail="The admin who requested or approved cannot also execute the move.",
+        )
+    appr.status = "executed"
+    appr.executed_at = datetime.utcnow()
+    return appr
+
+
 async def add_fund(
     user_id: uuid.UUID, body: FundRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+    *, approval_id: uuid.UUID | None = None,
 ) -> dict:
-    """Add funds to user's MAIN WALLET. User must transfer to trading account manually."""
+    """Add funds to user's MAIN WALLET. User must transfer to trading account manually.
+
+    Above the system_settings threshold (`fund_move_two_person_threshold`,
+    defaults $500), the move must be backed by a previously-approved
+    `fund_move_approvals` row — `approval_id` carries the proof. A single
+    compromised admin account can no longer drain the platform."""
     from packages.common.src.notify import create_notification
 
-    user_result = await db.execute(select(User).where(User.id == user_id))
+    amt = Decimal(str(body.amount))
+    threshold = await _two_person_threshold(db)
+    if amt >= threshold and approval_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Amounts ≥ ${threshold} require a second admin's approval. "
+                "POST /admin/users/{user_id}/fund-approvals first, have another "
+                "admin approve it, then pass the approval_id back to add-fund."
+            ),
+        )
+    if approval_id is not None:
+        await _consume_fund_approval(
+            db, approval_id=approval_id, expected_action="add_fund",
+            expected_user_id=user_id, expected_amount=amt,
+            executor_admin_id=admin_id,
+        )
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
     old_balance = user_row.main_wallet_balance or Decimal("0")
-    user_row.main_wallet_balance = old_balance + Decimal(str(body.amount))
+    user_row.main_wallet_balance = old_balance + amt
 
     txn = Transaction(
         user_id=user_id,
@@ -259,17 +329,38 @@ async def add_fund(
 async def deduct_fund(
     user_id: uuid.UUID, body: FundRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+    *, approval_id: uuid.UUID | None = None,
 ) -> dict:
     """Deduct funds. `body.source` controls where the deduction comes from:
        - "main_wallet":    deduct only from the user's main wallet (error if short).
        - "trading_account": deduct only from body.account_id (error if short).
        - None (legacy):    try main wallet first, fall back to body.account_id.
-    """
+
+    Above the configured threshold the move requires a previously-approved
+    `fund_move_approvals` row (carried by `approval_id`) — see add_fund."""
     amt = Decimal(str(body.amount))
     source = (getattr(body, "source", None) or "").strip().lower() or None
 
-    # Load user
-    user_result = await db.execute(select(User).where(User.id == user_id))
+    threshold = await _two_person_threshold(db)
+    if amt >= threshold and approval_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Amounts ≥ ${threshold} require a second admin's approval. "
+                "POST /admin/users/{user_id}/fund-approvals first."
+            ),
+        )
+    if approval_id is not None:
+        await _consume_fund_approval(
+            db, approval_id=approval_id, expected_action="deduct_fund",
+            expected_user_id=user_id, expected_amount=amt,
+            executor_admin_id=admin_id,
+        )
+
+    # Load user (locked to prevent concurrent debits racing each other)
+    user_result = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
@@ -365,6 +456,110 @@ async def deduct_fund(
     await db.commit()
     return {"message": "Fund deducted from trading account successfully", "new_balance": float(account.balance)}
 
+
+# ─── Two-person fund-move approvals (C3) ──────────────────────────────
+
+
+async def request_fund_approval(
+    user_id: uuid.UUID, action: str, body: FundRequest,
+    admin_id: uuid.UUID, db: AsyncSession,
+) -> dict:
+    """Open a pending request that a SECOND admin must approve before
+    add_fund / deduct_fund can execute. Used when the amount is over
+    the configured threshold."""
+    if action not in ("add_fund", "deduct_fund"):
+        raise HTTPException(status_code=400, detail="action must be add_fund or deduct_fund")
+    if not (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
+    target_account_uuid = None
+    if getattr(body, "account_id", None):
+        try:
+            target_account_uuid = uuid.UUID(str(body.account_id))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="invalid account_id")
+
+    appr = FundMoveApproval(
+        action=action,
+        target_user_id=user_id,
+        target_account_id=target_account_uuid,
+        amount=Decimal(str(body.amount)),
+        source=(getattr(body, "source", None) or None),
+        description=body.description,
+        requested_by=admin_id,
+        status="pending",
+    )
+    db.add(appr)
+    await db.commit()
+    return {
+        "id": str(appr.id),
+        "action": appr.action,
+        "amount": float(appr.amount),
+        "status": appr.status,
+        "requested_at": appr.requested_at.isoformat() if appr.requested_at else None,
+    }
+
+
+async def approve_fund_request(
+    approval_id: uuid.UUID, admin_id: uuid.UUID, db: AsyncSession,
+) -> dict:
+    """A second admin (NOT the requester) approves the pending move."""
+    res = await db.execute(
+        select(FundMoveApproval).where(FundMoveApproval.id == approval_id).with_for_update()
+    )
+    appr = res.scalar_one_or_none()
+    if appr is None:
+        raise HTTPException(status_code=404, detail="Approval not found")
+    if appr.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Approval is in '{appr.status}' state")
+    if appr.requested_by == admin_id:
+        raise HTTPException(
+            status_code=403,
+            detail="The admin who requested this move cannot approve it. Ask a colleague.",
+        )
+    appr.approved_by = admin_id
+    appr.approved_at = datetime.utcnow()
+    appr.status = "approved"
+    await db.commit()
+    return {"id": str(appr.id), "status": appr.status}
+
+
+async def reject_fund_request(
+    approval_id: uuid.UUID, reason: str | None,
+    admin_id: uuid.UUID, db: AsyncSession,
+) -> dict:
+    res = await db.execute(
+        select(FundMoveApproval).where(FundMoveApproval.id == approval_id).with_for_update()
+    )
+    appr = res.scalar_one_or_none()
+    if appr is None:
+        raise HTTPException(status_code=404, detail="Approval not found")
+    if appr.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Approval is in '{appr.status}' state")
+    appr.rejected_by = admin_id
+    appr.rejected_at = datetime.utcnow()
+    appr.rejection_reason = (reason or "").strip() or None
+    appr.status = "rejected"
+    await db.commit()
+    return {"id": str(appr.id), "status": appr.status}
+
+
+async def list_pending_fund_approvals(db: AsyncSession) -> list[dict]:
+    res = await db.execute(
+        select(FundMoveApproval)
+        .where(FundMoveApproval.status == "pending")
+        .order_by(FundMoveApproval.requested_at.desc())
+    )
+    rows = res.scalars().all()
+    return [{
+        "id": str(a.id),
+        "action": a.action,
+        "target_user_id": str(a.target_user_id),
+        "amount": float(a.amount),
+        "source": a.source,
+        "description": a.description,
+        "requested_by": str(a.requested_by) if a.requested_by else None,
+        "requested_at": a.requested_at.isoformat() if a.requested_at else None,
+    } for a in rows]
 
 async def give_credit(
     user_id: uuid.UUID, body: CreditRequest,

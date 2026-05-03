@@ -13,13 +13,16 @@ class TradeSocket {
   private accountId: string | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
 
-  connect(accountId: string, token: string) {
+  /** `token` is now ignored — the backend reads the HttpOnly pt_access
+   * cookie automatically. The parameter stays for API compatibility
+   * with older callers but should be dropped over time. */
+  connect(accountId: string, _token?: string) {
+    void _token;
     this.accountId = accountId;
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     const base = getWebSocketBaseUrl();
-    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
-    const wsUrl = `${base}/ws/trades/${accountId}${qs}`;
+    const wsUrl = `${base}/ws/trades/${accountId}`;
 
     this.ws = new WebSocket(wsUrl);
 
@@ -34,7 +37,7 @@ class TradeSocket {
 
     this.ws.onclose = () => {
       if (this.accountId) {
-        this.reconnectTimer = setTimeout(() => this.connect(accountId, token), 3000);
+        this.reconnectTimer = setTimeout(() => this.connect(accountId), 3000);
       }
     };
 

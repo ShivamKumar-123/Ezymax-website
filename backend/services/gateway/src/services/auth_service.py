@@ -480,6 +480,7 @@ async def register_user(
     request: Request,
     db: AsyncSession,
 ) -> JSONResponse:
+    assert_same_origin(request)
     from packages.common.src.settings_store import get_bool_setting
 
     rate_limit_http(request, "register", 15, 3600.0)
@@ -529,6 +530,7 @@ async def login_user(
     request: Request,
     db: AsyncSession,
 ) -> JSONResponse:
+    assert_same_origin(request)
     rate_limit_http(request, "login", 40, 60.0)
     # Case-insensitive email lookup so users who registered with mixed case can still
     # sign in. The unique index on lower(email) (migration 0018) enforces uniqueness.
@@ -568,7 +570,15 @@ async def login_user(
         if not totp_code:
             raise AuthServiceError("2FA code required")
         totp = pyotp.TOTP(secret)
-        if not totp.verify(totp_code):
+        # Accept either a 6-digit TOTP from the authenticator OR a
+        # one-time backup code (XXXXX-XXXXX). Backup codes are a
+        # legitimate self-service recovery path so a lost phone doesn't
+        # require a support-ticket account-recovery (the social-
+        # engineering attack surface — audit H2).
+        ok = totp.verify(totp_code)
+        if not ok:
+            ok = await consume_2fa_backup_code(user.id, totp_code, db)
+        if not ok:
             raise AuthServiceError("Invalid 2FA code", 401)
 
     return await issue_auth_json_response(user, request, db, user_audit_action="LOGIN")
@@ -830,6 +840,7 @@ async def bootstrap_session(access_token: str, request: Request, db: AsyncSessio
 # ─── Forgot / Reset password ─────────────────────────────────────────────
 
 async def forgot_password(email: str, request: Request, db: AsyncSession) -> dict:
+    assert_same_origin(request)
     rate_limit_http(request, "forgot-password", 5, 600.0)
     msg = {"message": "If an account exists for this email, you will receive password reset instructions shortly."}
     result = await db.execute(select(User).where(User.email == email))
@@ -863,6 +874,7 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
 
 
 async def reset_password(token: str, new_password: str, request: Request, db: AsyncSession) -> dict:
+    assert_same_origin(request)
     rate_limit_http(request, "reset-password", 20, 600.0)
     token_hash = hash_token(token.strip())
     now = datetime.now(timezone.utc)
@@ -899,6 +911,15 @@ async def setup_2fa(user_id: UUID, db: AsyncSession) -> dict:
 
 
 async def verify_2fa(user_id: UUID, code: str, db: AsyncSession) -> dict:
+    """Confirms the freshly-set TOTP secret with a real code, then mints
+    eight one-time backup codes — bcrypt-hashed in the DB, returned in
+    plaintext exactly once. The user's instructions tell them to print
+    or save these somewhere offline; lose the phone, use a code, sign
+    in. Without this path the only fallback is a support ticket which
+    is the social-engineering attack surface (audit H2)."""
+    from packages.common.src.models import TwoFactorBackupCode
+    from sqlalchemy import delete as sql_delete
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user.two_factor_secret:
@@ -907,8 +928,87 @@ async def verify_2fa(user_id: UUID, code: str, db: AsyncSession) -> dict:
     if not totp.verify(code):
         raise AuthServiceError("Invalid code", 401)
     user.two_factor_enabled = True
+
+    # Burn any old backup codes from a previous setup attempt before
+    # issuing a fresh batch — otherwise stale codes from a previous
+    # secret could still authenticate against this user.
+    await db.execute(
+        sql_delete(TwoFactorBackupCode).where(TwoFactorBackupCode.user_id == user_id)
+    )
+    plaintext_codes = []
+    for _ in range(8):
+        # 10 hex chars (40 bits of entropy) — formatted as XXXXX-XXXXX
+        # for readability when transcribing.
+        raw = secrets.token_hex(5).upper()
+        formatted = f"{raw[:5]}-{raw[5:]}"
+        plaintext_codes.append(formatted)
+        db.add(TwoFactorBackupCode(
+            user_id=user_id,
+            code_hash=hash_password(formatted),
+        ))
     await db.commit()
-    return {"message": "2FA enabled successfully"}
+    return {
+        "message": "2FA enabled successfully",
+        "backup_codes": plaintext_codes,
+        "backup_code_warning": (
+            "Save these one-time recovery codes somewhere safe. Each "
+            "code works exactly once if you lose access to your "
+            "authenticator app. We will never show them again."
+        ),
+    }
+
+
+async def consume_2fa_backup_code(user_id: UUID, code: str, db: AsyncSession) -> bool:
+    """Try every active backup code; bcrypt-verify against `code`. On
+    match, mark that code used (single-use) and return True. Constant-
+    time-ish: we always loop the full set even on early hit so timing
+    can't reveal how many codes the user has remaining."""
+    from packages.common.src.models import TwoFactorBackupCode
+
+    rows_q = await db.execute(
+        select(TwoFactorBackupCode).where(
+            TwoFactorBackupCode.user_id == user_id,
+            TwoFactorBackupCode.used_at.is_(None),
+        )
+    )
+    rows = rows_q.scalars().all()
+    candidate = (code or "").strip().upper()
+    if not candidate:
+        return False
+    matched: TwoFactorBackupCode | None = None
+    for row in rows:
+        if verify_password(candidate, row.code_hash):
+            matched = row  # don't break — keep timing roughly constant
+    if matched is None:
+        return False
+    matched.used_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
+async def regenerate_2fa_backup_codes(user_id: UUID, db: AsyncSession) -> dict:
+    """User-initiated rotation. Burns all existing codes and issues a
+    fresh batch — used when the printed sheet is suspected lost."""
+    from packages.common.src.models import TwoFactorBackupCode
+    from sqlalchemy import delete as sql_delete
+
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user or not user.two_factor_enabled:
+        raise AuthServiceError("2FA is not enabled")
+
+    await db.execute(
+        sql_delete(TwoFactorBackupCode).where(TwoFactorBackupCode.user_id == user_id)
+    )
+    plaintext_codes = []
+    for _ in range(8):
+        raw = secrets.token_hex(5).upper()
+        formatted = f"{raw[:5]}-{raw[5:]}"
+        plaintext_codes.append(formatted)
+        db.add(TwoFactorBackupCode(
+            user_id=user_id, code_hash=hash_password(formatted),
+        ))
+    await db.commit()
+    return {"backup_codes": plaintext_codes}
 
 
 # ─── Password change ─────────────────────────────────────────────────────

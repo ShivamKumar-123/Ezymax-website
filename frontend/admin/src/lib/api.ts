@@ -47,41 +47,26 @@ export function formatApiErrorDetail(detail: unknown): string {
   }
 }
 
-/** Session-only: closing the browser tab drops the admin JWT (no persistence across tabs). */
+/** Legacy export — only honoured by the obsolete employee-impersonation
+ * flow which still hands a token between users. New auth uses HttpOnly
+ * cookies; nothing else should reference this. */
 export const ADMIN_TOKEN_KEY = 'admin_token';
-export const ADMIN_AUTH_KEY = 'admin-auth';
 
 class AdminApi {
+  /** Optional bearer for legacy impersonation. The real session lives
+   * in the HttpOnly `fx_admin` cookie set by the backend on /login. */
   private token: string | null = null;
 
   setToken(t: string) {
     this.token = t;
-    if (typeof window !== 'undefined') sessionStorage.setItem(ADMIN_TOKEN_KEY, t);
   }
 
   getToken(): string | null {
-    if (!this.token && typeof window !== 'undefined') {
-      this.token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
-      if (!this.token) {
-        try {
-          const store = sessionStorage.getItem(ADMIN_AUTH_KEY);
-          if (store) this.token = JSON.parse(store)?.state?.token || null;
-        } catch {
-          /* ignore */
-        }
-      }
-    }
     return this.token;
   }
 
   clearToken() {
     this.token = null;
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-      sessionStorage.removeItem(ADMIN_AUTH_KEY);
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      localStorage.removeItem(ADMIN_AUTH_KEY);
-    }
   }
 
   private async req<T>(
@@ -96,14 +81,22 @@ class AdminApi {
     if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    const t = this.getToken();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
-    const res = await fetch(url.toString(), { method, headers, body: body ? JSON.stringify(body) : undefined });
+    // credentials:'include' tells the browser to attach the HttpOnly
+    // admin cookie on every request — that's our primary auth surface
+    // now. Without it the cookie is dropped on cross-origin proxies.
+    const res = await fetch(url.toString(), {
+      method, headers,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
+    });
 
     if (res.status === 401) {
       this.clearToken();
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
       throw new Error('Unauthorized');
     }
 
@@ -138,10 +131,12 @@ class AdminApi {
     const p = path.startsWith('/') ? path : `/${path}`;
     const url = `${base}${p}`;
     const headers: Record<string, string> = {};
-    const t = this.getToken();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
-    const res = await fetch(url, { method: 'POST', headers, body: formData });
+    const res = await fetch(url, {
+      method: 'POST', headers, body: formData,
+      credentials: 'include',
+    });
 
     if (res.status === 401) {
       this.clearToken();

@@ -210,8 +210,23 @@ async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSes
 
 @router.post("/2fa/verify")
 async def verify_2fa(code: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Confirms the freshly-set TOTP secret and returns 8 one-time backup
+    codes. Display those to the user once — they can't be retrieved
+    later. The /2fa/regenerate-backup-codes endpoint mints a fresh batch
+    if the original sheet is lost."""
     try:
         return await _verify_2fa(user_id=current_user["user_id"], code=code, db=db)
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+@router.post("/2fa/regenerate-backup-codes")
+async def regenerate_2fa_backup_codes(
+    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+):
+    from ..services.auth_service import regenerate_2fa_backup_codes as _regen
+    try:
+        return await _regen(user_id=current_user["user_id"], db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 

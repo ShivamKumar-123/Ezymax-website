@@ -127,6 +127,59 @@ class WalletAuthNonce(Base):
     consumed_at = Column(DateTime(timezone=True))
 
 
+class FundMoveApproval(Base):
+    """Pending admin add-fund / deduct-fund actions awaiting a SECOND
+    admin's approval (2-person rule). A single compromised finance-tier
+    account cannot drain the platform — moves above the configured
+    threshold land here as `status='pending'` and only the executor
+    flips them to `executed` after a different admin signs off."""
+    __tablename__ = "fund_move_approvals"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    action = Column(String(20), nullable=False)          # 'add_fund' | 'deduct_fund'
+    target_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    target_account_id = Column(UUID(as_uuid=True))
+    amount = Column(Numeric(18, 8), nullable=False)
+    source = Column(String(20))
+    description = Column(Text)
+    requested_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    requested_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    approved_at = Column(DateTime(timezone=True))
+    rejected_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    rejected_at = Column(DateTime(timezone=True))
+    rejection_reason = Column(Text)
+    status = Column(String(20), default="pending", nullable=False)
+    executed_at = Column(DateTime(timezone=True))
+
+
+class TwoFactorBackupCode(Base):
+    """Bcrypt-hashed one-time codes for 2FA recovery. Generated at
+    setup, displayed once, then only verified-and-burned on use."""
+    __tablename__ = "user_2fa_backup_codes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    code_hash = Column(String(255), nullable=False)
+    used_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class IdempotencyKey(Base):
+    """Cache of (scope, key_hash) → cached HTTP response so a network-
+    blip retry of the same request returns the same answer instead of
+    creating a duplicate row."""
+    __tablename__ = "idempotency_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope = Column(String(40), nullable=False)
+    key_hash = Column(String(64), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    response_status = Column(Integer, nullable=False)
+    response_json = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
 class KYCDocument(Base):
     __tablename__ = "kyc_documents"
 

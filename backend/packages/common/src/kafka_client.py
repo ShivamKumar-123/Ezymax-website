@@ -39,14 +39,30 @@ async def produce_event(topic: str, key: str, value: dict):
     await producer.send_and_wait(topic, key=key, value=value)
 
 
-def create_consumer(topic: str, group_id: str) -> AIOKafkaConsumer:
+def create_consumer(
+    topic: str, group_id: str,
+    *, auto_offset_reset: str = "earliest",
+    enable_auto_commit: bool = False,
+) -> AIOKafkaConsumer:
+    """Default to AT-LEAST-ONCE delivery semantics:
+      - auto_offset_reset='earliest' so a brand-new consumer group
+        starts from the beginning of the partition rather than silently
+        skipping events that arrived before subscription
+      - enable_auto_commit=False so the caller commits after the DB
+        write succeeds (commit-after-handle pattern). With auto-commit
+        true, a crash mid-handler discards the event because the offset
+        already advanced.
+
+    Caller must `await consumer.commit()` after a successful handler.
+    Use the kwargs overrides for non-money paths (e.g. price ticks)
+    where at-most-once is acceptable in exchange for lower latency."""
     return AIOKafkaConsumer(
         topic,
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         group_id=group_id,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        auto_offset_reset="latest",
-        enable_auto_commit=True,
+        auto_offset_reset=auto_offset_reset,
+        enable_auto_commit=enable_auto_commit,
     )
 
 

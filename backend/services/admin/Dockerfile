@@ -16,6 +16,14 @@ COPY backend/services/admin /app
 
 ENV PYTHONPATH=/app
 
+# Drop root — H8 from the security audit. Same uploads/ chown path as
+# gateway so any admin tooling that writes there still works.
+RUN groupadd --system --gid 1001 fxartha \
+ && useradd  --system --uid 1001 --gid fxartha --shell /usr/sbin/nologin fxartha \
+ && mkdir -p /app/uploads \
+ && chown -R fxartha:fxartha /app/uploads
+USER fxartha
+
 EXPOSE 8001
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

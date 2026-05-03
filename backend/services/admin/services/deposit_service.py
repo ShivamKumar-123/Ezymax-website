@@ -133,7 +133,12 @@ async def list_all_withdrawals(page: int, per_page: int, status: str | None, db:
 async def approve_deposit(
     deposit_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
-    result = await db.execute(select(Deposit).where(Deposit.id == deposit_id))
+    # Lock the deposit row so two admins clicking "approve" at the same
+    # moment can't both flip pending → approved and credit twice. The
+    # status guard below then makes the second one fail cleanly.
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+    )
     deposit = result.scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")
@@ -144,7 +149,11 @@ async def approve_deposit(
     deposit.approved_by = admin_id
     deposit.approved_at = datetime.utcnow()
 
-    user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+    # Lock the user row too — concurrent transactions touching
+    # main_wallet_balance must serialise to avoid lost-update writes.
+    user_q = await db.execute(
+        select(User).where(User.id == deposit.user_id).with_for_update()
+    )
     user_row = user_q.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=400, detail="User not found for deposit")
@@ -303,7 +312,12 @@ async def reject_deposit(
 async def approve_withdrawal(
     withdrawal_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
-    result = await db.execute(select(Withdrawal).where(Withdrawal.id == withdrawal_id))
+    # Withdrawal row is locked so two admins racing on the same row see
+    # "not pending" on the second click; the user row + account row are
+    # then locked so balance reads are consistent with the debit.
+    result = await db.execute(
+        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+    )
     withdrawal = result.scalar_one_or_none()
     if not withdrawal:
         raise HTTPException(status_code=404, detail="Withdrawal not found")
@@ -312,7 +326,7 @@ async def approve_withdrawal(
 
     if withdrawal.account_id:
         acc_q = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == withdrawal.account_id)
+            select(TradingAccount).where(TradingAccount.id == withdrawal.account_id).with_for_update()
         )
         account = acc_q.scalar_one_or_none()
         if account:
@@ -334,7 +348,9 @@ async def approve_withdrawal(
             )
             db.add(txn)
     else:
-        uw = await db.execute(select(User).where(User.id == withdrawal.user_id))
+        uw = await db.execute(
+            select(User).where(User.id == withdrawal.user_id).with_for_update()
+        )
         user_row = uw.scalar_one_or_none()
         if not user_row:
             raise HTTPException(status_code=400, detail="User not found")

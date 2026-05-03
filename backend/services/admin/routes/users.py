@@ -43,12 +43,18 @@ async def add_fund(
     user_id: uuid.UUID,
     body: FundRequest,
     request: Request,
+    approval_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("users.add_fund")),
     db: AsyncSession = Depends(get_db),
 ):
+    """For amounts ≥ fund_move_two_person_threshold (default $500),
+    `approval_id` MUST reference a previously-approved
+    /users/{user_id}/fund-approvals row. The executing admin must
+    differ from the requester and the approver."""
     return await user_service.add_fund(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+        approval_id=approval_id,
     )
 
 
@@ -57,12 +63,68 @@ async def deduct_fund(
     user_id: uuid.UUID,
     body: FundRequest,
     request: Request,
+    approval_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("users.deduct_fund")),
     db: AsyncSession = Depends(get_db),
 ):
     return await user_service.deduct_fund(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+        approval_id=approval_id,
+    )
+
+
+# ── Two-person fund-move approvals ─────────────────────────────────
+
+
+@router.get("/fund-approvals/pending")
+async def list_pending_fund_approvals(
+    admin: User = Depends(require_permission("users.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await user_service.list_pending_fund_approvals(db=db)
+
+
+@router.post("/{user_id}/fund-approvals/{action}")
+async def request_fund_approval(
+    user_id: uuid.UUID,
+    action: str,
+    body: FundRequest,
+    admin: User = Depends(require_permission("users.add_fund")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Open a pending fund-move request. `action` must be 'add_fund' or
+    'deduct_fund'. Returns the approval id; pass it back to the
+    matching add-fund / deduct-fund endpoint after a SECOND admin has
+    /approve'd it."""
+    return await user_service.request_fund_approval(
+        user_id=user_id, action=action, body=body,
+        admin_id=admin.id, db=db,
+    )
+
+
+@router.post("/fund-approvals/{approval_id}/approve")
+async def approve_fund_request(
+    approval_id: uuid.UUID,
+    admin: User = Depends(require_permission("users.add_fund")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await user_service.approve_fund_request(
+        approval_id=approval_id, admin_id=admin.id, db=db,
+    )
+
+
+@router.post("/fund-approvals/{approval_id}/reject")
+async def reject_fund_request(
+    approval_id: uuid.UUID,
+    body: dict | None = None,
+    admin: User = Depends(require_permission("users.add_fund")),
+    db: AsyncSession = Depends(get_db),
+):
+    reason = (body or {}).get("reason") if isinstance(body, dict) else None
+    return await user_service.reject_fund_request(
+        approval_id=approval_id, reason=reason,
+        admin_id=admin.id, db=db,
     )
 
 

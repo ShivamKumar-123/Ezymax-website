@@ -116,6 +116,8 @@ async def issue_nonce(
     embeds the nonce in the SIWE message and the wallet signs it. The
     nonce expires in NONCE_TTL_SECONDS and is consumed atomically inside
     verify_signature()."""
+    from .auth_service import assert_same_origin
+    assert_same_origin(request)
     rate_limit_http(request, f"wallet_nonce:{_normalize_address(address)}", 10, 60.0)
     rate_limit_http(request, "wallet_nonce_global", 100, 60.0)
 
@@ -206,6 +208,8 @@ async def verify_message(
     Single-use guarantee comes from the atomic UPDATE … RETURNING: a
     concurrent verify of the same payload sees no matching row and is
     rejected with 401."""
+    from .auth_service import assert_same_origin
+    assert_same_origin(request)
     rate_limit_http(request, "wallet_verify", 30, 60.0)
     SiweMessage = _import_siwe()
 

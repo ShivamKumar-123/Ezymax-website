@@ -57,6 +57,17 @@ async def _read_upload_file(upload: UploadFile, label: str) -> tuple[bytes, str]
             status_code=400,
             detail=f"File too large for {label}. Maximum size is 10 MB.",
         )
+    # Confirm the file's leading bytes match the declared extension —
+    # blocks polyglots / spoofed Content-Type uploads.
+    from packages.common.src.file_validation import validate_upload
+    try:
+        suffix = validate_upload(
+            content, suffix,
+            allowed_extensions=ALLOWED_EXTENSIONS,
+            label=label,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return content, suffix
 
 
