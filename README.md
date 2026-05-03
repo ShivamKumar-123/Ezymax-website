@@ -20,6 +20,26 @@ Open http://localhost:5173
 - Lucide React (icons)
 - Inter (Google Fonts)
 
+## Event bus
+
+There is no message broker in the deployment. Events that need to fan
+out to multiple subscribers (real-time price ticks, position updates,
+notifications) use **Redis pub/sub** — Redis is already in the stack.
+Durable history (trade fills, audit log, deposits/withdrawals, webhook
+events) is the source of truth and lives in **Postgres** as ordinary
+tables.
+
+The codebase used to ship Kafka + Zookeeper for an event log that no
+consumer ever read. With zero users and zero consumers it was eating
+~1.5 GB of RAM for nothing, so it was removed. The
+`packages/common/src/kafka_client.produce_event` function is now a
+no-op shim so existing call-sites still compile. When a real consumer
+is needed (fraud engine, analytics pipeline, audit replayer), the
+cheapest re-introduction is **Redis Streams** — `XADD trades * key val`
+in place of the no-op. Real Kafka only earns its keep at multi-region,
+multi-consumer scale.
+
+
 ## Backups & disaster recovery
 
 Daily snapshots of Postgres, TimescaleDB, and the `uploads/` directory are

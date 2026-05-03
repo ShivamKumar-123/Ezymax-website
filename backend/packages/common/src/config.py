@@ -9,7 +9,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha"
     TIMESCALE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
+    # downstream IaC / .env that still defines it doesn't fail validation
+    # — but Kafka itself has been removed from the stack. The kafka_client
+    # module is a no-op shim.
+    KAFKA_BOOTSTRAP_SERVERS: str = ""
 
     JWT_SECRET: str = "dev-secret-change-in-production"
     JWT_ALGORITHM: str = "HS256"
