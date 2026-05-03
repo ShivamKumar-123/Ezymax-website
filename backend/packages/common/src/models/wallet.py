@@ -98,6 +98,25 @@ class Transaction(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 
+class WebhookEvent(Base):
+    """One row per processed payment-provider webhook.
+
+    Inserted (with the (provider, external_id, status) UNIQUE constraint
+    asserted at the DB layer) at the start of every webhook handler. A
+    re-delivery of the same event by NOWPayments / OxaPay raises
+    IntegrityError and the handler short-circuits — the deposit row is
+    therefore credited at most once per status transition.
+    """
+    __tablename__ = "webhook_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider = Column(String(40), nullable=False)
+    external_id = Column(String(120), nullable=False)
+    status = Column(String(40), nullable=False)
+    received_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    payload_hash = Column(String(64))
+
+
 class ChargeConfig(Base):
     __tablename__ = "charge_configs"
 

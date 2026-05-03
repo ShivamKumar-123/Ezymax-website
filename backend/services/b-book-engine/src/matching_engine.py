@@ -325,9 +325,12 @@ class MatchingEngine:
         })
 
         # ── A-Book: forward SL/TP close to Corecen LP ────────────────────
+        # Pass the Decimal values through verbatim — corecen_trade_client
+        # serialises them to their exact string form so reconciliation
+        # between our records and the LP's never drifts on rounding.
         _pos_id = str(pos.id)
-        _cp = float(close_price)
-        _pnl = float(profit)
+        _cp = close_price
+        _pnl = profit
         _reason_upper = reason.upper()
         _user_id = account.user_id if account else None
         _is_demo = bool(account.is_demo) if account else True

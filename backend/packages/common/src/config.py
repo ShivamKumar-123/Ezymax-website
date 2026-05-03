@@ -129,6 +129,39 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
+_DEFAULT_JWT_SECRETS = {
+    "dev-secret-change-in-production",
+    "admin-secret-change-in-production",
+    "change-me",
+    "",
+}
+
+
+def _assert_production_secrets(s: Settings) -> None:
+    """Refuse to start in production with default JWT secrets baked into
+    the binary. A missing or default secret means an attacker can mint
+    valid tokens with the public default — that's the codebase's #1
+    security risk if the env file is ever forgotten. Fail loudly at
+    process boot rather than silently authenticating forged tokens."""
+    if s.ENVIRONMENT.lower() != "production":
+        return
+    bad: list[str] = []
+    for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
+        val = getattr(s, name, "")
+        if val in _DEFAULT_JWT_SECRETS or len(val) < 32:
+            bad.append(name)
+    if bad:
+        raise RuntimeError(
+            "Refusing to start: ENVIRONMENT=production but the following JWT "
+            "secrets are missing, default, or shorter than 32 chars: "
+            + ", ".join(bad)
+            + ". Generate strong values with `openssl rand -hex 32` and set "
+            "them in /opt/fxartha/.env before deploying."
+        )
+
+
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    _assert_production_secrets(s)
+    return s

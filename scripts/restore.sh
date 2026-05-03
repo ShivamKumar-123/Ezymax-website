@@ -19,14 +19,30 @@
 # command (printed at the end).
 set -euo pipefail
 
-DUMP="${1:?postgres dump path required (e.g. backups/postgres-...sql.gz)}"
+DUMP="${1:?postgres dump path required (e.g. backups/postgres-...sql.gz or .sql.gz.gpg)}"
 UPLOADS="${2:-}"
 TS_DUMP="${3:-}"
 COMPOSE_DIR="${FXARTHA_DIR:-/opt/fxartha}"
+GPG_PASSPHRASE="${BACKUP_GPG_PASSPHRASE:-}"
 
 [[ -f "$DUMP" ]] || { echo "[restore] $DUMP not found"; exit 1; }
 [[ -z "$UPLOADS" || -f "$UPLOADS" ]] || { echo "[restore] $UPLOADS not found"; exit 1; }
 [[ -z "$TS_DUMP" || -f "$TS_DUMP" ]] || { echo "[restore] $TS_DUMP not found"; exit 1; }
+
+# Decrypt $1 if it ends in .gpg, write plaintext to $2. Otherwise just
+# copy the file path through. Used transparently below so the rest of
+# the restore stays the same whether or not encryption was on.
+decrypt_to() {
+  local src="$1" dst="$2"
+  if [[ "$src" == *.gpg ]]; then
+    [[ -n "$GPG_PASSPHRASE" ]] || { echo "[restore] $src is encrypted but BACKUP_GPG_PASSPHRASE is not set"; exit 1; }
+    command -v gpg >/dev/null || { echo "[restore] gpg required to decrypt $src"; exit 1; }
+    GPG_PASSPHRASE="$GPG_PASSPHRASE" gpg --batch --yes --quiet --pinentry-mode loopback \
+      --passphrase-fd 3 --decrypt --output "$dst" "$src" 3<<<"$GPG_PASSPHRASE"
+  else
+    cp "$src" "$dst"
+  fi
+}
 
 cd "$COMPOSE_DIR"
 
@@ -51,8 +67,11 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-echo "[restore] piping $DUMP → psql"
-gunzip -c "$DUMP" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+TMP_PG=$(mktemp --suffix=.sql.gz)
+trap 'rm -f "$TMP_PG" "$TMP_TS" "$TMP_UP"' EXIT
+decrypt_to "$DUMP" "$TMP_PG"
+echo "[restore] piping (decrypted) $DUMP → psql"
+gunzip -c "$TMP_PG" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
   exec -T postgres psql -U "${POSTGRES_USER:-fxartha}" -d postgres -v ON_ERROR_STOP=1
 
 # ─── TimescaleDB (optional) ───────────────────────────────────────────
@@ -66,15 +85,19 @@ if [[ -n "$TS_DUMP" ]]; then
     fi
     sleep 1
   done
-  echo "[restore] piping $TS_DUMP → timescale psql"
-  gunzip -c "$TS_DUMP" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  TMP_TS=$(mktemp --suffix=.sql.gz)
+  decrypt_to "$TS_DUMP" "$TMP_TS"
+  echo "[restore] piping (decrypted) $TS_DUMP → timescale psql"
+  gunzip -c "$TMP_TS" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
     exec -T timescaledb psql -U "${TIMESCALE_USER:-fxartha}" -d postgres -v ON_ERROR_STOP=1
 fi
 
 # ─── Uploads (optional) ───────────────────────────────────────────────
 if [[ -n "$UPLOADS" ]]; then
-  echo "[restore] extracting $UPLOADS → $COMPOSE_DIR"
-  tar xzf "$UPLOADS" -C "$COMPOSE_DIR"
+  TMP_UP=$(mktemp --suffix=.tar.gz)
+  decrypt_to "$UPLOADS" "$TMP_UP"
+  echo "[restore] extracting (decrypted) $UPLOADS → $COMPOSE_DIR"
+  tar xzf "$TMP_UP" -C "$COMPOSE_DIR"
 fi
 
 echo

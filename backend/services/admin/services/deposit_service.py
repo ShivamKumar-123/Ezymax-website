@@ -207,7 +207,10 @@ async def approve_deposit(
 
     await write_audit_log(
         db, admin_id, "approve_deposit", "deposit", deposit_id,
-        new_values={"amount": float(deposit.amount), "status": "approved"},
+        # str() preserves the Decimal precisely in JSONB — float() can
+        # introduce a few ULPs of drift on edge values which becomes a
+        # records-vs-bank-statement diff during reconciliation.
+        new_values={"amount": str(deposit.amount), "status": "approved"},
         ip_address=ip_address,
     )
     await create_notification(
@@ -358,7 +361,7 @@ async def approve_withdrawal(
 
     await write_audit_log(
         db, admin_id, "approve_withdrawal", "withdrawal", withdrawal_id,
-        new_values={"amount": float(withdrawal.amount), "status": "approved"},
+        new_values={"amount": str(withdrawal.amount), "status": "approved"},
         ip_address=ip_address,
     )
     await create_notification(

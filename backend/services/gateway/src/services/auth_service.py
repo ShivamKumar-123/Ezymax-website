@@ -104,11 +104,72 @@ def client_ip_for_inet(request: Request) -> str | None:
 
 # ─── Utility: rate limiting ──────────────────────────────────────────────
 
+_LOCAL_RATE_BUCKETS: dict[str, list[float]] = {}
+
+
 def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec: float) -> None:
-    # Rate limiting fully disabled — users hit 429s under normal load even with
-    # valid sessions. No-op retained so existing call sites keep compiling.
-    _ = (request, bucket, max_requests, window_sec)
-    return None
+    """Sliding-window rate limiter, scoped to (bucket, client IP).
+
+    Best-effort: tries Redis first via fire-and-forget asyncio scheduling
+    (so we never block the request hot path on Redis latency), and falls
+    back to a per-process in-memory window if Redis is unreachable.
+
+    Raises HTTPException(429) when the cap is exceeded. Whitelisting is
+    by IP; if `client_ip_for_inet` returns None (e.g. unit test request
+    with no client) the bucket is keyed on the bucket name alone.
+
+    Earlier this was a no-op, which left every auth endpoint (login,
+    register, password reset, 2FA, wallet nonce) wide open to brute
+    force / credential stuffing / OTP guessing. Production must always
+    have it on.
+    """
+    from fastapi import HTTPException
+
+    ip = client_ip_for_inet(request) or "anon"
+    key = f"rl:{bucket}:{ip}"
+    now = monotonic()
+    floor = now - window_sec
+
+    # Local fallback path. Trim, count, decide. Cheap.
+    arr = _LOCAL_RATE_BUCKETS.setdefault(key, [])
+    while arr and arr[0] < floor:
+        arr.pop(0)
+    if len(arr) >= max_requests:
+        retry_after = max(1, int(arr[0] + window_sec - now))
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many requests — retry after {retry_after}s.",
+            headers={"Retry-After": str(retry_after)},
+        )
+    arr.append(now)
+
+    # Best-effort Redis cross-process sync — fire-and-forget so a Redis
+    # blip never makes auth slower than it already is. Multi-pod
+    # deployments rely on this for cluster-wide counting.
+    try:
+        from packages.common.src.redis_client import redis_client
+        async def _sync():
+            try:
+                pipe = redis_client.pipeline()
+                pipe.zremrangebyscore(key, 0, floor)
+                pipe.zadd(key, {f"{now}:{ip}": now})
+                pipe.zcard(key)
+                pipe.expire(key, int(window_sec) + 5)
+                _, _, count, _ = await pipe.execute()
+                if count > max_requests:
+                    # Cross-process counter saw too many — bump the local
+                    # bucket so the next request from this pod also fails
+                    # without re-querying Redis.
+                    _LOCAL_RATE_BUCKETS[key] = [now] * max_requests
+            except Exception:
+                pass
+        import asyncio
+        try:
+            asyncio.create_task(_sync())
+        except RuntimeError:
+            pass
+    except Exception:
+        pass
 
 
 # ─── Utility: cookies ────────────────────────────────────────────────────

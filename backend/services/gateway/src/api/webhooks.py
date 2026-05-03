@@ -1,15 +1,56 @@
 """Public webhook endpoints — no JWT auth, secured by provider-specific HMAC."""
+import hashlib
 import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
+from packages.common.src.models import WebhookEvent
 from ..services import oxapay_service, nowpayments_service, wallet_service
 
 router = APIRouter()
 logger = logging.getLogger("webhooks")
+
+
+async def _claim_webhook(
+    db: AsyncSession,
+    *,
+    provider: str,
+    external_id: str,
+    status: str,
+    raw_body: bytes,
+) -> bool:
+    """Insert a (provider, external_id, status) row in webhook_events.
+
+    Returns True when the row was newly inserted (caller should process
+    the webhook), False when the UNIQUE constraint already had it (a
+    re-delivery — caller short-circuits with 200 OK so the provider
+    stops retrying).
+
+    Production payment webhooks are routinely re-delivered (network
+    blips, our 5xx, deliberate re-sends from the dashboard). Without
+    this guard, a re-delivery of a `finished` event would credit the
+    deposit twice and apply bonuses twice."""
+    payload_hash = hashlib.sha256(raw_body or b"").hexdigest()
+    db.add(WebhookEvent(
+        provider=provider,
+        external_id=external_id,
+        status=status,
+        payload_hash=payload_hash,
+    ))
+    try:
+        await db.commit()
+        return True
+    except IntegrityError:
+        await db.rollback()
+        logger.info(
+            "webhook duplicate suppressed: provider=%s external_id=%s status=%s",
+            provider, external_id, status,
+        )
+        return False
 
 
 @router.post("/oxapay")
@@ -39,6 +80,12 @@ async def oxapay_webhook(
         return {"status": "ignored"}
 
     logger.info("OxaPay webhook: order=%s status=%s track=%s", order_id, status, track_id)
+
+    if not await _claim_webhook(
+        db, provider="oxapay", external_id=str(order_id), status=str(status),
+        raw_body=raw_body,
+    ):
+        return {"status": "duplicate"}
 
     await wallet_service.handle_oxapay_webhook(
         order_id=order_id,
@@ -93,6 +140,12 @@ async def nowpayments_webhook(
         "NOWPayments webhook: order=%s status=%s payment_id=%s",
         order_id, status, payment_id,
     )
+
+    if not await _claim_webhook(
+        db, provider="nowpayments", external_id=str(order_id), status=str(status),
+        raw_body=raw_body,
+    ):
+        return {"status": "duplicate"}
 
     await wallet_service.handle_nowpayments_webhook(
         order_id=str(order_id),

@@ -209,9 +209,11 @@ class RiskEngine:
             logger.info(f"Stop-out closed {pos.instrument.symbol} {pos.side.value}, profit: {profit}")
 
             # ── A-Book: forward stop-out close to Corecen LP ─────────────
+            # Decimal preserved — corecen_trade_client stringifies it
+            # exactly, so the LP's record matches ours digit-for-digit.
             _pos_id = str(pos.id)
-            _cp = float(close_price)
-            _pnl = float(profit)
+            _cp = close_price
+            _pnl = profit
             _is_demo = bool(account.is_demo)
 
             async def _forward_stopout(pid=_pos_id, cp=_cp, pnl=_pnl, is_demo=_is_demo):

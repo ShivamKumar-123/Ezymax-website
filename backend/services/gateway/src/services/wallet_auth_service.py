@@ -123,6 +123,22 @@ async def issue_nonce(
         raise AuthServiceError("Unsupported chain", 400)
 
     addr = _normalize_address(address)
+
+    # Cap concurrent unconsumed nonces per address. Without this, a script
+    # can flood the wallet_auth_nonces table with millions of rows for
+    # any address (the rate limit only smooths the burst). Six unconsumed
+    # nonces is plenty for normal "click → fail → retry" UX.
+    active_q = await db.execute(
+        select(func.count())
+        .select_from(WalletAuthNonce)
+        .where(
+            func.lower(WalletAuthNonce.address) == addr,
+            WalletAuthNonce.consumed_at.is_(None),
+            WalletAuthNonce.expires_at > func.now(),
+        )
+    )
+    if (active_q.scalar() or 0) >= 6:
+        raise AuthServiceError("Too many pending sign-in attempts for this wallet", 429)
     # Defensive shape check — Pydantic already enforced 0x + 40 hex but
     # is_address() also catches mixed-case checksum issues if present.
     try:
