@@ -32,10 +32,15 @@ def upgrade() -> None:
         CREATE INDEX IF NOT EXISTS ix_orders_account_created
             ON orders (account_id, created_at DESC);
     """)
+    # Partial index targeted at the "still actionable" rows so the b-book
+    # engine's pending-orders poll stays cheap. The original draft used
+    # `WHERE status IN ('pending', 'partial')` but this codebase's
+    # order_status enum doesn't include 'partial' — keep it to the
+    # status that's actually defined.
     op.execute("""
         CREATE INDEX IF NOT EXISTS ix_orders_account_status
             ON orders (account_id, status)
-            WHERE status IN ('pending', 'partial');
+            WHERE status = 'pending';
     """)
     op.execute("""
         CREATE INDEX IF NOT EXISTS ix_positions_account_status
