@@ -76,8 +76,8 @@ def upgrade() -> None:
             ON transactions (user_id, created_at DESC);
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS ix_user_audit_log_user_created
-            ON user_audit_log (user_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS ix_user_audit_logs_user_created
+            ON user_audit_logs (user_id, created_at DESC);
     """)
 
     # ── Webhook event de-dup ────────────────────────────────────────────
@@ -102,7 +102,7 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ix_webhook_events_received;")
     op.execute("DROP TABLE IF EXISTS webhook_events;")
     for ix in (
-        "ix_user_audit_log_user_created",
+        "ix_user_audit_logs_user_created",
         "ix_transactions_user_created",
         "ix_trade_history_account_closed",
         "ix_withdrawals_user_created",
