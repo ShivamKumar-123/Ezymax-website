@@ -392,6 +392,64 @@ async def place_order(
     )
     await db.commit()
 
+    # Fire-and-forget: email the user that a trade was placed. Captures
+    # only what we need from the request-scoped objects so the background
+    # task doesn't depend on the soon-to-be-closed DB session. Skips
+    # demo accounts and wallet-placeholder addresses so the inbox doesn't
+    # get spammed during testing/onboarding.
+    _email_payload = {
+        "user_id": user_id,
+        "is_demo": bool(account.is_demo),
+        "symbol": instrument.symbol,
+        "side": str(req.side),
+        "lots": float(req.lots),
+        "order_type": str(req.order_type),
+        "status": str(order.status),
+        "price": float(req.price) if req.price else None,
+        "filled_price": float(order.filled_price) if order.filled_price else None,
+        "stop_loss": float(req.stop_loss) if req.stop_loss else None,
+        "take_profit": float(req.take_profit) if req.take_profit else None,
+    }
+
+    async def _send_trade_placed_email():
+        if _email_payload["is_demo"]:
+            return
+        try:
+            from packages.common.src.smtp_mail import send_email, smtp_configured
+            if not smtp_configured():
+                return
+            from packages.common.src.email_templates import render_trade_placed
+            from packages.common.src.config import get_settings
+            from datetime import datetime, timezone
+            async with AsyncSessionLocal() as bg_db:
+                u = (await bg_db.execute(
+                    select(User).where(User.id == _email_payload["user_id"])
+                )).scalar_one_or_none()
+            if not u or not u.email:
+                return
+            if u.email.lower().endswith("@wallet.fxartha.local"):
+                return
+            st = get_settings()
+            subject, html, text = render_trade_placed(
+                first_name=u.first_name,
+                symbol=_email_payload["symbol"],
+                side=_email_payload["side"],
+                lots=_email_payload["lots"],
+                order_type=_email_payload["order_type"],
+                status=_email_payload["status"],
+                price=_email_payload["price"],
+                filled_price=_email_payload["filled_price"],
+                stop_loss=_email_payload["stop_loss"],
+                take_profit=_email_payload["take_profit"],
+                when_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                trader_app_url=st.TRADER_APP_URL or "https://trade.fxartha.com",
+            )
+            await send_email(u.email, subject, html, text=text)
+        except Exception as e:
+            logger.warning("trade-placed email send failed: %s", e)
+
+    asyncio.create_task(_send_trade_placed_email())
+
     # Fire-and-forget: notification + IB commission run in background (don't block response)
     if req.order_type == "market":
         # ── A-Book: forward trade to Corecen LP ──────────────────────────

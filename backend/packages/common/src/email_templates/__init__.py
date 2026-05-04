@@ -21,6 +21,7 @@ from .bonus import render_bonus_credited
 from .rewards import render_mission_completed, render_tier_upgraded
 from .staking import render_staking_digest
 from .verification import render_verification_reminder
+from .trade_placed import render_trade_placed
 
 __all__ = [
     "render_layout",
@@ -41,4 +42,5 @@ __all__ = [
     "render_tier_upgraded",
     "render_staking_digest",
     "render_verification_reminder",
+    "render_trade_placed",
 ]
