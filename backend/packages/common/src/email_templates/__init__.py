@@ -22,6 +22,7 @@ from .rewards import render_mission_completed, render_tier_upgraded
 from .staking import render_staking_digest
 from .verification import render_verification_reminder
 from .trade_placed import render_trade_placed
+from .monthly_statement import render_monthly_statement_available
 
 __all__ = [
     "render_layout",
@@ -43,4 +44,5 @@ __all__ = [
     "render_staking_digest",
     "render_verification_reminder",
     "render_trade_placed",
+    "render_monthly_statement_available",
 ]
