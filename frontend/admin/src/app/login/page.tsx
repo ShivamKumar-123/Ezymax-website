@@ -15,7 +15,7 @@ const STEPS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, checkAuth } = useAuthStore();
+  const { login, isAuthenticated } = useAuthStore();
   const authRehydrated = useAuthRehydrated();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,8 +25,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authRehydrated) return;
-    if (checkAuth()) router.replace('/dashboard');
-  }, [authRehydrated, checkAuth, router]);
+    if (isAuthenticated) router.replace('/dashboard');
+  }, [authRehydrated, isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
