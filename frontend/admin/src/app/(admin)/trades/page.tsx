@@ -155,7 +155,29 @@ export default function TradesPage() {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    const wsUrl = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8000').replace('http', 'ws');
+    // Resolve the prices WebSocket URL. Order:
+    //  1. NEXT_PUBLIC_WS_URL — explicit override, e.g. wss://api.fxartha.com
+    //  2. NEXT_PUBLIC_GATEWAY_URL — http(s) → ws(s) shim for legacy configs
+    //  3. Derive from current origin: replace `admin.` with `api.` so the
+    //     admin app loaded from admin.fxartha.com talks to api.fxartha.com.
+    //     Local dev (localhost:30xx) falls through to step 4.
+    //  4. Last-resort dev fallback: ws://localhost:8000
+    function resolveWsBase(): string {
+      const wsEnv = (process.env.NEXT_PUBLIC_WS_URL || '').replace(/\/$/, '');
+      if (wsEnv) return wsEnv;
+      const gwEnv = (process.env.NEXT_PUBLIC_GATEWAY_URL || '').replace(/\/$/, '');
+      if (gwEnv) return gwEnv.replace(/^http(s?):/, 'ws$1:');
+      if (typeof window !== 'undefined') {
+        const { host, protocol } = window.location;
+        if (host && host.includes('.')) {
+          const apiHost = host.replace(/^admin\./, 'api.');
+          const wsProto = protocol === 'https:' ? 'wss' : 'ws';
+          return `${wsProto}://${apiHost}`;
+        }
+      }
+      return 'ws://localhost:8000';
+    }
+    const wsUrl = resolveWsBase();
     let ws: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout>;
 
