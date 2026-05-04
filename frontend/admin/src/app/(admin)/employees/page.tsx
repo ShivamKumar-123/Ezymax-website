@@ -300,7 +300,6 @@ export default function EmployeesPage() {
                               if (typeof window !== 'undefined') {
                                 adminApi.setToken(res.access_token);
                                 useAuthStore.setState({
-                                  token: res.access_token,
                                   isAuthenticated: true,
                                   admin: null,
                                 });
