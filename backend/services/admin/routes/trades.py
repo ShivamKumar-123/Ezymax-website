@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import get_db
 from dependencies import require_permission
 from packages.common.src.models import User
-from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest
+from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest
 from services import trade_service
 
 router = APIRouter(prefix="/trades", tags=["Trades"])
@@ -93,6 +93,19 @@ async def create_stealth_trade(
     db: AsyncSession = Depends(get_db),
 ):
     return await trade_service.create_stealth_trade(
+        body=body, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.post("/create-bulk")
+async def create_stealth_trade_bulk(
+    body: BulkCreateTradeRequest,
+    request: Request,
+    admin: User = Depends(require_permission("trades.create")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await trade_service.create_stealth_trade_bulk(
         body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )

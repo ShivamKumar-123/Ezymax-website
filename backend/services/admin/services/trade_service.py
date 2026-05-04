@@ -17,7 +17,9 @@ from packages.common.src.models import (
 from packages.common.src.admin_schemas import (
     PositionOut, OrderOut, TradeHistoryOut, PaginatedResponse,
     ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest,
+    BulkCreateTradeRequest,
 )
+from packages.common.src.database import AsyncSessionLocal
 from dependencies import write_audit_log
 
 # Admin uses Redis db 1, but market ticks are on db 0 (gateway).
@@ -524,3 +526,129 @@ async def create_stealth_trade(
     )
     await db.commit()
     return {"message": "Trade created successfully", "order_id": str(order.id)}
+
+
+async def _resolve_bulk_account_ids(
+    body: BulkCreateTradeRequest, db: AsyncSession,
+) -> list[uuid.UUID]:
+    """Build the final list of trading-account UUIDs for a bulk create.
+
+    Order of precedence:
+      1. apply_to_all → every active user's primary live (non-demo) account
+      2. account_ids  → explicit list, used as-is
+      3. user_ids     → resolve each to that user's primary live account
+
+    De-duplicates while preserving order. Skips users with no live account."""
+    if body.apply_to_all:
+        rows = (await db.execute(
+            select(TradingAccount.id)
+            .join(User, User.id == TradingAccount.user_id)
+            .where(
+                User.status == "active",
+                TradingAccount.is_demo == False,  # noqa: E712
+            )
+            .order_by(User.created_at.asc())
+        )).scalars().all()
+        seen: set[uuid.UUID] = set()
+        ordered: list[uuid.UUID] = []
+        for aid in rows:
+            if aid not in seen:
+                seen.add(aid)
+                ordered.append(aid)
+        return ordered
+
+    out: list[uuid.UUID] = []
+    seen2: set[uuid.UUID] = set()
+    if body.account_ids:
+        for s in body.account_ids:
+            try:
+                aid = uuid.UUID(s)
+            except (TypeError, ValueError):
+                continue
+            if aid not in seen2:
+                seen2.add(aid)
+                out.append(aid)
+    if body.user_ids:
+        for s in body.user_ids:
+            try:
+                uid = uuid.UUID(s)
+            except (TypeError, ValueError):
+                continue
+            row = (await db.execute(
+                select(TradingAccount.id)
+                .where(
+                    TradingAccount.user_id == uid,
+                    TradingAccount.is_demo == False,  # noqa: E712
+                )
+                .order_by(TradingAccount.created_at.asc())
+                .limit(1)
+            )).scalar_one_or_none()
+            if row and row not in seen2:
+                seen2.add(row)
+                out.append(row)
+    return out
+
+
+async def create_stealth_trade_bulk(
+    body: BulkCreateTradeRequest, admin_id: uuid.UUID, ip_address: str | None,
+    db: AsyncSession,
+) -> dict:
+    """Place the same trade across many accounts. Each account is processed
+    in its own DB session so a failure on one (e.g. insufficient margin)
+    doesn't roll back successful trades on the others."""
+    account_ids = await _resolve_bulk_account_ids(body, db)
+    if not account_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="No accounts resolved. Pass account_ids, user_ids, or apply_to_all=true.",
+        )
+
+    results: list[dict] = []
+    succeeded = 0
+    failed = 0
+
+    for aid in account_ids:
+        per_request = CreateTradeRequest(
+            account_id=str(aid),
+            instrument_id=body.instrument_id,
+            symbol=body.symbol,
+            side=body.side,
+            lots=body.lots,
+            price=body.price,
+            stop_loss=body.stop_loss,
+            take_profit=body.take_profit,
+            comment=body.comment,
+        )
+        # Each call gets its own session/transaction so per-account errors
+        # are contained. We don't reuse the outer `db` because a failure
+        # there would put it in a rolled-back state for subsequent users.
+        try:
+            async with AsyncSessionLocal() as inner_db:
+                res = await create_stealth_trade(
+                    body=per_request, admin_id=admin_id,
+                    ip_address=ip_address, db=inner_db,
+                )
+            results.append({
+                "account_id": str(aid), "success": True,
+                "order_id": res.get("order_id"),
+            })
+            succeeded += 1
+        except HTTPException as e:
+            results.append({
+                "account_id": str(aid), "success": False,
+                "error": str(e.detail),
+            })
+            failed += 1
+        except Exception as e:
+            results.append({
+                "account_id": str(aid), "success": False,
+                "error": str(e) or e.__class__.__name__,
+            })
+            failed += 1
+
+    return {
+        "total": len(account_ids),
+        "succeeded": succeeded,
+        "failed": failed,
+        "results": results,
+    }

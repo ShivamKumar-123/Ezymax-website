@@ -251,6 +251,25 @@ class CreateTradeRequest(BaseModel):
     comment: Optional[str] = None
 
 
+class BulkCreateTradeRequest(BaseModel):
+    """Place the same trade across many accounts at once. Either pass an
+    explicit list of account_ids (e.g. one live account per selected user)
+    or set apply_to_all=True to broadcast to every active user's primary
+    live account. Each account is processed independently — one failure
+    doesn't roll back the rest."""
+    account_ids: Optional[list[str]] = None
+    user_ids: Optional[list[str]] = None  # alt form: server resolves to primary live account
+    apply_to_all: bool = False
+    instrument_id: Optional[str] = None
+    symbol: Optional[str] = None
+    side: str
+    lots: float
+    price: Optional[float] = None
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    comment: Optional[str] = None
+
+
 class DepositOut(BaseModel):
     id: str
     user_id: str

@@ -6,12 +6,10 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
   Loader2,
-  MoreHorizontal,
   Plus,
   Search,
   Trash2,
@@ -218,10 +216,11 @@ export default function TradesPage() {
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
   // Create trade modal state
+  type PickedUser = { id: string; name: string; email: string };
   const [createUserSearch, setCreateUserSearch] = useState('');
-  const [createUsers, setCreateUsers] = useState<{ id: string; name: string; email: string; accounts?: { id: string; name: string }[] }[]>([]);
-  const [createSelectedUser, setCreateSelectedUser] = useState<{ id: string; name: string; email: string; accounts?: { id: string; name: string }[] } | null>(null);
-  const [createAccountId, setCreateAccountId] = useState('');
+  const [createUsers, setCreateUsers] = useState<PickedUser[]>([]);
+  const [createSelectedUsers, setCreateSelectedUsers] = useState<PickedUser[]>([]);
+  const [applyToAllUsers, setApplyToAllUsers] = useState(false);
   const [createSymbol, setCreateSymbol] = useState('');
   const [createInstrumentId, setCreateInstrumentId] = useState('');
   const [instrumentSearch, setInstrumentSearch] = useState('');
@@ -330,8 +329,8 @@ export default function TradesPage() {
   const openCreateModal = () => {
     setCreateUserSearch('');
     setCreateUsers([]);
-    setCreateSelectedUser(null);
-    setCreateAccountId('');
+    setCreateSelectedUsers([]);
+    setApplyToAllUsers(false);
     setCreateSymbol('');
     setCreateInstrumentId('');
     setInstrumentSearch('');
@@ -413,24 +412,23 @@ export default function TradesPage() {
     }
   };
 
-  const selectUserForTrade = async (u: typeof createUsers[0]) => {
+  const addUserToSelection = (u: PickedUser) => {
     setCreateUsers([]);
     setCreateUserSearch('');
-    try {
-      const detail = await adminApi.get<any>(`/users/${u.id}`);
-      const rawAccounts: any[] = detail.accounts || [];
-      const mapped = rawAccounts.map((a: any) => ({ id: a.id, name: `${a.account_number}${a.is_demo ? ' (Demo)' : ''} — $${Number(a.balance || 0).toLocaleString()}` }));
-      setCreateSelectedUser({ ...u, accounts: mapped });
-      const live = rawAccounts.find((a: any) => !a.is_demo);
-      setCreateAccountId(live ? live.id : rawAccounts[0]?.id || '');
-    } catch {
-      setCreateSelectedUser(u);
-    }
+    setCreateSelectedUsers((prev) =>
+      prev.some((p) => p.id === u.id) ? prev : [...prev, u]
+    );
+  };
+
+  const removeUserFromSelection = (id: string) => {
+    setCreateSelectedUsers((prev) => prev.filter((p) => p.id !== id));
   };
 
   const submitCreateTrade = async () => {
-    if (!createSelectedUser) { toast.error('Select a user'); return; }
-    if (!createAccountId) { toast.error('Select an account'); return; }
+    if (!applyToAllUsers && createSelectedUsers.length === 0) {
+      toast.error('Select at least one user, or enable "Apply to all active users"');
+      return;
+    }
     if (!createSymbol) { toast.error('Enter a symbol'); return; }
     if (!createLots || parseFloat(createLots) <= 0) { toast.error('Enter valid lots'); return; }
     if (!createReason) { toast.error('Reason is required'); return; }
@@ -439,7 +437,6 @@ export default function TradesPage() {
     setModalSubmitting(true);
     try {
       const body: Record<string, unknown> = {
-        account_id: createAccountId,
         symbol: createSymbol.replace('/', '').toUpperCase(),
         side: createSide,
         lots: parseFloat(createLots),
@@ -449,9 +446,22 @@ export default function TradesPage() {
       if (createPrice) body.price = parseFloat(createPrice);
       if (createSl) body.stop_loss = parseFloat(createSl);
       if (createTp) body.take_profit = parseFloat(createTp);
+      if (applyToAllUsers) {
+        body.apply_to_all = true;
+      } else {
+        body.user_ids = createSelectedUsers.map((u) => u.id);
+      }
 
-      await adminApi.post('/trades/create', body);
-      toast.success('Trade created successfully');
+      const res = await adminApi.post<{ total: number; succeeded: number; failed: number }>(
+        '/trades/create-bulk', body,
+      );
+      if (res.failed === 0) {
+        toast.success(`Created ${res.succeeded} trade${res.succeeded === 1 ? '' : 's'}`);
+      } else if (res.succeeded === 0) {
+        toast.error(`All ${res.failed} trades failed`);
+      } else {
+        toast.success(`${res.succeeded} of ${res.total} succeeded · ${res.failed} failed`);
+      }
       closeModal();
       fetchPositions();
     } catch (e) {
@@ -827,56 +837,90 @@ export default function TradesPage() {
             <p className="text-xxs text-warning font-medium">This trade will appear as the user&apos;s own trade</p>
           </div>
 
-          {/* User Search */}
+          {/* User multi-select */}
           <div>
-            <label className="block text-xxs text-text-tertiary mb-1">User</label>
-            {createSelectedUser ? (
-              <div className="flex items-center justify-between p-2 bg-bg-tertiary/50 border border-border-primary rounded-md">
-                <div>
-                  <p className="text-xs text-text-primary">{createSelectedUser.name}</p>
-                  <p className="text-xxs text-text-secondary">{createSelectedUser.email}</p>
-                </div>
-                <button onClick={() => { setCreateSelectedUser(null); setCreateAccountId(''); }} className="p-1 rounded hover:bg-bg-hover text-text-tertiary"><X size={12} /></button>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xxs text-text-tertiary">Users</label>
+              <label className="flex items-center gap-1.5 text-xxs text-text-secondary cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={applyToAllUsers}
+                  onChange={(e) => {
+                    setApplyToAllUsers(e.target.checked);
+                    if (e.target.checked) setCreateSelectedUsers([]);
+                  }}
+                  className="accent-buy"
+                />
+                Apply to all active users
+              </label>
+            </div>
+
+            {applyToAllUsers ? (
+              <div className="p-2.5 rounded-md bg-warning/10 border border-warning/20 text-xxs text-warning font-medium">
+                This trade will be placed on every active user's primary live account.
               </div>
             ) : (
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                <input type="text" value={createUserSearch} onChange={e => searchUsers(e.target.value)} placeholder="Search by email or name..." className="w-full pl-9 pr-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast" />
-                {createUsers.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-10 max-h-40 overflow-y-auto border border-border-primary rounded-md bg-bg-secondary shadow-dropdown">
-                    {createUsers.map(u => (
-                      <button key={u.id} onClick={() => selectUserForTrade(u)} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-hover transition-fast border-b border-border-primary/50 last:border-0">
-                        <p className="text-text-primary">{u.name}</p>
-                        <p className="text-xxs text-text-tertiary">{u.email}</p>
-                      </button>
+              <>
+                {createSelectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {createSelectedUsers.map((u) => (
+                      <span key={u.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-tertiary/70 border border-border-primary text-xxs text-text-primary">
+                        <span className="truncate max-w-[180px]" title={u.email}>{u.email || u.name}</span>
+                        <button type="button" onClick={() => removeUserFromSelection(u.id)} className="text-text-tertiary hover:text-text-primary"><X size={10} /></button>
+                      </span>
                     ))}
                   </div>
                 )}
-                {userSearchLoading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-text-tertiary" />}
-              </div>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  <input
+                    type="text"
+                    value={createUserSearch}
+                    onChange={(e) => searchUsers(e.target.value)}
+                    placeholder="Search and add users by email or name..."
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast"
+                  />
+                  {createUsers.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-10 max-h-40 overflow-y-auto border border-border-primary rounded-md bg-bg-secondary shadow-dropdown">
+                      {createUsers
+                        .filter((u) => !createSelectedUsers.some((p) => p.id === u.id))
+                        .map((u) => (
+                          <button
+                            key={u.id}
+                            onClick={() => addUserToSelection(u)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-bg-hover transition-fast border-b border-border-primary/50 last:border-0"
+                          >
+                            <p className="text-text-primary">{u.name}</p>
+                            <p className="text-xxs text-text-tertiary">{u.email}</p>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                  {userSearchLoading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-text-tertiary" />}
+                </div>
+                <p className="text-xxs text-text-tertiary mt-1">
+                  Each user's primary live (non-demo) account is used.
+                </p>
+              </>
             )}
           </div>
 
-          {/* Account */}
-          {createSelectedUser && (
-            <div>
-              <label className="block text-xxs text-text-tertiary mb-1">Account</label>
-              {createSelectedUser.accounts && createSelectedUser.accounts.length > 0 ? (
-                <div className="relative">
-                  <select value={createAccountId} onChange={e => setCreateAccountId(e.target.value)} className="w-full text-xs py-2 pl-3 pr-8 appearance-none bg-bg-input border border-border-primary rounded-md text-text-primary">
-                    {createSelectedUser.accounts.map(a => <option key={a.id} value={a.id}>{a.name || a.id}</option>)}
-                  </select>
-                  <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                </div>
-              ) : (
-                <input type="text" value={createAccountId} onChange={e => setCreateAccountId(e.target.value)} placeholder="Enter account ID" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast" />
-              )}
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xxs text-text-tertiary mb-1">Symbol</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xxs text-text-tertiary">Symbol</label>
+                {createSymbol && (() => {
+                  const tick = pricesRef.current[createSymbol];
+                  if (!tick) return <span className="text-xxs text-text-tertiary">Live: —</span>;
+                  const cp = createSide === 'buy' ? tick.ask : tick.bid;
+                  return (
+                    <span className="text-xxs text-text-tertiary tabular-nums font-mono">
+                      Live <span className={cn('font-semibold', createSide === 'buy' ? 'text-buy' : 'text-sell')}>{cp.toFixed(5)}</span>
+                      <span className="text-text-tertiary/70"> ({createSide === 'buy' ? 'ask' : 'bid'})</span>
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="relative">
                 {createSymbol ? (
                   <div className="flex items-center justify-between px-3 py-2 bg-bg-input border border-border-primary rounded-md">
@@ -941,7 +985,17 @@ export default function TradesPage() {
             <label className="block text-xxs text-text-tertiary mb-1">
               Price {createType === 'market' && <span className="text-text-tertiary">(optional — auto from market)</span>}
             </label>
-            <input type="number" step="any" value={createPrice} onChange={e => setCreatePrice(e.target.value)} placeholder={createType === 'market' ? 'Auto (live price)' : '0.00'} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
+            {(() => {
+              const tick = createSymbol ? pricesRef.current[createSymbol] : null;
+              const livePx = tick ? (createSide === 'buy' ? tick.ask : tick.bid) : null;
+              const placeholder =
+                createType === 'market'
+                  ? (livePx != null ? `Auto · ${livePx.toFixed(5)}` : 'Auto (live price)')
+                  : (livePx != null ? livePx.toFixed(5) : '0.00');
+              return (
+                <input type="number" step="any" value={createPrice} onChange={e => setCreatePrice(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
+              );
+            })()}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
