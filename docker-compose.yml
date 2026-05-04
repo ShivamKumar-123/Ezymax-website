@@ -81,6 +81,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
       WALLET_UPLOAD_ROOT: /app/uploads/wallet
+      BANK_QR_UPLOAD_DIR: /app/uploads/qr
     volumes:
       - ./backend/services/admin:/app
       - ./backend/packages/common:/app/packages/common

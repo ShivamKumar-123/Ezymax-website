@@ -1,4 +1,5 @@
 """Admin Bank Service — CRUD for bank accounts, QR upload/serve."""
+import os
 import re
 import uuid
 from pathlib import Path
@@ -13,8 +14,18 @@ from packages.common.src.admin_schemas import BankAccountIn, BankAccountOut
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from dependencies import write_audit_log
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent / "uploads" / "qr"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+def _upload_dir() -> Path:
+    env = os.environ.get("BANK_QR_UPLOAD_DIR", "").strip()
+    if env:
+        p = Path(env)
+    else:
+        p = Path(__file__).resolve().parents[1] / "uploads" / "qr"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+UPLOAD_DIR = _upload_dir()
 
 
 async def list_bank_accounts(db: AsyncSession) -> list:
