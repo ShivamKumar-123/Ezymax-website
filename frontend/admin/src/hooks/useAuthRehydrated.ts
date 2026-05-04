@@ -6,49 +6,33 @@ import { useAuthStore } from '@/stores/authStore';
 const MAX_WAIT_MS = 3500;
 
 /**
- * Wait for zustand persist to finish. Persist never completes on some failures — timeout required.
+ * Cookie-only auth: there's no localStorage to rehydrate (the previous
+ * zustand persist middleware was removed for security — see authStore
+ * comments). Instead, this hook waits for the store to have settled into
+ * either an authenticated or anonymous state by triggering a /auth/me
+ * probe if `isInitialized` is still false.
+ *
+ * Returns true once the cookie check finishes, OR after MAX_WAIT_MS as
+ * an escape valve against a hung request — pages always become
+ * interactive within ~3.5s even if the gateway is unreachable.
  */
 export function useAuthRehydrated(): boolean {
-  const [rehydrated, setRehydrated] = useState(false);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+  const [forced, setForced] = useState(false);
 
   useEffect(() => {
-    const p = useAuthStore.persist;
-    if (!p || typeof p.hasHydrated !== 'function') {
-      setRehydrated(true);
-      return;
-    }
+    if (isInitialized) return;
+    const { refreshAdminProfile } = useAuthStore.getState();
 
-    let finished = false;
-    const done = () => {
-      if (finished) return;
-      finished = true;
-      setRehydrated(true);
-    };
-
-    if (p.hasHydrated()) {
-      done();
-      return;
-    }
-
-    const t = window.setTimeout(done, MAX_WAIT_MS);
-    const unsub = p.onFinishHydration(() => {
-      window.clearTimeout(t);
-      done();
-    });
-
-    // If hydration finished between subscribe and listener attach
-    queueMicrotask(() => {
-      if (p.hasHydrated()) {
-        window.clearTimeout(t);
-        done();
-      }
+    const timer = window.setTimeout(() => setForced(true), MAX_WAIT_MS);
+    void refreshAdminProfile().finally(() => {
+      window.clearTimeout(timer);
     });
 
     return () => {
-      window.clearTimeout(t);
-      unsub();
+      window.clearTimeout(timer);
     };
-  }, []);
+  }, [isInitialized]);
 
-  return rehydrated;
+  return isInitialized || forced;
 }
