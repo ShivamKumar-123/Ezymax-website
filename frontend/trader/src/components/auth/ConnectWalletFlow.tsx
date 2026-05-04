@@ -83,8 +83,16 @@ export default function ConnectWalletFlow({ variant = 'login', disabled }: Props
       // Step 4: build the SIWE message using exactly what the server
       // told us — domain, statement, nonce, timestamps. The wallet
       // displays this verbatim before signing.
+      // SIWE `domain` MUST match the page's host (window.location.host) —
+      // wallets compare the two and warn the user about phishing if they
+      // diverge. We can't trust `nonceRes.domain` because the request may
+      // arrive at the gateway through an internal proxy hop (Next.js →
+      // gateway:8000) where the Host header is the docker service name
+      // rather than the public hostname. The backend still validates the
+      // submitted domain against the CORS allow-list on /verify, so the
+      // client can't smuggle a foreign host past the server.
       const siweMsg = new SiweMessage({
-        domain: nonceRes.domain,
+        domain: window.location.host,
         address: address,
         statement: nonceRes.statement,
         uri: window.location.origin,
