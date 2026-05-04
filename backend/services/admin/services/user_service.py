@@ -1,12 +1,24 @@
 """Admin User Service — user listing, detail, fund/credit ops, ban, kill switch, login-as."""
+import logging
+import os
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 import jwt
+import redis.asyncio as aioredis
 from fastapi import HTTPException
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Presence keys are written by the gateway (which uses Redis db 0). Admin-api
+# is configured to use db 1, so we spin up a dedicated db-0 pool here just for
+# reading those keys. Mirrors the pattern in services/trade_service for prices.
+_redis_url_env = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_redis_db0 = aioredis.from_url(
+    _redis_url_env.rsplit("/", 1)[0] + "/0", decode_responses=True,
+)
+_presence_logger = logging.getLogger("user_service.presence")
 
 from packages.common.src.config import get_settings
 from sqlalchemy import delete as sql_delete
@@ -118,6 +130,21 @@ async def list_users(
         for row in acc_q.all():
             balance_map[row[0]] = {"balance": float(row[1]), "equity": float(row[2])}
 
+    # Presence: one MGET for the visible page. Any non-null value at
+    # presence:user:<id> means the user has hit an authenticated endpoint
+    # in the last 120 seconds. Failures here just mean the column shows
+    # "offline" for everyone — never breaks the list itself.
+    online_ids: set[uuid.UUID] = set()
+    if user_ids:
+        try:
+            keys = [f"presence:user:{uid}" for uid in user_ids]
+            vals = await _redis_db0.mget(keys)
+            for uid, v in zip(user_ids, vals):
+                if v:
+                    online_ids.add(uid)
+        except Exception as e:
+            _presence_logger.debug("presence MGET failed: %s", e)
+
     user_list = []
     for u in users:
         name = " ".join(filter(None, [u.first_name, u.last_name])) or u.email.split("@")[0]
@@ -137,6 +164,7 @@ async def list_users(
             "group": u.role or "user",
             "kyc_status": u.kyc_status or "pending",
             "status": u.status or "active",
+            "is_online": u.id in online_ids,
         })
 
     pages = max(1, (total + per_page - 1) // per_page)

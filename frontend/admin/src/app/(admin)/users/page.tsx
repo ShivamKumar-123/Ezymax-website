@@ -46,6 +46,8 @@ interface User {
   group: string;
   kyc_status: string;
   status: string;
+  /** Has the user hit any authenticated endpoint in the last 120s. */
+  is_online?: boolean;
 }
 
 interface UsersResponse {
@@ -508,10 +510,27 @@ export default function UsersPage() {
                     <td className="px-3 py-3 text-text-tertiary font-mono tabular-nums whitespace-nowrap" title={u.id}>{u.id.slice(0, 8)}…</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <Link href={`/users/${u.id}`} className="inline-flex items-center gap-2 hover:text-buy transition-fast">
-                        <div className="w-7 h-7 rounded-full bg-buy/10 border border-buy/20 flex items-center justify-center shrink-0">
-                          <UserRound size={13} className="text-buy" />
+                        <div className="relative shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-buy/10 border border-buy/20 flex items-center justify-center">
+                            <UserRound size={13} className="text-buy" />
+                          </div>
+                          <span
+                            title={u.is_online ? 'Online' : 'Offline'}
+                            className={cn(
+                              'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-bg-secondary',
+                              u.is_online ? 'bg-success' : 'bg-text-tertiary/60',
+                            )}
+                          />
                         </div>
                         <span className="text-xs font-medium text-text-primary">{u.name}</span>
+                        <span
+                          className={cn(
+                            'text-[10px] font-semibold uppercase tracking-wide',
+                            u.is_online ? 'text-success' : 'text-text-tertiary',
+                          )}
+                        >
+                          {u.is_online ? 'Online' : 'Offline'}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-3 py-3 text-text-secondary whitespace-nowrap">{u.email}</td>
