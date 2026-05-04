@@ -36,8 +36,8 @@
   --border-glass-bright: rgba(255, 255, 255, 0.08);
 
   --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --text-tertiary: #555555;
+  --text-secondary: #b4b4b4;
+  --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
 
   --scrollbar-track: #0a0a0a;
@@ -144,8 +144,8 @@
   --border-glass: rgba(255, 255, 255, 0.06);
   --border-glass-bright: rgba(255, 255, 255, 0.08);
   --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --text-tertiary: #555555;
+  --text-secondary: #b4b4b4;
+  --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #2a2a2a;
