@@ -23,14 +23,14 @@ def render_new_login(
 
     body = kv_table(rows) + """
     <p style="margin:16px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      If this was you, no action needed. If you don't recognise this device,
+      If this was you, no action needed. If you don't recognise this sign-in,
       change your password and review active sessions immediately.
     </p>
     """
     subject = "New sign-in to your FXArtha account"
     html = render_layout(
-        title="New device signed in",
-        intro=f"Hi {name}, we noticed a sign-in from a device we haven't seen before.",
+        title="Sign-in detected",
+        intro=f"Hi {name}, we just recorded a sign-in to your FXArtha account.",
         body_html=body,
         cta_label="Review account security",
         cta_url=f"{trader_app_url.rstrip('/')}/profile/security",
@@ -42,7 +42,7 @@ def render_new_login(
     text_lines = [
         f"Hi {name},",
         "",
-        "A new device signed in to your FXArtha account.",
+        "A sign-in to your FXArtha account was just recorded.",
         "",
         f"When (UTC): {when_utc}",
     ]

@@ -283,50 +283,31 @@ def _send_welcome_email(user: User, *, via_google: bool) -> None:
         logger.warning("welcome email scheduling failed for %s: %s", user.email, e)
 
 
-async def _maybe_send_new_login_email(
+async def _send_login_notification_email(
     user: User,
     request: Request,
     db: AsyncSession,
     new_session_id: UUID,
 ) -> None:
-    """If this login is from a device we haven't seen before, email the user.
+    """Email the user that a sign-in just happened on their account.
 
-    "Unrecognized" = no prior UserSession (older than this one) shares the
-    same user_agent string for this user. We compare on user-agent rather
-    than IP to avoid noisy alerts for users on mobile networks where the
-    IP changes constantly. Best-effort, fire-and-forget — never blocks the
-    login response or rolls anything back."""
+    Fires on every login (email/password, Google, wallet) so the account
+    owner has a paper trail. Best-effort, fire-and-forget — never blocks
+    the login response or rolls anything back. Skips wallet-placeholder
+    addresses (@wallet.fxartha.local) since those aren't real mailboxes;
+    those users get notified once they add a real email via the profile."""
     try:
-        ua = (request.headers.get("user-agent") or "").strip()
-        if not ua:
-            return
-        prior_q = await db.execute(
-            select(UserSession.id)
-            .where(
-                UserSession.user_id == user.id,
-                UserSession.id != new_session_id,
-                UserSession.user_agent == ua,
-            )
-            .limit(1)
-        )
-        if prior_q.scalar_one_or_none() is not None:
-            return  # known device — no email
-
-        # Also skip if this is the user's very first session ever (no point
-        # warning them about their own initial login from registration).
-        first_q = await db.execute(
-            select(func.count())
-            .select_from(UserSession)
-            .where(UserSession.user_id == user.id)
-        )
-        if (first_q.scalar() or 0) <= 1:
-            return
-
         from packages.common.src.smtp_mail import (
             send_email, smtp_configured, fire_and_forget,
         )
         if not smtp_configured() or not user.email:
             return
+        # Wallet-first signups get a synthesized placeholder email; sending
+        # to wallet.fxartha.local would just bounce.
+        if user.email.lower().endswith("@wallet.fxartha.local"):
+            return
+
+        ua = (request.headers.get("user-agent") or "").strip()
         from packages.common.src.email_templates import render_new_login
 
         ip = client_ip_for_inet(request) or None
@@ -442,11 +423,11 @@ async def issue_auth_json_response(
         )
     await db.commit()
 
-    # Best-effort: if the action is a LOGIN and this device hasn't been seen
-    # before, fire a "new sign-in" email. Never raises into the login path.
-    if user_audit_action == "LOGIN":
+    # Best-effort: notify the user by email on every successful sign-in
+    # (email/password, Google, wallet). Never raises into the login path.
+    if user_audit_action in ("LOGIN", "WALLET_LOGIN"):
         try:
-            await _maybe_send_new_login_email(user, request, db, new_session.id)
+            await _send_login_notification_email(user, request, db, new_session.id)
         except Exception:
             pass
 
