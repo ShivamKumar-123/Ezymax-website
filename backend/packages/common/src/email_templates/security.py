@@ -22,9 +22,9 @@ def render_new_login(
         rows.append(("Device", _shorten(user_agent, 80)))
 
     body = kv_table(rows) + """
-    <p style="margin:16px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
+    <p style="margin:18px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
       If this was you, no action needed. If you don't recognise this sign-in,
-      change your password and review active sessions immediately.
+      change your password and reply to this email so support can lock the account.
     </p>
     """
     subject = "New sign-in to your FXArtha account"
@@ -32,8 +32,6 @@ def render_new_login(
         title="Sign-in detected",
         intro=f"Hi {name}, we just recorded a sign-in to your FXArtha account.",
         body_html=body,
-        cta_label="Review account security",
-        cta_url=f"{trader_app_url.rstrip('/')}/profile/security",
         footer_note=(
             "Wasn't you? Change your password right away and reply to this email "
             "so support can lock the account."
@@ -55,8 +53,8 @@ def render_new_login(
     text_lines += [
         "",
         "If this was you, no action needed.",
-        "If you don't recognise this device, change your password immediately:",
-        f"  {trader_app_url.rstrip('/')}/profile/security",
+        "If you don't recognise this sign-in, change your password and reply",
+        "to this email so support can lock the account.",
     ]
     return subject, html, "\n".join(text_lines)
 

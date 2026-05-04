@@ -10,9 +10,12 @@ from html import escape
 _GOLD = "#d6a93d"
 _BG = "#0a0a0a"
 _CARD = "#141414"
+_KV_BG = "#0d0d0d"
+_KV_ROW_BORDER = "#222222"
 _TEXT = "#f5f5f5"
 _TEXT_DIM = "#9a9a9a"
 _BORDER = "#2a2a2a"
+_BORDER_BRIGHT = "#3a3a3a"
 
 
 def render_layout(
@@ -109,12 +112,18 @@ def render_layout(
 </html>"""
 
 
-def kv_row(label: str, value: str) -> str:
-    """One line in a label/value table for transactional details."""
+def kv_row(label: str, value: str, *, last: bool = False) -> str:
+    """One line in a label/value table for transactional details.
+
+    `last=True` skips the bottom row separator so the last row sits flush
+    against the table border instead of doubling up."""
+    border_bottom = "" if last else f"border-bottom:1px solid {_KV_ROW_BORDER};"
     return f"""
     <tr>
-      <td style="padding:10px 0;color:{_TEXT_DIM};font-size:13px;width:160px;">{escape(label)}</td>
-      <td style="padding:10px 0;color:{_TEXT};font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;">
+      <td style="padding:14px 20px;color:{_TEXT_DIM};font-size:13px;
+                 width:180px;vertical-align:top;{border_bottom}">{escape(label)}</td>
+      <td style="padding:14px 20px;color:{_TEXT};font-size:14px;font-weight:600;
+                 font-variant-numeric:tabular-nums;word-break:break-word;{border_bottom}">
         {escape(value)}
       </td>
     </tr>
@@ -122,12 +131,18 @@ def kv_row(label: str, value: str) -> str:
 
 
 def kv_table(rows: list[tuple[str, str]]) -> str:
-    """Wraps kv_row items into a styled table."""
-    inner = "".join(kv_row(k, v) for (k, v) in rows)
+    """Wraps kv_row items into a styled table. Wider padding + brighter
+    border + per-row separators so the block stands out clearly against
+    the email card surface."""
+    last_idx = len(rows) - 1
+    inner = "".join(
+        kv_row(k, v, last=(i == last_idx)) for i, (k, v) in enumerate(rows)
+    )
     return f"""
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="border-collapse:collapse;border:1px solid {_BORDER};
-                  border-radius:8px;background:{_BG};padding:8px 16px;">
+           style="border-collapse:separate;border-spacing:0;width:100%;
+                  border:1px solid {_BORDER_BRIGHT};border-radius:10px;
+                  background:{_KV_BG};margin:8px 0;overflow:hidden;">
       {inner}
     </table>
     """
