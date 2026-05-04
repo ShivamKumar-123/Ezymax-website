@@ -425,7 +425,14 @@ async def issue_auth_json_response(
 
     # Best-effort: notify the user by email on every successful sign-in
     # (email/password, Google, wallet). Never raises into the login path.
-    if user_audit_action in ("LOGIN", "WALLET_LOGIN"):
+    # Includes the Google REGISTER path so first-time Google signups still
+    # see a login record, matching the client's "every login" requirement.
+    if user_audit_action in (
+        "LOGIN",
+        "WALLET_LOGIN",
+        "OAUTH_GOOGLE_LOGIN",
+        "OAUTH_GOOGLE_REGISTER",
+    ):
         try:
             await _send_login_notification_email(user, request, db, new_session.id)
         except Exception:
