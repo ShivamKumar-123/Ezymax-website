@@ -1,16 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Domain split:
- *   - fxartha.com (apex): marketing + auth + ALL user-app pages
- *     (dashboard, wallet, kyc, accounts, portfolio, profile, etc.)
- *   - trade.fxartha.com: ONLY the trading terminal (/trading/terminal/*)
+ * Domain split (asymmetric, by design):
+ *   - fxartha.com (apex): marketing + auth + every user-app page.
+ *     If the user lands on the apex with /trading/terminal, we bounce
+ *     them to the trade subdomain so the terminal has a clean origin.
+ *   - trade.fxartha.com: hosts the trading terminal canonically, but
+ *     ALSO serves every other page. Previously we redirected non-
+ *     terminal traffic back to the apex, but that caused two persistent
+ *     production issues: (1) RSC prefetches and TradingView chart
+ *     bundles cross-origin to the apex, getting CORS-blocked; (2) some
+ *     browsers cached 308 redirects from older middleware builds and
+ *     replayed them locally for weeks even after we shipped fixes.
+ *     Letting both hosts serve all pages eliminates both problems and
+ *     adds no real cost — they're authenticated app pages, not
+ *     marketing pages with SEO concerns.
  *
- * The auth cookie is set with Domain=.fxartha.com (see backend COOKIE_DOMAIN env)
- * so the same session works across the apex and the trade subdomain.
- *
- * If NEXT_PUBLIC_MARKETING_HOST or NEXT_PUBLIC_TRADE_HOST is unset (local dev),
- * this middleware no-ops and a single host serves every route.
+ * The auth cookie is Domain=.fxartha.com so a single session works on
+ * apex AND subdomain. If NEXT_PUBLIC_MARKETING_HOST or
+ * NEXT_PUBLIC_TRADE_HOST is unset (local dev), this middleware no-ops.
  */
 
 const TRADE_PREFIXES = ['/trading/terminal'];
@@ -53,21 +61,14 @@ export function middleware(req: NextRequest) {
     return r;
   };
 
-  // Terminal route on apex → bounce to trade subdomain
+  // Terminal route on apex → bounce to trade subdomain. Only top-level
+  // navigations are redirected — RSC prefetches / sub-resource fetches
+  // must stay same-origin so CORS doesn't break them.
   if (onMarketing && trade) {
-    return noCacheRedirect(`https://${tradeHost}${pathname}${search}`);
-  }
-  // Anything that isn't the terminal must live on the apex — but only
-  // redirect real top-level navigations.  Sub-resource fetches (RSC data,
-  // scripts, prefetches) must resolve on the current origin to avoid CORS.
-  if (onTrade && !trade) {
     const rsc = req.headers.get('rsc');
     const prefetch = req.headers.get('next-router-prefetch');
     const nextRouterStateTree = req.headers.get('next-router-state-tree');
     const mode = req.headers.get('sec-fetch-mode');
-    // Newer Next.js (15+) uses a ?_rsc=<id> query param on some prefetches
-    // INSTEAD of the legacy RSC header — querystring-based detection is the
-    // only reliable signal in those cases.
     const hasRscQuery = req.nextUrl.searchParams.has('_rsc');
     if (
       rsc ||
@@ -78,8 +79,10 @@ export function middleware(req: NextRequest) {
     ) {
       return NextResponse.next();
     }
-    return noCacheRedirect(`https://${marketingHost}${pathname}${search}`);
+    return noCacheRedirect(`https://${tradeHost}${pathname}${search}`);
   }
+  // Trade subdomain → serve every page. We deliberately do NOT redirect
+  // back to apex anymore (see the file-level comment for context).
   return NextResponse.next();
 }
 
