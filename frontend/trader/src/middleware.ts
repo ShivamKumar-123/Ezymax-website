@@ -41,9 +41,21 @@ export function middleware(req: NextRequest) {
 
   const trade = isTradePath(pathname);
 
+  // Helper: build a non-cacheable redirect. We use 307 (temporary) so a
+  // browser can never cache the redirect across deploys; we also set
+  // Cache-Control: no-store on the redirect response itself so the cache
+  // never holds onto it. Without this, a stale 308 redirect from an older
+  // middleware build will persist on every previously-visited browser
+  // even after we deploy a fix — the request never even leaves the browser.
+  const noCacheRedirect = (url: string) => {
+    const r = NextResponse.redirect(url, 307);
+    r.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    return r;
+  };
+
   // Terminal route on apex → bounce to trade subdomain
   if (onMarketing && trade) {
-    return NextResponse.redirect(`https://${tradeHost}${pathname}${search}`, 308);
+    return noCacheRedirect(`https://${tradeHost}${pathname}${search}`);
   }
   // Anything that isn't the terminal must live on the apex — but only
   // redirect real top-level navigations.  Sub-resource fetches (RSC data,
@@ -66,7 +78,7 @@ export function middleware(req: NextRequest) {
     ) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(`https://${marketingHost}${pathname}${search}`, 308);
+    return noCacheRedirect(`https://${marketingHost}${pathname}${search}`);
   }
   return NextResponse.next();
 }
