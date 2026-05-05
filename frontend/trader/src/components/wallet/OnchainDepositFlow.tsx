@@ -167,7 +167,7 @@ export default function OnchainDepositFlow({
     const tick = async () => {
       try {
         const s = await api.get<StatusPayload>(
-          `/wallet/deposit/${deposit.id}/onchain-status`,
+          `/wallet/deposit/${deposit.deposit_id}/onchain-status`,
         );
         if (cancelled) return;
         setStatus(s);
