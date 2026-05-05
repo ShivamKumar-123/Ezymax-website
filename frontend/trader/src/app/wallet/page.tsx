@@ -11,6 +11,7 @@ import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import WalletDepositModal from '@/components/wallet/WalletDepositModal';
+import OnchainDepositFlow from '@/components/wallet/OnchainDepositFlow';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -130,7 +131,7 @@ function WalletPageContent() {
   const fundPanelRef = useRef<HTMLDivElement>(null);
 
   const [fundMainTab, setFundMainTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
+  const [depositUiSection, setDepositUiSection] = useState<'usdt' | 'crypto' | 'manual'>('usdt');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
   const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
@@ -288,7 +289,9 @@ function WalletPageContent() {
   const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
-    setDepositChannel(depositUiSection === 'crypto' ? 'crypto' : 'manual');
+    // Both 'usdt' (decentralized wallet-connect) and 'crypto' (NowPayments)
+    // are crypto channels — we just track the channel string for analytics.
+    setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
   }, [depositUiSection]);
 
   useEffect(() => {
@@ -321,7 +324,7 @@ function WalletPageContent() {
     setDepositAmount('');
     setDepositTxId('');
     setDepositProofFile(null);
-    setDepositUiSection('crypto');
+    setDepositUiSection('usdt');
     setManualBankInfo(null);
     setFundMainTab('deposit');
     scrollToFundPanel();
@@ -889,28 +892,41 @@ function WalletPageContent() {
                   </div>
 
                   {/* Deposit Method Tabs */}
-                  <div className="flex gap-2 border-b border-border-glass">
-                    {(['crypto', 'manual'] as const).map((method) => {
+                  <div className="flex gap-2 border-b border-border-glass overflow-x-auto">
+                    {(['usdt', 'crypto', 'manual'] as const).map((method) => {
                       const active = depositUiSection === method;
+                      const label =
+                        method === 'usdt'
+                          ? 'USDT (Wallet Connect)'
+                          : method === 'crypto'
+                          ? 'Crypto (NowPayments)'
+                          : 'Manual (Bank/UPI)';
                       return (
                         <button
                           key={method}
                           type="button"
                           onClick={() => setDepositUiSection(method)}
                           className={clsx(
-                            'px-4 py-2.5 text-sm font-semibold transition-all border-b-2',
+                            'px-4 py-2.5 text-sm font-semibold transition-all border-b-2 whitespace-nowrap',
                             active
                               ? 'border-accent text-accent'
                               : 'border-transparent text-text-tertiary hover:text-text-primary'
                           )}
                         >
-                          {method === 'crypto' ? 'Crypto (Wallet Connect)' : 'Manual (Bank/UPI)'}
+                          {label}
                         </button>
                       );
                     })}
                   </div>
 
-                  {depositUiSection === 'crypto' ? (
+                  {depositUiSection === 'usdt' ? (
+                    <OnchainDepositFlow
+                      onSettled={() => {
+                        // Refresh the wallet summary so the new balance lands.
+                        void fetchData(true);
+                      }}
+                    />
+                  ) : depositUiSection === 'crypto' ? (
                     <>
                       {/* Crypto deposit via NOWPayments wallet-connect modal */}
                       <div className="space-y-1">

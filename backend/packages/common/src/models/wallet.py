@@ -98,6 +98,27 @@ class Transaction(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 
+class AdminDepositWallet(Base):
+    """Admin-controlled deposit address per (network, asset).
+
+    Powers the decentralized wallet-connect deposit flow: when a user picks
+    USDT on a chain, the gateway looks up the active row for that
+    (network='eth'|'bsc'|'tron', asset='USDT') tuple and shows the user
+    that address as the destination. Only one row per (network, asset)
+    can be active at a time, enforced by a partial unique index.
+    """
+    __tablename__ = "admin_deposit_wallets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    network = Column(String(20), nullable=False)  # eth | bsc | tron
+    asset = Column(String(20), nullable=False, default="USDT")
+    address = Column(String(64), nullable=False)
+    min_confirmations = Column(Integer, nullable=False, default=12)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class WebhookEvent(Base):
     """One row per processed payment-provider webhook.
 

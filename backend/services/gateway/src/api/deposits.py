@@ -16,7 +16,7 @@ from packages.common.src.schemas import (
     WithdrawalRequest,
 )
 from packages.common.src.auth import get_current_user
-from ..services import wallet_service
+from ..services import wallet_service, onchain_deposit_service
 
 router = APIRouter()
 
@@ -129,6 +129,63 @@ async def save_wallet_deposit_tx_hash(
     return await wallet_service.save_wallet_deposit_tx_hash(
         deposit_id=deposit_id, tx_hash=req.tx_hash,
         user_id=current_user["user_id"], db=db,
+    )
+
+
+# ─── Decentralized USDT deposit flow ──────────────────────────────────────
+# User picks a chain, signs a transfer in their own wallet, submits the
+# tx hash. The chain_verifier_engine confirms on-chain and credits.
+
+
+class OnchainDepositRequest(BaseModel):
+    network: str  # eth | bsc | tron
+    amount: Decimal
+
+
+@router.post("/deposit/onchain", status_code=201)
+async def create_onchain_deposit(
+    req: OnchainDepositRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Open a wallet-connect deposit. Returns the admin deposit address
+    for the picked chain plus everything the trader UI needs to invoke
+    MetaMask / TronLink: token contract, chain id, base-units amount,
+    expiry. The user's wallet does the actual transfer."""
+    return await onchain_deposit_service.create_onchain_deposit(
+        user_id=current_user["user_id"],
+        network=req.network,
+        amount=req.amount,
+        db=db,
+    )
+
+
+@router.post("/deposit/{deposit_id}/confirm-tx", status_code=202)
+async def confirm_onchain_tx(
+    deposit_id: UUID,
+    req: TxHashSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record the on-chain tx hash for a wallet-connect deposit. The
+    chain_verifier_engine will pick it up on its next tick and credit
+    the user's main wallet once the transfer has enough confirmations."""
+    return await onchain_deposit_service.confirm_tx_hash(
+        deposit_id=deposit_id, tx_hash=req.tx_hash,
+        user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.get("/deposit/{deposit_id}/onchain-status")
+async def get_onchain_deposit_status(
+    deposit_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Polling endpoint the trader UI uses to tail the deposit's status
+    from 'initiated' → 'submitted' → 'auto_approved' / 'rejected'."""
+    return await onchain_deposit_service.get_status(
+        deposit_id=deposit_id, user_id=current_user["user_id"], db=db,
     )
 
 

@@ -41,6 +41,7 @@ from .trading import (
 from .wallet import (
     BankAccount, Deposit, Withdrawal, Transaction,
     ChargeConfig, SpreadConfig, SwapConfig, WebhookEvent,
+    AdminDepositWallet,
 )
 from .business import (
     IBProfile, IBApplication, IBCommissionPlan, IBCommission, Referral,
@@ -87,6 +88,7 @@ __all__ = [
     # wallet
     "BankAccount", "Deposit", "Withdrawal", "Transaction",
     "ChargeConfig", "SpreadConfig", "SwapConfig", "WebhookEvent",
+    "AdminDepositWallet",
     # business
     "IBProfile", "IBApplication", "IBCommissionPlan", "IBCommission", "Referral",
     "MasterAccount", "InvestorAllocation", "CopyTrade",

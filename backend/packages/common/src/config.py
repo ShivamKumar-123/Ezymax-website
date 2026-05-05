@@ -124,6 +124,16 @@ class Settings(BaseSettings):
     NOWPAYMENTS_SANDBOX: bool = False
     NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
 
+    # Decentralized USDT deposit flow — per-chain explorer + RPC config.
+    # All optional: with no keys the chain_verifier_engine falls back to
+    # public free endpoints (rate-limited but functional for low traffic).
+    ETHERSCAN_API_KEY: str = ""        # https://etherscan.io/myapikey
+    BSCSCAN_API_KEY: str = ""          # https://bscscan.com/myapikey
+    TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
+    ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
+    BSC_RPC_URL: str = ""              # public default fallback used if blank
+    TRON_API_URL: str = "https://api.trongrid.io"
+
     # Absolute path recommended in production (writable volume). Relative paths are resolved from gateway CWD.
     KYC_UPLOAD_ROOT: str = "uploads/kyc"
     # Deposit proof screenshots + user payout QR for manual withdrawals (gateway). Mount same path in admin for review.
