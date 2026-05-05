@@ -51,8 +51,19 @@ export function middleware(req: NextRequest) {
   if (onTrade && !trade) {
     const rsc = req.headers.get('rsc');
     const prefetch = req.headers.get('next-router-prefetch');
+    const nextRouterStateTree = req.headers.get('next-router-state-tree');
     const mode = req.headers.get('sec-fetch-mode');
-    if (rsc || prefetch || (mode && mode !== 'navigate')) {
+    // Newer Next.js (15+) uses a ?_rsc=<id> query param on some prefetches
+    // INSTEAD of the legacy RSC header — querystring-based detection is the
+    // only reliable signal in those cases.
+    const hasRscQuery = req.nextUrl.searchParams.has('_rsc');
+    if (
+      rsc ||
+      prefetch ||
+      nextRouterStateTree ||
+      hasRscQuery ||
+      (mode && mode !== 'navigate')
+    ) {
       return NextResponse.next();
     }
     return NextResponse.redirect(`https://${marketingHost}${pathname}${search}`, 308);
