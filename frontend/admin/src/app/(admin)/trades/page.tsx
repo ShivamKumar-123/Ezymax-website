@@ -97,10 +97,16 @@ function formatDate(d: string | undefined | null) {
 function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-bg-secondary border border-border-primary rounded-md shadow-modal mx-4 p-5 animate-slide-down w-full', wide ? 'max-w-xl' : 'max-w-md')}>
-        <div className="flex items-center justify-between mb-4">
+      <div
+        className={cn(
+          'relative bg-bg-secondary border border-border-primary rounded-md shadow-modal p-5 animate-slide-down w-full my-auto',
+          'max-h-[calc(100vh-2rem)] overflow-y-auto',
+          wide ? 'max-w-xl' : 'max-w-md',
+        )}
+      >
+        <div className="flex items-center justify-between mb-4 sticky top-0 bg-bg-secondary -mx-5 -mt-5 px-5 pt-5 pb-2 z-10">
           <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-bg-hover transition-fast text-text-tertiary hover:text-text-primary"><X size={14} /></button>
         </div>
@@ -905,22 +911,9 @@ export default function TradesPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xxs text-text-tertiary">Symbol</label>
-                {createSymbol && (() => {
-                  const tick = pricesRef.current[createSymbol];
-                  if (!tick) return <span className="text-xxs text-text-tertiary">Live: —</span>;
-                  const cp = createSide === 'buy' ? tick.ask : tick.bid;
-                  return (
-                    <span className="text-xxs text-text-tertiary tabular-nums font-mono">
-                      Live <span className={cn('font-semibold', createSide === 'buy' ? 'text-buy' : 'text-sell')}>{cp.toFixed(5)}</span>
-                      <span className="text-text-tertiary/70"> ({createSide === 'buy' ? 'ask' : 'bid'})</span>
-                    </span>
-                  );
-                })()}
-              </div>
+              <label className="block text-xxs text-text-tertiary mb-1">Symbol</label>
               <div className="relative">
                 {createSymbol ? (
                   <div className="flex items-center justify-between px-3 py-2 bg-bg-input border border-border-primary rounded-md">
@@ -962,6 +955,37 @@ export default function TradesPage() {
             </div>
           </div>
 
+          {/* Live quote card — shows bid + ask + spread for the picked symbol.
+              Updates every second via the rerender tick. */}
+          {createSymbol && (() => {
+            const tick = pricesRef.current[createSymbol];
+            if (!tick) {
+              return (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border-primary bg-bg-tertiary/40 text-xxs text-text-tertiary">
+                  <Loader2 size={11} className="animate-spin" />
+                  Waiting for live prices on {createSymbol}…
+                </div>
+              );
+            }
+            const spread = ((tick.ask - tick.bid) * 100000).toFixed(1);
+            return (
+              <div className="grid grid-cols-3 gap-2 px-3 py-2 rounded-md border border-border-primary bg-bg-tertiary/40 text-center">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Bid</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-sell">{tick.bid.toFixed(5)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Spread</p>
+                  <p className="text-xs font-mono tabular-nums text-text-secondary">{spread}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Ask</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-buy">{tick.ask.toFixed(5)}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Side Toggle */}
           <div>
             <label className="block text-xxs text-text-tertiary mb-1">Side</label>
@@ -998,7 +1022,7 @@ export default function TradesPage() {
             })()}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xxs text-text-tertiary mb-1">Stop Loss</label>
               <input type="number" step="any" value={createSl} onChange={e => setCreateSl(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
