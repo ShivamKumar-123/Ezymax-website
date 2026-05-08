@@ -171,12 +171,11 @@ function tradeExitLabel(
 
 
 
-const TIMEFRAMES = ['1M', '3M', '6M', '1Y', 'All'] as const;
-
+// Portfolio always shows all-time stats. The mapping below is kept as a
+// reference for whenever the per-period selector comes back; right now
+// only the 'All' → 'all' entry is actually consulted.
 const TF_TO_PERIOD: Record<string, string> = {
-
   '1M': '1m', '3M': '3m', '6M': '6m', '1Y': '1y', 'All': 'all',
-
 };
 
 const UUID_RE =
@@ -200,7 +199,11 @@ function PortfolioPageContent() {
     return v?.trim() ? v.trim() : '';
   }, [queryKey]);
 
-  const [tf, setTf] = useState('1M');
+  // Portfolio is now always all-time. The timeframe selector was removed
+  // from the UI per client direction — `tf` stays as a const reference so
+  // the existing TF_TO_PERIOD lookup keeps compiling. If we ever bring the
+  // selector back, swap this back to useState('1M').
+  const tf = 'All';
 
   const [tab, setTab] = useState('overview');
 
@@ -570,22 +573,10 @@ function PortfolioPageContent() {
           </div>
         ) : null}
 
-        {dashboardData ? (
-          <div className="flex items-center justify-end gap-0.5 -mb-2">
-            {TIMEFRAMES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTf(t)}
-                className={clsx(
-                  'px-2 py-1 text-[10px] rounded-md transition-all',
-                  tf === t ? 'skeu-btn-buy text-text-inverse' : 'text-text-tertiary hover:bg-bg-hover',
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        {/* Timeframe selector retired — portfolio always shows all-time data
+            (per client decision). The TIMEFRAMES + setTf scaffolding stays
+            in place behind the scenes (forced to 'All') so re-introducing
+            per-period stats later is a one-component change. */}
 
         {dashboardData ? <TradingOverview data={dashboardData} /> : null}
 
