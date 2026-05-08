@@ -31,6 +31,14 @@ interface User {
    * to disable Unlink when wallet is the only credential. */
   has_password?: boolean;
   has_google?: boolean;
+  /** OnboardingGate inputs from /auth/me. Flipped server-side once
+   * profile + email + wallet are all set (or the user is grandfathered
+   * pre-2026-05-08). The frontend gate mirrors this so a UI bug can't
+   * accidentally open access. */
+  wallet_linked?: boolean;
+  email_verified?: boolean;
+  is_wallet_placeholder?: boolean;
+  onboarding_complete?: boolean;
 }
 
 export interface WalletNonceResponse {
