@@ -393,6 +393,31 @@ async def close_position(
         acc.equity = acc.balance + (acc.credit or Decimal("0"))
         acc.free_margin = acc.equity - acc.margin_used
 
+    # Detect whether the close price has already crossed the position's
+    # SL/TP — covers two cases where admin clicks Close:
+    #   1. Admin races the SL/TP engine and lands the close request first
+    #      (the engine's next tick would have stamped 'sl' or 'tp').
+    #   2. Admin overrides body.close_price to the SL/TP level explicitly
+    #      (e.g. honouring a TP that the engine missed because of a feed
+    #      gap).
+    # If neither matches, default the reason to 'admin' (NOT 'manual')
+    # so support can distinguish admin-closed trades from
+    # trader-clicked-Close manual closes. The frontend already renders
+    # an 'Admin' badge for this value (admin/trades/page.tsx).
+    detected_reason = "admin"
+    if pos.stop_loss:
+        sl = Decimal(str(pos.stop_loss))
+        if side_val == "buy" and close_price <= sl:
+            detected_reason = "sl"
+        elif side_val == "sell" and close_price >= sl:
+            detected_reason = "sl"
+    if detected_reason == "admin" and pos.take_profit:
+        tp = Decimal(str(pos.take_profit))
+        if side_val == "buy" and close_price >= tp:
+            detected_reason = "tp"
+        elif side_val == "sell" and close_price <= tp:
+            detected_reason = "tp"
+
     trade_rec = TradeHistory(
         position_id=pos.id,
         account_id=pos.account_id,
@@ -404,7 +429,7 @@ async def close_position(
         swap=pos.swap or Decimal("0"),
         commission=pos.commission or Decimal("0"),
         profit=profit,
-        close_reason="manual",
+        close_reason=detected_reason,
         opened_at=pos.created_at,
         closed_at=datetime.utcnow(),
     )
