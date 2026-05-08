@@ -70,6 +70,11 @@ interface ClosedTrade {
   lots: number;
   open_price: number;
   close_price: number;
+  /** SL / TP that were configured on the underlying Position when it
+   * closed. Null when no limit was set. Backed by the join in
+   * admin_trade_service.list_trade_history. */
+  stop_loss?: number | null;
+  take_profit?: number | null;
   profit: number;
   close_reason: string;
   closed_at: string;
@@ -684,11 +689,11 @@ export default function TradesPage() {
           {activeTab === 'history' && (
             <div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[920px]">
+                <table className="w-full min-w-[1040px]">
                   <thead>
                     <tr className="border-b border-border-primary bg-bg-tertiary/40">
-                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'P&L', 'Reason'].map(c => (
-                        <th key={c} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'P&L'].includes(c) && 'text-right')}>{c}</th>
+                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason'].map(c => (
+                        <th key={c} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'SL', 'TP', 'P&L'].includes(c) && 'text-right')}>{c}</th>
                       ))}
                     </tr>
                   </thead>
@@ -703,6 +708,12 @@ export default function TradesPage() {
                       const reason = t.close_reason || 'manual';
                       const reasonLabel = reason === 'sl' ? 'SL' : reason === 'tp' ? 'TP' : reason === 'admin' ? 'Admin' : 'Manual';
                       const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger' : reason === 'tp' ? 'bg-success/15 text-success' : reason === 'admin' ? 'bg-warning/15 text-warning' : 'bg-text-tertiary/15 text-text-tertiary';
+                      // SL/TP cells: dim em-dash when not set, sell color
+                      // for SL, buy color for TP — visually mirrors the
+                      // Open Positions tab so admins read both views the
+                      // same way.
+                      const slDisplay = t.stop_loss != null ? t.stop_loss : '—';
+                      const tpDisplay = t.take_profit != null ? t.take_profit : '—';
                       return (
                       <tr key={t.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
                         <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">{formatDate(t.closed_at)}</td>
@@ -712,6 +723,8 @@ export default function TradesPage() {
                         <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">{t.lots}</td>
                         <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">{t.open_price}</td>
                         <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">{t.close_price}</td>
+                        <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{slDisplay}</td>
+                        <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{tpDisplay}</td>
                         <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums font-medium', (t.profit || 0) >= 0 ? 'text-success' : 'text-danger')}>
                           {(t.profit || 0) >= 0 ? '+' : ''}{formatMoney(t.profit)}
                         </td>
@@ -724,7 +737,7 @@ export default function TradesPage() {
                   </tbody>
                 </table>
               </div>
-              {histLoading && <TableSkeleton cols={9} />}
+              {histLoading && <TableSkeleton cols={11} />}
               {!histLoading && history.length === 0 && (
                 <div className="px-4 py-12 text-center text-xs text-text-tertiary">No closed trades</div>
               )}

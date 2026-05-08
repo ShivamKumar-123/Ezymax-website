@@ -320,6 +320,23 @@ async def trade_history(
     )
     trades = result.scalars().all()
 
+    # Pre-fetch SL/TP for the originating positions in one shot — keeps
+    # the per-row loop cheap. Position rows survive after close so this
+    # join is reliable for historical trades too.
+    pos_ids = [t.position_id for t in trades if t.position_id is not None]
+    pos_sltp: dict = {}
+    if pos_ids:
+        from packages.common.src.models import Position as _Position
+        pos_rows = (await db.execute(
+            select(_Position.id, _Position.stop_loss, _Position.take_profit)
+            .where(_Position.id.in_(pos_ids))
+        )).all()
+        for pid, sl, tp in pos_rows:
+            pos_sltp[pid] = (
+                float(sl) if sl is not None else None,
+                float(tp) if tp is not None else None,
+            )
+
     items = []
     for t in trades:
         side_val = t.side.value if hasattr(t.side, 'value') else str(t.side)
@@ -328,10 +345,16 @@ async def trade_history(
         )
         copy_trade = copy_trade_q.scalar_one_or_none()
         trade_type = "copy_trade" if copy_trade else "self_trade"
+        sl_val, tp_val = pos_sltp.get(t.position_id, (None, None))
         items.append({
             "id": str(t.id), "symbol": t.instrument.symbol if t.instrument else None,
             "side": side_val, "lots": float(t.lots),
             "open_price": float(t.open_price), "close_price": float(t.close_price),
+            # SL/TP that were configured on the underlying Position at
+            # close time. Surfaced in trader-side history so users see
+            # the limits they had set even after the trade is closed.
+            "stop_loss": sl_val,
+            "take_profit": tp_val,
             "swap": float(t.swap), "commission": float(t.commission),
             "pnl": float(t.profit), "close_reason": t.close_reason or "manual",
             "trade_type": trade_type,

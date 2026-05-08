@@ -217,6 +217,20 @@ async def list_trade_history(page: int, per_page: int, db: AsyncSession):
             if usr:
                 user_email = usr.email
 
+        # Pull SL/TP off the originating position so the history row
+        # carries the limits the trader had set at close time. The
+        # Position row stays after close (status flips to 'closed' but
+        # the row is preserved for the audit trail), so this read is
+        # cheap and accurate.
+        pos_sl = None
+        pos_tp = None
+        if t.position_id:
+            pos_q = await db.execute(select(Position).where(Position.id == t.position_id))
+            pos = pos_q.scalar_one_or_none()
+            if pos:
+                pos_sl = float(pos.stop_loss) if pos.stop_loss is not None else None
+                pos_tp = float(pos.take_profit) if pos.take_profit is not None else None
+
         items.append(TradeHistoryOut(
             id=str(t.id),
             account_id=str(t.account_id),
@@ -225,6 +239,8 @@ async def list_trade_history(page: int, per_page: int, db: AsyncSession):
             lots=float(t.lots or 0),
             open_price=float(t.open_price or 0),
             close_price=float(t.close_price or 0),
+            stop_loss=pos_sl,
+            take_profit=pos_tp,
             swap=float(t.swap or 0),
             commission=float(t.commission or 0),
             profit=float(t.profit or 0),

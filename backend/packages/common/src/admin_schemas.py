@@ -210,6 +210,12 @@ class TradeHistoryOut(BaseModel):
     lots: float
     open_price: float
     close_price: float
+    # SL/TP that were set on the underlying Position when it closed.
+    # Surfaced in history so support / client can see what limits the
+    # trader had configured, even after the position is gone from the
+    # Open Positions tab. Null when no SL/TP was set.
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
     swap: float = 0
     commission: float = 0
     profit: float

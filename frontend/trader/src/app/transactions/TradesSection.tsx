@@ -62,6 +62,11 @@ interface ClosedTrade {
   lots: number;
   open_price: number;
   close_price: number;
+  /** SL/TP that were configured on the underlying Position when this
+   * trade closed. Null when no limit was set. Backed by a join in
+   * portfolio_service.trade_history. */
+  stop_loss?: number | null;
+  take_profit?: number | null;
   swap: number;
   commission: number;
   pnl: number;
@@ -347,6 +352,12 @@ export default function TradesSection() {
                     ) : (
                       <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Type</th>
                     )}
+                    {tab === 'closed' && (
+                      <>
+                        <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">SL</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">TP</th>
+                      </>
+                    )}
                     {tab !== 'pending' && (
                       <th className="text-right px-3 py-3 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">P/L</th>
                     )}
@@ -397,6 +408,16 @@ export default function TradesSection() {
                           <td className="px-3 py-3 text-right font-mono text-text-secondary">{fmt5(r.close_price ?? r.current_price ?? 0)}</td>
                         ) : (
                           <td className="px-3 py-3 text-right text-text-tertiary text-[11px] uppercase">{r.order_type || 'limit'}</td>
+                        )}
+                        {tab === 'closed' && (
+                          <>
+                            <td className={clsx('px-3 py-3 text-right font-mono', r.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>
+                              {r.stop_loss != null ? fmt5(r.stop_loss) : '—'}
+                            </td>
+                            <td className={clsx('px-3 py-3 text-right font-mono', r.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
+                              {r.take_profit != null ? fmt5(r.take_profit) : '—'}
+                            </td>
+                          </>
                         )}
                         {tab !== 'pending' && (
                           <td className={clsx('px-3 py-3 text-right font-mono font-bold', pnl >= 0 ? 'text-buy' : 'text-sell')}>
