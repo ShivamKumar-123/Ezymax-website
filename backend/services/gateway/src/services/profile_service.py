@@ -294,7 +294,18 @@ async def submit_kyc(
         user_upload_dir = safe_join_under_base(root, str(user_id))
     except PathTraversalError:
         raise HTTPException(status_code=400, detail="Invalid upload path")
-    user_upload_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        user_upload_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        # Most common cause: the host bind-mount target
+        # (./backend/uploads/) isn't writable by the gateway container's
+        # non-root user (uid 1001). Surfaces the same way as the bank_service
+        # /uploads bug fixed earlier — logs the full path so ops can chmod it.
+        logger.exception("KYC user upload dir not writable: %s", user_upload_dir)
+        raise HTTPException(
+            status_code=503,
+            detail="File upload is temporarily unavailable. Please contact support.",
+        ) from e
 
     saved_docs: list[KYCDocument] = []
     try:
@@ -358,6 +369,19 @@ async def submit_kyc(
                 "Could not save KYC data. Your server database may need the latest migration "
                 "(kyc document types). Contact support if this continues."
             ),
+        ) from e
+    except HTTPException:
+        # Already a clean error — let it through without rewrapping.
+        raise
+    except Exception as e:
+        # Anything else is unexpected (filesystem, Redis, Notification model
+        # drift, etc.). Log the full traceback so ops can diagnose, but
+        # return a generic 500 to the user without leaking internals.
+        await db.rollback()
+        logger.exception("KYC submit failed for user_id=%s: %s", user_id, e)
+        raise HTTPException(
+            status_code=500,
+            detail="We couldn't save your KYC documents. Our team has been notified — please try again in a few minutes.",
         ) from e
 
     primary = saved_docs[0]
