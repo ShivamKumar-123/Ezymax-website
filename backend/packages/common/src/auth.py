@@ -78,13 +78,17 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     payload = decode_token(token)
     user_id = UUID(payload["sub"])
-    # Mark the user as online for ~2 minutes after this request. The admin
+    # Mark the user as online for ~5 minutes after this request. The admin
     # users list reads these keys to render an online/offline indicator.
-    # Fire-and-forget so a Redis blip never breaks an authenticated request,
-    # and a fresh value extends the TTL each time we hit any authed route.
+    # 5 minutes is generous enough that brief idle stretches (reading a
+    # dashboard, looking at a chart) don't make a user appear to drop off
+    # while still rolling forward whenever they touch any authed endpoint.
+    # The AuthProvider in the trader app also fires a /auth/me heartbeat
+    # every 60s as a safety net for pages that don't poll API on their own.
+    # Fire-and-forget so a Redis blip never breaks an authenticated request.
     try:
         from .redis_client import redis_client
-        await redis_client.set(f"presence:user:{user_id}", "1", ex=120)
+        await redis_client.set(f"presence:user:{user_id}", "1", ex=300)
     except Exception:
         pass
     return {
