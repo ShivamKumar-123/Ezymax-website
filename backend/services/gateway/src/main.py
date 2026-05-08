@@ -129,25 +129,28 @@ add_middleware_stack(app)
 
 # REST API Routes
 #
-# `require_onboarded` gates the trading + money surfaces server-side so a
-# non-onboarded user can't poke past the frontend OnboardingGate by hitting
-# the API directly. The dependency exempts demo accounts and staff (admin
-# / super_admin / employee) and returns 428 ONBOARDING_INCOMPLETE for
-# everyone else who hasn't finished profile + email + wallet. The list
-# below is deliberately narrow — auth, profile, instrument catalogues,
-# notifications, support, banners are all left ungated because they are
-# either pre-onboarding (login, profile-fill) or read-only metadata.
-_GATED = [Depends(require_onboarded)]
+# Onboarding enforcement happens at the action layer (e.g.
+# wallet_service.create_withdrawal refuses without user.wallet_address)
+# rather than at the router level. The router-wide _GATED was rolled back
+# because the 428 ONBOARDING_INCOMPLETE responses were leaking through to
+# the dashboard's read-only screens (accounts list, wallet summary,
+# portfolio) before the OnboardingGate modal could render — leaving new
+# users stuck on a "Retry" error instead of being walked through email
+# verification + wallet linking.
+#
+# The frontend OnboardingGate is still the UX nudge. Money operations
+# enforce per-action: withdrawals require user.wallet_address, the email-
+# change flow requires step-up, etc.
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["Accounts"], dependencies=_GATED)
+app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["Accounts"])
 app.include_router(instruments.router, prefix="/api/v1/instruments", tags=["Instruments"])
 app.include_router(trading_catalog.router, prefix="/api/v1")
-app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"], dependencies=_GATED)
-app.include_router(positions.router, prefix="/api/v1/positions", tags=["Positions"], dependencies=_GATED)
-app.include_router(deposits.router, prefix="/api/v1/wallet", tags=["Wallet"], dependencies=_GATED)
+app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"])
+app.include_router(positions.router, prefix="/api/v1/positions", tags=["Positions"])
+app.include_router(deposits.router, prefix="/api/v1/wallet", tags=["Wallet"])
 app.include_router(social.router, prefix="/api/v1/social", tags=["Social Trading"])
 app.include_router(business.router, prefix="/api/v1/business", tags=["Business/IB"])
-app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio"], dependencies=_GATED)
+app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio"])
 app.include_router(profile.router, prefix="/api/v1/profile", tags=["Profile"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["Support"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
