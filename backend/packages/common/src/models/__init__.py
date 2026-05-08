@@ -31,6 +31,7 @@ from .users import (
     User, UserSession, PasswordResetToken, UserRefreshToken, KYCDocument,
     IPLog, AuditLog, UserAuditLog, Employee, WalletAuthNonce,
     FundMoveApproval, TwoFactorBackupCode, IdempotencyKey,
+    EmailOtpCode,
 )
 from .instruments import (
     InstrumentSegment, Instrument, InstrumentConfig, InstrumentConfigAudit,
@@ -81,6 +82,7 @@ __all__ = [
     "User", "UserSession", "PasswordResetToken", "UserRefreshToken", "KYCDocument",
     "IPLog", "AuditLog", "UserAuditLog", "Employee", "WalletAuthNonce",
     "FundMoveApproval", "TwoFactorBackupCode", "IdempotencyKey",
+    "EmailOtpCode",
     # instruments
     "InstrumentSegment", "Instrument", "InstrumentConfig", "InstrumentConfigAudit",
     # trading

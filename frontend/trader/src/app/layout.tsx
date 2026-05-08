@@ -8,6 +8,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
 import NotificationListener from '@/components/NotificationListener';
 import ProfileCompleteGate from '@/components/profile/ProfileCompleteGate';
+import OnboardingGate from '@/components/auth/OnboardingGate';
 import TopLoader from '@/components/TopLoader';
 
 export const metadata: Metadata = {
@@ -46,7 +47,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <GoogleAuthProvider>
             <NotificationListener />
+            {/* Two-stage onboarding gate. ProfileCompleteGate enforces the
+                profile-fields step (always renders first if profile is
+                incomplete); OnboardingGate then enforces wallet + email
+                verification on top. Order matters: only one of them ever
+                shows at a time, and they chain — finish the profile, then
+                the wallet/email gate kicks in. Both are non-dismissible. */}
             <ProfileCompleteGate />
+            <OnboardingGate />
             {children}
             <Suspense fallback={null}>
               <MobileBottomNav />

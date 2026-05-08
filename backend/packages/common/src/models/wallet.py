@@ -106,6 +106,12 @@ class AdminDepositWallet(Base):
     (network='eth'|'bsc'|'tron', asset='USDT') tuple and shows the user
     that address as the destination. Only one row per (network, asset)
     can be active at a time, enforced by a partial unique index.
+
+    The same row also holds the smart-contract integration placeholders
+    (contract_address, contract_event_abi, contract_owner_address) added
+    by migration 0040. These stay null until the client commits to a
+    contract spec; once set, the chain verifier branches to event-decoded
+    verification instead of plain transfer-input verification.
     """
     __tablename__ = "admin_deposit_wallets"
 
@@ -115,6 +121,12 @@ class AdminDepositWallet(Base):
     address = Column(String(64), nullable=False)
     min_confirmations = Column(Integer, nullable=False, default=12)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # Smart-contract integration (nullable until Phase 2 ships).
+    contract_address = Column(String(64), nullable=True)
+    contract_event_abi = Column(JSONB, nullable=True)
+    contract_owner_address = Column(String(64), nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

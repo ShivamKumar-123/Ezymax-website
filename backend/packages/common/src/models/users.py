@@ -16,6 +16,13 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
+    # OTP-verified email flag. Set TRUE when:
+    #   • Google sign-in (Google verifies upstream — backfilled by 0041)
+    #   • User completes /auth/email/verify-otp
+    # Stays FALSE for password-only signups (until OTP) and for wallet-first
+    # signups with the placeholder @wallet.fxartha.local email.
+    email_verified = Column(Boolean, nullable=False, default=False, server_default="false")
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
     phone = Column(String(20))
     password_hash = Column(String(255), nullable=True)  # nullable for OAuth-only users
     google_id = Column(String(64), nullable=True, index=True)  # Google `sub` claim if signed in via Google
@@ -86,6 +93,28 @@ class PasswordResetToken(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class EmailOtpCode(Base):
+    """One-time-passcode for email verification.
+
+    Issued by /auth/email/start-verification and consumed by
+    /auth/email/verify-otp. The OTP itself is hashed with SHA-256 +
+    a per-row salt so a DB read can't replay live codes. `target_email`
+    is the address being verified — for the change-email flow this
+    differs from users.email until the OTP succeeds, at which point
+    we promote target_email → users.email and flip email_verified=true.
+    """
+    __tablename__ = "email_otp_codes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    target_email = Column(String(255), nullable=False)
+    code_hash = Column(String(128), nullable=False)
+    attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", back_populates="password_reset_tokens")
 

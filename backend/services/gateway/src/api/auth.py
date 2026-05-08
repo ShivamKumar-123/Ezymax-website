@@ -22,7 +22,7 @@ from ..services.auth_service import (
     change_password as _change_password, get_me as _get_me, logout_user,
     client_ip_for_inet,
 )
-from ..services import wallet_auth_service
+from ..services import wallet_auth_service, email_otp_service
 
 logger = logging.getLogger("auth_api")
 
@@ -253,3 +253,48 @@ async def logout(
         return await logout_user(user_id=current_user["user_id"], request=request, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+# ─── Email OTP verification ───────────────────────────────────────────────
+# Powers the onboarding gate's email step (wallet-first signups + change-
+# email flow). The user is already authenticated when they hit these
+# routes — we're verifying that they actually own the address they typed.
+
+from pydantic import BaseModel  # noqa: E402  (kept inline to localize the dep)
+
+
+class _StartEmailVerificationRequest(BaseModel):
+    email: str
+
+
+class _VerifyEmailOtpRequest(BaseModel):
+    otp: str
+
+
+@router.post("/email/start-verification")
+async def start_email_verification(
+    body: _StartEmailVerificationRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a fresh 6-digit OTP and email it to body.email."""
+    return await email_otp_service.start_verification(
+        user_id=current_user["user_id"], target_email=body.email, db=db,
+    )
+
+
+@router.post("/email/verify-otp")
+async def verify_email_otp(
+    body: _VerifyEmailOtpRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Consume the latest OTP and promote target_email → users.email."""
+    return await email_otp_service.verify_otp(
+        user_id=current_user["user_id"],
+        otp=body.otp,
+        db=db,
+        request_ip=client_ip_for_inet(request),
+    )

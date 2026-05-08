@@ -113,6 +113,10 @@ interface ManualBankDetailsResponse {
 
 function WalletPageContent() {
   const isDemo = useAuthStore((s) => s.user?.is_demo);
+  // Linked wallet address (lowercase) from /auth/me. Withdrawals always go
+  // here — the input on the withdraw card is read-only. Server enforces the
+  // same rule even if the FE is bypassed.
+  const linkedWalletAddress = useAuthStore((s) => s.user?.wallet_address || '');
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountFromUrl = searchParams.get('account');
@@ -391,18 +395,24 @@ function WalletPageContent() {
       return;
     }
     if (withdrawChannel === 'crypto') {
-      const detail = withdrawOxapayDetails.trim();
-      if (!detail) {
-        toast.error('Enter your wallet address or payout details');
+      // Destination address is decided server-side from the user's
+      // linked wallet — we no longer let the user type it. The UI
+      // shows it read-only on the withdraw card. If they have no
+      // linked wallet at all the OnboardingGate would've stopped them
+      // before this point; defensive client check too.
+      if (!linkedWalletAddress) {
+        toast.error('Link a wallet from Profile → Security before requesting a withdrawal.');
         return;
       }
-      const payout = [`[${selectedCryptoWithdraw}]`, detail].join(' ').trim();
       setWithdrawSubmitting(true);
       try {
         await api.post('/wallet/withdraw', {
           amount: amt,
           method: CRYPTO_WITHDRAW_METHOD,
-          bank_details: { oxapay_payout: payout },
+          // Server ignores any address the FE sends and uses
+          // user.wallet_address, but we send the linked address anyway
+          // so audit logs make the intent explicit.
+          bank_details: { destination: linkedWalletAddress },
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
         void fetchData(true);
@@ -1077,20 +1087,32 @@ function WalletPageContent() {
                         </div>
                       </div>
 
+                      {/* Linked wallet — read-only. Withdrawals always go to
+                          this address (server enforces it; the UI just shows
+                          the user where their funds will land). The address
+                          comes from /auth/me so it's always in sync with the
+                          server's view of user.wallet_address. */}
                       <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Wallet address / payout details</label>
-                        <textarea
-                          value={withdrawOxapayDetails}
-                          onChange={(e) => setWithdrawOxapayDetails(e.target.value)}
-                          placeholder={
-                            withdrawUiSection === 'crypto'
-                              ? 'Your crypto wallet address (network must match the withdrawal asset)'
-                              : 'Bank account / UPI ID / payout instructions'
-                          }
-                          rows={3}
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm resize-none"
-                        />
+                        <label className="text-xs text-text-secondary flex items-center gap-1.5">
+                          Withdraw to your linked wallet
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400">
+                            VERIFIED
+                          </span>
+                        </label>
+                        <div className="px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary/40 text-sm font-mono text-text-primary break-all select-all">
+                          {linkedWalletAddress || (
+                            <span className="text-text-tertiary font-sans">
+                              No wallet linked — set one up in Profile → Security.
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-text-tertiary leading-relaxed">
+                          Withdrawals can only be sent to your linked wallet. To
+                          change the destination, disconnect the current wallet
+                          from Profile → Security and link a new one.
+                        </p>
                       </div>
+
                       <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
 
                       <button
@@ -1100,14 +1122,14 @@ function WalletPageContent() {
                           demoFundingBlocked ||
                           withdrawSubmitting ||
                           !withdrawAmount ||
-                          !withdrawOxapayDetails.trim()
+                          !linkedWalletAddress
                         }
                         className={clsx(
                           'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
                           demoFundingBlocked ||
                             withdrawSubmitting ||
                             !withdrawAmount ||
-                            !withdrawOxapayDetails.trim()
+                            !linkedWalletAddress
                             ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
                             : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
                         )}

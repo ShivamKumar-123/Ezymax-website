@@ -141,18 +141,9 @@ async def _get_live_account_ids(user_id, db: AsyncSession) -> list[UUID]:
     return [row[0] for row in result.all()]
 
 
-async def _get_bank_for_tier(amount: Decimal, db: AsyncSession) -> BankAccount | None:
-    result = await db.execute(
-        select(BankAccount).where(
-            BankAccount.is_active == True,
-            BankAccount.min_amount <= amount,
-            BankAccount.max_amount >= amount,
-        ).order_by(BankAccount.last_used_at.asc().nullsfirst(), BankAccount.rotation_order)
-    )
-    bank = result.scalars().first()
-    if bank:
-        bank.last_used_at = datetime.utcnow()
-    return bank
+# NOTE: _get_bank_for_tier was retired in migration 0040 along with the
+# manual bank/UPI deposit flow. The BankAccount model + table are kept for
+# historical lookups in the admin queue but no new rows reference them.
 
 
 # ─── Deposits ─────────────────────────────────────────────────────────────
@@ -869,13 +860,32 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
             ),
         )
 
+    # SECURITY — withdrawals always go to the user's linked wallet, never
+    # to whatever address the frontend sent. The trader UI shows the
+    # linked address read-only, but this server-side check is what
+    # actually enforces the rule. If the user has no wallet linked the
+    # onboarding gate should have stopped them long before this point;
+    # we raise a 400 anyway as a defensive check.
+    linked = (user_row.wallet_address or "").strip().lower()
+    if not linked:
+        raise HTTPException(
+            status_code=400,
+            detail="Link a wallet to your account before requesting a withdrawal.",
+        )
+    requested = (getattr(req, "crypto_address", None) or "").strip().lower()
+    if requested and requested != linked:
+        raise HTTPException(
+            status_code=400,
+            detail="Withdrawals can only be sent to your linked wallet.",
+        )
+
     withdrawal = Withdrawal(
         user_id=user_id,
         account_id=None,
         amount=req.amount,
         method=METHOD_MAP.get(req.method, "bank_transfer"),
         bank_details=getattr(req, "bank_details", None),
-        crypto_address=getattr(req, "crypto_address", None),
+        crypto_address=linked,  # always the linked wallet, ignore client input
         status="pending",
     )
     db.add(withdrawal)

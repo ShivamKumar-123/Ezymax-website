@@ -103,6 +103,71 @@ async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
+async def require_onboarded(
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """Server-side onboarding gate.
+
+    Blocks every trading / deposit / withdraw / wallet API for users
+    who haven't completed onboarding (profile + verified email + linked
+    wallet). The frontend OnboardingGate enforces this in the UI; this
+    dependency enforces it server-side so the rule cannot be bypassed
+    by hitting the API directly.
+
+    Demo accounts and staff (admin / super_admin / employee roles) are
+    exempt — same exemption already applied in get_me.
+
+    Reads users.email_verified + users.wallet_address + users.is_demo +
+    role + the same profile-field set used by get_me to keep the two
+    decisions in sync. Single SELECT — cheap to add to every protected
+    endpoint.
+    """
+    role = current_user.get("role")
+    if role in ("admin", "super_admin", "employee"):
+        return current_user
+
+    from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401  (annotation hint only)
+    from .database import AsyncSessionLocal
+    from .models import User
+
+    async with AsyncSessionLocal() as db:
+        user = (await db.execute(
+            select(User).where(User.id == current_user["user_id"])
+        )).scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Account not found.")
+    if bool(getattr(user, "is_demo", False)):
+        return current_user
+
+    is_placeholder = (user.email or "").lower().endswith("@wallet.fxartha.local")
+    profile_complete = bool(
+        (user.first_name or "").strip()
+        and (user.last_name or "").strip()
+        and (user.phone or "").strip()
+        and (user.country or "").strip()
+        and (user.address or "").strip()
+        and (user.city or "").strip()
+        and (user.state or "").strip()
+        and (user.postal_code or "").strip()
+        and user.date_of_birth is not None
+    )
+    wallet_linked = bool((user.wallet_address or "").strip())
+    email_verified = bool(getattr(user, "email_verified", False))
+
+    if profile_complete and wallet_linked and email_verified and not is_placeholder:
+        return current_user
+
+    # 428 Precondition Required is the closest standard status code for
+    # "you need to do something else first". The frontend already maps
+    # 401/403/428 to "show me the gate" — this lands cleanly.
+    raise HTTPException(
+        status_code=428,
+        detail="ONBOARDING_INCOMPLETE",
+    )
+
+
 async def require_super_admin(current_user: dict = Depends(get_current_user)) -> dict:
     if current_user["role"] != "super_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")

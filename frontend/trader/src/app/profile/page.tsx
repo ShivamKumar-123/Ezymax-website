@@ -8,6 +8,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
 import LinkedWalletCard from '@/components/profile/LinkedWalletCard';
+import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
 import api from '@/lib/api/client';
 
 interface Profile {
@@ -23,6 +24,10 @@ interface Profile {
   postal_code?: string | null;
   kyc_status: string;
   two_factor_enabled: boolean;
+  // Onboarding flags from /profile (mirror /auth/me) — drive the
+  // EmailVerificationCard's "verified" badge and the Change-Email button.
+  email_verified?: boolean;
+  is_wallet_placeholder?: boolean;
 }
 
 interface TradingAccount {
@@ -498,6 +503,13 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            <EmailVerificationCard
+              email={profile?.email || ''}
+              isVerified={Boolean(profile?.email_verified)}
+              isPlaceholder={Boolean(profile?.is_wallet_placeholder)}
+              onChanged={() => void fetchProfile()}
+            />
 
             <LinkedWalletCard />
           </div>

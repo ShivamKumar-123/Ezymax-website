@@ -23,6 +23,7 @@ from .staking import render_staking_digest
 from .verification import render_verification_reminder
 from .trade_placed import render_trade_placed
 from .monthly_statement import render_monthly_statement_available
+from .email_otp import render_email_otp
 
 __all__ = [
     "render_layout",
@@ -45,4 +46,5 @@ __all__ = [
     "render_verification_reminder",
     "render_trade_placed",
     "render_monthly_statement_available",
+    "render_email_otp",
 ]

@@ -119,6 +119,14 @@ class UserResponse(BaseModel):
     # Linked SIWE wallet address (lowercase). Null when the user hasn't
     # connected one. Drives the LinkedWalletCard UI.
     wallet_address: Optional[str] = None
+    # Onboarding-gate flags (computed in get_me). The OnboardingGate on
+    # the trader app reads these to decide whether to render the
+    # non-dismissible modal. All four together are required before
+    # dashboard access is unlocked for a non-demo/non-staff user.
+    wallet_linked: bool = False
+    email_verified: bool = False
+    is_wallet_placeholder: bool = False
+    onboarding_complete: bool = False
     # Whether the account has each non-wallet sign-in method available —
     # used by the FE to disable the "unlink wallet" button when wallet is
     # the user's only credential.

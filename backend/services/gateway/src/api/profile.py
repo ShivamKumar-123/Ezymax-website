@@ -5,15 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.auth import get_current_user
-from packages.common.src.models import User
+from packages.common.src.models import User, UserAuditLog
 from packages.common.src.schemas import (
     WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
 )
 from ..services import profile_service, auth_service, wallet_auth_service
+from ..services.auth_service import client_ip_for_inet
 
 router = APIRouter()
 
@@ -175,8 +177,21 @@ async def link_wallet(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a SIWE signature for the authenticated user and persist the
-    wallet address on their account row. Rejects 409 if the wallet is
-    already linked to a different user."""
+    wallet address on their account row.
+
+    Strict rules per the onboarding policy:
+      • Wallet address arrives from the SIWE message — never trusted from
+        an out-of-band field. verify_message returns the address recovered
+        from the signature, which is what we persist.
+      • Address normalised lowercase before storage.
+      • CASE 1: rejects 409 if the wallet is already linked to a different
+        account.
+      • CASE 2: rejects 400 if THIS account already has a different wallet
+        — one account = one wallet. Disconnecting first is the only path
+        to swap wallets.
+      • Writes a UserAuditLog row with action_type=WALLET_LINKED so support
+        can reconstruct any account history.
+    """
     try:
         addr_lower, _nonce_row = await wallet_auth_service.verify_message(
             req.message, req.signature, request, db,
@@ -185,12 +200,21 @@ async def link_wallet(
     except wallet_auth_service.AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
+    addr_lower = (addr_lower or "").strip().lower()
+
     user_q = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = user_q.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Conflict guard: another row already owns this address.
+    # CASE 2 — this account already has a different wallet.
+    if user.wallet_address and (user.wallet_address or "").lower() != addr_lower:
+        raise HTTPException(
+            status_code=400,
+            detail="Only one wallet can be linked per account.",
+        )
+
+    # CASE 1 — another row already owns this address.
     existing_q = await db.execute(
         select(User.id).where(
             func.lower(User.wallet_address) == addr_lower,
@@ -200,22 +224,41 @@ async def link_wallet(
     if existing_q.scalar_one_or_none():
         raise HTTPException(
             status_code=409,
-            detail="Wallet already linked to another account",
+            detail="This wallet is already linked to another account.",
         )
 
     user.wallet_address = addr_lower
-    await db.commit()
+    db.add(UserAuditLog(
+        user_id=user.id,
+        action_type="WALLET_LINKED",
+        ip_address=client_ip_for_inet(request),
+        device_info=f"address={addr_lower}",
+    ))
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        # The partial UNIQUE index on LOWER(wallet_address) caught a race.
+        # Translate to the same 409 the application-level guard uses.
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="This wallet is already linked to another account.",
+        ) from e
     return await auth_service.get_me(user.id, db)
 
 
 @router.delete("/wallet/link")
 async def unlink_wallet(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Remove the linked wallet from the authenticated user's account.
+
     Refused when the wallet is the user's only sign-in method — they'd
-    lock themselves out."""
+    lock themselves out. After disconnect the onboarding gate kicks in
+    again and blocks the dashboard until a new wallet is linked. Writes
+    a UserAuditLog WALLET_DISCONNECTED entry."""
     user_q = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = user_q.scalar_one_or_none()
     if not user:
@@ -226,9 +269,17 @@ async def unlink_wallet(
     if not (has_password or has_google):
         raise HTTPException(
             status_code=400,
-            detail="Cannot unlink your only sign-in method. Set a password first.",
+            detail="Cannot disconnect your only sign-in method. Set a password or link Google first.",
         )
 
+    prior_address = user.wallet_address
     user.wallet_address = None
+    if prior_address:
+        db.add(UserAuditLog(
+            user_id=user.id,
+            action_type="WALLET_DISCONNECTED",
+            ip_address=client_ip_for_inet(request),
+            device_info=f"prior_address={prior_address}",
+        ))
     await db.commit()
     return await auth_service.get_me(user.id, db)

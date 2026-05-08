@@ -16,7 +16,7 @@ from packages.common.src.schemas import (
     WithdrawalRequest,
 )
 from packages.common.src.auth import get_current_user
-from ..services import wallet_service, onchain_deposit_service
+from ..services import wallet_service, onchain_deposit_service, onchain_withdraw_service
 
 router = APIRouter()
 
@@ -32,21 +32,10 @@ async def create_deposit(
     )
 
 
-@router.post("/deposit/manual", status_code=201)
-async def create_manual_deposit(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    account_id: Optional[UUID] = Form(default=None),
-    amount: Decimal = Form(...),
-    transaction_id: str = Form(...),
-    file: UploadFile = File(...),
-):
-    """Bank / UPI manual deposit: user pays admin bank (see bank-details), uploads proof + reference."""
-    return await wallet_service.create_manual_deposit(
-        user_id=current_user["user_id"],
-        account_id=account_id, amount=amount,
-        transaction_id=transaction_id, file=file, db=db,
-    )
+# NOTE: POST /deposit/manual was retired in migration 0040. Bank/UPI/QR
+# deposits are no longer accepted from users — the platform is fully on-
+# chain. Existing pending rows still finish processing through the admin
+# queue; no replacement endpoint.
 
 
 # ─── On-site wallet-connect deposits (NOWPayments /v1/payment) ────────────
@@ -200,20 +189,50 @@ async def create_withdrawal(
     )
 
 
-@router.post("/withdraw/manual", status_code=201)
-async def create_manual_withdrawal(
+# NOTE: POST /withdraw/manual was retired in migration 0040. UPI / bank
+# payouts are no longer accepted — withdrawals are now wallet-connect only.
+# See /withdraw/onchain below.
+
+
+# ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────
+
+
+class OnchainWithdrawRequest(BaseModel):
+    network: str            # eth | bsc | tron
+    amount: Decimal
+    destination_address: str  # user's own wallet on the picked chain
+
+
+@router.post("/withdraw/onchain", status_code=201)
+async def create_onchain_withdrawal(
+    req: OnchainWithdrawRequest,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    amount: Decimal = Form(...),
-    upi_id: str = Form(default=""),
-    payout_notes: str = Form(default=""),
-    file: UploadFile | None = File(default=None),
 ):
-    """Manual payout: user provides UPI ID and/or a QR image for finance to pay out (main wallet)."""
-    return await wallet_service.create_manual_withdrawal(
+    """User initiates a wallet-connect withdrawal: pick chain + paste their
+    own destination address. We freeze the user's main wallet balance,
+    queue the row for admin review. Admin signs the on-chain payout and
+    pastes the tx hash; the chain_verifier_engine confirms and flips the
+    row to 'paid'."""
+    return await onchain_withdraw_service.create_onchain_withdrawal(
         user_id=current_user["user_id"],
-        amount=amount, upi_id=upi_id, payout_notes=payout_notes,
-        file=file, db=db,
+        network=req.network,
+        amount=req.amount,
+        destination_address=req.destination_address,
+        db=db,
+    )
+
+
+@router.get("/withdraw/{withdrawal_id}/onchain-status")
+async def get_onchain_withdrawal_status(
+    withdrawal_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Polling endpoint for the trader UI: pending → approved → sent → paid
+    (or rejected with reason)."""
+    return await onchain_withdraw_service.get_status(
+        withdrawal_id=withdrawal_id, user_id=current_user["user_id"], db=db,
     )
 
 

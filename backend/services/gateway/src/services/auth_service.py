@@ -1039,6 +1039,23 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
             and user.date_of_birth is not None
         )
 
+    # Onboarding gate inputs. The trader app's OnboardingGate reads these
+    # to decide which steps to render (profile / connect wallet / verify
+    # email). Demo and staff accounts skip the gate entirely — their
+    # onboarding_complete is always True. For everyone else, ALL THREE of
+    # profile_complete, wallet_linked, and email_verified must be true.
+    is_wallet_placeholder = bool(
+        (user.email or "").lower().endswith("@wallet.fxartha.local")
+    )
+    wallet_linked = bool((user.wallet_address or "").strip())
+    email_verified = bool(getattr(user, "email_verified", False))
+    if user.role in ("admin", "super_admin", "employee") or bool(user.is_demo):
+        onboarding_complete = True
+    else:
+        onboarding_complete = bool(
+            complete and wallet_linked and email_verified and not is_wallet_placeholder
+        )
+
     return {
         "id": user.id,
         "email": user.email,
@@ -1061,6 +1078,10 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
         "theme": user.theme or "dark",
         "profile_complete": complete,
         "wallet_address": user.wallet_address,
+        "wallet_linked": wallet_linked,
+        "email_verified": email_verified,
+        "is_wallet_placeholder": is_wallet_placeholder,
+        "onboarding_complete": onboarding_complete,
         "has_password": bool(user.password_hash),
         "has_google": bool(user.google_id),
         "created_at": user.created_at,
