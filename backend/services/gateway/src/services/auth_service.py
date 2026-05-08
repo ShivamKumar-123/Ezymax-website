@@ -1044,12 +1044,28 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
     # email). Demo and staff accounts skip the gate entirely — their
     # onboarding_complete is always True. For everyone else, ALL THREE of
     # profile_complete, wallet_linked, and email_verified must be true.
+    #
+    # Grandfather rule: users created before the email + wallet
+    # mandate landed (commit d862363, 2026-05-08) were trading on the
+    # platform under the old rules. Retroactively forcing them into
+    # OTP + wallet linking traps them in a non-dismissible modal on
+    # next login. They're treated as onboarded; per-action checks
+    # (e.g. wallet required for withdrawal) still apply when they
+    # actually try to move money.
+    ONBOARDING_RULE_CUTOFF = datetime(2026, 5, 8, tzinfo=timezone.utc)
     is_wallet_placeholder = bool(
         (user.email or "").lower().endswith("@wallet.fxartha.local")
     )
     wallet_linked = bool((user.wallet_address or "").strip())
     email_verified = bool(getattr(user, "email_verified", False))
-    if user.role in ("admin", "super_admin", "employee") or bool(user.is_demo):
+    is_pre_policy = (
+        user.created_at is not None and user.created_at < ONBOARDING_RULE_CUTOFF
+    )
+    if (
+        user.role in ("admin", "super_admin", "employee")
+        or bool(user.is_demo)
+        or is_pre_policy
+    ):
         onboarding_complete = True
     else:
         onboarding_complete = bool(
