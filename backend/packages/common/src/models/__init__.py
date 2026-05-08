@@ -31,7 +31,7 @@ from .users import (
     User, UserSession, PasswordResetToken, UserRefreshToken, KYCDocument,
     IPLog, AuditLog, UserAuditLog, Employee, WalletAuthNonce,
     FundMoveApproval, TwoFactorBackupCode, IdempotencyKey,
-    EmailOtpCode,
+    EmailOtpCode, SensitiveActionChallenge,
 )
 from .instruments import (
     InstrumentSegment, Instrument, InstrumentConfig, InstrumentConfigAudit,
@@ -42,7 +42,7 @@ from .trading import (
 from .wallet import (
     BankAccount, Deposit, Withdrawal, Transaction,
     ChargeConfig, SpreadConfig, SwapConfig, WebhookEvent,
-    AdminDepositWallet,
+    AdminDepositWallet, WalletCooldown,
 )
 from .business import (
     IBProfile, IBApplication, IBCommissionPlan, IBCommission, Referral,
@@ -82,7 +82,7 @@ __all__ = [
     "User", "UserSession", "PasswordResetToken", "UserRefreshToken", "KYCDocument",
     "IPLog", "AuditLog", "UserAuditLog", "Employee", "WalletAuthNonce",
     "FundMoveApproval", "TwoFactorBackupCode", "IdempotencyKey",
-    "EmailOtpCode",
+    "EmailOtpCode", "SensitiveActionChallenge",
     # instruments
     "InstrumentSegment", "Instrument", "InstrumentConfig", "InstrumentConfigAudit",
     # trading
@@ -90,7 +90,7 @@ __all__ = [
     # wallet
     "BankAccount", "Deposit", "Withdrawal", "Transaction",
     "ChargeConfig", "SpreadConfig", "SwapConfig", "WebhookEvent",
-    "AdminDepositWallet",
+    "AdminDepositWallet", "WalletCooldown",
     # business
     "IBProfile", "IBApplication", "IBCommissionPlan", "IBCommission", "Referral",
     "MasterAccount", "InvestorAllocation", "CopyTrade",

@@ -72,8 +72,18 @@ class Withdrawal(Base):
     method = Column(String(30))
     status = Column(String(20), default="pending")
     bank_details = Column(JSONB)
+    # crypto_address IS the linked-wallet snapshot at submit time. Even
+    # if the user later disconnects + relinks a different wallet, the
+    # historical row keeps the address we paid (or will pay) to.
     crypto_address = Column(String(200))
     crypto_tx_hash = Column(String(200))
+    # Forensic snapshot fields added by 0042. wallet_chain_snapshot is
+    # the chain id slug at submit time. verification_method records
+    # how the user proved the action (siwe / password / totp future).
+    # These two together let support reconstruct exactly how a payout
+    # was authorised even years after the fact.
+    wallet_chain_snapshot = Column(String(20), nullable=True)
+    verification_method = Column(String(40), nullable=True)
     rejection_reason = Column(Text)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     approved_at = Column(DateTime(timezone=True))
@@ -81,6 +91,36 @@ class Withdrawal(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[user_id], lazy="selectin")
+
+
+class WalletCooldown(Base):
+    """Cooldown lock on a recently-disconnected wallet.
+
+    When a user clicks "Disconnect" on Profile → Security, we insert a
+    row here capturing (wallet_address, prior_user_id, disconnected_at,
+    reusable_after = NOW() + 24h). The wallet-link flow LEFT JOINs
+    against this table on lowercase address with `reusable_after >
+    NOW()` and refuses to link a wallet that's still in cooldown.
+
+    Why a separate table instead of fields on `users`:
+      • A disconnected wallet doesn't belong to any active account, so
+        putting cooldown state on `users` is a category error.
+      • A wallet can be linked → disconnected → re-linked →
+        disconnected again — multiple cooldown periods in its history.
+      • Historical rows are useful for fraud investigation.
+    """
+    __tablename__ = "wallet_cooldowns"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    wallet_address = Column(String(64), nullable=False)
+    wallet_chain = Column(String(20), nullable=True)
+    prior_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    disconnected_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    reusable_after = Column(DateTime(timezone=True), nullable=False)
+    # Free-text categorisation: 'user_disconnected' | 'admin_force' |
+    # 'security_flag'. Non-binding — for analytics only.
+    reason = Column(String(40), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 
 class Transaction(Base):

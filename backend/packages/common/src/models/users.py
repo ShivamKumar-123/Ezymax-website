@@ -59,6 +59,15 @@ class User(Base):
     # ix_users_wallet_address_lower (migration 0034). Set on first SIWE
     # sign-in or after a manual link from /profile/wallet/link.
     wallet_address = Column(String(42), nullable=True)
+    # Wallet metadata added by 0042. wallet_chain is the chain id slug we
+    # use throughout (eth | bsc | polygon | arbitrum | tron). The two
+    # timestamps capture the most recent link/disconnect actions on this
+    # account; on a fresh re-link, wallet_connected_at is set and
+    # wallet_disconnected_at is cleared. The forensic trail of every prior
+    # disconnect lives in the wallet_cooldowns table, not here.
+    wallet_chain = Column(String(20), nullable=True)
+    wallet_connected_at = Column(DateTime(timezone=True), nullable=True)
+    wallet_disconnected_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -95,6 +104,49 @@ class PasswordResetToken(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     user = relationship("User", back_populates="password_reset_tokens")
+
+
+class SensitiveActionChallenge(Base):
+    """Polymorphic step-up auth challenge.
+
+    Powers the async multi-roundtrip flows where the user must prove
+    something out-of-band before a high-risk action proceeds:
+      • email_change   — OTP to OLD email or fresh SIWE signature
+      • wallet_link    — (future) extra verification beyond SIWE
+      • wallet_disconnect — (future) async if password verification
+                            isn't available inline
+      • withdrawal     — (future) async if needed for thresholds
+      • password_reset — existing flow uses its own table; new flows can
+                          adopt this for parity
+
+    Inline step-up (password / fresh SIWE signature in the same request
+    body) does NOT use this table — those are stateless and verified on
+    the spot.
+
+    `challenge_data` is JSONB holding the per-method state:
+      • method='otp_old_email' → {"code_hash": "<sha256>", "target": "old@…"}
+      • method='siwe'          → {"nonce": "<hex>", "address": "<0x…>"}
+      • method='totp'          → {"window": 1}  (future)
+      • method='passkey'       → {"challenge": "<b64>"}  (future)
+
+    `metadata` is JSONB holding the action-specific context the action
+    handler will read after `verified_at` is set:
+      • action='email_change' → {"target_email": "new@example.com"}
+      • action='withdrawal'   → {"amount": "50.00", "currency": "USD"}
+    """
+    __tablename__ = "sensitive_action_challenges"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action = Column(String(40), nullable=False)
+    method = Column(String(40), nullable=False)
+    challenge_data = Column(JSONB, nullable=True)
+    challenge_metadata = Column("metadata", JSONB, nullable=True)
+    attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class EmailOtpCode(Base):

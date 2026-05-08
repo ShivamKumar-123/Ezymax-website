@@ -22,7 +22,7 @@ from ..services.auth_service import (
     change_password as _change_password, get_me as _get_me, logout_user,
     client_ip_for_inet,
 )
-from ..services import wallet_auth_service, email_otp_service
+from ..services import wallet_auth_service, email_otp_service, sensitive_action_service
 
 logger = logging.getLogger("auth_api")
 
@@ -298,3 +298,75 @@ async def verify_email_otp(
         db=db,
         request_ip=client_ip_for_inet(request),
     )
+
+
+# ─── Step-up authentication (async multi-roundtrip flows) ─────────────────
+# Used by email-change today and TOTP / passkey / hardware-wallet in the
+# future. Inline step-up (password / fresh SIWE in the same request body)
+# does NOT come through these routes — it's verified directly by the
+# action handler. See services/sensitive_action_service.py.
+
+
+class _StepUpStartRequest(BaseModel):
+    action: str          # email_change | wallet_disconnect | withdrawal | …
+    method: str          # otp_old_email | siwe | totp | passkey
+    metadata: dict | None = None
+
+
+class _StepUpVerifyRequest(BaseModel):
+    challenge_id: str
+    proof: dict          # method-specific payload (otp / message+signature / …)
+
+
+@router.post("/step-up/start")
+async def step_up_start(
+    body: _StepUpStartRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a step-up challenge. Returns a challenge_id the client uses
+    on /step-up/verify. For 'otp_old_email' the OTP is sent
+    immediately; for 'siwe' the response includes the wallet address
+    the client should sign with."""
+    return await sensitive_action_service.start_challenge(
+        user_id=current_user["user_id"],
+        action=body.action,
+        method=body.method,
+        metadata=body.metadata or {},
+        db=db,
+    )
+
+
+@router.post("/step-up/verify")
+async def step_up_verify(
+    body: _StepUpVerifyRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify the proof for a previously-started challenge. On success
+    sets verified_at — the row is now redeemable for one matching
+    action call within 5 minutes. The action handler then uses
+    consume_verified_challenge() to atomically redeem it."""
+    from uuid import UUID as _UUID
+    try:
+        challenge_uuid = _UUID(body.challenge_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid challenge id")
+    challenge = await sensitive_action_service.verify_challenge(
+        user_id=current_user["user_id"],
+        challenge_id=challenge_uuid,
+        proof=body.proof,
+        request=request,
+        db=db,
+    )
+    return {
+        "verified": True,
+        "challenge_id": str(challenge.id),
+        "action": challenge.action,
+        "method": challenge.method,
+        "verified_at": challenge.verified_at.isoformat() if challenge.verified_at else None,
+        # Frontend uses this as a deadline for redeeming the action.
+        "ttl_seconds": sensitive_action_service.STEP_UP_TOKEN_TTL_MINUTES * 60,
+    }
