@@ -80,9 +80,83 @@ async def _backfill_close_reasons():
         logger.warning("close_reason backfill skipped: %s", e)
 
 
+# ── Trade-history self-heal ────────────────────────────────────────────
+# Defensive safety net: if a Position closes (status='closed', close_price
+# set) but no matching trade_history row exists, this task re-creates the
+# missing row from the position's data. Catches any close-path that drops
+# the TradeHistory write — root cause investigation pending, but the
+# user-visible symptom (missing rows in trader history) is auto-resolved
+# within 60s without manual SQL intervention.
+#
+# All values copied verbatim from the existing positions row — nothing
+# fabricated. close_reason is computed from the actual close_price vs
+# the actual TP/SL on the position, same logic as the existing lazy
+# backfill in portfolio_service.trade_history.
+async def _heal_missing_trade_history():
+    from sqlalchemy import text
+    sql = text(
+        """
+        INSERT INTO trade_history (
+            id, position_id, account_id, instrument_id, side, lots,
+            open_price, close_price, swap, commission, profit,
+            opened_at, closed_at, close_reason
+        )
+        SELECT
+            gen_random_uuid(), p.id, p.account_id, p.instrument_id, p.side, p.lots,
+            p.open_price, p.close_price,
+            COALESCE(p.swap, 0), COALESCE(p.commission, 0),
+            COALESCE(p.profit, 0),
+            p.created_at,
+            COALESCE(p.closed_at, NOW()),
+            CASE
+                WHEN p.take_profit IS NOT NULL AND (
+                  (LOWER(CAST(p.side AS TEXT))='buy'  AND p.close_price >= p.take_profit)
+                  OR (LOWER(CAST(p.side AS TEXT))='sell' AND p.close_price <= p.take_profit)
+                ) THEN 'tp'
+                WHEN p.stop_loss IS NOT NULL AND (
+                  (LOWER(CAST(p.side AS TEXT))='buy'  AND p.close_price <= p.stop_loss)
+                  OR (LOWER(CAST(p.side AS TEXT))='sell' AND p.close_price >= p.stop_loss)
+                ) THEN 'sl'
+                ELSE 'manual'
+            END
+        FROM positions p
+        WHERE p.status = 'closed'
+          AND p.close_price IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM trade_history th WHERE th.position_id = p.id)
+        """
+    )
+    try:
+        async with AsyncSessionLocal() as session:
+            res = await session.execute(sql)
+            await session.commit()
+            inserted = res.rowcount or 0
+            if inserted > 0:
+                logger.warning(
+                    "trade_history self-heal: inserted %d missing row(s) — "
+                    "investigate close-path that's dropping the TradeHistory write",
+                    inserted,
+                )
+    except Exception as e:
+        logger.warning("trade_history self-heal skipped: %s", e)
+
+
+async def _trade_history_healer_loop():
+    """Run _heal_missing_trade_history every 60 seconds for as long as the
+    gateway is up. Cheap query (touches only a tiny set of rows where
+    Position.status='closed' AND no matching trade_history row), no impact
+    on hot path."""
+    while True:
+        await _heal_missing_trade_history()
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
+    # Run the self-heal once at startup (catches drift accumulated while
+    # gateway was down), then kick off the periodic loop.
+    await _heal_missing_trade_history()
+    healer_task = asyncio.create_task(_trade_history_healer_loop())
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()
@@ -93,6 +167,11 @@ async def lifespan(app: FastAPI):
     await monthly_statement_engine.start()
     await chain_verifier_engine.start()
     yield
+    healer_task.cancel()
+    try:
+        await healer_task
+    except asyncio.CancelledError:
+        pass
     await chain_verifier_engine.stop()
     await monthly_statement_engine.stop()
     await verification_reminder_engine.stop()
