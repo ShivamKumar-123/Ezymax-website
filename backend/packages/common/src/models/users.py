@@ -94,6 +94,8 @@ class PasswordResetToken(Base):
     used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
+    user = relationship("User", back_populates="password_reset_tokens")
+
 
 class EmailOtpCode(Base):
     """One-time-passcode for email verification.
@@ -115,8 +117,6 @@ class EmailOtpCode(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     consumed_at = Column(DateTime(timezone=True), nullable=True)
-
-    user = relationship("User", back_populates="password_reset_tokens")
 
 
 class UserRefreshToken(Base):
