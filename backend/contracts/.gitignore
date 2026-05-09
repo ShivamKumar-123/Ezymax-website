@@ -1,0 +1,18 @@
+# Foundry build artefacts
+out/
+cache/
+broadcast/
+
+# Foundry-installed dependencies
+lib/
+
+# Local environment — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.vscode/
+.idea/

@@ -38,9 +38,17 @@ const OnchainConnectAndSend = dynamic(() => import('./OnchainConnectAndSend'), {
 
 // ── Chains ────────────────────────────────────────────────────────────
 
-type Network = 'eth' | 'bsc' | 'tron';
+type Network = 'eth' | 'bsc' | 'tron' | 'bsc-testnet';
 
-const CHAIN_OPTIONS: Array<{
+// Feature flag: when set, the BSC-testnet vault chain card is rendered
+// alongside the three production networks. Default off so production
+// users see the existing three chains only. Set
+// NEXT_PUBLIC_VAULT_TESTNET_ENABLED=true at trader-frontend BUILD time
+// (Next.js inlines NEXT_PUBLIC_* at build, not runtime).
+const VAULT_TESTNET_ENABLED =
+  process.env.NEXT_PUBLIC_VAULT_TESTNET_ENABLED === 'true';
+
+const CHAIN_OPTIONS_BASE: Array<{
   id: Network;
   label: string;
   short: string;
@@ -73,6 +81,24 @@ const CHAIN_OPTIONS: Array<{
     isEvm: true,
   },
 ];
+
+// Testnet card appended only when the build-time feature flag is on.
+// Once the FXArthaVaultV1 contract is deployed on BSC mainnet and the
+// audit signs off, this card swaps for the mainnet vault chain (or the
+// production BSC card above is repointed at the vault contract).
+const VAULT_TESTNET_OPTION = {
+  id: 'bsc-testnet' as Network,
+  label: 'USDT · BSC Testnet (Vault)',
+  short: 'BSC Testnet',
+  description:
+    'FXArthaVaultV1 on BSC testnet (chain 97). Test funds only — get tBNB from the faucet.',
+  feeHint: 'tBNB gas, ~30s',
+  isEvm: true,
+};
+
+const CHAIN_OPTIONS = VAULT_TESTNET_ENABLED
+  ? [...CHAIN_OPTIONS_BASE, VAULT_TESTNET_OPTION]
+  : CHAIN_OPTIONS_BASE;
 
 // ── API types ─────────────────────────────────────────────────────────
 

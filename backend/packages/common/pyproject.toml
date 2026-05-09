@@ -24,6 +24,12 @@ dependencies = [
     "prometheus-client>=0.20.0",
     "aiosmtplib>=3.0.0",
     "slowapi>=0.1.9",
+    # eth-utils provides keccak256 (Ethereum-flavoured, NOT NIST SHA-3)
+    # used by chain_clients/bscscan.py to compute event topic hashes
+    # for the FXArthaVaultV1 event-decoded verification path. Tiny pure-
+    # Python lib (~1MB), well-maintained, transitive dep of most Ethereum
+    # tooling.
+    "eth-utils>=4.0.0",
 ]
 
 [project.optional-dependencies]

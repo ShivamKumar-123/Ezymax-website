@@ -41,6 +41,7 @@ from packages.common.src.chain_clients import (
     USDT_CONTRACTS, USDT_DECIMALS,
     verify_eth_usdt_transfer,
     verify_bsc_usdt_transfer,
+    verify_bsc_vault_deposit,
     verify_tron_usdt_transfer,
 )
 
@@ -138,16 +139,25 @@ async def _verify_one(deposit_id) -> None:
             )
             return
 
-        decimals = USDT_DECIMALS[net]
+        decimals = USDT_DECIMALS.get(net, 6)
         expected_value = int(Decimal(deposit.amount) * (Decimal(10) ** decimals))
 
-        result = await verifier(
-            deposit.crypto_tx_hash,
-            wallet.address,
-            expected_value,
-            int(wallet.min_confirmations),
-            contract_address=USDT_CONTRACTS[net],
-        )
+        # Vault path: when admin_deposit_wallet.contract_address is set,
+        # the deposit was made via vault.deposit() — verify the on-chain
+        # Deposit event instead of decoding a plain USDT.transfer call.
+        # Spec: docs/vault-phase1-spec.md §5.2.
+        if (wallet.contract_address or "").strip():
+            result = await _verify_via_vault_event(
+                deposit, wallet, expected_value, decimals,
+            )
+        else:
+            result = await verifier(
+                deposit.crypto_tx_hash,
+                wallet.address,
+                expected_value,
+                int(wallet.min_confirmations),
+                contract_address=USDT_CONTRACTS.get(net, ""),
+            )
 
         logger.info(
             "verifying deposit=%s network=%s tx=%s result=%s confs=%s reason=%s",
@@ -187,6 +197,58 @@ async def _verify_one(deposit_id) -> None:
                 )
         except Exception:
             pass
+
+
+async def _verify_via_vault_event(
+    deposit: Deposit,
+    wallet: AdminDepositWallet,
+    expected_value: int,
+    decimals: int,
+) -> dict:
+    """Vault-path verification: check the tx_hash carries a Deposit event
+    emitted by `wallet.contract_address` for this user's wallet address
+    in the expected amount. Currently supports BSC (mainnet + testnet);
+    other EVM chains can be added by mirroring this function with their
+    respective explorer client.
+
+    Returns the same dict shape as `verify_*_usdt_transfer` so the
+    surrounding engine logic (commit / reject / retry) is unchanged.
+    """
+    net = (deposit.network or "").lower()
+
+    # Vault path requires the depositor's wallet address — pulled from
+    # the user row. The Deposit event's `user` field is the on-chain
+    # msg.sender, which is the wallet that signed the deposit() call.
+    async with AsyncSessionLocal() as db2:
+        u = (await db2.execute(
+            select(User).where(User.id == deposit.user_id)
+        )).scalar_one_or_none()
+    if not u or not u.wallet_address:
+        return {
+            "ok": False, "confirmations": 0,
+            "reason": "user_wallet_not_linked", "final_failure": True,
+        }
+    expected_user = (u.wallet_address or "").lower()
+
+    if net in ("bsc", "bsc-testnet"):
+        return await verify_bsc_vault_deposit(
+            deposit.crypto_tx_hash,
+            wallet.contract_address,
+            expected_user,
+            expected_value,
+            int(wallet.min_confirmations),
+            is_testnet=(net == "bsc-testnet"),
+        )
+
+    logger.warning(
+        "vault-event verification not implemented for network=%s deposit=%s",
+        net, deposit.id,
+    )
+    return {
+        "ok": False, "confirmations": 0,
+        "reason": f"vault_path_not_implemented:{net}",
+        "final_failure": False,
+    }
 
 
 async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
