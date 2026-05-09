@@ -135,7 +135,7 @@ function WalletPageContent() {
   const fundPanelRef = useRef<HTMLDivElement>(null);
 
   const [fundMainTab, setFundMainTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [depositUiSection, setDepositUiSection] = useState<'usdt' | 'crypto'>('usdt');
+  const [depositUiSection, setDepositUiSection] = useState<'usdt' | 'crypto' | 'manual'>('usdt');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
   const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
@@ -293,9 +293,10 @@ function WalletPageContent() {
   const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
-    // Both 'usdt' (decentralized wallet-connect) and 'crypto' (NowPayments)
-    // are crypto channels.
-    setDepositChannel('crypto');
+    // 'usdt' (decentralized wallet-connect) and 'crypto' (NowPayments)
+    // are crypto channels; 'manual' is the bank/UPI flow restored per
+    // client request.
+    setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
   }, [depositUiSection]);
 
   useEffect(() => {
@@ -349,10 +350,12 @@ function WalletPageContent() {
     scrollToFundPanel();
   };
 
-  // Manual bank-details preload removed — the Manual (Bank/UPI) tab is no
-  // longer surfaced to traders. The loadManualBankDetails callback is kept
-  // because it's still referenced by the manual-deposit form body that
-  // hasn't been pruned yet (dead code path under depositUiSection === 'manual').
+  // Auto-preload bank details when the user lands on the Manual tab so
+  // the destination bank/UPI is visible immediately (no extra click).
+  useEffect(() => {
+    if (fundMainTab !== 'deposit' || depositUiSection !== 'manual') return;
+    void loadManualBankDetails();
+  }, [fundMainTab, depositUiSection, loadManualBankDetails]);
 
   /** Open withdraw modal from main wallet (?action=withdraw); external payouts use main balance only. */
   useEffect(() => {
@@ -903,12 +906,14 @@ function WalletPageContent() {
 
                   {/* Deposit Method Tabs */}
                   <div className="flex gap-2 border-b border-border-glass overflow-x-auto">
-                    {(['usdt', 'crypto'] as const).map((method) => {
+                    {(['usdt', 'crypto', 'manual'] as const).map((method) => {
                       const active = depositUiSection === method;
                       const label =
                         method === 'usdt'
                           ? 'USDT (Wallet Connect)'
-                          : 'Crypto (NowPayments)';
+                          : method === 'crypto'
+                          ? 'Crypto (NowPayments)'
+                          : 'Manual (Bank/UPI)';
                       return (
                         <button
                           key={method}
@@ -934,7 +939,7 @@ function WalletPageContent() {
                         void fetchData(true);
                       }}
                     />
-                  ) : (
+                  ) : depositUiSection === 'crypto' ? (
                     <>
                       {/* Crypto deposit via NOWPayments wallet-connect modal */}
                       <div className="space-y-1">
@@ -971,6 +976,151 @@ function WalletPageContent() {
                         )}
                       >
                         {depositSubmitting ? 'Processing…' : 'Pay with Crypto'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Manual deposit — amount + bank details + proof */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-secondary">Amount (USD)</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            onBlur={() => void loadManualBankDetails()}
+                            placeholder="0.00"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-3 py-3 sm:px-4 space-y-2 min-w-0">
+                        <p className="text-xs font-bold text-text-primary">Pay to this account (from admin)</p>
+                        {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.account_number) ? (
+                          <div className="text-[11px] sm:text-xs text-text-secondary font-mono min-w-0 space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                              {manualBankInfo.bank_name ? (
+                                <p className="break-words">
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Bank</span>
+                                  <br />
+                                  {manualBankInfo.bank_name}
+                                </p>
+                              ) : null}
+                              {manualBankInfo.account_holder ? (
+                                <p className="break-words">
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Holder</span>
+                                  <br />
+                                  {manualBankInfo.account_holder}
+                                </p>
+                              ) : null}
+                              {manualBankInfo.account_number ? (
+                                <p className="break-all">
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">A/C</span>
+                                  <br />
+                                  {manualBankInfo.account_number}
+                                </p>
+                              ) : null}
+                              {manualBankInfo.ifsc_code ? (
+                                <p className="break-all">
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">IFSC</span>
+                                  <br />
+                                  {manualBankInfo.ifsc_code}
+                                </p>
+                              ) : null}
+                              {manualBankInfo.upi_id ? (
+                                <p className="break-all sm:col-span-2">
+                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">UPI</span>
+                                  <br />
+                                  {manualBankInfo.upi_id}
+                                </p>
+                              ) : null}
+                            </div>
+                            {manualBankInfo.qr_code_url ? (
+                              <div className="pt-1 flex justify-center">
+                                <img
+                                  src={manualBankInfo.qr_code_url}
+                                  alt="Payment QR"
+                                  className="w-full max-w-[220px] max-h-48 object-contain rounded-lg border border-border-primary bg-bg-base"
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-amber-500/90">
+                            No bank details configured yet. Enter amount and refresh, or contact support.
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => void loadManualBankDetails()}
+                          className="text-[10px] font-semibold text-[#d6a93d] hover:underline"
+                        >
+                          Refresh bank details
+                        </button>
+                      </div>
+                      <div className="space-y-1 min-w-0">
+                        <label className="text-xs text-text-secondary">
+                          Transaction / reference ID <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={depositTxId}
+                          onChange={(e) => setDepositTxId(e.target.value)}
+                          placeholder="UTR or reference from your bank/UPI app"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1 min-w-0">
+                        <label className="text-xs text-text-secondary">
+                          Payment screenshot <span className="text-red-400">*</span>
+                        </label>
+                        <label
+                          className={clsx(
+                            'flex flex-col items-center justify-center w-full min-w-0 py-5 sm:py-6 px-2 rounded-xl border-2 border-dashed cursor-pointer transition-all',
+                            depositProofFile
+                              ? 'border-accent/40 bg-accent/5'
+                              : 'border-border-primary hover:border-accent/30',
+                          )}
+                        >
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.pdf,.webp"
+                            className="hidden"
+                            onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
+                          />
+                          {depositProofFile ? (
+                            <span className="text-sm font-medium text-[#d6a93d] px-2 text-center">{depositProofFile.name}</span>
+                          ) : (
+                            <span className="text-xs text-[#666]">JPG, PNG, PDF, WEBP — max 10 MB</span>
+                          )}
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void submitDeposit()}
+                        disabled={
+                          demoFundingBlocked ||
+                          depositSubmitting ||
+                          !depositAmount ||
+                          !depositTxId.trim() ||
+                          !depositProofFile
+                        }
+                        className={clsx(
+                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
+                          demoFundingBlocked ||
+                            depositSubmitting ||
+                            !depositAmount ||
+                            !depositTxId.trim() ||
+                            !depositProofFile
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                        )}
+                      >
+                        {depositSubmitting ? 'Submitting…' : `Deposit${depositAmount ? ` — $${parseFloat(depositAmount || '0').toLocaleString()}` : ''}`}
                       </button>
                     </>
                   )}

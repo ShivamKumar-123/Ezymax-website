@@ -141,9 +141,22 @@ async def _get_live_account_ids(user_id, db: AsyncSession) -> list[UUID]:
     return [row[0] for row in result.all()]
 
 
-# NOTE: _get_bank_for_tier was retired in migration 0040 along with the
-# manual bank/UPI deposit flow. The BankAccount model + table are kept for
-# historical lookups in the admin queue but no new rows reference them.
+async def _get_bank_for_tier(amount: Decimal, db: AsyncSession) -> BankAccount | None:
+    """Pick the active bank account whose tier brackets this amount,
+    rotating through the pool by `last_used_at` so no single account
+    receives every deposit. Used by the manual bank/UPI deposit flow
+    (re-enabled per client direction)."""
+    result = await db.execute(
+        select(BankAccount).where(
+            BankAccount.is_active == True,
+            BankAccount.min_amount <= amount,
+            BankAccount.max_amount >= amount,
+        ).order_by(BankAccount.last_used_at.asc().nullsfirst(), BankAccount.rotation_order)
+    )
+    bank = result.scalars().first()
+    if bank:
+        bank.last_used_at = datetime.utcnow()
+    return bank
 
 
 # ─── Deposits ─────────────────────────────────────────────────────────────
