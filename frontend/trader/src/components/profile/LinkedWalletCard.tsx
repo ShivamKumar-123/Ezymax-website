@@ -72,12 +72,12 @@ export default function LinkedWalletCard() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-text-primary leading-tight">
-            Wallet sign-in
+            Connect Wallet
           </h3>
           <p className="text-text-tertiary text-xs mt-0.5 leading-relaxed">
             {linked
-              ? 'Sign in to FXArtha by signing a message with this wallet — no password needed.'
-              : 'Link a Web3 wallet (MetaMask, Trust, Rainbow, Coinbase, OKX, …) to sign in without a password.'}
+              ? 'This wallet is linked to your account for on-chain deposits and withdrawals.'
+              : 'Connect an external wallet (MetaMask, Trust, Rainbow, Coinbase, OKX, …) to link it with your account for transactions and payments.'}
           </p>
         </div>
       </div>
@@ -108,8 +108,8 @@ export default function LinkedWalletCard() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[11px] text-text-tertiary leading-relaxed flex-1 min-w-[180px]">
               {canUnlink
-                ? 'Unlinking removes wallet sign-in from this account. You can re-link later.'
-                : 'Set a password before unlinking — wallet is currently your only sign-in method.'}
+                ? 'Unlinking disconnects this wallet from your account. You can connect a different wallet later.'
+                : 'Set a password before unlinking — this wallet is currently your only sign-in method.'}
             </p>
             <button
               type="button"
