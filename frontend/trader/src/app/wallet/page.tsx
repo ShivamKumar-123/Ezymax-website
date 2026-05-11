@@ -11,7 +11,6 @@ import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import WalletDepositModal from '@/components/wallet/WalletDepositModal';
-import OnchainDepositFlow from '@/components/wallet/OnchainDepositFlow';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -85,12 +84,13 @@ const CRYPTO_WITHDRAW_METHOD = 'oxapay';
 
 /** UI grid — selection is sent with NOWPayments / payout details for finance matching. */
 const CRYPTO_ASSETS = [
+  { id: 'USDT_BSC', label: 'USDT', sub: 'BEP20' },
+  { id: 'USDT_ERC', label: 'USDT', sub: 'ERC20' },
+  { id: 'USDT_TRC', label: 'USDT', sub: 'TRC20' },
   { id: 'BTC', label: 'BTC', sub: 'Bitcoin' },
   { id: 'ETH', label: 'ETH', sub: 'Ethereum' },
-  { id: 'USDT_ERC', label: 'USDT', sub: 'ERC20' },
   { id: 'USDC_ERC', label: 'USDC', sub: 'ERC20' },
   { id: 'TRX', label: 'TRX', sub: 'Tron' },
-  { id: 'USDT_TRC', label: 'USDT', sub: 'TRC20' },
   { id: 'USDC_TRC', label: 'USDC', sub: 'TRC20' },
   { id: 'USDT_SOL', label: 'USDT', sub: 'SOL' },
   { id: 'USDC_SOL', label: 'USDC', sub: 'SOL' },
@@ -135,7 +135,7 @@ function WalletPageContent() {
   const fundPanelRef = useRef<HTMLDivElement>(null);
 
   const [fundMainTab, setFundMainTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [depositUiSection, setDepositUiSection] = useState<'usdt' | 'crypto' | 'manual'>('usdt');
+  const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
   const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
@@ -293,9 +293,6 @@ function WalletPageContent() {
   const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
-    // 'usdt' (decentralized wallet-connect) and 'crypto' (NowPayments)
-    // are crypto channels; 'manual' is the bank/UPI flow restored per
-    // client request.
     setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
   }, [depositUiSection]);
 
@@ -329,7 +326,7 @@ function WalletPageContent() {
     setDepositAmount('');
     setDepositTxId('');
     setDepositProofFile(null);
-    setDepositUiSection('usdt');
+    setDepositUiSection('crypto');
     setManualBankInfo(null);
     setFundMainTab('deposit');
     scrollToFundPanel();
@@ -906,12 +903,10 @@ function WalletPageContent() {
 
                   {/* Deposit Method Tabs */}
                   <div className="flex gap-2 border-b border-border-glass overflow-x-auto">
-                    {(['usdt', 'crypto', 'manual'] as const).map((method) => {
+                    {(['crypto', 'manual'] as const).map((method) => {
                       const active = depositUiSection === method;
                       const label =
-                        method === 'usdt'
-                          ? 'USDT (Wallet Connect)'
-                          : method === 'crypto'
+                        method === 'crypto'
                           ? 'Crypto (NowPayments)'
                           : 'Manual (Bank/UPI)';
                       return (
@@ -932,16 +927,40 @@ function WalletPageContent() {
                     })}
                   </div>
 
-                  {depositUiSection === 'usdt' ? (
-                    <OnchainDepositFlow
-                      onSettled={() => {
-                        // Refresh the wallet summary so the new balance lands.
-                        void fetchData(true);
-                      }}
-                    />
-                  ) : depositUiSection === 'crypto' ? (
+                  {depositUiSection === 'crypto' ? (
                     <>
-                      {/* Crypto deposit via NOWPayments wallet-connect modal */}
+                      {/* USDT network picker. NowPayments invoice is pre-locked to
+                          the selected variant so user pays on exactly that chain. */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-text-secondary font-medium uppercase tracking-wide">Network</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'USDT_BSC', label: 'USDT', sub: 'BEP-20', hint: '~$0.30 gas' },
+                            { id: 'USDT_ERC', label: 'USDT', sub: 'ERC-20', hint: '~$5–20 gas' },
+                            { id: 'USDT_TRC', label: 'USDT', sub: 'TRC-20', hint: '~$1 gas' },
+                          ].map((n) => {
+                            const active = selectedCryptoDeposit === n.id;
+                            return (
+                              <button
+                                key={n.id}
+                                type="button"
+                                onClick={() => setSelectedCryptoDeposit(n.id)}
+                                className={clsx(
+                                  'rounded-xl border p-3 text-left transition-colors',
+                                  active
+                                    ? 'border-accent bg-accent/10'
+                                    : 'border-border-primary bg-bg-secondary hover:border-border-secondary',
+                                )}
+                              >
+                                <div className="font-bold text-text-primary text-sm">{n.label}</div>
+                                <div className="text-[11px] text-text-tertiary mt-0.5">{n.sub}</div>
+                                <div className="text-[10px] text-text-tertiary mt-1">{n.hint}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
                         <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
@@ -960,7 +979,7 @@ function WalletPageContent() {
 
                       <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
                         <p className="text-xs text-text-secondary leading-relaxed">
-                          Pay directly from your wallet (MetaMask, Trust, Rainbow, etc.) on Ethereum, BSC, Polygon, or Arbitrum. We'll show a QR code + on-site payment screen — no third-party redirect.
+                          A NowPayments invoice will be generated for the selected USDT network. Send the exact amount from any wallet or exchange to the address shown — funds credit automatically after on-chain confirmations.
                         </p>
                       </div>
 

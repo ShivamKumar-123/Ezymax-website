@@ -29,6 +29,7 @@ CURRENCY_MAP: dict[str, str] = {
     "BTC": "btc",
     "ETH": "eth",
     "USDT_ERC": "usdterc20",
+    "USDT_BSC": "usdtbsc",
     "USDC_ERC": "usdcerc20",
     "TRX": "trx",
     "USDT_TRC": "usdttrc20",
