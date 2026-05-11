@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Coins, Loader2, Lock, Sparkles, Wallet, ArrowRight, Check } from 'lucide-react';
+import {
+  Coins, Loader2, Lock, Sparkles, Wallet, ArrowRight, Check,
+  BarChart3, TrendingUp, Calendar, Gift,
+} from 'lucide-react';
+import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import StakingPlanCard, { StakingPlan } from '@/components/earn/StakingPlanCard';
@@ -143,24 +147,110 @@ function Inner() {
     );
   }
 
+  // Aggregate stats for the DAG-style top cards.
+  const activePositions = positions.filter((p) => p.state === 'active');
+  const totalStaked = activePositions.reduce((s, p) => s + (Number(p.principal) || 0), 0);
+  const totalEarned = positions.reduce(
+    (s, p) => s + (Number(p.rewards_paid) || 0) + (Number(p.rewards_unpaid) || 0),
+    0,
+  );
+  const totalTradingBonus = positions.reduce(
+    (s, p) => s + (Number(p.trading_bonus_credited) || 0),
+    0,
+  );
+  // Approx next payout: sum of unpaid rewards across active positions. The
+  // exact "next payout date" lives in staking_reward_accruals; surface here
+  // as the soonest unlocks_at among active locked positions.
+  const nextPayoutAmount = activePositions.reduce((s, p) => s + (Number(p.rewards_unpaid) || 0), 0);
+  const nextPayoutDate = activePositions
+    .map((p) => (p.unlocks_at ? new Date(p.unlocks_at).getTime() : Infinity))
+    .filter((t) => Number.isFinite(t))
+    .sort((a, b) => a - b)[0];
+
   return (
     <div className="space-y-6 pb-8">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            Staking <Coins size={22} className="text-[#d6a93d]" />
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+            Staking Dashboard
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            Provide liquidity and earn structured rewards. Flexible mode or long-term lock — your choice.
+            Stake your funds and earn high returns with trading bonus.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5">
-          <Wallet size={14} className="text-[#d6a93d]" />
-          <span className="text-sm font-semibold text-text-primary tabular-nums">
-            {fmtUsd(walletBalance)} available
-          </span>
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/30 bg-gradient-to-br from-[#3a1c5e]/40 to-[#2a1442]/40">
+          <div className="w-9 h-9 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center">
+            <Wallet size={16} className="text-purple-300" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-purple-200/70 font-medium">Wallet Balance</p>
+            <p className="text-sm font-bold text-white font-mono tabular-nums">{fmtUsd(walletBalance)}</p>
+          </div>
         </div>
       </header>
+
+      {/* ── 4 stat cards (DAG aesthetic per client mockup) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Staked */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
+              <BarChart3 size={20} className="text-purple-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Total Staked</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(totalStaked)}</p>
+              <p className="text-[10px] text-purple-200/60 mt-0.5">Across {activePositions.length} active {activePositions.length === 1 ? 'stake' : 'stakes'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Earned (All Time) */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
+              <TrendingUp size={20} className="text-emerald-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Earned (All Time)</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(totalEarned)}</p>
+              <p className="text-[10px] text-emerald-200/60 mt-0.5">Paid + accrued rewards</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Next Payout */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
+              <Calendar size={20} className="text-blue-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">Next Payout</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(nextPayoutAmount)}</p>
+              <p className="text-[10px] text-blue-200/60 mt-0.5">
+                {nextPayoutDate && Number.isFinite(nextPayoutDate)
+                  ? `Unlocks ${new Date(nextPayoutDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}`
+                  : 'No upcoming unlocks'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Trading Bonus */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <Gift size={20} className="text-amber-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">Total Trading Bonus</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(totalTradingBonus)}</p>
+              <p className="text-[10px] text-amber-200/60 mt-0.5">Bonus balance available</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Plan picker */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

@@ -21,6 +21,20 @@ import {
   ArrowUpFromLine,
   TrendingUp,
   X,
+  ShieldCheck,
+  Crown,
+  Gift,
+  User2,
+  Lock,
+  Bell,
+  LinkIcon,
+  FileDown,
+  MessageCircle,
+  HelpCircle,
+  LogOut,
+  ChevronRight,
+  Check,
+  History,
 } from 'lucide-react';
 
 interface AccountItem {
@@ -44,6 +58,7 @@ interface WalletData {
   balance: number;
   currency: string;
   main_wallet_balance: number;
+  bonus_balance: number;
   total_deposited: number;
   total_withdrawn: number;
   pending_withdrawals: number;
@@ -112,6 +127,7 @@ interface ManualBankDetailsResponse {
 }
 
 function WalletPageContent() {
+  const user = useAuthStore((s) => s.user);
   const isDemo = useAuthStore((s) => s.user?.is_demo);
   // Linked wallet address (lowercase) from /auth/me. Withdrawals always go
   // here — the input on the withdraw card is read-only. Server enforces the
@@ -189,15 +205,17 @@ function WalletPageContent() {
         let currency = 'USD';
         let balance = 0;
         let mainWalletBalance = 0;
+        let bonusBalance = 0;
         let totalDeposited = 0;
         let totalWithdrawn = 0;
         let totalLiveBalance: number | undefined;
 
         if (summaryRes.status === 'fulfilled' && summaryRes.value) {
-          const s = summaryRes.value;
+          const s = summaryRes.value as WalletSummaryResponse & { bonus_balance?: number };
           const live = s.live_accounts || [];
           setLiveAccounts(live);
           mainWalletBalance = Number(s.main_wallet_balance) || 0;
+          bonusBalance = Number(s.bonus_balance) || 0;
           totalDeposited = Number(s.total_deposited) || 0;
           totalWithdrawn = Number(s.total_withdrawn) || 0;
           totalLiveBalance =
@@ -250,6 +268,7 @@ function WalletPageContent() {
           balance,
           currency,
           main_wallet_balance: mainWalletBalance,
+          bonus_balance: bonusBalance,
           total_deposited: totalDeposited,
           total_withdrawn: totalWithdrawn,
           pending_withdrawals: pendingWd,
@@ -265,6 +284,7 @@ function WalletPageContent() {
           balance: 0,
           currency: 'USD',
           main_wallet_balance: 0,
+          bonus_balance: 0,
           total_deposited: 0,
           total_withdrawn: 0,
           pending_withdrawals: 0,
@@ -673,6 +693,181 @@ function WalletPageContent() {
               <p className="text-text-secondary mt-1 leading-relaxed">{DEMO_FUNDING_MSG}</p>
             </div>
           )}
+
+          {/* ── Profile & Wallet overview (DAG/purple aesthetic per client mockup) ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+            {/* LEFT — 3 balance overview cards */}
+            <div>
+              <div className="flex items-baseline justify-between gap-2 mb-3">
+                <h2 className="text-lg font-bold text-text-primary">Wallet Overview</h2>
+                <button
+                  type="button"
+                  onClick={() => router.push('/transactions')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary hover:bg-bg-hover text-xs font-medium text-text-secondary transition-colors"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Transaction History
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Main Balance — blue */}
+                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20 flex flex-col">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center">
+                      <WalletIcon size={18} className="text-blue-300" />
+                    </div>
+                    <p className="text-xs uppercase tracking-wide text-blue-200/80 font-medium">Main Balance</p>
+                  </div>
+                  <p className="text-xl font-bold text-white font-mono tabular-nums">
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-blue-200/70">USD</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setFundMainTab('deposit'); scrollToFundPanel(); }}
+                    className="mt-3 w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+                  >
+                    Deposit
+                  </button>
+                </div>
+
+                {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
+                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20 flex flex-col">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center">
+                      <Gift size={18} className="text-emerald-300" />
+                    </div>
+                    <p className="text-xs uppercase tracking-wide text-emerald-200/80 font-medium">Bonus Balance</p>
+                  </div>
+                  <p className="text-xl font-bold text-white font-mono tabular-nums">
+                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-emerald-200/70">USD</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/rewards')}
+                    className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
+                  >
+                    View Details
+                  </button>
+                </div>
+
+                {/* Withdrawable Balance — purple */}
+                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20 flex flex-col">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center">
+                      <ArrowDownToLine size={18} className="text-purple-300" />
+                    </div>
+                    <p className="text-xs uppercase tracking-wide text-purple-200/80 font-medium">Withdrawable Balance</p>
+                  </div>
+                  <p className="text-xl font-bold text-white font-mono tabular-nums">
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-purple-200/70">USD</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setFundMainTab('withdraw'); scrollToFundPanel(); }}
+                    className="mt-3 w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
+                  >
+                    Withdraw
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — KYC + VIP stacked */}
+            <div className="space-y-3">
+              {/* KYC Verification card */}
+              {(() => {
+                const kyc = user?.kyc_status || 'unverified';
+                const isApproved = kyc === 'approved';
+                const isPending = kyc === 'pending';
+                const isRejected = kyc === 'rejected';
+                const stateColor =
+                  isApproved ? 'emerald'
+                  : isPending ? 'amber'
+                  : isRejected ? 'red'
+                  : 'slate';
+                const stateLabel =
+                  isApproved ? 'Verified'
+                  : isPending ? 'Pending'
+                  : isRejected ? 'Rejected'
+                  : 'Unverified';
+                const stateBody =
+                  isApproved ? 'Your identity has been verified. You can enjoy all platform features.'
+                  : isPending ? 'Your KYC documents are under review.'
+                  : isRejected ? 'Please re-submit your KYC documents.'
+                  : 'Complete KYC to unlock withdrawals and higher limits.';
+                return (
+                  <div className={clsx(
+                    'rounded-2xl p-4 border',
+                    isApproved && 'bg-gradient-to-br from-[#0d3f2a] via-[#0f5535]/60 to-[#082921] border-emerald-500/30',
+                    isPending && 'bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10]/60 to-[#2e2407] border-amber-500/30',
+                    isRejected && 'bg-gradient-to-br from-[#3f0d0d] via-[#551010]/60 to-[#290808] border-red-500/30',
+                    !isApproved && !isPending && !isRejected && 'bg-gradient-to-br from-[#1a1a2e] via-[#222238]/60 to-[#0f0f1c] border-slate-500/30',
+                  )}>
+                    <p className="text-xs uppercase tracking-wide text-text-tertiary font-medium mb-2">KYC Verification</p>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className={clsx(
+                        'w-10 h-10 rounded-xl border flex items-center justify-center',
+                        `bg-${stateColor}-500/25 border-${stateColor}-400/30`,
+                      )}>
+                        <ShieldCheck size={18} className={`text-${stateColor}-300`} />
+                      </div>
+                      <p className={clsx('text-base font-bold', `text-${stateColor}-300`)}>{stateLabel}</p>
+                    </div>
+                    <p className="text-[11px] text-text-tertiary leading-relaxed mb-3">{stateBody}</p>
+                    <button
+                      type="button"
+                      onClick={() => router.push(isApproved ? '/profile' : '/kyc')}
+                      className="w-full py-2 rounded-lg bg-bg-base/50 border border-border-primary hover:bg-bg-hover text-xs font-bold text-text-primary transition-colors"
+                    >
+                      {isApproved ? 'View Details' : 'Complete KYC'}
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* VIP Status card */}
+              {(() => {
+                const isVip = !!(user as any)?.is_vip;
+                return (
+                  <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470]/70 to-[#2a1442] border border-purple-500/30">
+                    <p className="text-xs uppercase tracking-wide text-purple-200/80 font-medium mb-2">VIP Status</p>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/40 flex items-center justify-center">
+                        <Crown size={18} className="text-amber-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-white">{isVip ? 'VIP Member' : 'Free User'}</p>
+                          {isVip && (
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        {isVip && <p className="text-[10px] text-purple-200/70 mt-0.5">Premium tier</p>}
+                      </div>
+                    </div>
+                    <div className="space-y-1 mb-3">
+                      <p className="text-[11px] font-semibold text-purple-200/90 mb-1">{isVip ? 'Your Benefits' : 'VIP Benefits'}</p>
+                      {['20% Extra XP & Rewards', 'Higher Staking Returns', 'Priority Support', 'Exclusive Airdrops'].map((b) => (
+                        <div key={b} className="flex items-center gap-1.5 text-[11px] text-purple-100/80">
+                          <Check size={11} className="text-emerald-400 shrink-0" />
+                          <span>{b}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/rewards')}
+                      className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs font-bold transition-colors"
+                    >
+                      {isVip ? 'View VIP Benefits' : 'Upgrade to VIP'}
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
 
           {/* ── Account Cards Grid ── */}
           <div className="space-y-3">
@@ -1143,8 +1338,110 @@ function WalletPageContent() {
             <div>
               <h5 className="text-text-primary font-bold text-xs uppercase tracking-wide">Processing Time</h5>
               <p className="text-text-tertiary text-[10px] leading-relaxed mt-0.5">
-                Crypto and manual bank/UPI withdrawals are reviewed by finance; most requests are processed within 24 hours.
+                Crypto withdrawals are reviewed by finance; most requests are processed within 24 hours.
               </p>
+            </div>
+          </div>
+
+          {/* ── Account Settings / Security / Quick Actions (DAG mockup) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            {/* Account Settings */}
+            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
+              <h3 className="text-sm font-bold text-text-primary mb-3">Account Settings</h3>
+              <div className="space-y-1">
+                {[
+                  { icon: User2, label: 'Profile Information', desc: 'Update your personal details', go: '/profile' },
+                  { icon: ShieldCheck, label: 'Security', desc: 'Change password, 2FA, and security settings', go: '/profile?tab=security' },
+                  { icon: Bell, label: 'Notification Preferences', desc: 'Manage email and push notifications', go: '/profile?tab=notifications' },
+                  { icon: LinkIcon, label: 'Linked Accounts', desc: 'Manage your linked bank and crypto accounts', go: '/profile?tab=security' },
+                ].map((it) => (
+                  <button
+                    key={it.label}
+                    type="button"
+                    onClick={() => router.push(it.go)}
+                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-bg-base/60 border border-border-primary flex items-center justify-center shrink-0">
+                      <it.icon size={14} className="text-text-secondary group-hover:text-text-primary transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-text-primary truncate">{it.label}</p>
+                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-text-tertiary shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
+              <h3 className="text-sm font-bold text-text-primary mb-3">Security</h3>
+              <div className="space-y-1">
+                {[
+                  { icon: Lock, label: 'Password', desc: 'Change password', go: '/profile?tab=security', cta: 'Change' },
+                  { icon: ShieldCheck, label: 'Two-Factor Authentication (2FA)', desc: 'Manage 2FA', go: '/profile?tab=security', cta: 'Manage' },
+                  { icon: Clock, label: 'Login Activity', desc: 'View recent login sessions', go: '/profile?tab=security', cta: 'View' },
+                  { icon: WalletIcon, label: 'Device Management', desc: 'Manage your trusted devices', go: '/profile?tab=security', cta: 'Manage' },
+                ].map((it) => (
+                  <button
+                    key={it.label}
+                    type="button"
+                    onClick={() => router.push(it.go)}
+                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-bg-base/60 border border-border-primary flex items-center justify-center shrink-0">
+                      <it.icon size={14} className="text-text-secondary group-hover:text-text-primary transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-text-primary truncate">{it.label}</p>
+                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
+                    </div>
+                    <span className="text-[10px] font-semibold text-purple-400 group-hover:text-purple-300 transition-colors shrink-0">
+                      {it.cta}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
+              <h3 className="text-sm font-bold text-text-primary mb-3">Quick Actions</h3>
+              <div className="space-y-1">
+                {[
+                  { icon: FileDown, label: 'Download Account Statement', desc: 'Get your trading and wallet statement', action: () => toast.success('Statement export — coming soon'), danger: false },
+                  { icon: MessageCircle, label: 'Contact Support', desc: "We're here to help you", action: () => router.push('/support'), danger: false },
+                  { icon: HelpCircle, label: 'Help Center', desc: 'FAQs and guides', action: () => router.push('/support'), danger: false },
+                  { icon: LogOut, label: 'Logout', desc: 'Sign out from your account', action: () => { void useAuthStore.getState().logout(); router.push('/auth/login'); }, danger: true },
+                ].map((it) => (
+                  <button
+                    key={it.label}
+                    type="button"
+                    onClick={it.action}
+                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
+                  >
+                    <div className={clsx(
+                      'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0',
+                      it.danger ? 'bg-red-500/10 border-red-500/30' : 'bg-bg-base/60 border-border-primary',
+                    )}>
+                      <it.icon size={14} className={clsx(
+                        'transition-colors',
+                        it.danger ? 'text-red-400' : 'text-text-secondary group-hover:text-text-primary',
+                      )} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={clsx(
+                        'text-xs font-semibold truncate',
+                        it.danger ? 'text-red-400' : 'text-text-primary',
+                      )}>
+                        {it.label}
+                      </p>
+                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

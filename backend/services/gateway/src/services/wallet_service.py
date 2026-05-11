@@ -11,7 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
-    BankAccount, BonusOffer, Deposit, Transaction, TradingAccount, User, Withdrawal,
+    BankAccount, BonusOffer, Deposit, Transaction, TradingAccount, User,
+    UserBonus, Withdrawal,
 )
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
@@ -1350,6 +1351,18 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
     total_deposited += float(adj_main_in.scalar() or 0)
     total_withdrawn += abs(float(adj_main_out.scalar() or 0))
 
+    # Real "bonus balance" = sum of active user_bonuses still under wagering.
+    # Once a bonus is released (lots_traded >= lots_required), it merges into
+    # main_wallet_balance via the wallet_service.release_bonus path. So this
+    # number is the locked, unwithdrawable portion only.
+    bonus_q = await db.execute(
+        select(func.coalesce(func.sum(UserBonus.amount), 0)).where(
+            UserBonus.user_id == user_id,
+            UserBonus.status == "active",
+        )
+    )
+    bonus_balance = float(bonus_q.scalar() or 0)
+
     acct_q = await db.execute(
         select(TradingAccount)
         .where(
@@ -1378,6 +1391,7 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
     if not live_list:
         return {
             "main_wallet_balance": main_wallet_balance,
+            "bonus_balance": bonus_balance,
             "balance": 0, "credit": 0, "equity": 0, "margin_used": 0, "free_margin": 0,
             "total_deposited": total_deposited, "total_withdrawn": total_withdrawn,
             "total_live_balance": 0, "live_accounts": [],
@@ -1408,6 +1422,7 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
 
     return {
         "main_wallet_balance": main_wallet_balance,
+        "bonus_balance": bonus_balance,
         "balance": primary_balance,
         "credit": float(total_credit),
         "equity": float(total_equity),

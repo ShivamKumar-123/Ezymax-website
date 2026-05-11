@@ -10,6 +10,18 @@ import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import MasterEligibilityBanner from '@/components/social/MasterEligibilityBanner';
+import {
+  DollarSign,
+  TrendingUp,
+  ArrowDownToLine,
+  Users,
+  Clock,
+  GraduationCap,
+  ShieldCheck,
+  BarChart2,
+  Search,
+  ArrowRight,
+} from 'lucide-react';
 
 type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard';
 type SortBy = 'total_return_pct' | 'sharpe_ratio' | 'followers_count';
@@ -891,6 +903,46 @@ function SocialPageInner() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>(() => tabFromQuery(searchParams.get('tab')));
 
+  // Aggregate stats for the top 4 cards (DAG mockup). Refetched on mount.
+  // Backend returns my-copies list — we sum invested/profit/this-month locally.
+  const [copySummary, setCopySummary] = useState({
+    totalInvested: 0,
+    totalProfit: 0,
+    profitThisMonth: 0,
+    activeCopies: 0,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<{ items: Array<{
+          allocated_amount?: number; current_value?: number; total_pnl?: number;
+          joined_at?: string; status?: string;
+        }> }>('/social/my-allocations');
+        const items = res.items ?? [];
+        const active = items.filter((i) => (i.status || 'active') === 'active');
+        const totalInvested = active.reduce((s, i) => s + (Number(i.allocated_amount) || 0), 0);
+        const totalProfit = active.reduce((s, i) => s + (Number(i.total_pnl) || 0), 0);
+        const now = new Date();
+        const thisMonthCutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+        const profitThisMonth = active
+          .filter((i) => i.joined_at && new Date(i.joined_at) >= thisMonthCutoff)
+          .reduce((s, i) => s + (Number(i.total_pnl) || 0), 0);
+        if (!cancelled) {
+          setCopySummary({
+            totalInvested,
+            totalProfit,
+            profitThisMonth,
+            activeCopies: active.length,
+          });
+        }
+      } catch {
+        // empty state — stay at zero
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     setActiveTab(tabFromQuery(searchParams.get('tab')));
   }, [searchParams]);
@@ -923,14 +975,77 @@ function SocialPageInner() {
             />
             <div className="relative z-10 px-3 sm:px-6 py-3 sm:py-8">
               <h1 className="text-base sm:text-3xl font-bold text-text-primary mb-1 sm:mb-2 leading-tight">
-                MAMM Trading — Follow Global Elite Traders
+                Copy Trading
               </h1>
               <p className="text-xs sm:text-sm text-text-secondary max-w-2xl hidden sm:block">
-                Follow top performers and replicate their strategies automatically. For pooled accounts, use{' '}
+                Follow top traders and earn by copying their trades. For pooled accounts, use{' '}
                 <span className="text-accent font-medium">PAMM</span> in the sidebar.
               </p>
             </div>
           </section>
+
+          {/* ── 4 Stat Cards (DAG aesthetic per client mockup) ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-5">
+            {/* Total Invested */}
+            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
+                  <DollarSign size={18} className="text-blue-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">Total Invested (All Masters)</p>
+                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                    ${copySummary.totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Profit */}
+            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                  <TrendingUp size={18} className="text-emerald-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Profit (All Masters)</p>
+                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                    ${copySummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Profit This Month */}
+            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
+                  <ArrowDownToLine size={18} className="text-purple-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Profit This Month</p>
+                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                    ${copySummary.profitThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Copy Trades */}
+            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
+                  <Users size={18} className="text-amber-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">Active Copy Trades</p>
+                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums">
+                    {copySummary.activeCopies} <span className="text-xs font-medium text-amber-200/60">/ 10</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
             <div className="relative border-b border-border-primary bg-card overflow-x-auto scrollbar-none">
@@ -965,6 +1080,76 @@ function SocialPageInner() {
               {activeTab === 'my-copies' && <MyCopiesTab />}
               {activeTab === 'become-provider' && <BecomeProviderTab />}
               {activeTab === 'my-dashboard' && <MyDashboardTab />}
+            </div>
+          </div>
+
+          {/* ── Why Copy Top Traders? (DAG mockup) ── */}
+          <div className="mt-4 sm:mt-6 rounded-2xl bg-bg-secondary border border-border-glass/30 p-4 sm:p-5">
+            <h3 className="text-base font-bold text-text-primary mb-4">Why Copy Top Traders?</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                { icon: Clock, color: 'amber', title: 'Save Time', desc: 'No need to analyze the market' },
+                { icon: GraduationCap, color: 'emerald', title: 'Learn & Grow', desc: 'Learn strategies from top traders' },
+                { icon: ShieldCheck, color: 'red', title: 'Risk Management', desc: 'Diversified portfolio with top traders' },
+                { icon: BarChart2, color: 'purple', title: 'Transparent Performance', desc: 'Real-time results and performance tracking' },
+              ].map((b) => (
+                <div key={b.title} className="flex items-start gap-3">
+                  <div className={clsx(
+                    'w-10 h-10 rounded-xl border flex items-center justify-center shrink-0',
+                    b.color === 'amber' && 'bg-amber-500/15 border-amber-500/30',
+                    b.color === 'emerald' && 'bg-emerald-500/15 border-emerald-500/30',
+                    b.color === 'red' && 'bg-red-500/15 border-red-500/30',
+                    b.color === 'purple' && 'bg-purple-500/15 border-purple-500/30',
+                  )}>
+                    <b.icon size={18} className={clsx(
+                      b.color === 'amber' && 'text-amber-400',
+                      b.color === 'emerald' && 'text-emerald-400',
+                      b.color === 'red' && 'text-red-400',
+                      b.color === 'purple' && 'text-purple-400',
+                    )} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-text-primary">{b.title}</p>
+                    <p className="text-[11px] text-text-tertiary mt-0.5 leading-relaxed">{b.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── How Copy Trading Works? (3-step horizontal flow) ── */}
+          <div className="mt-3 sm:mt-4 rounded-2xl bg-bg-secondary border border-border-glass/30 p-4 sm:p-5">
+            <h3 className="text-base font-bold text-text-primary mb-4">How Copy Trading Works?</h3>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
+              {[
+                { icon: Search, color: 'cyan', title: 'Choose a Master', desc: 'Select a top trader' },
+                { icon: DollarSign, color: 'emerald', title: 'Set Your Amount', desc: 'Invest any amount' },
+                { icon: ArrowDownToLine, color: 'purple', title: 'Start Copying', desc: 'We copy trades for you' },
+              ].map((s, idx, arr) => (
+                <div key={s.title} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={clsx(
+                      'w-12 h-12 rounded-xl border flex items-center justify-center shrink-0',
+                      s.color === 'cyan' && 'bg-cyan-500/15 border-cyan-500/30',
+                      s.color === 'emerald' && 'bg-emerald-500/15 border-emerald-500/30',
+                      s.color === 'purple' && 'bg-purple-500/15 border-purple-500/30',
+                    )}>
+                      <s.icon size={20} className={clsx(
+                        s.color === 'cyan' && 'text-cyan-400',
+                        s.color === 'emerald' && 'text-emerald-400',
+                        s.color === 'purple' && 'text-purple-400',
+                      )} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-text-primary">{idx + 1}. {s.title}</p>
+                      <p className="text-[11px] text-text-tertiary mt-0.5">{s.desc}</p>
+                    </div>
+                  </div>
+                  {idx < arr.length - 1 && (
+                    <ArrowRight size={18} className="text-text-tertiary hidden sm:block shrink-0" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>

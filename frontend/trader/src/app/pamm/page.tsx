@@ -25,6 +25,9 @@ interface MammPammAccount {
   min_investment: number;
   active_investors: number;
   slots_available: number;
+  aum: number;
+  win_rate: number;
+  total_trades: number;
   description: string;
 }
 
@@ -469,9 +472,190 @@ export default function PammPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold text-text-primary">PAMM</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Pooled managed-account investing</p>
+          <h1 className="text-2xl font-bold text-text-primary">PAM Accounts</h1>
+          <p className="text-sm text-text-secondary mt-0.5">Choose a PAM account to copy trade and grow your profits.</p>
         </div>
+
+        {/* ── Top stat cards (purple/DAG aesthetic per client mockup) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* My PAM Investments */}
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
+                <Users size={20} className="text-purple-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-purple-200/80 font-medium">My PAM Investments</p>
+                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                  ${(summary?.total_invested ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-[11px] text-purple-200/70 mt-1">In {allocations.length} {allocations.length === 1 ? 'Account' : 'Accounts'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Profit (All PAM) */}
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                <TrendingUp size={20} className="text-emerald-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Profit (All PAM)</p>
+                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                  ${(summary?.total_pnl ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className={clsx(
+                  'text-[11px] mt-1 font-semibold',
+                  (summary?.overall_pnl_pct ?? 0) >= 0 ? 'text-emerald-300' : 'text-red-400',
+                )}>
+                  {(summary?.overall_pnl_pct ?? 0) >= 0 ? '+' : ''}{(summary?.overall_pnl_pct ?? 0).toFixed(2)}% Overall ROI
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Available Balance + Invest Now CTA */}
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-11 h-11 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
+                <Wallet size={20} className="text-blue-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-blue-200/80 font-medium">Available Balance</p>
+                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                  ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('browse'); }}
+              className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+            >
+              Invest Now
+            </button>
+          </div>
+
+          {/* Total PAM Accounts */}
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
+                <BarChart2 size={20} className="text-amber-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-amber-200/80 font-medium">Total PAM Accounts</p>
+                <p className="text-2xl font-bold text-white mt-1 font-mono tabular-nums">{accounts.length}</p>
+                <p className="text-[11px] text-amber-200/70 mt-1">Active PAM Accounts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Top 4 Featured PAM Accounts (sorted by ROI desc) ── */}
+        {accounts.length > 0 && (
+          <div>
+            <div className="flex items-baseline justify-between gap-2 mb-3">
+              <h2 className="text-lg font-bold text-text-primary">Top PAM Accounts</h2>
+              <p className="text-[11px] text-text-tertiary">Sorted by ROI (High to Low)</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...accounts]
+                .sort((a, b) => b.total_return_pct - a.total_return_pct)
+                .slice(0, 4)
+                .map((a, idx) => {
+                  const rank = idx + 1;
+                  const rankColors: Record<number, string> = {
+                    1: 'bg-amber-400 text-amber-950',
+                    2: 'bg-slate-300 text-slate-900',
+                    3: 'bg-orange-400 text-orange-950',
+                    4: 'bg-purple-400 text-purple-950',
+                  };
+                  // Style label derived from master_type.
+                  const styleLabel =
+                    a.master_type === 'pamm' ? 'PAMM Manager'
+                    : a.master_type === 'mam' ? 'MAM Manager'
+                    : 'Signal Provider';
+                  const aum = a.aum || 0;
+                  const totalReturnUsd = aum * (a.total_return_pct / 100);
+                  return (
+                    <div
+                      key={a.id}
+                      className="relative rounded-2xl p-5 bg-gradient-to-b from-[#1a1330] to-[#0d0820] border border-purple-500/15 flex flex-col"
+                    >
+                      {/* Rank badge */}
+                      <div className={clsx('absolute top-3 left-3 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold', rankColors[rank])}>
+                        {rank}
+                      </div>
+                      {/* Active status pill (top right) */}
+                      <div className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        Active
+                      </div>
+
+                      {/* Name + style — avatar skipped per client direction */}
+                      <div className="mt-8 text-center">
+                        <p className="text-base font-bold text-white truncate">{a.manager_name}</p>
+                        <p className="text-[11px] text-purple-300/70 mt-0.5">{styleLabel}</p>
+                      </div>
+
+                      {/* ROI + Total Return (Total Return = AUM × ROI%) */}
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-text-tertiary">ROI (All Time)</p>
+                          <p className={clsx(
+                            'text-sm font-bold font-mono tabular-nums mt-0.5',
+                            a.total_return_pct >= 0 ? 'text-emerald-400' : 'text-red-400',
+                          )}>
+                            {a.total_return_pct >= 0 ? '+' : ''}{a.total_return_pct.toFixed(2)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Total Return</p>
+                          <p className="text-sm font-bold text-white font-mono tabular-nums mt-0.5">
+                            ${totalReturnUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Stats grid — real numbers from backend */}
+                      <div className="mt-4 space-y-1.5 text-[11px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-text-tertiary">Max Drawdown</span>
+                          <span className="text-white font-mono tabular-nums">{a.max_drawdown_pct.toFixed(2)}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-text-tertiary">Win Rate</span>
+                          <span className="text-white font-mono tabular-nums">
+                            {a.total_trades > 0 ? `${a.win_rate.toFixed(0)}%` : 'No trades yet'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-text-tertiary">AUM</span>
+                          <span className="text-white font-mono tabular-nums">
+                            ${aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-text-tertiary">Investors</span>
+                          <span className="text-white font-mono tabular-nums">{a.active_investors}</span>
+                        </div>
+                      </div>
+
+                      {/* CTA */}
+                      <button
+                        type="button"
+                        onClick={() => openInvest(a)}
+                        className="mt-4 w-full py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs font-bold transition-colors"
+                      >
+                        View Details &amp; Invest
+                      </button>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* Tab bar */}
         <div className="flex gap-1 p-1 rounded-xl bg-bg-secondary border border-border-primary">

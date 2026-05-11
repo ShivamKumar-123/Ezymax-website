@@ -56,7 +56,7 @@ const NAV_ITEMS: NavEntry[] = [
   },
   { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
-  { label: 'MAMM', href: '/social', icon: Copy },
+  { label: 'Copy Trading', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
   { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },

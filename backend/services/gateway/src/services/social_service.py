@@ -1204,13 +1204,30 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
 
     items = []
     for master, first_name, last_name in rows:
-        investor_count = await db.execute(
-            select(func.count()).select_from(InvestorAllocation).where(
+        # Active investors + real AUM (sum of allocation amounts) for this
+        # master. Single aggregation query — count() + sum() in one round-trip.
+        aum_row = await db.execute(
+            select(
+                func.count(InvestorAllocation.id),
+                func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0),
+            ).where(
                 InvestorAllocation.master_id == master.id,
                 InvestorAllocation.status == "active",
             )
         )
-        active = investor_count.scalar()
+        active, aum = aum_row.one()
+
+        # Real win rate from trade_history. Zero-safe when no trades closed
+        # yet (new master) — UI will render 0% instead of an em-dash.
+        trades_row = await db.execute(
+            select(
+                func.count(TradeHistory.id),
+                func.count().filter(TradeHistory.profit > 0),
+            ).where(TradeHistory.account_id == master.account_id)
+        )
+        total_trades, wins = trades_row.one()
+        win_rate = (wins / total_trades * 100) if total_trades else 0.0
+
         items.append({
             "id": str(master.id),
             "manager_name": f"{first_name or ''} {last_name or ''}".strip(),
@@ -1224,6 +1241,9 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
             "max_investors": master.max_investors,
             "active_investors": active,
             "slots_available": master.max_investors - active,
+            "aum": float(aum or 0),
+            "win_rate": round(float(win_rate), 2),
+            "total_trades": int(total_trades or 0),
             "description": master.description,
         })
 

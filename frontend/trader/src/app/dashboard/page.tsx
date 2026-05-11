@@ -10,14 +10,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight, Gift,
   ShieldCheck, BadgeCheck, ExternalLink, Loader2,
+  Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
+import { useAuthStore } from '@/stores/authStore';
 
 interface AccountRow {
   id: string;
@@ -68,11 +71,23 @@ export default function DashboardPage() {
 }
 
 function BrokerHome() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [movers, setMovers] = useState<{ symbol: string; pct: number; price: number }[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Rewards state for Level + DGC Coins (Artha Coin) display.
+  const [rewardsState, setRewardsState] = useState<{
+    level?: number; level_label?: string;
+    xp?: number; xp_next_level?: number;
+    artha_coins?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,8 +144,165 @@ function BrokerHome() {
     [accounts, activeId],
   );
 
+  // Aggregate stats for the DAG mockup top section.
+  const realAccounts = accounts.filter((a) => !a.is_demo);
+  const totalBalance = realAccounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  const totalEquity = realAccounts.reduce((s, a) => s + (Number(a.equity) || 0), 0);
+  const todaysPnl = totalEquity - totalBalance;
+  const todaysPnlPct = totalBalance > 0 ? (todaysPnl / totalBalance) * 100 : 0;
+  const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
+  const level = rewardsState?.level ?? 1;
+  const levelLabel = rewardsState?.level_label || 'New Trader';
+  const dgcCoins = rewardsState?.artha_coins ?? 0;
+
   return (
     <div className="space-y-5 pb-8 max-w-[1200px] mx-auto w-full">
+      {/* ── Greeting header (DAG mockup) ── */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
+          Welcome back, {firstName}! <span className="text-2xl">👋</span>
+        </h1>
+        <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level Up.</p>
+      </div>
+
+      {/* ── 4 stat cards (DAG aesthetic) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Balance */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
+              <WalletIcon size={20} className="text-purple-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Total Balance</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(totalBalance)}</p>
+              <p className="text-[10px] text-purple-200/60 mt-0.5">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's P/L */}
+        <div className={clsx(
+          'rounded-2xl p-4 border',
+          todaysPnl >= 0
+            ? 'bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border-emerald-500/20'
+            : 'bg-gradient-to-br from-[#3f0d0d] via-[#551010] to-[#290808] border-red-500/20',
+        )}>
+          <div className="flex items-start gap-3">
+            <div className={clsx(
+              'w-11 h-11 rounded-xl border flex items-center justify-center shrink-0',
+              todaysPnl >= 0 ? 'bg-emerald-500/25 border-emerald-400/30' : 'bg-red-500/25 border-red-400/30',
+            )}>
+              {todaysPnl >= 0
+                ? <TrendingUp size={20} className="text-emerald-300" />
+                : <TrendingDown size={20} className="text-red-300" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className={clsx(
+                'text-[10px] uppercase tracking-wide font-medium',
+                todaysPnl >= 0 ? 'text-emerald-200/80' : 'text-red-200/80',
+              )}>Open P/L</p>
+              <p className={clsx(
+                'text-lg font-bold mt-1 font-mono tabular-nums truncate',
+                todaysPnl >= 0 ? 'text-emerald-300' : 'text-red-300',
+              )}>
+                {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
+              </p>
+              <p className={clsx(
+                'text-[10px] mt-0.5',
+                todaysPnl >= 0 ? 'text-emerald-200/70' : 'text-red-200/70',
+              )}>
+                {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* My Level */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0 relative">
+              <Shield size={20} className="text-blue-300" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-600 border border-blue-300/40 flex items-center justify-center text-[9px] font-bold text-white">
+                {level}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">My Level</p>
+              <p className="text-lg font-bold text-white mt-1 truncate">Level {level}</p>
+              <p className="text-[10px] text-blue-200/70 mt-0.5 truncate">{levelLabel}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* DGC Coins */}
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <Coins size={20} className="text-amber-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">DGC Coins</p>
+              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-amber-200/60 mt-0.5">Reward balance</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3 Large CTA buttons (DAG mockup) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* Trade Now — blue gradient */}
+        <button
+          type="button"
+          onClick={() => router.push('/trading/terminal')}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <BarChart3 size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Trade Now</p>
+            <p className="text-xs text-blue-100/80 mt-0.5">Start Trading</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+
+        {/* Copy Trading — green gradient */}
+        <button
+          type="button"
+          onClick={() => router.push('/social')}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 border border-emerald-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-emerald-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <Users size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Copy Trading</p>
+            <p className="text-xs text-emerald-100/80 mt-0.5">Copy Top Traders</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+
+        {/* Add Funds — amber gradient */}
+        <button
+          type="button"
+          onClick={() => router.push('/wallet')}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-300/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-amber-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <WalletIcon size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Add Funds</p>
+            <p className="text-xs text-amber-100/80 mt-0.5">Deposit Now</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+      </div>
+
       <AccountBalanceCard
         accounts={accounts}
         active={activeAccount}
