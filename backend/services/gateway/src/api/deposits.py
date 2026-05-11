@@ -1,9 +1,8 @@
 """Wallet API — Deposits, Withdrawals, Transactions."""
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,29 +28,6 @@ async def create_deposit(
 ):
     return await wallet_service.create_deposit(
         req=req, user_id=current_user["user_id"], db=db,
-    )
-
-
-# Manual bank/UPI/QR deposit. User pays into the bank account returned
-# by /deposit/bank-details (rotated from the active pool by tier),
-# then submits this multipart form with the transaction reference and
-# a payment screenshot. Admin reviews + approves on the back-office
-# queue. Re-enabled per client request after the brief retirement in
-# migration 0040 — see migration 0043.
-@router.post("/deposit/manual", status_code=201)
-async def create_manual_deposit(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    account_id: Optional[UUID] = Form(default=None),
-    amount: Decimal = Form(...),
-    transaction_id: str = Form(...),
-    file: UploadFile = File(...),
-):
-    """Bank / UPI manual deposit: user pays admin bank (see bank-details), uploads proof + reference."""
-    return await wallet_service.create_manual_deposit(
-        user_id=current_user["user_id"],
-        account_id=account_id, amount=amount,
-        transaction_id=transaction_id, file=file, db=db,
     )
 
 
@@ -206,27 +182,6 @@ async def create_withdrawal(
     )
 
 
-# Manual UPI / bank payout. User submits this multipart form with the
-# UPI ID and / or a QR image; finance team pays out from the main
-# wallet on the admin side. Re-enabled per client request after the
-# brief retirement in migration 0040 — see migration 0043.
-@router.post("/withdraw/manual", status_code=201)
-async def create_manual_withdrawal(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    amount: Decimal = Form(...),
-    upi_id: str = Form(default=""),
-    payout_notes: str = Form(default=""),
-    file: UploadFile | None = File(default=None),
-):
-    """Manual payout: user provides UPI ID and/or a QR image for finance to pay out (main wallet)."""
-    return await wallet_service.create_manual_withdrawal(
-        user_id=current_user["user_id"],
-        amount=amount, upi_id=upi_id, payout_notes=payout_notes,
-        file=file, db=db,
-    )
-
-
 # ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────
 
 
@@ -351,27 +306,3 @@ async def wallet_summary(
     )
 
 
-class DepositBankDetailsRequest(BaseModel):
-    """Optional amount picks a bank account tier (min/max)."""
-
-    amount: Decimal | None = None
-
-
-@router.post("/deposit/bank-details")
-async def get_deposit_bank_details(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    body: DepositBankDetailsRequest | None = Body(default=None),
-):
-    """Return an active bank account for manual deposits (details + QR URL from admin)."""
-    return await wallet_service.get_deposit_bank_details(
-        amount=body.amount if body else None, db=db,
-    )
-
-
-@router.get("/bank-info")
-async def get_bank_info(
-    amount: Decimal = Query(..., gt=0),
-    db: AsyncSession = Depends(get_db),
-):
-    return await wallet_service.get_bank_info(amount=amount, db=db)
