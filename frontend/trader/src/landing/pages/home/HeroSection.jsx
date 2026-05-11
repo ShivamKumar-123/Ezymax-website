@@ -5,29 +5,8 @@ import { Link } from 'react-router-dom'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/stores/authStore'
-import {
-  ArrowRight,
-  Zap,
-  Shield,
-  Headphones,
-  TrendingUp,
-  Award,
-  ShieldCheck,
-  Loader2,
-} from 'lucide-react'
-
-const featurePills = [
-  { icon: TrendingUp, title: 'Tight Spreads',     sub: 'From 0.0 pips' },
-  { icon: Zap,        title: 'Lightning Fast',    sub: 'Execution' },
-  { icon: Shield,     title: 'Secure & Trusted',  sub: 'Global Standard' },
-  { icon: Headphones, title: '24/7 Support',      sub: 'Always Here' },
-]
-
-const trustBadges = [
-  { icon: Award,       title: 'Trusted by',           sub: '100K+ Traders Worldwide' },
-  { icon: ShieldCheck, title: 'Secure Funds',         sub: 'Segregated Client Accounts' },
-  { icon: Award,       title: 'Award Winning',        sub: 'Forex Brokerage Platform' },
-]
+import TickerTape from '@/landing/components/TickerTape'
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 export default function HeroSection() {
   const router = useRouter()
@@ -48,55 +27,36 @@ export default function HeroSection() {
   }
 
   return (
-    <section className="relative overflow-hidden" style={{ background: 'var(--fx-bg)' }}>
-      <div className="fx-grid-bg" aria-hidden="true" />
-      <div className="fx-glow-gold" aria-hidden="true" />
+    <section
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: 'var(--fx-bg)',
+        backgroundImage: "url('/images/hero_bg1.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
 
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
-        <div className="max-w-3xl">
-          {/* Text + CTAs */}
-          <div>
+      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-10 md:pb-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center lg:min-h-[560px]">
+          {/* ── Left: copy + CTAs ─────────────────────────────────── */}
+          <div className="lg:col-span-7 xl:col-span-7">
             <h1 className="fx-headline text-[44px] sm:text-[56px] md:text-[64px] lg:text-[72px] xl:text-[82px] fx-fade-up">
-              Trade Without Giving
+              Trade Globally
               <br />
-              Your Money to <span className="fx-gold-text">Any Broker</span>
+              <span className="fx-gold-text">Prosper Limitlessly</span>
             </h1>
 
             <p
               className="mt-5 md:mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d1"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              Your funds move through a secure smart contract — not into a
-              broker&apos;s account. You control access. The system handles
-              execution. Your Money. Your Wallet. Your Control.
+              Experience next-level trading with ARTHA FX where technology
+              meets opportunity.
             </p>
 
-            {/* Feature pills row */}
-            <ul className="mt-7 md:mt-8 grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-4 fx-fade-up fx-fade-up-d2">
-              {featurePills.map(({ icon: Icon, title, sub }) => (
-                <li key={title} className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{
-                      background: 'var(--fx-gold-soft)',
-                      border: '1px solid rgba(214,169,61,0.28)',
-                    }}
-                  >
-                    <Icon size={15} style={{ color: 'var(--fx-gold-light)' }} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs md:text-[13px] font-semibold leading-tight" style={{ color: 'var(--fx-text)' }}>
-                      {title}
-                    </p>
-                    <p className="text-[11px] md:text-xs leading-tight" style={{ color: 'var(--fx-text-3)' }}>
-                      {sub}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
+            <div className="mt-10 md:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
               <Link to="/auth/register" className="fx-btn-primary justify-center">
                 Open Live Account
                 <ArrowRight size={18} />
@@ -107,36 +67,18 @@ export default function HeroSection() {
                 disabled={demoLoading}
                 className="fx-btn-ghost justify-center disabled:opacity-60"
               >
-                {demoLoading ? <Loader2 size={16} className="animate-spin" /> : 'Try with Demo Account'}
+                {demoLoading ? <Loader2 size={16} className="animate-spin" /> : 'Try Demo Account'}
               </button>
             </div>
 
-            {/* Trust badges */}
-            <ul className="mt-10 md:mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 fx-fade-up fx-fade-up-d4">
-              {trustBadges.map(({ icon: Icon, title, sub }) => (
-                <li key={title} className="flex items-center gap-3">
-                  <Icon size={22} style={{ color: 'var(--fx-gold-light)' }} className="shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs md:text-[13px] font-semibold leading-tight" style={{ color: 'var(--fx-text)' }}>
-                      {title}
-                    </p>
-                    <p className="text-[11px] md:text-xs leading-tight" style={{ color: 'var(--fx-text-3)' }}>
-                      {sub}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
-
         </div>
       </div>
 
-      <div
-        className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, transparent, var(--fx-bg))' }}
-        aria-hidden="true"
-      />
+      {/* Live ticker — sits flush at the bottom of the hero */}
+      <div className="relative z-10">
+        <TickerTape />
+      </div>
     </section>
   )
 }
