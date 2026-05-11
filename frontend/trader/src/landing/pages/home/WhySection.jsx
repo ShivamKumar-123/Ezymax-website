@@ -31,21 +31,7 @@ export default function WhySection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {features.map(({ icon: Icon, title, desc }, i) => (
             <ScrollReveal key={title} variant="fadeUp" delay={i * 0.06}>
-              <div
-                className="h-full rounded-2xl p-5 md:p-6 flex items-start gap-4 transition-all duration-300"
-                style={{
-                  background: 'var(--fx-bg-elev)',
-                  border: '1px solid var(--fx-line)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(214,169,61,0.4)'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--fx-line)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }}
-              >
+              <div className="glass-card h-full p-5 md:p-6 flex items-start gap-4">
                 <div
                   className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{
