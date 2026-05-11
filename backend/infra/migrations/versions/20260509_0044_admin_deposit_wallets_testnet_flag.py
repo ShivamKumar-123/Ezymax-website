@@ -43,12 +43,12 @@ def upgrade() -> None:
     # mainnet row AND a testnet row (chain_id differs even though
     # `network` slug doesn't). Without this, the existing UNIQUE on
     # `(network, asset)` would block testnet/mainnet coexistence.
+    op.execute("DROP INDEX IF EXISTS ux_admin_deposit_wallets_active_per_chain;")
     op.execute(
         """
-        DROP INDEX IF EXISTS ux_admin_deposit_wallets_active_per_chain;
         CREATE UNIQUE INDEX ux_admin_deposit_wallets_active_per_chain
             ON admin_deposit_wallets (network, asset, is_testnet)
-            WHERE is_active = TRUE;
+            WHERE is_active = TRUE
         """
     )
 
@@ -62,7 +62,7 @@ def upgrade() -> None:
         """
         CREATE UNIQUE INDEX IF NOT EXISTS ux_withdrawals_approval_id
             ON withdrawals (approval_id)
-            WHERE approval_id IS NOT NULL;
+            WHERE approval_id IS NOT NULL
         """
     )
 
