@@ -388,13 +388,13 @@ export default function OrderPanel() {
                 onClick={() => setSide('buy')}
                 className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
                 style={{
-                  background: side === 'buy' ? 'rgba(214,169,61,0.15)' : 'var(--bg-secondary)',
-                  border: side === 'buy' ? '1px solid #d6a93d' : '1px solid var(--border-primary)',
-                  color: side === 'buy' ? '#d6a93d' : 'var(--text-secondary)',
+                  background: side === 'buy' ? 'rgba(41,98,255,0.15)' : 'var(--bg-secondary)',
+                  border: side === 'buy' ? '1px solid #2962FF' : '1px solid var(--border-primary)',
+                  color: side === 'buy' ? '#2962FF' : 'var(--text-secondary)',
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Buy</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#d6a93d]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
+                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2962FF]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
                 <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
              </button>
           </div>
@@ -554,9 +554,9 @@ export default function OrderPanel() {
                 disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
                 style={{
-                  background: side === 'buy' ? '#d6a93d' : '#ef5350',
+                  background: side === 'buy' ? '#2962FF' : '#ef5350',
                   color: '#fff',
-                  boxShadow: side === 'buy' ? '0 4px 20px rgba(214,169,61,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
+                  boxShadow: side === 'buy' ? '0 4px 20px rgba(41,98,255,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
                 }}
               >
                 {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
@@ -600,9 +600,9 @@ export default function OrderPanel() {
               disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
               className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
-                background: side === 'buy' ? '#d6a93d' : '#ef5350',
+                background: side === 'buy' ? '#2962FF' : '#ef5350',
                 color: '#fff',
-                boxShadow: side === 'buy' ? '0 2px 12px rgba(214,169,61,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
+                boxShadow: side === 'buy' ? '0 2px 12px rgba(41,98,255,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
               }}
             >
               {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}

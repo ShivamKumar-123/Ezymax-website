@@ -744,7 +744,7 @@ function SummaryCard({
   valueColor?: string;
 }) {
   const colorMap = {
-    blue: { bg: 'rgba(214,169,61,0.04)', border: 'rgba(214,169,61,0.25)', text: 'text-[#d6a93d]', grad: 'rgba(214,169,61,0.2)' },
+    blue: { bg: 'rgba(41,98,255,0.04)', border: 'rgba(41,98,255,0.25)', text: 'text-[#2962FF]', grad: 'rgba(41,98,255,0.2)' },
     amber: { bg: 'rgba(245,158,11,0.04)', border: 'rgba(245,158,11,0.25)', text: 'text-amber-400', grad: 'rgba(245,158,11,0.2)' },
     green: { bg: 'rgba(34,197,94,0.04)', border: 'rgba(34,197,94,0.25)', text: 'text-buy', grad: 'rgba(34,197,94,0.2)' },
     red: { bg: 'rgba(239,68,68,0.04)', border: 'rgba(239,68,68,0.25)', text: 'text-sell', grad: 'rgba(239,68,68,0.2)' },

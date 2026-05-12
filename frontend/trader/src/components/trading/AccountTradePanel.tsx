@@ -353,8 +353,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 onClick={() => setSide('buy')}
                 className="py-3 rounded-lg text-center transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  background: side === 'buy' ? '#d6a93d' : 'rgba(214,169,61,0.12)',
-                  color: side === 'buy' ? '#000' : '#d6a93d',
+                  background: side === 'buy' ? '#2962FF' : 'rgba(41,98,255,0.12)',
+                  color: side === 'buy' ? '#fff' : '#2962FF',
                 }}
               >
                 <div className="text-xs font-bold">Buy</div>
@@ -493,9 +493,9 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               disabled={!hasEnoughMargin || (orderTab === 'market' && !marketStatus.isOpen)}
               className="w-full py-3.5 rounded-xl text-sm font-bold transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
-                background: side === 'buy' ? '#d6a93d' : '#ef5350',
-                color: side === 'buy' ? '#000' : '#fff',
-                boxShadow: side === 'buy' ? '0 4px 20px rgba(214,169,61,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
+                background: side === 'buy' ? '#2962FF' : '#ef5350',
+                color: '#fff',
+                boxShadow: side === 'buy' ? '0 4px 20px rgba(41,98,255,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
               }}
             >
               {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
@@ -547,8 +547,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                         <span
                           className="text-[9px] font-bold uppercase px-1 py-0.5 rounded"
                           style={{
-                            background: pos.side === 'buy' ? 'rgba(214,169,61,0.12)' : 'rgba(239,83,80,0.12)',
-                            color: pos.side === 'buy' ? '#d6a93d' : '#ef5350',
+                            background: pos.side === 'buy' ? 'rgba(41,98,255,0.12)' : 'rgba(239,83,80,0.12)',
+                            color: pos.side === 'buy' ? '#2962FF' : '#ef5350',
                           }}
                         >
                           {pos.side}
