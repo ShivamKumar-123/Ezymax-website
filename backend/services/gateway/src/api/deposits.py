@@ -83,6 +83,53 @@ async def create_wallet_deposit(
     return result
 
 
+class HostedInvoiceDepositRequest(BaseModel):
+    amount: Decimal
+    # Optional: when present, NOWPayments page pre-locks to this currency.
+    # When omitted/null, NOWPayments shows its full 300+ currency picker.
+    crypto_currency: str | None = None
+
+
+@router.post("/deposit/hosted-invoice", status_code=201)
+async def create_hosted_invoice_deposit(
+    req: HostedInvoiceDepositRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a NOWPayments hosted-invoice deposit (Mode B).
+
+    Returns ``{id, payment_url}``. The browser redirects to ``payment_url``;
+    NOWPayments hosts the pay page; the user pays there and is redirected
+    back via the success_url configured in create_payment(). Settlement
+    fires through the same IPN webhook as the on-site flow.
+
+    Idempotency-Key is honoured the same way as /deposit/wallet so a
+    network retry returns the same payment_url instead of spawning a
+    second invoice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="deposit_hosted_invoice_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await wallet_service.create_hosted_invoice_deposit(
+        amount=req.amount,
+        crypto_currency=req.crypto_currency,
+        user_id=current_user["user_id"],
+        db=db,
+    )
+    await store_response(
+        request, scope="deposit_hosted_invoice_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
+
+
 @router.get("/deposit/{deposit_id}/status")
 async def get_wallet_deposit_status(
     deposit_id: UUID,

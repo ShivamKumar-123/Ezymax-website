@@ -609,6 +609,78 @@ async def create_wallet_deposit(
     }
 
 
+async def create_hosted_invoice_deposit(
+    *,
+    amount: Decimal,
+    crypto_currency: str | None,
+    user_id: UUID,
+    db: AsyncSession,
+) -> dict:
+    """Create a Deposit row + a NOWPayments **hosted invoice** for users
+    who don't want to (or can't) use a connected wallet.
+
+    Returns ``{id, payment_url}``. The frontend redirects the browser to
+    ``payment_url`` — NOWPayments hosts the pay page, the user picks
+    currency (if not pre-selected), pays, and is redirected back to
+    ``success_url``. Settlement still gates on the same IPN webhook;
+    balance is never credited from this endpoint.
+    """
+    from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(status_code=503, detail="Platform is under maintenance.")
+    if not await get_bool_setting("allow_deposits", True):
+        raise HTTPException(status_code=403, detail="Deposits are currently disabled")
+
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        raise HTTPException(status_code=503, detail="Crypto deposits are not configured")
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+
+    deposit = Deposit(
+        user_id=user_id,
+        account_id=None,
+        amount=amount,
+        method="nowpayments",
+        status="initiated",
+    )
+    db.add(deposit)
+    await db.commit()
+    await db.refresh(deposit)
+
+    try:
+        np = await nowpayments_service.create_payment(
+            amount=amount,
+            crypto_currency=crypto_currency,
+            order_id=str(deposit.id),
+            description=f"FXArtha deposit ${float(amount):,.2f}",
+        )
+    except Exception as e:
+        logger.exception(
+            "NOWPayments create_payment (hosted invoice) failed for deposit %s",
+            deposit.id,
+        )
+        await db.delete(deposit)
+        await db.commit()
+        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
+
+    # Store the invoice id in transaction_id; the IPN webhook looks up by
+    # order_id (deposit.id), so we don't strictly need this column to match
+    # — but support uses it for forensics.
+    deposit.transaction_id = np["invoice_id"]
+    await db.commit()
+    await db.refresh(deposit)
+
+    return {
+        "id": str(deposit.id),
+        "status": deposit.status,
+        "amount_usd": float(deposit.amount),
+        "payment_url": np["payment_url"],
+        "invoice_id": deposit.transaction_id,
+    }
+
+
 async def get_wallet_deposit_status(
     *, deposit_id: UUID, user_id: UUID, db: AsyncSession,
 ) -> dict:

@@ -228,6 +228,31 @@ function DepositBody({
   const networkLabel = NETWORK_TO_CHAIN[deposit.network ?? '']?.name || deposit.network || '—';
   const wcConfigured = isWalletConnectConfigured();
   const evmCompatible = !!NETWORK_TO_CHAIN[deposit.network ?? ''];
+  // Set true while the user clicks "Pay on NOWPayments page" — we
+  // disable the button to prevent double-spawning hosted invoices on a
+  // double-click before the browser navigates away.
+  const [redirectingToHosted, setRedirectingToHosted] = useState(false);
+
+  const handlePayOnNowPayments = useCallback(async () => {
+    if (redirectingToHosted) return;
+    setRedirectingToHosted(true);
+    try {
+      const res = await api.post<{ payment_url: string }>(
+        '/wallet/deposit/hosted-invoice',
+        { amount: deposit.amount_usd, crypto_currency: cryptoAsset },
+      );
+      if (res?.payment_url) {
+        window.location.href = res.payment_url;
+        return; // navigation away
+      }
+      throw new Error('No payment URL returned');
+    } catch (e) {
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
+      const msg = err?.response?.data?.detail || err?.message || 'Could not create hosted invoice';
+      toast.error(typeof msg === 'string' ? msg : 'Could not create hosted invoice');
+      setRedirectingToHosted(false);
+    }
+  }, [deposit.amount_usd, cryptoAsset, redirectingToHosted]);
 
   if (settled) {
     return (
@@ -330,6 +355,41 @@ function DepositBody({
           The {networkLabel} network isn't supported by the Connect Wallet flow yet —
           send the amount above from any compatible wallet or exchange and we'll
           credit your balance once it confirms on-chain.
+        </div>
+      )}
+
+      {/* Mode B fallback — Pay on NOWPayments' hosted page. Targets users
+          who don't have a Web3 wallet, want to pay from a CEX in a
+          currency we don't list here, or just prefer the hosted UX. */}
+      {!expired && (
+        <div className="rounded-md border border-border-primary bg-bg-secondary p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-text-primary">
+                Don't have a crypto wallet?
+              </p>
+              <p className="text-[10px] text-text-tertiary leading-relaxed mt-0.5">
+                Pay on the NOWPayments page — works with any exchange,
+                supports more currencies. You'll return here after paying.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={redirectingToHosted}
+              onClick={handlePayOnNowPayments}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-buy text-white text-[11px] font-bold hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {redirectingToHosted ? (
+                <>
+                  <Loader2 size={11} className="animate-spin" /> Redirecting…
+                </>
+              ) : (
+                <>
+                  Pay on NOWPayments <ExternalLink size={11} />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
