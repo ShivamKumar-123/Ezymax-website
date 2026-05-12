@@ -257,7 +257,14 @@ function BrokerHome() {
         {/* Trade Now — blue gradient */}
         <button
           type="button"
-          onClick={() => router.push('/trading/terminal')}
+          onClick={() => {
+            if (accounts.length === 0) {
+              router.push('/trading/open-account');
+              return;
+            }
+            const id = activeId || accounts[0].id;
+            router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
+          }}
           className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
         >
           <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
