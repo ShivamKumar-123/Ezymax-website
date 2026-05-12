@@ -22,7 +22,6 @@ import {
   TrendingUp,
   X,
   ShieldCheck,
-  Crown,
   Gift,
   User2,
   Lock,
@@ -33,7 +32,6 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Check,
   History,
 } from 'lucide-react';
 
@@ -709,8 +707,13 @@ function WalletPageContent() {
                   Transaction History
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Main Balance — blue */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Main Balance — blue. This is also the withdrawable
+                    bucket: external payouts only ever debit main_wallet_balance.
+                    A separate "Withdrawable Balance" card used to live here
+                    but it was rendering the same number twice, so it was
+                    removed in favour of placing Deposit + Withdraw side by
+                    side. */}
                 <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20 flex flex-col">
                   <div className="flex items-center gap-2.5 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center">
@@ -721,13 +724,22 @@ function WalletPageContent() {
                   <p className="text-xl font-bold text-white font-mono tabular-nums">
                     ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-blue-200/70">USD</span>
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => { setFundMainTab('deposit'); scrollToFundPanel(); }}
-                    className="mt-3 w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
-                  >
-                    Deposit
-                  </button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setFundMainTab('deposit'); scrollToFundPanel(); }}
+                      className="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+                    >
+                      Deposit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setFundMainTab('withdraw'); scrollToFundPanel(); }}
+                      className="py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover text-text-primary border border-border-primary text-xs font-bold transition-colors"
+                    >
+                      Withdraw
+                    </button>
+                  </div>
                 </div>
 
                 {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
@@ -747,26 +759,6 @@ function WalletPageContent() {
                     className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
                   >
                     View Details
-                  </button>
-                </div>
-
-                {/* Withdrawable Balance — purple */}
-                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20 flex flex-col">
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center">
-                      <ArrowDownToLine size={18} className="text-purple-300" />
-                    </div>
-                    <p className="text-xs uppercase tracking-wide text-purple-200/80 font-medium">Withdrawable Balance</p>
-                  </div>
-                  <p className="text-xl font-bold text-white font-mono tabular-nums">
-                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-purple-200/70">USD</span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => { setFundMainTab('withdraw'); scrollToFundPanel(); }}
-                    className="mt-3 w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
-                  >
-                    Withdraw
                   </button>
                 </div>
               </div>
@@ -825,47 +817,12 @@ function WalletPageContent() {
                 );
               })()}
 
-              {/* VIP Status card */}
-              {(() => {
-                const isVip = !!(user as any)?.is_vip;
-                return (
-                  <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470]/70 to-[#2a1442] border border-purple-500/30">
-                    <p className="text-xs uppercase tracking-wide text-purple-200/80 font-medium mb-2">VIP Status</p>
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/40 flex items-center justify-center">
-                        <Crown size={18} className="text-amber-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-white">{isVip ? 'VIP Member' : 'Free User'}</p>
-                          {isVip && (
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        {isVip && <p className="text-[10px] text-purple-200/70 mt-0.5">Premium tier</p>}
-                      </div>
-                    </div>
-                    <div className="space-y-1 mb-3">
-                      <p className="text-[11px] font-semibold text-purple-200/90 mb-1">{isVip ? 'Your Benefits' : 'VIP Benefits'}</p>
-                      {['20% Extra XP & Rewards', 'Higher Staking Returns', 'Priority Support', 'Exclusive Airdrops'].map((b) => (
-                        <div key={b} className="flex items-center gap-1.5 text-[11px] text-purple-100/80">
-                          <Check size={11} className="text-emerald-400 shrink-0" />
-                          <span>{b}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => router.push('/rewards')}
-                      className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs font-bold transition-colors"
-                    >
-                      {isVip ? 'View VIP Benefits' : 'Upgrade to VIP'}
-                    </button>
-                  </div>
-                );
-              })()}
+              {/* VIP Status card — hidden until the VIP system is actually
+                  wired (qualification, purchase, boost application). Schema
+                  exists at vip_pass_allocations + users.is_vip but
+                  system_settings.vip_pass_enabled = false and no benefit code
+                  path reads it. Restore this block when shipping the
+                  feature. */}
             </div>
           </div>
 
