@@ -133,10 +133,12 @@ export default function AccountsPage() {
     }
   }, []);
 
-  const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
+  const fetchAccounts = useCallback(async (signal?: AbortSignal, opts: { silent?: boolean } = {}) => {
     const id = ++loadGen.current;
-    setLoading(true);
-    setError(null);
+    if (!opts.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await api.get<any>('/accounts', undefined, { signal });
       if (id !== loadGen.current) return;
@@ -146,11 +148,14 @@ export default function AccountsPage() {
       setStoreAccounts(tradingList);
     } catch (e) {
       if (id !== loadGen.current) return;
+      // Silent polls swallow errors so a transient blip doesn't surface
+      // a toast every 2s; the initial-load handler still shows them.
+      if (opts.silent) return;
       const msg = e instanceof Error ? e.message : 'Failed to load accounts';
       setError(msg);
       toast.error(msg);
     } finally {
-      if (id === loadGen.current) setLoading(false);
+      if (id === loadGen.current && !opts.silent) setLoading(false);
     }
   }, [setStoreAccounts]);
 
@@ -169,6 +174,37 @@ export default function AccountsPage() {
       loadGen.current += 1;
     };
   }, [fetchAccounts]);
+
+  // Live equity / P&L polling. The backend recomputes equity on every
+  // /accounts request using current Redis tick prices + open positions
+  // (see account_service.list_accounts), so a 2 s poll keeps the P&L
+  // column moving without any extra WebSocket plumbing. Polling pauses
+  // while the tab is hidden so we don't burn requests for nothing.
+  useEffect(() => {
+    if (tab !== 'accounts') return;
+    let cancelled = false;
+
+    const tick = () => {
+      if (cancelled) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void fetchAccounts(undefined, { silent: true });
+    };
+
+    const interval = setInterval(tick, 2000);
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) tick();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    };
+  }, [tab, fetchAccounts]);
 
   useEffect(() => {
     if (loading || rows.length === 0) return;
