@@ -20,6 +20,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
+from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
 
@@ -196,6 +197,20 @@ class SLTPEngine:
             description=f"{reason.upper()} hit: {pos.instrument.symbol if pos.instrument else ''} {side} {pos.lots} lots @ {close_price}",
         )
         db.add(tx)
+
+        # Bonus wagering — feed the auto-closed lots into the FIFO release
+        # queue. Skips demo accounts (function-internal). Errors swallowed
+        # so a release bug can never block an SL/TP trigger.
+        if account and account.user_id:
+            try:
+                await wallet_service.release_bonuses_after_trade(
+                    user_id=account.user_id,
+                    traded_lots=Decimal(str(pos.lots)),
+                    is_demo_account=bool(account.is_demo),
+                    db=db,
+                )
+            except Exception as _bonus_exc:
+                logger.debug("bonus release after SL/TP close failed: %s", _bonus_exc)
 
         try:
             await redis_client.publish(f"account:{pos.account_id}", json.dumps({

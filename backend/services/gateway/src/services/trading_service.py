@@ -18,7 +18,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
-from . import rewards_service
+from . import rewards_service, wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -966,6 +966,20 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             logger.debug("rewards trade-volume distribution failed: %s", _vol_exc)
     except Exception as _exc:
         logger.debug("rewards mark_progress failed: %s", _exc)
+
+    # Bonus wagering — feed this trade's lots into the FIFO release queue.
+    # Demo accounts skipped inside the function so users can't farm demo
+    # volume to release real bonus money. Errors swallowed so a bonus
+    # release bug can never block a close.
+    try:
+        await wallet_service.release_bonuses_after_trade(
+            user_id=user_id,
+            traded_lots=Decimal(str(close_lots)),
+            is_demo_account=bool(account.is_demo),
+            db=db,
+        )
+    except Exception as _bonus_exc:
+        logger.debug("bonus release after close failed: %s", _bonus_exc)
 
     await db.commit()
 

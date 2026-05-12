@@ -681,6 +681,93 @@ async def create_hosted_invoice_deposit(
     }
 
 
+async def release_bonuses_after_trade(
+    *,
+    user_id: UUID,
+    traded_lots: Decimal,
+    is_demo_account: bool,
+    db: AsyncSession,
+) -> None:
+    """Apply newly-traded lots toward each active user_bonus and release
+    those that meet their wagering requirement.
+
+    Lot accounting (FIFO): traded lots are consumed by the OLDEST active
+    bonus first; once that bonus's `lots_required` is reached, the
+    remainder flows to the next-oldest. A bonus is released the instant
+    its `lots_traded >= lots_required` — its locked amount is credited
+    to `user.main_wallet_balance` and a Transaction row of
+    `type='bonus_release'` is written so the credit appears in the
+    user's transaction history.
+
+    Real accounts only — demo trades do NOT count toward wagering
+    (otherwise users could trade demo to release real bonus money).
+
+    Caller MUST be inside an open DB transaction. This function only
+    flushes; it does not commit. Errors propagate; the caller should
+    wrap in try/except if a release failure must not block the trade
+    close.
+    """
+    if is_demo_account:
+        return
+    if traded_lots <= 0:
+        return
+
+    q = await db.execute(
+        select(UserBonus)
+        .where(UserBonus.user_id == user_id, UserBonus.status == "active")
+        .order_by(UserBonus.created_at.asc())
+        .with_for_update()
+    )
+    active = list(q.scalars().all())
+    if not active:
+        return
+
+    user_q = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
+    user = user_q.scalar_one_or_none()
+    if not user:
+        return
+
+    remaining = Decimal(str(traded_lots))
+    for bonus in active:
+        if remaining <= 0:
+            break
+        required = Decimal(str(bonus.lots_required or 0))
+        already = Decimal(str(bonus.lots_traded or 0))
+        needed = max(Decimal("0"), required - already)
+        # Lots_required==0 is a no-wagering bonus — release immediately
+        # without consuming any of the traded volume.
+        if required <= 0:
+            consume = Decimal("0")
+        elif remaining >= needed:
+            consume = needed
+        else:
+            consume = remaining
+
+        bonus.lots_traded = already + consume
+        remaining -= consume
+
+        if bonus.lots_traded >= required:
+            bonus.status = "released"
+            bonus.released_at = datetime.utcnow()
+            bonus_amount = Decimal(str(bonus.amount or 0))
+            if bonus_amount > 0:
+                user.main_wallet_balance = (
+                    Decimal(str(user.main_wallet_balance or 0)) + bonus_amount
+                )
+                db.add(Transaction(
+                    user_id=user_id,
+                    account_id=None,
+                    type="bonus_release",
+                    amount=bonus_amount,
+                    balance_after=user.main_wallet_balance,
+                    reference_id=bonus.id,
+                    description="Bonus released — wagering requirement met",
+                ))
+    await db.flush()
+
+
 async def get_wallet_deposit_status(
     *, deposit_id: UUID, user_id: UUID, db: AsyncSession,
 ) -> dict:
