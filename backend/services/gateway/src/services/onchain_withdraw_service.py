@@ -107,6 +107,10 @@ async def create_onchain_withdrawal(
         currency="USDT",
         method="wallet_connect",
         crypto_address=linked,
+        # Snapshot the chain the user picked so admin doesn't have to
+        # guess from the address (USDT on ETH/BSC/TRC all look different
+        # but the contract address column is opaque in a list view).
+        wallet_chain_snapshot=net,
         status="pending",
     )
     db.add(withdrawal)

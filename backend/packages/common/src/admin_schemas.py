@@ -305,8 +305,16 @@ class WithdrawalOut(BaseModel):
     status: str
     bank_details: Optional[dict] = None
     crypto_address: Optional[str] = None
+    # Chain name captured at submit time (eth | bsc | tron | sol | …) so the
+    # admin sees which network to send on without guessing from the address.
+    wallet_chain_snapshot: Optional[str] = None
+    # Filled by admin via /mark-paid once the on-chain (or off-chain) payout
+    # has been sent. Surfaces the explorer-linkable hash to the user.
+    crypto_tx_hash: Optional[str] = None
     rejection_reason: Optional[str] = None
     created_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     user_email: Optional[str] = None
     user_name: Optional[str] = None
 

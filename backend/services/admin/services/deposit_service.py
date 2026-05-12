@@ -44,8 +44,12 @@ def _withdrawal_to_out(w: Withdrawal, user: User = None) -> WithdrawalOut:
         status=w.status,
         bank_details=w.bank_details,
         crypto_address=w.crypto_address,
+        wallet_chain_snapshot=w.wallet_chain_snapshot,
+        crypto_tx_hash=w.crypto_tx_hash,
         rejection_reason=w.rejection_reason,
         created_at=w.created_at,
+        approved_at=w.approved_at,
+        completed_at=w.completed_at,
         user_email=user.email if user else None,
         user_name=f"{user.first_name or ''} {user.last_name or ''}".strip() if user else None,
     )
@@ -324,17 +328,24 @@ async def approve_withdrawal(
     if withdrawal.status != "pending":
         raise HTTPException(status_code=400, detail="Withdrawal is not pending")
 
+    # wallet_connect withdrawals already debited main_wallet_balance at
+    # request time (see onchain_withdraw_service.create_onchain_withdrawal),
+    # so approving them must NOT debit again. We still write the ledger
+    # row here at approval time so the audit trail shows the admin action.
+    already_debited = (withdrawal.method or "") == "wallet_connect"
+
     if withdrawal.account_id:
         acc_q = await db.execute(
             select(TradingAccount).where(TradingAccount.id == withdrawal.account_id).with_for_update()
         )
         account = acc_q.scalar_one_or_none()
         if account:
-            if (account.balance or Decimal("0")) < withdrawal.amount:
-                raise HTTPException(status_code=400, detail="Insufficient account balance")
-            account.balance = (account.balance or Decimal("0")) - withdrawal.amount
-            account.equity = account.balance + (account.credit or Decimal("0"))
-            account.free_margin = account.equity - (account.margin_used or Decimal("0"))
+            if not already_debited:
+                if (account.balance or Decimal("0")) < withdrawal.amount:
+                    raise HTTPException(status_code=400, detail="Insufficient account balance")
+                account.balance = (account.balance or Decimal("0")) - withdrawal.amount
+                account.equity = account.balance + (account.credit or Decimal("0"))
+                account.free_margin = account.equity - (account.margin_used or Decimal("0"))
 
             txn = Transaction(
                 user_id=withdrawal.user_id,
@@ -354,10 +365,11 @@ async def approve_withdrawal(
         user_row = uw.scalar_one_or_none()
         if not user_row:
             raise HTTPException(status_code=400, detail="User not found")
-        main_bal = user_row.main_wallet_balance or Decimal("0")
-        if main_bal < withdrawal.amount:
-            raise HTTPException(status_code=400, detail="Insufficient main wallet balance")
-        user_row.main_wallet_balance = main_bal - withdrawal.amount
+        if not already_debited:
+            main_bal = user_row.main_wallet_balance or Decimal("0")
+            if main_bal < withdrawal.amount:
+                raise HTTPException(status_code=400, detail="Insufficient main wallet balance")
+            user_row.main_wallet_balance = main_bal - withdrawal.amount
         db.add(
             Transaction(
                 user_id=withdrawal.user_id,
@@ -430,12 +442,41 @@ async def reject_withdrawal(
     withdrawal_id: uuid.UUID, reason: str | None,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
-    result = await db.execute(select(Withdrawal).where(Withdrawal.id == withdrawal_id))
+    # Row-lock so the refund branch (below) is safe against a concurrent
+    # approve on the same row.
+    result = await db.execute(
+        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+    )
     withdrawal = result.scalar_one_or_none()
     if not withdrawal:
         raise HTTPException(status_code=404, detail="Withdrawal not found")
     if withdrawal.status != "pending":
         raise HTTPException(status_code=400, detail="Withdrawal is not pending")
+
+    # wallet_connect withdrawals had main_wallet_balance debited at REQUEST
+    # time so we must refund here. All other methods debit at approve, so
+    # a still-pending row never moved money — nothing to refund.
+    if (withdrawal.method or "") == "wallet_connect":
+        uw = await db.execute(
+            select(User).where(User.id == withdrawal.user_id).with_for_update()
+        )
+        user_row = uw.scalar_one_or_none()
+        if user_row:
+            user_row.main_wallet_balance = (
+                Decimal(str(user_row.main_wallet_balance or 0)) + Decimal(str(withdrawal.amount))
+            )
+            db.add(
+                Transaction(
+                    user_id=withdrawal.user_id,
+                    account_id=None,
+                    type="withdrawal_refund",
+                    amount=Decimal(str(withdrawal.amount)),
+                    balance_after=user_row.main_wallet_balance,
+                    reference_id=withdrawal.id,
+                    description="Withdrawal rejected — main wallet refunded",
+                    created_by=admin_id,
+                )
+            )
 
     withdrawal.status = "rejected"
     withdrawal.rejection_reason = reason
@@ -481,6 +522,96 @@ async def reject_withdrawal(
         import logging as _logging
         _logging.getLogger("admin.withdraw").warning("withdrawal reject email failed: %s", _e)
     return {"message": "Withdrawal rejected"}
+
+
+async def mark_withdrawal_paid(
+    withdrawal_id: uuid.UUID,
+    tx_hash: str,
+    notes: str | None,
+    admin_id: uuid.UUID,
+    ip_address: str | None,
+    db: AsyncSession,
+) -> dict:
+    """Record an off-platform payout. Admin calls this after they have
+    actually sent the funds (signed an on-chain tx, made a bank
+    transfer, etc.) and pastes the tx hash / reference.
+
+    The Withdrawal row must already be in status='approved' (balance
+    debited). This flips status to 'paid' and stamps crypto_tx_hash +
+    completed_at so the user sees an explorer-linkable hash in their
+    transaction history.
+    """
+    tx_hash = (tx_hash or "").strip()
+    if not tx_hash:
+        raise HTTPException(status_code=400, detail="tx_hash is required")
+
+    result = await db.execute(
+        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+    )
+    withdrawal = result.scalar_one_or_none()
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="Withdrawal not found")
+    if withdrawal.status != "approved":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Withdrawal must be 'approved' before marking paid (current: {withdrawal.status})",
+        )
+
+    withdrawal.crypto_tx_hash = tx_hash
+    withdrawal.status = "paid"
+    withdrawal.completed_at = datetime.utcnow()
+
+    await write_audit_log(
+        db, admin_id, "mark_withdrawal_paid", "withdrawal", withdrawal_id,
+        new_values={"tx_hash": tx_hash, "status": "paid", "notes": notes or ""},
+        ip_address=ip_address,
+    )
+
+    await create_notification(
+        db,
+        withdrawal.user_id,
+        title="Withdrawal paid",
+        message=(
+            f"Your withdrawal of ${float(withdrawal.amount):,.2f} has been sent. "
+            f"Reference: {tx_hash}"
+        ),
+        notif_type="withdrawal",
+        action_url="/wallet",
+        commit=False,
+    )
+    await db.commit()
+
+    # Payout email — fire-and-forget. Falls back to a plain email if no
+    # dedicated template exists for paid withdrawals yet.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        u = (await db.execute(select(User).where(User.id == withdrawal.user_id))).scalar_one_or_none()
+        if smtp_configured() and u and u.email:
+            subject = f"Your withdrawal of ${float(withdrawal.amount):,.2f} has been paid"
+            html = (
+                f"<p>Hi {u.first_name or 'Trader'},</p>"
+                f"<p>Your withdrawal request has been processed and the funds have been sent.</p>"
+                f"<ul>"
+                f"<li><strong>Amount:</strong> ${float(withdrawal.amount):,.2f}</li>"
+                f"<li><strong>Method:</strong> {withdrawal.method or 'manual'}</li>"
+                f"<li><strong>Reference / TX:</strong> {tx_hash}</li>"
+                f"</ul>"
+                f"<p>If you don't see the funds within the expected confirmation window, "
+                f"contact support and quote request ID {withdrawal.id}.</p>"
+            )
+            text = (
+                f"Your withdrawal of ${float(withdrawal.amount):,.2f} has been sent.\n"
+                f"Reference / TX: {tx_hash}\n"
+                f"Request ID: {withdrawal.id}\n"
+            )
+            fire_and_forget(send_email(u.email, subject, html, text=text))
+    except Exception as _e:
+        import logging as _logging
+        _logging.getLogger("admin.withdraw").warning("withdrawal paid email failed: %s", _e)
+
+    return {"message": "Withdrawal marked as paid", "tx_hash": tx_hash}
 
 
 async def download_deposit_screenshot(deposit_id: uuid.UUID, db: AsyncSession):

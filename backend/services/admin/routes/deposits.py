@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -8,6 +9,11 @@ from dependencies import require_permission
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import RejectRequest
 from services import deposit_service
+
+
+class MarkPaidRequest(BaseModel):
+    tx_hash: str
+    notes: str | None = None
 
 router = APIRouter(prefix="/finance", tags=["Finance"])
 
@@ -105,6 +111,27 @@ async def reject_withdrawal(
     return await deposit_service.reject_withdrawal(
         withdrawal_id=withdrawal_id, reason=body.reason, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.post("/withdrawals/{withdrawal_id}/mark-paid")
+async def mark_withdrawal_paid(
+    withdrawal_id: uuid.UUID,
+    body: MarkPaidRequest,
+    request: Request,
+    admin: User = Depends(require_permission("withdrawals.approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record the off-platform payout admin made. Requires withdrawal to
+    be in 'approved' status. Stamps the on-chain tx hash (or bank
+    reference) and flips status to 'paid'."""
+    return await deposit_service.mark_withdrawal_paid(
+        withdrawal_id=withdrawal_id,
+        tx_hash=body.tx_hash,
+        notes=body.notes,
+        admin_id=admin.id,
+        ip_address=request.client.host if request.client else None,
+        db=db,
     )
 
 
