@@ -1103,6 +1103,50 @@ function WalletPageContent() {
                         </div>
                       </div>
 
+                      {/* Fee preview — approximate. NowPayments adds a service
+                          fee (~0.5%) + the network gas to the user's amount
+                          (is_fee_paid_by_user=true on the backend), so the
+                          user actually sends more than they entered. Showing
+                          this here removes the surprise on the next screen. */}
+                      {Number(depositAmount) > 0 && (() => {
+                        const amt = Number(depositAmount);
+                        const svcFee = +(amt * 0.005).toFixed(2); // ~0.5%
+                        const gasEstimate = selectedCryptoDeposit === 'USDT_BSC'
+                          ? 0.30
+                          : selectedCryptoDeposit === 'USDT_TRC'
+                            ? 1.00
+                            : 7.00; // ERC midpoint of $5-20
+                        const networkLabel = selectedCryptoDeposit === 'USDT_BSC'
+                          ? 'BEP-20'
+                          : selectedCryptoDeposit === 'USDT_TRC'
+                            ? 'TRC-20'
+                            : 'ERC-20';
+                        const total = +(amt + svcFee + gasEstimate).toFixed(2);
+                        return (
+                          <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Amount</span>
+                              <span className="font-mono text-text-primary">${amt.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Service fee (~0.5%)</span>
+                              <span className="font-mono text-text-primary">~${svcFee.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Network gas ({networkLabel})</span>
+                              <span className="font-mono text-text-primary">~${gasEstimate.toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-border-primary pt-1.5 mt-1.5 flex items-center justify-between">
+                              <span className="text-xs font-semibold text-text-secondary">You&apos;ll send approximately</span>
+                              <span className="font-mono font-bold text-accent text-sm">~${total.toFixed(2)} USDT</span>
+                            </div>
+                            <p className="text-[10px] text-text-tertiary leading-snug pt-1">
+                              Exact amount is locked when the payment is generated. Network gas can vary with on-chain conditions.
+                            </p>
+                          </div>
+                        );
+                      })()}
+
                       <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
                         <p className="text-xs text-text-secondary leading-relaxed">
                           A NowPayments invoice will be generated for the selected USDT network. Send the exact amount from any wallet or exchange to the address shown — funds credit automatically after on-chain confirmations.
