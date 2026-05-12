@@ -8,7 +8,7 @@
  * configurable banner carousel.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -89,6 +89,50 @@ function BrokerHome() {
     api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
   }, []);
 
+  // Cached daily-open bars — these don't change intraday, so we fetch
+  // once on mount and reuse across every mover refresh. The poll only
+  // re-pulls the cheap /instruments/prices/all endpoint.
+  const dayOpenBarsRef = useRef<BarRow[][]>([]);
+
+  const refreshAccounts = useCallback(async (opts: { silent?: boolean } = {}) => {
+    try {
+      const accs = await api.get<{ items: AccountRow[] } | AccountRow[]>('/accounts');
+      const list: AccountRow[] = Array.isArray(accs) ? accs : (accs as { items: AccountRow[] }).items || [];
+      setAccounts(list);
+      if (list.length > 0) setActiveId((cur) => cur ?? list[0].id);
+    } catch {
+      // Silent polls swallow errors; initial-load surfacing is handled
+      // by the bootstrap effect below.
+      if (!opts.silent) throw new Error('accounts fetch failed');
+    }
+  }, []);
+
+  const recomputeMovers = useCallback((ticksRaw: PriceTick[]) => {
+    const tickMap = new Map<string, number>();
+    for (const t of ticksRaw || []) {
+      if (t?.symbol && t.bid && t.ask) tickMap.set(t.symbol.toUpperCase(), (t.bid + t.ask) / 2);
+    }
+    const out = TOP_MOVER_SYMBOLS.map((sym, i) => {
+      const bars = dayOpenBarsRef.current[i] || [];
+      const dayOpen = bars.length > 0 ? Number(bars[bars.length - 1].open) : NaN;
+      const price = tickMap.get(sym) ?? (bars.length > 0 ? Number(bars[bars.length - 1].close) : NaN);
+      const pct = (Number.isFinite(dayOpen) && dayOpen > 0 && Number.isFinite(price))
+        ? ((price - dayOpen) / dayOpen) * 100
+        : 0;
+      return { symbol: sym, pct, price };
+    });
+    setMovers(out);
+  }, []);
+
+  const refreshMoverTicks = useCallback(async () => {
+    try {
+      const ticksRaw = await api.get<PriceTick[]>('/instruments/prices/all');
+      recomputeMovers(ticksRaw || []);
+    } catch {
+      // Silent — keep the last known prices on a transient failure.
+    }
+  }, [recomputeMovers]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -120,24 +164,40 @@ function BrokerHome() {
           ),
         ]);
         if (cancelled) return;
-        const tickMap = new Map<string, number>();
-        for (const t of ticksRaw || []) {
-          if (t?.symbol && t.bid && t.ask) tickMap.set(t.symbol.toUpperCase(), (t.bid + t.ask) / 2);
-        }
-        const out = TOP_MOVER_SYMBOLS.map((sym, i) => {
-          const bars = barsRaw[i] || [];
-          const dayOpen = bars.length > 0 ? Number(bars[bars.length - 1].open) : NaN;
-          const price = tickMap.get(sym) ?? (bars.length > 0 ? Number(bars[bars.length - 1].close) : NaN);
-          const pct = (Number.isFinite(dayOpen) && dayOpen > 0 && Number.isFinite(price))
-            ? ((price - dayOpen) / dayOpen) * 100
-            : 0;
-          return { symbol: sym, pct, price };
-        });
-        setMovers(out);
+        dayOpenBarsRef.current = barsRaw;
+        recomputeMovers(ticksRaw || []);
       } catch {}
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [recomputeMovers]);
+
+  // Background polling — keeps Total Balance, Open P/L, the account
+  // card stats, and Top Daily Movers fresh while the dashboard is
+  // visible. Both endpoints are cheap; /accounts recomputes equity
+  // server-side from current Redis tick prices on every call.
+  useEffect(() => {
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void refreshAccounts({ silent: true });
+      void refreshMoverTicks();
+    };
+    const interval = setInterval(tick, 2000);
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) tick();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    };
+  }, [refreshAccounts, refreshMoverTicks]);
 
   const activeAccount = useMemo(
     () => accounts.find((a) => a.id === activeId) || accounts[0] || null,
