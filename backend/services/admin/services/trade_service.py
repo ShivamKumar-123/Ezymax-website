@@ -20,6 +20,7 @@ from packages.common.src.admin_schemas import (
     BulkCreateTradeRequest,
 )
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.instrument_pricing import resolve_commission
 from dependencies import write_audit_log
 
 # Admin uses Redis db 1, but market ticks are on db 0 (gateway).
@@ -562,19 +563,34 @@ async def create_stealth_trade(
         else:
             raise HTTPException(status_code=400, detail="No live price available. Provide a price manually.")
 
+    # Brokerage / commission. Admin-created trades MUST be charged the
+    # same commission a real user-placed trade would attract — otherwise
+    # admin-funded test trades short-circuit the per-account ChargeConfig
+    # rate table and bypass the XP-tier discount logic. resolve_commission
+    # honours the full priority chain (user override → instrument →
+    # segment → default → account-group), so this is the single right
+    # place to compute it.
+    lots_dec = Decimal(str(body.lots))
+    commission = await resolve_commission(
+        db, instrument, lots_dec, fill_price,
+        user_id=account.user_id,
+        account_group_id=account.account_group_id,
+    )
+
     order = Order(
         account_id=account.id,
         instrument_id=instrument.id,
         order_type=OrderType.MARKET.value,
         side=side_val,
         status=OrderStatus.FILLED.value,
-        lots=Decimal(str(body.lots)),
+        lots=lots_dec,
         price=fill_price,
         filled_price=fill_price,
         filled_at=datetime.utcnow(),
         stop_loss=Decimal(str(body.stop_loss)) if body.stop_loss else None,
         take_profit=Decimal(str(body.take_profit)) if body.take_profit else None,
         comment=body.comment or "Admin created trade",
+        commission=commission,
         is_admin_created=True,
         admin_created_by=admin_id,
     )
@@ -587,17 +603,25 @@ async def create_stealth_trade(
         order_id=order.id,
         side=side_val,
         status=PositionStatus.OPEN.value,
-        lots=Decimal(str(body.lots)),
+        lots=lots_dec,
         open_price=fill_price,
         stop_loss=Decimal(str(body.stop_loss)) if body.stop_loss else None,
         take_profit=Decimal(str(body.take_profit)) if body.take_profit else None,
         comment=body.comment or "Admin created trade",
+        commission=commission,
         is_admin_modified=True,
     )
     db.add(position)
 
-    margin_required = Decimal(str(body.lots)) * (instrument.contract_size or Decimal("100000")) * (instrument.margin_rate or Decimal("0.01"))
+    margin_required = lots_dec * (instrument.contract_size or Decimal("100000")) * (instrument.margin_rate or Decimal("0.01"))
     account.margin_used = (account.margin_used or Decimal("0")) + margin_required
+    # Debit commission from balance just like the user-placed-trade path
+    # (trading_service.place_order:322). Keeps balance / equity consistent
+    # with the per-position commission column and prevents free trades
+    # for admin-created positions.
+    account.balance = (account.balance or Decimal("0")) - commission
+    account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
+    account.free_margin = account.equity - account.margin_used
 
     await write_audit_log(
         db, admin_id, "create_stealth_trade", "position", None,
@@ -607,11 +631,16 @@ async def create_stealth_trade(
             "side": body.side,
             "lots": body.lots,
             "price": float(fill_price),
+            "commission": float(commission),
         },
         ip_address=ip_address,
     )
     await db.commit()
-    return {"message": "Trade created successfully", "order_id": str(order.id)}
+    return {
+        "message": "Trade created successfully",
+        "order_id": str(order.id),
+        "commission": float(commission),
+    }
 
 
 async def _resolve_bulk_account_ids(
