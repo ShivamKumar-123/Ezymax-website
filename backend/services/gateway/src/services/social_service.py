@@ -1694,7 +1694,11 @@ async def pamm_master_trades(
             "closed_at": th.closed_at.isoformat() if th.closed_at else None,
             "master_pnl": profit,
             "your_share": round(profit * ratio, 2),
-            "close_reason": th.close_reason,
+            # Hide 'admin' close-reason from investor view (matches
+            # portfolio_service._public_close_reason). Investor sees
+            # 'manual' if admin closed the master's trade.
+            "close_reason": ("manual" if (th.close_reason or "").lower() == "admin"
+                             else (th.close_reason or "manual")),
             "status": "closed",
         })
 

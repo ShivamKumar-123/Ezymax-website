@@ -19,6 +19,19 @@ from packages.common.src.models import (
 from packages.common.src.redis_client import redis_client, PriceChannel
 
 
+def _public_close_reason(reason: str | None) -> str:
+    """User-facing close-reason translation. The DB stores 'admin' when
+    an admin closes a trade on behalf of the user (audit trail), but
+    the user shouldn't see that — to them it's just a manual close.
+    SL / TP / margin / copy reasons round-trip unchanged. Centralised
+    here so any new trader-facing endpoint can reuse it without
+    re-deriving the same rule."""
+    r = (reason or "manual").lower()
+    if r == "admin":
+        return "manual"
+    return r
+
+
 async def _get_user_accounts(user_id: UUID, db: AsyncSession) -> list[TradingAccount]:
     result = await db.execute(
         select(TradingAccount).where(TradingAccount.user_id == user_id)
@@ -356,7 +369,15 @@ async def trade_history(
             "stop_loss": sl_val,
             "take_profit": tp_val,
             "swap": float(t.swap), "commission": float(t.commission),
-            "pnl": float(t.profit), "close_reason": t.close_reason or "manual",
+            "pnl": float(t.profit),
+            # User-facing view hides the 'admin' close-reason. Admins
+            # closing a trade on a user's behalf still write
+            # close_reason='admin' to the DB (audit trail intact, the
+            # admin panel renders an "Admin" badge) but the trader
+            # shouldn't see "Admin closed your trade" in their own
+            # history — they see "Manual" the same as if they'd
+            # clicked Close themselves.
+            "close_reason": _public_close_reason(t.close_reason),
             "trade_type": trade_type,
             "opened_at": t.opened_at.isoformat() if t.opened_at else None,
             "close_time": t.closed_at.isoformat() if t.closed_at else None,
