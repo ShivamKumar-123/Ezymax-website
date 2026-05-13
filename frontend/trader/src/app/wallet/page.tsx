@@ -19,19 +19,12 @@ import {
   RefreshCcw,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Plus,
+  Minus,
   TrendingUp,
   X,
   ShieldCheck,
   Gift,
-  User2,
-  Lock,
-  Bell,
-  LinkIcon,
-  FileDown,
-  MessageCircle,
-  HelpCircle,
-  LogOut,
-  ChevronRight,
   History,
 } from 'lucide-react';
 
@@ -93,7 +86,6 @@ const DEMO_FUNDING_MSG =
 // NOWPayments. Withdrawals still echo the OxaPay-style payout payload (only
 // the inbound deposit channel changed).
 const CRYPTO_DEPOSIT_METHOD = 'nowpayments';
-const CRYPTO_WITHDRAW_METHOD = 'oxapay';
 
 /** UI grid — selection is sent with NOWPayments / payout details for finance matching. */
 const CRYPTO_ASSETS = [
@@ -110,6 +102,32 @@ const CRYPTO_ASSETS = [
   { id: 'SOL', label: 'SOL', sub: 'Solana' },
   { id: 'XRP', label: 'XRP', sub: 'XRP' },
 ] as const;
+
+// Networks the on-chain USDT payout supports (admin signs the transfer
+// manually). Must mirror `ALLOWED_NETWORKS` in onchain_withdraw_service.py.
+const WITHDRAW_NETWORK_OPTIONS = [
+  {
+    network: 'tron' as const,
+    label: 'USDT TRC20',
+    sub: 'Tron network',
+    addressHint: 'Address starts with T (e.g. TXYZ…)',
+    addressRegex: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
+  },
+  {
+    network: 'bsc' as const,
+    label: 'USDT BEP20',
+    sub: 'BNB Smart Chain',
+    addressHint: 'EVM address — 0x followed by 40 hex characters',
+    addressRegex: /^0x[a-fA-F0-9]{40}$/,
+  },
+  {
+    network: 'eth' as const,
+    label: 'USDT ERC20',
+    sub: 'Ethereum',
+    addressHint: 'EVM address — 0x followed by 40 hex characters',
+    addressRegex: /^0x[a-fA-F0-9]{40}$/,
+  },
+];
 
 // 'crypto' = automated provider flow (NOWPayments for deposits, OxaPay-style
 // payout details for withdrawals). 'manual' = legacy bank/UPI manual path.
@@ -152,7 +170,6 @@ function WalletPageContent() {
   const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
-  const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
 
   const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
   // On-site wallet-connect deposit modal — opened from the deposit form's
@@ -169,7 +186,10 @@ function WalletPageContent() {
 
   const [withdrawChannel, setWithdrawChannel] = useState<FundingChannel>('crypto');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawOxapayDetails, setWithdrawOxapayDetails] = useState('');
+  /** USDT payout chain the user is sending to. Server requires one of these. */
+  const [withdrawNetwork, setWithdrawNetwork] = useState<'tron' | 'bsc' | 'eth'>('tron');
+  /** Destination wallet address (typed by user). No wallet-connect needed. */
+  const [withdrawCryptoAddress, setWithdrawCryptoAddress] = useState('');
   const [manualWithdrawUpi, setManualWithdrawUpi] = useState('');
   const [manualWithdrawNotes, setManualWithdrawNotes] = useState('');
   const [manualWithdrawQrFile, setManualWithdrawQrFile] = useState<File | null>(null);
@@ -308,7 +328,6 @@ function WalletPageContent() {
     }).format(n);
 
   const selectedDepositCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoDeposit) ?? CRYPTO_ASSETS[0];
-  const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
     setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
@@ -356,7 +375,7 @@ function WalletPageContent() {
       return;
     }
     setWithdrawAmount('');
-    setWithdrawOxapayDetails('');
+    setWithdrawCryptoAddress('');
     setWithdrawUiSection('crypto');
     setManualWithdrawUpi('');
     setManualWithdrawNotes('');
@@ -390,7 +409,7 @@ function WalletPageContent() {
     setFundMainTab('withdraw');
     setWithdrawUiSection('crypto');
     setWithdrawAmount('');
-    setWithdrawOxapayDetails('');
+    setWithdrawCryptoAddress('');
     setManualWithdrawUpi('');
     setManualWithdrawNotes('');
     setManualWithdrawQrFile(null);
@@ -413,26 +432,29 @@ function WalletPageContent() {
       return;
     }
     if (withdrawChannel === 'crypto') {
-      // Destination address is decided server-side from the user's
-      // linked wallet — we no longer let the user type it. The UI
-      // shows it read-only on the withdraw card. If they have no
-      // linked wallet at all the OnboardingGate would've stopped them
-      // before this point; defensive client check too.
-      if (!linkedWalletAddress) {
-        toast.error('Link a wallet from Profile → Security before requesting a withdrawal.');
+      // Manual USDT payout: user types their own destination address +
+      // picks the chain. No wallet-connect required. Admin reviews +
+      // signs the on-chain transfer from the back office.
+      const opt = WITHDRAW_NETWORK_OPTIONS.find((o) => o.network === withdrawNetwork)
+        ?? WITHDRAW_NETWORK_OPTIONS[0];
+      const addr = withdrawCryptoAddress.trim();
+      if (!addr) {
+        toast.error('Enter your USDT wallet address');
+        return;
+      }
+      if (!opt.addressRegex.test(addr)) {
+        toast.error(`Invalid ${opt.label} address. ${opt.addressHint}`);
         return;
       }
       setWithdrawSubmitting(true);
       try {
-        await api.post('/wallet/withdraw', {
+        await api.post('/wallet/withdraw/onchain', {
+          network: opt.network,
           amount: amt,
-          method: CRYPTO_WITHDRAW_METHOD,
-          // Server ignores any address the FE sends and uses
-          // user.wallet_address, but we send the linked address anyway
-          // so audit logs make the intent explicit.
-          bank_details: { destination: linkedWalletAddress },
+          destination_address: addr,
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
+        setWithdrawCryptoAddress('');
         void fetchData(true);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
@@ -945,21 +967,23 @@ function WalletPageContent() {
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
-                            disabled={demoFundingBlocked}
-                            title="Move to main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
-                          >
-                            <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
                             onClick={(e) => { e.stopPropagation(); openTransferFromMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Add from main wallet"
                             className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
                           >
-                            <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
+                            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            <span>Deposit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
+                            disabled={demoFundingBlocked}
+                            title="Move to main wallet"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
+                          >
+                            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            <span>Withdraw</span>
                           </button>
                         </div>
                       ) : (
@@ -1211,115 +1235,136 @@ function WalletPageContent() {
                   </p>
 
                   {withdrawUiSection === 'crypto' ? (
-                    <>
-                      <div>
-                        <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">Payment Method</p>
-                        {/* Featured selected coin */}
-                        <div className="rounded-xl border border-border-primary bg-bg-secondary p-4 mb-2">
-                          <p className="text-base font-bold text-text-primary font-mono flex items-center gap-2.5">
-                            <span className="text-xl leading-none" aria-hidden>
-                              {selectedWithdrawCrypto.id === 'BTC' ? '₿' : '◆'}
-                            </span>
-                            <span>
-                              {selectedWithdrawCrypto.label}{' '}
-                              <span className="text-text-tertiary text-sm font-normal">({selectedWithdrawCrypto.sub})</span>
-                            </span>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {CRYPTO_ASSETS.filter((c) => c.id !== selectedCryptoWithdraw).map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => setSelectedCryptoWithdraw(c.id)}
-                              className="rounded-xl border border-border-primary bg-bg-secondary p-3.5 text-left transition-colors hover:border-border-secondary hover:bg-bg-hover"
-                            >
-                              <div className="font-bold text-text-primary font-mono text-sm">{c.label}</div>
-                              <div className="text-[11px] text-text-tertiary mt-0.5">({c.sub})</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    (() => {
+                      const activeOpt = WITHDRAW_NETWORK_OPTIONS.find((o) => o.network === withdrawNetwork)
+                        ?? WITHDRAW_NETWORK_OPTIONS[0];
+                      const linkedMatchesNetwork = !!linkedWalletAddress &&
+                        activeOpt.addressRegex.test(linkedWalletAddress);
+                      const trimmedAddr = withdrawCryptoAddress.trim();
+                      const addrLooksValid =
+                        trimmedAddr.length > 0 && activeOpt.addressRegex.test(trimmedAddr);
+                      return (
+                        <>
+                          <div>
+                            <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">USDT Network</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {WITHDRAW_NETWORK_OPTIONS.map((opt) => {
+                                const active = opt.network === withdrawNetwork;
+                                return (
+                                  <button
+                                    key={opt.network}
+                                    type="button"
+                                    onClick={() => setWithdrawNetwork(opt.network)}
+                                    className={clsx(
+                                      'rounded-xl border p-3.5 text-left transition-colors',
+                                      active
+                                        ? 'border-accent/60 bg-accent/10'
+                                        : 'border-border-primary bg-bg-secondary hover:border-border-secondary hover:bg-bg-hover',
+                                    )}
+                                  >
+                                    <div className={clsx(
+                                      'font-bold text-sm font-mono',
+                                      active ? 'text-accent' : 'text-text-primary',
+                                    )}>
+                                      {opt.label}
+                                    </div>
+                                    <div className="text-[11px] text-text-tertiary mt-0.5">{opt.sub}</div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-xs text-text-secondary">Amount (USD)</label>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs text-text-secondary">Amount (USD)</label>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
+                                }
+                                className="text-xs font-bold text-[#d6a93d] hover:underline"
+                              >
+                                Max
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={withdrawAmount}
+                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs text-text-secondary">Your {activeOpt.label} address</label>
+                              {linkedMatchesNetwork && (
+                                <button
+                                  type="button"
+                                  onClick={() => setWithdrawCryptoAddress(linkedWalletAddress)}
+                                  className="text-[11px] font-bold text-[#d6a93d] hover:underline"
+                                >
+                                  Use linked wallet
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              spellCheck={false}
+                              autoCorrect="off"
+                              autoCapitalize="off"
+                              value={withdrawCryptoAddress}
+                              onChange={(e) => setWithdrawCryptoAddress(e.target.value)}
+                              placeholder={activeOpt.addressHint}
+                              className={clsx(
+                                'w-full px-4 py-3 rounded-xl border bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none font-mono text-sm break-all',
+                                trimmedAddr && !addrLooksValid
+                                  ? 'border-red-500/60 focus:border-red-500'
+                                  : 'border-border-primary focus:border-accent/50',
+                              )}
+                            />
+                            <p className="text-[11px] text-text-tertiary leading-relaxed">
+                              {trimmedAddr && !addrLooksValid
+                                ? `That doesn't look like a valid ${activeOpt.label} address.`
+                                : `Double-check the address — payouts on the wrong network can't be recovered.`}
+                            </p>
+                          </div>
+
+                          <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
+
                           <button
                             type="button"
-                            onClick={() =>
-                              setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
+                            onClick={() => void submitWithdraw()}
+                            disabled={
+                              demoFundingBlocked ||
+                              withdrawSubmitting ||
+                              !withdrawAmount ||
+                              !addrLooksValid
                             }
-                            className="text-xs font-bold text-[#d6a93d] hover:underline"
+                            className={clsx(
+                              'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
+                              demoFundingBlocked ||
+                                withdrawSubmitting ||
+                                !withdrawAmount ||
+                                !addrLooksValid
+                                ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                                : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            )}
                           >
-                            Max
+                            {withdrawSubmitting
+                              ? 'Submitting…'
+                              : `Withdraw funds${withdrawAmount ? ` — ${fmt(parseFloat(withdrawAmount || '0'))}` : ''}`}
                           </button>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={withdrawAmount}
-                            onChange={(e) => setWithdrawAmount(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Linked wallet — read-only. Withdrawals always go to
-                          this address (server enforces it; the UI just shows
-                          the user where their funds will land). The address
-                          comes from /auth/me so it's always in sync with the
-                          server's view of user.wallet_address. */}
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary flex items-center gap-1.5">
-                          Withdraw to your linked wallet
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400">
-                            VERIFIED
-                          </span>
-                        </label>
-                        <div className="px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary/40 text-sm font-mono text-text-primary break-all select-all">
-                          {linkedWalletAddress || (
-                            <span className="text-text-tertiary font-sans">
-                              No wallet linked — set one up in Profile → Security.
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-text-tertiary leading-relaxed">
-                          Withdrawals can only be sent to your linked wallet. To
-                          change the destination, disconnect the current wallet
-                          from Profile → Security and link a new one.
-                        </p>
-                      </div>
-
-                      <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
-
-                      <button
-                        type="button"
-                        onClick={() => void submitWithdraw()}
-                        disabled={
-                          demoFundingBlocked ||
-                          withdrawSubmitting ||
-                          !withdrawAmount ||
-                          !linkedWalletAddress
-                        }
-                        className={clsx(
-                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
-                          demoFundingBlocked ||
-                            withdrawSubmitting ||
-                            !withdrawAmount ||
-                            !linkedWalletAddress
-                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
-                        )}
-                      >
-                        {withdrawSubmitting
-                          ? 'Submitting…'
-                          : `Withdraw funds${withdrawAmount ? ` — ${fmt(parseFloat(withdrawAmount || '0'))}` : ''}`}
-                      </button>
-                    </>
+                        </>
+                      );
+                    })()
                   ) : null}
                 </>
               )}
@@ -1359,107 +1404,6 @@ function WalletPageContent() {
             </div>
           </div>
 
-          {/* ── Account Settings / Security / Quick Actions (DAG mockup) ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-            {/* Account Settings */}
-            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
-              <h3 className="text-sm font-bold text-text-primary mb-3">Account Settings</h3>
-              <div className="space-y-1">
-                {[
-                  { icon: User2, label: 'Profile Information', desc: 'Update your personal details', go: '/profile' },
-                  { icon: ShieldCheck, label: 'Security', desc: 'Change password, 2FA, and security settings', go: '/profile?tab=security' },
-                  { icon: Bell, label: 'Notification Preferences', desc: 'Manage email and push notifications', go: '/profile?tab=notifications' },
-                  { icon: LinkIcon, label: 'Linked Accounts', desc: 'Manage your linked bank and crypto accounts', go: '/profile?tab=security' },
-                ].map((it) => (
-                  <button
-                    key={it.label}
-                    type="button"
-                    onClick={() => router.push(it.go)}
-                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-bg-base/60 border border-border-primary flex items-center justify-center shrink-0">
-                      <it.icon size={14} className="text-text-secondary group-hover:text-text-primary transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-text-primary truncate">{it.label}</p>
-                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
-                    </div>
-                    <ChevronRight size={14} className="text-text-tertiary shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Security */}
-            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
-              <h3 className="text-sm font-bold text-text-primary mb-3">Security</h3>
-              <div className="space-y-1">
-                {[
-                  { icon: Lock, label: 'Password', desc: 'Change password', go: '/profile?tab=security', cta: 'Change' },
-                  { icon: ShieldCheck, label: 'Two-Factor Authentication (2FA)', desc: 'Manage 2FA', go: '/profile?tab=security', cta: 'Manage' },
-                  { icon: Clock, label: 'Login Activity', desc: 'View recent login sessions', go: '/profile?tab=security', cta: 'View' },
-                  { icon: WalletIcon, label: 'Device Management', desc: 'Manage your trusted devices', go: '/profile?tab=security', cta: 'Manage' },
-                ].map((it) => (
-                  <button
-                    key={it.label}
-                    type="button"
-                    onClick={() => router.push(it.go)}
-                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-bg-base/60 border border-border-primary flex items-center justify-center shrink-0">
-                      <it.icon size={14} className="text-text-secondary group-hover:text-text-primary transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-text-primary truncate">{it.label}</p>
-                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
-                    </div>
-                    <span className="text-[10px] font-semibold text-purple-400 group-hover:text-purple-300 transition-colors shrink-0">
-                      {it.cta}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="rounded-2xl p-4 bg-bg-secondary border border-border-glass/30">
-              <h3 className="text-sm font-bold text-text-primary mb-3">Quick Actions</h3>
-              <div className="space-y-1">
-                {[
-                  { icon: FileDown, label: 'Download Account Statement', desc: 'Get your trading and wallet statement', action: () => toast.success('Statement export — coming soon'), danger: false },
-                  { icon: MessageCircle, label: 'Contact Support', desc: "We're here to help you", action: () => router.push('/support'), danger: false },
-                  { icon: HelpCircle, label: 'Help Center', desc: 'FAQs and guides', action: () => router.push('/support'), danger: false },
-                  { icon: LogOut, label: 'Logout', desc: 'Sign out from your account', action: () => { void useAuthStore.getState().logout(); router.push('/auth/login'); }, danger: true },
-                ].map((it) => (
-                  <button
-                    key={it.label}
-                    type="button"
-                    onClick={it.action}
-                    className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-bg-hover transition-colors text-left group"
-                  >
-                    <div className={clsx(
-                      'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0',
-                      it.danger ? 'bg-red-500/10 border-red-500/30' : 'bg-bg-base/60 border-border-primary',
-                    )}>
-                      <it.icon size={14} className={clsx(
-                        'transition-colors',
-                        it.danger ? 'text-red-400' : 'text-text-secondary group-hover:text-text-primary',
-                      )} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={clsx(
-                        'text-xs font-semibold truncate',
-                        it.danger ? 'text-red-400' : 'text-text-primary',
-                      )}>
-                        {it.label}
-                      </p>
-                      <p className="text-[10px] text-text-tertiary truncate">{it.desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
