@@ -315,12 +315,40 @@ export default function TradesPage() {
     else fetchHistory(false);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
 
-  /** Silent background poll every 5s — no spinner, no flicker, data just updates. */
+  /** Silent background poll every 5 s. Polls the ACTIVE tab on its own
+   * interval AND the other two tabs at half-frequency, so the tab
+   * count badges (e.g. "Trade History (47)") and the underlying lists
+   * stay live — a TP/SL auto-close shows up in History within 5–10 s
+   * even when admin is sitting on the Open Positions tab. The active
+   * tab keeps the faster cadence so the visible table never feels
+   * stale; the others are cheaper because the user isn't looking
+   * directly at them. */
   useEffect(() => {
+    let tickCount = 0;
     const poll = setInterval(() => {
-      if (activeTab === 'open') fetchPositions(true);
-      else if (activeTab === 'pending') fetchOrders(true);
-      else fetchHistory(true);
+      if (typeof document !== 'undefined' && document.hidden) return;
+      tickCount += 1;
+      const everyOther = tickCount % 2 === 0;
+
+      if (activeTab === 'open') {
+        void fetchPositions(true);
+        if (everyOther) {
+          void fetchOrders(true);
+          void fetchHistory(true);
+        }
+      } else if (activeTab === 'pending') {
+        void fetchOrders(true);
+        if (everyOther) {
+          void fetchPositions(true);
+          void fetchHistory(true);
+        }
+      } else {
+        void fetchHistory(true);
+        if (everyOther) {
+          void fetchPositions(true);
+          void fetchOrders(true);
+        }
+      }
     }, 5000);
     return () => clearInterval(poll);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);

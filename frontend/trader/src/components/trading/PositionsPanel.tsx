@@ -369,8 +369,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return a?.account_number ?? accountId.slice(0, 8);
   };
 
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true);
+  const loadHistory = useCallback(async (opts: { silent?: boolean } = {}) => {
+    // Silent polls skip the loading toggle so the list doesn't
+    // flicker into a "Loading history…" placeholder every 4 s.
+    if (!opts.silent) setHistoryLoading(true);
     try {
       const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', {
         page: '1',
@@ -380,13 +382,27 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
       );
     } catch {
-      setHistoryTrades([]);
+      // Silent polls swallow errors — last-known list stays put.
+      if (!opts.silent) setHistoryTrades([]);
     }
-    setHistoryLoading(false);
+    if (!opts.silent) setHistoryLoading(false);
   }, []);
 
   useEffect(() => {
     if (activeTab === 'history') void loadHistory();
+  }, [activeTab, loadHistory]);
+
+  // Live refresh while the History tab is open. Without this, when a
+  // trade closes via SL/TP (or admin action) the user has to manually
+  // switch tabs to see it. Poll only when this tab is the visible one
+  // and the browser tab itself isn't backgrounded.
+  useEffect(() => {
+    if (activeTab !== 'history') return;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void loadHistory({ silent: true });
+    }, 4000);
+    return () => clearInterval(interval);
   }, [activeTab, loadHistory]);
 
   const closePosition = (id: string, lots?: number) => {
