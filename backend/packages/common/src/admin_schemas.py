@@ -236,6 +236,12 @@ class ModifyPositionRequest(BaseModel):
     commission: Optional[float] = None
     swap: Optional[float] = None
     lots: Optional[float] = None
+    # Admin can flip side from buy→sell or sell→buy as a correction. When
+    # set, the position direction is reversed and any open copy-trade
+    # mirrors flip in sync so master and follower stay aligned. The
+    # unrealized P&L sign reverses naturally on the next tick because
+    # P&L is computed from side + current price each time.
+    side: Optional[str] = None  # "buy" or "sell"
     open_time: Optional[datetime] = None
     reason: Optional[str] = None
 

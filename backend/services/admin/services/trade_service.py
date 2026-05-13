@@ -279,6 +279,9 @@ async def modify_position(
                 detail="A-book trade — forwarded to LP, cannot be edited from admin.",
             )
 
+    def _side_str(s) -> str:
+        return s.value if hasattr(s, "value") else str(s)
+
     old_values = {
         "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
         "take_profit": float(pos.take_profit) if pos.take_profit else None,
@@ -286,6 +289,7 @@ async def modify_position(
         "commission": float(pos.commission) if pos.commission else 0,
         "swap": float(pos.swap) if pos.swap else 0,
         "lots": float(pos.lots) if pos.lots else None,
+        "side": _side_str(pos.side) if pos.side else None,
         "created_at": pos.created_at.isoformat() if pos.created_at else None,
     }
 
@@ -304,6 +308,20 @@ async def modify_position(
     if body.open_time is not None:
         pos.created_at = body.open_time
 
+    # Side flip — buy ↔ sell. The position object stores an enum so we
+    # coerce the string from the body into OrderSide. We do NOT touch
+    # the unrealized P&L here: it's computed from side + current price
+    # on every tick, so the sign reverses naturally on the next read.
+    # SL/TP semantics also reverse (was-buy-with-TP-above-open becomes
+    # sell-with-TP-below-open if admin doesn't also update the SL/TP),
+    # so admins are expected to set sensible SL/TP in the same call
+    # when flipping side.
+    if body.side is not None:
+        side_norm = body.side.strip().lower()
+        if side_norm not in ("buy", "sell"):
+            raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
+        pos.side = OrderSide.BUY if side_norm == "buy" else OrderSide.SELL
+
     pos.is_admin_modified = True
     pos.updated_at = datetime.utcnow()
 
@@ -314,6 +332,7 @@ async def modify_position(
         "commission": float(pos.commission) if pos.commission else 0,
         "swap": float(pos.swap) if pos.swap else 0,
         "lots": float(pos.lots) if pos.lots else None,
+        "side": _side_str(pos.side) if pos.side else None,
         "created_at": pos.created_at.isoformat() if pos.created_at else None,
     }
 
@@ -337,6 +356,10 @@ async def modify_position(
             inv_pos.stop_loss = Decimal(str(body.stop_loss))
         if body.take_profit is not None:
             inv_pos.take_profit = Decimal(str(body.take_profit))
+        # Mirror the side flip onto the follower so the copy stays
+        # aligned with the master after admin's correction.
+        if body.side is not None:
+            inv_pos.side = pos.side
         inv_pos.is_admin_modified = True
         inv_pos.updated_at = datetime.utcnow()
         updated_copies += 1

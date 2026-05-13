@@ -237,6 +237,10 @@ export default function TradesPage() {
   const [modifyCommission, setModifyCommission] = useState('');
   const [modifySwap, setModifySwap] = useState('');
   const [modifyOpenTime, setModifyOpenTime] = useState('');
+  // Admin can flip Buy ↔ Sell on an open position as a correction.
+  // Initialized from the position's current side; only sent in the
+  // PUT body when it actually differs from the original.
+  const [modifySide, setModifySide] = useState<'buy' | 'sell'>('buy');
   const [actionReason, setActionReason] = useState('');
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
@@ -339,6 +343,7 @@ export default function TradesPage() {
     setModifyCommission(pos.commission ? String(pos.commission) : '');
     setModifySwap(pos.swap ? String(pos.swap) : '');
     setModifyOpenTime(pos.created_at ? new Date(pos.created_at).toISOString().slice(0, 16) : '');
+    setModifySide((pos.side?.toLowerCase() === 'sell' ? 'sell' : 'buy'));
     setActionReason('');
     setModalType('modify');
     setOpenActionsId(null);
@@ -399,6 +404,11 @@ export default function TradesPage() {
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
       if (modifySwap) body.swap = parseFloat(modifySwap);
       if (modifyOpenTime) body.open_time = new Date(modifyOpenTime).toISOString();
+      // Only send side if admin actually flipped it — saves a write
+      // on every save where the toggle wasn't touched and keeps the
+      // audit log clean.
+      const originalSide = (selectedPosition.side || '').toLowerCase();
+      if (modifySide !== originalSide) body.side = modifySide;
       await adminApi.put(`/trades/position/${selectedPosition.id}/modify`, body);
       toast.success('Position modified');
       closeModal();
@@ -781,6 +791,47 @@ export default function TradesPage() {
               </div>
             );
           })()}
+          {/* Side toggle — admin can flip Buy ↔ Sell as a correction.
+              Flipping reverses the position direction; unrealized P&L
+              sign flips automatically on the next tick. Copy-trade
+              mirrors are kept in sync server-side. */}
+          <div>
+            <label className="block text-xxs text-text-tertiary mb-1">Side</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setModifySide('buy')}
+                className={cn(
+                  'px-3 py-2 text-xs font-bold rounded-md border transition-fast',
+                  modifySide === 'buy'
+                    ? 'bg-buy/20 border-buy text-buy'
+                    : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover',
+                )}
+              >
+                BUY
+              </button>
+              <button
+                type="button"
+                onClick={() => setModifySide('sell')}
+                className={cn(
+                  'px-3 py-2 text-xs font-bold rounded-md border transition-fast',
+                  modifySide === 'sell'
+                    ? 'bg-sell/20 border-sell text-sell'
+                    : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover',
+                )}
+              >
+                SELL
+              </button>
+            </div>
+            {selectedPosition && modifySide !== (selectedPosition.side || '').toLowerCase() && (
+              <p className="text-[10px] text-warning mt-1.5 leading-snug">
+                ⚠ Side change reverses direction. SL/TP semantics flip — set them
+                in this same save if needed. Open copy-trade mirrors are flipped
+                in sync.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xxs text-text-tertiary mb-1">Open Price</label>
