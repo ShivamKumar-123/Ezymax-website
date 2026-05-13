@@ -136,6 +136,15 @@ export default function GoogleAuthButton({ disabled }: { disabled?: boolean }) {
     } catch (err: any) {
       const status = err?.status ?? err?.response?.status;
       const detail = err?.detail || err?.response?.data?.detail || err?.message;
+      // The sign-in actually succeeded server-side (session created, email
+      // dispatched) — we just couldn't load the profile in time. Send the
+      // user to /accounts; the layout's loadUser() will resolve identity
+      // there. Don't show the misleading "could not be verified" toast.
+      if (err?.profileLoadFailed) {
+        toast.success('Signed in with Google');
+        router.push('/accounts');
+        return;
+      }
       let msg = detail || 'Google sign-in failed';
       if (status === 409) msg = detail || 'Email already linked to another Google account';
       else if (status === 503) msg = 'Google sign-in is not available right now';

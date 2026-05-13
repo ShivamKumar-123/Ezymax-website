@@ -117,16 +117,49 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   googleLogin: async (idToken, referralCode) => {
     set({ isLoading: true });
+    // Stage 1: the sign-in itself. A failure here (bad token, blocked
+    // account, origin reject) keeps the original status so the UI can show
+    // "could not be verified" etc.
     try {
       await api.post<{ access_token: string; user_id: string; role: string }>('/auth/google', {
         id_token: idToken,
         referral_code: referralCode,
       });
-      const user = await api.get<User>('/auth/me');
-      set({ user, isAuthenticated: true, isLoading: false, token: null });
     } catch (e) {
       set({ isLoading: false });
       throw e;
+    }
+    // Stage 2: the sign-in succeeded — cookies are set and the new-login
+    // email has fired. Now load the profile. On Safari (and Chrome under
+    // strict cookie / FedCM redirects) the very next request can 401
+    // because the Set-Cookie hasn't been applied to the cookie jar yet.
+    // Retry with the refresh cookie path before declaring failure, and
+    // when we *do* fail, tag the error so the UI doesn't show the
+    // "could not be verified" message — the user IS signed in.
+    try {
+      let user: User;
+      try {
+        user = await api.get<User>('/auth/me');
+      } catch (e: unknown) {
+        const status = (e as { status?: number })?.status;
+        if (status !== 401) throw e;
+        // Short pause to let the cookie write settle, then try the
+        // refresh-cookie path (same flow loadUser() uses on cold start).
+        await new Promise((r) => setTimeout(r, 250));
+        try {
+          await api.post('/auth/refresh', {});
+        } catch { /* refresh may already be fresh — ignore and retry /me */ }
+        user = await api.get<User>('/auth/me');
+      }
+      set({ user, isAuthenticated: true, isLoading: false, token: null });
+    } catch (e) {
+      set({ isLoading: false });
+      const err = new Error(
+        'Signed in, but profile failed to load. Please refresh the page.',
+      );
+      (err as { status?: number; profileLoadFailed?: boolean }).status = 0;
+      (err as { profileLoadFailed?: boolean }).profileLoadFailed = true;
+      throw err;
     }
   },
 
