@@ -714,15 +714,21 @@ function WalletPageContent() {
                     but it was rendering the same number twice, so it was
                     removed in favour of placing Deposit + Withdraw side by
                     side. */}
-                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20 flex flex-col">
+                <div
+                  className="rounded-2xl p-4 border flex flex-col"
+                  style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
+                >
                   <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center">
-                      <WalletIcon size={18} className="text-blue-300" />
+                    <div
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
+                      style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
+                    >
+                      <WalletIcon size={18} style={{ color: 'var(--card-blue-icon)' }} />
                     </div>
-                    <p className="text-xs uppercase tracking-wide text-blue-200/80 font-medium">Main Balance</p>
+                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Main Balance</p>
                   </div>
-                  <p className="text-xl font-bold text-white font-mono tabular-nums">
-                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-blue-200/70">USD</span>
+                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
@@ -743,15 +749,21 @@ function WalletPageContent() {
                 </div>
 
                 {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
-                <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20 flex flex-col">
+                <div
+                  className="rounded-2xl p-4 border flex flex-col"
+                  style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}
+                >
                   <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center">
-                      <Gift size={18} className="text-emerald-300" />
+                    <div
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
+                      style={{ background: 'var(--card-green-icon-bg)', borderColor: 'var(--card-green-icon-border)' }}
+                    >
+                      <Gift size={18} style={{ color: 'var(--card-green-icon)' }} />
                     </div>
-                    <p className="text-xs uppercase tracking-wide text-emerald-200/80 font-medium">Bonus Balance</p>
+                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-green-text-muted)' }}>Bonus Balance</p>
                   </div>
-                  <p className="text-xl font-bold text-white font-mono tabular-nums">
-                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-emerald-200/70">USD</span>
+                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-green-text-strong)' }}>
+                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-green-text-faint)' }}>USD</span>
                   </p>
                   <button
                     type="button"
@@ -787,14 +799,17 @@ function WalletPageContent() {
                   : isPending ? 'Your KYC documents are under review.'
                   : isRejected ? 'Please re-submit your KYC documents.'
                   : 'Complete KYC to unlock withdrawals and higher limits.';
+                // KYC card surface follows the state color — green
+                // (approved), amber (pending), red (rejected), or the
+                // neutral card surface when no action yet. All
+                // theme-aware via --card-* vars.
+                const kycSurface =
+                  isApproved ? { background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' } :
+                  isPending  ? { background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' } :
+                  isRejected ? { background: 'var(--card-red-bg)',   borderColor: 'var(--card-red-border)'   } :
+                               { background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' };
                 return (
-                  <div className={clsx(
-                    'rounded-2xl p-4 border',
-                    isApproved && 'bg-gradient-to-br from-[#0d3f2a] via-[#0f5535]/60 to-[#082921] border-emerald-500/30',
-                    isPending && 'bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10]/60 to-[#2e2407] border-amber-500/30',
-                    isRejected && 'bg-gradient-to-br from-[#3f0d0d] via-[#551010]/60 to-[#290808] border-red-500/30',
-                    !isApproved && !isPending && !isRejected && 'bg-gradient-to-br from-[#1a1a2e] via-[#222238]/60 to-[#0f0f1c] border-slate-500/30',
-                  )}>
+                  <div className="rounded-2xl p-4 border" style={kycSurface}>
                     <p className="text-xs uppercase tracking-wide text-text-tertiary font-medium mb-2">KYC Verification</p>
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className={clsx(

@@ -500,7 +500,7 @@ function PortfolioPageContent() {
 
     return (
 
-      <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+      <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-3 py-12">
           <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading portfolio...</span>
@@ -517,7 +517,7 @@ function PortfolioPageContent() {
 
     return (
 
-      <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+      <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
         <div className="text-center space-y-3 py-12">
           <p className="text-red-400 text-sm">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchData}>
@@ -966,7 +966,7 @@ export default function PortfolioPage() {
   return (
     <Suspense
       fallback={(
-        <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+        <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
           <div className="flex flex-col items-center gap-3 py-12">
             <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#888]">Loading portfolio...</span>

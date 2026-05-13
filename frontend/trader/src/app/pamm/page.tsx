@@ -478,52 +478,49 @@ export default function PammPage() {
 
         {/* ── Top stat cards (purple/DAG aesthetic per client mockup) ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* My PAM Investments */}
-          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+          {/* My PAM Investments — purple */}
+          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}>
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
-                <Users size={20} className="text-purple-300" />
+              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}>
+                <Users size={20} style={{ color: 'var(--card-purple-icon)' }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide text-purple-200/80 font-medium">My PAM Investments</p>
-                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>My PAM Investments</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-purple-text-strong)' }}>
                   ${(summary?.total_invested ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] text-purple-200/70 mt-1">In {allocations.length} {allocations.length === 1 ? 'Account' : 'Accounts'}</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--card-purple-text-faint)' }}>In {allocations.length} {allocations.length === 1 ? 'Account' : 'Accounts'}</p>
               </div>
             </div>
           </div>
 
-          {/* Total Profit (All PAM) */}
-          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+          {/* Total Profit — green */}
+          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}>
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
-                <TrendingUp size={20} className="text-emerald-300" />
+              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-green-icon-bg)', borderColor: 'var(--card-green-icon-border)' }}>
+                <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Profit (All PAM)</p>
-                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-green-text-muted)' }}>Total Profit (All PAM)</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-green-text-strong)' }}>
                   ${(summary?.total_pnl ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className={clsx(
-                  'text-[11px] mt-1 font-semibold',
-                  (summary?.overall_pnl_pct ?? 0) >= 0 ? 'text-emerald-300' : 'text-red-400',
-                )}>
+                <p className="text-[11px] mt-1 font-semibold" style={{ color: (summary?.overall_pnl_pct ?? 0) >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
                   {(summary?.overall_pnl_pct ?? 0) >= 0 ? '+' : ''}{(summary?.overall_pnl_pct ?? 0).toFixed(2)}% Overall ROI
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Available Balance + Invest Now CTA */}
-          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+          {/* Available Balance — blue */}
+          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}>
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-11 h-11 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
-                <Wallet size={20} className="text-blue-300" />
+              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}>
+                <Wallet size={20} style={{ color: 'var(--card-blue-icon)' }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide text-blue-200/80 font-medium">Available Balance</p>
-                <p className="text-xl font-bold text-white mt-1 font-mono tabular-nums">
+                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Available Balance</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
                   ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
@@ -537,16 +534,16 @@ export default function PammPage() {
             </button>
           </div>
 
-          {/* Total PAM Accounts */}
-          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+          {/* Total PAM Accounts — amber */}
+          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}>
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
-                <BarChart2 size={20} className="text-amber-300" />
+              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}>
+                <BarChart2 size={20} style={{ color: 'var(--card-amber-icon)' }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide text-amber-200/80 font-medium">Total PAM Accounts</p>
-                <p className="text-2xl font-bold text-white mt-1 font-mono tabular-nums">{accounts.length}</p>
-                <p className="text-[11px] text-amber-200/70 mt-1">Active PAM Accounts</p>
+                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>Total PAM Accounts</p>
+                <p className="text-2xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-amber-text-strong)' }}>{accounts.length}</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--card-amber-text-faint)' }}>Active PAM Accounts</p>
               </div>
             </div>
           </div>

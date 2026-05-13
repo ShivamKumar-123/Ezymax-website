@@ -62,6 +62,57 @@
   --toast-fg: #f0f0f0;
   --toast-border: rgba(214, 169, 61, 0.28);
 
+  /* Colored stat-card surfaces. The trader/admin UIs lean heavily on
+   * gradient stat cards (Total Balance, Bonus, Trade Now, etc.).
+   * Defining them as CSS variables lets the dark / light themes pick
+   * their own gradient stops without every component having to ship
+   * `dark:` Tailwind variants. The `*-text-*` companions are the on-
+   * card foreground colors. */
+  --card-blue-bg: linear-gradient(135deg, #0e2a55 0%, #143a72 50%, #0b1d3d 100%);
+  --card-blue-border: rgba(59, 130, 246, 0.25);
+  --card-blue-icon-bg: rgba(59, 130, 246, 0.25);
+  --card-blue-icon-border: rgba(96, 165, 250, 0.30);
+  --card-blue-icon: #93c5fd;
+  --card-blue-text-strong: #ffffff;
+  --card-blue-text-muted: rgba(191, 219, 254, 0.85);
+  --card-blue-text-faint: rgba(191, 219, 254, 0.60);
+
+  --card-green-bg: linear-gradient(135deg, #0d3f2a 0%, #0f5535 50%, #082921 100%);
+  --card-green-border: rgba(16, 185, 129, 0.25);
+  --card-green-icon-bg: rgba(16, 185, 129, 0.25);
+  --card-green-icon-border: rgba(52, 211, 153, 0.30);
+  --card-green-icon: #6ee7b7;
+  --card-green-text-strong: #ffffff;
+  --card-green-text-muted: rgba(167, 243, 208, 0.85);
+  --card-green-text-faint: rgba(167, 243, 208, 0.60);
+
+  --card-purple-bg: linear-gradient(135deg, #3a1c5e 0%, #4a2470 50%, #2a1442 100%);
+  --card-purple-border: rgba(168, 85, 247, 0.25);
+  --card-purple-icon-bg: rgba(168, 85, 247, 0.25);
+  --card-purple-icon-border: rgba(192, 132, 252, 0.30);
+  --card-purple-icon: #c4b5fd;
+  --card-purple-text-strong: #ffffff;
+  --card-purple-text-muted: rgba(221, 214, 254, 0.85);
+  --card-purple-text-faint: rgba(221, 214, 254, 0.60);
+
+  --card-amber-bg: linear-gradient(135deg, #78350f 0%, #92400e 50%, #5b2a07 100%);
+  --card-amber-border: rgba(245, 158, 11, 0.25);
+  --card-amber-icon-bg: rgba(245, 158, 11, 0.25);
+  --card-amber-icon-border: rgba(251, 191, 36, 0.30);
+  --card-amber-icon: #fcd34d;
+  --card-amber-text-strong: #ffffff;
+  --card-amber-text-muted: rgba(254, 215, 170, 0.85);
+  --card-amber-text-faint: rgba(254, 215, 170, 0.60);
+
+  --card-red-bg: linear-gradient(135deg, #3c0d0d 0%, #5b1a1a 50%, #2a0808 100%);
+  --card-red-border: rgba(239, 68, 68, 0.25);
+  --card-red-icon-bg: rgba(239, 68, 68, 0.25);
+  --card-red-icon-border: rgba(248, 113, 113, 0.30);
+  --card-red-icon: #fca5a5;
+  --card-red-text-strong: #ffffff;
+  --card-red-text-muted: rgba(254, 202, 202, 0.85);
+  --card-red-text-faint: rgba(254, 202, 202, 0.60);
+
   color-scheme: dark;
 }
 
@@ -115,6 +166,55 @@
   --toast-bg: #ffffff;
   --toast-fg: #111827;
   --toast-border: rgba(0, 0, 0, 0.1);
+
+  /* Stat-card surfaces — light mode. Soft tinted gradients so the
+   * cards keep their visual identity (blue = balance, green = bonus,
+   * etc.) but read cleanly on a white page. Text colors flip from
+   * white to dark-mid so they stay legible on the lighter surfaces. */
+  --card-blue-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  --card-blue-border: rgba(59, 130, 246, 0.40);
+  --card-blue-icon-bg: rgba(59, 130, 246, 0.12);
+  --card-blue-icon-border: rgba(59, 130, 246, 0.30);
+  --card-blue-icon: #2563eb;
+  --card-blue-text-strong: #1e3a8a;
+  --card-blue-text-muted: #1d4ed8;
+  --card-blue-text-faint: #3b82f6;
+
+  --card-green-bg: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+  --card-green-border: rgba(16, 185, 129, 0.40);
+  --card-green-icon-bg: rgba(16, 185, 129, 0.12);
+  --card-green-icon-border: rgba(16, 185, 129, 0.30);
+  --card-green-icon: #059669;
+  --card-green-text-strong: #064e3b;
+  --card-green-text-muted: #047857;
+  --card-green-text-faint: #10b981;
+
+  --card-purple-bg: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  --card-purple-border: rgba(168, 85, 247, 0.40);
+  --card-purple-icon-bg: rgba(168, 85, 247, 0.12);
+  --card-purple-icon-border: rgba(168, 85, 247, 0.30);
+  --card-purple-icon: #7c3aed;
+  --card-purple-text-strong: #4c1d95;
+  --card-purple-text-muted: #6d28d9;
+  --card-purple-text-faint: #8b5cf6;
+
+  --card-amber-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  --card-amber-border: rgba(245, 158, 11, 0.40);
+  --card-amber-icon-bg: rgba(245, 158, 11, 0.12);
+  --card-amber-icon-border: rgba(245, 158, 11, 0.30);
+  --card-amber-icon: #d97706;
+  --card-amber-text-strong: #78350f;
+  --card-amber-text-muted: #b45309;
+  --card-amber-text-faint: #d97706;
+
+  --card-red-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 50%, #fecaca 100%);
+  --card-red-border: rgba(239, 68, 68, 0.40);
+  --card-red-icon-bg: rgba(239, 68, 68, 0.12);
+  --card-red-icon-border: rgba(239, 68, 68, 0.30);
+  --card-red-icon: #dc2626;
+  --card-red-text-strong: #7f1d1d;
+  --card-red-text-muted: #b91c1c;
+  --card-red-text-faint: #ef4444;
 
   color-scheme: light;
 }

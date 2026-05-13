@@ -225,88 +225,107 @@ function BrokerHome() {
         <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level Up.</p>
       </div>
 
-      {/* ── 4 stat cards (DAG aesthetic) ── */}
+      {/* ── 4 stat cards (DAG aesthetic). Surfaces + foreground colors
+              come from theme-aware `--card-*` CSS vars (defined in
+              globals.css) so the cards work in both dark and light
+              mode without per-component `dark:` overrides. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Balance */}
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+        {/* Total Balance — purple */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}
+        >
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
-              <WalletIcon size={20} className="text-purple-300" />
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}
+            >
+              <WalletIcon size={20} style={{ color: 'var(--card-purple-icon)' }} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Total Balance</p>
-              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">{fmtUsd(totalBalance)}</p>
-              <p className="text-[10px] text-purple-200/60 mt-0.5">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>Total Balance</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-purple-text-strong)' }}>{fmtUsd(totalBalance)}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-purple-text-faint)' }}>Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
             </div>
           </div>
         </div>
 
-        {/* Today's P/L */}
-        <div className={clsx(
-          'rounded-2xl p-4 border',
-          todaysPnl >= 0
-            ? 'bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border-emerald-500/20'
-            : 'bg-gradient-to-br from-[#3f0d0d] via-[#551010] to-[#290808] border-red-500/20',
-        )}>
+        {/* Today's P/L — green when up, red when down */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{
+            background: todaysPnl >= 0 ? 'var(--card-green-bg)' : 'var(--card-red-bg)',
+            borderColor: todaysPnl >= 0 ? 'var(--card-green-border)' : 'var(--card-red-border)',
+          }}
+        >
           <div className="flex items-start gap-3">
-            <div className={clsx(
-              'w-11 h-11 rounded-xl border flex items-center justify-center shrink-0',
-              todaysPnl >= 0 ? 'bg-emerald-500/25 border-emerald-400/30' : 'bg-red-500/25 border-red-400/30',
-            )}>
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{
+                background: todaysPnl >= 0 ? 'var(--card-green-icon-bg)' : 'var(--card-red-icon-bg)',
+                borderColor: todaysPnl >= 0 ? 'var(--card-green-icon-border)' : 'var(--card-red-icon-border)',
+              }}
+            >
               {todaysPnl >= 0
-                ? <TrendingUp size={20} className="text-emerald-300" />
-                : <TrendingDown size={20} className="text-red-300" />}
+                ? <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
+                : <TrendingDown size={20} style={{ color: 'var(--card-red-icon)' }} />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className={clsx(
-                'text-[10px] uppercase tracking-wide font-medium',
-                todaysPnl >= 0 ? 'text-emerald-200/80' : 'text-red-200/80',
-              )}>Open P/L</p>
-              <p className={clsx(
-                'text-lg font-bold mt-1 font-mono tabular-nums truncate',
-                todaysPnl >= 0 ? 'text-emerald-300' : 'text-red-300',
-              )}>
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-muted)' : 'var(--card-red-text-muted)' }}>Open P/L</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: todaysPnl >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
                 {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
               </p>
-              <p className={clsx(
-                'text-[10px] mt-0.5',
-                todaysPnl >= 0 ? 'text-emerald-200/70' : 'text-red-200/70',
-              )}>
+              <p className="text-[10px] mt-0.5" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-faint)' : 'var(--card-red-text-faint)' }}>
                 {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
               </p>
             </div>
           </div>
         </div>
 
-        {/* My Level */}
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+        {/* My Level — blue */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
+        >
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0 relative">
-              <Shield size={20} className="text-blue-300" />
-              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-600 border border-blue-300/40 flex items-center justify-center text-[9px] font-bold text-white">
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 relative"
+              style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
+            >
+              <Shield size={20} style={{ color: 'var(--card-blue-icon)' }} />
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-bold"
+                style={{ background: 'var(--card-blue-icon)', borderColor: 'var(--card-blue-icon-border)', color: '#ffffff' }}
+              >
                 {level}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">My Level</p>
-              <p className="text-lg font-bold text-white mt-1 truncate">Level {level}</p>
-              <p className="text-[10px] text-blue-200/70 mt-0.5 truncate">{levelLabel}</p>
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>My Level</p>
+              <p className="text-lg font-bold mt-1 truncate" style={{ color: 'var(--card-blue-text-strong)' }}>Level {level}</p>
+              <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--card-blue-text-faint)' }}>{levelLabel}</p>
             </div>
           </div>
         </div>
 
-        {/* DGC Coins */}
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+        {/* DGC Coins — amber */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}
+        >
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
-              <Coins size={20} className="text-amber-300" />
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}
+            >
+              <Coins size={20} style={{ color: 'var(--card-amber-icon)' }} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">DGC Coins</p>
-              <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>DGC Coins</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-amber-text-strong)' }}>
                 {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] text-amber-200/60 mt-0.5">Reward balance</p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-amber-text-faint)' }}>Reward balance</p>
             </div>
           </div>
         </div>
