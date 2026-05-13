@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap } from 'lucide-react';
+import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -27,6 +27,8 @@ export default function OrderPanel() {
     toggleTerminalMarkets,
     oneClickTrading,
     setOneClickTrading,
+    theme,
+    toggleTheme,
   } = useUIStore();
 
   const {
@@ -308,6 +310,17 @@ export default function OrderPanel() {
                 )}
               >
                 <Zap size={15} strokeWidth={1.75} />
+              </button>
+              <button
+                type="button"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                onClick={toggleTheme}
+                className="flex items-center justify-center w-8 h-8 rounded-md border border-border-secondary text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
+              >
+                {theme === 'dark'
+                  ? <Sun size={15} strokeWidth={1.75} />
+                  : <Moon size={15} strokeWidth={1.75} />}
               </button>
             </div>
           ) : null}
