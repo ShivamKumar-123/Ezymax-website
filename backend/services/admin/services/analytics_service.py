@@ -287,3 +287,103 @@ async def get_exposure(db: AsyncSession) -> dict:
         "exposure": exposure_items,
         "profitable_users": profitable_users,
     }
+
+
+async def list_user_pnl_breakdown(
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 50,
+    search: str | None = None,
+    sort_by: str = "net_pnl",
+    sort_dir: str = "desc",
+) -> dict:
+    """Per-user trade P&L breakdown for the analytics page. Groups every
+    closed trade in TradeHistory by the user that owns the trading
+    account, summing gross profit / gross loss / net P&L plus a few
+    summary stats (trades count, win count, win rate, last closed date).
+
+    Unlike the top-10 list under `/analytics/exposure`, this is
+    paginated and includes BOTH winners AND losers so admin can find
+    any user — search by email / name does substring matching, sort
+    flips by net P&L / trades / last activity.
+    """
+    base = (
+        select(
+            TradingAccount.user_id.label("user_id"),
+            func.sum(TradeHistory.profit).label("net_pnl"),
+            func.sum(case((TradeHistory.profit > 0, TradeHistory.profit), else_=0)).label("gross_profit"),
+            func.sum(case((TradeHistory.profit < 0, TradeHistory.profit), else_=0)).label("gross_loss"),
+            func.count(TradeHistory.id).label("trades_count"),
+            func.sum(case((TradeHistory.profit > 0, 1), else_=0)).label("wins"),
+            func.max(TradeHistory.closed_at).label("last_closed_at"),
+        )
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+        .group_by(TradingAccount.user_id)
+    )
+
+    if search:
+        like = f"%{search}%"
+        matching_users_q = select(User.id).where(
+            (User.email.ilike(like)) |
+            (User.first_name.ilike(like)) |
+            (User.last_name.ilike(like))
+        )
+        base = base.where(TradingAccount.user_id.in_(matching_users_q))
+
+    sort_col_map = {
+        "net_pnl": func.sum(TradeHistory.profit),
+        "gross_profit": func.sum(case((TradeHistory.profit > 0, TradeHistory.profit), else_=0)),
+        "gross_loss": func.sum(case((TradeHistory.profit < 0, TradeHistory.profit), else_=0)),
+        "trades_count": func.count(TradeHistory.id),
+        "last_closed_at": func.max(TradeHistory.closed_at),
+    }
+    sort_col = sort_col_map.get(sort_by, sort_col_map["net_pnl"])
+    sort_col = sort_col.desc() if sort_dir == "desc" else sort_col.asc()
+
+    count_q = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(count_q)).scalar() or 0
+
+    page_q = base.order_by(sort_col).offset((page - 1) * per_page).limit(per_page)
+    result = await db.execute(page_q)
+    rows = result.all()
+
+    user_ids = [r.user_id for r in rows]
+    users_map: dict = {}
+    if user_ids:
+        users_res = await db.execute(select(User).where(User.id.in_(user_ids)))
+        for u in users_res.scalars().all():
+            users_map[u.id] = u
+
+    items = []
+    for r in rows:
+        u = users_map.get(r.user_id)
+        net = float(r.net_pnl or 0)
+        gp = float(r.gross_profit or 0)
+        gl = float(r.gross_loss or 0)
+        tc = int(r.trades_count or 0)
+        wins = int(r.wins or 0)
+        items.append({
+            "user_id": str(r.user_id),
+            "user_name": (
+                f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
+                if u else "Unknown"
+            ),
+            "user_email": u.email if u else None,
+            "net_pnl": net,
+            "gross_profit": gp,
+            "gross_loss": gl,
+            "avg_per_trade": (net / tc) if tc > 0 else 0,
+            "trades_count": tc,
+            "wins": wins,
+            "win_rate": (wins / tc * 100) if tc > 0 else 0,
+            "last_closed_at": r.last_closed_at.isoformat() if r.last_closed_at else None,
+        })
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page if total else 0,
+    }

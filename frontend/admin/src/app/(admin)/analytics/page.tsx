@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Loader2, RefreshCw, DollarSign, TrendingUp, AlertTriangle, BarChart3, Users, CreditCard, Gift, GitBranch } from 'lucide-react';
+import { Loader2, RefreshCw, DollarSign, TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, CreditCard, Gift, GitBranch, Search, ChevronLeft, ChevronRight, ArrowUpDown, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface RevenueStats {
@@ -29,6 +30,30 @@ interface ProfitableUser {
   trades_count: number;
   win_rate: number;
 }
+
+interface UserPnlRow {
+  user_id: string;
+  user_name: string;
+  user_email: string | null;
+  net_pnl: number;
+  gross_profit: number;
+  gross_loss: number;
+  avg_per_trade: number;
+  trades_count: number;
+  wins: number;
+  win_rate: number;
+  last_closed_at: string | null;
+}
+
+interface UserPnlPage {
+  items: UserPnlRow[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
+type SortField = 'net_pnl' | 'gross_profit' | 'gross_loss' | 'trades_count' | 'last_closed_at';
 
 function fmt(n: number) { return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -63,11 +88,31 @@ function RevenueCard({ title, stats }: { title: string; stats: RevenueStats }) {
   );
 }
 
+function fmtDate(d: string | null) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return d; }
+}
+
 export default function AnalyticsPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [exposure, setExposure] = useState<ExposureRow[]>([]);
   const [profitableUsers, setProfitableUsers] = useState<ProfitableUser[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Per-user P&L breakdown — fully paginated + searchable + sortable.
+  // Loaded independently of the overview so the page paints fast and
+  // admins can drill the table without waiting for /analytics/dashboard
+  // to refresh.
+  const [pnlRows, setPnlRows] = useState<UserPnlRow[]>([]);
+  const [pnlTotal, setPnlTotal] = useState(0);
+  const [pnlPages, setPnlPages] = useState(1);
+  const [pnlPage, setPnlPage] = useState(1);
+  const [pnlSearch, setPnlSearch] = useState('');
+  const [pnlSearchInput, setPnlSearchInput] = useState('');
+  const [pnlSortBy, setPnlSortBy] = useState<SortField>('net_pnl');
+  const [pnlSortDir, setPnlSortDir] = useState<'asc' | 'desc'>('desc');
+  const [pnlLoading, setPnlLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,7 +131,41 @@ export default function AnalyticsPage() {
     }
   }, []);
 
+  const fetchPnl = useCallback(async () => {
+    setPnlLoading(true);
+    try {
+      const res = await adminApi.get<UserPnlPage>('/analytics/user-pnl', {
+        page: String(pnlPage),
+        per_page: '50',
+        sort_by: pnlSortBy,
+        sort_dir: pnlSortDir,
+        ...(pnlSearch ? { search: pnlSearch } : {}),
+      });
+      setPnlRows(res.items || []);
+      setPnlTotal(res.total || 0);
+      setPnlPages(res.pages || 1);
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load per-user P&L');
+      setPnlRows([]);
+    } finally {
+      setPnlLoading(false);
+    }
+  }, [pnlPage, pnlSortBy, pnlSortDir, pnlSearch]);
+
+  // Toggle a column's sort direction: clicking the active column flips
+  // dir, clicking a different column resets to desc.
+  const toggleSort = (field: SortField) => {
+    if (pnlSortBy === field) {
+      setPnlSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setPnlSortBy(field);
+      setPnlSortDir('desc');
+    }
+    setPnlPage(1);
+  };
+
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchPnl(); }, [fetchPnl]);
 
   if (loading) return <><div className="flex items-center justify-center h-96"><Loader2 size={20} className="animate-spin text-text-tertiary" /></div></>;
 
@@ -236,7 +315,212 @@ export default function AnalyticsPage() {
             </div>
           )}
         </div>
+
+        {/* ─── PER-USER P&L BREAKDOWN ─── */}
+        <div className="bg-bg-secondary border border-border-primary rounded-md">
+          <div className="px-4 py-3 border-b border-border-primary flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium text-text-primary">Per-User P&amp;L Breakdown</h2>
+              <p className="text-xxs text-text-tertiary mt-0.5">
+                Every user with at least one closed trade. Click a row to open the full ledger
+                (deposits / withdrawals / transactions / trade history).
+              </p>
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); setPnlSearch(pnlSearchInput.trim()); setPnlPage(1); }}
+              className="flex items-center gap-2"
+            >
+              <div className="relative">
+                <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                <input
+                  type="text"
+                  value={pnlSearchInput}
+                  onChange={(e) => setPnlSearchInput(e.target.value)}
+                  placeholder="Search email or name…"
+                  className="text-xs pl-7 pr-2 py-1.5 bg-bg-input border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary focus:border-buy outline-none w-56"
+                />
+              </div>
+              <button type="submit" className="px-3 py-1.5 text-xs font-medium bg-buy text-white rounded-md hover:bg-buy/80 transition-fast">Search</button>
+              {pnlSearch && (
+                <button
+                  type="button"
+                  onClick={() => { setPnlSearchInput(''); setPnlSearch(''); setPnlPage(1); }}
+                  className="text-xxs text-text-tertiary hover:text-text-primary"
+                >
+                  Clear
+                </button>
+              )}
+            </form>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[900px]">
+              <thead>
+                <tr className="border-b border-border-primary bg-bg-tertiary/40">
+                  <th className="text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">User</th>
+                  <SortHeader label="Trades" field="trades_count" active={pnlSortBy === 'trades_count'} dir={pnlSortDir} onClick={toggleSort} align="right" />
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Win Rate</th>
+                  <SortHeader label="Gross Profit" field="gross_profit" active={pnlSortBy === 'gross_profit'} dir={pnlSortDir} onClick={toggleSort} align="right" />
+                  <SortHeader label="Gross Loss" field="gross_loss" active={pnlSortBy === 'gross_loss'} dir={pnlSortDir} onClick={toggleSort} align="right" />
+                  <SortHeader label="Net P&L" field="net_pnl" active={pnlSortBy === 'net_pnl'} dir={pnlSortDir} onClick={toggleSort} align="right" />
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Avg / Trade</th>
+                  <SortHeader label="Last Trade" field="last_closed_at" active={pnlSortBy === 'last_closed_at'} dir={pnlSortDir} onClick={toggleSort} align="left" />
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pnlLoading ? (
+                  <tr><td colSpan={9} className="py-12 text-center"><Loader2 size={18} className="inline-block animate-spin text-text-tertiary" /></td></tr>
+                ) : pnlRows.length === 0 ? (
+                  <tr><td colSpan={9} className="py-12 text-center text-xs text-text-tertiary">No users found</td></tr>
+                ) : (
+                  pnlRows.map((u) => (
+                    <tr
+                      key={u.user_id}
+                      onClick={() => router.push(`/users/${u.user_id}`)}
+                      className="border-b border-border-primary/50 hover:bg-bg-hover cursor-pointer transition-fast"
+                    >
+                      <td className="px-4 py-2">
+                        <p className="text-xs text-text-primary truncate">{u.user_name}</p>
+                        {u.user_email && <p className="text-xxs text-text-tertiary truncate">{u.user_email}</p>}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-text-primary text-right font-mono tabular-nums">{u.trades_count}</td>
+                      <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums', u.win_rate >= 50 ? 'text-success' : 'text-text-secondary')}>{u.win_rate.toFixed(1)}%</td>
+                      <td className="px-4 py-2 text-xs text-emerald-400 text-right font-mono tabular-nums">${fmt(u.gross_profit)}</td>
+                      <td className="px-4 py-2 text-xs text-rose-400 text-right font-mono tabular-nums">${fmt(u.gross_loss)}</td>
+                      <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums font-semibold', u.net_pnl >= 0 ? 'text-success' : 'text-danger')}>
+                        {u.net_pnl >= 0 ? '+' : ''}${fmt(u.net_pnl)}
+                      </td>
+                      <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums', u.avg_per_trade >= 0 ? 'text-text-secondary' : 'text-danger')}>
+                        {u.avg_per_trade >= 0 ? '+' : ''}${fmt(u.avg_per_trade)}
+                      </td>
+                      <td className="px-4 py-2 text-xxs text-text-tertiary font-mono whitespace-nowrap">{fmtDate(u.last_closed_at)}</td>
+                      <td className="px-4 py-2 text-right">
+                        <ExternalLink size={12} className="inline-block text-text-tertiary" />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards — same data, vertical layout */}
+          <div className="md:hidden p-3 space-y-2">
+            {pnlLoading ? (
+              <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-text-tertiary" /></div>
+            ) : pnlRows.length === 0 ? (
+              <div className="py-12 text-center text-xs text-text-tertiary">No users found</div>
+            ) : (
+              pnlRows.map((u) => (
+                <div
+                  key={u.user_id}
+                  onClick={() => router.push(`/users/${u.user_id}`)}
+                  className="bg-bg-tertiary/40 border border-border-primary rounded-md p-3 active:scale-[0.99] transition-fast"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-text-primary truncate">{u.user_name}</p>
+                      {u.user_email && <p className="text-xxs text-text-tertiary truncate">{u.user_email}</p>}
+                    </div>
+                    <span className={cn('shrink-0 px-2 py-1 rounded text-xs font-semibold font-mono', u.net_pnl >= 0 ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger')}>
+                      {u.net_pnl >= 0 ? '+' : ''}${fmt(u.net_pnl)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xxs">
+                    <div>
+                      <p className="text-text-tertiary uppercase">Trades</p>
+                      <p className="text-text-primary font-mono">{u.trades_count}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Win %</p>
+                      <p className="text-text-primary font-mono">{u.win_rate.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Avg / Trade</p>
+                      <p className={cn('font-mono', u.avg_per_trade >= 0 ? 'text-text-primary' : 'text-danger')}>${fmt(u.avg_per_trade)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Gross +</p>
+                      <p className="text-emerald-400 font-mono">${fmt(u.gross_profit)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Gross -</p>
+                      <p className="text-rose-400 font-mono">${fmt(u.gross_loss)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Last</p>
+                      <p className="text-text-tertiary font-mono">{u.last_closed_at ? new Date(u.last_closed_at).toLocaleDateString() : '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          {pnlPages > 1 && (
+            <div className="px-4 py-3 border-t border-border-primary flex items-center justify-between">
+              <p className="text-xxs text-text-tertiary">
+                {pnlTotal} user{pnlTotal === 1 ? '' : 's'} · Page {pnlPage} of {pnlPages}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={pnlPage <= 1 || pnlLoading}
+                  onClick={() => setPnlPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="px-2 text-xs text-text-secondary font-mono tabular-nums">
+                  {pnlPage} / {pnlPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={pnlPage >= pnlPages || pnlLoading}
+                  onClick={() => setPnlPage((p) => p + 1)}
+                  className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </>
+  );
+}
+
+// Sortable column header for the per-user P&L table. Shows an
+// arrow that flips between ↑ and ↓ when the field is the active
+// sort column.
+function SortHeader({
+  label, field, active, dir, onClick, align,
+}: {
+  label: string;
+  field: SortField;
+  active: boolean;
+  dir: 'asc' | 'desc';
+  onClick: (f: SortField) => void;
+  align: 'left' | 'right';
+}) {
+  return (
+    <th className={cn('px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase select-none', align === 'right' ? 'text-right' : 'text-left')}>
+      <button
+        type="button"
+        onClick={() => onClick(field)}
+        className={cn(
+          'inline-flex items-center gap-1 hover:text-text-primary transition-fast',
+          align === 'right' && 'ml-auto',
+          active && 'text-buy',
+        )}
+      >
+        {label}
+        {active ? (dir === 'desc' ? '↓' : '↑') : <ArrowUpDown size={10} className="opacity-50" />}
+      </button>
+    </th>
   );
 }
