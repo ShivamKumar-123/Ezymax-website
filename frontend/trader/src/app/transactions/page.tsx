@@ -61,11 +61,14 @@ export default function TransactionsPage() {
   const [pageSize, setPageSize] = useState(10);
   const loadGen = useRef(0);
 
-  const fetchData = useCallback(async (isRefresh = false) => {
+  const fetchData = useCallback(async (opts: { isRefresh?: boolean; silent?: boolean } = {}) => {
+    const { isRefresh = false, silent = false } = opts;
     const id = ++loadGen.current;
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setLoadError(null);
+    if (!silent) {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setLoadError(null);
+    }
     try {
       const [summaryRes, depRes, wdRes, ledgerRes] = await Promise.allSettled([
         api.get<WalletSummaryResponse>('/wallet/summary'),
@@ -82,7 +85,7 @@ export default function TransactionsPage() {
         setTotalWithdrawn(Number(s.total_withdrawn) || 0);
       }
 
-      if (summaryRes.status === 'rejected') {
+      if (!silent && summaryRes.status === 'rejected') {
         const msg =
           summaryRes.reason instanceof Error ? summaryRes.reason.message : 'Failed to load summary';
         setLoadError(msg);
@@ -93,19 +96,21 @@ export default function TransactionsPage() {
       const wdItems = wdRes.status === 'fulfilled' ? wdRes.value?.items || [] : [];
       const ledgerItems = ledgerRes.status === 'fulfilled' ? ledgerRes.value?.items || [] : [];
 
-      if (depRes.status === 'rejected' || wdRes.status === 'rejected' || ledgerRes.status === 'rejected') {
+      if (!silent && (depRes.status === 'rejected' || wdRes.status === 'rejected' || ledgerRes.status === 'rejected')) {
         toast.error('Some transaction data could not be loaded.');
       }
 
       setTransactions(mergeWalletHistory(depItems, wdItems, ledgerItems));
     } catch (e) {
       if (id !== loadGen.current) return;
-      const message = e instanceof Error ? e.message : 'Failed to load';
-      setLoadError(message);
-      toast.error(message);
-      setTransactions([]);
+      if (!silent) {
+        const message = e instanceof Error ? e.message : 'Failed to load';
+        setLoadError(message);
+        toast.error(message);
+        setTransactions([]);
+      }
     } finally {
-      if (id === loadGen.current) {
+      if (id === loadGen.current && !silent) {
         setLoading(false);
         setRefreshing(false);
       }
@@ -115,6 +120,17 @@ export default function TransactionsPage() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  // Silent background poll so trade closes (realized P&L), incoming
+  // deposits, and admin adjustments appear without a manual refresh.
+  // 6s cadence matches the trade-history live refresh.
+  useEffect(() => {
+    if (mainTab !== 'transactions') return;
+    const id = window.setInterval(() => {
+      void fetchData({ silent: true });
+    }, 6000);
+    return () => window.clearInterval(id);
+  }, [fetchData, mainTab]);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
@@ -180,7 +196,7 @@ export default function TransactionsPage() {
             {mainTab === 'transactions' && (
               <button
                 type="button"
-                onClick={() => void fetchData(true)}
+                onClick={() => void fetchData({ isRefresh: true })}
                 disabled={refreshing}
                 className={clsx(
                   'shrink-0 p-2 rounded-lg border border-border-primary bg-card hover:bg-bg-hover transition-all',
