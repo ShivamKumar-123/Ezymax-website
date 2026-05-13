@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
@@ -66,12 +67,13 @@ const STAT_CONFIG: Array<{
   format: (v: number) => string;
   pnl?: boolean;
   highlight?: boolean;
+  href?: string;
 }> = [
   { key: 'total_users', label: 'Total Users', icon: Users, format: (v) => v.toLocaleString() },
   { key: 'active_traders', label: 'Active Traders', icon: TrendingUp, format: (v) => v.toLocaleString() },
   { key: 'deposits_today', label: 'Deposits Today', icon: Wallet, format: (v) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` },
   { key: 'pending_deposits_count', label: 'Pending Deposits', icon: ArrowDownToLine, format: (v) => v.toLocaleString(), highlight: true },
-  { key: 'platform_pnl', label: 'Platform P&L', icon: DollarSign, format: (v) => `${v >= 0 ? '+' : ''}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`, pnl: true },
+  { key: 'platform_pnl', label: 'Platform P&L', icon: DollarSign, format: (v) => `${v >= 0 ? '+' : ''}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`, pnl: true, href: '/analytics/platform-pnl' },
   { key: 'open_tickets_count', label: 'Open Tickets', icon: HeadphonesIcon, format: (v) => v.toLocaleString() },
 ];
 
@@ -138,6 +140,7 @@ function RevenueChart({ points }: { points: RevenuePoint[] }) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -262,8 +265,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {STAT_CONFIG.map((s) => {
             const val = stats ? stats[s.key] : null;
-            return (
-              <div key={s.key} className="bg-bg-secondary border border-border-primary rounded-md p-3 min-w-0">
+            const clickable = !!s.href;
+            const inner = (
+              <>
                 <div className="flex items-center justify-between mb-2 gap-1">
                   <span className="text-xxs text-text-tertiary truncate">{s.label}</span>
                   <s.icon size={14} className="text-text-tertiary shrink-0" />
@@ -280,6 +284,26 @@ export default function DashboardPage() {
                 >
                   {loading ? '—' : val != null ? s.format(Number(val)) : '—'}
                 </div>
+                {clickable && (
+                  <div className="text-xxs text-text-tertiary mt-1">View details →</div>
+                )}
+              </>
+            );
+            if (clickable) {
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => router.push(s.href!)}
+                  className="text-left bg-bg-secondary border border-border-primary rounded-md p-3 min-w-0 hover:bg-bg-hover hover:border-accent-primary transition-fast cursor-pointer"
+                >
+                  {inner}
+                </button>
+              );
+            }
+            return (
+              <div key={s.key} className="bg-bg-secondary border border-border-primary rounded-md p-3 min-w-0">
+                {inner}
               </div>
             );
           })}

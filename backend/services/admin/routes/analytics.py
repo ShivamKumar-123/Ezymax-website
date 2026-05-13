@@ -25,6 +25,19 @@ async def get_exposure(
     return await analytics_service.get_exposure(db=db)
 
 
+@router.get("/platform-pnl")
+async def platform_pnl_detail(
+    admin: User = Depends(require_permission("analytics.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Comprehensive Platform P&L breakdown: trade-mirror, brokerage
+    commission, swap, and copy/MAM commissions across Today/Week/
+    Month/All Time, plus the 10 users who've cost the platform the
+    most and the 10 who've earned the platform the most, plus a
+    30-row "what moved the needle" list of recent big trades."""
+    return await analytics_service.platform_pnl_detail(db=db)
+
+
 @router.get("/user-pnl")
 async def user_pnl_breakdown(
     page: int = Query(1, ge=1),

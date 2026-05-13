@@ -289,6 +289,161 @@ async def get_exposure(db: AsyncSession) -> dict:
     }
 
 
+async def platform_pnl_detail(db: AsyncSession) -> dict:
+    """Comprehensive Platform P&L breakdown for the
+    /admin/analytics/platform-pnl page. Surfaces:
+
+      - Per-period totals (Today / Week / Month / All Time) with the
+        four components: trade mirror, brokerage commission, swap,
+        and the combined net platform P&L
+      - The 10 users whose trading has COST the platform the most
+        (i.e. those with the largest realized user-side profit —
+        in B-book that's broker loss)
+      - The 10 users who have EARNED the platform the most
+        (largest realized user-side losses)
+      - The 30 most-impactful recent closed trades (last 30 days,
+        sorted by absolute platform P&L impact)
+
+    All numbers reuse `_revenue_stats` and the existing TradeHistory
+    table so this stays read-only — no new tables, no recompute on
+    write, no migration.
+    """
+    today = _start_of_today()
+    week = _start_of_week()
+    month = _start_of_month()
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+
+    periods = {
+        "today": await _revenue_stats(db, since=today),
+        "this_week": await _revenue_stats(db, since=week),
+        "this_month": await _revenue_stats(db, since=month),
+        "all_time": await _revenue_stats(db),
+    }
+
+    # Helper: build a "user impact" list. Both lists are derived from
+    # the same per-user aggregate (grouped by user_id via the account
+    # join) — winners are users whose net_pnl > 0 (broker lost), losers
+    # are users whose net_pnl < 0 (broker won).
+    user_agg_q = await db.execute(
+        select(
+            TradingAccount.user_id.label("user_id"),
+            func.sum(TradeHistory.profit).label("net_pnl"),
+            func.count(TradeHistory.id).label("trades_count"),
+        )
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+        .group_by(TradingAccount.user_id)
+    )
+    user_rows = user_agg_q.all()
+
+    # Fan out a single User lookup so we don't N+1 per row.
+    user_ids = [r.user_id for r in user_rows if r.user_id]
+    users_map: dict = {}
+    if user_ids:
+        u_res = await db.execute(select(User).where(User.id.in_(user_ids)))
+        for u in u_res.scalars().all():
+            users_map[u.id] = u
+
+    def _user_label(uid):
+        u = users_map.get(uid)
+        if not u:
+            return ("Unknown", None)
+        name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
+        return (name, u.email)
+
+    rows_sorted = sorted(user_rows, key=lambda r: float(r.net_pnl or 0))
+    # Losers for the broker (user_net_pnl > 0): broker pays them
+    top_costs = []
+    for r in reversed(rows_sorted):
+        net = float(r.net_pnl or 0)
+        if net <= 0:
+            break
+        name, email = _user_label(r.user_id)
+        top_costs.append({
+            "user_id": str(r.user_id),
+            "user_name": name,
+            "user_email": email,
+            "user_pnl": net,
+            "platform_impact": -net,  # broker loss
+            "trades_count": int(r.trades_count or 0),
+        })
+        if len(top_costs) >= 10:
+            break
+    # Winners for the broker (user_net_pnl < 0): broker collects them
+    top_earnings = []
+    for r in rows_sorted:
+        net = float(r.net_pnl or 0)
+        if net >= 0:
+            break
+        name, email = _user_label(r.user_id)
+        top_earnings.append({
+            "user_id": str(r.user_id),
+            "user_name": name,
+            "user_email": email,
+            "user_pnl": net,
+            "platform_impact": -net,  # broker gain
+            "trades_count": int(r.trades_count or 0),
+        })
+        if len(top_earnings) >= 10:
+            break
+
+    # Recent big trades — last 30 days, top 30 by |profit|. Used by
+    # the admin page to show "what moved the needle".
+    big_trades_q = await db.execute(
+        select(TradeHistory)
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(
+            TradingAccount.is_demo == False,
+            TradeHistory.closed_at >= thirty_days_ago,
+        )
+        .order_by(func.abs(TradeHistory.profit).desc())
+        .limit(30)
+    )
+    big_trades_rows = big_trades_q.scalars().all()
+
+    # Look up symbols + owners for the big-trade rows.
+    big_trade_account_ids = {th.account_id for th in big_trades_rows}
+    big_trade_instrument_ids = {th.instrument_id for th in big_trades_rows}
+    big_accounts: dict = {}
+    if big_trade_account_ids:
+        a_res = await db.execute(select(TradingAccount).where(TradingAccount.id.in_(list(big_trade_account_ids))))
+        for a in a_res.scalars().all():
+            big_accounts[a.id] = a
+    big_instruments: dict = {}
+    if big_trade_instrument_ids:
+        i_res = await db.execute(select(Instrument).where(Instrument.id.in_(list(big_trade_instrument_ids))))
+        for i in i_res.scalars().all():
+            big_instruments[i.id] = i
+
+    big_trades = []
+    for th in big_trades_rows:
+        acc = big_accounts.get(th.account_id)
+        owner_id = acc.user_id if acc else None
+        name, email = _user_label(owner_id) if owner_id else ("Unknown", None)
+        inst = big_instruments.get(th.instrument_id) if th.instrument_id else None
+        user_p = float(th.profit or 0)
+        big_trades.append({
+            "trade_id": str(th.id),
+            "user_id": str(owner_id) if owner_id else None,
+            "user_name": name,
+            "user_email": email,
+            "symbol": inst.symbol if inst else None,
+            "side": th.side.value if hasattr(th.side, "value") else str(th.side),
+            "lots": float(th.lots or 0),
+            "user_pnl": user_p,
+            "platform_impact": -user_p,  # B-book mirror
+            "close_reason": th.close_reason or "manual",
+            "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+        })
+
+    return {
+        "periods": periods,
+        "top_costs": top_costs,
+        "top_earnings": top_earnings,
+        "big_trades": big_trades,
+    }
+
+
 async def list_user_pnl_breakdown(
     db: AsyncSession,
     page: int = 1,
