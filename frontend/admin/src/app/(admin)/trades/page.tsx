@@ -63,6 +63,7 @@ interface PendingOrder {
 
 interface ClosedTrade {
   id: string;
+  account_id?: string;
   user_email: string;
   account_number: string;
   instrument_symbol: string;
@@ -75,8 +76,15 @@ interface ClosedTrade {
    * admin_trade_service.list_trade_history. */
   stop_loss?: number | null;
   take_profit?: number | null;
+  /** Commission and swap booked against the position at close. Both
+   * already deducted from `profit`. Surfaced separately on the detail
+   * modal so support can answer "why is the net different from price
+   * × lots × contract?". */
+  commission?: number;
+  swap?: number;
   profit: number;
   close_reason: string;
+  opened_at?: string | null;
   closed_at: string;
 }
 
@@ -216,6 +224,12 @@ export default function TradesPage() {
 
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+  // Click-to-expand on a row in Trade History — opens a read-only
+  // detail modal with everything we know about the closed trade. We
+  // keep this state separate from selectedPosition so the
+  // modify/create/close modal flows above can't accidentally trample
+  // the history detail (and vice versa).
+  const [selectedTrade, setSelectedTrade] = useState<ClosedTrade | null>(null);
   const [modifySl, setModifySl] = useState('');
   const [modifyTp, setModifyTp] = useState('');
   const [modifyOpenPrice, setModifyOpenPrice] = useState('');
@@ -715,7 +729,12 @@ export default function TradesPage() {
                       const slDisplay = t.stop_loss != null ? t.stop_loss : '—';
                       const tpDisplay = t.take_profit != null ? t.take_profit : '—';
                       return (
-                      <tr key={t.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                      <tr
+                        key={t.id}
+                        onClick={() => setSelectedTrade(t)}
+                        className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover cursor-pointer"
+                        title="Click to see full trade details"
+                      >
                         <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">{formatDate(t.closed_at)}</td>
                         <td className="px-4 py-2.5 text-xs text-text-primary">{t.user_email || t.account_number || '—'}</td>
                         <td className="px-4 py-2.5 text-xs text-text-primary font-medium">{t.instrument_symbol}</td>
@@ -1058,6 +1077,227 @@ export default function TradesPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Trade Detail Modal — read-only, opens on row click in History. */}
+      <Modal
+        open={selectedTrade != null}
+        onClose={() => setSelectedTrade(null)}
+        title={
+          selectedTrade
+            ? `${selectedTrade.instrument_symbol} ${selectedTrade.side?.toUpperCase()} ${selectedTrade.lots} lots`
+            : 'Trade'
+        }
+        wide
+      >
+        {selectedTrade && (() => {
+          const t = selectedTrade;
+          const isBuy = t.side?.toLowerCase() === 'buy';
+          const reason = t.close_reason || 'manual';
+          const reasonLabel = reason === 'sl' ? 'Stop Loss' : reason === 'tp' ? 'Take Profit' : reason === 'admin' ? 'Admin closed' : 'Manual close';
+          const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger border-danger/30' : reason === 'tp' ? 'bg-success/15 text-success border-success/30' : reason === 'admin' ? 'bg-warning/15 text-warning border-warning/30' : 'bg-text-tertiary/15 text-text-tertiary border-text-tertiary/30';
+          const profitPositive = (t.profit || 0) >= 0;
+          // Duration calc — when we have both timestamps, render a
+          // friendly "5m 23s" style string. Falls back to em-dash.
+          let durationLabel = '—';
+          if (t.opened_at && t.closed_at) {
+            const ms = new Date(t.closed_at).getTime() - new Date(t.opened_at).getTime();
+            if (Number.isFinite(ms) && ms >= 0) {
+              const s = Math.floor(ms / 1000);
+              const days = Math.floor(s / 86400);
+              const hours = Math.floor((s % 86400) / 3600);
+              const mins = Math.floor((s % 3600) / 60);
+              const secs = s % 60;
+              const parts: string[] = [];
+              if (days) parts.push(`${days}d`);
+              if (hours) parts.push(`${hours}h`);
+              if (mins) parts.push(`${mins}m`);
+              if (!days && !hours) parts.push(`${secs}s`);
+              durationLabel = parts.join(' ') || '0s';
+            }
+          }
+          const priceMove = t.close_price - t.open_price;
+          const priceMoveLabel = `${priceMove >= 0 ? '+' : ''}${priceMove.toFixed(5)}`;
+          const commission = t.commission ?? 0;
+          const swap = t.swap ?? 0;
+          // Gross = profit + |commission| + |swap| (profit already nets
+          // them out in the close logic). Display them as separate
+          // line items so support can answer the inevitable "where did
+          // the dollar go?" question.
+          const grossPnl = t.profit + Math.abs(commission) + Math.abs(swap);
+
+          return (
+            <div className="space-y-4">
+              {/* Banner — symbol + side + net P&L, big and bold */}
+              <div
+                className={cn(
+                  'rounded-md border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3',
+                  profitPositive
+                    ? 'bg-success/10 border-success/30'
+                    : 'bg-danger/10 border-danger/30',
+                )}
+              >
+                <div>
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide">Net P&L</p>
+                  <p className={cn('text-2xl font-bold font-mono tabular-nums', profitPositive ? 'text-success' : 'text-danger')}>
+                    {profitPositive ? '+' : ''}${formatMoney(t.profit)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-xs font-semibold px-2 py-0.5 rounded border', isBuy ? 'bg-buy/15 text-buy border-buy/30' : 'bg-sell/15 text-sell border-sell/30')}>
+                    {t.side?.toUpperCase()}
+                  </span>
+                  <span className={cn('text-xs font-semibold px-2 py-0.5 rounded border', reasonColor)}>
+                    {reasonLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Two-column grid — collapses to single column on phones */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Timing */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Timing</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Opened</span>
+                      <span className="text-text-primary font-mono text-right">{formatDate(t.opened_at) || '—'}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Closed</span>
+                      <span className="text-text-primary font-mono text-right">{formatDate(t.closed_at)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Duration</span>
+                      <span className="text-text-primary font-mono text-right">{durationLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prices */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Prices</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Open price</span>
+                      <span className="text-text-primary font-mono tabular-nums">{t.open_price}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Close price</span>
+                      <span className="text-text-primary font-mono tabular-nums">{t.close_price}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Move</span>
+                      <span className={cn('font-mono tabular-nums', priceMove >= 0 ? 'text-success' : 'text-danger')}>{priceMoveLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Limits */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Limits at close</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Stop Loss</span>
+                      <span className={cn('font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>
+                        {t.stop_loss != null ? t.stop_loss : '— (not set)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Take Profit</span>
+                      <span className={cn('font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
+                        {t.take_profit != null ? t.take_profit : '— (not set)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Triggered by</span>
+                      <span className={cn('font-mono', reasonColor.includes('danger') ? 'text-danger' : reasonColor.includes('success') ? 'text-success' : 'text-text-secondary')}>{reasonLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accounting */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Accounting</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Gross P&L</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {grossPnl >= 0 ? '+' : ''}${formatMoney(grossPnl)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Commission</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {commission ? `-$${formatMoney(Math.abs(commission))}` : '$0.00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Swap</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {swap ? `${swap >= 0 ? '+' : '-'}$${formatMoney(Math.abs(swap))}` : '$0.00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2 border-t border-border-primary pt-1.5 mt-1.5">
+                      <span className="text-text-secondary font-semibold">Net P&L</span>
+                      <span className={cn('font-mono tabular-nums font-bold', profitPositive ? 'text-success' : 'text-danger')}>
+                        {profitPositive ? '+' : ''}${formatMoney(t.profit)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Owner + IDs — full width */}
+              <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Owner & identifiers</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">User email</span>
+                    <span className="text-text-primary font-mono break-all text-right sm:text-left">{t.user_email || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Account #</span>
+                    <span className="text-text-primary font-mono text-right sm:text-left">{t.account_number || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Trade ID</span>
+                    <button
+                      type="button"
+                      onClick={() => { void navigator.clipboard.writeText(t.id); }}
+                      className="text-text-primary font-mono text-[10px] break-all text-right sm:text-left hover:text-buy"
+                      title="Click to copy"
+                    >
+                      {t.id}
+                    </button>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Account ID</span>
+                    <button
+                      type="button"
+                      onClick={() => { if (t.account_id) void navigator.clipboard.writeText(t.account_id); }}
+                      className="text-text-primary font-mono text-[10px] break-all text-right sm:text-left hover:text-buy disabled:cursor-not-allowed"
+                      disabled={!t.account_id}
+                      title={t.account_id ? 'Click to copy' : undefined}
+                    >
+                      {t.account_id || '—'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTrade(null)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
     </>
   );
