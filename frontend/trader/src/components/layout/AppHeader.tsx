@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
 import { ChevronDown, Wallet } from 'lucide-react';
@@ -103,6 +104,11 @@ export default function AppHeader() {
             <span className="text-[#d6a93d] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
             <ChevronDown size={12} className="text-[#d6a93d]/60 shrink-0 hidden sm:block" />
           </Link>
+
+          {/* Theme toggle — lets the user flip dark/light without
+              digging into Profile → Settings. Compact variant fits
+              alongside the wallet pill + bell. */}
+          <ThemeToggle compact />
 
           {/* Notification bell */}
           <NotificationBell />
