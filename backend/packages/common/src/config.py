@@ -9,7 +9,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha"
     TIMESCALE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
+    # downstream IaC / .env that still defines it doesn't fail validation
+    # — but Kafka itself has been removed from the stack. The kafka_client
+    # module is a no-op shim.
+    KAFKA_BOOTSTRAP_SERVERS: str = ""
 
     JWT_SECRET: str = "dev-secret-change-in-production"
     JWT_ALGORITHM: str = "HS256"
@@ -34,6 +38,15 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"  # lax | strict | none
     # If None, Secure flag follows the incoming request (HTTPS / X-Forwarded-Proto).
     COOKIE_SECURE: bool | None = None
+    # Cookie Domain attribute. Set to a parent domain (e.g. ".fxartha.com") to share
+    # the auth session across the apex and subdomains (trade.*, etc.). Leave empty to
+    # let the browser set a host-only cookie (works for single-host dev/local setups).
+    COOKIE_DOMAIN: str = ""
+
+    # Google OAuth (Sign in / Sign up with Google). Verifies id_token audience offline
+    # against Google's JWKS — no client secret stored on our infra. When empty, the
+    # /auth/google endpoint returns 503 and the frontend hides the button.
+    GOOGLE_CLIENT_ID: str = ""
 
     ADMIN_JWT_SECRET: str = "admin-secret-change-in-production"
     ADMIN_JWT_ALGORITHM: str = "HS256"
@@ -100,10 +113,30 @@ class Settings(BaseSettings):
     # Request body size limit (bytes) — 10 MB default
     MAX_REQUEST_SIZE: int = 10 * 1024 * 1024
 
-    # OxaPay crypto payment gateway
+    # OxaPay crypto payment gateway (legacy — kept mounted for in-flight + historical deposits)
     OXAPAY_MERCHANT_KEY: str = ""
     OXAPAY_SANDBOX: bool = False
     OXAPAY_CALLBACK_BASE_URL: str = ""  # public gateway URL for webhooks, e.g. "https://api.yourdomain.com"
+
+    # NOWPayments crypto payment gateway (current default for new deposits).
+    NOWPAYMENTS_API_KEY: str = ""
+    NOWPAYMENTS_IPN_SECRET: str = ""    # IPN HMAC secret from dashboard
+    NOWPAYMENTS_SANDBOX: bool = False
+    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
+
+    # Decentralized USDT deposit flow — per-chain explorer + RPC config.
+    # All optional: with no keys the chain_verifier_engine falls back to
+    # public free endpoints (rate-limited but functional for low traffic).
+    ETHERSCAN_API_KEY: str = ""        # https://etherscan.io/myapikey
+    BSCSCAN_API_KEY: str = ""          # https://bscscan.com/myapikey (same key works for mainnet + testnet)
+    TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
+    ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
+    BSC_RPC_URL: str = ""              # public default fallback used if blank
+    # BSC testnet RPC for the FXArthaVaultV1 testnet deploy. Falls back
+    # to the public binance.org seed if blank. Used by the bscscan vault
+    # event verifier to fetch eth_blockNumber for confirmations.
+    BSC_TESTNET_RPC_URL: str = ""
+    TRON_API_URL: str = "https://api.trongrid.io"
 
     # Absolute path recommended in production (writable volume). Relative paths are resolved from gateway CWD.
     KYC_UPLOAD_ROOT: str = "uploads/kyc"
@@ -114,6 +147,39 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
+_DEFAULT_JWT_SECRETS = {
+    "dev-secret-change-in-production",
+    "admin-secret-change-in-production",
+    "change-me",
+    "",
+}
+
+
+def _assert_production_secrets(s: Settings) -> None:
+    """Refuse to start in production with default JWT secrets baked into
+    the binary. A missing or default secret means an attacker can mint
+    valid tokens with the public default — that's the codebase's #1
+    security risk if the env file is ever forgotten. Fail loudly at
+    process boot rather than silently authenticating forged tokens."""
+    if s.ENVIRONMENT.lower() != "production":
+        return
+    bad: list[str] = []
+    for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
+        val = getattr(s, name, "")
+        if val in _DEFAULT_JWT_SECRETS or len(val) < 32:
+            bad.append(name)
+    if bad:
+        raise RuntimeError(
+            "Refusing to start: ENVIRONMENT=production but the following JWT "
+            "secrets are missing, default, or shorter than 32 chars: "
+            + ", ".join(bad)
+            + ". Generate strong values with `openssl rand -hex 32` and set "
+            "them in /opt/fxartha/.env before deploying."
+        )
+
+
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    _assert_production_secrets(s)
+    return s

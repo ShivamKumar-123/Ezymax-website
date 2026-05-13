@@ -20,7 +20,10 @@ services:
       retries: 5
 
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    # Pinned to a specific Timescale release for reproducible builds —
+    # `latest-pg16` could quietly upgrade across releases and surface
+    # breaking SQL changes during a routine docker pull.
+    image: timescale/timescaledb:2.17.2-pg16
     environment:
       POSTGRES_USER: ${TIMESCALE_USER:-fxartha}
       POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-fxartha_dev}
@@ -47,40 +50,12 @@ services:
       timeout: 3s
       retries: 5
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    # No host port binding — only kafka connects via Docker network (zookeeper:2181)
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    depends_on:
-      - zookeeper
-    # No host port binding — all services connect via Docker network (kafka:29092)
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    depends_on:
-      - kafka
-    ports:
-      - "8080:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: fxartha
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+  # Kafka + Zookeeper + kafka-ui were removed. The codebase produced
+  # events to Kafka topics that nothing consumed (~1.5 GB RAM for a
+  # write-only sink). Real-time fan-out lives in Redis pub/sub; durable
+  # state in Postgres. produce_event() in packages/common/src/kafka_client.py
+  # is now a no-op shim that keeps call-sites compiling. When a real
+  # consumer is needed, the cheapest re-introduction is Redis Streams.
 
   # Admin dashboard API (port 8001)
   # Loads secrets from backend/.env (Compose does NOT auto-load that path for ${VAR} substitution).
@@ -106,6 +81,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
       WALLET_UPLOAD_ROOT: /app/uploads/wallet
+      BANK_QR_UPLOAD_DIR: /app/uploads/qr
     volumes:
       - ./backend/services/admin:/app
       - ./backend/packages/common:/app/packages/common
@@ -126,9 +102,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # Kafka "healthy" can block for a long time; gateway only needs broker up
-      kafka:
-        condition: service_started
     environment:
       BANNERS_UPLOAD_DIR: /app/uploads/banners
       WALLET_UPLOAD_ROOT: /app/uploads/wallet
@@ -153,8 +126,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka:
-        condition: service_started
     volumes:
       - ./backend/services/market-data:/app/services/market_data
       - ./backend/packages:/app/packages
@@ -171,8 +142,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka:
-        condition: service_started
     volumes:
       - ./backend/services/b-book-engine:/app/services/b_book_engine
       - ./backend/packages:/app/packages
@@ -189,8 +158,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      kafka:
-        condition: service_started
     volumes:
       - ./backend/services/risk-engine:/app/services/risk_engine
       - ./backend/packages:/app/packages

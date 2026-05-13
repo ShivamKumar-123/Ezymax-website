@@ -13,7 +13,7 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #2196f3 accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #d6a93d accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -36,8 +36,8 @@
   --border-glass-bright: rgba(255, 255, 255, 0.08);
 
   --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --text-tertiary: #555555;
+  --text-secondary: #b4b4b4;
+  --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
 
   --scrollbar-track: #0a0a0a;
@@ -47,11 +47,11 @@
   --input-bg: #111111;
   --input-border: #1f1f1f;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(33, 150, 243, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(33, 150, 243, 0.12), 0 0 0 3px rgba(33, 150, 243, 0.12);
+  --input-focus-border: rgba(214, 169, 61, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(214, 169, 61, 0.12), 0 0 0 3px rgba(214, 169, 61, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(33, 150, 243, 0.22);
+  --selection-bg: rgba(214, 169, 61, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
@@ -60,7 +60,58 @@
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(33, 150, 243, 0.28);
+  --toast-border: rgba(214, 169, 61, 0.28);
+
+  /* Colored stat-card surfaces. The trader/admin UIs lean heavily on
+   * gradient stat cards (Total Balance, Bonus, Trade Now, etc.).
+   * Defining them as CSS variables lets the dark / light themes pick
+   * their own gradient stops without every component having to ship
+   * `dark:` Tailwind variants. The `*-text-*` companions are the on-
+   * card foreground colors. */
+  --card-blue-bg: linear-gradient(135deg, #0e2a55 0%, #143a72 50%, #0b1d3d 100%);
+  --card-blue-border: rgba(59, 130, 246, 0.25);
+  --card-blue-icon-bg: rgba(59, 130, 246, 0.25);
+  --card-blue-icon-border: rgba(96, 165, 250, 0.30);
+  --card-blue-icon: #93c5fd;
+  --card-blue-text-strong: #ffffff;
+  --card-blue-text-muted: rgba(191, 219, 254, 0.85);
+  --card-blue-text-faint: rgba(191, 219, 254, 0.60);
+
+  --card-green-bg: linear-gradient(135deg, #0d3f2a 0%, #0f5535 50%, #082921 100%);
+  --card-green-border: rgba(16, 185, 129, 0.25);
+  --card-green-icon-bg: rgba(16, 185, 129, 0.25);
+  --card-green-icon-border: rgba(52, 211, 153, 0.30);
+  --card-green-icon: #6ee7b7;
+  --card-green-text-strong: #ffffff;
+  --card-green-text-muted: rgba(167, 243, 208, 0.85);
+  --card-green-text-faint: rgba(167, 243, 208, 0.60);
+
+  --card-purple-bg: linear-gradient(135deg, #3a1c5e 0%, #4a2470 50%, #2a1442 100%);
+  --card-purple-border: rgba(168, 85, 247, 0.25);
+  --card-purple-icon-bg: rgba(168, 85, 247, 0.25);
+  --card-purple-icon-border: rgba(192, 132, 252, 0.30);
+  --card-purple-icon: #c4b5fd;
+  --card-purple-text-strong: #ffffff;
+  --card-purple-text-muted: rgba(221, 214, 254, 0.85);
+  --card-purple-text-faint: rgba(221, 214, 254, 0.60);
+
+  --card-amber-bg: linear-gradient(135deg, #78350f 0%, #92400e 50%, #5b2a07 100%);
+  --card-amber-border: rgba(245, 158, 11, 0.25);
+  --card-amber-icon-bg: rgba(245, 158, 11, 0.25);
+  --card-amber-icon-border: rgba(251, 191, 36, 0.30);
+  --card-amber-icon: #fcd34d;
+  --card-amber-text-strong: #ffffff;
+  --card-amber-text-muted: rgba(254, 215, 170, 0.85);
+  --card-amber-text-faint: rgba(254, 215, 170, 0.60);
+
+  --card-red-bg: linear-gradient(135deg, #3c0d0d 0%, #5b1a1a 50%, #2a0808 100%);
+  --card-red-border: rgba(239, 68, 68, 0.25);
+  --card-red-icon-bg: rgba(239, 68, 68, 0.25);
+  --card-red-icon-border: rgba(248, 113, 113, 0.30);
+  --card-red-icon: #fca5a5;
+  --card-red-text-strong: #ffffff;
+  --card-red-text-muted: rgba(254, 202, 202, 0.85);
+  --card-red-text-faint: rgba(254, 202, 202, 0.60);
 
   color-scheme: dark;
 }
@@ -116,6 +167,55 @@
   --toast-fg: #111827;
   --toast-border: rgba(0, 0, 0, 0.1);
 
+  /* Stat-card surfaces — light mode. Soft tinted gradients so the
+   * cards keep their visual identity (blue = balance, green = bonus,
+   * etc.) but read cleanly on a white page. Text colors flip from
+   * white to dark-mid so they stay legible on the lighter surfaces. */
+  --card-blue-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  --card-blue-border: rgba(59, 130, 246, 0.40);
+  --card-blue-icon-bg: rgba(59, 130, 246, 0.12);
+  --card-blue-icon-border: rgba(59, 130, 246, 0.30);
+  --card-blue-icon: #2563eb;
+  --card-blue-text-strong: #1e3a8a;
+  --card-blue-text-muted: #1d4ed8;
+  --card-blue-text-faint: #3b82f6;
+
+  --card-green-bg: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+  --card-green-border: rgba(16, 185, 129, 0.40);
+  --card-green-icon-bg: rgba(16, 185, 129, 0.12);
+  --card-green-icon-border: rgba(16, 185, 129, 0.30);
+  --card-green-icon: #059669;
+  --card-green-text-strong: #064e3b;
+  --card-green-text-muted: #047857;
+  --card-green-text-faint: #10b981;
+
+  --card-purple-bg: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+  --card-purple-border: rgba(168, 85, 247, 0.40);
+  --card-purple-icon-bg: rgba(168, 85, 247, 0.12);
+  --card-purple-icon-border: rgba(168, 85, 247, 0.30);
+  --card-purple-icon: #7c3aed;
+  --card-purple-text-strong: #4c1d95;
+  --card-purple-text-muted: #6d28d9;
+  --card-purple-text-faint: #8b5cf6;
+
+  --card-amber-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  --card-amber-border: rgba(245, 158, 11, 0.40);
+  --card-amber-icon-bg: rgba(245, 158, 11, 0.12);
+  --card-amber-icon-border: rgba(245, 158, 11, 0.30);
+  --card-amber-icon: #d97706;
+  --card-amber-text-strong: #78350f;
+  --card-amber-text-muted: #b45309;
+  --card-amber-text-faint: #d97706;
+
+  --card-red-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 50%, #fecaca 100%);
+  --card-red-border: rgba(239, 68, 68, 0.40);
+  --card-red-icon-bg: rgba(239, 68, 68, 0.12);
+  --card-red-icon-border: rgba(239, 68, 68, 0.30);
+  --card-red-icon: #dc2626;
+  --card-red-text-strong: #7f1d1d;
+  --card-red-text-muted: #b91c1c;
+  --card-red-text-faint: #ef4444;
+
   color-scheme: light;
 }
 
@@ -144,20 +244,20 @@
   --border-glass: rgba(255, 255, 255, 0.06);
   --border-glass-bright: rgba(255, 255, 255, 0.08);
   --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --text-tertiary: #555555;
+  --text-secondary: #b4b4b4;
+  --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #2a2a2a;
   --scrollbar-hover: #3a3a3a;
   --input-bg: #111111;
   --input-border: #1f1f1f;
-  --input-focus-border: rgba(33, 150, 243, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(33, 150, 243, 0.12);
-  --selection-bg: rgba(33, 150, 243, 0.22);
+  --input-focus-border: rgba(214, 169, 61, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(214, 169, 61, 0.12);
+  --selection-bg: rgba(214, 169, 61, 0.22);
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(33, 150, 243, 0.28);
+  --toast-border: rgba(214, 169, 61, 0.28);
   color-scheme: dark;
 }
 
@@ -397,30 +497,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #64b5f6 0%, #2196f3 50%, #1976d2 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(33,150,243,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #ecc657 0%, #d6a93d 50%, #9b7d3a 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(214,169,61,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #90caf9 0%, #64b5f6 50%, #2196f3 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(33,150,243,0.38);
+  background: linear-gradient(180deg, #f5d984 0%, #ecc657 50%, #d6a93d 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(214,169,61,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #2196f3 0%, #1976d2 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(33,150,243,0.2);
+  background: linear-gradient(180deg, #d6a93d 0%, #9b7d3a 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(214,169,61,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #2196f3;
+  background: #d6a93d;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 2px 8px rgba(214, 169, 61, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #1976d2;
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  background: #9b7d3a;
+  box-shadow: 0 4px 12px rgba(214, 169, 61, 0.4);
 }
 
 .skeu-btn-sell {
@@ -497,15 +597,56 @@ html {
 
 .flash-blue { animation: flashAccent 0.15s ease-out; }
 .flash-red { animation: flashRed 0.15s ease-out; }
-@keyframes flashAccent { 0% { background-color: rgba(33,150,243,0.22); } 100% { background-color: transparent; } }
+@keyframes flashAccent { 0% { background-color: rgba(214,169,61,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
-/* react-hot-toast — library defaults can look white; force FXArtha dark surface */
+/* react-hot-toast — library defaults are washed-out white squares; reskin
+ * to the FXArtha dark surface with proper padding, gap, and typography so
+ * single-line errors don't wrap mid-word and the icon doesn't crash into
+ * the text. */
 .fxartha-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  min-height: 44px;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The internal status icon (✓ / ✕) — give it a soft circular halo so it
+ * reads as a status badge rather than a punched-out hole. */
+.fxartha-hot-toast > div[role="status"] {
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+/* The text container — react-hot-toast wraps content in a child div; make
+ * sure long error strings flow nicely instead of orphaning a single word. */
+.fxartha-hot-toast > div:not([role="status"]) {
+  flex: 1 1 auto;
+  margin: 0 !important;
+  word-break: break-word;
+}
+
+/* Tighten the close-button (×) for toasts that ship with one. */
+.fxartha-hot-toast button {
+  flex-shrink: 0;
+  color: var(--toast-fg) !important;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.fxartha-hot-toast button:hover {
+  opacity: 1;
 }
 
 /* Page fade-in — applied to main content area on route change */
@@ -517,8 +658,8 @@ html {
 
 /* Sidebar icon glow pulse */
 @keyframes iconGlowPulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(33,150,243,0.15)); }
-  50%      { filter: drop-shadow(0 0 10px rgba(33,150,243,0.55)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(214,169,61,0.15)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(214,169,61,0.55)); }
 }
 .sidebar-icon-glow {
   animation: iconGlowPulse 2.5s ease-in-out infinite;
@@ -532,7 +673,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #2196f3; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #d6a93d; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -689,8 +830,8 @@ html {
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(33, 150, 243, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+    border-color: rgba(214, 169, 61, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(214, 169, 61, 0.2) !important;
   }
   .accounts-native-select option {
     background-color: var(--bg-secondary);

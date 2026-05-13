@@ -1,6 +1,7 @@
 """Profile Service — User profile CRUD, KYC document handling, session management."""
 import logging
 import uuid as _uuid
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -56,6 +57,17 @@ async def _read_upload_file(upload: UploadFile, label: str) -> tuple[bytes, str]
             status_code=400,
             detail=f"File too large for {label}. Maximum size is 10 MB.",
         )
+    # Confirm the file's leading bytes match the declared extension —
+    # blocks polyglots / spoofed Content-Type uploads.
+    from packages.common.src.file_validation import validate_upload
+    try:
+        suffix = validate_upload(
+            content, suffix,
+            allowed_extensions=ALLOWED_EXTENSIONS,
+            label=label,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return content, suffix
 
 
@@ -88,11 +100,16 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
     return {
         "id": str(user.id),
         "email": user.email,
+        "email_verified": bool(getattr(user, "email_verified", False)),
+        "is_wallet_placeholder": (user.email or "").lower().endswith("@wallet.fxartha.local"),
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,
         "country": user.country,
         "address": user.address,
+        "city": user.city,
+        "state": user.state,
+        "postal_code": user.postal_code,
         "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
         "role": user.role,
         "status": user.status,
@@ -100,6 +117,7 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
         "two_factor_enabled": user.two_factor_enabled,
         "language": user.language,
         "theme": user.theme,
+        "is_islamic": bool(getattr(user, "is_islamic", False)),
         "kyc_documents": kyc_documents,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
@@ -112,6 +130,23 @@ async def update_profile(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # date_of_birth arrives from the HTML <input type="date"> as a YYYY-MM-DD
+    # string. The User column is a DateTime so we coerce here — asyncpg
+    # otherwise raises DataError on commit.
+    if "date_of_birth" in update_data:
+        dob_raw = update_data["date_of_birth"]
+        if dob_raw is None or (isinstance(dob_raw, str) and not dob_raw.strip()):
+            update_data["date_of_birth"] = None
+        elif isinstance(dob_raw, str):
+            try:
+                # Accept either "YYYY-MM-DD" or full ISO 8601.
+                update_data["date_of_birth"] = datetime.fromisoformat(dob_raw[:10])
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid date of birth — expected YYYY-MM-DD.",
+                )
 
     for field, value in update_data.items():
         if value is not None:
@@ -128,6 +163,9 @@ async def update_profile(
         "phone": user.phone,
         "country": user.country,
         "address": user.address,
+        "city": user.city,
+        "state": user.state,
+        "postal_code": user.postal_code,
         "language": user.language,
         "theme": user.theme,
         "message": "Profile updated",
@@ -258,7 +296,18 @@ async def submit_kyc(
         user_upload_dir = safe_join_under_base(root, str(user_id))
     except PathTraversalError:
         raise HTTPException(status_code=400, detail="Invalid upload path")
-    user_upload_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        user_upload_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        # Most common cause: the host bind-mount target
+        # (./backend/uploads/) isn't writable by the gateway container's
+        # non-root user (uid 1001). Surfaces the same way as the bank_service
+        # /uploads bug fixed earlier — logs the full path so ops can chmod it.
+        logger.exception("KYC user upload dir not writable: %s", user_upload_dir)
+        raise HTTPException(
+            status_code=503,
+            detail="File upload is temporarily unavailable. Please contact support.",
+        ) from e
 
     saved_docs: list[KYCDocument] = []
     try:
@@ -322,6 +371,19 @@ async def submit_kyc(
                 "Could not save KYC data. Your server database may need the latest migration "
                 "(kyc document types). Contact support if this continues."
             ),
+        ) from e
+    except HTTPException:
+        # Already a clean error — let it through without rewrapping.
+        raise
+    except Exception as e:
+        # Anything else is unexpected (filesystem, Redis, Notification model
+        # drift, etc.). Log the full traceback so ops can diagnose, but
+        # return a generic 500 to the user without leaking internals.
+        await db.rollback()
+        logger.exception("KYC submit failed for user_id=%s: %s", user_id, e)
+        raise HTTPException(
+            status_code=500,
+            detail="We couldn't save your KYC documents. Our team has been notified — please try again in a few minutes.",
         ) from e
 
     primary = saved_docs[0]

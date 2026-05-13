@@ -7,6 +7,8 @@ import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette } from 'l
 import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
+import LinkedWalletCard from '@/components/profile/LinkedWalletCard';
+import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
 import api from '@/lib/api/client';
 
 interface Profile {
@@ -22,6 +24,10 @@ interface Profile {
   postal_code?: string | null;
   kyc_status: string;
   two_factor_enabled: boolean;
+  // Onboarding flags from /profile (mirror /auth/me) — drive the
+  // EmailVerificationCard's "verified" badge and the Change-Email button.
+  email_verified?: boolean;
+  is_wallet_placeholder?: boolean;
 }
 
 interface TradingAccount {
@@ -291,7 +297,7 @@ export default function ProfilePage() {
                   >
                     <Icon size={14} className="shrink-0 opacity-90" />
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(33,150,243,0.6)] truncate">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(214,169,61,0.6)] truncate">
                         {t.label}
                       </span>
                     ) : (
@@ -497,6 +503,15 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            <EmailVerificationCard
+              email={profile?.email || ''}
+              isVerified={Boolean(profile?.email_verified)}
+              isPlaceholder={Boolean(profile?.is_wallet_placeholder)}
+              onChanged={() => void fetchProfile()}
+            />
+
+            <LinkedWalletCard />
           </div>
         )}
 
@@ -567,7 +582,7 @@ export default function ProfilePage() {
                     <div className="flex h-[calc(100%-12px)]">
                       <div className="w-1/4 border-r" style={{ borderColor: '#2a2a2a', background: '#0d0d0d' }} />
                       <div className="flex-1 p-1.5">
-                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#2196f3' }} />
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#d6a93d' }} />
                         <div className="h-1 w-1/2 rounded-full" style={{ background: '#333' }} />
                       </div>
                     </div>

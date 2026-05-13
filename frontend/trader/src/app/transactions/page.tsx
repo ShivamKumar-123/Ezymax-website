@@ -61,11 +61,14 @@ export default function TransactionsPage() {
   const [pageSize, setPageSize] = useState(10);
   const loadGen = useRef(0);
 
-  const fetchData = useCallback(async (isRefresh = false) => {
+  const fetchData = useCallback(async (opts: { isRefresh?: boolean; silent?: boolean } = {}) => {
+    const { isRefresh = false, silent = false } = opts;
     const id = ++loadGen.current;
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setLoadError(null);
+    if (!silent) {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setLoadError(null);
+    }
     try {
       const [summaryRes, depRes, wdRes, ledgerRes] = await Promise.allSettled([
         api.get<WalletSummaryResponse>('/wallet/summary'),
@@ -82,7 +85,7 @@ export default function TransactionsPage() {
         setTotalWithdrawn(Number(s.total_withdrawn) || 0);
       }
 
-      if (summaryRes.status === 'rejected') {
+      if (!silent && summaryRes.status === 'rejected') {
         const msg =
           summaryRes.reason instanceof Error ? summaryRes.reason.message : 'Failed to load summary';
         setLoadError(msg);
@@ -93,19 +96,21 @@ export default function TransactionsPage() {
       const wdItems = wdRes.status === 'fulfilled' ? wdRes.value?.items || [] : [];
       const ledgerItems = ledgerRes.status === 'fulfilled' ? ledgerRes.value?.items || [] : [];
 
-      if (depRes.status === 'rejected' || wdRes.status === 'rejected' || ledgerRes.status === 'rejected') {
+      if (!silent && (depRes.status === 'rejected' || wdRes.status === 'rejected' || ledgerRes.status === 'rejected')) {
         toast.error('Some transaction data could not be loaded.');
       }
 
       setTransactions(mergeWalletHistory(depItems, wdItems, ledgerItems));
     } catch (e) {
       if (id !== loadGen.current) return;
-      const message = e instanceof Error ? e.message : 'Failed to load';
-      setLoadError(message);
-      toast.error(message);
-      setTransactions([]);
+      if (!silent) {
+        const message = e instanceof Error ? e.message : 'Failed to load';
+        setLoadError(message);
+        toast.error(message);
+        setTransactions([]);
+      }
     } finally {
-      if (id === loadGen.current) {
+      if (id === loadGen.current && !silent) {
         setLoading(false);
         setRefreshing(false);
       }
@@ -115,6 +120,17 @@ export default function TransactionsPage() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  // Silent background poll so trade closes (realized P&L), incoming
+  // deposits, and admin adjustments appear without a manual refresh.
+  // 6s cadence matches the trade-history live refresh.
+  useEffect(() => {
+    if (mainTab !== 'transactions') return;
+    const id = window.setInterval(() => {
+      void fetchData({ silent: true });
+    }, 6000);
+    return () => window.clearInterval(id);
+  }, [fetchData, mainTab]);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
@@ -180,7 +196,7 @@ export default function TransactionsPage() {
             {mainTab === 'transactions' && (
               <button
                 type="button"
-                onClick={() => void fetchData(true)}
+                onClick={() => void fetchData({ isRefresh: true })}
                 disabled={refreshing}
                 className={clsx(
                   'shrink-0 p-2 rounded-lg border border-border-primary bg-card hover:bg-bg-hover transition-all',
@@ -237,16 +253,16 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#2196f3]/[0.04] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#d6a93d]/[0.04] pointer-events-none" />
               <div className="relative flex items-center gap-3">
                 <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#2196f3]/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.2) 0%, rgba(33,150,243,0.06) 100%)' }}
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#d6a93d]/25"
+                  style={{ background: 'linear-gradient(135deg, rgba(214,169,61,0.2) 0%, rgba(214,169,61,0.06) 100%)' }}
                 >
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.5))' }} />
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#d6a93d]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(214,169,61,0.5))' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/60">Total Deposits</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#d6a93d]/60">Total Deposits</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(totalDeposited)}
                   </p>
@@ -289,16 +305,16 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#2196f3]/[0.03] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#d6a93d]/[0.03] pointer-events-none" />
               <div className="relative flex items-center gap-3">
                 <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#2196f3]/20"
-                  style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.04) 100%)' }}
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#d6a93d]/20"
+                  style={{ background: 'linear-gradient(135deg, rgba(214,169,61,0.15) 0%, rgba(214,169,61,0.04) 100%)' }}
                 >
-                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.4))' }} />
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#d6a93d]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(214,169,61,0.4))' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/50">IB Commissions</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#d6a93d]/50">IB Commissions</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(0)}
                   </p>
@@ -388,7 +404,7 @@ export default function TransactionsPage() {
                     'px-3 py-1 text-[11px] font-semibold rounded-full border transition-all',
                     statusFilter === s
                       ? s === 'completed'
-                        ? 'bg-[#2196f3]/15 text-[#2196f3] border-[#2196f3]/30'
+                        ? 'bg-[#d6a93d]/15 text-[#d6a93d] border-[#d6a93d]/30'
                         : s === 'pending'
                           ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                           : s === 'failed'

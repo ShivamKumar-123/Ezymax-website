@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "trustedge-common"
+name = "fxartha-common"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -14,18 +14,22 @@ dependencies = [
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
     "redis[hiredis]>=5.0.0",
-    "aiokafka>=0.10.0",
     "bcrypt>=4.0.0",
     "PyJWT>=2.8.0",
     "python-multipart>=0.0.9",
     "httpx>=0.27.0",
-    "celery[redis]>=5.4.0",
     "websockets>=12.0",
     "alembic>=1.13.0",
     "sentry-sdk[fastapi]>=2.0.0",
-    "slowapi>=0.1.9",
     "prometheus-client>=0.20.0",
     "aiosmtplib>=3.0.0",
+    "slowapi>=0.1.9",
+    # eth-utils provides keccak256 (Ethereum-flavoured, NOT NIST SHA-3)
+    # used by chain_clients/bscscan.py to compute event topic hashes
+    # for the FXArthaVaultV1 event-decoded verification path. Tiny pure-
+    # Python lib (~1MB), well-maintained, transitive dep of most Ethereum
+    # tooling.
+    "eth-utils>=4.0.0",
 ]
 
 [project.optional-dependencies]

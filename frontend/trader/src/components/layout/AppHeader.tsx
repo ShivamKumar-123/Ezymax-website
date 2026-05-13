@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
-import { Menu, ChevronDown, Wallet } from 'lucide-react';
+import { ChevronDown, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -74,31 +76,39 @@ export default function AppHeader() {
       <header
         className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
       >
-        {/* LEFT — logo (opens sidebar) */}
+        {/* LEFT — fxartha mark toggles the sidebar (no hamburger) */}
         <button
           type="button"
           onClick={toggleSidebar}
-          className="shrink-0"
+          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors"
           aria-label="Toggle menu"
         >
           <img
-            src="/images/fxartha-logo.png"
+            src="/images/fxartha_icon.png"
             alt="FXArtha"
-            className="w-10 h-10 object-contain"
+            className="w-9 h-9 object-contain"
           />
         </button>
 
-        {/* RIGHT — balance + bell + user */}
+        {/* RIGHT — XP/Coin chip + balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* XP + AC chip — links to /earn/tasks */}
+          <EarnChip />
+
           {/* Balance pill */}
           <Link
             href="/wallet"
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#2196f3]/30 bg-[#2196f3]/5 hover:bg-[#2196f3]/10 transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
           >
-            <Wallet size={14} className="text-[#2196f3] shrink-0" />
-            <span className="text-[#2196f3] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
-            <ChevronDown size={12} className="text-[#2196f3]/60 shrink-0 hidden sm:block" />
+            <Wallet size={14} className="text-[#d6a93d] shrink-0" />
+            <span className="text-[#d6a93d] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
+            <ChevronDown size={12} className="text-[#d6a93d]/60 shrink-0 hidden sm:block" />
           </Link>
+
+          {/* Theme toggle — lets the user flip dark/light without
+              digging into Profile → Settings. Compact variant fits
+              alongside the wallet pill + bell. */}
+          <ThemeToggle compact />
 
           {/* Notification bell */}
           <NotificationBell />
@@ -110,7 +120,7 @@ export default function AppHeader() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#2196f3]/20 border border-[#2196f3]/30 flex items-center justify-center text-[#2196f3] text-[10px] sm:text-xs font-bold uppercase">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase">
                 {initials}
               </div>
               <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>

@@ -74,10 +74,10 @@ const IconMore = ({ active }: { active: boolean }) => (
 
 /* More-sheet items */
 const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon }[] = [
-  { name: 'Deposit', path: '/wallet', color: '#2196f3', icon: ArrowDownToLine },
+  { name: 'Deposit', path: '/wallet', color: '#d6a93d', icon: ArrowDownToLine },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
-  { name: 'MAMM', path: '/social', color: '#f59e0b', icon: Copy },
+  { name: 'Copy Trading', path: '/social', color: '#f59e0b', icon: Copy },
   { name: 'Affiliates', path: '/business', color: '#ec4899', icon: Users },
   { name: 'PAMM', path: '/pamm', color: '#06b6d4', icon: TrendingUp },
   { name: 'History', path: '/transactions', color: '#a855f7', icon: HistoryIcon },
@@ -156,7 +156,7 @@ export default function MobileBottomNav() {
     ? tradingTerminalUrl(tradingAccountId, { view: 'order' })
     : '/trading';
 
-  const isHome = pathname === '/accounts' || pathname === '/dashboard';
+  const isHome = pathname === '/dashboard';
   const isMarket = isTradingArea && (currentView === 'watchlist' || (!currentView && pathname === '/trading'));
   const isChart = isTradingArea && (currentView === 'chart' || (pathname?.includes('/terminal') && !currentView));
   const isOrders = isTradingArea && currentView === 'order';
@@ -171,11 +171,11 @@ export default function MobileBottomNav() {
       >
         <div className="relative bg-bg-base">
           {/* Top border glow */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2196f3]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d6a93d]/20 to-transparent" />
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
-            <Link href="/accounts" className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
+            <Link href="/dashboard" prefetch={false} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
               <span className={clsx('transition-colors', isHome ? 'text-accent' : 'text-text-tertiary')}>
                 <IconHome active={isHome} />
               </span>
@@ -203,7 +203,7 @@ export default function MobileBottomNav() {
               <div className={clsx(
                 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all',
                 isChart
-                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(33,150,243,0.4)]'
+                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(214,169,61,0.4)]'
                   : 'bg-bg-secondary text-text-secondary border border-border-primary',
               )}>
                 <IconChart />
@@ -260,6 +260,7 @@ export default function MobileBottomNav() {
                   <Link
                     key={item.name}
                     href={item.path}
+                    prefetch={false}
                     onClick={() => setShowMore(false)}
                     className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
                   >

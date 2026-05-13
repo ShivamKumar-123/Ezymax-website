@@ -120,6 +120,49 @@ async def become_provider(
     )
 
 
+@router.get("/masters/eligibility")
+async def master_eligibility(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-criterion progress toward Master Trader eligibility.
+
+    The frontend modal calls this on open to show the user where they stand
+    (e.g. "82 / 100 trades, $74,500 / $100,000 volume, 22 / 30 days") so the
+    Apply button is informed instead of mysterious."""
+    return await social_service.check_master_eligibility(
+        user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.post("/masters/apply", status_code=201)
+async def apply_as_master(
+    master_type: str = Query("signal_provider"),
+    description: str = Body(None),
+    performance_fee_pct: Decimal = Body(Decimal("25"), ge=0, le=50),
+    management_fee_pct: Decimal = Body(Decimal("0"), ge=0, le=10),
+    min_investment: Decimal = Body(Decimal("100"), gt=0),
+    max_investors: int = Body(100, ge=1, le=1000),
+    external_pnl_url: str | None = Body(None),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Apply as a Master Trader. Either the user's on-platform stats meet the
+    eligibility bar, or they supply a URL to a verified external track record
+    for admin review."""
+    return await social_service.apply_as_master(
+        user_id=current_user["user_id"],
+        db=db,
+        master_type=master_type,
+        description=description,
+        performance_fee_pct=performance_fee_pct,
+        management_fee_pct=management_fee_pct,
+        min_investment=min_investment,
+        max_investors=max_investors,
+        external_pnl_url=external_pnl_url,
+    )
+
+
 @router.get("/my-provider")
 async def my_provider_stats(
     master_type: str = Query(None),

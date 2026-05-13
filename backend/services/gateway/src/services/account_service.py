@@ -18,12 +18,91 @@ from packages.common.src.models import (
     OrderStatus,
     Position,
     PositionStatus,
+    RewardsUserState,
     TradingAccount,
     Transaction,
     User,
 )
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.redis_client import redis_client, PriceChannel
+
+
+# ─── Per-user leverage cap (Trading_Mechanism.docx risk control) ──────
+# Default ceiling is 1:50 for everyone. KYC + XP unlock higher leverage.
+DEFAULT_USER_MAX_LEVERAGE = 50
+
+# XP tier → leverage ceiling. Same XP thresholds as the rewards level
+# system — keeping a single XP ladder so the user-facing story stays
+# coherent ("level up to unlock more leverage").
+XP_LEVERAGE_TIERS = [
+    (0,    50),   # Starter
+    (300,  100),  # Active
+    (1000, 200),  # Skilled
+    (3000, 300),  # Pro
+    (7000, 500),  # Elite
+]
+
+
+def _xp_leverage_cap(xp: int) -> int:
+    cap = DEFAULT_USER_MAX_LEVERAGE
+    for threshold, max_lev in XP_LEVERAGE_TIERS:
+        if xp >= threshold:
+            cap = max_lev
+    return cap
+
+
+async def _user_effective_leverage_cap(
+    db: AsyncSession,
+    user: User,
+    group: AccountGroup,
+) -> tuple[int, dict]:
+    """Returns (effective_cap, hints) where effective_cap is the smallest of:
+        - group.max_leverage / leverage_default (broker ceiling per Phase 2)
+        - DEFAULT_USER_MAX_LEVERAGE if KYC is not approved
+        - the user's XP-gated cap
+
+    `hints` carries per-reason flags so the UI can show 'Complete KYC' or
+    'Reach 1,000 XP to unlock 1:200' next to the dropdown."""
+    group_cap = int(group.max_leverage or group.leverage_default or 100)
+
+    # Demo accounts ignore KYC + XP gating — full group ceiling applies.
+    if bool(user.is_demo) or bool(group.is_demo):
+        return group_cap, {
+            "kyc_unlock_required": False,
+            "xp_unlock_required": False,
+            "xp_for_next_unlock": None,
+            "next_unlock_leverage": None,
+        }
+
+    # KYC gate.
+    kyc_ok = (user.kyc_status or "").lower() in ("approved", "verified")
+    kyc_cap = group_cap if kyc_ok else DEFAULT_USER_MAX_LEVERAGE
+
+    # XP gate.
+    xp = (await db.execute(
+        select(RewardsUserState.xp).where(RewardsUserState.user_id == user.id)
+    )).scalar_one_or_none()
+    xp_int = int(xp or 0)
+    xp_cap = _xp_leverage_cap(xp_int)
+
+    effective = min(group_cap, kyc_cap, xp_cap)
+
+    # Compute the next unlock that the user can earn — the next XP threshold
+    # whose cap is strictly higher than the *current* effective cap.
+    next_threshold = None
+    next_leverage = None
+    for threshold, lev in XP_LEVERAGE_TIERS:
+        if xp_int < threshold and lev > effective:
+            next_threshold = threshold
+            next_leverage = lev
+            break
+
+    return effective, {
+        "kyc_unlock_required": (not kyc_ok and group_cap > DEFAULT_USER_MAX_LEVERAGE),
+        "xp_unlock_required": (next_threshold is not None),
+        "xp_for_next_unlock": next_threshold,
+        "next_unlock_leverage": next_leverage,
+    }
 
 
 async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
@@ -41,21 +120,31 @@ async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
         .order_by(AccountGroup.name)
     )
     rows = result.scalars().all()
-    return {
-        "items": [
-            {
-                "id": str(g.id),
-                "name": g.name,
-                "description": g.description or "",
-                "leverage_default": int(g.leverage_default or 100),
-                "minimum_deposit": float(g.minimum_deposit or 0),
-                "spread_markup": float(g.spread_markup_default or 0),
-                "commission_per_lot": float(g.commission_default or 0),
-                "swap_free": bool(g.swap_free),
-            }
-            for g in rows
-        ]
-    }
+    # Islamic users see only swap-free groups so their entire account list
+    # is Shariah-friendly by default. Demo/non-Islamic users see all.
+    if bool(getattr(user, "is_islamic", False)) and not bool(user.is_demo):
+        rows = [g for g in rows if bool(g.swap_free)]
+    items = []
+    for g in rows:
+        effective_cap, hints = await _user_effective_leverage_cap(db, user, g)
+        items.append({
+            "id": str(g.id),
+            "name": g.name,
+            "description": g.description or "",
+            "leverage_default": int(g.leverage_default or 100),
+            "max_leverage": int(g.max_leverage or g.leverage_default or 100),
+            "effective_max_leverage": int(effective_cap),
+            "kyc_unlock_required": bool(hints["kyc_unlock_required"]),
+            "xp_unlock_required": bool(hints["xp_unlock_required"]),
+            "xp_for_next_unlock": hints["xp_for_next_unlock"],
+            "next_unlock_leverage": hints["next_unlock_leverage"],
+            "minimum_deposit": float(g.minimum_deposit or 0),
+            "spread_markup": float(g.spread_markup_default or 0),
+            "commission_per_lot": float(g.commission_default or 0),
+            "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
+            "swap_free": bool(g.swap_free),
+        })
+    return {"items": items, "user_is_islamic": bool(getattr(user, "is_islamic", False))}
 
 
 async def open_live_account(
@@ -127,7 +216,28 @@ async def open_live_account(
             new_balance = min_d
 
     num = generate_account_number()
-    lev = int(group.leverage_default or 100)
+    # Effective cap = min(group ceiling, KYC gate, XP gate). User-facing
+    # error mentions the most-restrictive reason so the trader knows what
+    # to do next.
+    max_lev, hints = await _user_effective_leverage_cap(db, user, group)
+    if req.leverage is not None:
+        if req.leverage < 1 or req.leverage > max_lev:
+            reasons: list[str] = []
+            if hints.get("kyc_unlock_required"):
+                reasons.append("complete KYC")
+            if hints.get("xp_unlock_required") and hints.get("xp_for_next_unlock"):
+                reasons.append(
+                    f"reach {hints['xp_for_next_unlock']} XP to unlock 1:{hints['next_unlock_leverage']}"
+                )
+            extra = (" — " + ", ".join(reasons)) if reasons else ""
+            raise HTTPException(
+                status_code=400,
+                detail=f"Leverage must be between 1 and {max_lev} for this account type{extra}.",
+            )
+        lev = int(req.leverage)
+    else:
+        # Default to the group's headline leverage clamped by the user cap.
+        lev = min(int(group.leverage_default or max_lev), max_lev)
     new_acc = TradingAccount(
         user_id=user_id,
         account_group_id=group.id,
@@ -200,9 +310,11 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                 "name": g.name,
                 "spread_markup": float(g.spread_markup_default or 0),
                 "commission_per_lot": float(g.commission_default or 0),
+                "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
                 "minimum_deposit": float(g.minimum_deposit or 0),
                 "swap_free": bool(g.swap_free),
                 "leverage_default": int(g.leverage_default or 100),
+                "max_leverage": int(g.max_leverage or g.leverage_default or 100),
             }
 
         items.append({
@@ -296,7 +408,7 @@ async def get_account_summary(
 async def update_account_leverage(
     account_id: UUID, user_id: UUID, leverage: int, db: AsyncSession,
 ) -> dict:
-    """Update leverage on an account the user owns, capped at the group's leverage_default."""
+    """Update leverage on an account the user owns, capped at the group's max_leverage."""
     if leverage < 1:
         raise HTTPException(status_code=400, detail="leverage must be at least 1")
 
@@ -310,11 +422,28 @@ async def update_account_leverage(
         raise HTTPException(status_code=404, detail="Trading account not found")
 
     group = account.account_group
-    max_lev = int((group.leverage_default if group else None) or 500)
+    if group is None:
+        # Defensive fallback for legacy rows that lost their group FK.
+        max_lev = 500
+        hints: dict = {}
+    else:
+        u = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if u is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        max_lev, hints = await _user_effective_leverage_cap(db, u, group)
+
     if leverage > max_lev:
+        reasons: list[str] = []
+        if hints.get("kyc_unlock_required"):
+            reasons.append("complete KYC")
+        if hints.get("xp_unlock_required") and hints.get("xp_for_next_unlock"):
+            reasons.append(
+                f"reach {hints['xp_for_next_unlock']} XP to unlock 1:{hints['next_unlock_leverage']}"
+            )
+        extra = (" — " + ", ".join(reasons)) if reasons else ""
         raise HTTPException(
             status_code=400,
-            detail=f"Leverage cannot exceed the broker limit for this account (1:{max_lev})",
+            detail=f"Leverage cannot exceed 1:{max_lev} for this account{extra}",
         )
 
     # Block leverage changes while positions are open to avoid surprise margin calls.

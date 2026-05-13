@@ -20,6 +20,8 @@ from packages.common.src.models import (
 )
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
+from packages.common.src.engine_lock import engine_lock
+from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
 
@@ -84,13 +86,30 @@ class SLTPEngine:
         if not self._prices:
             return
 
+        # Leader-election: only one gateway worker runs this tick.
+        # See packages.common.src.engine_lock for the why.
+        async with engine_lock("sltp", ttl_seconds=10) as is_leader:
+            if not is_leader:
+                return
+            await self._check_positions_locked()
+
+    async def _check_positions_locked(self):
         async with AsyncSessionLocal() as db:
+            # SKIP LOCKED so the gateway's `--workers N` uvicorn fleet
+            # doesn't double-process the same trigger. Worker A takes a
+            # row-level lock on the open SL/TP positions for this tick;
+            # Worker B's identical SELECT skips those rows and only sees
+            # whatever's left. Without this, every TP/SL hit was
+            # inserting one TradeHistory + one Transaction row PER WORKER,
+            # crediting the user the P&L twice and showing two rows in
+            # the trade history.
             result = await db.execute(
                 select(Position)
                 .where(Position.status == "open")
                 .where(
                     (Position.stop_loss.isnot(None)) | (Position.take_profit.isnot(None))
                 )
+                .with_for_update(skip_locked=True)
             )
             positions = result.scalars().all()
 
@@ -136,6 +155,23 @@ class SLTPEngine:
     async def _close_position(
         self, db: AsyncSession, pos: Position, close_price: Decimal, reason: str
     ):
+        # Defensive: re-acquire the row with FOR UPDATE and confirm it's
+        # still open before doing anything. Even with SKIP LOCKED on the
+        # outer SELECT, a manual close (POST /positions/{id}/close) on
+        # the same position could land between our SELECT and our close
+        # work. Without this guard the manual close + the engine would
+        # BOTH write a TradeHistory row.
+        locked_q = await db.execute(
+            select(Position).where(Position.id == pos.id).with_for_update()
+        )
+        locked = locked_q.scalar_one_or_none()
+        if not locked:
+            return
+        cur_status = locked.status.value if hasattr(locked.status, "value") else str(locked.status)
+        if cur_status != "open":
+            return  # Already closed by another worker / manual close.
+        pos = locked
+
         side = _side_val(pos.side)
         contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
@@ -196,6 +232,20 @@ class SLTPEngine:
             description=f"{reason.upper()} hit: {pos.instrument.symbol if pos.instrument else ''} {side} {pos.lots} lots @ {close_price}",
         )
         db.add(tx)
+
+        # Bonus wagering — feed the auto-closed lots into the FIFO release
+        # queue. Skips demo accounts (function-internal). Errors swallowed
+        # so a release bug can never block an SL/TP trigger.
+        if account and account.user_id:
+            try:
+                await wallet_service.release_bonuses_after_trade(
+                    user_id=account.user_id,
+                    traded_lots=Decimal(str(pos.lots)),
+                    is_demo_account=bool(account.is_demo),
+                    db=db,
+                )
+            except Exception as _bonus_exc:
+                logger.debug("bonus release after SL/TP close failed: %s", _bonus_exc)
 
         try:
             await redis_client.publish(f"account:{pos.account_id}", json.dumps({

@@ -2,10 +2,12 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import ConnectWalletButton from '@/components/auth/ConnectWalletButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -24,14 +26,12 @@ const formVariants = {
 /* ── step config ── */
 const STEPS = [
   { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Demo Account' },
-  { number: 3, label: 'Sign up your account' },
+  { number: 2, label: 'Sign up your account' },
 ];
 
 const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
   1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
-  2: { title: 'Try It Out', subtitle: 'Explore the app with a demo account.' },
-  3: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
+  2: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
 };
 
 /* ── Input Field ── */
@@ -74,7 +74,21 @@ export default function RegisterPage() {
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { register, isLoading } = useAuthStore();
+  const { register, demoLogin, isLoading } = useAuthStore();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await demoLogin();
+      toast.success('Welcome — demo account');
+      router.push('/accounts');
+    } catch (err: any) {
+      toast.error(err?.message || 'Demo sign-in failed');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   const [form, setForm] = useState({
     email: '', password: '', confirmPassword: '',
@@ -101,6 +115,11 @@ function RegisterContent() {
     if (!form.first_name.trim()) e.first_name = 'First name is required.';
     if (!form.last_name.trim()) e.last_name = 'Last name is required.';
     if (!form.email.includes('@') || !form.email.includes('.')) e.email = 'Please enter a valid email address.';
+    if (!form.phone.trim()) {
+      e.phone = 'Phone number is required.';
+    } else if (!/^\+?[0-9 \-()]{6,20}$/.test(form.phone.trim())) {
+      e.phone = 'Please enter a valid phone number.';
+    }
     if (form.password.length < 8) e.password = 'Password must be at least 8 characters.';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
     setErrors(e);
@@ -113,7 +132,7 @@ function RegisterContent() {
         password: form.password,
         first_name: form.first_name,
         last_name: form.last_name,
-        phone: form.phone || undefined,
+        phone: form.phone.trim(),
         referral_code: form.referral_code || undefined,
       });
       toast.success('Account created successfully!');
@@ -127,17 +146,18 @@ function RegisterContent() {
 
   /* password strength */
   const strength = form.password.length >= 12 ? 4 : form.password.length >= 10 ? 3 : form.password.length >= 8 ? 2 : form.password.length > 0 ? 1 : 0;
-  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#2196f3'];
+  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#d6a93d'];
 
   /* ── Step change ── */
   const handleStepClick = (step: number) => {
-    if (step === 1 || step === 2) {
+    if (step === 1) {
       router.push('/auth/login');
       return;
     }
   };
 
   return (
+    <MotionConfig reducedMotion="always">
     <div className="auth-wrapper">
       <div className="auth-card-wrapper">
         <div className="auth-card">
@@ -150,21 +170,22 @@ function RegisterContent() {
           >
             <motion.div
               className="auth-left__bg"
-              animate={{ scale: [1, 1.25, 1], y: [0, -30, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ scale: [1, 1.18, 1], y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
             />
+            <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>
-                {LEFT_CONFIG[3].title}
+                {LEFT_CONFIG[2].title}
               </motion.h1>
               <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>
-                {LEFT_CONFIG[3].subtitle}
+                {LEFT_CONFIG[2].subtitle}
               </motion.p>
               <div className="auth-left__steps">
                 {STEPS.map((s, i) => (
                   <motion.div key={s.number} {...fadeUp(0.45 + i * 0.08)}>
                     <div
-                      className={`auth-step ${s.number === 3 ? 'auth-step--active' : 'auth-step--inactive'}`}
+                      className={`auth-step ${s.number === 2 ? 'auth-step--active' : 'auth-step--inactive'}`}
                       onClick={() => handleStepClick(s.number)}
                     >
                       <span className="auth-step__num">{s.number}</span>
@@ -218,7 +239,7 @@ function RegisterContent() {
                     <AuthInput
                       label="Email"
                       type="email"
-                      placeholder="eg. johnfrans@gmail.com"
+                      placeholder=""
                       value={form.email}
                       onChange={(e) => update('email', e.target.value)}
                       error={errors.email}
@@ -227,11 +248,12 @@ function RegisterContent() {
 
                   <motion.div {...fadeUp(0.5)}>
                     <AuthInput
-                      label="Phone (optional)"
+                      label="Phone"
                       type="tel"
                       placeholder="+91 9876543210"
                       value={form.phone}
                       onChange={(e) => update('phone', e.target.value)}
+                      error={errors.phone}
                     />
                   </motion.div>
 
@@ -288,6 +310,34 @@ function RegisterContent() {
                     </button>
                   </motion.div>
 
+                  <motion.div className="auth-divider" {...fadeUp(0.74)}>
+                    <span className="auth-divider__line" />
+                    <span className="auth-divider__text">or</span>
+                    <span className="auth-divider__line" />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.75)}>
+                    <GoogleAuthButton disabled={loading || isLoading || demoLoading} />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.755)}>
+                    <ConnectWalletButton
+                      variant="login"
+                      disabled={loading || isLoading || demoLoading}
+                    />
+                  </motion.div>
+
+                  <motion.div {...fadeUp(0.76)}>
+                    <button
+                      type="button"
+                      onClick={handleDemo}
+                      disabled={demoLoading || isLoading}
+                      className="auth-btn auth-btn--outline"
+                    >
+                      {demoLoading ? <Loader2 size={18} className="auth-spinner" /> : 'Try with Demo Account'}
+                    </button>
+                  </motion.div>
+
                   <motion.p className="auth-footer" {...fadeUp(0.78)}>
                     Already have an account?{' '}
                     <a onClick={() => router.push('/auth/login')}>Log in</a>
@@ -299,5 +349,6 @@ function RegisterContent() {
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 }

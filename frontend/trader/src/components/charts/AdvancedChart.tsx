@@ -98,8 +98,15 @@ function AdvancedChartInner() {
         'display_market_status',
         'popup_hints',
       ],
+      // NOTE: 'study_templates' was previously enabled here, but the
+      // Trading Terminal also needs `client_id` / `user_id` props plus
+      // a backend route at /charting_library/{client_id}/{user_id}/study_templates
+      // to persist the templates. We don't have either, so TV was firing
+      // GET /charting_library/undefined/undefined/study_templates and
+      // returning 404 on every chart mount, flooding the console with
+      // "Study templates list response was not OK". Until we ship the
+      // save/load backend the cleanest fix is to leave the feature off.
       enabled_features: [
-        'study_templates',
         'side_toolbar_in_fullscreen_mode',
         'trading_notifications',
         'show_trading_notifications_history',

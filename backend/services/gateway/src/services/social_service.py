@@ -1,6 +1,7 @@
 """Social Trading Service — Leaderboard, copy trading, MAM/PAMM, followers."""
 import json
 import secrets
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
+    Referral, RewardsTransaction,
 )
 from packages.common.src.redis_client import redis_client
 
@@ -818,6 +820,217 @@ async def withdraw_managed_account(
     }
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Master Trader eligibility (COPY_TRADING_PAGE.docx)
+# ─────────────────────────────────────────────────────────────────────
+#
+# Two paths:
+#   1. Verified external P&L  — submit a track-record URL; admin reviews.
+#   2. Qualify via FXArtha    — meet all four criteria below over the
+#      user's lifetime trading on the platform.
+
+MASTER_MIN_ACTIVE_DAYS = 30
+MASTER_MIN_VOLUME_USD = Decimal("100000")
+MASTER_MIN_TRADES = 100
+
+
+async def check_master_eligibility(user_id: UUID, db: AsyncSession) -> dict:
+    """Compute the four eligibility metrics + a per-criterion pass flag.
+
+    Volume is sum(lots × open_price × 100k) over closed trades — same notional
+    convention used elsewhere (see stats_engine). All checks consider live
+    accounts only; demo trades don't count toward eligibility.
+    """
+    # Live trading accounts only.
+    accounts_q = await db.execute(
+        select(TradingAccount.id)
+        .where(
+            TradingAccount.user_id == user_id,
+            TradingAccount.is_demo.is_(False),
+        )
+    )
+    account_ids = [row[0] for row in accounts_q.all()]
+
+    if not account_ids:
+        return {
+            "active_days": 0, "active_days_required": MASTER_MIN_ACTIVE_DAYS, "active_days_ok": False,
+            "profitable": False, "profitable_ok": False, "total_pnl_usd": 0.0,
+            "trade_volume_usd": 0.0, "trade_volume_required": float(MASTER_MIN_VOLUME_USD), "trade_volume_ok": False,
+            "trade_count": 0, "trade_count_required": MASTER_MIN_TRADES, "trade_count_ok": False,
+            "all_passed": False,
+        }
+
+    stats_q = await db.execute(
+        select(
+            func.count().label("cnt"),
+            func.coalesce(func.sum(TradeHistory.profit), 0).label("pnl"),
+            func.coalesce(
+                func.sum(TradeHistory.lots * TradeHistory.open_price * 100000),
+                0,
+            ).label("volume"),
+            func.min(TradeHistory.closed_at).label("first_close"),
+        )
+        .where(TradeHistory.account_id.in_(account_ids))
+    )
+    row = stats_q.one()
+    trade_count = int(row.cnt or 0)
+    total_pnl = Decimal(str(row.pnl or 0))
+    volume = Decimal(str(row.volume or 0))
+    first_close = row.first_close
+
+    if first_close is not None:
+        if first_close.tzinfo is None:
+            first_close = first_close.replace(tzinfo=timezone.utc)
+        active_days = max(0, (datetime.now(timezone.utc) - first_close).days)
+    else:
+        active_days = 0
+
+    profitable = total_pnl > 0
+    return {
+        "active_days": active_days,
+        "active_days_required": MASTER_MIN_ACTIVE_DAYS,
+        "active_days_ok": active_days >= MASTER_MIN_ACTIVE_DAYS,
+        "profitable": profitable,
+        "profitable_ok": profitable,
+        "total_pnl_usd": float(total_pnl),
+        "trade_volume_usd": float(volume),
+        "trade_volume_required": float(MASTER_MIN_VOLUME_USD),
+        "trade_volume_ok": volume >= MASTER_MIN_VOLUME_USD,
+        "trade_count": trade_count,
+        "trade_count_required": MASTER_MIN_TRADES,
+        "trade_count_ok": trade_count >= MASTER_MIN_TRADES,
+        "all_passed": (
+            active_days >= MASTER_MIN_ACTIVE_DAYS
+            and profitable
+            and volume >= MASTER_MIN_VOLUME_USD
+            and trade_count >= MASTER_MIN_TRADES
+        ),
+    }
+
+
+async def apply_as_master(
+    user_id: UUID,
+    db: AsyncSession,
+    *,
+    master_type: str = "signal_provider",
+    description: str | None = None,
+    performance_fee_pct: Decimal = Decimal("25"),
+    management_fee_pct: Decimal = Decimal("0"),
+    min_investment: Decimal = Decimal("100"),
+    max_investors: int = 100,
+    external_pnl_url: str | None = None,
+) -> dict:
+    """Apply as a Master Trader. Either eligibility passes (auto-create
+    pending application) or an external_pnl_url is supplied for admin review.
+    Reuses the existing become_provider() to write the row so all of the
+    existing admin-approval plumbing keeps working unchanged."""
+    if not external_pnl_url:
+        elig = await check_master_eligibility(user_id, db)
+        if not elig["all_passed"]:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "not_eligible",
+                    "eligibility": elig,
+                },
+            )
+    strategy_info = None
+    if external_pnl_url:
+        strategy_info = {"external_pnl_url": external_pnl_url}
+    return await become_provider(
+        account_id=None,
+        master_type=master_type,
+        description=description,
+        performance_fee_pct=performance_fee_pct,
+        management_fee_pct=management_fee_pct,
+        min_investment=min_investment,
+        max_investors=max_investors,
+        user_id=user_id,
+        db=db,
+        strategy_info=strategy_info,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Copy-trade platform-fee 50% network distribution
+# (XP_Reward_mechanism slide 6 / table 3)
+#
+# When a follower's copy trade closes profitably and the platform takes
+# its share of the master's fee, half of that platform-take is
+# distributed up the FOLLOWER's referral chain across 10 levels using
+# the same percentages as the trade-volume distribution (35/15/10/10/
+# 5×6). The other 50% stays as platform profit.
+# ─────────────────────────────────────────────────────────────────────
+
+COPY_TRADE_NETWORK_SHARE = Decimal("0.5")  # 50% of the platform-take is redistributed
+COPY_TRADE_LEVEL_PCT = [
+    Decimal("0.35"), Decimal("0.15"), Decimal("0.10"), Decimal("0.10"),
+    Decimal("0.05"), Decimal("0.05"), Decimal("0.05"), Decimal("0.05"),
+    Decimal("0.05"), Decimal("0.05"),
+]
+
+
+async def distribute_copy_trade_platform_fee(
+    db: AsyncSession,
+    *,
+    follower_user_id: UUID,
+    platform_fee: Decimal,
+    reference_id: UUID,
+) -> Decimal:
+    """Walk up to 10 levels from the follower and credit each ancestor in
+    USD (added to main_wallet_balance). Returns the total amount paid out
+    so the caller can subtract it from platform retained earnings if
+    they want exact accounting.
+
+    The pool here is `platform_fee × 50%` — the other 50% stays as
+    platform profit (already credited via credit_admin_fee on the call
+    site)."""
+    if platform_fee <= 0:
+        return Decimal("0")
+    pool = (Decimal(str(platform_fee)) * COPY_TRADE_NETWORK_SHARE).quantize(Decimal("0.01"))
+    if pool <= 0:
+        return Decimal("0")
+
+    paid_out = Decimal("0")
+    current = follower_user_id
+    visited: set = set()
+    for level_idx in range(10):
+        row = (await db.execute(
+            select(Referral).where(Referral.referred_id == current).limit(1)
+        )).scalar_one_or_none()
+        if row is None:
+            break
+        ancestor_id = row.referrer_id
+        if ancestor_id in visited or ancestor_id == follower_user_id:
+            break
+        visited.add(ancestor_id)
+
+        share = COPY_TRADE_LEVEL_PCT[level_idx]
+        payout = (pool * share).quantize(Decimal("0.01"))
+        if payout <= 0:
+            current = ancestor_id
+            continue
+
+        anc = (await db.execute(
+            select(User).where(User.id == ancestor_id).with_for_update()
+        )).scalar_one_or_none()
+        if anc is None:
+            break
+        anc.main_wallet_balance = Decimal(str(anc.main_wallet_balance or 0)) + payout
+        paid_out += payout
+
+        db.add(RewardsTransaction(
+            user_id=ancestor_id,
+            type=f"copy_fee_referral_l{level_idx + 1}",
+            xp_delta=0,
+            ac_delta=Decimal("0"),
+            source="copy_trade_platform_fee",
+            reference_id=reference_id,
+        ))
+        current = ancestor_id
+    return paid_out
+
+
 async def become_provider(
     account_id: UUID | None, master_type: str, description: str | None,
     performance_fee_pct: Decimal, management_fee_pct: Decimal,
@@ -991,13 +1204,30 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
 
     items = []
     for master, first_name, last_name in rows:
-        investor_count = await db.execute(
-            select(func.count()).select_from(InvestorAllocation).where(
+        # Active investors + real AUM (sum of allocation amounts) for this
+        # master. Single aggregation query — count() + sum() in one round-trip.
+        aum_row = await db.execute(
+            select(
+                func.count(InvestorAllocation.id),
+                func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0),
+            ).where(
                 InvestorAllocation.master_id == master.id,
                 InvestorAllocation.status == "active",
             )
         )
-        active = investor_count.scalar()
+        active, aum = aum_row.one()
+
+        # Real win rate from trade_history. Zero-safe when no trades closed
+        # yet (new master) — UI will render 0% instead of an em-dash.
+        trades_row = await db.execute(
+            select(
+                func.count(TradeHistory.id),
+                func.count().filter(TradeHistory.profit > 0),
+            ).where(TradeHistory.account_id == master.account_id)
+        )
+        total_trades, wins = trades_row.one()
+        win_rate = (wins / total_trades * 100) if total_trades else 0.0
+
         items.append({
             "id": str(master.id),
             "manager_name": f"{first_name or ''} {last_name or ''}".strip(),
@@ -1011,6 +1241,9 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
             "max_investors": master.max_investors,
             "active_investors": active,
             "slots_available": master.max_investors - active,
+            "aum": float(aum or 0),
+            "win_rate": round(float(win_rate), 2),
+            "total_trades": int(total_trades or 0),
             "description": master.description,
         })
 
@@ -1461,7 +1694,11 @@ async def pamm_master_trades(
             "closed_at": th.closed_at.isoformat() if th.closed_at else None,
             "master_pnl": profit,
             "your_share": round(profit * ratio, 2),
-            "close_reason": th.close_reason,
+            # Hide 'admin' close-reason from investor view (matches
+            # portfolio_service._public_close_reason). Investor sees
+            # 'manual' if admin closed the master's trade.
+            "close_reason": ("manual" if (th.close_reason or "").lower() == "admin"
+                             else (th.close_reason or "manual")),
             "status": "closed",
         })
 

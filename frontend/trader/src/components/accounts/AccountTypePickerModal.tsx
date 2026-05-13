@@ -1,85 +1,131 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { clsx } from 'clsx';
-import { Check } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import api from '@/lib/api/client';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface AvailableAccountGroup {
   id: string;
   name: string;
   description: string;
   leverage_default: number;
+  /** Hard cap from migration 0020 — falls back to leverage_default for legacy rows. */
+  max_leverage?: number;
+  /** Per-user effective ceiling: the smaller of group cap, KYC gate (1:50 until verified),
+   *  and XP gate (Starter 1:50 → Active 1:100 → Skilled 1:200 → Pro 1:300 → Elite 1:500). */
+  effective_max_leverage?: number;
+  /** UI hints for why the dropdown is locked below the group's hard cap. */
+  kyc_unlock_required?: boolean;
+  xp_unlock_required?: boolean;
+  xp_for_next_unlock?: number | null;
+  next_unlock_leverage?: number | null;
   minimum_deposit: number;
   spread_markup: number;
   commission_per_lot: number;
+  /** Percentage brokerage fee (e.g. 0.0006 = 0.06%) from migration 0020. May be null on legacy rows. */
+  commission_pct?: number | null;
   swap_free: boolean;
 }
 
-function fmtMoney(n: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
-}
+const fmtMoney = (n: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0 })
+    .format(n);
 
-const CARD_BG = 'var(--bg-secondary)';
-const CARD_BORDER = 'var(--border-primary)';
+/** Generic candidate leverages — filtered to <= each group's max. */
+const LEVERAGE_OPTIONS = [1, 25, 50, 100, 200, 300, 500, 1000, 2000];
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Called after account is successfully created — parent should refetch accounts list. */
   onCreated?: (accountId: string) => void;
 };
 
 export default function AccountTypePickerModal({ open, onClose, onCreated }: Props) {
+  const user = useAuthStore((s) => s.user);
+  const userIsDemo = !!user?.is_demo;
+
   const [groups, setGroups] = useState<AvailableAccountGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [leverage, setLeverage] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setSelectedId(null);
+    setLeverage(null);
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
         const res = await api.get<{ items: AvailableAccountGroup[] }>('/accounts/available-groups');
         if (cancelled) return;
-        setGroups(Array.isArray(res.items) ? res.items : []);
+        const list = Array.isArray(res.items) ? res.items : [];
+        setGroups(list);
+        if (list.length > 0) {
+          setSelectedId(list[0].id);
+          setLeverage(list[0].leverage_default);
+        }
       } catch (e) {
         if (!cancelled) toast.error(e instanceof Error ? e.message : 'Could not load account types');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [open]);
 
-  const handleContinue = async () => {
-    if (!selectedId) {
+  const selected = useMemo(
+    () => groups.find((g) => g.id === selectedId) || null,
+    [groups, selectedId],
+  );
+
+  // The user-effective cap is what actually limits the dropdown — it's the
+  // smaller of the group's hard cap (max_leverage), the KYC gate, and the
+  // XP gate. Falls back to leverage_default for legacy rows.
+  const groupMaxLeverage = (g: AvailableAccountGroup) =>
+    Number(g.effective_max_leverage ?? g.max_leverage ?? g.leverage_default ?? 100);
+
+  /** When the user picks a different group, clamp leverage to its max. */
+  useEffect(() => {
+    if (!selected) return;
+    const maxLev = groupMaxLeverage(selected);
+    if (leverage == null || leverage > maxLev) {
+      setLeverage(maxLev);
+    }
+  }, [selected]);
+
+  const leverageOptions = useMemo(() => {
+    if (!selected) return [] as number[];
+    const max = groupMaxLeverage(selected);
+    const opts = LEVERAGE_OPTIONS.filter((l) => l <= max);
+    if (!opts.includes(max)) opts.push(max);
+    return Array.from(new Set(opts)).sort((a, b) => a - b);
+  }, [selected]);
+
+  const handleCreate = async () => {
+    if (!selected) {
       toast.error('Select an account type');
       return;
     }
     setCreating(true);
     try {
       const res = await api.post<{ id: string; account_number: string }>('/accounts/open', {
-        account_group_id: selectedId,
+        account_group_id: selected.id,
+        leverage: leverage ?? selected.leverage_default,
       });
       toast.success('Trading account created');
       onClose();
       if (res?.id) {
-        try {
-          sessionStorage.setItem('ptd-accounts-expand', res.id);
-        } catch {}
+        try { sessionStorage.setItem('ptd-accounts-expand', res.id); } catch {}
         onCreated?.(res.id);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
-      // Backend returns detail="KYC_REQUIRED" when KYC is not approved — show a friendly message.
       if (msg === 'KYC_REQUIRED') {
         toast.error('Please complete KYC verification before opening a live account.');
         onClose();
@@ -95,121 +141,194 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     <Modal
       open={open}
       onClose={onClose}
-      title="Choose account type"
+      title="Set up account details"
       width="2xl"
-      className="border border-border-primary bg-bg-card max-h-[90vh] flex flex-col shadow-2xl"
-      headerClassName="border-b border-border-primary bg-bg-card [&_h3]:text-text-primary [&_button]:text-text-tertiary [&_button:hover]:text-text-primary [&_button:hover]:bg-bg-hover"
-      bodyClassName="bg-bg-card p-4 sm:p-5"
+      className="border border-border-primary bg-bg-card max-h-[92vh] flex flex-col shadow-2xl"
+      headerClassName="border-b border-border-primary bg-bg-card [&_h3]:text-text-primary"
+      bodyClassName="bg-bg-card p-5 sm:p-6"
     >
-      <div className="space-y-4">
-        <p className="text-xs text-text-secondary leading-relaxed">
-          Pick the account that fits how you trade. You can open more accounts later from Accounts.
-        </p>
+      <div className="space-y-6">
+        {/* Account-type segmented toggle */}
+        <Section label="Account type">
+          <div className="inline-flex p-1 rounded-lg" style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}>
+            <TypePill active={!userIsDemo} disabled={userIsDemo} label="Real" />
+            <TypePill active={userIsDemo} disabled={!userIsDemo} label="Demo" />
+          </div>
+          {userIsDemo && (
+            <p className="mt-2 text-xs text-text-tertiary">
+              Demo users can only open demo accounts. Sign up for a real account to trade live.
+            </p>
+          )}
+        </Section>
 
-        {loading ? (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-text-secondary">Loading account types…</span>
-          </div>
-        ) : groups.length === 0 ? (
-          <div
-            className="rounded-xl border p-6 text-center text-sm text-text-secondary"
-            style={{ backgroundColor: CARD_BG, borderColor: CARD_BORDER }}
-          >
-            No account types are available yet. Please contact support.
-          </div>
-        ) : (
-          <ul className="space-y-3 max-h-[min(60vh,420px)] overflow-y-auto pr-1">
-            {groups.map((g) => {
-              const isSel = selectedId === g.id;
-              return (
-                <li key={g.id}>
+        {/* Platform / account-group cards */}
+        <Section label="Platform">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-text-secondary text-sm gap-2">
+              <Loader2 size={14} className="animate-spin" /> Loading account types…
+            </div>
+          ) : groups.length === 0 ? (
+            <div
+              className="rounded-xl border p-8 text-center text-sm text-text-secondary"
+              style={{ background: 'var(--bg-card-nested)', borderColor: 'var(--border-primary)' }}
+            >
+              No account types are available yet. Please contact support.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {groups.map((g, i) => {
+                const sel = selectedId === g.id;
+                const stocks = /stock/i.test(g.name + ' ' + g.description);
+                return (
                   <button
+                    key={g.id}
                     type="button"
                     onClick={() => setSelectedId(g.id)}
                     className={clsx(
-                      'w-full text-left rounded-xl border-2 p-4 sm:p-5 transition-all',
-                      isSel
-                        ? 'border-[#2196f3] bg-[#2196f3]/[0.06] shadow-[0_0_0_3px_rgba(33,150,243,0.15)]'
-                        : 'border-border-primary bg-bg-secondary hover:border-[#2196f3]/40 hover:bg-bg-hover',
+                      'relative text-left rounded-xl p-4 transition-all',
+                      sel ? 'ring-2 ring-[#d6a93d]/60' : '',
                     )}
+                    style={{
+                      background: 'var(--bg-card-nested)',
+                      border: `1px solid ${sel ? '#d6a93d' : 'var(--border-primary)'}`,
+                    }}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-base font-bold text-text-primary">{g.name}</span>
-                          {g.swap_free ? (
-                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#2196f3]/15 text-[#2196f3] border border-[#2196f3]/25">
-                              Swap-free
-                            </span>
-                          ) : null}
-                        </div>
-                        {g.description ? (
-                          <p className="text-xs text-text-secondary leading-snug">{g.description}</p>
-                        ) : null}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-2 pt-1 text-[11px]">
-                          <div className="space-y-0.5">
-                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
-                              Min. balance
-                            </span>
-                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
-                              {fmtMoney(g.minimum_deposit)}
-                            </span>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
-                              Leverage
-                            </span>
-                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
-                              1:{g.leverage_default}
-                            </span>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="block text-text-tertiary uppercase tracking-wider font-bold">
-                              Commission / lot
-                            </span>
-                            <span className="block text-text-primary font-mono font-bold tabular-nums text-sm">
-                              {g.commission_per_lot}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        className={clsx(
-                          'shrink-0 mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
-                          isSel
-                            ? 'border-[#2196f3] bg-[#2196f3]'
-                            : 'border-border-secondary bg-bg-card',
-                        )}
-                      >
-                        {isSel ? <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} /> : null}
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                    {stocks && <Badge color="#f59e0b">Trading on stocks</Badge>}
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border-primary">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm mb-3"
+                      style={{
+                        background: 'rgba(214,169,61,0.12)',
+                        color: '#d6a93d',
+                        border: '1px solid rgba(214,169,61,0.3)',
+                      }}
+                    >
+                      {i + 1}
+                    </div>
+
+                    <CardRow label={`Spread from ${(g.spread_markup || 0.6).toFixed(1)} pips`}
+                             sub="Floating spread, markup" />
+                    <CardRow label={g.name || 'Standard account'}
+                             sub={g.description || 'Currencies, indices, metals, energies, crypto'} />
+                    <CardRow
+                      label={`Min deposit ${fmtMoney(g.minimum_deposit || 0)}`}
+                      sub={
+                        g.swap_free
+                          ? 'Swap-free, Islamic-friendly'
+                          : g.commission_pct != null
+                            ? `Brokerage ${(g.commission_pct * 100).toFixed(2)}% · Up to 1:${groupMaxLeverage(g)}`
+                            : `Commission ${fmtMoney(g.commission_per_lot || 0)} / lot · Up to 1:${groupMaxLeverage(g)}`
+                      }
+                      last
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
+        {/* Leverage */}
+        <Section label="Leverage">
+          <div className="relative inline-block w-full sm:w-72">
+            <select
+              value={leverage ?? ''}
+              onChange={(e) => setLeverage(Number(e.target.value))}
+              disabled={!selected || leverageOptions.length === 0}
+              className="w-full appearance-none pl-4 pr-10 py-2.5 rounded-lg text-sm font-semibold bg-bg-card-nested text-text-primary disabled:opacity-50"
+              style={{ border: '1px solid var(--border-primary)' }}
+            >
+              {leverageOptions.map((l) => (
+                <option key={l} value={l}>1:{l}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+          </div>
+          {selected && (
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-text-tertiary">
+                Capped at this account type&apos;s maximum: 1:{groupMaxLeverage(selected)}
+              </p>
+              {(selected.kyc_unlock_required || selected.xp_unlock_required) && (
+                <p className="text-xs text-amber-400/85">
+                  {selected.kyc_unlock_required && 'Complete KYC to unlock higher leverage. '}
+                  {selected.xp_unlock_required && selected.xp_for_next_unlock && selected.next_unlock_leverage
+                    ? `Reach ${selected.xp_for_next_unlock} XP to unlock 1:${selected.next_unlock_leverage}.`
+                    : ''}
+                </p>
+              )}
+            </div>
+          )}
+        </Section>
+
+        {/* Action */}
+        <div className="pt-2 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-lg border border-border-primary bg-bg-card text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
+            onClick={handleCreate}
+            disabled={creating || !selected}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
+            style={{ background: '#d6a93d', color: '#1a1408' }}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={loading || creating || groups.length === 0 || !selectedId}
-            onClick={() => void handleContinue()}
-            className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-[0_2px_8px_rgba(33,150,243,0.25)]"
-          >
-            {creating ? 'Creating…' : 'Open Account'}
+            {creating && <Loader2 size={14} className="animate-spin" />}
+            Create account
           </button>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/* ───────────── Tiny UI atoms ───────────── */
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-sm font-bold text-text-primary mb-2">{label}</h3>
+      {children}
+    </div>
+  );
+}
+
+function TypePill({ active, disabled, label }: { active: boolean; disabled: boolean; label: string }) {
+  return (
+    <span
+      className="px-4 py-1.5 text-sm font-semibold rounded-md transition-colors select-none"
+      style={{
+        background: active ? '#d6a93d' : 'transparent',
+        color: active ? '#1a1408' : 'var(--text-secondary)',
+        opacity: disabled ? 0.55 : 1,
+        cursor: disabled ? 'not-allowed' : 'default',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function Badge({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <span
+      className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+      style={{
+        background: `${color}26`,
+        color,
+        border: `1px solid ${color}55`,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function CardRow({ label, sub, last }: { label: string; sub: string; last?: boolean }) {
+  return (
+    <div
+      className={clsx('py-2', !last && 'border-b')}
+      style={{ borderColor: 'var(--border-primary)' }}
+    >
+      <p className="text-sm font-semibold text-text-primary leading-tight">{label}</p>
+      <p className="text-xs text-text-tertiary mt-0.5 leading-snug">{sub}</p>
+    </div>
   );
 }

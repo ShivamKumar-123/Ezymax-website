@@ -17,6 +17,8 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
+from . import rewards_service, wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -238,7 +240,14 @@ async def place_order(
             if req.side == "sell" and req.take_profit >= fill_price:
                 raise HTTPException(status_code=400, detail="SELL TP must be below entry price")
 
-        commission = await resolve_commission(db, instrument, req.lots, fill_price, user_id=user_id)
+        # Pass account_group_id so the commission_pct on the user's account
+        # tier (Micro/Standard/Pro/Elite) acts as the fallback rack rate when
+        # no admin ChargeConfig matches. XP discount also applies.
+        commission = await resolve_commission(
+            db, instrument, req.lots, fill_price,
+            user_id=user_id,
+            account_group_id=account.account_group_id,
+        )
 
         contract_size = instrument.contract_size or Decimal("100000")
         required_margin = calc_margin(req.lots, fill_price, contract_size, account.leverage)
@@ -383,6 +392,64 @@ async def place_order(
     )
     await db.commit()
 
+    # Fire-and-forget: email the user that a trade was placed. Captures
+    # only what we need from the request-scoped objects so the background
+    # task doesn't depend on the soon-to-be-closed DB session. Skips
+    # demo accounts and wallet-placeholder addresses so the inbox doesn't
+    # get spammed during testing/onboarding.
+    _email_payload = {
+        "user_id": user_id,
+        "is_demo": bool(account.is_demo),
+        "symbol": instrument.symbol,
+        "side": str(req.side),
+        "lots": float(req.lots),
+        "order_type": str(req.order_type),
+        "status": str(order.status),
+        "price": float(req.price) if req.price else None,
+        "filled_price": float(order.filled_price) if order.filled_price else None,
+        "stop_loss": float(req.stop_loss) if req.stop_loss else None,
+        "take_profit": float(req.take_profit) if req.take_profit else None,
+    }
+
+    async def _send_trade_placed_email():
+        if _email_payload["is_demo"]:
+            return
+        try:
+            from packages.common.src.smtp_mail import send_email, smtp_configured
+            if not smtp_configured():
+                return
+            from packages.common.src.email_templates import render_trade_placed
+            from packages.common.src.config import get_settings
+            from datetime import datetime, timezone
+            async with AsyncSessionLocal() as bg_db:
+                u = (await bg_db.execute(
+                    select(User).where(User.id == _email_payload["user_id"])
+                )).scalar_one_or_none()
+            if not u or not u.email:
+                return
+            if u.email.lower().endswith("@wallet.fxartha.local"):
+                return
+            st = get_settings()
+            subject, html, text = render_trade_placed(
+                first_name=u.first_name,
+                symbol=_email_payload["symbol"],
+                side=_email_payload["side"],
+                lots=_email_payload["lots"],
+                order_type=_email_payload["order_type"],
+                status=_email_payload["status"],
+                price=_email_payload["price"],
+                filled_price=_email_payload["filled_price"],
+                stop_loss=_email_payload["stop_loss"],
+                take_profit=_email_payload["take_profit"],
+                when_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                trader_app_url=st.TRADER_APP_URL or "https://trade.fxartha.com",
+            )
+            await send_email(u.email, subject, html, text=text)
+        except Exception as e:
+            logger.warning("trade-placed email send failed: %s", e)
+
+    asyncio.create_task(_send_trade_placed_email())
+
     # Fire-and-forget: notification + IB commission run in background (don't block response)
     if req.order_type == "market":
         # ── A-Book: forward trade to Corecen LP ──────────────────────────
@@ -473,6 +540,7 @@ async def place_order(
 
     return {
         "id": str(order.id),
+        "position_id": str(position.id) if req.order_type == "market" else None,
         "account_id": str(order.account_id),
         "symbol": instrument.symbol,
         "order_type": otype_val,
@@ -865,6 +933,53 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         description=f"{'Partial ' if is_partial else ''}Close {pos.instrument.symbol} {sv} {close_lots} lots @ {close_price}",
     )
     db.add(tx)
+
+    # Trade insurance — evaluate on full AND partial close. `maybe_pay`
+    # swallows its own exceptions so a payout failure can never block the
+    # close. For partial close, the claim is naturally proportional because
+    # `history.profit` reflects only the partial lots; the policy's
+    # remaining cap is enforced inside evaluate_claim.
+    await insurance_maybe_pay(db=db, position=pos, history=history)
+
+    # Rewards — bump every mission whose action_kind matches this event,
+    # AND credit XP/AC/PS for trade volume (own + 10-level referral chain).
+    # Errors here must never block the close, so swallow.
+    try:
+        await rewards_service.mark_progress(db, user_id, "place_trades", 1)
+        # If the close was profitable, count it for win-streak missions.
+        if result_profit > 0:
+            try:
+                await rewards_service.mark_progress(db, user_id, "win_streak", 1)
+            except Exception:
+                pass
+        try:
+            notional = Decimal(str(close_lots)) * Decimal(str(contract_size)) * Decimal(str(pos.open_price))
+            if notional > 0:
+                volume_usd = int(notional)
+                await rewards_service.mark_progress(db, user_id, "trade_volume_usd", volume_usd)
+                # XP_Reward_mechanism slide 3: award XP/AC/PS by traded
+                # volume + distribute through the 10-level referral chain.
+                await rewards_service.award_trading_volume_rewards(
+                    db, user_id, notional, reference_id=pos.id,
+                )
+        except Exception as _vol_exc:
+            logger.debug("rewards trade-volume distribution failed: %s", _vol_exc)
+    except Exception as _exc:
+        logger.debug("rewards mark_progress failed: %s", _exc)
+
+    # Bonus wagering — feed this trade's lots into the FIFO release queue.
+    # Demo accounts skipped inside the function so users can't farm demo
+    # volume to release real bonus money. Errors swallowed so a bonus
+    # release bug can never block a close.
+    try:
+        await wallet_service.release_bonuses_after_trade(
+            user_id=user_id,
+            traded_lots=Decimal(str(close_lots)),
+            is_demo_account=bool(account.is_demo),
+            db=db,
+        )
+    except Exception as _bonus_exc:
+        logger.debug("bonus release after close failed: %s", _bonus_exc)
 
     await db.commit()
 

@@ -29,6 +29,14 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   if (auth) headers.set('authorization', auth);
   const ct = req.headers.get('content-type');
   if (ct) headers.set('content-type', ct);
+  // Forward the browser's cookies so admin-api can read fx_admin (the
+  // HttpOnly session cookie set by /auth/login). Without this the proxy
+  // strips the cookie and every authenticated request fails with 401.
+  const cookie = req.headers.get('cookie');
+  if (cookie) headers.set('cookie', cookie);
+  // Preserve client IP in the audit logs.
+  const fwdFor = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
+  if (fwdFor) headers.set('x-forwarded-for', fwdFor);
 
   const method = req.method.toUpperCase();
   const hasBody = !['GET', 'HEAD'].includes(method);
@@ -79,6 +87,20 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   const out = new Headers();
   const ctOut = res.headers.get('content-type');
   if (ctOut) out.set('content-type', ctOut);
+  // Relay every Set-Cookie back to the browser. Critical for admin auth:
+  // /auth/login sets the fx_admin HttpOnly session cookie here, and
+  // /auth/logout deletes it. Without this passthrough the cookie never
+  // reaches the browser and login appears to work for one request before
+  // failing forever.
+  // Headers.getSetCookie() returns the array of values (Node 20+, Next 15+).
+  const cookies = (res.headers as unknown as { getSetCookie?: () => string[] })
+    .getSetCookie?.();
+  if (cookies && cookies.length) {
+    for (const c of cookies) out.append('set-cookie', c);
+  } else {
+    const single = res.headers.get('set-cookie');
+    if (single) out.set('set-cookie', single);
+  }
 
   return new NextResponse(buf, {
     status: res.status,

@@ -1,11 +1,39 @@
-import json
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
-from .config import get_settings
+"""Event-bus shim — Kafka has been removed.
 
-settings = get_settings()
+Why this file still exists:
+    Trade / order / position / risk hot paths historically called
+    `produce_event(...)` to push events onto Kafka topics. Nothing
+    consumed those topics — the broker plus Zookeeper were eating
+    ~1.5 GB of RAM on a single-host VPS for an event log no one
+    read. With zero users and zero consumers, Kafka was paying us
+    nothing.
+
+    Rather than rip every call site out (which would touch trading +
+    risk + market-data and risk regression in flows that already
+    work), we keep the public surface — `produce_event`,
+    `KafkaTopics`, `create_consumer`, `close_producer`,
+    `get_kafka_producer` — but make every function a no-op /
+    structured-log line.
+
+    When we eventually need a real event bus (fraud engine, analytics
+    pipeline, audit replayer), the cheapest re-introduction is Redis
+    Streams (Redis is already in the stack) — `XADD trades * key val`
+    in place of the body below. A second commit can wire it back
+    without touching call sites again. See README "Event bus".
+
+The aiokafka package has been removed from every requirements.txt; do
+not re-import AIOKafkaProducer / AIOKafkaConsumer here without also
+re-adding the dependency.
+"""
+import logging
+
+logger = logging.getLogger("kafka_client")
 
 
 class KafkaTopics:
+    """Topic-name constants. Retained as plain strings so existing
+    call-sites compile and so a future Redis-Streams / Kafka migration
+    can use the same identifiers as stream / topic names."""
     ORDERS = "orders"
     TRADES = "trades"
     POSITIONS = "positions"
@@ -19,39 +47,35 @@ class KafkaTopics:
     SOCIAL_COPY = "social_copy"
 
 
-_producer = None
+async def get_kafka_producer():
+    """Stub — no producer to return. Kept for import compatibility."""
+    return None
 
 
-async def get_kafka_producer() -> AIOKafkaProducer:
-    global _producer
-    if _producer is None:
-        _producer = AIOKafkaProducer(
-            bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-            key_serializer=lambda k: k.encode("utf-8") if k else None,
-        )
-        await _producer.start()
-    return _producer
+async def produce_event(topic: str, key: str, value: dict) -> None:
+    """No-op event publish. Logs at DEBUG so an operator inspecting the
+    log can confirm the call site fired without flooding production
+    output. Real durable storage of these events lives in Postgres
+    (`positions`, `trade_history`, `audit_log`, `transactions`,
+    `webhook_events`) — that's the source of truth, not this stream."""
+    logger.debug("event[%s] key=%s value=%s (kafka removed; not published)",
+                 topic, key, value)
 
 
-async def produce_event(topic: str, key: str, value: dict):
-    producer = await get_kafka_producer()
-    await producer.send_and_wait(topic, key=key, value=value)
-
-
-def create_consumer(topic: str, group_id: str) -> AIOKafkaConsumer:
-    return AIOKafkaConsumer(
-        topic,
-        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
-        group_id=group_id,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        auto_offset_reset="latest",
-        enable_auto_commit=True,
+def create_consumer(topic: str, group_id: str, **_kwargs):
+    """Stub — there are no consumers in the codebase today, and the
+    broker is gone. Calling this returns None so any caller can detect
+    "no event bus" and either degrade gracefully or raise its own
+    error."""
+    logger.warning(
+        "create_consumer(%s, %s) called but Kafka was removed. "
+        "Use Redis pub/sub or a Postgres polling loop instead.",
+        topic, group_id,
     )
+    return None
 
 
-async def close_producer():
-    global _producer
-    if _producer:
-        await _producer.stop()
-        _producer = None
+async def close_producer() -> None:
+    """No-op shutdown hook — retained so app lifespan handlers don't
+    AttributeError on shutdown."""
+    return None

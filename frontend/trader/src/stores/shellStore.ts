@@ -9,7 +9,9 @@ interface ShellState {
 }
 
 export const useShellStore = create<ShellState>((set) => ({
-  sidebarOpen: false,
+  /* Default open so desktop users see the nav immediately on first paint.
+     Hydrate then closes it on screens < 1024px. */
+  sidebarOpen: true,
   _hydrated: false,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -21,6 +23,5 @@ export const useShellStore = create<ShellState>((set) => ({
 
 // Hydrate on client — runs once after mount
 if (typeof window !== 'undefined') {
-  // Delay to ensure window dimensions are correct
   setTimeout(() => useShellStore.getState().hydrate(), 0);
 }

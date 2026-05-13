@@ -14,7 +14,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.database import get_db, AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import close_producer
-from packages.common.src.auth import decode_token
+from packages.common.src.auth import decode_token, require_onboarded
 from packages.common.src.models import TradingAccount
 from packages.common.src.instrumentation import init_sentry, add_middleware_stack
 
@@ -22,11 +22,17 @@ from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers, lp_receiver,
-    algo_connector, algo_keys, algo_market_data, share,
+    share, insurance, rewards, play_zone, staking,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
 from .engines.stats_engine import stats_engine
+from .engines.staking_engine import staking_engine
+from .engines.play_zone_engine import play_zone_engine
+from .engines.overnight_fee_engine import overnight_fee_engine
+from .engines.verification_reminder_engine import verification_reminder_engine
+from .engines.monthly_statement_engine import monthly_statement_engine
+from .engines.chain_verifier_engine import chain_verifier_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -74,13 +80,104 @@ async def _backfill_close_reasons():
         logger.warning("close_reason backfill skipped: %s", e)
 
 
+# ── Trade-history self-heal ────────────────────────────────────────────
+# Defensive safety net: if a Position closes (status='closed', close_price
+# set) but no matching trade_history row exists, this task re-creates the
+# missing row from the position's data. Catches any close-path that drops
+# the TradeHistory write — root cause investigation pending, but the
+# user-visible symptom (missing rows in trader history) is auto-resolved
+# within 60s without manual SQL intervention.
+#
+# All values copied verbatim from the existing positions row — nothing
+# fabricated. close_reason is computed from the actual close_price vs
+# the actual TP/SL on the position, same logic as the existing lazy
+# backfill in portfolio_service.trade_history.
+async def _heal_missing_trade_history():
+    from sqlalchemy import text
+    sql = text(
+        """
+        INSERT INTO trade_history (
+            id, position_id, account_id, instrument_id, side, lots,
+            open_price, close_price, swap, commission, profit,
+            opened_at, closed_at, close_reason
+        )
+        SELECT
+            gen_random_uuid(), p.id, p.account_id, p.instrument_id, p.side, p.lots,
+            p.open_price, p.close_price,
+            COALESCE(p.swap, 0), COALESCE(p.commission, 0),
+            COALESCE(p.profit, 0),
+            p.created_at,
+            COALESCE(p.closed_at, NOW()),
+            CASE
+                WHEN p.take_profit IS NOT NULL AND (
+                  (LOWER(CAST(p.side AS TEXT))='buy'  AND p.close_price >= p.take_profit)
+                  OR (LOWER(CAST(p.side AS TEXT))='sell' AND p.close_price <= p.take_profit)
+                ) THEN 'tp'
+                WHEN p.stop_loss IS NOT NULL AND (
+                  (LOWER(CAST(p.side AS TEXT))='buy'  AND p.close_price <= p.stop_loss)
+                  OR (LOWER(CAST(p.side AS TEXT))='sell' AND p.close_price >= p.stop_loss)
+                ) THEN 'sl'
+                ELSE 'manual'
+            END
+        FROM positions p
+        WHERE p.status = 'closed'
+          AND p.close_price IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM trade_history th WHERE th.position_id = p.id)
+        """
+    )
+    try:
+        async with AsyncSessionLocal() as session:
+            res = await session.execute(sql)
+            await session.commit()
+            inserted = res.rowcount or 0
+            if inserted > 0:
+                logger.warning(
+                    "trade_history self-heal: inserted %d missing row(s) — "
+                    "investigate close-path that's dropping the TradeHistory write",
+                    inserted,
+                )
+    except Exception as e:
+        logger.warning("trade_history self-heal skipped: %s", e)
+
+
+async def _trade_history_healer_loop():
+    """Run _heal_missing_trade_history every 60 seconds for as long as the
+    gateway is up. Cheap query (touches only a tiny set of rows where
+    Position.status='closed' AND no matching trade_history row), no impact
+    on hot path."""
+    while True:
+        await _heal_missing_trade_history()
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
+    # Run the self-heal once at startup (catches drift accumulated while
+    # gateway was down), then kick off the periodic loop.
+    await _heal_missing_trade_history()
+    healer_task = asyncio.create_task(_trade_history_healer_loop())
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()
+    await staking_engine.start()
+    await play_zone_engine.start()
+    await overnight_fee_engine.start()
+    await verification_reminder_engine.start()
+    await monthly_statement_engine.start()
+    await chain_verifier_engine.start()
     yield
+    healer_task.cancel()
+    try:
+        await healer_task
+    except asyncio.CancelledError:
+        pass
+    await chain_verifier_engine.stop()
+    await monthly_statement_engine.stop()
+    await verification_reminder_engine.stop()
+    await overnight_fee_engine.stop()
+    await play_zone_engine.stop()
+    await staking_engine.stop()
     await stats_engine.stop()
     await copy_engine.stop()
     await sltp_engine.stop()
@@ -110,6 +207,19 @@ app.add_middleware(
 add_middleware_stack(app)
 
 # REST API Routes
+#
+# Onboarding enforcement happens at the action layer (e.g.
+# wallet_service.create_withdrawal refuses without user.wallet_address)
+# rather than at the router level. The router-wide _GATED was rolled back
+# because the 428 ONBOARDING_INCOMPLETE responses were leaking through to
+# the dashboard's read-only screens (accounts list, wallet summary,
+# portfolio) before the OnboardingGate modal could render — leaving new
+# users stuck on a "Retry" error instead of being walked through email
+# verification + wallet linking.
+#
+# The frontend OnboardingGate is still the UX nudge. Money operations
+# enforce per-action: withdrawals require user.wallet_address, the email-
+# change flow requires step-up, etc.
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["Accounts"])
 app.include_router(instruments.router, prefix="/api/v1/instruments", tags=["Instruments"])
@@ -130,11 +240,12 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"]
 # Corecen LP price push receiver — HMAC-secured, public (no JWT). Path mirrors
 # Corecen's sender (axios POST baseURL + '/api/lp/prices/batch').
 app.include_router(lp_receiver.router, prefix="/api/lp", tags=["LP Receiver"])
-app.include_router(algo_connector.router, prefix="/api/algo", tags=["Algo Connector"])
-app.include_router(algo_market_data.router, prefix="/api/algo", tags=["Algo Market Data"])
-app.include_router(algo_keys.router, prefix="/api/v1/algo", tags=["Algo Keys"])
 app.include_router(share.router, prefix="/api/v1", tags=["Share Trade"])
 app.include_router(share.public_router, prefix="/api/v1/public", tags=["Public Share"])
+app.include_router(insurance.router, prefix="/api/v1/insurance", tags=["Trade Insurance"])
+app.include_router(rewards.router, prefix="/api/v1/rewards", tags=["Rewards"])
+app.include_router(play_zone.router, prefix="/api/v1/play", tags=["Play Zone"])
+app.include_router(staking.router, prefix="/api/v1/staking", tags=["Staking"])
 
 
 @app.get("/health")
@@ -157,17 +268,27 @@ def _verify_ws_token(token: str | None) -> dict | None:
         return None
 
 
-@app.websocket("/ws/algo/prices")
-async def algo_prices_stream(websocket: WebSocket):
-    """Live tick stream for external algo bots — first-message auth via X-Api-Key + X-Api-Secret.
-    Broadcasts every tick from the LP pipeline (same source the frontend consumes)."""
-    await algo_market_data.algo_prices_ws(websocket)
+def _ws_token_from_websocket(ws: WebSocket, fallback_query_token: str | None) -> str | None:
+    """Extract the access JWT for a WebSocket handshake.
+
+    Preferred path: HttpOnly `pt_access` cookie (browser sends it
+    automatically — never leaks into URLs / logs / browser history).
+    Fallback: ?token= query string for legacy mobile clients that can't
+    attach cookies. The query path is retained for backward
+    compatibility but the trader frontend has been switched to cookies
+    so its access token never appears in nginx access logs (audit H4)."""
+    cookie_name = (get_settings().ACCESS_TOKEN_COOKIE_NAME or "pt_access").strip()
+    cookie_token = ws.cookies.get(cookie_name)
+    if cookie_token:
+        return cookie_token
+    return fallback_query_token
 
 
 @app.websocket("/ws/prices")
 async def price_stream(websocket: WebSocket, token: str | None = Query(default=None)):
-    if token:
-        user = _verify_ws_token(token)
+    effective = _ws_token_from_websocket(websocket, token)
+    if effective:
+        user = _verify_ws_token(effective)
         if not user:
             await websocket.close(code=4001, reason="Invalid token")
             return
@@ -198,8 +319,9 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
 
 
 @app.websocket("/ws/trades/{account_id}")
-async def trade_stream(websocket: WebSocket, account_id: str, token: str = Query()):
-    user = _verify_ws_token(token)
+async def trade_stream(websocket: WebSocket, account_id: str, token: str | None = Query(default=None)):
+    effective = _ws_token_from_websocket(websocket, token)
+    user = _verify_ws_token(effective)
     if not user:
         await websocket.close(code=4001, reason="Invalid token")
         return

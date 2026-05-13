@@ -59,7 +59,8 @@ export function formatMethod(method: string): string {
     crypto_usdt: 'USDT',
     metamask: 'MetaMask',
     card: 'Card',
-    oxapay: 'OxaPay',
+    oxapay: 'Crypto',
+    nowpayments: 'Crypto',
     manual: 'Manual / Bank',
   };
   if (labels[m]) return labels[m];

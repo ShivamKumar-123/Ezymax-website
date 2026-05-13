@@ -1,9 +1,8 @@
 """Wallet API — Deposits, Withdrawals, Transactions."""
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +15,7 @@ from packages.common.src.schemas import (
     WithdrawalRequest,
 )
 from packages.common.src.auth import get_current_user
-from ..services import wallet_service
+from ..services import wallet_service, onchain_deposit_service, onchain_withdraw_service
 
 router = APIRouter()
 
@@ -32,20 +31,190 @@ async def create_deposit(
     )
 
 
-@router.post("/deposit/manual", status_code=201)
-async def create_manual_deposit(
+# ─── On-site wallet-connect deposits (NOWPayments /v1/payment) ────────────
+
+
+class WalletDepositRequest(BaseModel):
+    amount: Decimal
+    crypto_currency: str  # frontend asset id, e.g. "USDT_ERC", "ETH"
+
+
+class TxHashSaveRequest(BaseModel):
+    tx_hash: str
+
+
+@router.post("/deposit/wallet", status_code=201)
+async def create_wallet_deposit(
+    req: WalletDepositRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    account_id: Optional[UUID] = Form(default=None),
-    amount: Decimal = Form(...),
-    transaction_id: str = Form(...),
-    file: UploadFile = File(...),
 ):
-    """Bank / UPI manual deposit: user pays admin bank (see bank-details), uploads proof + reference."""
-    return await wallet_service.create_manual_deposit(
+    """Create a NOWPayments direct payment (no hosted-page redirect).
+
+    Returns the deposit row id + the pay_address / pay_amount / network /
+    expires_at the frontend needs to drive the on-site wallet-connect UI.
+    Settlement still happens via the same IPN webhook + handle_nowpayments_webhook
+    path — balance is never credited from this endpoint.
+
+    Honours the `Idempotency-Key` header — a network-blip retry of the
+    same key returns the same response without creating a second
+    NOWPayments invoice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="deposit_wallet_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await wallet_service.create_wallet_deposit(
+        amount=req.amount,
+        crypto_currency=req.crypto_currency,
         user_id=current_user["user_id"],
-        account_id=account_id, amount=amount,
-        transaction_id=transaction_id, file=file, db=db,
+        db=db,
+    )
+    await store_response(
+        request, scope="deposit_wallet_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
+
+
+class HostedInvoiceDepositRequest(BaseModel):
+    amount: Decimal
+    # Optional: when present, NOWPayments page pre-locks to this currency.
+    # When omitted/null, NOWPayments shows its full 300+ currency picker.
+    crypto_currency: str | None = None
+
+
+@router.post("/deposit/hosted-invoice", status_code=201)
+async def create_hosted_invoice_deposit(
+    req: HostedInvoiceDepositRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a NOWPayments hosted-invoice deposit (Mode B).
+
+    Returns ``{id, payment_url}``. The browser redirects to ``payment_url``;
+    NOWPayments hosts the pay page; the user pays there and is redirected
+    back via the success_url configured in create_payment(). Settlement
+    fires through the same IPN webhook as the on-site flow.
+
+    Idempotency-Key is honoured the same way as /deposit/wallet so a
+    network retry returns the same payment_url instead of spawning a
+    second invoice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="deposit_hosted_invoice_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await wallet_service.create_hosted_invoice_deposit(
+        amount=req.amount,
+        crypto_currency=req.crypto_currency,
+        user_id=current_user["user_id"],
+        db=db,
+    )
+    await store_response(
+        request, scope="deposit_hosted_invoice_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
+
+
+@router.get("/deposit/{deposit_id}/status")
+async def get_wallet_deposit_status(
+    deposit_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Read-only status check for the wallet-connect UI's polling loop.
+    Combines local deposit status + a fresh NOWPayments status fetch so the
+    UI can show "waiting → confirming → finished" without waiting for the
+    IPN."""
+    return await wallet_service.get_wallet_deposit_status(
+        deposit_id=deposit_id, user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.post("/deposit/{deposit_id}/tx-hash")
+async def save_wallet_deposit_tx_hash(
+    deposit_id: UUID,
+    req: TxHashSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record the on-chain tx hash the user's wallet returned. Purely
+    informational — settlement still gates on the NOWPayments IPN, never
+    on a client-supplied hash."""
+    return await wallet_service.save_wallet_deposit_tx_hash(
+        deposit_id=deposit_id, tx_hash=req.tx_hash,
+        user_id=current_user["user_id"], db=db,
+    )
+
+
+# ─── Decentralized USDT deposit flow ──────────────────────────────────────
+# User picks a chain, signs a transfer in their own wallet, submits the
+# tx hash. The chain_verifier_engine confirms on-chain and credits.
+
+
+class OnchainDepositRequest(BaseModel):
+    network: str  # eth | bsc | tron
+    amount: Decimal
+
+
+@router.post("/deposit/onchain", status_code=201)
+async def create_onchain_deposit(
+    req: OnchainDepositRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Open a wallet-connect deposit. Returns the admin deposit address
+    for the picked chain plus everything the trader UI needs to invoke
+    MetaMask / TronLink: token contract, chain id, base-units amount,
+    expiry. The user's wallet does the actual transfer."""
+    return await onchain_deposit_service.create_onchain_deposit(
+        user_id=current_user["user_id"],
+        network=req.network,
+        amount=req.amount,
+        db=db,
+    )
+
+
+@router.post("/deposit/{deposit_id}/confirm-tx", status_code=202)
+async def confirm_onchain_tx(
+    deposit_id: UUID,
+    req: TxHashSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record the on-chain tx hash for a wallet-connect deposit. The
+    chain_verifier_engine will pick it up on its next tick and credit
+    the user's main wallet once the transfer has enough confirmations."""
+    return await onchain_deposit_service.confirm_tx_hash(
+        deposit_id=deposit_id, tx_hash=req.tx_hash,
+        user_id=current_user["user_id"], db=db,
+    )
+
+
+@router.get("/deposit/{deposit_id}/onchain-status")
+async def get_onchain_deposit_status(
+    deposit_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Polling endpoint the trader UI uses to tail the deposit's status
+    from 'initiated' → 'submitted' → 'auto_approved' / 'rejected'."""
+    return await onchain_deposit_service.get_status(
+        deposit_id=deposit_id, user_id=current_user["user_id"], db=db,
     )
 
 
@@ -60,20 +229,45 @@ async def create_withdrawal(
     )
 
 
-@router.post("/withdraw/manual", status_code=201)
-async def create_manual_withdrawal(
+# ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────
+
+
+class OnchainWithdrawRequest(BaseModel):
+    network: str            # eth | bsc | tron
+    amount: Decimal
+    destination_address: str  # user's own wallet on the picked chain
+
+
+@router.post("/withdraw/onchain", status_code=201)
+async def create_onchain_withdrawal(
+    req: OnchainWithdrawRequest,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    amount: Decimal = Form(...),
-    upi_id: str = Form(default=""),
-    payout_notes: str = Form(default=""),
-    file: UploadFile | None = File(default=None),
 ):
-    """Manual payout: user provides UPI ID and/or a QR image for finance to pay out (main wallet)."""
-    return await wallet_service.create_manual_withdrawal(
+    """User initiates a wallet-connect withdrawal: pick chain + paste their
+    own destination address. We freeze the user's main wallet balance,
+    queue the row for admin review. Admin signs the on-chain payout and
+    pastes the tx hash; the chain_verifier_engine confirms and flips the
+    row to 'paid'."""
+    return await onchain_withdraw_service.create_onchain_withdrawal(
         user_id=current_user["user_id"],
-        amount=amount, upi_id=upi_id, payout_notes=payout_notes,
-        file=file, db=db,
+        network=req.network,
+        amount=req.amount,
+        destination_address=req.destination_address,
+        db=db,
+    )
+
+
+@router.get("/withdraw/{withdrawal_id}/onchain-status")
+async def get_onchain_withdrawal_status(
+    withdrawal_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Polling endpoint for the trader UI: pending → approved → sent → paid
+    (or rejected with reason)."""
+    return await onchain_withdraw_service.get_status(
+        withdrawal_id=withdrawal_id, user_id=current_user["user_id"], db=db,
     )
 
 
@@ -159,27 +353,3 @@ async def wallet_summary(
     )
 
 
-class DepositBankDetailsRequest(BaseModel):
-    """Optional amount picks a bank account tier (min/max)."""
-
-    amount: Decimal | None = None
-
-
-@router.post("/deposit/bank-details")
-async def get_deposit_bank_details(
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    body: DepositBankDetailsRequest | None = Body(default=None),
-):
-    """Return an active bank account for manual deposits (details + QR URL from admin)."""
-    return await wallet_service.get_deposit_bank_details(
-        amount=body.amount if body else None, db=db,
-    )
-
-
-@router.get("/bank-info")
-async def get_bank_info(
-    amount: Decimal = Query(..., gt=0),
-    db: AsyncSession = Depends(get_db),
-):
-    return await wallet_service.get_bank_info(amount=amount, db=db)

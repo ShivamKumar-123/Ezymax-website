@@ -210,6 +210,12 @@ class TradeHistoryOut(BaseModel):
     lots: float
     open_price: float
     close_price: float
+    # SL/TP that were set on the underlying Position when it closed.
+    # Surfaced in history so support / client can see what limits the
+    # trader had configured, even after the position is gone from the
+    # Open Positions tab. Null when no SL/TP was set.
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
     swap: float = 0
     commission: float = 0
     profit: float
@@ -230,6 +236,12 @@ class ModifyPositionRequest(BaseModel):
     commission: Optional[float] = None
     swap: Optional[float] = None
     lots: Optional[float] = None
+    # Admin can flip side from buy→sell or sell→buy as a correction. When
+    # set, the position direction is reversed and any open copy-trade
+    # mirrors flip in sync so master and follower stay aligned. The
+    # unrealized P&L sign reverses naturally on the next tick because
+    # P&L is computed from side + current price each time.
+    side: Optional[str] = None  # "buy" or "sell"
     open_time: Optional[datetime] = None
     reason: Optional[str] = None
 
@@ -241,6 +253,25 @@ class ClosePositionRequest(BaseModel):
 
 class CreateTradeRequest(BaseModel):
     account_id: str
+    instrument_id: Optional[str] = None
+    symbol: Optional[str] = None
+    side: str
+    lots: float
+    price: Optional[float] = None
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    comment: Optional[str] = None
+
+
+class BulkCreateTradeRequest(BaseModel):
+    """Place the same trade across many accounts at once. Either pass an
+    explicit list of account_ids (e.g. one live account per selected user)
+    or set apply_to_all=True to broadcast to every active user's primary
+    live account. Each account is processed independently — one failure
+    doesn't roll back the rest."""
+    account_ids: Optional[list[str]] = None
+    user_ids: Optional[list[str]] = None  # alt form: server resolves to primary live account
+    apply_to_all: bool = False
     instrument_id: Optional[str] = None
     symbol: Optional[str] = None
     side: str
@@ -280,8 +311,16 @@ class WithdrawalOut(BaseModel):
     status: str
     bank_details: Optional[dict] = None
     crypto_address: Optional[str] = None
+    # Chain name captured at submit time (eth | bsc | tron | sol | …) so the
+    # admin sees which network to send on without guessing from the address.
+    wallet_chain_snapshot: Optional[str] = None
+    # Filled by admin via /mark-paid once the on-chain (or off-chain) payout
+    # has been sent. Surfaces the explorer-linkable hash to the user.
+    crypto_tx_hash: Optional[str] = None
     rejection_reason: Optional[str] = None
     created_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     user_email: Optional[str] = None
     user_name: Optional[str] = None
 

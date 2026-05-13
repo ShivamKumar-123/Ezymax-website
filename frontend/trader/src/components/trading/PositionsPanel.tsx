@@ -34,6 +34,11 @@ interface ClosedTrade {
   lots: number;
   open_price: number;
   close_price: number;
+  /** SL/TP that were set on the underlying Position when this trade
+   * closed. Null when no limit was configured. Backed by a join in
+   * portfolio_service.trade_history. */
+  stop_loss?: number | null;
+  take_profit?: number | null;
   pnl: number;
   commission: number;
   swap: number;
@@ -186,7 +191,7 @@ function TerminalPositionStaticCard({
             <span
               className={clsx(
                 'text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded',
-                pos.side === 'buy' ? 'bg-[#2196f3]/18 text-[#2196f3]' : 'bg-[#ff5252]/18 text-[#ff5252]',
+                pos.side === 'buy' ? 'bg-[#2962FF]/18 text-[#2962FF]' : 'bg-[#ff5252]/18 text-[#ff5252]',
               )}
             >
               {pos.side}
@@ -199,7 +204,7 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-green-500/10 border-green-500/20 text-[#2196f3]'
+                ? 'bg-green-500/10 border-green-500/20 text-[#d6a93d]'
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
@@ -233,7 +238,7 @@ function TerminalPositionStaticCard({
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#2196f3]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#d6a93d]" aria-hidden />
               ))}
           </div>
         </div>
@@ -364,8 +369,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return a?.account_number ?? accountId.slice(0, 8);
   };
 
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true);
+  const loadHistory = useCallback(async (opts: { silent?: boolean } = {}) => {
+    // Silent polls skip the loading toggle so the list doesn't
+    // flicker into a "Loading history…" placeholder every 4 s.
+    if (!opts.silent) setHistoryLoading(true);
     try {
       const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', {
         page: '1',
@@ -375,13 +382,27 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
       );
     } catch {
-      setHistoryTrades([]);
+      // Silent polls swallow errors — last-known list stays put.
+      if (!opts.silent) setHistoryTrades([]);
     }
-    setHistoryLoading(false);
+    if (!opts.silent) setHistoryLoading(false);
   }, []);
 
   useEffect(() => {
     if (activeTab === 'history') void loadHistory();
+  }, [activeTab, loadHistory]);
+
+  // Live refresh while the History tab is open. Without this, when a
+  // trade closes via SL/TP (or admin action) the user has to manually
+  // switch tabs to see it. Poll only when this tab is the visible one
+  // and the browser tab itself isn't backgrounded.
+  useEffect(() => {
+    if (activeTab !== 'history') return;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void loadHistory({ silent: true });
+    }, 4000);
+    return () => clearInterval(interval);
   }, [activeTab, loadHistory]);
 
   const closePosition = (id: string, lots?: number) => {
@@ -721,7 +742,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       <span
                         className={clsx(
                           'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]',
+                          totalPnl >= 0 ? 'text-[#d6a93d]' : 'text-[#ef5350]',
                         )}
                       >
                         {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
@@ -866,7 +887,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#2196f3]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#d6a93d]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',
@@ -1379,6 +1400,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <div><span className="text-text-tertiary">Open</span> <span className="text-text-primary font-mono">{trade.open_price.toFixed(d)}</span></div>
                               <div><span className="text-text-tertiary">Close</span> <span className="text-text-primary font-mono">{trade.close_price.toFixed(d)}</span></div>
                               <div>
+                                <span className="text-text-tertiary">SL</span>{' '}
+                                <span className={clsx('font-mono', trade.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>
+                                  {trade.stop_loss != null ? trade.stop_loss.toFixed(d) : '—'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-text-tertiary">TP</span>{' '}
+                                <span className={clsx('font-mono', trade.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
+                                  {trade.take_profit != null ? trade.take_profit.toFixed(d) : '—'}
+                                </span>
+                              </div>
+                              <div>
                                 <span className={clsx('inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide', exitBadge.className)}>
                                   {exitBadge.label}
                                 </span>
@@ -1394,7 +1427,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   </div>
                   {/* Desktop table layout */}
                   <div className="hidden md:block w-full min-w-0 overflow-auto flex-1 min-h-0">
-                  <table className="w-full min-w-[900px] border-collapse">
+                  <table className="w-full min-w-[1020px] border-collapse">
                     <thead>
                       <tr className={theadRowClass}>
                         <th className={th}>Symbol</th>
@@ -1403,12 +1436,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Qty</th>
                         <th className={th}>Open</th>
                         <th className={th}>Close</th>
+                        <th className={th}>SL</th>
+                        <th className={th}>TP</th>
                         <th className={th}>
                           <span className="block">P&amp;L</span>
                         </th>
                         <th className={th}>
-                          <span className="block">Close</span>
-                          <span className="block text-[9px] font-normal normal-case text-text-tertiary tracking-normal">SL / TP / …</span>
+                          <span className="block">Reason</span>
                         </th>
                         <th className={th}>Closed</th>
                       </tr>
@@ -1441,6 +1475,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={td}>{trade.lots}</td>
                             <td className={clsx(td, 'font-mono')}>{trade.open_price.toFixed(d)}</td>
                             <td className={clsx(td, 'font-mono')}>{trade.close_price.toFixed(d)}</td>
+                            <td className={clsx(td, 'font-mono', trade.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>
+                              {trade.stop_loss != null ? trade.stop_loss.toFixed(d) : '—'}
+                            </td>
+                            <td className={clsx(td, 'font-mono', trade.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
+                              {trade.take_profit != null ? trade.take_profit.toFixed(d) : '—'}
+                            </td>
                             <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
                             </td>

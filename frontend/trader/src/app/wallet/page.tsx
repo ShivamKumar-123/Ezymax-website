@@ -10,6 +10,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import WalletDepositModal from '@/components/wallet/WalletDepositModal';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -18,8 +19,13 @@ import {
   RefreshCcw,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Plus,
+  Minus,
   TrendingUp,
   X,
+  ShieldCheck,
+  Gift,
+  History,
 } from 'lucide-react';
 
 interface AccountItem {
@@ -43,6 +49,7 @@ interface WalletData {
   balance: number;
   currency: string;
   main_wallet_balance: number;
+  bonus_balance: number;
   total_deposited: number;
   total_withdrawn: number;
   pending_withdrawals: number;
@@ -73,16 +80,22 @@ interface WalletListItem {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
 
-const OXAPAY_METHOD = 'oxapay';
+// Provider used for new deposits. NOWPayments replaced OxaPay in this build;
+// the OxaPay backend code stays mounted so historical / in-flight OxaPay
+// deposits still settle, but new deposits are always created against
+// NOWPayments. Withdrawals still echo the OxaPay-style payout payload (only
+// the inbound deposit channel changed).
+const CRYPTO_DEPOSIT_METHOD = 'nowpayments';
 
-/** UI grid — selection is sent with OxaPay / payout details for finance matching. */
+/** UI grid — selection is sent with NOWPayments / payout details for finance matching. */
 const CRYPTO_ASSETS = [
+  { id: 'USDT_BSC', label: 'USDT', sub: 'BEP20' },
+  { id: 'USDT_ERC', label: 'USDT', sub: 'ERC20' },
+  { id: 'USDT_TRC', label: 'USDT', sub: 'TRC20' },
   { id: 'BTC', label: 'BTC', sub: 'Bitcoin' },
   { id: 'ETH', label: 'ETH', sub: 'Ethereum' },
-  { id: 'USDT_ERC', label: 'USDT', sub: 'ERC20' },
   { id: 'USDC_ERC', label: 'USDC', sub: 'ERC20' },
   { id: 'TRX', label: 'TRX', sub: 'Tron' },
-  { id: 'USDT_TRC', label: 'USDT', sub: 'TRC20' },
   { id: 'USDC_TRC', label: 'USDC', sub: 'TRC20' },
   { id: 'USDT_SOL', label: 'USDT', sub: 'SOL' },
   { id: 'USDC_SOL', label: 'USDC', sub: 'SOL' },
@@ -90,7 +103,35 @@ const CRYPTO_ASSETS = [
   { id: 'XRP', label: 'XRP', sub: 'XRP' },
 ] as const;
 
-type FundingChannel = 'oxapay' | 'manual';
+// Networks the on-chain USDT payout supports (admin signs the transfer
+// manually). Must mirror `ALLOWED_NETWORKS` in onchain_withdraw_service.py.
+const WITHDRAW_NETWORK_OPTIONS = [
+  {
+    network: 'tron' as const,
+    label: 'USDT TRC20',
+    sub: 'Tron network',
+    addressHint: 'Address starts with T (e.g. TXYZ…)',
+    addressRegex: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
+  },
+  {
+    network: 'bsc' as const,
+    label: 'USDT BEP20',
+    sub: 'BNB Smart Chain',
+    addressHint: 'EVM address — 0x followed by 40 hex characters',
+    addressRegex: /^0x[a-fA-F0-9]{40}$/,
+  },
+  {
+    network: 'eth' as const,
+    label: 'USDT ERC20',
+    sub: 'Ethereum',
+    addressHint: 'EVM address — 0x followed by 40 hex characters',
+    addressRegex: /^0x[a-fA-F0-9]{40}$/,
+  },
+];
+
+// 'crypto' = automated provider flow (NOWPayments for deposits, OxaPay-style
+// payout details for withdrawals). 'manual' = legacy bank/UPI manual path.
+type FundingChannel = 'crypto' | 'manual';
 
 interface ManualBankDetailsResponse {
   bank_name?: string;
@@ -102,7 +143,12 @@ interface ManualBankDetailsResponse {
 }
 
 function WalletPageContent() {
+  const user = useAuthStore((s) => s.user);
   const isDemo = useAuthStore((s) => s.user?.is_demo);
+  // Linked wallet address (lowercase) from /auth/me. Withdrawals always go
+  // here — the input on the withdraw card is read-only. Server enforces the
+  // same rule even if the FE is bypassed.
+  const linkedWalletAddress = useAuthStore((s) => s.user?.wallet_address || '');
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountFromUrl = searchParams.get('account');
@@ -124,18 +170,26 @@ function WalletPageContent() {
   const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
-  const [selectedCryptoWithdraw, setSelectedCryptoWithdraw] = useState<string>(CRYPTO_ASSETS[0].id);
 
-  const [depositChannel, setDepositChannel] = useState<FundingChannel>('oxapay');
+  const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
+  // On-site wallet-connect deposit modal — opened from the deposit form's
+  // submit handler when depositChannel === 'crypto'. The modal owns the
+  // /wallet/deposit/wallet POST + the polling loop.
+  const [walletDepositOpen, setWalletDepositOpen] = useState(false);
+  const [walletDepositAmount, setWalletDepositAmount] = useState(0);
+  const [walletDepositAsset, setWalletDepositAsset] = useState<string>(CRYPTO_ASSETS[0].id);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositTxId, setDepositTxId] = useState('');
   const [depositProofFile, setDepositProofFile] = useState<File | null>(null);
   const [manualBankInfo, setManualBankInfo] = useState<ManualBankDetailsResponse | null>(null);
   const [depositSubmitting, setDepositSubmitting] = useState(false);
 
-  const [withdrawChannel, setWithdrawChannel] = useState<FundingChannel>('oxapay');
+  const [withdrawChannel, setWithdrawChannel] = useState<FundingChannel>('crypto');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawOxapayDetails, setWithdrawOxapayDetails] = useState('');
+  /** USDT payout chain the user is sending to. Server requires one of these. */
+  const [withdrawNetwork, setWithdrawNetwork] = useState<'tron' | 'bsc' | 'eth'>('tron');
+  /** Destination wallet address (typed by user). No wallet-connect needed. */
+  const [withdrawCryptoAddress, setWithdrawCryptoAddress] = useState('');
   const [manualWithdrawUpi, setManualWithdrawUpi] = useState('');
   const [manualWithdrawNotes, setManualWithdrawNotes] = useState('');
   const [manualWithdrawQrFile, setManualWithdrawQrFile] = useState<File | null>(null);
@@ -169,15 +223,17 @@ function WalletPageContent() {
         let currency = 'USD';
         let balance = 0;
         let mainWalletBalance = 0;
+        let bonusBalance = 0;
         let totalDeposited = 0;
         let totalWithdrawn = 0;
         let totalLiveBalance: number | undefined;
 
         if (summaryRes.status === 'fulfilled' && summaryRes.value) {
-          const s = summaryRes.value;
+          const s = summaryRes.value as WalletSummaryResponse & { bonus_balance?: number };
           const live = s.live_accounts || [];
           setLiveAccounts(live);
           mainWalletBalance = Number(s.main_wallet_balance) || 0;
+          bonusBalance = Number(s.bonus_balance) || 0;
           totalDeposited = Number(s.total_deposited) || 0;
           totalWithdrawn = Number(s.total_withdrawn) || 0;
           totalLiveBalance =
@@ -230,6 +286,7 @@ function WalletPageContent() {
           balance,
           currency,
           main_wallet_balance: mainWalletBalance,
+          bonus_balance: bonusBalance,
           total_deposited: totalDeposited,
           total_withdrawn: totalWithdrawn,
           pending_withdrawals: pendingWd,
@@ -245,6 +302,7 @@ function WalletPageContent() {
           balance: 0,
           currency: 'USD',
           main_wallet_balance: 0,
+          bonus_balance: 0,
           total_deposited: 0,
           total_withdrawn: 0,
           pending_withdrawals: 0,
@@ -270,14 +328,13 @@ function WalletPageContent() {
     }).format(n);
 
   const selectedDepositCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoDeposit) ?? CRYPTO_ASSETS[0];
-  const selectedWithdrawCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoWithdraw) ?? CRYPTO_ASSETS[0];
 
   useEffect(() => {
-    setDepositChannel(depositUiSection === 'crypto' ? 'oxapay' : 'manual');
+    setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
   }, [depositUiSection]);
 
   useEffect(() => {
-    setWithdrawChannel(withdrawUiSection === 'crypto' ? 'oxapay' : 'manual');
+    setWithdrawChannel(withdrawUiSection === 'crypto' ? 'crypto' : 'manual');
   }, [withdrawUiSection]);
 
   const loadManualBankDetails = useCallback(async () => {
@@ -318,7 +375,7 @@ function WalletPageContent() {
       return;
     }
     setWithdrawAmount('');
-    setWithdrawOxapayDetails('');
+    setWithdrawCryptoAddress('');
     setWithdrawUiSection('crypto');
     setManualWithdrawUpi('');
     setManualWithdrawNotes('');
@@ -327,6 +384,8 @@ function WalletPageContent() {
     scrollToFundPanel();
   };
 
+  // Auto-preload bank details when the user lands on the Manual tab so
+  // the destination bank/UPI is visible immediately (no extra click).
   useEffect(() => {
     if (fundMainTab !== 'deposit' || depositUiSection !== 'manual') return;
     void loadManualBankDetails();
@@ -350,7 +409,7 @@ function WalletPageContent() {
     setFundMainTab('withdraw');
     setWithdrawUiSection('crypto');
     setWithdrawAmount('');
-    setWithdrawOxapayDetails('');
+    setWithdrawCryptoAddress('');
     setManualWithdrawUpi('');
     setManualWithdrawNotes('');
     setManualWithdrawQrFile(null);
@@ -372,28 +431,30 @@ function WalletPageContent() {
       toast.error('Enter a valid amount');
       return;
     }
-    if (withdrawChannel === 'oxapay') {
-      const detail = withdrawOxapayDetails.trim();
-      if (!detail) {
-        toast.error(
-          withdrawUiSection === 'crypto'
-            ? 'Enter your wallet address or payout details'
-            : 'Enter OxaPay payout details',
-        );
+    if (withdrawChannel === 'crypto') {
+      // Manual USDT payout: user types their own destination address +
+      // picks the chain. No wallet-connect required. Admin reviews +
+      // signs the on-chain transfer from the back office.
+      const opt = WITHDRAW_NETWORK_OPTIONS.find((o) => o.network === withdrawNetwork)
+        ?? WITHDRAW_NETWORK_OPTIONS[0];
+      const addr = withdrawCryptoAddress.trim();
+      if (!addr) {
+        toast.error('Enter your USDT wallet address');
         return;
       }
-      const payout =
-        withdrawUiSection === 'crypto'
-          ? [`[${selectedCryptoWithdraw}]`, detail].join(' ').trim()
-          : detail;
+      if (!opt.addressRegex.test(addr)) {
+        toast.error(`Invalid ${opt.label} address. ${opt.addressHint}`);
+        return;
+      }
       setWithdrawSubmitting(true);
       try {
-        await api.post('/wallet/withdraw', {
+        await api.post('/wallet/withdraw/onchain', {
+          network: opt.network,
           amount: amt,
-          method: OXAPAY_METHOD,
-          bank_details: { oxapay_payout: payout },
+          destination_address: addr,
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
+        setWithdrawCryptoAddress('');
         void fetchData(true);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
@@ -457,30 +518,15 @@ function WalletPageContent() {
       toast.error('Enter a valid amount');
       return;
     }
-    if (depositChannel === 'oxapay') {
-      setDepositSubmitting(true);
-      try {
-        const res = await api.post<{ id: string; status: string; amount: number; payment_url?: string }>(
-          '/wallet/deposit',
-          {
-            amount: amt,
-            method: OXAPAY_METHOD,
-          },
-        );
-        if (res.payment_url) {
-          toast.success('Redirecting to OxaPay...');
-          window.location.href = res.payment_url;
-          return;
-        } else {
-          toast.error('Failed to create OxaPay payment link. Please try again or contact support.');
-          return;
-        }
-        void fetchData(true);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Deposit failed');
-      } finally {
-        setDepositSubmitting(false);
-      }
+    if (depositChannel === 'crypto') {
+      // On-site wallet-connect flow: open the modal which calls
+      // POST /wallet/deposit/wallet itself, renders the QR + connect button,
+      // and polls the status. The legacy hosted-redirect path stays mounted
+      // on the backend as a manual fallback (Pay manually link inside the
+      // modal — copy address to any external wallet/exchange).
+      setWalletDepositAmount(amt);
+      setWalletDepositAsset(selectedCryptoDeposit);
+      setWalletDepositOpen(true);
       return;
     }
 
@@ -609,7 +655,7 @@ function WalletPageContent() {
     return (
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-text-secondary">Loading wallet...</span>
         </div>
       </DashboardShell>
@@ -668,6 +714,155 @@ function WalletPageContent() {
             </div>
           )}
 
+          {/* ── Profile & Wallet overview (DAG/purple aesthetic per client mockup) ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+            {/* LEFT — 3 balance overview cards */}
+            <div>
+              <div className="flex items-baseline justify-between gap-2 mb-3">
+                <h2 className="text-lg font-bold text-text-primary">Wallet Overview</h2>
+                <button
+                  type="button"
+                  onClick={() => router.push('/transactions')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary hover:bg-bg-hover text-xs font-medium text-text-secondary transition-colors"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Transaction History
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Main Balance — blue. This is also the withdrawable
+                    bucket: external payouts only ever debit main_wallet_balance.
+                    A separate "Withdrawable Balance" card used to live here
+                    but it was rendering the same number twice, so it was
+                    removed in favour of placing Deposit + Withdraw side by
+                    side. */}
+                <div
+                  className="rounded-2xl p-4 border flex flex-col"
+                  style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
+                      style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
+                    >
+                      <WalletIcon size={18} style={{ color: 'var(--card-blue-icon)' }} />
+                    </div>
+                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Main Balance</p>
+                  </div>
+                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setFundMainTab('deposit'); scrollToFundPanel(); }}
+                      className="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+                    >
+                      Deposit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setFundMainTab('withdraw'); scrollToFundPanel(); }}
+                      className="py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover text-text-primary border border-border-primary text-xs font-bold transition-colors"
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
+                <div
+                  className="rounded-2xl p-4 border flex flex-col"
+                  style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
+                      style={{ background: 'var(--card-green-icon-bg)', borderColor: 'var(--card-green-icon-border)' }}
+                    >
+                      <Gift size={18} style={{ color: 'var(--card-green-icon)' }} />
+                    </div>
+                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-green-text-muted)' }}>Bonus Balance</p>
+                  </div>
+                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-green-text-strong)' }}>
+                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-green-text-faint)' }}>USD</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/rewards')}
+                    className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — KYC + VIP stacked */}
+            <div className="space-y-3">
+              {/* KYC Verification card */}
+              {(() => {
+                const kyc = user?.kyc_status || 'unverified';
+                const isApproved = kyc === 'approved';
+                const isPending = kyc === 'pending';
+                const isRejected = kyc === 'rejected';
+                const stateColor =
+                  isApproved ? 'emerald'
+                  : isPending ? 'amber'
+                  : isRejected ? 'red'
+                  : 'slate';
+                const stateLabel =
+                  isApproved ? 'Verified'
+                  : isPending ? 'Pending'
+                  : isRejected ? 'Rejected'
+                  : 'Unverified';
+                const stateBody =
+                  isApproved ? 'Your identity has been verified. You can enjoy all platform features.'
+                  : isPending ? 'Your KYC documents are under review.'
+                  : isRejected ? 'Please re-submit your KYC documents.'
+                  : 'Complete KYC to unlock withdrawals and higher limits.';
+                // KYC card surface follows the state color — green
+                // (approved), amber (pending), red (rejected), or the
+                // neutral card surface when no action yet. All
+                // theme-aware via --card-* vars.
+                const kycSurface =
+                  isApproved ? { background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' } :
+                  isPending  ? { background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' } :
+                  isRejected ? { background: 'var(--card-red-bg)',   borderColor: 'var(--card-red-border)'   } :
+                               { background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' };
+                return (
+                  <div className="rounded-2xl p-4 border" style={kycSurface}>
+                    <p className="text-xs uppercase tracking-wide text-text-tertiary font-medium mb-2">KYC Verification</p>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className={clsx(
+                        'w-10 h-10 rounded-xl border flex items-center justify-center',
+                        `bg-${stateColor}-500/25 border-${stateColor}-400/30`,
+                      )}>
+                        <ShieldCheck size={18} className={`text-${stateColor}-300`} />
+                      </div>
+                      <p className={clsx('text-base font-bold', `text-${stateColor}-300`)}>{stateLabel}</p>
+                    </div>
+                    <p className="text-[11px] text-text-tertiary leading-relaxed mb-3">{stateBody}</p>
+                    <button
+                      type="button"
+                      onClick={() => router.push(isApproved ? '/profile' : '/kyc')}
+                      className="w-full py-2 rounded-lg bg-bg-base/50 border border-border-primary hover:bg-bg-hover text-xs font-bold text-text-primary transition-colors"
+                    >
+                      {isApproved ? 'View Details' : 'Complete KYC'}
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* VIP Status card — hidden until the VIP system is actually
+                  wired (qualification, purchase, boost application). Schema
+                  exists at vip_pass_allocations + users.is_vip but
+                  system_settings.vip_pass_enabled = false and no benefit code
+                  path reads it. Restore this block when shipping the
+                  feature. */}
+            </div>
+          </div>
+
           {/* ── Account Cards Grid ── */}
           <div className="space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
@@ -680,14 +875,14 @@ function WalletPageContent() {
                   boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
                 }}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#2196f3]/[0.04] group-hover:bg-[#2196f3]/[0.08] transition-colors duration-500" />
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#d6a93d]/[0.04] group-hover:bg-[#d6a93d]/[0.08] transition-colors duration-500" />
                 <div className="relative p-3 sm:p-4 md:p-5 flex flex-col gap-2.5 sm:gap-3">
                   <div className="flex items-center justify-between">
                     <div
-                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#2196f3]/25"
-                      style={{ background: 'linear-gradient(135deg, rgba(33,150,243,0.18) 0%, rgba(33,150,243,0.05) 100%)' }}
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#d6a93d]/25"
+                      style={{ background: 'linear-gradient(135deg, rgba(214,169,61,0.18) 0%, rgba(214,169,61,0.05) 100%)' }}
                     >
-                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#2196f3]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(33,150,243,0.5))' }} />
+                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#d6a93d]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(214,169,61,0.5))' }} />
                     </div>
                     {(wallet?.pending_withdrawals ?? 0) > 0 && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
@@ -696,7 +891,7 @@ function WalletPageContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#2196f3]/60 mb-0.5 sm:mb-1">Main Wallet</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#d6a93d]/60 mb-0.5 sm:mb-1">Main Wallet</p>
                     <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">
                       {fmt(wallet?.main_wallet_balance ?? 0)}
                     </p>
@@ -707,7 +902,7 @@ function WalletPageContent() {
                       onClick={() => openTransferFromMain(liveAccounts.length === 1 ? liveAccounts[0].id : null)}
                       disabled={demoFundingBlocked}
                       title="Add to trading account"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#2196f3]/10 text-[#2196f3] border border-[#2196f3]/20 hover:bg-[#2196f3]/20 hover:border-[#2196f3]/40 disabled:opacity-40 disabled:pointer-events-none"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#d6a93d]/10 text-[#d6a93d] border border-[#d6a93d]/20 hover:bg-[#d6a93d]/20 hover:border-[#d6a93d]/40 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                       To Trading
@@ -730,7 +925,7 @@ function WalletPageContent() {
                   : num.startsWith('PM') ? 'PAMM Master Pool'
                   : num.startsWith('CT') ? 'MAM Master Pool'
                   : num;
-                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '33,150,243', hex: '#2196f3' };
+                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '214,169,61', hex: '#d6a93d' };
 
                 return (
                   <div
@@ -742,7 +937,7 @@ function WalletPageContent() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAccountId(a.id); } }}
                     className={clsx(
                       'relative group rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer outline-none hover:scale-[1.02]',
-                      isSel && 'ring-2 ring-[#2196f3]/30',
+                      isSel && 'ring-2 ring-[#d6a93d]/30',
                     )}
                     style={{
                       background: 'var(--bg-card)',
@@ -772,21 +967,23 @@ function WalletPageContent() {
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
-                            disabled={demoFundingBlocked}
-                            title="Move to main wallet"
-                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
-                          >
-                            <ArrowDownToLine className="h-3 w-3" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
                             onClick={(e) => { e.stopPropagation(); openTransferFromMain(a.id); }}
                             disabled={demoFundingBlocked}
                             title="Add from main wallet"
                             className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
                           >
-                            <ArrowUpFromLine className="h-3 w-3" strokeWidth={2.25} />
+                            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            <span>Deposit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openTransferToMain(a.id); }}
+                            disabled={demoFundingBlocked}
+                            title="Move to main wallet"
+                            className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border-primary bg-bg-hover/40 py-2 text-[10px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-accent hover:border-accent/25 transition-all disabled:opacity-40"
+                          >
+                            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            <span>Withdraw</span>
                           </button>
                         </div>
                       ) : (
@@ -854,7 +1051,7 @@ function WalletPageContent() {
                     {active ? (
                       <span
                         key={fundMainTab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(214,169,61,0.7)]"
                       >
                         {t === 'deposit' ? 'Deposit' : 'Withdraw'}
                       </span>
@@ -888,38 +1085,47 @@ function WalletPageContent() {
                     <p className="text-xs text-text-tertiary mb-2 font-medium uppercase tracking-wide">Deposit To</p>
                     <button
                       type="button"
-                      className="w-full py-3.5 rounded-xl bg-[#2196f3] text-white font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-xl bg-[#d6a93d] text-white font-bold text-sm flex items-center justify-center gap-2"
                     >
                       <WalletIcon className="w-4 h-4" />
                       Wallet
                     </button>
                   </div>
 
-                  {/* Deposit Method Tabs */}
-                  <div className="flex gap-2 border-b border-border-glass">
-                    {(['crypto', 'manual'] as const).map((method) => {
-                      const active = depositUiSection === method;
-                      return (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setDepositUiSection(method)}
-                          className={clsx(
-                            'px-4 py-2.5 text-sm font-semibold transition-all border-b-2',
-                            active
-                              ? 'border-accent text-accent'
-                              : 'border-transparent text-text-tertiary hover:text-text-primary'
-                          )}
-                        >
-                          {method === 'crypto' ? 'Crypto (OxaPay)' : 'Manual (Bank/UPI)'}
-                        </button>
-                      );
-                    })}
-                  </div>
-
                   {depositUiSection === 'crypto' ? (
                     <>
-                      {/* Crypto deposit via OxaPay */}
+                      {/* USDT network picker. NowPayments invoice is pre-locked to
+                          the selected variant so user pays on exactly that chain. */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-text-secondary font-medium uppercase tracking-wide">Network</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'USDT_BSC', label: 'USDT', sub: 'BEP-20', hint: '~$0.30 gas' },
+                            { id: 'USDT_ERC', label: 'USDT', sub: 'ERC-20', hint: '~$5–20 gas' },
+                            { id: 'USDT_TRC', label: 'USDT', sub: 'TRC-20', hint: '~$1 gas' },
+                          ].map((n) => {
+                            const active = selectedCryptoDeposit === n.id;
+                            return (
+                              <button
+                                key={n.id}
+                                type="button"
+                                onClick={() => setSelectedCryptoDeposit(n.id)}
+                                className={clsx(
+                                  'rounded-xl border p-3 text-left transition-colors',
+                                  active
+                                    ? 'border-accent bg-accent/10'
+                                    : 'border-border-primary bg-bg-secondary hover:border-border-secondary',
+                                )}
+                              >
+                                <div className="font-bold text-text-primary text-sm">{n.label}</div>
+                                <div className="text-[11px] text-text-tertiary mt-0.5">{n.sub}</div>
+                                <div className="text-[10px] text-text-tertiary mt-1">{n.hint}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
                         <label className="text-xs text-text-secondary">Amount (USD)</label>
                         <div className="relative">
@@ -936,9 +1142,53 @@ function WalletPageContent() {
                         </div>
                       </div>
 
+                      {/* Fee preview — approximate. NowPayments adds a service
+                          fee (~0.5%) + the network gas to the user's amount
+                          (is_fee_paid_by_user=true on the backend), so the
+                          user actually sends more than they entered. Showing
+                          this here removes the surprise on the next screen. */}
+                      {Number(depositAmount) > 0 && (() => {
+                        const amt = Number(depositAmount);
+                        const svcFee = +(amt * 0.005).toFixed(2); // ~0.5%
+                        const gasEstimate = selectedCryptoDeposit === 'USDT_BSC'
+                          ? 0.30
+                          : selectedCryptoDeposit === 'USDT_TRC'
+                            ? 1.00
+                            : 7.00; // ERC midpoint of $5-20
+                        const networkLabel = selectedCryptoDeposit === 'USDT_BSC'
+                          ? 'BEP-20'
+                          : selectedCryptoDeposit === 'USDT_TRC'
+                            ? 'TRC-20'
+                            : 'ERC-20';
+                        const total = +(amt + svcFee + gasEstimate).toFixed(2);
+                        return (
+                          <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Amount</span>
+                              <span className="font-mono text-text-primary">${amt.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Service fee (~0.5%)</span>
+                              <span className="font-mono text-text-primary">~${svcFee.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-text-tertiary">Network gas ({networkLabel})</span>
+                              <span className="font-mono text-text-primary">~${gasEstimate.toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-border-primary pt-1.5 mt-1.5 flex items-center justify-between">
+                              <span className="text-xs font-semibold text-text-secondary">You&apos;ll send approximately</span>
+                              <span className="font-mono font-bold text-accent text-sm">~${total.toFixed(2)} USDT</span>
+                            </div>
+                            <p className="text-[10px] text-text-tertiary leading-snug pt-1">
+                              Exact amount is locked when the payment is generated. Network gas can vary with on-chain conditions.
+                            </p>
+                          </div>
+                        );
+                      })()}
+
                       <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
                         <p className="text-xs text-text-secondary leading-relaxed">
-                          You will be redirected to OxaPay to choose your cryptocurrency (BTC, ETH, USDT, USDC, etc.) and complete the payment securely.
+                          A NowPayments invoice will be generated for the selected USDT network. Send the exact amount from any wallet or exchange to the address shown — funds credit automatically after on-chain confirmations.
                         </p>
                       </div>
 
@@ -956,152 +1206,7 @@ function WalletPageContent() {
                         {depositSubmitting ? 'Processing…' : 'Pay with Crypto'}
                       </button>
                     </>
-                  ) : (
-                    <>
-                      {/* Manual deposit — amount + bank details + proof */}
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Amount (USD)</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
-                          <input
-                            type="number"
-                            min="1"
-                            step="0.01"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            onBlur={() => void loadManualBankDetails()}
-                            placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-3 py-3 sm:px-4 space-y-2 min-w-0">
-                        <p className="text-xs font-bold text-text-primary">Pay to this account (from admin)</p>
-                        {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.account_number) ? (
-                          <div className="text-[11px] sm:text-xs text-text-secondary font-mono min-w-0 space-y-2">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                              {manualBankInfo.bank_name ? (
-                                <p className="break-words">
-                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Bank</span>
-                                  <br />
-                                  {manualBankInfo.bank_name}
-                                </p>
-                              ) : null}
-                              {manualBankInfo.account_holder ? (
-                                <p className="break-words">
-                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">Holder</span>
-                                  <br />
-                                  {manualBankInfo.account_holder}
-                                </p>
-                              ) : null}
-                              {manualBankInfo.account_number ? (
-                                <p className="break-all">
-                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">A/C</span>
-                                  <br />
-                                  {manualBankInfo.account_number}
-                                </p>
-                              ) : null}
-                              {manualBankInfo.ifsc_code ? (
-                                <p className="break-all">
-                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">IFSC</span>
-                                  <br />
-                                  {manualBankInfo.ifsc_code}
-                                </p>
-                              ) : null}
-                              {manualBankInfo.upi_id ? (
-                                <p className="break-all sm:col-span-2">
-                                  <span className="text-text-tertiary font-sans text-[10px] uppercase tracking-wide">UPI</span>
-                                  <br />
-                                  {manualBankInfo.upi_id}
-                                </p>
-                              ) : null}
-                            </div>
-                            {manualBankInfo.qr_code_url ? (
-                              <div className="pt-1 flex justify-center">
-                                <img
-                                  src={manualBankInfo.qr_code_url}
-                                  alt="Payment QR"
-                                  className="w-full max-w-[220px] max-h-48 object-contain rounded-lg border border-border-primary bg-bg-base"
-                                />
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <p className="text-[11px] text-amber-500/90">
-                            No bank details configured yet. Enter amount and refresh, or contact support.
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => void loadManualBankDetails()}
-                          className="text-[10px] font-semibold text-[#2196f3] hover:underline"
-                        >
-                          Refresh bank details
-                        </button>
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <label className="text-xs text-text-secondary">
-                          Transaction / reference ID <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={depositTxId}
-                          onChange={(e) => setDepositTxId(e.target.value)}
-                          placeholder="UTR or reference from your bank/UPI app"
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
-                        />
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <label className="text-xs text-text-secondary">
-                          Payment screenshot <span className="text-red-400">*</span>
-                        </label>
-                        <label
-                          className={clsx(
-                            'flex flex-col items-center justify-center w-full min-w-0 py-5 sm:py-6 px-2 rounded-xl border-2 border-dashed cursor-pointer transition-all',
-                            depositProofFile
-                              ? 'border-accent/40 bg-accent/5'
-                              : 'border-border-primary hover:border-accent/30',
-                          )}
-                        >
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf,.webp"
-                            className="hidden"
-                            onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
-                          />
-                          {depositProofFile ? (
-                            <span className="text-sm font-medium text-[#2196f3] px-2 text-center">{depositProofFile.name}</span>
-                          ) : (
-                            <span className="text-xs text-[#666]">JPG, PNG, PDF, WEBP — max 10 MB</span>
-                          )}
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void submitDeposit()}
-                        disabled={
-                          demoFundingBlocked ||
-                          depositSubmitting ||
-                          !depositAmount ||
-                          !depositTxId.trim() ||
-                          !depositProofFile
-                        }
-                        className={clsx(
-                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
-                          demoFundingBlocked ||
-                            depositSubmitting ||
-                            !depositAmount ||
-                            !depositTxId.trim() ||
-                            !depositProofFile
-                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
-                        )}
-                      >
-                        {depositSubmitting ? 'Submitting…' : `Deposit${depositAmount ? ` — $${parseFloat(depositAmount || '0').toLocaleString()}` : ''}`}
-                      </button>
-                    </>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -1129,235 +1234,138 @@ function WalletPageContent() {
                     you need is available on the main wallet before requesting a payout.
                   </p>
 
-                  {/* Payment method sub-tabs */}
-                  <div className="flex gap-1 p-1 rounded-xl bg-bg-secondary border border-border-secondary">
-                    <button
-                      type="button"
-                      onClick={() => setWithdrawUiSection('crypto')}
-                      className={clsx(
-                        'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
-                        withdrawUiSection === 'crypto'
-                          ? 'bg-accent text-white'
-                          : 'text-text-tertiary hover:text-text-primary',
-                      )}
-                    >
-                      Crypto
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWithdrawUiSection('bank')}
-                      className={clsx(
-                        'flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-200',
-                        withdrawUiSection === 'bank'
-                          ? 'bg-accent text-white'
-                          : 'text-text-tertiary hover:text-text-primary',
-                      )}
-                    >
-                      Bank
-                    </button>
-                  </div>
-
                   {withdrawUiSection === 'crypto' ? (
-                    <>
-                      <div>
-                        <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">Payment Method</p>
-                        {/* Featured selected coin */}
-                        <div className="rounded-xl border border-border-primary bg-bg-secondary p-4 mb-2">
-                          <p className="text-base font-bold text-text-primary font-mono flex items-center gap-2.5">
-                            <span className="text-xl leading-none" aria-hidden>
-                              {selectedWithdrawCrypto.id === 'BTC' ? '₿' : '◆'}
-                            </span>
-                            <span>
-                              {selectedWithdrawCrypto.label}{' '}
-                              <span className="text-text-tertiary text-sm font-normal">({selectedWithdrawCrypto.sub})</span>
-                            </span>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {CRYPTO_ASSETS.filter((c) => c.id !== selectedCryptoWithdraw).map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => setSelectedCryptoWithdraw(c.id)}
-                              className="rounded-xl border border-border-primary bg-bg-secondary p-3.5 text-left transition-colors hover:border-border-secondary hover:bg-bg-hover"
-                            >
-                              <div className="font-bold text-text-primary font-mono text-sm">{c.label}</div>
-                              <div className="text-[11px] text-text-tertiary mt-0.5">({c.sub})</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    (() => {
+                      const activeOpt = WITHDRAW_NETWORK_OPTIONS.find((o) => o.network === withdrawNetwork)
+                        ?? WITHDRAW_NETWORK_OPTIONS[0];
+                      const linkedMatchesNetwork = !!linkedWalletAddress &&
+                        activeOpt.addressRegex.test(linkedWalletAddress);
+                      const trimmedAddr = withdrawCryptoAddress.trim();
+                      const addrLooksValid =
+                        trimmedAddr.length > 0 && activeOpt.addressRegex.test(trimmedAddr);
+                      return (
+                        <>
+                          <div>
+                            <p className="text-xs text-text-tertiary mb-3 font-medium uppercase tracking-wide">USDT Network</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {WITHDRAW_NETWORK_OPTIONS.map((opt) => {
+                                const active = opt.network === withdrawNetwork;
+                                return (
+                                  <button
+                                    key={opt.network}
+                                    type="button"
+                                    onClick={() => setWithdrawNetwork(opt.network)}
+                                    className={clsx(
+                                      'rounded-xl border p-3.5 text-left transition-colors',
+                                      active
+                                        ? 'border-accent/60 bg-accent/10'
+                                        : 'border-border-primary bg-bg-secondary hover:border-border-secondary hover:bg-bg-hover',
+                                    )}
+                                  >
+                                    <div className={clsx(
+                                      'font-bold text-sm font-mono',
+                                      active ? 'text-accent' : 'text-text-primary',
+                                    )}>
+                                      {opt.label}
+                                    </div>
+                                    <div className="text-[11px] text-text-tertiary mt-0.5">{opt.sub}</div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-xs text-text-secondary">Amount (USD)</label>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs text-text-secondary">Amount (USD)</label>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
+                                }
+                                className="text-xs font-bold text-[#d6a93d] hover:underline"
+                              >
+                                Max
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={withdrawAmount}
+                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs text-text-secondary">Your {activeOpt.label} address</label>
+                              {linkedMatchesNetwork && (
+                                <button
+                                  type="button"
+                                  onClick={() => setWithdrawCryptoAddress(linkedWalletAddress)}
+                                  className="text-[11px] font-bold text-[#d6a93d] hover:underline"
+                                >
+                                  Use linked wallet
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              spellCheck={false}
+                              autoCorrect="off"
+                              autoCapitalize="off"
+                              value={withdrawCryptoAddress}
+                              onChange={(e) => setWithdrawCryptoAddress(e.target.value)}
+                              placeholder={activeOpt.addressHint}
+                              className={clsx(
+                                'w-full px-4 py-3 rounded-xl border bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none font-mono text-sm break-all',
+                                trimmedAddr && !addrLooksValid
+                                  ? 'border-red-500/60 focus:border-red-500'
+                                  : 'border-border-primary focus:border-accent/50',
+                              )}
+                            />
+                            <p className="text-[11px] text-text-tertiary leading-relaxed">
+                              {trimmedAddr && !addrLooksValid
+                                ? `That doesn't look like a valid ${activeOpt.label} address.`
+                                : `Double-check the address — payouts on the wrong network can't be recovered.`}
+                            </p>
+                          </div>
+
+                          <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
+
                           <button
                             type="button"
-                            onClick={() =>
-                              setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
+                            onClick={() => void submitWithdraw()}
+                            disabled={
+                              demoFundingBlocked ||
+                              withdrawSubmitting ||
+                              !withdrawAmount ||
+                              !addrLooksValid
                             }
-                            className="text-xs font-bold text-[#2196f3] hover:underline"
+                            className={clsx(
+                              'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
+                              demoFundingBlocked ||
+                                withdrawSubmitting ||
+                                !withdrawAmount ||
+                                !addrLooksValid
+                                ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                                : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                            )}
                           >
-                            Max
+                            {withdrawSubmitting
+                              ? 'Submitting…'
+                              : `Withdraw funds${withdrawAmount ? ` — ${fmt(parseFloat(withdrawAmount || '0'))}` : ''}`}
                           </button>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={withdrawAmount}
-                            onChange={(e) => setWithdrawAmount(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Wallet address / payout details</label>
-                        <textarea
-                          value={withdrawOxapayDetails}
-                          onChange={(e) => setWithdrawOxapayDetails(e.target.value)}
-                          placeholder={
-                            withdrawUiSection === 'crypto'
-                              ? 'Your crypto wallet address or OxaPay payout details'
-                              : 'OxaPay ID, email, or instructions'
-                          }
-                          rows={3}
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm resize-none"
-                        />
-                      </div>
-                      <p className="text-[11px] text-text-tertiary">Processing time: up to 24 hours.</p>
-
-                      <button
-                        type="button"
-                        onClick={() => void submitWithdraw()}
-                        disabled={
-                          demoFundingBlocked ||
-                          withdrawSubmitting ||
-                          !withdrawAmount ||
-                          !withdrawOxapayDetails.trim()
-                        }
-                        className={clsx(
-                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
-                          demoFundingBlocked ||
-                            withdrawSubmitting ||
-                            !withdrawAmount ||
-                            !withdrawOxapayDetails.trim()
-                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
-                        )}
-                      >
-                        {withdrawSubmitting
-                          ? 'Submitting…'
-                          : `Withdraw funds${withdrawAmount ? ` — ${fmt(parseFloat(withdrawAmount || '0'))}` : ''}`}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-xs text-text-secondary">Amount (USD)</label>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
-                            }
-                            className="text-xs font-bold text-[#2196f3] hover:underline"
-                          >
-                            Max
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={withdrawAmount}
-                            onChange={(e) => setWithdrawAmount(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border-primary bg-bg-secondary px-4 py-3 space-y-2">
-                        <p className="text-xs font-bold text-text-primary">Bank / UPI payout</p>
-                        <p className="text-[11px] text-text-secondary leading-relaxed">
-                          Provide the UPI ID and/or upload a QR code. Finance processes after approval.
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">UPI ID</label>
-                        <input
-                          type="text"
-                          value={manualWithdrawUpi}
-                          onChange={(e) => setManualWithdrawUpi(e.target.value)}
-                          placeholder="yourname@upi"
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono text-sm"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Notes for finance (optional)</label>
-                        <input
-                          type="text"
-                          value={manualWithdrawNotes}
-                          onChange={(e) => setManualWithdrawNotes(e.target.value)}
-                          placeholder="Account name, bank, etc."
-                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-text-secondary">Your QR code (optional)</label>
-                        <label
-                          className={clsx(
-                            'flex flex-col items-center justify-center w-full py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all',
-                            manualWithdrawQrFile
-                              ? 'border-accent/40 bg-accent/5'
-                              : 'border-border-primary hover:border-accent/30',
-                          )}
-                        >
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf,.webp"
-                            className="hidden"
-                            onChange={(e) => setManualWithdrawQrFile(e.target.files?.[0] ?? null)}
-                          />
-                          {manualWithdrawQrFile ? (
-                            <span className="text-sm font-medium text-[#2196f3] px-2 text-center">
-                              {manualWithdrawQrFile.name}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-text-tertiary">JPG, PNG, PDF, WEBP</span>
-                          )}
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void submitWithdraw()}
-                        disabled={
-                          demoFundingBlocked ||
-                          withdrawSubmitting ||
-                          !withdrawAmount ||
-                          (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
-                        }
-                        className={clsx(
-                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
-                          demoFundingBlocked ||
-                            withdrawSubmitting ||
-                            !withdrawAmount ||
-                            (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
-                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
-                        )}
-                      >
-                        {withdrawSubmitting ? 'Submitting…' : 'Withdraw funds'}
-                      </button>
-                    </>
-                  )}
+                        </>
+                      );
+                    })()
+                  ) : null}
                 </>
               )}
             </div>
@@ -1391,10 +1399,11 @@ function WalletPageContent() {
             <div>
               <h5 className="text-text-primary font-bold text-xs uppercase tracking-wide">Processing Time</h5>
               <p className="text-text-tertiary text-[10px] leading-relaxed mt-0.5">
-                OxaPay and manual bank/UPI options are reviewed by finance; most requests are processed within 24 hours.
+                Crypto withdrawals are reviewed by finance; most requests are processed within 24 hours.
               </p>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -1502,6 +1511,18 @@ function WalletPageContent() {
         </div>
       )}
 
+      <WalletDepositModal
+        open={walletDepositOpen}
+        onClose={() => setWalletDepositOpen(false)}
+        amountUsd={walletDepositAmount}
+        cryptoAsset={walletDepositAsset}
+        onSettled={() => {
+          // The IPN webhook already credited balance + sent the email; just
+          // refresh the wallet view so the user sees the new total.
+          void fetchData(true);
+        }}
+      />
+
     </DashboardShell>
   );
 }
@@ -1512,7 +1533,7 @@ export default function WalletPage() {
       fallback={
         <DashboardShell mainClassName="flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-text-secondary">Loading wallet…</span>
           </div>
         </DashboardShell>

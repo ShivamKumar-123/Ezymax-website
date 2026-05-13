@@ -51,11 +51,29 @@ EMPLOYEE_ROLE_PERMISSIONS = {
 }
 
 
+ADMIN_COOKIE_NAME = "fx_admin"
+
+
 async def get_current_admin(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    token = credentials.credentials
+    """Resolve the active admin from EITHER an HttpOnly cookie (preferred —
+    no XSS-readable token) OR a Bearer header (legacy clients). The
+    cookie path is what the new admin frontend uses; the header path
+    is retained so cron / scripts that already mint a token via /login
+    keep working until they migrate."""
+    token: str | None = None
+    cookie_token = request.cookies.get(ADMIN_COOKIE_NAME)
+    if cookie_token:
+        token = cookie_token
+    elif credentials is not None:
+        token = credentials.credentials
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
         payload = jwt.decode(
             token,
@@ -122,14 +140,35 @@ async def write_audit_log(
     new_values: Optional[dict] = None,
     ip_address: Optional[str] = None,
 ):
+    """Insert one row into the admin audit log.
+
+    CONTRACT: this function does NOT commit. The audit insert MUST share
+    the caller's transaction with whatever financial mutation it
+    documents — otherwise a crash between the audit write and the
+    mutation commit would leave one of them orphaned. We only flush, so
+    the caller's eventual db.commit() (or db.rollback() on error) is
+    the single decision point. Do NOT add db.commit() here under any
+    circumstance — the C4 concern from the security audit is exactly
+    that.
+
+    Defence in depth: any free-floating Decimal in the JSON payload is
+    coerced to a string here so JSONB stores its exact representation
+    instead of a lossy float — see H10."""
+    from decimal import Decimal as _D
     from packages.common.src.models import AuditLog
+
+    def _safe(d):
+        if d is None:
+            return None
+        return {k: (str(v) if isinstance(v, _D) else v) for k, v in d.items()}
+
     log = AuditLog(
         admin_id=admin_id,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
-        old_values=old_values,
-        new_values=new_values,
+        old_values=_safe(old_values),
+        new_values=_safe(new_values),
         ip_address=ip_address,
     )
     db.add(log)

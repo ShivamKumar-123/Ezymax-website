@@ -171,12 +171,11 @@ function tradeExitLabel(
 
 
 
-const TIMEFRAMES = ['1M', '3M', '6M', '1Y', 'All'] as const;
-
+// Portfolio always shows all-time stats. The mapping below is kept as a
+// reference for whenever the per-period selector comes back; right now
+// only the 'All' → 'all' entry is actually consulted.
 const TF_TO_PERIOD: Record<string, string> = {
-
   '1M': '1m', '3M': '3m', '6M': '6m', '1Y': '1y', 'All': 'all',
-
 };
 
 const UUID_RE =
@@ -200,7 +199,11 @@ function PortfolioPageContent() {
     return v?.trim() ? v.trim() : '';
   }, [queryKey]);
 
-  const [tf, setTf] = useState('1M');
+  // Portfolio is now always all-time. The timeframe selector was removed
+  // from the UI per client direction — `tf` stays as a const reference so
+  // the existing TF_TO_PERIOD lookup keeps compiling. If we ever bring the
+  // selector back, swap this back to useState('1M').
+  const tf = 'All';
 
   const [tab, setTab] = useState('overview');
 
@@ -497,9 +500,9 @@ function PortfolioPageContent() {
 
     return (
 
-      <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+      <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading portfolio...</span>
         </div>
       </DashboardShell>
@@ -514,7 +517,7 @@ function PortfolioPageContent() {
 
     return (
 
-      <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+      <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
         <div className="text-center space-y-3 py-12">
           <p className="text-red-400 text-sm">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchData}>
@@ -544,16 +547,16 @@ function PortfolioPageContent() {
         {invalidAccountParam ? (
           <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-text-primary">
             Invalid account id in the URL — showing your full portfolio.{' '}
-            <Link href="/portfolio" className="font-semibold text-[#2196f3] underline underline-offset-2 hover:text-[#1976d2]">
+            <Link href="/portfolio" className="font-semibold text-[#d6a93d] underline underline-offset-2 hover:text-[#9b7d3a]">
               Reset
             </Link>
           </div>
         ) : null}
 
         {validAccountId ? (
-          <div className="rounded-xl border border-[#2196f3]/30 bg-[#2196f3]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-xl border border-[#d6a93d]/30 bg-[#d6a93d]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2196f3]">Account scope</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#d6a93d]">Account scope</p>
               <p className="text-sm text-text-primary mt-0.5">
                 Journal and trade list for{' '}
                 <span className="font-mono font-semibold">
@@ -563,29 +566,17 @@ function PortfolioPageContent() {
             </div>
             <Link
               href="/portfolio"
-              className="text-xs font-semibold text-[#2196f3] hover:text-[#1976d2] underline underline-offset-2 shrink-0"
+              className="text-xs font-semibold text-[#d6a93d] hover:text-[#9b7d3a] underline underline-offset-2 shrink-0"
             >
               View all accounts
             </Link>
           </div>
         ) : null}
 
-        {dashboardData ? (
-          <div className="flex items-center justify-end gap-0.5 -mb-2">
-            {TIMEFRAMES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTf(t)}
-                className={clsx(
-                  'px-2 py-1 text-[10px] rounded-md transition-all',
-                  tf === t ? 'skeu-btn-buy text-text-inverse' : 'text-text-tertiary hover:bg-bg-hover',
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        {/* Timeframe selector retired — portfolio always shows all-time data
+            (per client decision). The TIMEFRAMES + setTf scaffolding stays
+            in place behind the scenes (forced to 'All') so re-introducing
+            per-period stats later is a one-component change. */}
 
         {dashboardData ? <TradingOverview data={dashboardData} /> : null}
 
@@ -939,7 +930,7 @@ function PortfolioPageContent() {
                       className={clsx(
                         'min-w-[32px] h-8 px-2 rounded-md text-xs font-semibold transition-colors border',
                         n === page
-                          ? 'bg-[#2196f3] text-text-inverse border-[#2196f3]'
+                          ? 'bg-[#d6a93d] text-text-inverse border-[#d6a93d]'
                           : 'bg-bg-card text-text-secondary border-border-primary hover:bg-bg-hover',
                       )}
                     >
@@ -975,9 +966,9 @@ export default function PortfolioPage() {
   return (
     <Suspense
       fallback={(
-        <DashboardShell mainClassName="flex items-center justify-center bg-[#050505]">
+        <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#888]">Loading portfolio...</span>
           </div>
         </DashboardShell>

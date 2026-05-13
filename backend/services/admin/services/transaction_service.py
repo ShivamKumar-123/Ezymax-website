@@ -1,5 +1,7 @@
 """Admin Transaction Service — paginated listing and summary."""
 
+import uuid  # noqa: F401  (used in type hints below)
+
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,17 +34,43 @@ def _txn_to_out(
     )
 
 
+# Trade P&L Transaction rows (one per close, type='profit' or 'loss')
+# duplicate the data that already appears under Trades → History. Admins
+# kept asking why their Transactions tab was flooded with `+$0.00 Profit`
+# break-even rows, so we hide them here. The DB still has them (the
+# Transaction ledger is the source of truth for balance reconciliation);
+# this is a presentation-only filter. If a future admin tool genuinely
+# needs to scan profit/loss txs, query the table directly or extend the
+# type filter explicitly.
+_HIDDEN_FROM_ADMIN_TX = ("profit", "loss")
+
+
 async def list_transactions(
     page: int,
     per_page: int,
     type_filter: str | None,
     search: str | None,
     db: AsyncSession,
+    user_id: "uuid.UUID | None" = None,
+    include_trade_pnl: bool = False,
 ) -> PaginatedResponse:
     query = select(Transaction)
 
+    # Per-user filter for the user-detail ledger page. When admin
+    # drills into a single user's full ledger we DO want to see the
+    # trade-P&L rows there (otherwise the "complete ledger" wouldn't
+    # be complete) — caller passes include_trade_pnl=True alongside
+    # user_id to opt into that.
+    if user_id is not None:
+        query = query.where(Transaction.user_id == user_id)
+
     if type_filter and type_filter != "all":
+        # Admin explicitly asked for a type — respect it, even if it's
+        # one of the hidden ones (lets ops drill into trade P&L from
+        # the URL when they really need to).
         query = query.where(Transaction.type == type_filter)
+    elif not include_trade_pnl:
+        query = query.where(Transaction.type.notin_(_HIDDEN_FROM_ADMIN_TX))
 
     if search:
         user_ids_q = select(User.id).where(
@@ -114,11 +142,18 @@ async def list_transactions(
 
 
 async def get_transaction_summary(db: AsyncSession) -> dict:
-    total_q = await db.execute(select(func.count(Transaction.id)))
+    # Mirror the visible-list filter — counts shown next to the
+    # Transactions tab should match the rows the admin actually sees,
+    # so the trade-P&L rows are excluded from totals too.
+    total_q = await db.execute(
+        select(func.count(Transaction.id))
+        .where(Transaction.type.notin_(_HIDDEN_FROM_ADMIN_TX))
+    )
     total_count = total_q.scalar() or 0
 
     type_counts_q = await db.execute(
         select(Transaction.type, func.count(Transaction.id), func.coalesce(func.sum(Transaction.amount), 0))
+        .where(Transaction.type.notin_(_HIDDEN_FROM_ADMIN_TX))
         .group_by(Transaction.type)
     )
     type_breakdown = {}

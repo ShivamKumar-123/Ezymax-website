@@ -18,6 +18,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import (
     MasterAccount, TradingAccount, TradeHistory, InvestorAllocation, Transaction,
 )
@@ -46,20 +47,29 @@ class StatsEngine:
     async def _run(self):
         while self._running:
             try:
-                async with AsyncSessionLocal() as db:
-                    await self._recalculate_all(db)
-                    await db.commit()
+                # Recalculation is overwrite-style (idempotent) so a
+                # duplicate run is harmless — but it's also CPU-heavy
+                # (full master/investor scan), so the lock saves work.
+                async with engine_lock("stats_recalc", ttl_seconds=120) as is_leader:
+                    if is_leader:
+                        async with AsyncSessionLocal() as db:
+                            await self._recalculate_all(db)
+                            await db.commit()
             except Exception as e:
                 logger.error("Stats engine error: %s", e, exc_info=True)
 
-            # Management fee collection (daily)
+            # Management fee collection (daily). NOT idempotent — each
+            # call debits investor + credits master + writes Transaction
+            # rows. MUST be leader-locked.
             now = asyncio.get_event_loop().time()
             if now - self._mgmt_fee_last_run >= MGMT_FEE_INTERVAL:
                 try:
-                    async with AsyncSessionLocal() as db:
-                        await self._collect_management_fees(db)
-                        await db.commit()
-                    self._mgmt_fee_last_run = now
+                    async with engine_lock("stats_mgmt_fee", ttl_seconds=300) as is_leader:
+                        if is_leader:
+                            async with AsyncSessionLocal() as db:
+                                await self._collect_management_fees(db)
+                                await db.commit()
+                            self._mgmt_fee_last_run = now
                 except Exception as e:
                     logger.error("Management fee collection error: %s", e, exc_info=True)
 

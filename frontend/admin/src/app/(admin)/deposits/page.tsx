@@ -56,8 +56,13 @@ interface Withdrawal {
   account_number?: string;
   ifsc_code?: string;
   bank_details?: WithdrawalBankDetails | null;
-  status: 'pending' | 'approved' | 'rejected';
+  crypto_address?: string | null;
+  wallet_chain_snapshot?: string | null;
+  crypto_tx_hash?: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
   created_at: string;
+  approved_at?: string | null;
+  completed_at?: string | null;
   note?: string;
   reason?: string;
 }
@@ -75,11 +80,15 @@ interface TransactionRecord {
 }
 
 interface ActionModal {
-  type: 'approve' | 'reject';
+  type: 'approve' | 'reject' | 'mark-paid';
   target: 'deposit' | 'withdrawal';
   id: string;
   userName: string;
   amount: number;
+  /** Pre-filled context shown read-only on the mark-paid modal so the
+   *  admin can copy the wallet address while pasting the tx hash. */
+  cryptoAddress?: string | null;
+  network?: string | null;
 }
 
 const TABS: { id: TabId; label: string; icon: typeof ArrowDownCircle }[] = [
@@ -223,6 +232,7 @@ export default function DepositsPage() {
   const [actionModal, setActionModal] = useState<ActionModal | null>(null);
   const [actionNote, setActionNote] = useState('');
   const [actionReason, setActionReason] = useState('');
+  const [actionTxHash, setActionTxHash] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchDeposits = useCallback(async () => {
@@ -324,6 +334,10 @@ export default function DepositsPage() {
       toast.error('Reason is required for rejection');
       return;
     }
+    if (actionModal.type === 'mark-paid' && !actionTxHash.trim()) {
+      toast.error('Transaction hash / reference is required');
+      return;
+    }
 
     setActionLoading(true);
     try {
@@ -337,6 +351,12 @@ export default function DepositsPage() {
           note: actionNote.trim() || undefined,
         });
         toast.success('Approved successfully');
+      } else if (actionModal.type === 'mark-paid') {
+        await adminApi.post(`${basePath}/mark-paid`, {
+          tx_hash: actionTxHash.trim(),
+          notes: actionNote.trim() || undefined,
+        });
+        toast.success('Withdrawal marked as paid');
       } else {
         await adminApi.post(`${basePath}/reject`, {
           reason: actionReason.trim(),
@@ -347,6 +367,7 @@ export default function DepositsPage() {
       setActionModal(null);
       setActionNote('');
       setActionReason('');
+      setActionTxHash('');
 
       if (activeTab === 'deposits') fetchDeposits();
       else fetchWithdrawals();
@@ -548,7 +569,7 @@ export default function DepositsPage() {
                       </tbody>
                     </table>
                   ) : activeTab === 'withdrawals' ? (
-                    <table className="w-full min-w-[1000px]">
+                    <table className="w-full min-w-[1200px]">
                       <thead>
                         <tr className="border-b border-border-primary bg-bg-tertiary/40">
                           {[
@@ -556,8 +577,11 @@ export default function DepositsPage() {
                             'User',
                             'Amount',
                             'Method',
-                            'Bank Details',
+                            'Wallet Address',
+                            'Network',
+                            'Bank / Payout',
                             'Status',
+                            'TX Hash',
                             'Date',
                             'Actions',
                           ].map((col) => (
@@ -591,7 +615,33 @@ export default function DepositsPage() {
                               -${formatMoney(w.amount)}
                             </td>
                             <td className="px-4 py-2.5 text-xs text-text-secondary">{w.method}</td>
-                            <td className="px-4 py-2.5 max-w-[280px]">
+                            <td className="px-4 py-2.5 max-w-[260px]">
+                              {w.crypto_address ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void navigator.clipboard.writeText(w.crypto_address as string);
+                                    toast.success('Wallet address copied');
+                                  }}
+                                  className="text-xs font-mono text-text-primary break-all text-left hover:text-buy"
+                                  title="Click to copy"
+                                >
+                                  {w.crypto_address}
+                                </button>
+                              ) : (
+                                <span className="text-xxs text-text-tertiary">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 text-xs">
+                              {w.wallet_chain_snapshot ? (
+                                <span className="inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium uppercase bg-buy/15 text-buy border border-buy/30">
+                                  {w.wallet_chain_snapshot}
+                                </span>
+                              ) : (
+                                <span className="text-xxs text-text-tertiary">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 max-w-[220px]">
                               <p className="text-xs text-text-primary break-words">{withdrawalPayoutSummary(w)}</p>
                               {w.bank_details?.user_payout_qr_path ? (
                                 <div className="mt-1">
@@ -614,6 +664,23 @@ export default function DepositsPage() {
                                 {w.status}
                               </span>
                             </td>
+                            <td className="px-4 py-2.5 max-w-[180px]">
+                              {w.crypto_tx_hash ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void navigator.clipboard.writeText(w.crypto_tx_hash as string);
+                                    toast.success('TX hash copied');
+                                  }}
+                                  className="text-xxs font-mono text-text-secondary break-all text-left hover:text-buy"
+                                  title="Click to copy"
+                                >
+                                  {w.crypto_tx_hash}
+                                </button>
+                              ) : (
+                                <span className="text-xxs text-text-tertiary">—</span>
+                              )}
+                            </td>
                             <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums whitespace-nowrap">
                               {formatDate(w.created_at)}
                             </td>
@@ -629,6 +696,8 @@ export default function DepositsPage() {
                                         id: w.id,
                                         userName: w.user_name,
                                         amount: w.amount,
+                                        cryptoAddress: w.crypto_address ?? null,
+                                        network: w.wallet_chain_snapshot ?? null,
                                       })
                                     }
                                     className="px-2 py-1 rounded-md text-xxs font-medium bg-success/15 text-success border border-success/30 hover:bg-success/25 transition-fast"
@@ -651,6 +720,25 @@ export default function DepositsPage() {
                                     Reject
                                   </button>
                                 </div>
+                              )}
+                              {w.status === 'approved' && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setActionModal({
+                                      type: 'mark-paid',
+                                      target: 'withdrawal',
+                                      id: w.id,
+                                      userName: w.user_name,
+                                      amount: w.amount,
+                                      cryptoAddress: w.crypto_address ?? null,
+                                      network: w.wallet_chain_snapshot ?? null,
+                                    })
+                                  }
+                                  className="px-2 py-1 rounded-md text-xxs font-medium bg-buy/15 text-buy border border-buy/30 hover:bg-buy/25 transition-fast"
+                                >
+                                  Mark Paid
+                                </button>
                               )}
                             </td>
                           </tr>
@@ -759,7 +847,7 @@ export default function DepositsPage() {
           <div className="w-full max-w-md bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary capitalize">
-                {actionModal.type} {actionModal.target}
+                {actionModal.type === 'mark-paid' ? 'Mark as paid' : actionModal.type} {actionModal.target}
               </h2>
               <button
                 type="button"
@@ -767,6 +855,7 @@ export default function DepositsPage() {
                   setActionModal(null);
                   setActionNote('');
                   setActionReason('');
+                  setActionTxHash('');
                 }}
                 className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-fast"
               >
@@ -775,13 +864,41 @@ export default function DepositsPage() {
             </div>
 
             <div className="p-4 space-y-4">
-              <div className="p-3 rounded-md bg-bg-tertiary border border-border-primary">
-                <p className="text-xxs text-text-tertiary">User</p>
-                <p className="text-xs text-text-primary font-medium">{actionModal.userName}</p>
-                <p className="text-xxs text-text-tertiary mt-2">Amount</p>
-                <p className="text-sm text-text-primary font-mono tabular-nums">
-                  ${formatMoney(actionModal.amount)}
-                </p>
+              <div className="p-3 rounded-md bg-bg-tertiary border border-border-primary space-y-2">
+                <div>
+                  <p className="text-xxs text-text-tertiary">User</p>
+                  <p className="text-xs text-text-primary font-medium">{actionModal.userName}</p>
+                </div>
+                <div>
+                  <p className="text-xxs text-text-tertiary">Amount</p>
+                  <p className="text-sm text-text-primary font-mono tabular-nums">
+                    ${formatMoney(actionModal.amount)}
+                  </p>
+                </div>
+                {actionModal.cryptoAddress && (
+                  <div>
+                    <p className="text-xxs text-text-tertiary">Send to wallet</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(actionModal.cryptoAddress as string);
+                        toast.success('Address copied');
+                      }}
+                      className="text-xs text-text-primary font-mono break-all text-left hover:text-buy"
+                      title="Click to copy"
+                    >
+                      {actionModal.cryptoAddress}
+                    </button>
+                  </div>
+                )}
+                {actionModal.network && (
+                  <div>
+                    <p className="text-xxs text-text-tertiary">Network</p>
+                    <span className="inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium uppercase bg-buy/15 text-buy border border-buy/30">
+                      {actionModal.network}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {actionModal.type === 'approve' ? (
@@ -796,6 +913,37 @@ export default function DepositsPage() {
                     placeholder="Add an optional note..."
                     className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary transition-fast focus:border-buy resize-none"
                   />
+                </div>
+              ) : actionModal.type === 'mark-paid' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xxs text-text-tertiary mb-1">
+                      Transaction hash / reference <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={actionTxHash}
+                      onChange={(e) => setActionTxHash(e.target.value)}
+                      placeholder="0x… (on-chain tx) or bank reference"
+                      className="w-full px-3 py-2 text-xs font-mono bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary transition-fast focus:border-buy"
+                    />
+                    <p className="text-xxs text-text-tertiary mt-1">
+                      This is shown to the user as proof of payment. Paste the on-chain
+                      tx hash you signed, or your bank/UPI reference.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xxs text-text-tertiary mb-1">
+                      Internal notes (optional)
+                    </label>
+                    <textarea
+                      value={actionNote}
+                      onChange={(e) => setActionNote(e.target.value)}
+                      rows={2}
+                      placeholder="Visible only in the audit log"
+                      className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary transition-fast focus:border-buy resize-none"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div>
@@ -820,6 +968,7 @@ export default function DepositsPage() {
                   setActionModal(null);
                   setActionNote('');
                   setActionReason('');
+                  setActionTxHash('');
                 }}
                 className="px-3 py-1.5 text-xs text-text-secondary border border-border-primary rounded-md hover:bg-bg-hover transition-fast"
               >
@@ -833,12 +982,18 @@ export default function DepositsPage() {
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-fast inline-flex items-center gap-1.5',
                   actionModal.type === 'approve'
                     ? 'bg-success text-white hover:bg-success/80'
-                    : 'bg-danger text-white hover:bg-danger/80',
+                    : actionModal.type === 'mark-paid'
+                      ? 'bg-buy text-white hover:bg-buy/80'
+                      : 'bg-danger text-white hover:bg-danger/80',
                   actionLoading && 'opacity-50 pointer-events-none',
                 )}
               >
                 {actionLoading && <Loader2 size={12} className="animate-spin" />}
-                {actionModal.type === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}
+                {actionModal.type === 'approve'
+                  ? 'Confirm Approval'
+                  : actionModal.type === 'mark-paid'
+                    ? 'Confirm Paid'
+                    : 'Confirm Rejection'}
               </button>
             </div>
           </div>

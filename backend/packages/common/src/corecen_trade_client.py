@@ -1,6 +1,6 @@
 """Corecen Broker API client — forwards A-Book trades to Corecen LP.
 
-When a TrustEdge user with book_type='A' opens, closes, or modifies a
+When an FXArtha user with book_type='A' opens, closes, or modifies a
 position, this client pushes the event to Corecen's broker API so Corecen
 can route it to the real LP.
 
@@ -153,27 +153,43 @@ async def forward_trade_open(
 
 async def forward_trade_close(
     position_id: str,
-    close_price: float,
-    pnl: float = 0,
+    close_price,
+    pnl=0,
     closed_by: str = "USER",
     closed_at: str | None = None,
 ) -> dict:
-    """Push an A-Book trade close to Corecen."""
+    """Push an A-Book trade close to Corecen.
+
+    `close_price` and `pnl` accept Decimal | float | str. Decimals are
+    preserved by serialising to their canonical string form (no float
+    round-trip). For reconciliation between FXArtha records and the
+    LP's records, every fractional digit matters."""
+    from decimal import Decimal
+
+    def _money(v) -> str:
+        if isinstance(v, Decimal):
+            return format(v, "f")  # no exponent, no trailing junk
+        if isinstance(v, str):
+            return v
+        # Last-resort float — always cast through Decimal first so the
+        # JSON payload doesn't show "0.30000000000000004"-style noise.
+        return format(Decimal(str(v)), "f")
+
     if not _is_configured():
         return {"skipped": True}
 
     payload = {
         "external_trade_id": position_id,
-        "close_price": close_price,
-        "pnl": pnl,
+        "close_price": _money(close_price),
+        "pnl": _money(pnl),
         "closed_by": closed_by,
     }
     if closed_at:
         payload["closed_at"] = closed_at
 
     logger.info(
-        "[A-BOOK] Forwarding CLOSE to Corecen: pos=%s @ %.5f pnl=%.2f",
-        position_id, close_price, pnl,
+        "[A-BOOK] Forwarding CLOSE to Corecen: pos=%s @ %s pnl=%s",
+        position_id, payload["close_price"], payload["pnl"],
     )
     return await _request("POST", "/api/v1/broker-api/trades/close", payload)
 

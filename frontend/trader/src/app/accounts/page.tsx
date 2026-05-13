@@ -133,10 +133,12 @@ export default function AccountsPage() {
     }
   }, []);
 
-  const fetchAccounts = useCallback(async (signal?: AbortSignal) => {
+  const fetchAccounts = useCallback(async (signal?: AbortSignal, opts: { silent?: boolean } = {}) => {
     const id = ++loadGen.current;
-    setLoading(true);
-    setError(null);
+    if (!opts.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await api.get<any>('/accounts', undefined, { signal });
       if (id !== loadGen.current) return;
@@ -146,11 +148,14 @@ export default function AccountsPage() {
       setStoreAccounts(tradingList);
     } catch (e) {
       if (id !== loadGen.current) return;
+      // Silent polls swallow errors so a transient blip doesn't surface
+      // a toast every 2s; the initial-load handler still shows them.
+      if (opts.silent) return;
       const msg = e instanceof Error ? e.message : 'Failed to load accounts';
       setError(msg);
       toast.error(msg);
     } finally {
-      if (id === loadGen.current) setLoading(false);
+      if (id === loadGen.current && !opts.silent) setLoading(false);
     }
   }, [setStoreAccounts]);
 
@@ -169,6 +174,37 @@ export default function AccountsPage() {
       loadGen.current += 1;
     };
   }, [fetchAccounts]);
+
+  // Live equity / P&L polling. The backend recomputes equity on every
+  // /accounts request using current Redis tick prices + open positions
+  // (see account_service.list_accounts), so a 2 s poll keeps the P&L
+  // column moving without any extra WebSocket plumbing. Polling pauses
+  // while the tab is hidden so we don't burn requests for nothing.
+  useEffect(() => {
+    if (tab !== 'accounts') return;
+    let cancelled = false;
+
+    const tick = () => {
+      if (cancelled) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void fetchAccounts(undefined, { silent: true });
+    };
+
+    const interval = setInterval(tick, 2000);
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) tick();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    };
+  }, [tab, fetchAccounts]);
 
   useEffect(() => {
     if (loading || rows.length === 0) return;
@@ -435,7 +471,7 @@ export default function AccountsPage() {
   };
 
   const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#2196f3] text-[#2196f3] text-sm font-bold hover:bg-[#2196f3]/10 transition-colors shrink-0';
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#d6a93d] text-[#d6a93d] text-sm font-bold hover:bg-[#d6a93d]/10 transition-colors shrink-0';
 
   /** Open the live account picker only if KYC is approved; otherwise show the KYC gate modal. */
   const handleOpenNewAccount = () => {
@@ -499,7 +535,7 @@ export default function AccountsPage() {
             <Link
               href="/kyc"
               onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors text-center"
             >
               Complete KYC
             </Link>
@@ -528,7 +564,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -583,7 +619,7 @@ export default function AccountsPage() {
                     {active ? (
                       <span
                         key={tab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(33,150,243,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(214,169,61,0.7)]"
                       >
                         {t.label}
                       </span>
@@ -645,21 +681,12 @@ export default function AccountsPage() {
                 )}
 
                 {!loading && !error && visibleRows.length === 0 && (
-                  <div className="space-y-4 rounded-xl border border-border-primary bg-card-nested p-8 text-center">
+                  <div className="rounded-xl border border-border-primary bg-card-nested p-8 text-center">
                     <p className="text-sm text-text-secondary">
                       {user?.is_demo
                         ? 'No demo trading account is linked yet.'
-                        : 'You do not have a trading account yet. Open one to start.'}
+                        : 'You do not have a trading account yet. Use the "New Account" button above to open one.'}
                     </p>
-                    {!user?.is_demo && (
-                      <button
-                        type="button"
-                        onClick={handleOpenNewAccount}
-                        className="inline-flex items-center justify-center rounded-lg border-2 border-accent px-5 py-2.5 text-sm font-bold text-accent hover:bg-accent/10"
-                      >
-                        + New Account
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -716,7 +743,7 @@ export default function AccountsPage() {
                         setTab('accounts');
                         handleOpenNewAccount();
                       }}
-                      className="text-sm font-bold text-[#2196f3] hover:underline"
+                      className="text-sm font-bold text-[#d6a93d] hover:underline"
                     >
                       Open live account
                     </button>
@@ -752,7 +779,7 @@ export default function AccountsPage() {
                       const isWallet = uniFrom === 'wallet';
                       return (
                         <div className="rounded-xl border border-accent/35 bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#2196f3]/12 flex items-center justify-center text-[#2196f3] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#d6a93d]/12 flex items-center justify-center text-[#d6a93d] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -811,7 +838,7 @@ export default function AccountsPage() {
                       const isWallet = uniTo === 'wallet';
                       return (
                         <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#2196f3]/12 flex items-center justify-center text-[#2196f3] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#d6a93d]/12 flex items-center justify-center text-[#d6a93d] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -838,7 +865,7 @@ export default function AccountsPage() {
                           setTransferAmount(uniFromBalance > 0 ? uniFromBalance.toFixed(2) : '')
                         }
                         disabled={uniFromBalance <= 0}
-                        className="text-sm font-bold text-[#2196f3] hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        className="text-sm font-bold text-[#d6a93d] hover:underline disabled:opacity-40 disabled:pointer-events-none"
                       >
                         Max: {fmt(uniFromBalance)}
                       </button>
@@ -865,7 +892,7 @@ export default function AccountsPage() {
                       uniFromBalance <= 0 ||
                       uniFrom === uniTo
                     }
-                    className="w-full py-3.5 rounded-xl bg-[#2196f3] text-white text-base font-bold hover:bg-[#1976d2] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-[#d6a93d] text-white text-base font-bold hover:bg-[#9b7d3a] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeftRight size={20} />
                     {transferSubmitting ? 'Transferring…' : 'Transfer'}
@@ -1062,7 +1089,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
       <div className="rounded-xl bg-bg-base border border-border-primary relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-5 w-5 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
+            <div className="h-5 w-5 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
@@ -1208,7 +1235,7 @@ function AccountCard({
         <span
           className={clsx(
             'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
-            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#2196f3] shadow-[0_0_6px_rgba(33,150,243,0.7)]',
+            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#d6a93d] shadow-[0_0_6px_rgba(214,169,61,0.7)]',
           )}
           aria-hidden
         />
@@ -1249,11 +1276,11 @@ function AccountCard({
             <div className="min-w-0">
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
               <div className="flex items-center gap-1">
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#2196f3]' : 'text-red-400')}>
+                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#d6a93d]' : 'text-red-400')}>
                   ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
-              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#2196f3]/70' : 'text-red-400/70')}>
+              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#d6a93d]/70' : 'text-red-400/70')}>
                 ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
               </p>
             </div>
@@ -1319,7 +1346,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
                 >
                   <BookOpen size={16} />
                   View Trades
@@ -1339,15 +1366,16 @@ function AccountCard({
                   <BookOpen size={16} />
                   Trade History
                 </Link>
-                <Link
+                <a
                   href={tradeHref}
-                  prefetch
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2196f3] text-white text-sm font-bold hover:bg-[#1976d2] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
-                </Link>
+                </a>
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setCloseModal(true); }}
@@ -1366,15 +1394,16 @@ function AccountCard({
                 >
                   Trading Journal
                 </Link>
-                <Link
+                <a
                   href={tradeHref}
-                  prefetch
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#2196f3] text-white text-xs sm:text-sm font-bold hover:bg-[#1976d2] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#d6a93d] text-white text-xs sm:text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />
-                </Link>
+                </a>
                 <button
                   type="button"
                   onClick={() => setCloseModal(true)}

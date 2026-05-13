@@ -623,7 +623,7 @@ export default function TradingTerminalPage() {
             className={clsx(
               'flex flex-col overflow-hidden bg-bg-base flex-1 min-w-0 min-h-0 relative isolate z-0',
               chartExpanded &&
-                'ring-1 ring-inset ring-accent/25 shadow-[inset_0_0_0_1px_rgba(33,150,243,0.08)]',
+                'ring-1 ring-inset ring-accent/25 shadow-[inset_0_0_0_1px_rgba(214,169,61,0.08)]',
             )}
           >
             {chartExpanded ? (

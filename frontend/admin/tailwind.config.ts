@@ -28,13 +28,13 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* Neon green accent — matches trader */
+        /* FXArtha gold accent — matches trader */
         buy: {
-          DEFAULT: '#00e676',
-          light: '#33eb91',
-          dark: '#00c853',
-          bg: 'rgba(0,230,118,0.07)',
-          glow: 'rgba(0,230,118,0.25)',
+          DEFAULT: '#d6a93d',
+          light: '#ecc657',
+          dark: '#9b7d3a',
+          bg: 'rgba(214,169,61,0.08)',
+          glow: 'rgba(214,169,61,0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -42,8 +42,8 @@ const config: Config = {
           dark: '#dc2626',
           bg: 'rgba(239,68,68,0.07)',
         },
-        accent: { DEFAULT: '#00e676', light: '#33eb91', dark: '#00c853' },
-        success: '#00e676',
+        accent: { DEFAULT: '#d6a93d', light: '#ecc657', dark: '#9b7d3a' },
+        success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',
         danger: '#ef4444',
@@ -85,7 +85,7 @@ const config: Config = {
         slideDown: { '0%': { opacity: '0', transform: 'translateY(-8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         pageFadeIn: { '0%': { opacity: '0', transform: 'translateY(6px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-        glowPulse: { '0%,100%': { boxShadow: '0 0 8px rgba(0,230,118,0.15)' }, '50%': { boxShadow: '0 0 20px rgba(0,230,118,0.3)' } },
+        glowPulse: { '0%,100%': { boxShadow: '0 0 8px rgba(214,169,61,0.15)' }, '50%': { boxShadow: '0 0 20px rgba(214,169,61,0.3)' } },
         shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
       },
       boxShadow: {
@@ -93,8 +93,8 @@ const config: Config = {
         dropdown: 'var(--shadow-dropdown)',
         glass: '0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
         'glass-lg': '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-        'glow-green': '0 0 20px rgba(0,230,118,0.2), 0 0 60px rgba(0,230,118,0.08)',
-        'neon-sm': '0 0 6px rgba(0,255,136,0.15), 0 0 12px rgba(0,230,118,0.08)',
+        'glow-green': '0 0 20px rgba(214,169,61,0.2), 0 0 60px rgba(214,169,61,0.08)',
+        'neon-sm': '0 0 6px rgba(236,198,87,0.15), 0 0 12px rgba(214,169,61,0.08)',
       },
       backdropBlur: {
         glass: '16px',

@@ -1,149 +1,173 @@
 import { Link } from 'react-router-dom'
-import { Twitter, Linkedin, Instagram, Youtube } from 'lucide-react'
-import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from './animations/ScrollReveal'
+import { Twitter, Linkedin, Instagram, Youtube, Mail } from 'lucide-react'
+import ScrollReveal from './animations/ScrollReveal'
 
-const Footer = () => {
-  const footerLinks = {
-    trading: [
-      { name: 'Forex', path: '/trading/forex' },
-      { name: 'Commodities', path: '/trading/commodities' },
-      { name: 'Indices', path: '/trading/indices' },
-      { name: 'Crypto', path: '/trading/crypto' },
-    ],
-    platforms: [
-      { name: 'Web Platform', path: '/platforms/web' },
-      { name: 'Copy Trading', path: '/platforms/copy-trading' },
-      { name: 'Prop Trading', path: '/platforms/prop-trading' },
-      { name: 'IB Management', path: '/platforms/ib-management' },
-    ],
-    accounts: [
-      { name: 'Standard', path: '/accounts/standard' },
-      { name: 'Pro', path: '/accounts/pro' },
-      { name: 'Demo', path: '/accounts/demo' },
-    ],
-    company: [
-      { name: 'About Us', path: '/company/about' },
-      { name: 'Why FXArtha', path: '/company/why-fxartha' },
-      { name: 'Contact', path: '/company/contact' },
-    ],
-    education: [
-      { name: 'Tutorials', path: '/education/tutorials' },
-      { name: 'Blog', path: '/education/blog' },
-      { name: 'Market News', path: '/education/news' },
-    ],
-  }
+const columns = {
+  Trading: [
+    { name: 'Forex',       path: '/trading/forex' },
+    { name: 'Indices',     path: '/trading/indices' },
+    { name: 'Commodities', path: '/trading/commodities' },
+    { name: 'Crypto',      path: '/trading/crypto' },
+  ],
+  Platforms: [
+    { name: 'Web Platform',  path: '/platforms/web' },
+    { name: 'Copy Trading',  path: '/platforms/copy-trading' },
+    { name: 'Prop Trading',  path: '/platforms/prop-trading' },
+    { name: 'IB Management', path: '/platforms/ib-management' },
+  ],
+  Accounts: [
+    { name: 'Standard', path: '/accounts/standard' },
+    { name: 'Pro',      path: '/accounts/pro' },
+    { name: 'Demo',     path: '/accounts/demo' },
+  ],
+  Company: [
+    { name: 'About Us',       path: '/company/about' },
+    { name: 'Why FXArtha',    path: '/company/why-fxartha' },
+    { name: 'Contact',        path: '/company/contact' },
+  ],
+  Education: [
+    { name: 'Tutorials',   path: '/education/tutorials' },
+    { name: 'Blog',        path: '/education/blog' },
+    { name: 'Market News', path: '/education/news' },
+  ],
+}
 
-  const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Youtube, href: '#', label: 'YouTube' },
-  ]
+const socials = [
+  { icon: Twitter,   href: '#', label: 'Twitter' },
+  { icon: Linkedin,  href: '#', label: 'LinkedIn' },
+  { icon: Instagram, href: '#', label: 'Instagram' },
+  { icon: Youtube,   href: '#', label: 'YouTube' },
+]
+
+export default function Footer() {
+  const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-[#070B15] border-t border-white/5">
-      <div className="container-custom py-16">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10 mb-12">
-          {/* Logo & Social */}
-          <div className="col-span-2 md:col-span-3 lg:col-span-1">
+    <footer
+      className="relative"
+      style={{
+        background: 'linear-gradient(180deg, var(--fx-bg) 0%, #050608 100%)',
+        borderTop: '1px solid var(--fx-line)',
+      }}
+    >
+      <div className="fx-divider-gold" />
+
+      <div className="fx-container py-14 md:py-20">
+        {/* Top: brand + columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10 lg:gap-8">
+          {/* Brand block — spans more on mobile */}
+          <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">
-              <Link to="/" className="inline-block mb-4">
-                <img src="/images/logo2.png" alt="FXArtha" className="h-10 w-auto" />
+              <Link to="/" className="inline-block mb-5" aria-label="FXArtha home">
+                <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-10 w-auto" />
               </Link>
-              <p className="text-text-secondary text-sm mb-6">
-                Trade with confidence. Trade with FXArtha.
+              <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
+                FXArtha is an institutional-grade forex and CFD broker. Built for serious
+                traders who demand fast execution, transparent pricing, and a platform that
+                works as hard as they do.
               </p>
-              <ScrollRevealGroup className="flex space-x-3" delay={0.4}>
-                {socialLinks.map((social) => (
-                  <ScrollRevealItem key={social.label}>
-                    <a
-                      href={social.href}
-                      className="w-9 h-9 rounded-md bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all duration-200"
-                      aria-label={social.label}
-                    >
-                      <social.icon className="w-4 h-4 text-text-secondary" />
-                    </a>
-                  </ScrollRevealItem>
+
+              <div className="flex items-center gap-2 text-sm mb-5" style={{ color: 'var(--fx-text-3)' }}>
+                <Mail size={14} style={{ color: 'var(--fx-gold-light)' }} />
+                <a href="mailto:support@fxartha.com" className="hover:underline" style={{ color: 'var(--fx-text-2)' }}>
+                  support@fxartha.com
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                {socials.map(({ icon: Icon, href, label }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid var(--fx-line-strong)',
+                      color: 'var(--fx-text-2)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--fx-gold-light)'
+                      e.currentTarget.style.borderColor = 'rgba(214,169,61,0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--fx-text-2)'
+                      e.currentTarget.style.borderColor = 'var(--fx-line-strong)'
+                    }}
+                  >
+                    <Icon size={15} />
+                  </a>
                 ))}
-              </ScrollRevealGroup>
+              </div>
             </ScrollReveal>
           </div>
 
-          {/* Trading */}
-          <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div>
-              <h3 className="text-white font-semibold text-sm mb-4">Trading</h3>
-              <ul className="space-y-2">
-                {footerLinks.trading.map((link) => (
+          {/* Link columns */}
+          {Object.entries(columns).map(([heading, links], i) => (
+            <ScrollReveal key={heading} variant="fadeUp" delay={0.05 + i * 0.05}>
+              <h3
+                className="text-xs uppercase tracking-[0.16em] font-semibold mb-4"
+                style={{ color: 'var(--fx-gold-light)' }}
+              >
+                {heading}
+              </h3>
+              <ul className="space-y-2.5">
+                {links.map((link) => (
                   <li key={link.path}>
-                    <Link to={link.path} className="text-text-secondary text-sm hover:text-white transition-colors duration-200">{link.name}</Link>
+                    <Link
+                      to={link.path}
+                      className="text-sm transition-colors"
+                      style={{ color: 'var(--fx-text-2)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fx-text)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fx-text-2)' }}
+                    >
+                      {link.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* Platforms */}
-          <ScrollReveal variant="fadeUp" delay={0.15}>
-            <div>
-              <h3 className="text-white font-semibold text-sm mb-4">Platforms</h3>
-              <ul className="space-y-2">
-                {footerLinks.platforms.map((link) => (
-                  <li key={link.path}>
-                    <Link to={link.path} className="text-text-secondary text-sm hover:text-white transition-colors duration-200">{link.name}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* Accounts */}
-          <ScrollReveal variant="fadeUp" delay={0.2}>
-            <div>
-              <h3 className="text-white font-semibold text-sm mb-4">Accounts</h3>
-              <ul className="space-y-2">
-                {footerLinks.accounts.map((link) => (
-                  <li key={link.path}>
-                    <Link to={link.path} className="text-text-secondary text-sm hover:text-white transition-colors duration-200">{link.name}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* Company */}
-          <ScrollReveal variant="fadeUp" delay={0.25}>
-            <div>
-              <h3 className="text-white font-semibold text-sm mb-4">Company</h3>
-              <ul className="space-y-2">
-                {footerLinks.company.map((link) => (
-                  <li key={link.path}>
-                    <Link to={link.path} className="text-text-secondary text-sm hover:text-white transition-colors duration-200">{link.name}</Link>
-                  </li>
-                ))}
-              </ul>
-              <h3 className="text-white font-semibold text-sm mt-6 mb-4">Education</h3>
-              <ul className="space-y-2">
-                {footerLinks.education.map((link) => (
-                  <li key={link.path}>
-                    <Link to={link.path} className="text-text-secondary text-sm hover:text-white transition-colors duration-200">{link.name}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
+            </ScrollReveal>
+          ))}
         </div>
 
-        <ScrollReveal variant="fadeIn" delay={0.5}>
-          <div className="pt-8 border-t border-white/5">
-            <p className="text-text-secondary text-xs text-center">
-              © 2025 FXArtha Ltd. All rights reserved. | Risk Warning: Trading involves significant risk of loss.
-            </p>
+        {/* Risk warning */}
+        <div
+          className="mt-12 md:mt-16 p-5 md:p-6 rounded-2xl"
+          style={{
+            background: 'var(--fx-bg-elev)',
+            border: '1px solid var(--fx-line)',
+          }}
+        >
+          <p
+            className="text-[11px] uppercase tracking-[0.16em] font-semibold mb-2"
+            style={{ color: 'var(--fx-gold-light)' }}
+          >
+            Risk Warning
+          </p>
+          <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
+            Trading forex and contracts for difference (CFDs) carries a high level of risk
+            and may not be suitable for all investors. You could lose more than your initial
+            investment. Past performance is not indicative of future results. Please ensure
+            you fully understand the risks involved and seek independent advice if necessary.
+            FXArtha does not provide investment advice.
+          </p>
+        </div>
+
+        {/* Bottom bar */}
+        <div
+          className="mt-10 pt-6 flex flex-col md:flex-row gap-3 md:gap-6 items-start md:items-center justify-between"
+          style={{ borderTop: '1px solid var(--fx-line)' }}
+        >
+          <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
+            © {year} FXArtha Ltd. All rights reserved.
+          </p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--fx-text-3)' }}>
+            <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
+            <Link to="/terms" className="hover:underline">Terms of Service</Link>
+            <Link to="/risk" className="hover:underline">Risk Disclosure</Link>
           </div>
-        </ScrollReveal>
+        </div>
       </div>
     </footer>
   )
 }
-
-export default Footer

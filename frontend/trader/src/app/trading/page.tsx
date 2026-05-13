@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Trash2 } from 'lucide-react';
@@ -55,6 +55,10 @@ export default function TradingAccountPickerPage() {
   const removeAccount = useTradingStore((s) => s.removeAccount);
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // While true the page renders a spinner instead of the empty-state CTA, so
+  // users without a live account never glimpse the "you don't have an
+  // account" card before being routed straight to the open-account flow.
+  const [redirectChecking, setRedirectChecking] = useState(true);
 
   const visibleAccounts = useMemo(() => {
     if (user?.is_demo) {
@@ -62,6 +66,44 @@ export default function TradingAccountPickerPage() {
     }
     return accounts;
   }, [accounts, user?.is_demo]);
+
+  // Source-of-truth account fetch decoupled from the trading layout's
+  // bootstrap so this page can decide redirect vs render without racing
+  // the global store hydration.
+  useEffect(() => {
+    if (user?.is_demo) {
+      setRedirectChecking(false);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<unknown>('/accounts')
+      .then((res) => {
+        if (cancelled) return;
+        const list = Array.isArray(res)
+          ? res
+          : ((res as { items?: unknown[] })?.items ?? []);
+        if (list.length === 0) {
+          router.replace('/trading/open-account');
+        } else {
+          setRedirectChecking(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRedirectChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.is_demo, router]);
+
+  if (redirectChecking) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-bg-primary">
+        <div className="w-8 h-8 border-2 border-buy border-t-transparent rounded-full animate-spin" aria-hidden />
+      </div>
+    );
+  }
 
   const startTrade = (id: string) => {
     setPersistedTradingAccountId(id);

@@ -6,12 +6,10 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
   Loader2,
-  MoreHorizontal,
   Plus,
   Search,
   Trash2,
@@ -65,6 +63,7 @@ interface PendingOrder {
 
 interface ClosedTrade {
   id: string;
+  account_id?: string;
   user_email: string;
   account_number: string;
   instrument_symbol: string;
@@ -72,8 +71,20 @@ interface ClosedTrade {
   lots: number;
   open_price: number;
   close_price: number;
+  /** SL / TP that were configured on the underlying Position when it
+   * closed. Null when no limit was set. Backed by the join in
+   * admin_trade_service.list_trade_history. */
+  stop_loss?: number | null;
+  take_profit?: number | null;
+  /** Commission and swap booked against the position at close. Both
+   * already deducted from `profit`. Surfaced separately on the detail
+   * modal so support can answer "why is the net different from price
+   * × lots × contract?". */
+  commission?: number;
+  swap?: number;
   profit: number;
   close_reason: string;
+  opened_at?: string | null;
   closed_at: string;
 }
 
@@ -99,10 +110,16 @@ function formatDate(d: string | undefined | null) {
 function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-bg-secondary border border-border-primary rounded-md shadow-modal mx-4 p-5 animate-slide-down w-full', wide ? 'max-w-xl' : 'max-w-md')}>
-        <div className="flex items-center justify-between mb-4">
+      <div
+        className={cn(
+          'relative bg-bg-secondary border border-border-primary rounded-md shadow-modal p-5 animate-slide-down w-full my-auto',
+          'max-h-[calc(100vh-2rem)] overflow-y-auto',
+          wide ? 'max-w-xl' : 'max-w-md',
+        )}
+      >
+        <div className="flex items-center justify-between mb-4 sticky top-0 bg-bg-secondary -mx-5 -mt-5 px-5 pt-5 pb-2 z-10">
           <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-bg-hover transition-fast text-text-tertiary hover:text-text-primary"><X size={14} /></button>
         </div>
@@ -155,7 +172,29 @@ export default function TradesPage() {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    const wsUrl = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8000').replace('http', 'ws');
+    // Resolve the prices WebSocket URL. Order:
+    //  1. NEXT_PUBLIC_WS_URL — explicit override, e.g. wss://api.fxartha.com
+    //  2. NEXT_PUBLIC_GATEWAY_URL — http(s) → ws(s) shim for legacy configs
+    //  3. Derive from current origin: replace `admin.` with `api.` so the
+    //     admin app loaded from admin.fxartha.com talks to api.fxartha.com.
+    //     Local dev (localhost:30xx) falls through to step 4.
+    //  4. Last-resort dev fallback: ws://localhost:8000
+    function resolveWsBase(): string {
+      const wsEnv = (process.env.NEXT_PUBLIC_WS_URL || '').replace(/\/$/, '');
+      if (wsEnv) return wsEnv;
+      const gwEnv = (process.env.NEXT_PUBLIC_GATEWAY_URL || '').replace(/\/$/, '');
+      if (gwEnv) return gwEnv.replace(/^http(s?):/, 'ws$1:');
+      if (typeof window !== 'undefined') {
+        const { host, protocol } = window.location;
+        if (host && host.includes('.')) {
+          const apiHost = host.replace(/^admin\./, 'api.');
+          const wsProto = protocol === 'https:' ? 'wss' : 'ws';
+          return `${wsProto}://${apiHost}`;
+        }
+      }
+      return 'ws://localhost:8000';
+    }
+    const wsUrl = resolveWsBase();
     let ws: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout>;
 
@@ -185,6 +224,12 @@ export default function TradesPage() {
 
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+  // Click-to-expand on a row in Trade History — opens a read-only
+  // detail modal with everything we know about the closed trade. We
+  // keep this state separate from selectedPosition so the
+  // modify/create/close modal flows above can't accidentally trample
+  // the history detail (and vice versa).
+  const [selectedTrade, setSelectedTrade] = useState<ClosedTrade | null>(null);
   const [modifySl, setModifySl] = useState('');
   const [modifyTp, setModifyTp] = useState('');
   const [modifyOpenPrice, setModifyOpenPrice] = useState('');
@@ -192,14 +237,19 @@ export default function TradesPage() {
   const [modifyCommission, setModifyCommission] = useState('');
   const [modifySwap, setModifySwap] = useState('');
   const [modifyOpenTime, setModifyOpenTime] = useState('');
+  // Admin can flip Buy ↔ Sell on an open position as a correction.
+  // Initialized from the position's current side; only sent in the
+  // PUT body when it actually differs from the original.
+  const [modifySide, setModifySide] = useState<'buy' | 'sell'>('buy');
   const [actionReason, setActionReason] = useState('');
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
   // Create trade modal state
+  type PickedUser = { id: string; name: string; email: string };
   const [createUserSearch, setCreateUserSearch] = useState('');
-  const [createUsers, setCreateUsers] = useState<{ id: string; name: string; email: string; accounts?: { id: string; name: string }[] }[]>([]);
-  const [createSelectedUser, setCreateSelectedUser] = useState<{ id: string; name: string; email: string; accounts?: { id: string; name: string }[] } | null>(null);
-  const [createAccountId, setCreateAccountId] = useState('');
+  const [createUsers, setCreateUsers] = useState<PickedUser[]>([]);
+  const [createSelectedUsers, setCreateSelectedUsers] = useState<PickedUser[]>([]);
+  const [applyToAllUsers, setApplyToAllUsers] = useState(false);
   const [createSymbol, setCreateSymbol] = useState('');
   const [createInstrumentId, setCreateInstrumentId] = useState('');
   const [instrumentSearch, setInstrumentSearch] = useState('');
@@ -265,12 +315,40 @@ export default function TradesPage() {
     else fetchHistory(false);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
 
-  /** Silent background poll every 5s — no spinner, no flicker, data just updates. */
+  /** Silent background poll every 5 s. Polls the ACTIVE tab on its own
+   * interval AND the other two tabs at half-frequency, so the tab
+   * count badges (e.g. "Trade History (47)") and the underlying lists
+   * stay live — a TP/SL auto-close shows up in History within 5–10 s
+   * even when admin is sitting on the Open Positions tab. The active
+   * tab keeps the faster cadence so the visible table never feels
+   * stale; the others are cheaper because the user isn't looking
+   * directly at them. */
   useEffect(() => {
+    let tickCount = 0;
     const poll = setInterval(() => {
-      if (activeTab === 'open') fetchPositions(true);
-      else if (activeTab === 'pending') fetchOrders(true);
-      else fetchHistory(true);
+      if (typeof document !== 'undefined' && document.hidden) return;
+      tickCount += 1;
+      const everyOther = tickCount % 2 === 0;
+
+      if (activeTab === 'open') {
+        void fetchPositions(true);
+        if (everyOther) {
+          void fetchOrders(true);
+          void fetchHistory(true);
+        }
+      } else if (activeTab === 'pending') {
+        void fetchOrders(true);
+        if (everyOther) {
+          void fetchPositions(true);
+          void fetchHistory(true);
+        }
+      } else {
+        void fetchHistory(true);
+        if (everyOther) {
+          void fetchPositions(true);
+          void fetchOrders(true);
+        }
+      }
     }, 5000);
     return () => clearInterval(poll);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
@@ -286,13 +364,16 @@ export default function TradesPage() {
 
   const openModifyModal = (pos: Position) => {
     setSelectedPosition(pos);
-    setModifySl(pos.stop_loss ? String(pos.stop_loss) : '');
-    setModifyTp(pos.take_profit ? String(pos.take_profit) : '');
+    // Use `!= null` so SL/TP set to literally 0 still pre-populates
+    // the input (would have showed empty under a truthy check).
+    setModifySl(pos.stop_loss != null ? String(pos.stop_loss) : '');
+    setModifyTp(pos.take_profit != null ? String(pos.take_profit) : '');
     setModifyOpenPrice(pos.open_price ? String(pos.open_price) : '');
     setModifyLots(pos.lots ? String(pos.lots) : '');
     setModifyCommission(pos.commission ? String(pos.commission) : '');
     setModifySwap(pos.swap ? String(pos.swap) : '');
     setModifyOpenTime(pos.created_at ? new Date(pos.created_at).toISOString().slice(0, 16) : '');
+    setModifySide((pos.side?.toLowerCase() === 'sell' ? 'sell' : 'buy'));
     setActionReason('');
     setModalType('modify');
     setOpenActionsId(null);
@@ -308,8 +389,8 @@ export default function TradesPage() {
   const openCreateModal = () => {
     setCreateUserSearch('');
     setCreateUsers([]);
-    setCreateSelectedUser(null);
-    setCreateAccountId('');
+    setCreateSelectedUsers([]);
+    setApplyToAllUsers(false);
     setCreateSymbol('');
     setCreateInstrumentId('');
     setInstrumentSearch('');
@@ -346,13 +427,25 @@ export default function TradesPage() {
     setModalSubmitting(true);
     try {
       const body: Record<string, unknown> = { reason: actionReason };
-      if (modifySl) body.stop_loss = parseFloat(modifySl);
-      if (modifyTp) body.take_profit = parseFloat(modifyTp);
+      // SL / TP: ALWAYS include in the body, with explicit `null` when
+      // the admin cleared the input. The backend uses Pydantic
+      // `model_fields_set` to distinguish "not provided" (don't touch)
+      // from "provided as null" (clear). Without this, clearing the
+      // SL/TP input was silently ignored and the old values stuck.
+      const slTrim = modifySl.trim();
+      const tpTrim = modifyTp.trim();
+      body.stop_loss = slTrim === '' ? null : parseFloat(slTrim);
+      body.take_profit = tpTrim === '' ? null : parseFloat(tpTrim);
       if (modifyOpenPrice) body.open_price = parseFloat(modifyOpenPrice);
       if (modifyLots) body.lots = parseFloat(modifyLots);
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
       if (modifySwap) body.swap = parseFloat(modifySwap);
       if (modifyOpenTime) body.open_time = new Date(modifyOpenTime).toISOString();
+      // Only send side if admin actually flipped it — saves a write
+      // on every save where the toggle wasn't touched and keeps the
+      // audit log clean.
+      const originalSide = (selectedPosition.side || '').toLowerCase();
+      if (modifySide !== originalSide) body.side = modifySide;
       await adminApi.put(`/trades/position/${selectedPosition.id}/modify`, body);
       toast.success('Position modified');
       closeModal();
@@ -391,24 +484,23 @@ export default function TradesPage() {
     }
   };
 
-  const selectUserForTrade = async (u: typeof createUsers[0]) => {
+  const addUserToSelection = (u: PickedUser) => {
     setCreateUsers([]);
     setCreateUserSearch('');
-    try {
-      const detail = await adminApi.get<any>(`/users/${u.id}`);
-      const rawAccounts: any[] = detail.accounts || [];
-      const mapped = rawAccounts.map((a: any) => ({ id: a.id, name: `${a.account_number}${a.is_demo ? ' (Demo)' : ''} — $${Number(a.balance || 0).toLocaleString()}` }));
-      setCreateSelectedUser({ ...u, accounts: mapped });
-      const live = rawAccounts.find((a: any) => !a.is_demo);
-      setCreateAccountId(live ? live.id : rawAccounts[0]?.id || '');
-    } catch {
-      setCreateSelectedUser(u);
-    }
+    setCreateSelectedUsers((prev) =>
+      prev.some((p) => p.id === u.id) ? prev : [...prev, u]
+    );
+  };
+
+  const removeUserFromSelection = (id: string) => {
+    setCreateSelectedUsers((prev) => prev.filter((p) => p.id !== id));
   };
 
   const submitCreateTrade = async () => {
-    if (!createSelectedUser) { toast.error('Select a user'); return; }
-    if (!createAccountId) { toast.error('Select an account'); return; }
+    if (!applyToAllUsers && createSelectedUsers.length === 0) {
+      toast.error('Select at least one user, or enable "Apply to all active users"');
+      return;
+    }
     if (!createSymbol) { toast.error('Enter a symbol'); return; }
     if (!createLots || parseFloat(createLots) <= 0) { toast.error('Enter valid lots'); return; }
     if (!createReason) { toast.error('Reason is required'); return; }
@@ -417,7 +509,6 @@ export default function TradesPage() {
     setModalSubmitting(true);
     try {
       const body: Record<string, unknown> = {
-        account_id: createAccountId,
         symbol: createSymbol.replace('/', '').toUpperCase(),
         side: createSide,
         lots: parseFloat(createLots),
@@ -427,9 +518,22 @@ export default function TradesPage() {
       if (createPrice) body.price = parseFloat(createPrice);
       if (createSl) body.stop_loss = parseFloat(createSl);
       if (createTp) body.take_profit = parseFloat(createTp);
+      if (applyToAllUsers) {
+        body.apply_to_all = true;
+      } else {
+        body.user_ids = createSelectedUsers.map((u) => u.id);
+      }
 
-      await adminApi.post('/trades/create', body);
-      toast.success('Trade created successfully');
+      const res = await adminApi.post<{ total: number; succeeded: number; failed: number }>(
+        '/trades/create-bulk', body,
+      );
+      if (res.failed === 0) {
+        toast.success(`Created ${res.succeeded} trade${res.succeeded === 1 ? '' : 's'}`);
+      } else if (res.succeeded === 0) {
+        toast.error(`All ${res.failed} trades failed`);
+      } else {
+        toast.success(`${res.succeeded} of ${res.total} succeeded · ${res.failed} failed`);
+      }
       closeModal();
       fetchPositions();
     } catch (e) {
@@ -563,8 +667,8 @@ export default function TradesPage() {
                           {livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}
                         </td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary font-mono tabular-nums">{p.commission ? formatMoney(p.commission) : '0'}</td>
-                        <td className="px-3 py-2 text-xs text-sell font-mono tabular-nums">{p.stop_loss || '—'}</td>
-                        <td className="px-3 py-2 text-xs text-buy font-mono tabular-nums">{p.take_profit || '—'}</td>
+                        <td className="px-3 py-2 text-xs text-sell font-mono tabular-nums">{p.stop_loss != null ? p.stop_loss : '—'}</td>
+                        <td className="px-3 py-2 text-xs text-buy font-mono tabular-nums">{p.take_profit != null ? p.take_profit : '—'}</td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1">
@@ -646,11 +750,11 @@ export default function TradesPage() {
           {activeTab === 'history' && (
             <div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[920px]">
+                <table className="w-full min-w-[1040px]">
                   <thead>
                     <tr className="border-b border-border-primary bg-bg-tertiary/40">
-                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'P&L', 'Reason'].map(c => (
-                        <th key={c} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'P&L'].includes(c) && 'text-right')}>{c}</th>
+                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason'].map(c => (
+                        <th key={c} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'SL', 'TP', 'P&L'].includes(c) && 'text-right')}>{c}</th>
                       ))}
                     </tr>
                   </thead>
@@ -665,8 +769,19 @@ export default function TradesPage() {
                       const reason = t.close_reason || 'manual';
                       const reasonLabel = reason === 'sl' ? 'SL' : reason === 'tp' ? 'TP' : reason === 'admin' ? 'Admin' : 'Manual';
                       const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger' : reason === 'tp' ? 'bg-success/15 text-success' : reason === 'admin' ? 'bg-warning/15 text-warning' : 'bg-text-tertiary/15 text-text-tertiary';
+                      // SL/TP cells: dim em-dash when not set, sell color
+                      // for SL, buy color for TP — visually mirrors the
+                      // Open Positions tab so admins read both views the
+                      // same way.
+                      const slDisplay = t.stop_loss != null ? t.stop_loss : '—';
+                      const tpDisplay = t.take_profit != null ? t.take_profit : '—';
                       return (
-                      <tr key={t.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                      <tr
+                        key={t.id}
+                        onClick={() => setSelectedTrade(t)}
+                        className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover cursor-pointer"
+                        title="Click to see full trade details"
+                      >
                         <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">{formatDate(t.closed_at)}</td>
                         <td className="px-4 py-2.5 text-xs text-text-primary">{t.user_email || t.account_number || '—'}</td>
                         <td className="px-4 py-2.5 text-xs text-text-primary font-medium">{t.instrument_symbol}</td>
@@ -674,6 +789,8 @@ export default function TradesPage() {
                         <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">{t.lots}</td>
                         <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">{t.open_price}</td>
                         <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">{t.close_price}</td>
+                        <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{slDisplay}</td>
+                        <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{tpDisplay}</td>
                         <td className={cn('px-4 py-2.5 text-xs text-right font-mono tabular-nums font-medium', (t.profit || 0) >= 0 ? 'text-success' : 'text-danger')}>
                           {(t.profit || 0) >= 0 ? '+' : ''}{formatMoney(t.profit)}
                         </td>
@@ -686,7 +803,7 @@ export default function TradesPage() {
                   </tbody>
                 </table>
               </div>
-              {histLoading && <TableSkeleton cols={9} />}
+              {histLoading && <TableSkeleton cols={11} />}
               {!histLoading && history.length === 0 && (
                 <div className="px-4 py-12 text-center text-xs text-text-tertiary">No closed trades</div>
               )}
@@ -711,6 +828,47 @@ export default function TradesPage() {
               </div>
             );
           })()}
+          {/* Side toggle — admin can flip Buy ↔ Sell as a correction.
+              Flipping reverses the position direction; unrealized P&L
+              sign flips automatically on the next tick. Copy-trade
+              mirrors are kept in sync server-side. */}
+          <div>
+            <label className="block text-xxs text-text-tertiary mb-1">Side</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setModifySide('buy')}
+                className={cn(
+                  'px-3 py-2 text-xs font-bold rounded-md border transition-fast',
+                  modifySide === 'buy'
+                    ? 'bg-buy/20 border-buy text-buy'
+                    : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover',
+                )}
+              >
+                BUY
+              </button>
+              <button
+                type="button"
+                onClick={() => setModifySide('sell')}
+                className={cn(
+                  'px-3 py-2 text-xs font-bold rounded-md border transition-fast',
+                  modifySide === 'sell'
+                    ? 'bg-sell/20 border-sell text-sell'
+                    : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover',
+                )}
+              >
+                SELL
+              </button>
+            </div>
+            {selectedPosition && modifySide !== (selectedPosition.side || '').toLowerCase() && (
+              <p className="text-[10px] text-warning mt-1.5 leading-snug">
+                ⚠ Side change reverses direction. SL/TP semantics flip — set them
+                in this same save if needed. Open copy-trade mirrors are flipped
+                in sync.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xxs text-text-tertiary mb-1">Open Price</label>
@@ -780,8 +938,8 @@ export default function TradesPage() {
               <div><p className="text-xxs text-text-tertiary">Current</p><p className="text-text-primary font-mono">{cp?.toFixed(5) || '—'}</p></div>
               <div><p className="text-xxs text-text-tertiary">P&L</p><p className={cn('font-mono font-bold', livePnl >= 0 ? 'text-success' : 'text-danger')}>{livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}</p></div>
               <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{selectedPosition.user_email}</p></div>
-              <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss || '—'}</p></div>
-              <div><p className="text-xxs text-text-tertiary">TP</p><p className="text-buy font-mono">{selectedPosition.take_profit || '—'}</p></div>
+              <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss != null ? selectedPosition.stop_loss : '—'}</p></div>
+              <div><p className="text-xxs text-text-tertiary">TP</p><p className="text-buy font-mono">{selectedPosition.take_profit != null ? selectedPosition.take_profit : '—'}</p></div>
             </div>
             );
           })()}
@@ -805,54 +963,75 @@ export default function TradesPage() {
             <p className="text-xxs text-warning font-medium">This trade will appear as the user&apos;s own trade</p>
           </div>
 
-          {/* User Search */}
+          {/* User multi-select */}
           <div>
-            <label className="block text-xxs text-text-tertiary mb-1">User</label>
-            {createSelectedUser ? (
-              <div className="flex items-center justify-between p-2 bg-bg-tertiary/50 border border-border-primary rounded-md">
-                <div>
-                  <p className="text-xs text-text-primary">{createSelectedUser.name}</p>
-                  <p className="text-xxs text-text-secondary">{createSelectedUser.email}</p>
-                </div>
-                <button onClick={() => { setCreateSelectedUser(null); setCreateAccountId(''); }} className="p-1 rounded hover:bg-bg-hover text-text-tertiary"><X size={12} /></button>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xxs text-text-tertiary">Users</label>
+              <label className="flex items-center gap-1.5 text-xxs text-text-secondary cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={applyToAllUsers}
+                  onChange={(e) => {
+                    setApplyToAllUsers(e.target.checked);
+                    if (e.target.checked) setCreateSelectedUsers([]);
+                  }}
+                  className="accent-buy"
+                />
+                Apply to all active users
+              </label>
+            </div>
+
+            {applyToAllUsers ? (
+              <div className="p-2.5 rounded-md bg-warning/10 border border-warning/20 text-xxs text-warning font-medium">
+                This trade will be placed on every active user's primary live account.
               </div>
             ) : (
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                <input type="text" value={createUserSearch} onChange={e => searchUsers(e.target.value)} placeholder="Search by email or name..." className="w-full pl-9 pr-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast" />
-                {createUsers.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-10 max-h-40 overflow-y-auto border border-border-primary rounded-md bg-bg-secondary shadow-dropdown">
-                    {createUsers.map(u => (
-                      <button key={u.id} onClick={() => selectUserForTrade(u)} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-hover transition-fast border-b border-border-primary/50 last:border-0">
-                        <p className="text-text-primary">{u.name}</p>
-                        <p className="text-xxs text-text-tertiary">{u.email}</p>
-                      </button>
+              <>
+                {createSelectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {createSelectedUsers.map((u) => (
+                      <span key={u.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-tertiary/70 border border-border-primary text-xxs text-text-primary">
+                        <span className="truncate max-w-[180px]" title={u.email}>{u.email || u.name}</span>
+                        <button type="button" onClick={() => removeUserFromSelection(u.id)} className="text-text-tertiary hover:text-text-primary"><X size={10} /></button>
+                      </span>
                     ))}
                   </div>
                 )}
-                {userSearchLoading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-text-tertiary" />}
-              </div>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  <input
+                    type="text"
+                    value={createUserSearch}
+                    onChange={(e) => searchUsers(e.target.value)}
+                    placeholder="Search and add users by email or name..."
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast"
+                  />
+                  {createUsers.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-10 max-h-40 overflow-y-auto border border-border-primary rounded-md bg-bg-secondary shadow-dropdown">
+                      {createUsers
+                        .filter((u) => !createSelectedUsers.some((p) => p.id === u.id))
+                        .map((u) => (
+                          <button
+                            key={u.id}
+                            onClick={() => addUserToSelection(u)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-bg-hover transition-fast border-b border-border-primary/50 last:border-0"
+                          >
+                            <p className="text-text-primary">{u.name}</p>
+                            <p className="text-xxs text-text-tertiary">{u.email}</p>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                  {userSearchLoading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-text-tertiary" />}
+                </div>
+                <p className="text-xxs text-text-tertiary mt-1">
+                  Each user's primary live (non-demo) account is used.
+                </p>
+              </>
             )}
           </div>
 
-          {/* Account */}
-          {createSelectedUser && (
-            <div>
-              <label className="block text-xxs text-text-tertiary mb-1">Account</label>
-              {createSelectedUser.accounts && createSelectedUser.accounts.length > 0 ? (
-                <div className="relative">
-                  <select value={createAccountId} onChange={e => setCreateAccountId(e.target.value)} className="w-full text-xs py-2 pl-3 pr-8 appearance-none bg-bg-input border border-border-primary rounded-md text-text-primary">
-                    {createSelectedUser.accounts.map(a => <option key={a.id} value={a.id}>{a.name || a.id}</option>)}
-                  </select>
-                  <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                </div>
-              ) : (
-                <input type="text" value={createAccountId} onChange={e => setCreateAccountId(e.target.value)} placeholder="Enter account ID" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast" />
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xxs text-text-tertiary mb-1">Symbol</label>
               <div className="relative">
@@ -896,6 +1075,37 @@ export default function TradesPage() {
             </div>
           </div>
 
+          {/* Live quote card — shows bid + ask + spread for the picked symbol.
+              Updates every second via the rerender tick. */}
+          {createSymbol && (() => {
+            const tick = pricesRef.current[createSymbol];
+            if (!tick) {
+              return (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border-primary bg-bg-tertiary/40 text-xxs text-text-tertiary">
+                  <Loader2 size={11} className="animate-spin" />
+                  Waiting for live prices on {createSymbol}…
+                </div>
+              );
+            }
+            const spread = ((tick.ask - tick.bid) * 100000).toFixed(1);
+            return (
+              <div className="grid grid-cols-3 gap-2 px-3 py-2 rounded-md border border-border-primary bg-bg-tertiary/40 text-center">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Bid</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-sell">{tick.bid.toFixed(5)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Spread</p>
+                  <p className="text-xs font-mono tabular-nums text-text-secondary">{spread}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Ask</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-buy">{tick.ask.toFixed(5)}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Side Toggle */}
           <div>
             <label className="block text-xxs text-text-tertiary mb-1">Side</label>
@@ -919,10 +1129,20 @@ export default function TradesPage() {
             <label className="block text-xxs text-text-tertiary mb-1">
               Price {createType === 'market' && <span className="text-text-tertiary">(optional — auto from market)</span>}
             </label>
-            <input type="number" step="any" value={createPrice} onChange={e => setCreatePrice(e.target.value)} placeholder={createType === 'market' ? 'Auto (live price)' : '0.00'} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
+            {(() => {
+              const tick = createSymbol ? pricesRef.current[createSymbol] : null;
+              const livePx = tick ? (createSide === 'buy' ? tick.ask : tick.bid) : null;
+              const placeholder =
+                createType === 'market'
+                  ? (livePx != null ? `Auto · ${livePx.toFixed(5)}` : 'Auto (live price)')
+                  : (livePx != null ? livePx.toFixed(5) : '0.00');
+              return (
+                <input type="number" step="any" value={createPrice} onChange={e => setCreatePrice(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
+              );
+            })()}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xxs text-text-tertiary mb-1">Stop Loss</label>
               <input type="number" step="any" value={createSl} onChange={e => setCreateSl(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
@@ -945,6 +1165,227 @@ export default function TradesPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Trade Detail Modal — read-only, opens on row click in History. */}
+      <Modal
+        open={selectedTrade != null}
+        onClose={() => setSelectedTrade(null)}
+        title={
+          selectedTrade
+            ? `${selectedTrade.instrument_symbol} ${selectedTrade.side?.toUpperCase()} ${selectedTrade.lots} lots`
+            : 'Trade'
+        }
+        wide
+      >
+        {selectedTrade && (() => {
+          const t = selectedTrade;
+          const isBuy = t.side?.toLowerCase() === 'buy';
+          const reason = t.close_reason || 'manual';
+          const reasonLabel = reason === 'sl' ? 'Stop Loss' : reason === 'tp' ? 'Take Profit' : reason === 'admin' ? 'Admin closed' : 'Manual close';
+          const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger border-danger/30' : reason === 'tp' ? 'bg-success/15 text-success border-success/30' : reason === 'admin' ? 'bg-warning/15 text-warning border-warning/30' : 'bg-text-tertiary/15 text-text-tertiary border-text-tertiary/30';
+          const profitPositive = (t.profit || 0) >= 0;
+          // Duration calc — when we have both timestamps, render a
+          // friendly "5m 23s" style string. Falls back to em-dash.
+          let durationLabel = '—';
+          if (t.opened_at && t.closed_at) {
+            const ms = new Date(t.closed_at).getTime() - new Date(t.opened_at).getTime();
+            if (Number.isFinite(ms) && ms >= 0) {
+              const s = Math.floor(ms / 1000);
+              const days = Math.floor(s / 86400);
+              const hours = Math.floor((s % 86400) / 3600);
+              const mins = Math.floor((s % 3600) / 60);
+              const secs = s % 60;
+              const parts: string[] = [];
+              if (days) parts.push(`${days}d`);
+              if (hours) parts.push(`${hours}h`);
+              if (mins) parts.push(`${mins}m`);
+              if (!days && !hours) parts.push(`${secs}s`);
+              durationLabel = parts.join(' ') || '0s';
+            }
+          }
+          const priceMove = t.close_price - t.open_price;
+          const priceMoveLabel = `${priceMove >= 0 ? '+' : ''}${priceMove.toFixed(5)}`;
+          const commission = t.commission ?? 0;
+          const swap = t.swap ?? 0;
+          // Gross = profit + |commission| + |swap| (profit already nets
+          // them out in the close logic). Display them as separate
+          // line items so support can answer the inevitable "where did
+          // the dollar go?" question.
+          const grossPnl = t.profit + Math.abs(commission) + Math.abs(swap);
+
+          return (
+            <div className="space-y-4">
+              {/* Banner — symbol + side + net P&L, big and bold */}
+              <div
+                className={cn(
+                  'rounded-md border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3',
+                  profitPositive
+                    ? 'bg-success/10 border-success/30'
+                    : 'bg-danger/10 border-danger/30',
+                )}
+              >
+                <div>
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide">Net P&L</p>
+                  <p className={cn('text-2xl font-bold font-mono tabular-nums', profitPositive ? 'text-success' : 'text-danger')}>
+                    {profitPositive ? '+' : ''}${formatMoney(t.profit)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-xs font-semibold px-2 py-0.5 rounded border', isBuy ? 'bg-buy/15 text-buy border-buy/30' : 'bg-sell/15 text-sell border-sell/30')}>
+                    {t.side?.toUpperCase()}
+                  </span>
+                  <span className={cn('text-xs font-semibold px-2 py-0.5 rounded border', reasonColor)}>
+                    {reasonLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Two-column grid — collapses to single column on phones */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Timing */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Timing</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Opened</span>
+                      <span className="text-text-primary font-mono text-right">{formatDate(t.opened_at) || '—'}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Closed</span>
+                      <span className="text-text-primary font-mono text-right">{formatDate(t.closed_at)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Duration</span>
+                      <span className="text-text-primary font-mono text-right">{durationLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prices */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Prices</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Open price</span>
+                      <span className="text-text-primary font-mono tabular-nums">{t.open_price}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Close price</span>
+                      <span className="text-text-primary font-mono tabular-nums">{t.close_price}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Move</span>
+                      <span className={cn('font-mono tabular-nums', priceMove >= 0 ? 'text-success' : 'text-danger')}>{priceMoveLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Limits */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Limits at close</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Stop Loss</span>
+                      <span className={cn('font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>
+                        {t.stop_loss != null ? t.stop_loss : '— (not set)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Take Profit</span>
+                      <span className={cn('font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
+                        {t.take_profit != null ? t.take_profit : '— (not set)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Triggered by</span>
+                      <span className={cn('font-mono', reasonColor.includes('danger') ? 'text-danger' : reasonColor.includes('success') ? 'text-success' : 'text-text-secondary')}>{reasonLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accounting */}
+                <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                  <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Accounting</p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Gross P&L</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {grossPnl >= 0 ? '+' : ''}${formatMoney(grossPnl)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Commission</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {commission ? `-$${formatMoney(Math.abs(commission))}` : '$0.00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-text-tertiary">Swap</span>
+                      <span className="text-text-primary font-mono tabular-nums">
+                        {swap ? `${swap >= 0 ? '+' : '-'}$${formatMoney(Math.abs(swap))}` : '$0.00'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2 border-t border-border-primary pt-1.5 mt-1.5">
+                      <span className="text-text-secondary font-semibold">Net P&L</span>
+                      <span className={cn('font-mono tabular-nums font-bold', profitPositive ? 'text-success' : 'text-danger')}>
+                        {profitPositive ? '+' : ''}${formatMoney(t.profit)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Owner + IDs — full width */}
+              <div className="rounded-md border border-border-primary bg-bg-tertiary/40 p-3 space-y-2">
+                <p className="text-xxs text-text-tertiary uppercase tracking-wide font-semibold">Owner & identifiers</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">User email</span>
+                    <span className="text-text-primary font-mono break-all text-right sm:text-left">{t.user_email || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Account #</span>
+                    <span className="text-text-primary font-mono text-right sm:text-left">{t.account_number || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Trade ID</span>
+                    <button
+                      type="button"
+                      onClick={() => { void navigator.clipboard.writeText(t.id); }}
+                      className="text-text-primary font-mono text-[10px] break-all text-right sm:text-left hover:text-buy"
+                      title="Click to copy"
+                    >
+                      {t.id}
+                    </button>
+                  </div>
+                  <div className="flex justify-between gap-2 sm:block">
+                    <span className="text-text-tertiary sm:block">Account ID</span>
+                    <button
+                      type="button"
+                      onClick={() => { if (t.account_id) void navigator.clipboard.writeText(t.account_id); }}
+                      className="text-text-primary font-mono text-[10px] break-all text-right sm:text-left hover:text-buy disabled:cursor-not-allowed"
+                      disabled={!t.account_id}
+                      title={t.account_id ? 'Click to copy' : undefined}
+                    >
+                      {t.account_id || '—'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTrade(null)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
     </>
   );

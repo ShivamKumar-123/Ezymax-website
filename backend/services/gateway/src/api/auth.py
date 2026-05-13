@@ -8,17 +8,21 @@ from packages.common.src.database import get_db
 from packages.common.src.schemas import (
     RegisterRequest, LoginRequest, UserResponse,
     ForgotPasswordRequest, ResetPasswordRequest, MessageResponse, BootstrapSessionRequest,
+    GoogleAuthRequest,
+    WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
 )
 from packages.common.src.auth import get_current_user
 from ..services.auth_service import (
     AuthServiceError,
     register_user, login_user, demo_login as _demo_login,
+    google_oauth as _google_oauth,
     refresh_token as _refresh_token, bootstrap_session as _bootstrap_session,
     forgot_password as _forgot_password, reset_password as _reset_password,
     setup_2fa as _setup_2fa, verify_2fa as _verify_2fa,
     change_password as _change_password, get_me as _get_me, logout_user,
     client_ip_for_inet,
 )
+from ..services import wallet_auth_service, email_otp_service, sensitive_action_service
 
 logger = logging.getLogger("auth_api")
 
@@ -28,11 +32,6 @@ router = APIRouter()
 #   from .auth import _client_ip_for_inet
 # continues to work without changes until orders.py is also refactored.
 _client_ip_for_inet = client_ip_for_inet
-
-
-def _handle(coro):
-    """Wrapper is not needed — service raises AuthServiceError which routes catch below."""
-    return coro
 
 
 @router.get("/platform-status")
@@ -88,6 +87,70 @@ async def demo_login(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=500,
             detail=f"Demo sign-in failed — {type(e).__name__}: {e}",
+        )
+
+
+@router.post("/google")
+async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        return await _google_oauth(
+            id_token_str=req.id_token,
+            referral_code=req.referral_code,
+            request=request,
+            db=db,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.exception("google sign-in failed unexpectedly")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail=f"Google sign-in failed — {type(e).__name__}: {e}",
+        )
+
+
+@router.post("/wallet/nonce", response_model=WalletNonceResponse)
+async def wallet_nonce(
+    req: WalletNonceRequest, request: Request, db: AsyncSession = Depends(get_db),
+):
+    """Issue a single-use SIWE nonce for the given wallet address. The
+    client embeds it in the SIWE message and the wallet signs it. The
+    nonce expires in 5 minutes and is consumed exactly once on verify."""
+    try:
+        return await wallet_auth_service.issue_nonce(
+            req.address, req.chain_id, request, db,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+@router.post("/wallet/verify")
+async def wallet_verify(
+    req: WalletVerifyRequest, request: Request, db: AsyncSession = Depends(get_db),
+):
+    """Verify a SIWE signature, find or create the user, and issue cookies.
+    Reuses `issue_auth_json_response()` so wallet sessions are
+    indistinguishable from email/Google sessions for downstream routes."""
+    try:
+        return await wallet_auth_service.login_or_register_with_wallet(
+            req.message, req.signature, request, db,
+            referral_code=req.referral_code,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.exception("wallet verify failed unexpectedly")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail=f"Wallet sign-in failed — {type(e).__name__}: {e}",
         )
 
 
@@ -147,8 +210,23 @@ async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSes
 
 @router.post("/2fa/verify")
 async def verify_2fa(code: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Confirms the freshly-set TOTP secret and returns 8 one-time backup
+    codes. Display those to the user once — they can't be retrieved
+    later. The /2fa/regenerate-backup-codes endpoint mints a fresh batch
+    if the original sheet is lost."""
     try:
         return await _verify_2fa(user_id=current_user["user_id"], code=code, db=db)
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+@router.post("/2fa/regenerate-backup-codes")
+async def regenerate_2fa_backup_codes(
+    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+):
+    from ..services.auth_service import regenerate_2fa_backup_codes as _regen
+    try:
+        return await _regen(user_id=current_user["user_id"], db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -175,3 +253,120 @@ async def logout(
         return await logout_user(user_id=current_user["user_id"], request=request, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+# ─── Email OTP verification ───────────────────────────────────────────────
+# Powers the onboarding gate's email step (wallet-first signups + change-
+# email flow). The user is already authenticated when they hit these
+# routes — we're verifying that they actually own the address they typed.
+
+from pydantic import BaseModel  # noqa: E402  (kept inline to localize the dep)
+
+
+class _StartEmailVerificationRequest(BaseModel):
+    email: str
+
+
+class _VerifyEmailOtpRequest(BaseModel):
+    otp: str
+
+
+@router.post("/email/start-verification")
+async def start_email_verification(
+    body: _StartEmailVerificationRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a fresh 6-digit OTP and email it to body.email."""
+    return await email_otp_service.start_verification(
+        user_id=current_user["user_id"], target_email=body.email, db=db,
+    )
+
+
+@router.post("/email/verify-otp")
+async def verify_email_otp(
+    body: _VerifyEmailOtpRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Consume the latest OTP and promote target_email → users.email."""
+    return await email_otp_service.verify_otp(
+        user_id=current_user["user_id"],
+        otp=body.otp,
+        db=db,
+        request_ip=client_ip_for_inet(request),
+    )
+
+
+# ─── Step-up authentication (async multi-roundtrip flows) ─────────────────
+# Used by email-change today and TOTP / passkey / hardware-wallet in the
+# future. Inline step-up (password / fresh SIWE in the same request body)
+# does NOT come through these routes — it's verified directly by the
+# action handler. See services/sensitive_action_service.py.
+
+
+class _StepUpStartRequest(BaseModel):
+    action: str          # email_change | wallet_disconnect | withdrawal | …
+    method: str          # otp_old_email | siwe | totp | passkey
+    metadata: dict | None = None
+
+
+class _StepUpVerifyRequest(BaseModel):
+    challenge_id: str
+    proof: dict          # method-specific payload (otp / message+signature / …)
+
+
+@router.post("/step-up/start")
+async def step_up_start(
+    body: _StepUpStartRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a step-up challenge. Returns a challenge_id the client uses
+    on /step-up/verify. For 'otp_old_email' the OTP is sent
+    immediately; for 'siwe' the response includes the wallet address
+    the client should sign with."""
+    return await sensitive_action_service.start_challenge(
+        user_id=current_user["user_id"],
+        action=body.action,
+        method=body.method,
+        metadata=body.metadata or {},
+        db=db,
+    )
+
+
+@router.post("/step-up/verify")
+async def step_up_verify(
+    body: _StepUpVerifyRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify the proof for a previously-started challenge. On success
+    sets verified_at — the row is now redeemable for one matching
+    action call within 5 minutes. The action handler then uses
+    consume_verified_challenge() to atomically redeem it."""
+    from uuid import UUID as _UUID
+    try:
+        challenge_uuid = _UUID(body.challenge_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid challenge id")
+    challenge = await sensitive_action_service.verify_challenge(
+        user_id=current_user["user_id"],
+        challenge_id=challenge_uuid,
+        proof=body.proof,
+        request=request,
+        db=db,
+    )
+    return {
+        "verified": True,
+        "challenge_id": str(challenge.id),
+        "action": challenge.action,
+        "method": challenge.method,
+        "verified_at": challenge.verified_at.isoformat() if challenge.verified_at else None,
+        # Frontend uses this as a deadline for redeeming the action.
+        "ttl_seconds": sensitive_action_service.STEP_UP_TOKEN_TTL_MINUTES * 60,
+    }

@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,11 +17,14 @@ async def list_transactions(
     per_page: int = Query(20, ge=1, le=100),
     type_filter: str = Query(None, alias="type"),
     search: str = Query(None),
+    user_id: uuid.UUID | None = Query(None),
+    include_trade_pnl: bool = Query(False),
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
     return await transaction_service.list_transactions(
-        page=page, per_page=per_page, type_filter=type_filter, search=search, db=db,
+        page=page, per_page=per_page, type_filter=type_filter, search=search,
+        user_id=user_id, include_trade_pnl=include_trade_pnl, db=db,
     )
 
 

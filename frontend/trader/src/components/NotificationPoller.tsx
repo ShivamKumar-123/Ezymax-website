@@ -10,8 +10,14 @@ export default function NotificationPoller() {
   const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
   const reset = useNotificationStore((s) => s.reset);
 
+  // Depend on user?.id, NOT the user object reference. AuthProvider's
+  // 60s heartbeat reassigns user with the same id every minute; if we
+  // depended on `user` the effect would tear down and rebuild every
+  // minute and the duplicate fetch was visible in the network panel
+  // as two back-to-back /unread-count calls on first paint.
+  const userId = user?.id ?? null;
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       reset();
       return;
     }
@@ -23,7 +29,7 @@ export default function NotificationPoller() {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
     };
-  }, [user, fetchUnreadCount, reset]);
+  }, [userId, fetchUnreadCount, reset]);
 
   return null;
 }

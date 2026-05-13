@@ -32,9 +32,7 @@ export const ROUTES = {
 
   // ── Tools ──
   NEWS: '/news',
-  ALGO_CONNECTOR: '/algo-connector',
   RISK_CALCULATOR: '/risk-calculator',
-  EDGE_BUILDER: '/edge-builder',
 
   // ── Business ──
   BUSINESS: '/business',

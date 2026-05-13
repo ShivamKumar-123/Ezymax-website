@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   TrustEdge Admin — Dark-first premium theme
-   Matches trader dashboard: neon green accent, glassmorphism,
+   FXArtha Admin — Dark-first premium theme
+   Matches trader dashboard: gold accent, glassmorphism,
    skeuomorphic buttons, smooth animations.
    ═══════════════════════════════════════════════════════════ */
 
@@ -86,16 +86,16 @@ input, select, textarea {
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(0, 230, 118, 0.5);
-  box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: rgba(214, 169, 61, 0.5);
+  box-shadow: 0 0 0 3px rgba(214, 169, 61, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-::selection { background-color: rgba(0, 230, 118, 0.2); }
+::selection { background-color: rgba(214, 169, 61, 0.2); }
 
 /* ── Utility ── */
 .transition-fast { transition: all 150ms ease; }
-.focus-ring:focus { outline: 1px solid #00e676; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #d6a93d; outline-offset: -1px; }
 
 /* ═══════════════════════════════════════════════════════════
    Glassmorphism
@@ -128,16 +128,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .skeu-btn-accent {
-  background: linear-gradient(180deg, #33eb91 0%, #00e676 40%, #00c853 100%);
-  border: 1px solid rgba(0,200,83,0.4);
-  box-shadow: 0 2px 8px rgba(0,230,118,0.3), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-  color: #000;
+  background: linear-gradient(180deg, #ecc657 0%, #d6a93d 40%, #9b7d3a 100%);
+  border: 1px solid rgba(214,169,61,0.5);
+  box-shadow: 0 2px 8px rgba(214,169,61,0.3), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  color: #1a1408;
   font-weight: 700;
   border-radius: 10px;
   transition: all 200ms ease;
 }
 .skeu-btn-accent:hover {
-  box-shadow: 0 4px 16px rgba(0,230,118,0.4), 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(214,169,61,0.4), 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
   transform: translateY(-1px);
 }
 .skeu-btn-danger {
@@ -161,8 +161,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(0,230,118,0.15); }
-  50%      { box-shadow: 0 0 20px rgba(0,230,118,0.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(214,169,61,0.15); }
+  50%      { box-shadow: 0 0 20px rgba(214,169,61,0.3); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -182,10 +182,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Sidebar nav glow for active item
    ═══════════════════════════════════════════════════════════ */
 .nav-active {
-  background: rgba(0,230,118,0.08);
-  border-left: 2px solid #00e676;
-  color: #00e676;
-  box-shadow: inset 3px 0 12px rgba(0,230,118,0.06);
+  background: rgba(214,169,61,0.08);
+  border-left: 2px solid #d6a93d;
+  color: #d6a93d;
+  box-shadow: inset 3px 0 12px rgba(214,169,61,0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -203,8 +203,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Stat glow badge
    ═══════════════════════════════════════════════════════════ */
 .stat-glow {
-  box-shadow: 0 0 0 1px rgba(0,230,118,0.1), 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 1px rgba(214,169,61,0.1), 0 2px 12px rgba(0,0,0,0.3);
 }
 .stat-glow:hover {
-  box-shadow: 0 0 0 1px rgba(0,230,118,0.2), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 1px rgba(214,169,61,0.2), 0 4px 20px rgba(0,0,0,0.4);
 }

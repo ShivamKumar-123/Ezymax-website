@@ -1,31 +1,61 @@
-import { ScrollRevealGroup, ScrollRevealItem } from '../../components/animations/ScrollReveal'
-import SectionHeader from '../../components/SectionHeader'
-import { whyFeatures } from '../HomeData'
+import { TrendingUp, Globe2, Coins, ShieldCheck } from 'lucide-react'
+import ScrollReveal from '../../components/animations/ScrollReveal'
+
+const features = [
+  {
+    icon: TrendingUp,
+    title: 'Advanced Trading',
+    desc: 'Powerful platforms, real-time data, and advanced tools for smart trading.',
+  },
+  {
+    icon: Globe2,
+    title: 'Global Markets',
+    desc: 'Trade Forex, Commodities, Indices, Stocks & Crypto from one account.',
+  },
+  {
+    icon: Coins,
+    title: 'Low Spreads',
+    desc: 'Enjoy ultra-low spreads and transparent pricing with no hidden fees.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Fast Withdrawals',
+    desc: 'Quick, secure & hassle-free withdrawals with multiple payment options.',
+  },
+]
 
 export default function WhySection() {
   return (
-    <section className="section-padding relative overflow-hidden bg-primary-secondary">
-      <div className="container-custom relative z-10">
-        <SectionHeader
-          badge="Why Choose Us"
-          title="Why Choose FXArtha"
-          highlight="FXArtha"
-          subtitle="We combine institutional-grade technology with trader-friendly conditions to give you the edge in global markets."
-        />
-
-        <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-14">
-          {whyFeatures.map((f) => (
-            <ScrollRevealItem key={f.title}>
-              <div className="glass-card p-6 group h-full">
-                <div className={`feature-icon ${f.bg} ${f.color} mb-4`}>{f.icon}</div>
-                <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-primary-accent transition-colors">
-                  {f.title}
-                </h3>
-                <p className="text-text-secondary text-sm leading-relaxed">{f.desc}</p>
+    <section className="relative" style={{ background: 'var(--fx-bg)' }}>
+      <div className="fx-container py-12 md:py-16 lg:py-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+          {features.map(({ icon: Icon, title, desc }, i) => (
+            <ScrollReveal key={title} variant="fadeUp" delay={i * 0.06}>
+              <div className="glass-card h-full p-5 md:p-6 flex items-start gap-4">
+                <div
+                  className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: 'var(--fx-gold-soft)',
+                    border: '1px solid rgba(214,169,61,0.28)',
+                  }}
+                >
+                  <Icon size={20} style={{ color: 'var(--fx-gold-light)' }} />
+                </div>
+                <div className="min-w-0">
+                  <h3
+                    className="text-base md:text-lg font-semibold mb-1.5"
+                    style={{ color: 'var(--fx-gold-light)' }}
+                  >
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                    {desc}
+                  </p>
+                </div>
               </div>
-            </ScrollRevealItem>
+            </ScrollReveal>
           ))}
-        </ScrollRevealGroup>
+        </div>
       </div>
     </section>
   )

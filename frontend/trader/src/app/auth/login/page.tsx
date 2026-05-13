@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect } from 'react';
 import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import ConnectWalletButton from '@/components/auth/ConnectWalletButton';
 import '../auth.css';
 
 /* ── animation helpers ── */
@@ -27,8 +29,7 @@ const formVariants = {
 /* ── step config ── */
 const STEPS = [
   { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Demo Account' },
-  { number: 3, label: 'Sign up your account' },
+  { number: 2, label: 'Sign up your account' },
 ];
 
 const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
@@ -126,7 +127,7 @@ export default function LoginPage() {
     try {
       await login(email, password, totpCode || undefined);
       toast.success('Welcome back!');
-      router.push('/accounts');
+      router.push('/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('2FA') && !msg.includes('Invalid')) {
@@ -145,7 +146,7 @@ export default function LoginPage() {
     try {
       await demoLogin();
       toast.success('Welcome — demo account');
-      router.push('/accounts');
+      router.push('/dashboard');
     } catch (err: unknown) {
       setErrorDialog({ title: 'Demo sign-in failed', message: authErrorMessage(err, 'demo') });
     } finally {
@@ -170,9 +171,9 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Step change: 3 → go to register ── */
+  /* ── Step change: 2 → go to register ── */
   const handleStepClick = (step: number) => {
-    if (step === 3) {
+    if (step === 2) {
       router.push('/auth/register');
       return;
     }
@@ -182,6 +183,7 @@ export default function LoginPage() {
   const cfg = LEFT_CONFIG[activeStep];
 
   return (
+    <MotionConfig reducedMotion="always">
     <div className="auth-wrapper">
       {maintenance && (
         <div
@@ -219,9 +221,10 @@ export default function LoginPage() {
           >
             <motion.div
               className="auth-left__bg"
-              animate={{ scale: [1, 1.25, 1], y: [0, -30, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ scale: [1, 1.18, 1], y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
             />
+            <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>{cfg.title}</motion.h1>
               <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>{cfg.subtitle}</motion.p>
@@ -268,7 +271,7 @@ export default function LoginPage() {
                       <AuthInput
                         label="Email"
                         type="email"
-                        placeholder="eg. john@example.com"
+                        placeholder=""
                         value={email}
                         onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })); }}
                         error={errors.email}
@@ -314,42 +317,41 @@ export default function LoginPage() {
                       </button>
                     </motion.div>
 
-                    <motion.p className="auth-footer" {...fadeUp(0.62)}>
-                      Don&apos;t have an account?{' '}
-                      <a onClick={() => handleStepClick(3)}>Sign Up</a>
-                    </motion.p>
-                  </form>
-                )}
-
-                {/* ── DEMO ── */}
-                {activeStep === 2 && (
-                  <div className="auth-form">
-                    <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
-                      <img src="/images/fxartha-logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
-                    </motion.div>
-                    <motion.div {...fadeUp(0.3)}>
-                      <h2 className="auth-form__title">Demo Account</h2>
-                      <p className="auth-form__subtitle">Try the platform instantly with a demo account.</p>
+                    <motion.div className="auth-divider" {...fadeUp(0.58)}>
+                      <span className="auth-divider__line" />
+                      <span className="auth-divider__text">or</span>
+                      <span className="auth-divider__line" />
                     </motion.div>
 
-                    <motion.div {...fadeUp(0.37)}>
-                      <div className="auth-demo-badge">
-                        <span className="auth-demo-badge__dot" />
-                        <span>One-click access — no registration needed</span>
-                      </div>
+                    <motion.div {...fadeUp(0.59)}>
+                      <Suspense fallback={null}>
+                        <GoogleAuthButton disabled={loading || isLoading || demoLoading || maintenance} />
+                      </Suspense>
                     </motion.div>
 
-                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.45, duration: 0.4 }}>
-                      <button type="button" className="auth-btn" onClick={handleDemo} disabled={demoLoading || isLoading || maintenance}>
-                        {(demoLoading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Start Demo Trading')}
+                    <motion.div {...fadeUp(0.595)}>
+                      <ConnectWalletButton
+                        variant="login"
+                        disabled={loading || isLoading || demoLoading || maintenance}
+                      />
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.6)}>
+                      <button
+                        type="button"
+                        onClick={handleDemo}
+                        disabled={demoLoading || isLoading || maintenance}
+                        className="auth-btn auth-btn--outline"
+                      >
+                        {demoLoading ? <Loader2 size={18} className="auth-spinner" /> : 'Try with Demo Account'}
                       </button>
                     </motion.div>
 
-                    <motion.p className="auth-footer" {...fadeUp(0.55)}>
-                      Want full access?{' '}
-                      <a onClick={() => handleStepClick(3)}>Sign Up</a>
+                    <motion.p className="auth-footer" {...fadeUp(0.62)}>
+                      Don&apos;t have an account?{' '}
+                      <a onClick={() => handleStepClick(2)}>Sign Up</a>
                     </motion.p>
-                  </div>
+                  </form>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -378,7 +380,7 @@ export default function LoginPage() {
               <AuthInput
                 label="Email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder=""
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
               />
@@ -393,5 +395,6 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+    </MotionConfig>
   );
 }

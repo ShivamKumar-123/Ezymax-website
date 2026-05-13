@@ -13,7 +13,6 @@ type Gate = 'boot' | 'ready' | 'redirect';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const admin = useAuthStore((s) => s.admin);
-  const token = useAuthStore((s) => s.token);
   const authRehydrated = useAuthRehydrated();
   const [mounted, setMounted] = useState(false);
   const [gate, setGate] = useState<Gate>('boot');
@@ -37,14 +36,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     const run = async () => {
-      const { checkAuth, refreshAdminProfile } = useAuthStore.getState();
+      const { refreshAdminProfile } = useAuthStore.getState();
 
-      if (!checkAuth()) {
-        finish('redirect');
-        router.replace('/login');
-        return;
-      }
-
+      // Cookie-based session — we don't know if it's valid until we
+      // actually call /auth/me. If admin is already cached from a
+      // previous render, render immediately; otherwise probe.
       if (useAuthStore.getState().admin) {
         finish('ready');
         return;
@@ -70,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => {
       runId.current += 1;
     };
-  }, [mounted, authRehydrated, admin, token, router]);
+  }, [mounted, authRehydrated, admin, router]);
 
   if (!mounted || !authRehydrated || gate !== 'ready') {
     return (

@@ -13,6 +13,8 @@ import { getDigits } from '@/lib/utils';
 import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
+import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
+import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
@@ -52,6 +54,7 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [symbolPickerOpen, setSymbolPickerOpen] = useState(false);
+  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; fee: number } | null>(null);
   const [wsStatus, setWsStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -183,7 +186,9 @@ export default function OrderPanel() {
       rollback = () => setPositions(prev);
     }
 
-    api.post('/orders/', {
+    const insuranceChoice = insuranceSelection;
+
+    api.post<{ id: string; position_id: string | null }>('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
       order_type: orderTab === 'market' ? 'market' : 'limit',
@@ -191,7 +196,19 @@ export default function OrderPanel() {
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
-    }).then(() => {
+    }).then(async (resp) => {
+      // Insurance — only for market orders that immediately produced a position_id.
+      if (insuranceChoice && resp?.position_id) {
+        try {
+          await insuranceApi.activate(resp.position_id, insuranceChoice.tier);
+          toast.success(`Insured ($${insuranceChoice.fee.toFixed(2)} fee)`);
+        } catch (e: any) {
+          const detail = e?.response?.data?.detail || e?.message || 'insurance_failed';
+          toast.error(`Insurance not activated: ${detail}`);
+        }
+      }
+      // Reset the picker so the next order starts fresh.
+      setInsuranceSelection(null);
       // Reconcile with server-authoritative state (replaces the optimistic row).
       Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
     }).catch((e: any) => {
@@ -299,12 +316,12 @@ export default function OrderPanel() {
           <div className="flex items-center gap-1">
             <span
               className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#2196f3' : '#f57c00' }}
+              style={{ color: marketStatus.isOpen ? '#d6a93d' : '#f57c00' }}
             >
               {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
             </span>
             {isConnected ? (
-              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#2196f3]" />
+              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#d6a93d]" />
             ) : (
               <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
             )}
@@ -341,7 +358,7 @@ export default function OrderPanel() {
                   color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   borderBottom:
                     orderTab === t
-                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#2196f3'}`
+                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#d6a93d'}`
                       : '2px solid transparent',
                 }}
               >
@@ -371,13 +388,13 @@ export default function OrderPanel() {
                 onClick={() => setSide('buy')}
                 className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
                 style={{
-                  background: side === 'buy' ? 'rgba(33,150,243,0.15)' : 'var(--bg-secondary)',
-                  border: side === 'buy' ? '1px solid #2196f3' : '1px solid var(--border-primary)',
-                  color: side === 'buy' ? '#2196f3' : 'var(--text-secondary)',
+                  background: side === 'buy' ? 'rgba(41,98,255,0.15)' : 'var(--bg-secondary)',
+                  border: side === 'buy' ? '1px solid #2962FF' : '1px solid var(--border-primary)',
+                  color: side === 'buy' ? '#2962FF' : 'var(--text-secondary)',
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Buy</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2196f3]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
+                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2962FF]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
                 <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
              </button>
           </div>
@@ -407,7 +424,7 @@ export default function OrderPanel() {
               <div
                 onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
                 className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
-                style={{ background: tpEnabled ? '#2196f3' : 'var(--bg-secondary)' }}
+                style={{ background: tpEnabled ? '#d6a93d' : 'var(--bg-secondary)' }}
               >
                 <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: tpEnabled ? '18px' : '3px' }} />
               </div>
@@ -481,14 +498,30 @@ export default function OrderPanel() {
           {/* TP input */}
           {tpEnabled && (
             <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#2196f3] mb-1.5 block">Take Profit</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#d6a93d] mb-1.5 block">Take Profit</span>
               <input
                 type="number"
                 value={takeProfit}
                 onChange={(e) => setTakeProfit(e.target.value)}
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#2196f3]/30 text-[#2196f3]"
+                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#d6a93d]/30 text-[#d6a93d]"
+              />
+            </div>
+          )}
+
+          {/* Trade Insurance — only on market orders */}
+          {orderTab === 'market' && activeAccount && (
+            <div className="pt-2">
+              <InsuranceTierPicker
+                accountId={activeAccount.id}
+                symbol={selectedSymbol}
+                side={side}
+                lots={lotsNum}
+                leverage={(activeAccount as any).leverage || 100}
+                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
+                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
+                onSelect={setInsuranceSelection}
               />
             </div>
           )}
@@ -500,8 +533,8 @@ export default function OrderPanel() {
                 {[
                   { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                   { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
-                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#2196f3' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#2196f3' : '#f57c00' },
+                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#d6a93d' },
+                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#d6a93d' : '#f57c00' },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
                     <span className="text-[11px] text-text-tertiary">{row.label}</span>
@@ -521,9 +554,9 @@ export default function OrderPanel() {
                 disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
                 style={{
-                  background: side === 'buy' ? '#2196f3' : '#ef5350',
+                  background: side === 'buy' ? '#2962FF' : '#ef5350',
                   color: '#fff',
-                  boxShadow: side === 'buy' ? '0 4px 20px rgba(33,150,243,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
+                  boxShadow: side === 'buy' ? '0 4px 20px rgba(41,98,255,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
                 }}
               >
                 {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
@@ -548,11 +581,11 @@ export default function OrderPanel() {
             </div>
             <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
               <span className="truncate">Mrgn ${marginRequired.toFixed(2)}</span>
-              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#2196f3]' : 'text-[#ef5350]')}>
+              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#d6a93d]' : 'text-[#ef5350]')}>
                 Free ${freeMargin.toFixed(2)}
               </span>
               <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#2196f3]' : 'text-[#f57c00]')}
+                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#d6a93d]' : 'text-[#f57c00]')}
                 title={isConnected ? 'Feed connected' : 'Feed disconnected'}
               >
                 {isConnected ? '●' : '○'}
@@ -567,9 +600,9 @@ export default function OrderPanel() {
               disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
               className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
-                background: side === 'buy' ? '#2196f3' : '#ef5350',
+                background: side === 'buy' ? '#2962FF' : '#ef5350',
                 color: '#fff',
-                boxShadow: side === 'buy' ? '0 2px 12px rgba(33,150,243,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
+                boxShadow: side === 'buy' ? '0 2px 12px rgba(41,98,255,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
               }}
             >
               {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
@@ -672,7 +705,7 @@ function LeveragePicker({
                 className={clsx(
                   'w-full text-left px-2 py-1 text-[11px] font-mono transition-colors',
                   v === account.leverage
-                    ? 'bg-[#2196f3]/15 text-[#2196f3] font-bold'
+                    ? 'bg-[#d6a93d]/15 text-[#d6a93d] font-bold'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >

@@ -1,51 +1,84 @@
-import ColorBends from '../../components/ColorBends'
-import ShimmerText from '../../components/ShimmerText'
+'use client'
+
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { useAuthStore } from '@/stores/authStore'
+import TickerTape from '@/landing/components/TickerTape'
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 export default function HeroSection() {
+  const router = useRouter()
+  const demoLogin = useAuthStore((s) => s.demoLogin)
+  const [demoLoading, setDemoLoading] = useState(false)
+
+  const handleDemo = async () => {
+    setDemoLoading(true)
+    try {
+      await demoLogin()
+      toast.success('Welcome — demo account')
+      router.push('/accounts')
+    } catch (err) {
+      toast.error(err?.message || 'Demo sign-in failed')
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative', background: '#0A0E1A', overflow: 'hidden' }}>
-      {/* Text overlay — left aligned, vertically centered */}
-      <div className="absolute inset-0 z-10 flex items-center pointer-events-none px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32">
-        <div className="w-full max-w-7xl text-left pointer-events-auto">
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            <ShimmerText
-              className="text-[28px] sm:text-[36px] md:text-[45px] lg:text-[56px] xl:text-[67px] font-extrabold text-white leading-[1.08] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.7)]"
-              duration={1.5}
-              delay={0.5}
+    <section
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: 'var(--fx-bg)',
+        backgroundImage: "url('/images/hero_bg1.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+
+      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-10 md:pb-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center lg:min-h-[560px]">
+          {/* ── Left: copy + CTAs ─────────────────────────────────── */}
+          <div className="lg:col-span-7 xl:col-span-7">
+            <h1 className="fx-headline text-[44px] sm:text-[56px] md:text-[64px] lg:text-[72px] xl:text-[82px] fx-fade-up">
+              Trade Globally
+              <br />
+              <span className="fx-gold-text">Prosper Limitlessly</span>
+            </h1>
+
+            <p
+              className="mt-5 md:mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d1"
+              style={{ color: 'var(--fx-text-2)' }}
             >
-              Execution trade with lightning speed
-            </ShimmerText>
-            <ShimmerText
-              className="text-[28px] sm:text-[36px] md:text-[45px] lg:text-[56px] xl:text-[67px] font-extrabold text-white leading-[1.08] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.7)]"
-              duration={1.5}
-              delay={1.5}
-            >
-              Trade with confidence
-            </ShimmerText>
+              Experience next-level trading with ARTHA FX where technology
+              meets opportunity.
+            </p>
+
+            <div className="mt-10 md:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
+              <Link to="/auth/register" className="fx-btn-primary justify-center">
+                Open Live Account
+                <ArrowRight size={18} />
+              </Link>
+              <button
+                type="button"
+                onClick={handleDemo}
+                disabled={demoLoading}
+                className="fx-btn-ghost justify-center disabled:opacity-60"
+              >
+                {demoLoading ? <Loader2 size={16} className="animate-spin" /> : 'Try Demo Account'}
+              </button>
+            </div>
+
           </div>
-          <h6 className="mt-5 sm:mt-6 md:mt-8 text-sm sm:text-base md:text-lg text-white/60 max-w-3xl leading-relaxed font-normal whitespace-normal">
-            Trade smarter with ultra-fast execution, tight spreads, and powerful brokerage tools that ensure precision, stability, and confidence in every transaction.
-          </h6>
         </div>
       </div>
 
-      {/* Background ColorBends Animation */}
-      <ColorBends
-        colors={['#1A56FF', '#0D3FCC', '#0A2A99']}
-        rotation={90}
-        speed={0.2}
-        scale={1}
-        frequency={1}
-        warpStrength={1}
-        mouseInfluence={1}
-        noise={0.15}
-        parallax={0.5}
-        iterations={1}
-        intensity={1.5}
-        bandWidth={6}
-        transparent
-        autoRotate={0}
-      />
-    </div>
+      {/* Live ticker — sits flush at the bottom of the hero */}
+      <div className="relative z-10">
+        <TickerTape />
+      </div>
+    </section>
   )
 }

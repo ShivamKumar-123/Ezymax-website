@@ -1,12 +1,24 @@
 """Admin User Service — user listing, detail, fund/credit ops, ban, kill switch, login-as."""
+import logging
+import os
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 import jwt
+import redis.asyncio as aioredis
 from fastapi import HTTPException
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Presence keys are written by the gateway (which uses Redis db 0). Admin-api
+# is configured to use db 1, so we spin up a dedicated db-0 pool here just for
+# reading those keys. Mirrors the pattern in services/trade_service for prices.
+_redis_url_env = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_redis_db0 = aioredis.from_url(
+    _redis_url_env.rsplit("/", 1)[0] + "/0", decode_responses=True,
+)
+_presence_logger = logging.getLogger("user_service.presence")
 
 from packages.common.src.config import get_settings
 from sqlalchemy import delete as sql_delete
@@ -118,6 +130,21 @@ async def list_users(
         for row in acc_q.all():
             balance_map[row[0]] = {"balance": float(row[1]), "equity": float(row[2])}
 
+    # Presence: one MGET for the visible page. Any non-null value at
+    # presence:user:<id> means the user has hit an authenticated endpoint
+    # in the last 120 seconds. Failures here just mean the column shows
+    # "offline" for everyone — never breaks the list itself.
+    online_ids: set[uuid.UUID] = set()
+    if user_ids:
+        try:
+            keys = [f"presence:user:{uid}" for uid in user_ids]
+            vals = await _redis_db0.mget(keys)
+            for uid, v in zip(user_ids, vals):
+                if v:
+                    online_ids.add(uid)
+        except Exception as e:
+            _presence_logger.debug("presence MGET failed: %s", e)
+
     user_list = []
     for u in users:
         name = " ".join(filter(None, [u.first_name, u.last_name])) or u.email.split("@")[0]
@@ -137,6 +164,7 @@ async def list_users(
             "group": u.role or "user",
             "kyc_status": u.kyc_status or "pending",
             "status": u.status or "active",
+            "is_online": u.id in online_ids,
         })
 
     pages = max(1, (total + per_page - 1) // per_page)
@@ -212,13 +240,17 @@ async def add_fund(
     """Add funds to user's MAIN WALLET. User must transfer to trading account manually."""
     from packages.common.src.notify import create_notification
 
-    user_result = await db.execute(select(User).where(User.id == user_id))
+    amt = Decimal(str(body.amount))
+
+    user_result = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
     old_balance = user_row.main_wallet_balance or Decimal("0")
-    user_row.main_wallet_balance = old_balance + Decimal(str(body.amount))
+    user_row.main_wallet_balance = old_balance + amt
 
     txn = Transaction(
         user_id=user_id,
@@ -263,13 +295,14 @@ async def deduct_fund(
     """Deduct funds. `body.source` controls where the deduction comes from:
        - "main_wallet":    deduct only from the user's main wallet (error if short).
        - "trading_account": deduct only from body.account_id (error if short).
-       - None (legacy):    try main wallet first, fall back to body.account_id.
-    """
+       - None (legacy):    try main wallet first, fall back to body.account_id."""
     amt = Decimal(str(body.amount))
     source = (getattr(body, "source", None) or "").strip().lower() or None
 
-    # Load user
-    user_result = await db.execute(select(User).where(User.id == user_id))
+    # Load user (locked to prevent concurrent debits racing each other)
+    user_result = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")

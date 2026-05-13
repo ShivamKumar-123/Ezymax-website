@@ -40,6 +40,7 @@ yarn-debug.log*
 
 # Upload storage (use object storage in production)
 /uploads/
+**/uploads/
 
 # Database backups
 /backups/
@@ -58,3 +59,30 @@ build/
 # Misc
 *.local
 *.tsbuildinfo
+
+# Claude Code agent state (never commit)
+.claude/
+
+# Local working notes (extracted client doc text, scratch files)
+.clientdocs/
+
+# Binary specs / drafts / office docs — kept locally, not tracked
+*.docx
+*.doc
+*.pdf
+*.xlsx
+*.xls
+*.ppt
+*.pptx
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.bak
+~$*
+
+# Client reference mockups dropped at the repo root (kept locally only)
+/ChatGPT Image*.png
+/ChatGPT Image*.jpg

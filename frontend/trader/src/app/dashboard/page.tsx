@@ -1,54 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { clsx } from 'clsx';
+/**
+ * Broker home — replaces the old open-positions / quick-actions dashboard.
+ * Layout follows the Elev8-style brief: account balance card with action
+ * buttons, popular deposit methods, top daily movers, status program /
+ * rewards, invite-friends banner, deposit bonus, and the existing admin-
+ * configurable banner carousel.
+ */
+
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
-import { Button } from '@/components/ui/Button';
+import { useRouter } from 'next/navigation';
+import { clsx } from 'clsx';
+import {
+  ChevronDown, ArrowDownToLine, ArrowUpFromLine,
+  TrendingUp, TrendingDown, ArrowRight, Gift,
+  ShieldCheck, BadgeCheck, ExternalLink, Loader2,
+  Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
+} from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
-import api, { ApiRequestCancelledError } from '@/lib/api/client';
+import api from '@/lib/api/client';
+import { useAuthStore } from '@/stores/authStore';
 
-interface OpenPositionRow {
+interface AccountRow {
   id: string;
-  symbol: string;
-  side: string;
-  lots: number;
-  entry_price: number;
-  current_price: number;
-  pnl: number;
-}
-
-interface PortfolioSummary {
-  total_balance: number;
-  total_credit: number;
-  total_equity: number;
-  total_unrealized_pnl: number;
-  pnl_breakdown: {
-    today: number;
-    this_week: number;
-    this_month: number;
-    all_time: number;
-  };
-  holdings: Array<{
-    symbol: string;
-    side: string;
-    lots: number;
-    entry_price: number;
-    current_price: number;
-    pnl: number;
-  }>;
-  /** Per-position rows (preferred for dashboard; matches all open trades). */
-  open_positions?: OpenPositionRow[];
-  open_positions_count: number;
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  is_read: boolean;
-  created_at: string;
+  account_number: string;
+  balance: number;
+  equity: number;
+  free_margin: number;
+  margin_used?: number;
+  leverage: number;
+  is_demo: boolean;
+  swap_free?: boolean;
+  account_group_name?: string | null;
 }
 
 interface Banner {
@@ -59,379 +43,695 @@ interface Banner {
   position: string;
 }
 
-/** Auto-rotate interval when multiple dashboard banners are active (2–3s range). */
-const BANNER_CAROUSEL_MS = 3000;
+interface PriceTick { symbol?: string; bid?: number; ask?: number; }
+interface BarRow { time: number; open: number; close: number; }
 
-function DashboardBannerCarousel({ banners }: { banners: Banner[] }) {
-  const [index, setIndex] = useState(0);
-  const idKey = banners.map((b) => b.id).join('|');
+const TOP_MOVER_SYMBOLS = ['XAUUSD', 'NAS100', 'BTCUSD', 'EURUSD'];
+
+const fmtUsd = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
+    .format(Number.isFinite(n) ? n : 0);
+
+const fmtNum = (n: number, dp = 2) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
+    .format(Number.isFinite(n) ? n : 0);
+
+const tradeUrl = (accountId: string) => {
+  const host = process.env.NEXT_PUBLIC_TRADE_HOST;
+  const path = `/trading/terminal?account=${encodeURIComponent(accountId)}&view=chart`;
+  return host ? `https://${host}${path}` : path;
+};
+
+export default function DashboardPage() {
+  return (
+    <DashboardShell>
+      <BrokerHome />
+    </DashboardShell>
+  );
+}
+
+function BrokerHome() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [movers, setMovers] = useState<{ symbol: string; pct: number; price: number }[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  // Rewards state for Level + DGC Coins (Artha Coin) display.
+  const [rewardsState, setRewardsState] = useState<{
+    level?: number; level_label?: string;
+    xp?: number; xp_next_level?: number;
+    artha_coins?: number;
+  } | null>(null);
 
   useEffect(() => {
-    setIndex(0);
-  }, [idKey]);
+    api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
+  }, []);
 
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
+  // Cached daily-open bars — these don't change intraday, so we fetch
+  // once on mount and reuse across every mover refresh. The poll only
+  // re-pulls the cheap /instruments/prices/all endpoint.
+  const dayOpenBarsRef = useRef<BarRow[][]>([]);
+
+  const refreshAccounts = useCallback(async (opts: { silent?: boolean } = {}) => {
+    try {
+      const accs = await api.get<{ items: AccountRow[] } | AccountRow[]>('/accounts');
+      const list: AccountRow[] = Array.isArray(accs) ? accs : (accs as { items: AccountRow[] }).items || [];
+      setAccounts(list);
+      if (list.length > 0) setActiveId((cur) => cur ?? list[0].id);
+    } catch {
+      // Silent polls swallow errors; initial-load surfacing is handled
+      // by the bootstrap effect below.
+      if (!opts.silent) throw new Error('accounts fetch failed');
     }
-    const t = setInterval(() => {
-      setIndex((i) => (i + 1) % banners.length);
-    }, BANNER_CAROUSEL_MS);
-    return () => clearInterval(t);
-  }, [banners.length, idKey]);
+  }, []);
+
+  const recomputeMovers = useCallback((ticksRaw: PriceTick[]) => {
+    const tickMap = new Map<string, number>();
+    for (const t of ticksRaw || []) {
+      if (t?.symbol && t.bid && t.ask) tickMap.set(t.symbol.toUpperCase(), (t.bid + t.ask) / 2);
+    }
+    const out = TOP_MOVER_SYMBOLS.map((sym, i) => {
+      const bars = dayOpenBarsRef.current[i] || [];
+      const dayOpen = bars.length > 0 ? Number(bars[bars.length - 1].open) : NaN;
+      const price = tickMap.get(sym) ?? (bars.length > 0 ? Number(bars[bars.length - 1].close) : NaN);
+      const pct = (Number.isFinite(dayOpen) && dayOpen > 0 && Number.isFinite(price))
+        ? ((price - dayOpen) / dayOpen) * 100
+        : 0;
+      return { symbol: sym, pct, price };
+    });
+    setMovers(out);
+  }, []);
+
+  const refreshMoverTicks = useCallback(async () => {
+    try {
+      const ticksRaw = await api.get<PriceTick[]>('/instruments/prices/all');
+      recomputeMovers(ticksRaw || []);
+    } catch {
+      // Silent — keep the last known prices on a transient failure.
+    }
+  }, [recomputeMovers]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [accs, b] = await Promise.all([
+          api.get<{ items: AccountRow[] } | AccountRow[]>('/accounts'),
+          api.get<{ banners: Banner[] }>('/banners', { page: 'dashboard' }).catch(() => ({ banners: [] as Banner[] })),
+        ]);
+        if (cancelled) return;
+        const list: AccountRow[] = Array.isArray(accs) ? accs : (accs as { items: AccountRow[] }).items || [];
+        setAccounts(list);
+        if (list.length > 0) setActiveId((cur) => cur ?? list[0].id);
+        setBanners(b.banners || []);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [ticksRaw, ...barsRaw] = await Promise.all([
+          api.get<PriceTick[]>('/instruments/prices/all').catch(() => [] as PriceTick[]),
+          ...TOP_MOVER_SYMBOLS.map((s) =>
+            api.get<BarRow[]>(`/instruments/${s}/bars`, { resolution: '1D' }).catch(() => [] as BarRow[]),
+          ),
+        ]);
+        if (cancelled) return;
+        dayOpenBarsRef.current = barsRaw;
+        recomputeMovers(ticksRaw || []);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [recomputeMovers]);
+
+  // Background polling — keeps Total Balance, Open P/L, the account
+  // card stats, and Top Daily Movers fresh while the dashboard is
+  // visible. Both endpoints are cheap; /accounts recomputes equity
+  // server-side from current Redis tick prices on every call.
+  useEffect(() => {
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void refreshAccounts({ silent: true });
+      void refreshMoverTicks();
+    };
+    const interval = setInterval(tick, 2000);
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) tick();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    };
+  }, [refreshAccounts, refreshMoverTicks]);
+
+  const activeAccount = useMemo(
+    () => accounts.find((a) => a.id === activeId) || accounts[0] || null,
+    [accounts, activeId],
+  );
+
+  // Aggregate stats for the DAG mockup top section.
+  const realAccounts = accounts.filter((a) => !a.is_demo);
+  const totalBalance = realAccounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  const totalEquity = realAccounts.reduce((s, a) => s + (Number(a.equity) || 0), 0);
+  const todaysPnl = totalEquity - totalBalance;
+  const todaysPnlPct = totalBalance > 0 ? (todaysPnl / totalBalance) * 100 : 0;
+  const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
+  const level = rewardsState?.level ?? 1;
+  const levelLabel = rewardsState?.level_label || 'New Trader';
+  const dgcCoins = rewardsState?.artha_coins ?? 0;
 
   return (
-    <div className="relative w-full min-w-0 rounded-xl overflow-hidden border border-border-glass shadow-sm hover:border-buy/30 transition-colors">
-      <div className="relative w-full h-52 sm:h-60 md:h-72 bg-bg-secondary">
-        {banners.map((b, i) => {
-          const active = i === index;
-          const img = (
-            <img
-              src={b.image_url}
-              alt={b.title || 'Banner'}
-              className="absolute inset-0 w-full h-full object-cover object-center"
-            />
-          );
-          const inner = b.link_url ? (
-            <a
-              href={b.link_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="absolute inset-0 block outline-none focus-visible:ring-2 focus-visible:ring-buy focus-visible:ring-offset-2 ring-offset-bg-primary"
-              tabIndex={active ? 0 : -1}
-              aria-hidden={!active}
-            >
-              {img}
-            </a>
-          ) : (
-            img
-          );
-          return (
+    <div className="space-y-5 pb-8 max-w-[1200px] mx-auto w-full">
+      {/* ── Greeting header (DAG mockup) ── */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
+          Welcome back, {firstName}! <span className="text-2xl">👋</span>
+        </h1>
+        <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level Up.</p>
+      </div>
+
+      {/* ── 4 stat cards (DAG aesthetic). Surfaces + foreground colors
+              come from theme-aware `--card-*` CSS vars (defined in
+              globals.css) so the cards work in both dark and light
+              mode without per-component `dark:` overrides. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Balance — purple */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}
+        >
+          <div className="flex items-start gap-3">
             <div
-              key={b.id}
-              className={clsx(
-                'absolute inset-0 transition-opacity duration-700 ease-in-out',
-                active ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none',
-              )}
-              aria-hidden={!active}
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}
             >
-              {inner}
+              <WalletIcon size={20} style={{ color: 'var(--card-purple-icon)' }} />
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>Total Balance</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-purple-text-strong)' }}>{fmtUsd(totalBalance)}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-purple-text-faint)' }}>Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's P/L — green when up, red when down */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{
+            background: todaysPnl >= 0 ? 'var(--card-green-bg)' : 'var(--card-red-bg)',
+            borderColor: todaysPnl >= 0 ? 'var(--card-green-border)' : 'var(--card-red-border)',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{
+                background: todaysPnl >= 0 ? 'var(--card-green-icon-bg)' : 'var(--card-red-icon-bg)',
+                borderColor: todaysPnl >= 0 ? 'var(--card-green-icon-border)' : 'var(--card-red-icon-border)',
+              }}
+            >
+              {todaysPnl >= 0
+                ? <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
+                : <TrendingDown size={20} style={{ color: 'var(--card-red-icon)' }} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-muted)' : 'var(--card-red-text-muted)' }}>Open P/L</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: todaysPnl >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
+                {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-faint)' : 'var(--card-red-text-faint)' }}>
+                {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* My Level — blue */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 relative"
+              style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
+            >
+              <Shield size={20} style={{ color: 'var(--card-blue-icon)' }} />
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-bold"
+                style={{ background: 'var(--card-blue-icon)', borderColor: 'var(--card-blue-icon-border)', color: '#ffffff' }}
+              >
+                {level}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>My Level</p>
+              <p className="text-lg font-bold mt-1 truncate" style={{ color: 'var(--card-blue-text-strong)' }}>Level {level}</p>
+              <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--card-blue-text-faint)' }}>{levelLabel}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* DGC Coins — amber */}
+        <div
+          className="rounded-2xl p-4 border"
+          style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
+              style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}
+            >
+              <Coins size={20} style={{ color: 'var(--card-amber-icon)' }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>DGC Coins</p>
+              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-amber-text-strong)' }}>
+                {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-amber-text-faint)' }}>Reward balance</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3 Large CTA buttons (DAG mockup) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* Trade Now — blue gradient */}
+        <button
+          type="button"
+          onClick={() => {
+            if (accounts.length === 0) {
+              router.push('/trading/open-account');
+              return;
+            }
+            const id = activeId || accounts[0].id;
+            router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
+          }}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <BarChart3 size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Trade Now</p>
+            <p className="text-xs text-blue-100/80 mt-0.5">Start Trading</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+
+        {/* Copy Trading — green gradient */}
+        <button
+          type="button"
+          onClick={() => router.push('/social')}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 border border-emerald-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-emerald-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <Users size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Copy Trading</p>
+            <p className="text-xs text-emerald-100/80 mt-0.5">Copy Top Traders</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+
+        {/* Add Funds — amber gradient */}
+        <button
+          type="button"
+          onClick={() => router.push('/wallet')}
+          className="group rounded-2xl p-5 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-300/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-amber-900/30"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <WalletIcon size={22} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-white truncate">Add Funds</p>
+            <p className="text-xs text-amber-100/80 mt-0.5">Deposit Now</p>
+          </div>
+          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
+      </div>
+
+      <AccountBalanceCard
+        accounts={accounts}
+        active={activeAccount}
+        onChangeAccount={setActiveId}
+        loading={loading}
+      />
+      <TopMoversCard movers={movers} />
+      <StatusProgramCard />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <InviteFriendsCard />
+        <BonusCard />
+      </div>
+      {banners.length > 0 && <BannerStrip banners={banners} />}
+    </div>
+  );
+}
+
+function AccountBalanceCard({
+  accounts, active, onChangeAccount, loading,
+}: {
+  accounts: AccountRow[];
+  active: AccountRow | null;
+  onChangeAccount: (id: string) => void;
+  loading: boolean;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const a = active;
+
+  return (
+    <div
+      className="rounded-2xl p-5 md:p-6"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+    >
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors hover:bg-bg-hover"
+            style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
+          >
+            <span
+              className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+              style={a?.is_demo
+                ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }
+                : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)', border: '1px solid rgba(214,169,61,0.3)' }}
+            >
+              {a?.is_demo ? 'Demo' : 'Real'}
+            </span>
+            <span className="text-sm font-semibold tabular-nums text-text-primary">
+              {a?.account_number || (loading ? '…' : 'No accounts')}
+            </span>
+            <ChevronDown size={14} className="text-text-tertiary" />
+          </button>
+          {pickerOpen && accounts.length > 0 && (
+            <div
+              className="absolute top-full left-0 mt-2 z-30 rounded-xl p-1.5 min-w-[260px]"
+              style={{
+                background: 'rgba(16,17,20,0.97)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
+              }}
+            >
+              {accounts.map((acc) => (
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => { onChangeAccount(acc.id); setPickerOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <span
+                    className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+                    style={acc.is_demo
+                      ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
+                      : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}
+                  >
+                    {acc.is_demo ? 'Demo' : 'Real'}
+                  </span>
+                  <span className="font-semibold tabular-nums">#{acc.account_number}</span>
+                  <span className="ml-auto text-xs text-text-tertiary tabular-nums">{fmtUsd(acc.balance)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/wallet"
+            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+            style={{ background: '#d6a93d', color: '#1a1408' }}
+          >
+            <ArrowDownToLine size={14} /> Deposit
+          </Link>
+          <a
+            href={a ? tradeUrl(a.id) : '#'}
+            target={a ? '_blank' : undefined}
+            rel="noopener noreferrer"
+            aria-disabled={!a}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+              !a && 'pointer-events-none opacity-50',
+            )}
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            Trade <ExternalLink size={13} />
+          </a>
+          <Link
+            href="/wallet"
+            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            <ArrowUpFromLine size={14} /> Withdraw
+          </Link>
+          <Link
+            href="/accounts"
+            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+          >
+            Details
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+        <Stat label="Balance" value={fmtUsd(a?.balance ?? 0)} highlight />
+        <Stat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} />
+        <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
+        <Stat label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
+        <Stat label="Server" value="—" />
+        <Stat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">{label}</p>
+      <p
+        className={clsx('mt-1 font-bold tabular-nums', highlight ? 'text-xl md:text-2xl' : 'text-base md:text-lg')}
+        style={{ color: highlight ? '#d6a93d' : 'var(--text-primary)' }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; price: number }[] }) {
+  return (
+    <Card title="Top daily movers">
+      <ul className="divide-y divide-border-primary">
+        {movers.length === 0 && (
+          <li className="py-8 text-center text-sm text-text-tertiary flex items-center justify-center gap-2">
+            <Loader2 size={14} className="animate-spin" /> Loading…
+          </li>
+        )}
+        {movers.map((m) => {
+          const up = m.pct >= 0;
+          const Icon = up ? TrendingUp : TrendingDown;
+          return (
+            <li key={m.symbol} className="py-3 flex items-center gap-3">
+              <span className="text-sm font-semibold text-text-primary flex-1">{m.symbol}</span>
+              <span className="text-sm font-mono tabular-nums text-text-secondary">
+                {Number.isFinite(m.price) && m.price > 0 ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
+              </span>
+              <span
+                className="inline-flex items-center gap-1 text-xs font-bold tabular-nums"
+                style={{ color: up ? '#22c55e' : '#ef4444' }}
+              >
+                <Icon size={12} />
+                {Number.isFinite(m.pct) ? `${up ? '+' : ''}${m.pct.toFixed(2)}%` : '—'}
+              </span>
+            </li>
           );
         })}
+      </ul>
+    </Card>
+  );
+}
+
+function StatusProgramCard() {
+  return (
+    <Card>
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base font-bold text-text-primary mb-2 flex items-center gap-2">
+            <BadgeCheck size={18} className="text-[#d6a93d]" /> Status program
+          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/rewards"
+              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors"
+              style={{ background: 'rgba(214,169,61,0.14)', color: '#d6a93d', border: '1px solid rgba(214,169,61,0.35)' }}
+            >
+              Challenges
+            </Link>
+            <Link
+              href="/rewards"
+              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:bg-bg-hover"
+              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
+            >
+              My rewards
+            </Link>
+          </div>
+        </div>
+        <div
+          className="md:w-[420px] rounded-xl p-4 flex items-center gap-4"
+          style={{
+            background: 'linear-gradient(135deg, rgba(214,169,61,0.12) 0%, rgba(155,125,58,0.06) 100%)',
+            border: '1px solid rgba(214,169,61,0.32)',
+          }}
+        >
+          <Gift size={28} className="text-[#d6a93d] shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-text-primary leading-tight">Welcome cashback</p>
+            <p className="text-xs text-text-secondary leading-tight mt-0.5">
+              Activate the welcome program to earn cashback on your first 10 closed trades.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/rewards"
+              className="px-3 py-1.5 text-xs font-bold rounded-md"
+              style={{ background: '#d6a93d', color: '#1a1408' }}
+            >
+              Activate
+            </Link>
+            <button
+              type="button"
+              className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors hover:bg-bg-hover"
+              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function InviteFriendsCard() {
+  return (
+    <Card>
+      <div className="flex items-center gap-4">
+        <div
+          className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}
+        >
+          <ShieldCheck size={26} className="text-green-500" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-bold text-text-primary">Invite friends, earn together</h3>
+          <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+            Get a share of every trade your invitees make. Lifetime payouts straight to your main wallet.
+          </p>
+          <Link
+            href="/business"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#d6a93d] hover:underline"
+          >
+            Learn details <ArrowRight size={12} />
+          </Link>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BonusCard() {
+  return (
+    <Card>
+      <div className="flex items-center gap-4">
+        <div
+          className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(214,169,61,0.14)', border: '1px solid rgba(214,169,61,0.32)' }}
+        >
+          <Gift size={26} className="text-[#d6a93d]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-bold text-text-primary">50% deposit bonus</h3>
+          <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+            Top up your account and we&apos;ll add 50% extra trading credit. No expiry, fully tradeable.
+          </p>
+          <Link
+            href="/wallet"
+            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-bold rounded-md"
+            style={{ background: '#d6a93d', color: '#1a1408' }}
+          >
+            Get bonus <ArrowRight size={12} />
+          </Link>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BannerStrip({ banners }: { banners: Banner[] }) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const t = setInterval(() => setIndex((i) => (i + 1) % banners.length), 3000);
+    return () => clearInterval(t);
+  }, [banners.length]);
+  if (banners.length === 0) return null;
+  const b = banners[index];
+  return (
+    <div className="relative w-full rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-primary)' }}>
+      <div className="relative w-full h-44 sm:h-52 md:h-60 bg-bg-secondary">
+        {b.link_url ? (
+          <a href={b.link_url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 block">
+            <img src={b.image_url} alt={b.title || 'Banner'} className="w-full h-full object-cover" />
+          </a>
+        ) : (
+          <img src={b.image_url} alt={b.title || 'Banner'} className="w-full h-full object-cover" />
+        )}
       </div>
       {banners.length > 1 && (
-        <div className="absolute bottom-2.5 left-0 right-0 flex justify-center z-[2] pointer-events-none">
-          <div
-            className="flex gap-1.5 pointer-events-auto rounded-full bg-black/35 px-2.5 py-1.5 backdrop-blur-sm"
-            role="tablist"
-            aria-label="Banner slides"
-          >
-            {banners.map((b, i) => (
-              <button
-                key={b.id}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                onClick={() => setIndex(i)}
-                className={clsx(
-                  'h-1.5 rounded-full transition-all duration-300',
-                  i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75',
-                )}
-                aria-label={`Banner ${i + 1}${b.title ? `: ${b.title}` : ''}`}
-              />
-            ))}
-          </div>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {banners.map((_, i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full transition-colors"
+              style={{ background: i === index ? '#d6a93d' : 'rgba(255,255,255,0.4)' }}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-const QUICK_ACTIONS = [
-  { label: 'Open Trading', href: '/trading', color: 'skeu-btn-buy text-text-inverse', icon: '▶' },
-  { label: 'Deposit Funds', href: '/wallet', color: 'bg-success/20 text-success border border-success/30', icon: '+' },
-  { label: 'Portfolio', href: '/portfolio', color: 'bg-info/20 text-info border border-info/30', icon: '◈' },
-  { label: 'Copy Trading', href: '/social', color: 'bg-accent/20 text-accent border border-accent/30', icon: '⊕' },
-  { label: 'Business / IB', href: '/business', color: 'bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30', icon: '⊗' },
-  { label: 'Support', href: '/support', color: 'bg-text-tertiary/20 text-text-secondary border border-text-tertiary/30', icon: '?' },
-];
-
-function fmt(n: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function emptyPortfolio(): PortfolioSummary {
-  return {
-    total_balance: 0,
-    total_credit: 0,
-    total_equity: 0,
-    total_unrealized_pnl: 0,
-    pnl_breakdown: { today: 0, this_week: 0, this_month: 0, all_time: 0 },
-    holdings: [],
-    open_positions: [],
-    open_positions_count: 0,
-  };
-}
-
-/** Core dashboard — fail fast enough to show errors; cold Docker still gets 30s. */
-const CORE_TIMEOUT_MS = 30_000;
-const EXTRAS_TIMEOUT_MS = 20_000;
-
-export default function DashboardPage() {
-  const [greeting] = useState(() => {
-    const h = new Date().getHours();
-    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-  });
-
-  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [extrasLoading, setExtrasLoading] = useState(false);
-  const loadGen = useRef(0);
-
-  const fetchExtras = useCallback((generation: number, signal?: AbortSignal) => {
-    setExtrasLoading(true);
-    Promise.allSettled([
-      api.get<{ items: Notification[] }>('/notifications', { per_page: '5' }, { timeoutMs: EXTRAS_TIMEOUT_MS, signal }),
-      api.get<{ banners: Banner[] }>('/banners', { page: 'dashboard' }, { timeoutMs: EXTRAS_TIMEOUT_MS, signal }),
-    ])
-      .then((settled) => {
-        if (generation !== loadGen.current) return;
-        if (settled[0].status === 'fulfilled') {
-          setNotifications(settled[0].value.items ?? []);
-        }
-        if (settled[1].status === 'fulfilled') {
-          setBanners(settled[1].value.banners ?? []);
-        }
-      })
-      .finally(() => {
-        if (generation === loadGen.current) setExtrasLoading(false);
-      });
-  }, []);
-
-  const fetchData = useCallback(async (signal?: AbortSignal) => {
-    const id = ++loadGen.current;
-    setLoading(true);
-    setError(null);
-    setNotifications([]);
-    setBanners([]);
-
-    let port: PortfolioSummary | null = null;
-    try {
-      port = await api.get<PortfolioSummary>('/portfolio/summary', undefined, {
-        timeoutMs: CORE_TIMEOUT_MS,
-        signal,
-      });
-    } catch (e) {
-      if (e instanceof ApiRequestCancelledError) {
-        if (id === loadGen.current) setLoading(false);
-        return;
-      }
-      const msg = e instanceof Error ? e.message : 'Portfolio failed';
-      setError(msg);
-      toast.error(msg, { id: 'dashboard-load' });
-      setLoading(false);
-      return;
-    }
-
-    if (id !== loadGen.current) return;
-
-    setPortfolio(port ?? emptyPortfolio());
-
-    setLoading(false);
-    fetchExtras(id, signal);
-  }, [fetchExtras]);
-
-  useEffect(() => {
-    const ac = new AbortController();
-    void fetchData(ac.signal);
-    return () => {
-      ac.abort();
-      loadGen.current += 1;
-    };
-  }, [fetchData]);
-
-  const dashboardOpenRows: OpenPositionRow[] = (() => {
-    if (!portfolio) return [];
-    if (portfolio.open_positions && portfolio.open_positions.length > 0) {
-      return portfolio.open_positions;
-    }
-    return (portfolio.holdings ?? []).map((h, i) => ({
-      id: `agg-${h.symbol}-${i}`,
-      symbol: h.symbol,
-      side: h.side ?? 'buy',
-      lots: h.lots,
-      entry_price: h.entry_price,
-      current_price: h.current_price,
-      pnl: (h as { pnl?: number; unrealized_pnl?: number }).pnl ?? (h as { unrealized_pnl?: number }).unrealized_pnl ?? 0,
-    }));
-  })();
-
-  if (loading) {
-    return (
-      <DashboardShell mainClassName="flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#2196f3] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#888]">Loading dashboard...</span>
-        </div>
-      </DashboardShell>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardShell mainClassName="flex items-center justify-center">
-        <div className="text-center space-y-3 py-12">
-          <p className="text-red-400 text-sm">{error}</p>
-          <Button variant="outline" size="sm" onClick={() => void fetchData()}>
-            Retry
-          </Button>
-        </div>
-      </DashboardShell>
-    );
-  }
-
+function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <DashboardShell>
-      <div className="page-main space-y-4 sm:space-y-6">
-        {/* Welcome */}
-        <div className="min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-text-primary">{greeting}, Trader</h2>
-          <p className="text-xs sm:text-sm text-text-tertiary mt-0.5">
-            Overview, positions, and shortcuts — manage accounts on{' '}
-            <Link href="/accounts" className="text-buy hover:underline font-medium">
-              Trading Accounts
-            </Link>
-            .
-          </p>
-        </div>
-
-        {/* Banners — carousel when multiple (3s rotation); single banner unchanged */}
-        {banners.length > 0 && <DashboardBannerCarousel banners={banners} />}
-
-        {/* Two Column */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Open Positions */}
-          <div className="glass-card rounded-xl overflow-hidden min-w-0">
-            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border-glass flex items-center justify-between gap-2">
-              <h3 className="text-sm sm:text-md font-semibold text-text-primary">
-                Open Positions
-                {portfolio && portfolio.open_positions_count > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-bg-hover rounded-sm tabular-nums">
-                    {portfolio.open_positions_count}
-                  </span>
-                )}
-              </h3>
-              <Link href="/portfolio" className="text-xs text-buy hover:underline shrink-0">View All</Link>
-            </div>
-            <div className="p-3 sm:p-4 max-h-[min(420px,55vh)] overflow-y-auto">
-              {dashboardOpenRows.length === 0 ? (
-                <p className="text-sm text-text-tertiary text-center py-4">No open positions</p>
-              ) : (
-                <div className="space-y-2">
-                  {dashboardOpenRows.map((pos) => {
-                    const pnl = Number(pos.pnl);
-                    const safePnl = Number.isFinite(pnl) ? pnl : 0;
-                    return (
-                      <div key={pos.id} className="flex justify-between items-center gap-2 py-2 border-b border-border-glass/50">
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium text-text-primary">{pos.symbol}</span>
-                          <span className={clsx('ml-2 text-xs font-medium', pos.side?.toLowerCase() === 'buy' ? 'text-buy' : 'text-sell')}>
-                            {String(pos.side || '').toUpperCase()} {pos.lots}
-                          </span>
-                          <div className="text-[10px] text-text-tertiary font-mono tabular-nums mt-0.5">
-                            @ {Number.isFinite(pos.entry_price) ? pos.entry_price.toFixed(5) : '—'} →{' '}
-                            {Number.isFinite(pos.current_price) ? pos.current_price.toFixed(5) : '—'}
-                          </div>
-                        </div>
-                        <span className={clsx('text-sm font-mono tabular-nums shrink-0', safePnl >= 0 ? 'text-buy' : 'text-sell')}>
-                          {safePnl >= 0 ? '+' : ''}{fmt(safePnl)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="glass-card rounded-xl overflow-hidden min-w-0">
-            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border-glass">
-              <h3 className="text-sm sm:text-md font-semibold text-text-primary">Quick Actions</h3>
-            </div>
-            <div className="p-3 sm:p-4 grid grid-cols-2 gap-2 sm:gap-3">
-              {QUICK_ACTIONS.map((action) => (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  prefetch={false}
-                  className={clsx(
-                    action.color,
-                    'text-xs sm:text-sm font-medium py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg text-center hover:opacity-90 transition-all flex items-center justify-center gap-1.5 sm:gap-2 leading-snug min-h-[44px]',
-                  )}
-                >
-                  <span>{action.icon}</span>
-                  {action.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div className="glass-card rounded-xl overflow-hidden min-w-0">
-          <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border-glass flex items-center justify-between gap-2">
-            <h3 className="text-sm sm:text-md font-semibold text-text-primary">Recent Notifications</h3>
-            <Button variant="ghost" size="sm" onClick={() => void fetchData()}>Refresh</Button>
-          </div>
-          <div className="divide-y divide-border-glass/50">
-            {extrasLoading && notifications.length === 0 ? (
-              <div className="px-4 py-6 flex flex-col items-center gap-2 text-sm text-text-tertiary">
-                <div className="w-5 h-5 border-2 border-buy border-t-transparent rounded-full animate-spin" />
-                <span>Loading notifications…</span>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-text-tertiary">No recent notifications</div>
-            ) : (
-              notifications.map((n) => (
-                <div key={n.id} className={clsx('px-4 py-3 flex items-center justify-between', !n.is_read && 'bg-buy/5')}>
-                  <div>
-                    <span className="text-sm text-text-primary font-medium">{n.title}</span>
-                    <p className="text-xs text-text-tertiary mt-0.5 line-clamp-1">{n.message}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0 ml-4">
-                    <span className={clsx(
-                      'inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-sm mb-0.5',
-                      n.type === 'success' ? 'bg-success/15 text-success'
-                        : n.type === 'warning' ? 'bg-warning/15 text-warning'
-                        : n.type === 'error' ? 'bg-sell/15 text-sell'
-                        : 'bg-info/15 text-info'
-                    )}>
-                      {n.type}
-                    </span>
-                    <div className="text-[10px] text-text-tertiary">{timeAgo(n.created_at)}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    </DashboardShell>
+    <div
+      className="rounded-2xl p-4 md:p-5"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+    >
+      {title && <h2 className="text-base font-bold text-text-primary mb-3">{title}</h2>}
+      {children}
+    </div>
   );
 }

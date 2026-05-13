@@ -53,6 +53,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [fetchStatus]);
 
+  /* Presence heartbeat: while a user is signed in, ping /auth/me every 60s
+   * so the gateway refreshes the `presence:user:<id>` Redis key (5-min TTL).
+   * Without this, idle traders on a page that doesn't auto-poll would drop
+   * out of the admin's online list within minutes. The hit is cheap — same
+   * endpoint already used at boot, no payload changes — and it doubles as
+   * a session-validity check (a 401 will route us through logout). Pause
+   * the interval when the tab is hidden to avoid wasting requests. */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const ping = () => { void loadUser(); };
+    const start = () => {
+      if (timer) return;
+      timer = setInterval(ping, 60_000);
+    };
+    const stop = () => {
+      if (timer) { clearInterval(timer); timer = null; }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        ping();          // refresh immediately when user returns
+        start();
+      } else {
+        stop();
+      }
+    };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [isAuthenticated, loadUser]);
+
   /* Maintenance ON + signed-in non-staff user → force logout once and route to login. */
   useEffect(() => {
     if (!isInitialized || !isAuthenticated) return;
@@ -87,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (isAuthenticated && (isAuthPage || pathname === '/')) {
         // Do not redirect authenticated users away from public share pages —
         // the short link should open the same card regardless of auth state.
-        if (!isSharePage) router.push('/accounts');
+        if (!isSharePage) router.push('/dashboard');
       }
     }
   }, [isInitialized, isAuthenticated, pathname, router]);

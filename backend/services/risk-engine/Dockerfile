@@ -12,4 +12,9 @@ COPY backend/services/risk-engine /app/services/risk_engine
 
 ENV PYTHONPATH=/app
 
+# H8 — drop root.
+RUN groupadd --system --gid 1001 fxartha \
+ && useradd  --system --uid 1001 --gid fxartha --shell /usr/sbin/nologin fxartha
+USER fxartha
+
 CMD ["python", "-m", "services.risk_engine.src.main"]
