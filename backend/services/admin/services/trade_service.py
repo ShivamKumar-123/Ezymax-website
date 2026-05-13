@@ -110,8 +110,8 @@ async def list_positions(
             lots=float(pos.lots or 0),
             open_price=float(pos.open_price or 0),
             close_price=current_price if status_val == "open" else (float(pos.close_price) if pos.close_price else None),
-            stop_loss=float(pos.stop_loss) if pos.stop_loss else None,
-            take_profit=float(pos.take_profit) if pos.take_profit else None,
+            stop_loss=float(pos.stop_loss) if pos.stop_loss is not None else None,
+            take_profit=float(pos.take_profit) if pos.take_profit is not None else None,
             swap=float(pos.swap or 0),
             commission=float(pos.commission or 0),
             profit=round(profit, 2),
@@ -283,8 +283,8 @@ async def modify_position(
         return s.value if hasattr(s, "value") else str(s)
 
     old_values = {
-        "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
-        "take_profit": float(pos.take_profit) if pos.take_profit else None,
+        "stop_loss": float(pos.stop_loss) if pos.stop_loss is not None else None,
+        "take_profit": float(pos.take_profit) if pos.take_profit is not None else None,
         "open_price": float(pos.open_price) if pos.open_price else None,
         "commission": float(pos.commission) if pos.commission else 0,
         "swap": float(pos.swap) if pos.swap else 0,
@@ -293,10 +293,19 @@ async def modify_position(
         "created_at": pos.created_at.isoformat() if pos.created_at else None,
     }
 
-    if body.stop_loss is not None:
-        pos.stop_loss = Decimal(str(body.stop_loss))
-    if body.take_profit is not None:
-        pos.take_profit = Decimal(str(body.take_profit))
+    # For SL/TP we need to distinguish "field omitted" (don't touch)
+    # from "field explicitly null" (clear it). Pydantic v2 tracks
+    # which keys were actually present in the request body via
+    # `model_fields_set`; we use that to decide whether to write.
+    # Without this, admin clearing the SL/TP input on the Edit modal
+    # silently does nothing because `stop_loss is not None` short-
+    # circuits the clear case. Reported bug: "TP/SL edit nahi hota,
+    # purana SL TP show karta rehta hai".
+    fields_set = body.model_fields_set
+    if "stop_loss" in fields_set:
+        pos.stop_loss = Decimal(str(body.stop_loss)) if body.stop_loss is not None else None
+    if "take_profit" in fields_set:
+        pos.take_profit = Decimal(str(body.take_profit)) if body.take_profit is not None else None
     if body.open_price is not None:
         pos.open_price = Decimal(str(body.open_price))
     if body.commission is not None:
@@ -326,8 +335,8 @@ async def modify_position(
     pos.updated_at = datetime.utcnow()
 
     new_values = {
-        "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
-        "take_profit": float(pos.take_profit) if pos.take_profit else None,
+        "stop_loss": float(pos.stop_loss) if pos.stop_loss is not None else None,
+        "take_profit": float(pos.take_profit) if pos.take_profit is not None else None,
         "open_price": float(pos.open_price) if pos.open_price else None,
         "commission": float(pos.commission) if pos.commission else 0,
         "swap": float(pos.swap) if pos.swap else 0,
@@ -352,10 +361,12 @@ async def modify_position(
             continue
         if body.open_price is not None:
             inv_pos.open_price = Decimal(str(body.open_price))
-        if body.stop_loss is not None:
-            inv_pos.stop_loss = Decimal(str(body.stop_loss))
-        if body.take_profit is not None:
-            inv_pos.take_profit = Decimal(str(body.take_profit))
+        # Same omitted-vs-null treatment for the mirrored follower:
+        # clearing on master clears on follower.
+        if "stop_loss" in fields_set:
+            inv_pos.stop_loss = Decimal(str(body.stop_loss)) if body.stop_loss is not None else None
+        if "take_profit" in fields_set:
+            inv_pos.take_profit = Decimal(str(body.take_profit)) if body.take_profit is not None else None
         # Mirror the side flip onto the follower so the copy stays
         # aligned with the master after admin's correction.
         if body.side is not None:

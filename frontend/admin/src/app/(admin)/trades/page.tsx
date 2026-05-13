@@ -336,8 +336,10 @@ export default function TradesPage() {
 
   const openModifyModal = (pos: Position) => {
     setSelectedPosition(pos);
-    setModifySl(pos.stop_loss ? String(pos.stop_loss) : '');
-    setModifyTp(pos.take_profit ? String(pos.take_profit) : '');
+    // Use `!= null` so SL/TP set to literally 0 still pre-populates
+    // the input (would have showed empty under a truthy check).
+    setModifySl(pos.stop_loss != null ? String(pos.stop_loss) : '');
+    setModifyTp(pos.take_profit != null ? String(pos.take_profit) : '');
     setModifyOpenPrice(pos.open_price ? String(pos.open_price) : '');
     setModifyLots(pos.lots ? String(pos.lots) : '');
     setModifyCommission(pos.commission ? String(pos.commission) : '');
@@ -397,8 +399,15 @@ export default function TradesPage() {
     setModalSubmitting(true);
     try {
       const body: Record<string, unknown> = { reason: actionReason };
-      if (modifySl) body.stop_loss = parseFloat(modifySl);
-      if (modifyTp) body.take_profit = parseFloat(modifyTp);
+      // SL / TP: ALWAYS include in the body, with explicit `null` when
+      // the admin cleared the input. The backend uses Pydantic
+      // `model_fields_set` to distinguish "not provided" (don't touch)
+      // from "provided as null" (clear). Without this, clearing the
+      // SL/TP input was silently ignored and the old values stuck.
+      const slTrim = modifySl.trim();
+      const tpTrim = modifyTp.trim();
+      body.stop_loss = slTrim === '' ? null : parseFloat(slTrim);
+      body.take_profit = tpTrim === '' ? null : parseFloat(tpTrim);
       if (modifyOpenPrice) body.open_price = parseFloat(modifyOpenPrice);
       if (modifyLots) body.lots = parseFloat(modifyLots);
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
@@ -630,8 +639,8 @@ export default function TradesPage() {
                           {livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}
                         </td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary font-mono tabular-nums">{p.commission ? formatMoney(p.commission) : '0'}</td>
-                        <td className="px-3 py-2 text-xs text-sell font-mono tabular-nums">{p.stop_loss || '—'}</td>
-                        <td className="px-3 py-2 text-xs text-buy font-mono tabular-nums">{p.take_profit || '—'}</td>
+                        <td className="px-3 py-2 text-xs text-sell font-mono tabular-nums">{p.stop_loss != null ? p.stop_loss : '—'}</td>
+                        <td className="px-3 py-2 text-xs text-buy font-mono tabular-nums">{p.take_profit != null ? p.take_profit : '—'}</td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1">
@@ -901,8 +910,8 @@ export default function TradesPage() {
               <div><p className="text-xxs text-text-tertiary">Current</p><p className="text-text-primary font-mono">{cp?.toFixed(5) || '—'}</p></div>
               <div><p className="text-xxs text-text-tertiary">P&L</p><p className={cn('font-mono font-bold', livePnl >= 0 ? 'text-success' : 'text-danger')}>{livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}</p></div>
               <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{selectedPosition.user_email}</p></div>
-              <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss || '—'}</p></div>
-              <div><p className="text-xxs text-text-tertiary">TP</p><p className="text-buy font-mono">{selectedPosition.take_profit || '—'}</p></div>
+              <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss != null ? selectedPosition.stop_loss : '—'}</p></div>
+              <div><p className="text-xxs text-text-tertiary">TP</p><p className="text-buy font-mono">{selectedPosition.take_profit != null ? selectedPosition.take_profit : '—'}</p></div>
             </div>
             );
           })()}
