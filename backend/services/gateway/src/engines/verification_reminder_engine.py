@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import User
 
 logger = logging.getLogger("verification-reminder")
@@ -45,12 +46,20 @@ class VerificationReminderEngine:
             try:
                 today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 if self._last_run_day != today:
-                    async with AsyncSessionLocal() as db:
-                        sent = await send_due_reminders(db)
-                        await db.commit()
-                    self._last_run_day = today
-                    if sent:
-                        logger.info("KYC reminder: emailed %d users", sent)
+                    # Without the leader lock, every gateway worker
+                    # would email the same user once per day. DB-side
+                    # kyc_reminder_stage bump prevents Day-3 re-sending,
+                    # but Day-7 reminders to the same user from two
+                    # workers can both flip stage 1→2 in parallel and
+                    # both send the email before either commit.
+                    async with engine_lock("verification_reminder", ttl_seconds=120) as is_leader:
+                        if is_leader:
+                            async with AsyncSessionLocal() as db:
+                                sent = await send_due_reminders(db)
+                                await db.commit()
+                            self._last_run_day = today
+                            if sent:
+                                logger.info("KYC reminder: emailed %d users", sent)
             except Exception as e:
                 logger.error("Verification reminder engine error: %s", e, exc_info=True)
             await asyncio.sleep(TICK_INTERVAL)

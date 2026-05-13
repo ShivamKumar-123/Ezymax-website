@@ -20,6 +20,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
+from packages.common.src.engine_lock import engine_lock
 from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
@@ -85,6 +86,14 @@ class SLTPEngine:
         if not self._prices:
             return
 
+        # Leader-election: only one gateway worker runs this tick.
+        # See packages.common.src.engine_lock for the why.
+        async with engine_lock("sltp", ttl_seconds=10) as is_leader:
+            if not is_leader:
+                return
+            await self._check_positions_locked()
+
+    async def _check_positions_locked(self):
         async with AsyncSessionLocal() as db:
             # SKIP LOCKED so the gateway's `--workers N` uvicorn fleet
             # doesn't double-process the same trigger. Worker A takes a

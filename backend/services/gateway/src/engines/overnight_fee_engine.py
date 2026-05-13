@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import (
     AccountGroup, InstrumentConfig, Position, PositionStatus,
     TradingAccount, Transaction, User,
@@ -53,11 +54,18 @@ class OvernightFeeEngine:
     async def _run(self):
         while self._running:
             try:
-                async with AsyncSessionLocal() as db:
-                    n = await charge_due_positions(db)
-                    if n:
-                        await db.commit()
-                        logger.info("Overnight fee: charged %d positions", n)
+                # Leader-election: with `--workers N` only one gateway
+                # process should charge the daily swap, otherwise every
+                # eligible position gets debited N times per night. TTL
+                # is generous (5 min) because each tick can touch a
+                # large set of positions.
+                async with engine_lock("overnight_fee", ttl_seconds=300) as is_leader:
+                    if is_leader:
+                        async with AsyncSessionLocal() as db:
+                            n = await charge_due_positions(db)
+                            if n:
+                                await db.commit()
+                                logger.info("Overnight fee: charged %d positions", n)
             except Exception as e:
                 logger.error("Overnight fee engine error: %s", e, exc_info=True)
             await asyncio.sleep(TICK_INTERVAL)

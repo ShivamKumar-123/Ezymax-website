@@ -30,6 +30,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.admin_fees import credit_admin_fee
+from packages.common.src.engine_lock import engine_lock
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("copy-engine")
@@ -126,44 +127,36 @@ class CopyTradeEngine:
 
     async def _run(self):
         while self._running:
-            lock_acquired = False
             try:
-                # Cluster-wide leader lock — prevents duplicate mirroring when
-                # gateway runs with --workers=N.
-                lock_acquired = bool(
-                    await redis_client.set(
-                        COPY_ENGINE_LOCK_KEY, "1",
-                        ex=COPY_ENGINE_LOCK_TTL, nx=True,
-                    )
-                )
-                if not lock_acquired:
-                    await asyncio.sleep(1)
-                    continue
+                # Cluster-wide leader lock — prevents duplicate mirroring
+                # when gateway runs with `--workers N`. Migrated from a
+                # hand-rolled `SET NX + DELETE` to the shared engine_lock
+                # utility, which uses a CAS-style Lua release so a slow
+                # tick whose TTL expires can't accidentally delete the
+                # next holder's lock.
+                async with engine_lock("copy_engine", ttl_seconds=COPY_ENGINE_LOCK_TTL) as is_leader:
+                    if not is_leader:
+                        await asyncio.sleep(1)
+                        continue
 
-                async with AsyncSessionLocal() as db:
-                    # Global orphan sweep — close any follower mirror whose
-                    # master position is already closed, even if the master
-                    # has no active followers left (e.g. last investor
-                    # withdrew while master still had open positions).
-                    await self._global_orphan_sweep(db)
+                    async with AsyncSessionLocal() as db:
+                        # Global orphan sweep — close any follower mirror whose
+                        # master position is already closed, even if the master
+                        # has no active followers left (e.g. last investor
+                        # withdrew while master still had open positions).
+                        await self._global_orphan_sweep(db)
 
-                    masters = await db.execute(
-                        select(MasterAccount).where(
-                            MasterAccount.status.in_(["approved", "active"]),
-                            MasterAccount.followers_count > 0,
+                        masters = await db.execute(
+                            select(MasterAccount).where(
+                                MasterAccount.status.in_(["approved", "active"]),
+                                MasterAccount.followers_count > 0,
+                            )
                         )
-                    )
-                    for master in masters.scalars().all():
-                        await self.process_master(master, db)
-                    await db.commit()
+                        for master in masters.scalars().all():
+                            await self.process_master(master, db)
+                        await db.commit()
             except Exception as e:
                 logger.error("Copy engine error: %s", e, exc_info=True)
-            finally:
-                if lock_acquired:
-                    try:
-                        await redis_client.delete(COPY_ENGINE_LOCK_KEY)
-                    except Exception:
-                        pass
 
             await asyncio.sleep(1)
 

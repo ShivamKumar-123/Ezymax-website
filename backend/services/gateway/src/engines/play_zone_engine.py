@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.engine_lock import engine_lock
 from ..services import play_zone_service
 
 logger = logging.getLogger("play-zone-engine")
@@ -28,12 +29,19 @@ class PlayZoneEngine:
     async def _run(self):
         while self._running:
             try:
-                async with AsyncSessionLocal() as db:
-                    n_lot = await play_zone_service.close_due_lottery_rounds(db)
-                    n_bid = await play_zone_service.close_due_bidding_rounds(db)
-                    if n_lot or n_bid:
-                        await db.commit()
-                        logger.info("Play Zone close: lotteries=%d bids=%d", n_lot, n_bid)
+                # Leader-election so only one gateway worker closes the
+                # due rounds. The closers ARE idempotent (filter on
+                # state='open') so duplicate runs don't corrupt data,
+                # but they each do a full DB scan + winner-pick + payout
+                # logic, so the lock saves real work.
+                async with engine_lock("play_zone", ttl_seconds=120) as is_leader:
+                    if is_leader:
+                        async with AsyncSessionLocal() as db:
+                            n_lot = await play_zone_service.close_due_lottery_rounds(db)
+                            n_bid = await play_zone_service.close_due_bidding_rounds(db)
+                            if n_lot or n_bid:
+                                await db.commit()
+                                logger.info("Play Zone close: lotteries=%d bids=%d", n_lot, n_bid)
             except Exception as e:
                 logger.error("Play Zone engine error: %s", e, exc_info=True)
             await asyncio.sleep(TICK_INTERVAL)
