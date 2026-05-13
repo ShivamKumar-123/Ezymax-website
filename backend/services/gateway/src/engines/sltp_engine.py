@@ -86,12 +86,21 @@ class SLTPEngine:
             return
 
         async with AsyncSessionLocal() as db:
+            # SKIP LOCKED so the gateway's `--workers N` uvicorn fleet
+            # doesn't double-process the same trigger. Worker A takes a
+            # row-level lock on the open SL/TP positions for this tick;
+            # Worker B's identical SELECT skips those rows and only sees
+            # whatever's left. Without this, every TP/SL hit was
+            # inserting one TradeHistory + one Transaction row PER WORKER,
+            # crediting the user the P&L twice and showing two rows in
+            # the trade history.
             result = await db.execute(
                 select(Position)
                 .where(Position.status == "open")
                 .where(
                     (Position.stop_loss.isnot(None)) | (Position.take_profit.isnot(None))
                 )
+                .with_for_update(skip_locked=True)
             )
             positions = result.scalars().all()
 
@@ -137,6 +146,23 @@ class SLTPEngine:
     async def _close_position(
         self, db: AsyncSession, pos: Position, close_price: Decimal, reason: str
     ):
+        # Defensive: re-acquire the row with FOR UPDATE and confirm it's
+        # still open before doing anything. Even with SKIP LOCKED on the
+        # outer SELECT, a manual close (POST /positions/{id}/close) on
+        # the same position could land between our SELECT and our close
+        # work. Without this guard the manual close + the engine would
+        # BOTH write a TradeHistory row.
+        locked_q = await db.execute(
+            select(Position).where(Position.id == pos.id).with_for_update()
+        )
+        locked = locked_q.scalar_one_or_none()
+        if not locked:
+            return
+        cur_status = locked.status.value if hasattr(locked.status, "value") else str(locked.status)
+        if cur_status != "open":
+            return  # Already closed by another worker / manual close.
+        pos = locked
+
         side = _side_val(pos.side)
         contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
