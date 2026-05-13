@@ -175,7 +175,7 @@ export default function MobileBottomNav() {
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
-            <Link href="/dashboard" className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
+            <Link href="/dashboard" prefetch={false} className="flex flex-col items-center justify-center gap-[2px] flex-1 py-2">
               <span className={clsx('transition-colors', isHome ? 'text-accent' : 'text-text-tertiary')}>
                 <IconHome active={isHome} />
               </span>
@@ -260,6 +260,7 @@ export default function MobileBottomNav() {
                   <Link
                     key={item.name}
                     href={item.path}
+                    prefetch={false}
                     onClick={() => setShowMore(false)}
                     className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
                   >

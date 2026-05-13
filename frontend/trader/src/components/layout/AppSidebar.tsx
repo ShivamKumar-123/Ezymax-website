@@ -169,6 +169,7 @@ export default function AppSidebar() {
                           <Link
                             key={child.href}
                             href={child.href}
+                            prefetch={false}
                             onClick={() => {
                               if (window.innerWidth < 1024) setSidebarOpen(false);
                             }}
@@ -196,6 +197,7 @@ export default function AppSidebar() {
               <Link
                 key={entry.href}
                 href={entry.href}
+                prefetch={false}
                 onClick={() => {
                   if (window.innerWidth < 1024) setSidebarOpen(false);
                 }}
@@ -225,6 +227,7 @@ export default function AppSidebar() {
         <div className="px-3 pb-4 pt-2 space-y-2.5 border-t border-border-primary bg-bg-base">
           <Link
             href="/terms"
+            prefetch={false}
             className="flex items-center gap-2 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2.5 text-xs text-text-secondary hover:text-text-primary hover:border-border-accent transition-colors"
           >
             <FileText size={14} className="text-accent shrink-0 opacity-90" />
@@ -239,6 +242,7 @@ export default function AppSidebar() {
             <p className="text-[10px] text-text-tertiary mb-3 leading-relaxed">Contact our 24/7 support team</p>
             <Link
               href="/support"
+              prefetch={false}
               className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-border-primary text-xs text-text-secondary hover:text-text-primary hover:border-accent/35 hover:bg-accent/5 transition-colors"
             >
               <Headphones size={12} className="text-accent/80" />
