@@ -43,10 +43,13 @@ async def list_all_deposits(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str = Query(None),
+    user_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await deposit_service.list_all_deposits(page=page, per_page=per_page, status=status, db=db)
+    return await deposit_service.list_all_deposits(
+        page=page, per_page=per_page, status=status, user_id=user_id, db=db,
+    )
 
 
 @router.get("/withdrawals")
@@ -54,10 +57,13 @@ async def list_all_withdrawals(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     status: str = Query(None),
+    user_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("withdrawals.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await deposit_service.list_all_withdrawals(page=page, per_page=per_page, status=status, db=db)
+    return await deposit_service.list_all_withdrawals(
+        page=page, per_page=per_page, status=status, user_id=user_id, db=db,
+    )
 
 
 @router.post("/deposits/{deposit_id}/approve")

@@ -91,8 +91,14 @@ async def list_pending_withdrawals(page: int, per_page: int, db: AsyncSession):
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
 
 
-async def list_all_deposits(page: int, per_page: int, status: str | None, db: AsyncSession):
+async def list_all_deposits(
+    page: int, per_page: int, status: str | None, db: AsyncSession,
+    user_id: uuid.UUID | None = None,
+):
     query = select(Deposit)
+    # Optional per-user filter for the user-detail ledger page.
+    if user_id is not None:
+        query = query.where(Deposit.user_id == user_id)
     if status and status != "all":
         if status == "approved":
             query = query.where(Deposit.status.in_(["approved", "auto_approved"]))
@@ -114,8 +120,13 @@ async def list_all_deposits(page: int, per_page: int, status: str | None, db: As
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
 
 
-async def list_all_withdrawals(page: int, per_page: int, status: str | None, db: AsyncSession):
+async def list_all_withdrawals(
+    page: int, per_page: int, status: str | None, db: AsyncSession,
+    user_id: uuid.UUID | None = None,
+):
     query = select(Withdrawal)
+    if user_id is not None:
+        query = query.where(Withdrawal.user_id == user_id)
     if status and status != "all":
         query = query.where(Withdrawal.status == status)
     count_q = select(func.count()).select_from(query.subquery())

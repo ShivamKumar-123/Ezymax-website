@@ -41,6 +41,7 @@ async def _get_live_price(symbol: str) -> dict | None:
 
 async def list_positions(
     page: int, per_page: int, status_filter: str, db: AsyncSession,
+    user_id: uuid.UUID | None = None,
 ):
     # Exclude demo-account activity from admin views (demo trades are practice-only).
     query = (
@@ -48,6 +49,11 @@ async def list_positions(
         .join(TradingAccount, Position.account_id == TradingAccount.id)
         .where(TradingAccount.is_demo == False)
     )
+    # Per-user filter for the user-detail ledger page. Joined on
+    # TradingAccount (positions are scoped to accounts, not users
+    # directly) so this picks up every account the user owns.
+    if user_id is not None:
+        query = query.where(TradingAccount.user_id == user_id)
     if status_filter == "open":
         query = query.where(Position.status == PositionStatus.OPEN.value)
     elif status_filter == "closed":
@@ -188,12 +194,17 @@ async def list_orders(
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
 
 
-async def list_trade_history(page: int, per_page: int, db: AsyncSession):
+async def list_trade_history(
+    page: int, per_page: int, db: AsyncSession,
+    user_id: uuid.UUID | None = None,
+):
     query = (
         select(TradeHistory)
         .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
         .where(TradingAccount.is_demo == False)
     )
+    if user_id is not None:
+        query = query.where(TradingAccount.user_id == user_id)
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 

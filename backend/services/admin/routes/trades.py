@@ -17,11 +17,15 @@ async def list_positions(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
     status_filter: str = Query("open", alias="status"),
+    # Optional per-user filter for the user-detail ledger page.
+    # When omitted, the existing global list is returned.
+    user_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
     return await trade_service.list_positions(
-        page=page, per_page=per_page, status_filter=status_filter, db=db,
+        page=page, per_page=per_page, status_filter=status_filter,
+        user_id=user_id, db=db,
     )
 
 
@@ -42,10 +46,13 @@ async def list_orders(
 async def list_trade_history(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
+    user_id: uuid.UUID | None = Query(None),
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await trade_service.list_trade_history(page=page, per_page=per_page, db=db)
+    return await trade_service.list_trade_history(
+        page=page, per_page=per_page, user_id=user_id, db=db,
+    )
 
 
 @router.put("/position/{position_id}/modify")

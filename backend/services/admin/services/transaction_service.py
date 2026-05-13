@@ -1,5 +1,7 @@
 """Admin Transaction Service — paginated listing and summary."""
 
+import uuid  # noqa: F401  (used in type hints below)
+
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,15 +51,25 @@ async def list_transactions(
     type_filter: str | None,
     search: str | None,
     db: AsyncSession,
+    user_id: "uuid.UUID | None" = None,
+    include_trade_pnl: bool = False,
 ) -> PaginatedResponse:
     query = select(Transaction)
+
+    # Per-user filter for the user-detail ledger page. When admin
+    # drills into a single user's full ledger we DO want to see the
+    # trade-P&L rows there (otherwise the "complete ledger" wouldn't
+    # be complete) — caller passes include_trade_pnl=True alongside
+    # user_id to opt into that.
+    if user_id is not None:
+        query = query.where(Transaction.user_id == user_id)
 
     if type_filter and type_filter != "all":
         # Admin explicitly asked for a type — respect it, even if it's
         # one of the hidden ones (lets ops drill into trade P&L from
         # the URL when they really need to).
         query = query.where(Transaction.type == type_filter)
-    else:
+    elif not include_trade_pnl:
         query = query.where(Transaction.type.notin_(_HIDDEN_FROM_ADMIN_TX))
 
     if search:
