@@ -22,7 +22,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 
 const TRADE_PREFIXES = ['/trading/terminal'];
-const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/', '/images/', '/frames/'];
+const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/', '/images/', '/frames/', '/charting_library/', '/datafeeds/'];
 const NEUTRAL_EXACT = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
 
 function isTradePath(path: string): boolean {
