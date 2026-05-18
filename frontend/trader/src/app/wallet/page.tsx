@@ -23,7 +23,6 @@ import {
   Minus,
   TrendingUp,
   X,
-  ShieldCheck,
   Gift,
   History,
 } from 'lucide-react';
@@ -714,9 +713,8 @@ function WalletPageContent() {
             </div>
           )}
 
-          {/* ── Profile & Wallet overview (DAG/purple aesthetic per client mockup) ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-            {/* LEFT — 3 balance overview cards */}
+          {/* ── Wallet overview (KYC card removed per client — it lives on /profile) ── */}
+          <div>
             <div>
               <div className="flex items-baseline justify-between gap-2 mb-3">
                 <h2 className="text-lg font-bold text-text-primary">Wallet Overview</h2>
@@ -798,69 +796,6 @@ function WalletPageContent() {
               </div>
             </div>
 
-            {/* RIGHT — KYC + VIP stacked */}
-            <div className="space-y-3">
-              {/* KYC Verification card */}
-              {(() => {
-                const kyc = user?.kyc_status || 'unverified';
-                const isApproved = kyc === 'approved';
-                const isPending = kyc === 'pending';
-                const isRejected = kyc === 'rejected';
-                const stateColor =
-                  isApproved ? 'emerald'
-                  : isPending ? 'amber'
-                  : isRejected ? 'red'
-                  : 'slate';
-                const stateLabel =
-                  isApproved ? 'Verified'
-                  : isPending ? 'Pending'
-                  : isRejected ? 'Rejected'
-                  : 'Unverified';
-                const stateBody =
-                  isApproved ? 'Your identity has been verified. You can enjoy all platform features.'
-                  : isPending ? 'Your KYC documents are under review.'
-                  : isRejected ? 'Please re-submit your KYC documents.'
-                  : 'Complete KYC to unlock withdrawals and higher limits.';
-                // KYC card surface follows the state color — green
-                // (approved), amber (pending), red (rejected), or the
-                // neutral card surface when no action yet. All
-                // theme-aware via --card-* vars.
-                const kycSurface =
-                  isApproved ? { background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' } :
-                  isPending  ? { background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' } :
-                  isRejected ? { background: 'var(--card-red-bg)',   borderColor: 'var(--card-red-border)'   } :
-                               { background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' };
-                return (
-                  <div className="rounded-2xl p-4 border" style={kycSurface}>
-                    <p className="text-xs uppercase tracking-wide text-text-tertiary font-medium mb-2">KYC Verification</p>
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className={clsx(
-                        'w-10 h-10 rounded-xl border flex items-center justify-center',
-                        `bg-${stateColor}-500/25 border-${stateColor}-400/30`,
-                      )}>
-                        <ShieldCheck size={18} className={`text-${stateColor}-300`} />
-                      </div>
-                      <p className={clsx('text-base font-bold', `text-${stateColor}-300`)}>{stateLabel}</p>
-                    </div>
-                    <p className="text-[11px] text-text-tertiary leading-relaxed mb-3">{stateBody}</p>
-                    <button
-                      type="button"
-                      onClick={() => router.push(isApproved ? '/profile' : '/kyc')}
-                      className="w-full py-2 rounded-lg bg-bg-base/50 border border-border-primary hover:bg-bg-hover text-xs font-bold text-text-primary transition-colors"
-                    >
-                      {isApproved ? 'View Details' : 'Complete KYC'}
-                    </button>
-                  </div>
-                );
-              })()}
-
-              {/* VIP Status card — hidden until the VIP system is actually
-                  wired (qualification, purchase, boost application). Schema
-                  exists at vip_pass_allocations + users.is_vip but
-                  system_settings.vip_pass_enabled = false and no benefit code
-                  path reads it. Restore this block when shipping the
-                  feature. */}
-            </div>
           </div>
 
           {/* ── Account Cards Grid ── */}

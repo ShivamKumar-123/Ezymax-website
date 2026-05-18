@@ -27,11 +27,18 @@ function buildEventsIframeSrc(
   importanceFilter: string,
   countryFilter: string,
 ): string {
+  // NOTE: width/height MUST be numeric pixels, never `'100%'`. TradingView's
+  // embed bootstrap calls decodeURIComponent() on the URL fragment, and a
+  // literal `%` followed by a non-hex digit (e.g. `%"`) raises URIError:
+  // URI malformed. The iframe is sized to its container via CSS anyway, so
+  // these large nominal values are just placeholders for the widget to know
+  // it can render full-bleed.
   const settings: Record<string, string | number | boolean> = {
     colorTheme,
     isTransparent,
-    width: '100%',
-    height: '100%',
+    autosize: true,
+    width: 1400,
+    height: 900,
     locale: 'en',
     importanceFilter,
     countryFilter,
