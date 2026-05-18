@@ -24,7 +24,7 @@ export default function CtHow() {
           badge="How It Works"
           title="From Selection to Settlement"
           highlight="Selection to Settlement"
-          subtitle="Simple setup. Full flexibility."
+          subtitle="Five quick steps from picking a trader to seeing the first mirrored trade in your account."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
@@ -81,16 +81,7 @@ export default function CtHow() {
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Simple setup. Full flexibility.”
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+          <div className="mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

@@ -33,7 +33,7 @@ export default function IbWhat() {
           badge="What is an IB?"
           title="What is an Introducing Broker (IB)?"
           highlight="Introducing Broker (IB)"
-          subtitle="Build relationships. Grow a trading network. Earn from activity."
+          subtitle="If you already work with traders, this is the boring-but-honest version of an affiliate program."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
@@ -118,16 +118,7 @@ export default function IbWhat() {
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Build relationships. Grow a trading network. Earn from activity.”
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+          <div className="mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

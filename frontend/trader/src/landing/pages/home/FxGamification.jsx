@@ -44,7 +44,7 @@ export default function FxGamification() {
           badge="Gamification"
           title="Your Activity Has Value"
           highlight="Value"
-          subtitle="Every interaction within the platform contributes to your progression."
+          subtitle="Trade and use the platform — earn XP, credits, and a performance score that quietly improves your account terms."
         />
 
         {/* ── 3 reward cards ──────────────────────────────────── */}
@@ -120,14 +120,6 @@ export default function FxGamification() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal variant="fadeUp" delay={0.3}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Stay active. Unlock more.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

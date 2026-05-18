@@ -37,7 +37,7 @@ export default function TxRiskControl() {
           badge="Risk Control"
           title="Built-In Risk Management"
           highlight="Risk Management"
-          subtitle="Better control leads to better decisions."
+          subtitle="The boring but useful tools that catch most surprises before you click Buy."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -62,14 +62,6 @@ export default function TxRiskControl() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Better control leads to better decisions.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

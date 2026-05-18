@@ -254,14 +254,6 @@ export default function TxExample() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “All costs are known before execution.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

@@ -1,0 +1,58 @@
+'use client'
+
+import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
+
+export default function StHero() {
+  return (
+    <section
+      className="relative overflow-hidden"
+      style={{ backgroundColor: 'var(--fx-bg)' }}
+    >
+      {/* Background banner */}
+      <div
+        aria-hidden
+        className="absolute inset-0 z-0 bg-no-repeat bg-center bg-cover"
+        style={{ backgroundImage: 'url(/images/banner2.png)' }}
+      />
+      {/* Dark overlay for text readability */}
+      <div
+        aria-hidden
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.75) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%), radial-gradient(40% 40% at 15% 90%, rgba(96,165,250,0.08) 0%, rgba(96,165,250,0) 60%)',
+        }}
+      />
+      <div className="fx-grid-bg" />
+      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* LEFT */}
+          <div className="lg:col-span-7">
+            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
+              Provide liquidity. <br />
+              <span className="fx-gold-text">Earn while you wait.</span>
+            </h1>
+            <p
+              className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
+              style={{ color: 'var(--fx-text-2)' }}
+            >
+              Park your funds with the protocol and earn while they sit there. Stay flexible
+              and withdraw when you want, or lock in for better terms.
+            </p>
+            <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
+              <Link to="#plans" className="fx-btn-primary justify-center">
+                Start Staking
+                <ArrowRight size={18} />
+              </Link>
+              <Link to="#modes" className="fx-btn-ghost justify-center">
+                Explore Options
+              </Link>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  )
+}

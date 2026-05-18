@@ -17,7 +17,7 @@ export default function CtWhat() {
           badge="Definition"
           title="What is Copy Trading?"
           highlight="Copy Trading?"
-          subtitle="Follow real performance — not predictions."
+          subtitle="Mirroring an experienced trader, position by position, at the size you choose."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
@@ -40,9 +40,6 @@ export default function CtWhat() {
                 When a Master Trader executes a trade, the same trade is mirrored in your account
                 based on your allocation.
               </p>
-              <div className="text-base md:text-lg font-semibold" style={{ color: 'var(--fx-gold-light)' }}>
-                “Follow real performance — not predictions.”
-              </div>
             </div>
           </ScrollReveal>
 

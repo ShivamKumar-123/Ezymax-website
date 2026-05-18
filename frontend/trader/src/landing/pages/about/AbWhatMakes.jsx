@@ -70,7 +70,7 @@ export default function AbWhatMakes() {
           badge="What Makes Us Different"
           title="More Than a Trading Platform"
           highlight="Trading Platform"
-          subtitle="FX Artha combines multiple layers of innovation into one unified ecosystem."
+          subtitle="A handful of things we built that aren't standard in this corner of the industry yet."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
@@ -97,14 +97,6 @@ export default function AbWhatMakes() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “FX Artha is designed as an ecosystem — not just a platform.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

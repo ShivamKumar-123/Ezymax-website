@@ -49,7 +49,7 @@ export default function IbBenefits() {
           badge="Why FX Artha"
           title="Why IBs Choose FX Artha"
           highlight="FX Artha"
-          subtitle="More than a broker partnership — an ecosystem partnership."
+          subtitle="The honest reasons people send their audience here instead of somewhere else."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
@@ -74,14 +74,6 @@ export default function IbBenefits() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “More than a broker partnership — an ecosystem partnership.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

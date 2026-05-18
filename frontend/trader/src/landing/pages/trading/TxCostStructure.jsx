@@ -86,14 +86,6 @@ export default function TxCostStructure() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “No hidden layers. Just transparent trading economics.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

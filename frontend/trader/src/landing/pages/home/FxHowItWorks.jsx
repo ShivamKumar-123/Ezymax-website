@@ -60,7 +60,7 @@ export default function FxHowItWorks() {
           badge="How It Works"
           title="From Wallet to Trade — A Seamless Flow"
           highlight="Seamless Flow"
-          subtitle="Structured flow. No manual control. Fully system-driven."
+          subtitle="From the moment you connect a wallet to the moment a profit lands back in it — here is what actually happens."
         />
 
         {/* ── Horizontal step rail (scrolls on mobile) ─────────── */}
@@ -119,14 +119,6 @@ export default function FxHowItWorks() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.3}>
-          <p
-            className="mt-12 md:mt-16 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Structured flow. No manual control. Fully system-driven.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

@@ -18,7 +18,7 @@ export default function AbHowItWorks() {
           badge="How It Works"
           title="A Smarter Trading Flow"
           highlight="Smarter Trading Flow"
-          subtitle="FX Artha separates fund custody, settlement, and trading infrastructure to create a more modern trading architecture."
+          subtitle="A normal broker bundles three things together: holding your money, running your trades, and settling them. We split those into three separate parts so you can actually see what's happening."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
@@ -74,14 +74,6 @@ export default function AbHowItWorks() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Built around transparency, automation, and user control.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

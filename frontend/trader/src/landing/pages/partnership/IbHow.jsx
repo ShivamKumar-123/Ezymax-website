@@ -24,7 +24,7 @@ export default function IbHow() {
           badge="How It Works"
           title="How the FX Artha IB Program Works"
           highlight="IB Program Works"
-          subtitle="The more active your network becomes, the more your business grows."
+          subtitle="Five steps from filling out the application to your first commission."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
@@ -81,16 +81,7 @@ export default function IbHow() {
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “The more active your network becomes, the more your business grows.”
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+          <div className="mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

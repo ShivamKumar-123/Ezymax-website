@@ -17,7 +17,7 @@ export default function FxReferral() {
           badge="Referral Program"
           title="Grow With the Platform"
           highlight="Platform"
-          subtitle="Growth driven by participation, not promises."
+          subtitle="A clean referral setup. No tiered pyramids, no MLM-style fine print."
         />
 
         <ScrollReveal variant="fadeUp">

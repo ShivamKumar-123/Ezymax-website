@@ -24,7 +24,7 @@ export default function FxTradeInsurance() {
           badge="Trade Insurance"
           title="Add an Extra Layer of Protection"
           highlight="Protection"
-          subtitle="Trade with awareness. Not uncertainty."
+          subtitle="Before you place a trade you can flip on a cushion that absorbs part of the loss if it goes wrong."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10 items-stretch">

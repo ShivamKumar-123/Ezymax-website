@@ -25,8 +25,10 @@ const navItems = [
       { name: 'Demo',     path: '/accounts/demo' },
     ],
   },
-  { label: 'About',      path: '/company/about' },
   { label: 'Partnership', path: '/company/partnership' },
+  { label: 'Staking',    path: '/staking' },
+  { label: 'Insurance',  path: '/insurance/overview' },
+  { label: 'About',      path: '/company/about' },
   { label: 'Contact',    path: '/company/contact' },
 ]
 
@@ -77,7 +79,7 @@ export default function Navbar() {
             <img
               src="/images/fxartha-logo.png"
               alt="FXArtha"
-              className="h-10 md:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-7 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
 
@@ -93,7 +95,7 @@ export default function Navbar() {
                 >
                   <button
                     type="button"
-                    className="flex items-center gap-1 px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-200"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
                     style={{
                       color: isDropdownActive(item.dropdown) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                     }}
@@ -147,7 +149,7 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className="px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-200"
+                  className="px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
                   style={{
                     color: isActive(item.path) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                   }}

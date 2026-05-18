@@ -136,14 +136,6 @@ export default function FxProblemSolution() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 md:mt-14 text-center text-lg md:text-xl font-semibold tracking-tight"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Control stays with you. Execution stays with the system.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

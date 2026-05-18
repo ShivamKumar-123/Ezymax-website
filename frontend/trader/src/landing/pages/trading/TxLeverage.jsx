@@ -77,13 +77,6 @@ export default function TxLeverage() {
                   </span>
                 </div>
               </div>
-
-              <p
-                className="mt-7 text-base md:text-lg font-semibold"
-                style={{ color: 'var(--fx-gold-light)' }}
-              >
-                “You only pay for leverage when you actually use it over time.”
-              </p>
             </div>
           </ScrollReveal>
 

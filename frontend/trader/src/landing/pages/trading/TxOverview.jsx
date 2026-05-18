@@ -87,14 +87,6 @@ export default function TxOverview() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal variant="fadeUp" delay={0.3}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Your growth as a trader improves your trading conditions.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

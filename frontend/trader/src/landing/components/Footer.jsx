@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Twitter, Linkedin, Instagram, Youtube, Mail } from 'lucide-react'
+import { Instagram, Youtube, Facebook, Mail } from 'lucide-react'
 import ScrollReveal from './animations/ScrollReveal'
 
 const columns = {
@@ -28,10 +28,9 @@ const columns = {
 }
 
 const socials = [
-  { icon: Twitter,   href: '#', label: 'Twitter' },
-  { icon: Linkedin,  href: '#', label: 'LinkedIn' },
   { icon: Instagram, href: '#', label: 'Instagram' },
   { icon: Youtube,   href: '#', label: 'YouTube' },
+  { icon: Facebook,  href: '#', label: 'Facebook' },
 ]
 
 export default function Footer() {
@@ -54,7 +53,7 @@ export default function Footer() {
           <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">
               <Link to="/" className="inline-block mb-5" aria-label="FXArtha home">
-                <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-10 w-auto" />
+                <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-7 w-auto" />
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 FXArtha is an institutional-grade forex and CFD broker. Built for serious

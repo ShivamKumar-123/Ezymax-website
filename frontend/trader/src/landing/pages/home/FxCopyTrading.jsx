@@ -18,7 +18,7 @@ export default function FxCopyTrading() {
           badge="Copy Trading"
           title="Access Experience Without Guesswork"
           highlight="Without Guesswork"
-          subtitle="Strategy over speculation."
+          subtitle="Skip writing your own strategy — borrow one that's already working."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">

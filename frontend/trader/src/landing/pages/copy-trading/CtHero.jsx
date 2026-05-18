@@ -1,7 +1,7 @@
 'use client'
 
 import { Link } from 'react-router-dom'
-import { ArrowRight, Crown, TrendingUp, Star, Copy } from 'lucide-react'
+import { ArrowRight, Crown, Star } from 'lucide-react'
 
 const leaders = [
   { rank: 1, name: 'AlphaQuant',  roi: '+48.2%', risk: 'Low',    color: '#4ade80' },
@@ -41,16 +41,10 @@ export default function CtHero() {
               className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              Follow verified strategies or become a Master Trader by proving your performance.
+              Pick a trader whose track record you actually like. From then on, every trade
+              they place gets mirrored in your account at your size. Pause it whenever you
+              want.
             </p>
-            <div className="mt-6 fx-fade-up fx-fade-up-d2">
-              <span
-                className="inline-block text-sm md:text-base font-semibold tracking-wide"
-                style={{ color: 'var(--fx-gold-light)' }}
-              >
-                Performance earns trust. Not promises.
-              </span>
-            </div>
             <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
               <Link to="#explore" className="fx-btn-primary justify-center">
                 Explore Traders
@@ -136,81 +130,6 @@ export default function CtHero() {
                 </ul>
               </div>
 
-              {/* Copy toggle pill */}
-              <div
-                className="absolute left-0 top-[58%] w-[60%] glass-card p-4"
-                style={{ animation: 'fxFloat 8s ease-in-out infinite 1.1s' }}
-              >
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Copy size={14} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--fx-text-3)' }}>
-                      Copy
-                    </span>
-                  </div>
-                  <span
-                    className="relative inline-flex items-center w-11 h-6 rounded-full p-0.5"
-                    style={{
-                      background:
-                        'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                    }}
-                  >
-                    <span
-                      className="block w-5 h-5 rounded-full"
-                      style={{
-                        background: '#1a1408',
-                        marginLeft: 'auto',
-                      }}
-                    />
-                  </span>
-                </div>
-                <div className="text-sm font-bold text-white">AlphaQuant · Active</div>
-                <div className="text-[11px]" style={{ color: 'var(--fx-text-3)' }}>
-                  Allocation $500
-                </div>
-              </div>
-
-              {/* Performance mini-chart */}
-              <div
-                className="absolute right-0 bottom-0 w-[58%] rounded-2xl p-4"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(74,222,128,0.10), rgba(74,222,128,0.02))',
-                  border: '1px solid rgba(74,222,128,0.30)',
-                  boxShadow: '0 16px 40px -16px rgba(74,222,128,0.30)',
-                  animation: 'fxFloat 6s ease-in-out infinite 0.4s',
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={14} style={{ color: '#4ade80' }} />
-                    <span className="text-[11px] uppercase tracking-wider" style={{ color: '#4ade80' }}>
-                      Performance
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold" style={{ color: '#4ade80' }}>
-                    +18.4%
-                  </span>
-                </div>
-                <svg viewBox="0 0 200 60" className="w-full h-14" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="ctHeroSpark" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(74,222,128,0.45)" />
-                      <stop offset="100%" stopColor="rgba(74,222,128,0)" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M0,44 L20,40 L40,42 L60,32 L80,30 L100,22 L120,20 L140,16 L160,12 L180,10 L200,6 L200,60 L0,60 Z"
-                    fill="url(#ctHeroSpark)"
-                  />
-                  <path
-                    d="M0,44 L20,40 L40,42 L60,32 L80,30 L100,22 L120,20 L140,16 L160,12 L180,10 L200,6"
-                    fill="none"
-                    stroke="#4ade80"
-                    strokeWidth="1.6"
-                  />
-                </svg>
-              </div>
             </div>
           </div>
         </div>

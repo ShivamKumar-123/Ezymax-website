@@ -138,12 +138,6 @@ export default function CtFee() {
                   Remaining goes to the Master Trader.
                 </li>
               </ul>
-              <p
-                className="text-base font-semibold"
-                style={{ color: 'var(--fx-gold-light)' }}
-              >
-                “Aligned incentives across all participants.”
-              </p>
             </div>
           </div>
         </ScrollReveal>

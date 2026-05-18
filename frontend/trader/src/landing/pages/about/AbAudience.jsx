@@ -20,7 +20,7 @@ export default function AbAudience() {
           badge="Who FX Artha Is For"
           title="Built for Modern Digital Traders"
           highlight="Digital Traders"
-          subtitle="Whether you are an experienced trader, a beginner, a community leader, or a digital finance enthusiast — FX Artha is designed for a connected ecosystem experience."
+          subtitle="If you've done any of this before, FX Artha will feel familiar — minus the parts that always bothered you."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">

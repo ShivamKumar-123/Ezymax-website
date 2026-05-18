@@ -26,7 +26,7 @@ export default function AbSecurity() {
           badge="Security & Transparency"
           title="Designed Around Trust"
           highlight="Trust"
-          subtitle="The platform architecture prioritises transparent systems, protocol-based infrastructure, smart contract logic, and modern digital security practices."
+          subtitle="What we lean on instead of asking you to take our word for it."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
@@ -53,14 +53,6 @@ export default function AbSecurity() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Trust is built through systems — not promises.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

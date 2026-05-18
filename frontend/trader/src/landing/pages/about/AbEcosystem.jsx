@@ -33,7 +33,7 @@ export default function AbEcosystem() {
           badge="The FX Artha Ecosystem"
           title="One Ecosystem. Multiple Opportunities."
           highlight="Multiple Opportunities"
-          subtitle="A connected financial ecosystem where you trade, copy strategies, stake, earn rewards, and engage with protocol utilities."
+          subtitle="Trading is the centre, but it's surrounded by other ways to put your account to work — copying, staking, rewards, partner programs."
         />
 
         {/* Mobile-first layout: 2-col grid with hub on top. */}
@@ -49,24 +49,6 @@ export default function AbEcosystem() {
         {/* Desktop ecosystem wheel — 3x3 grid w/ hub centered */}
         <div className="hidden md:block mt-12 md:mt-16">
           <div className="relative max-w-5xl mx-auto">
-            {/* Decorative orbits behind */}
-            <svg
-              viewBox="0 0 800 540"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden
-            >
-              <defs>
-                <radialGradient id="abEcoGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(214,169,61,0.10)" />
-                  <stop offset="100%" stopColor="rgba(214,169,61,0)" />
-                </radialGradient>
-              </defs>
-              <ellipse cx="400" cy="270" rx="380" ry="240" fill="url(#abEcoGlow)" />
-              <ellipse cx="400" cy="270" rx="320" ry="180" fill="none" stroke="rgba(255,255,255,0.05)" />
-              <ellipse cx="400" cy="270" rx="220" ry="120" fill="none" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 6" />
-            </svg>
-
             <div className="relative grid grid-cols-3 gap-5 lg:gap-7">
               <ScrollReveal variant="fadeUp" delay={0.0}>
                 <ModuleCard {...modules[0]} />
@@ -101,14 +83,6 @@ export default function AbEcosystem() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.3}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “Every feature is designed to strengthen the ecosystem experience.”
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )

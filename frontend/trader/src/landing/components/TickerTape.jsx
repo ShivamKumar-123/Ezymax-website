@@ -41,11 +41,15 @@ export default function TickerTape() {
   }, [])
 
   return (
-    <div className="w-full bg-primary-bg border-y border-white/[0.06]">
-      <div
-        className="tradingview-widget-container"
-        ref={container}
-      />
+    <div
+      className="w-full"
+      style={{
+        background: 'var(--fx-bg)',
+        borderTop: '1px solid var(--fx-line)',
+        borderBottom: '1px solid var(--fx-line)',
+      }}
+    >
+      <div className="tradingview-widget-container" ref={container} />
     </div>
   )
 }

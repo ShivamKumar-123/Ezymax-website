@@ -82,16 +82,7 @@ export default function CtProfit() {
         </ScrollReveal>
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
-          <p
-            className="mt-10 text-center text-base md:text-lg font-semibold italic"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            “You earn only when your followers profit.”
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+          <div className="mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

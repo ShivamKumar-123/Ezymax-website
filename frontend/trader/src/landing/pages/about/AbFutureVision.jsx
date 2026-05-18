@@ -17,7 +17,7 @@ export default function AbFutureVision() {
           badge="Future Vision"
           title="Building Beyond Traditional Trading"
           highlight="Beyond Traditional Trading"
-          subtitle="FX Artha is continuously exploring the next layers of trading infrastructure."
+          subtitle="What the team is working on next."
         />
 
         <ScrollReveal variant="fadeUp">
@@ -30,38 +30,6 @@ export default function AbFutureVision() {
               boxShadow: '0 30px 70px -30px rgba(214,169,61,0.35)',
             }}
           >
-            {/* galaxy / grid backdrop */}
-            <div className="absolute inset-0 fx-grid-bg" />
-            <svg
-              viewBox="0 0 800 220"
-              className="absolute inset-0 w-full h-full pointer-events-none opacity-90"
-              preserveAspectRatio="xMidYMid slice"
-              aria-hidden
-            >
-              <defs>
-                <radialGradient id="abFutureGalaxy" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%" stopColor="rgba(214,169,61,0.16)" />
-                  <stop offset="100%" stopColor="rgba(214,169,61,0)" />
-                </radialGradient>
-              </defs>
-              <rect width="800" height="220" fill="url(#abFutureGalaxy)" />
-              {Array.from({ length: 30 }).map((_, i) => {
-                const x = ((i * 47) % 800)
-                const y = ((i * 91) % 220)
-                const r = (i % 5) * 0.35 + 0.6
-                return (
-                  <circle
-                    key={i}
-                    cx={x}
-                    cy={y}
-                    r={r}
-                    fill={i % 3 === 0 ? '#ecc657' : 'rgba(255,255,255,0.45)'}
-                    opacity={0.3 + (i % 5) * 0.12}
-                  />
-                )
-              })}
-            </svg>
-
             <div className="relative max-w-3xl mx-auto">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-10">
                 {directions.map(({ icon: Icon, label }) => (

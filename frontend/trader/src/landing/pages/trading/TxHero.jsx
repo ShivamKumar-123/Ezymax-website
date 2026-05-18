@@ -1,7 +1,7 @@
 'use client'
 
 import { Link } from 'react-router-dom'
-import { ArrowRight, Layers, TrendingDown, LineChart, Zap } from 'lucide-react'
+import { ArrowRight, LineChart } from 'lucide-react'
 
 export default function TxHero() {
   return (
@@ -35,17 +35,10 @@ export default function TxHero() {
               className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              A trading system where your costs improve as you grow — designed for clarity,
-              fairness, and long-term efficiency.
+              No account tiers, no markup games. The brokerage, the leverage fee, and the
+              spread are the only three things you pay — and they all get smaller the more
+              you trade.
             </p>
-            <div className="mt-6 fx-fade-up fx-fade-up-d2">
-              <span
-                className="inline-block text-sm md:text-base font-semibold tracking-wide"
-                style={{ color: 'var(--fx-gold-light)' }}
-              >
-                Transparent pricing. Performance-based benefits.
-              </span>
-            </div>
             <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
               <Link to="/auth/register" className="fx-btn-primary justify-center">
                 Start Trading
@@ -119,58 +112,6 @@ export default function TxHero() {
                 </div>
               </div>
 
-              {/* Overlay: 3 Cost System */}
-              <div
-                className="absolute left-0 top-[64%] w-[58%] glass-card p-4"
-                style={{ animation: 'fxFloat 8s ease-in-out infinite 1.2s' }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="feature-icon" style={{ width: 40, height: 40 }}>
-                    <Layers size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--fx-gold-light)' }}>
-                      3-Cost System
-                    </div>
-                    <div className="text-sm font-bold text-white">Brokerage · Leverage · Spread</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Overlay: XP Growth */}
-              <div
-                className="absolute right-0 bottom-2 w-[52%] px-4 py-3 rounded-2xl"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(167,139,250,0.18), rgba(167,139,250,0.04))',
-                  border: '1px solid rgba(167,139,250,0.4)',
-                  boxShadow: '0 8px 30px -10px rgba(167,139,250,0.4)',
-                  animation: 'fxFloat 6s ease-in-out infinite 0.4s',
-                }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap size={16} style={{ color: '#a78bfa' }} />
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: '#a78bfa' }}>
-                    XP Growth
-                  </div>
-                </div>
-                <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: '68%',
-                      background: 'linear-gradient(90deg, #a78bfa, #ecc657)',
-                      boxShadow: '0 0 12px rgba(167,139,250,0.5)',
-                    }}
-                  />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[11px]">
-                  <span style={{ color: 'var(--fx-text-3)' }}>Fees</span>
-                  <span className="inline-flex items-center gap-1 font-semibold" style={{ color: '#4ade80' }}>
-                    <TrendingDown size={11} /> Lower over time
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>

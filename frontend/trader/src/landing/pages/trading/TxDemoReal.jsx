@@ -14,7 +14,7 @@ export default function TxDemoReal() {
           badge="Demo vs Real"
           title="Practice or Trade Live"
           highlight="or Trade Live"
-          subtitle="Same interface. Same logic. Different stakes."
+          subtitle="The buttons are the same. The numbers feel different."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

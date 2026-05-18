@@ -20,7 +20,7 @@ export default function AbVision() {
           badge="Our Vision"
           title="Built for the Next Generation of Traders"
           highlight="Next Generation"
-          subtitle="The trading industry has evolved technologically, but many systems still operate on outdated infrastructure."
+          subtitle="The trading software people use every day still runs on stuff designed for 2010. We thought it was time someone rebuilt it."
         />
 
         <div className="mt-12 md:mt-16 max-w-4xl mx-auto">
@@ -92,22 +92,6 @@ export default function AbVision() {
             </div>
           </ScrollReveal>
 
-          <ScrollReveal variant="fadeUp" delay={0.15}>
-            <div
-              className="mt-8 relative rounded-2xl p-7 md:p-9 text-center"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(214,169,61,0.18) 0%, var(--fx-bg-elev-2) 60%)',
-                border: '1px solid rgba(214,169,61,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(214,169,61,0.35)',
-              }}
-            >
-              <Quote size={28} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
-              <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                “Technology should increase transparency — not complexity.”
-              </p>
-            </div>
-          </ScrollReveal>
         </div>
       </div>
     </section>
