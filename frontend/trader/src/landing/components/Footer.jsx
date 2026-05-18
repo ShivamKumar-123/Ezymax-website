@@ -25,11 +25,6 @@ const columns = {
     { name: 'Why FXArtha',    path: '/company/why-fxartha' },
     { name: 'Contact',        path: '/company/contact' },
   ],
-  Education: [
-    { name: 'Tutorials',   path: '/education/tutorials' },
-    { name: 'Blog',        path: '/education/blog' },
-    { name: 'Market News', path: '/education/news' },
-  ],
 }
 
 const socials = [

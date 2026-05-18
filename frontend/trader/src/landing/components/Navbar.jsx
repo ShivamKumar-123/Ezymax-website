@@ -25,7 +25,6 @@ const navItems = [
       { name: 'Demo',     path: '/accounts/demo' },
     ],
   },
-  { label: 'Education',  path: '/education/tutorials' },
   { label: 'About',      path: '/company/about' },
   { label: 'Partnership', path: '/company/partnership' },
   { label: 'Contact',    path: '/company/contact' },

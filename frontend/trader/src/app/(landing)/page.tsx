@@ -1,43 +1,29 @@
 'use client'
 
 import HeroSection from '@/landing/pages/home/HeroSection'
-import WhySection from '@/landing/pages/home/WhySection'
-import MarketsSection from '@/landing/pages/home/MarketsSection'
-import AccountsSection from '@/landing/pages/home/AccountsSection'
-// import PlatformSection from '@/landing/pages/home/PlatformSection'
-import ConditionsSection from '@/landing/pages/home/ConditionsSection'
-import ToolsSection from '@/landing/pages/home/ToolsSection'
-import EducationSection from '@/landing/pages/home/EducationSection'
-import PaymentsSection from '@/landing/pages/home/PaymentsSection'
-import SecuritySection from '@/landing/pages/home/SecuritySection'
-import AboutSection from '@/landing/pages/home/AboutSection'
-import VisionMissionSection from '@/landing/pages/home/VisionMissionSection'
-// import PartnerProgramSection from '@/landing/pages/home/PartnerProgramSection'
-import IslamicAccountSection from '@/landing/pages/home/IslamicAccountSection'
-import LiveMarketChartsSection from '@/landing/pages/home/LiveMarketChartsSection'
-import StartTradingSection from '@/landing/pages/home/StartTradingSection'
-import BottomSection from '@/landing/pages/home/BottomSection'
+import FxProblemSolution from '@/landing/pages/home/FxProblemSolution'
+import FxHowItWorks from '@/landing/pages/home/FxHowItWorks'
+import FxTradingModes from '@/landing/pages/home/FxTradingModes'
+import FxTradeInsurance from '@/landing/pages/home/FxTradeInsurance'
+import FxGamification from '@/landing/pages/home/FxGamification'
+import FxCopyTrading from '@/landing/pages/home/FxCopyTrading'
+import FxStaking from '@/landing/pages/home/FxStaking'
+import FxReferral from '@/landing/pages/home/FxReferral'
+import FxFinalCTA from '@/landing/pages/home/FxFinalCTA'
 
 export default function LandingHomePage() {
   return (
     <>
       <HeroSection />
-      <WhySection />
-      <MarketsSection />
-      <AccountsSection />
-      {/* <PlatformSection /> */}
-      <ConditionsSection />
-      <ToolsSection />
-      <LiveMarketChartsSection />
-      <EducationSection />
-      <PaymentsSection />
-      <SecuritySection />
-      <AboutSection />
-      <VisionMissionSection />
-      <IslamicAccountSection />
-      {/* <PartnerProgramSection /> */}
-      <StartTradingSection />
-      <BottomSection />
+      <FxProblemSolution />
+      <FxHowItWorks />
+      <FxTradingModes />
+      <FxTradeInsurance />
+      <FxGamification />
+      <FxCopyTrading />
+      <FxStaking />
+      <FxReferral />
+      <FxFinalCTA />
     </>
   )
 }
