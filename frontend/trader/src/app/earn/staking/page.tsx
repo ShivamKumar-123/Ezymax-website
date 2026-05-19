@@ -24,6 +24,19 @@ type Position = {
   rewards_paid: number;
 };
 
+type ReferralLevel = {
+  level: number;
+  commission_pct: number;
+  earnings: number;
+  team_staked: number;
+  referrals_count: number;
+};
+type ReferralSummary = {
+  total_referral_earnings: number;
+  total_team_staked: number;
+  levels: ReferralLevel[];
+};
+
 const fmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const fmtUsd = (n: number) => `$${fmt(n)}`;
 
@@ -39,6 +52,7 @@ function Inner() {
   const [plans, setPlans] = useState<StakingPlan[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [useTradingBonus, setUseTradingBonus] = useState<boolean>(true);
@@ -53,14 +67,16 @@ function Inner() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [plansR, positionsR, wallet] = await Promise.all([
+      const [plansR, positionsR, wallet, referralR] = await Promise.all([
         api.get<StakingPlan[]>('/staking/plans'),
         api.get<Position[]>('/staking/positions'),
         api.get<{ main_wallet_balance?: number; balance?: number }>('/wallet/summary'),
+        api.get<ReferralSummary>('/staking/referral-summary').catch(() => null),
       ]);
       setPlans(plansR);
       setPositions(positionsR);
       setWalletBalance(Number(wallet.main_wallet_balance ?? wallet.balance ?? 0));
+      setReferralSummary(referralR);
       if (plansR.length > 0 && !selectedPlanId) {
         // Default to the first locked plan if any, else the flexible one.
         const def = plansR.find((p) => p.mode === 'locked') || plansR[0];
@@ -384,6 +400,106 @@ function Inner() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Staking Referral Earnings — 10-level commission breakdown.
+          Mirrors the one-time-payout distribution that fires on every stake
+          opened by a downline (see staking_service.STAKING_REFERRAL_PCT). */}
+      <section>
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <h2 className="text-lg font-bold text-text-primary">Staking Referral Earnings</h2>
+          <span className="text-[11px] text-text-tertiary">
+            Paid one-time on each downline stake — credited to your main wallet.
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3">
+          <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
+                <Gift size={20} className="text-purple-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">
+                  Total Referral Earnings (One-time)
+                </p>
+                <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                  {fmtUsd(referralSummary?.total_referral_earnings ?? 0)}
+                </p>
+                <p className="text-[10px] text-purple-200/60 mt-0.5">Across 10 referral levels</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                <BarChart3 size={20} className="text-emerald-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-wide text-emerald-200/80 font-medium">
+                  Total Team Staked
+                </p>
+                <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                  {fmtUsd(referralSummary?.total_team_staked ?? 0)}
+                </p>
+                <p className="text-[10px] text-emerald-200/60 mt-0.5">Cumulative principal across your network</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-bg-base/40 text-text-tertiary text-[11px] uppercase tracking-wider">
+                <th className="text-left font-medium px-4 py-2.5">Level</th>
+                <th className="text-right font-medium px-4 py-2.5">Commission %</th>
+                <th className="text-right font-medium px-4 py-2.5">Earnings (USD)</th>
+                <th className="text-right font-medium px-4 py-2.5">Team Staked (USD)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(referralSummary?.levels ?? []).map((lvl) => (
+                <tr
+                  key={lvl.level}
+                  className="border-t border-border-primary/60 hover:bg-bg-hover/40 transition-colors"
+                >
+                  <td className="px-4 py-2.5 text-text-primary font-medium">Level {lvl.level}</td>
+                  <td className="px-4 py-2.5 text-right text-text-secondary font-mono tabular-nums">
+                    {lvl.commission_pct.toFixed(lvl.commission_pct % 1 === 0 ? 0 : 1)}%
+                  </td>
+                  <td className={clsx(
+                    'px-4 py-2.5 text-right font-mono tabular-nums',
+                    lvl.earnings > 0 ? 'text-[#d6a93d] font-semibold' : 'text-text-tertiary',
+                  )}>
+                    {fmt(lvl.earnings)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-text-secondary font-mono tabular-nums">
+                    {fmt(lvl.team_staked)}
+                  </td>
+                </tr>
+              ))}
+              {referralSummary && (
+                <tr className="border-t border-border-primary bg-bg-base/30 font-semibold">
+                  <td className="px-4 py-2.5 text-text-primary">Total</td>
+                  <td className="px-4 py-2.5 text-right text-text-tertiary font-mono">30%</td>
+                  <td className="px-4 py-2.5 text-right text-[#d6a93d] font-mono tabular-nums">
+                    {fmt(referralSummary.total_referral_earnings)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-text-primary font-mono tabular-nums">
+                    {fmt(referralSummary.total_team_staked)}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {referralSummary && referralSummary.total_team_staked === 0 && (
+            <p className="px-4 py-3 text-center text-xs text-text-tertiary border-t border-border-primary/60">
+              No staking referrals yet. Share your IB link — when a downline opens a stake, you
+              earn a one-time payout (10% L1 down to 1% L10).
+            </p>
+          )}
+        </div>
       </section>
     </div>
   );

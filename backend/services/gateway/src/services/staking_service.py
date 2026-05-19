@@ -100,6 +100,87 @@ async def _distribute_staking_referral(
         current = ancestor_id
 
 
+# ─── Referral summary (per-level earnings + team-staked) ──────────────
+
+async def referral_summary(user_id: UUID, db: AsyncSession) -> dict:
+    """Per-level breakdown of the user's earnings from the 10-level staking
+    referral chain.
+
+    For each row in `rewards_transactions` whose type matches
+    `staking_referral_l{N}` and whose `user_id` is this user, we look up
+    the linked `StakingPosition` (via `reference_id`) to recover the
+    principal that triggered the payout. The payout amount is
+    deterministically `principal × STAKING_REFERRAL_PCT[N-1]` (matches the
+    distribution that fired in `_distribute_staking_referral`).
+
+    Returns a struct that the trader UI can render directly:
+      {
+        "total_referral_earnings": <USD, one-time>,
+        "total_team_staked": <USD, lifetime cumulative principal>,
+        "levels": [
+          { "level": 1, "commission_pct": 10.0, "earnings": ..., "team_staked": ..., "referrals_count": ... },
+          ...
+        ],
+      }
+
+    All-time semantics: includes principals from positions that have since
+    been withdrawn — the one-time payout already fired and is final.
+    """
+    rows = (await db.execute(
+        select(
+            RewardsTransaction.type,
+            StakingPosition.principal,
+        )
+        .join(StakingPosition, StakingPosition.id == RewardsTransaction.reference_id)
+        .where(
+            RewardsTransaction.user_id == user_id,
+            RewardsTransaction.type.like("staking_referral_l%"),
+        )
+    )).all()
+
+    by_level: dict[int, dict] = {
+        i: {
+            "level": i,
+            "commission_pct": float(STAKING_REFERRAL_PCT[i - 1] * Decimal("100")),
+            "earnings": Decimal("0"),
+            "team_staked": Decimal("0"),
+            "referrals_count": 0,
+        }
+        for i in range(1, 11)
+    }
+
+    for tx_type, principal in rows:
+        try:
+            level = int(str(tx_type).replace("staking_referral_l", ""))
+        except ValueError:
+            continue
+        if level < 1 or level > 10:
+            continue
+        principal_dec = Decimal(str(principal or 0))
+        share = STAKING_REFERRAL_PCT[level - 1]
+        by_level[level]["earnings"] += (principal_dec * share).quantize(Decimal("0.01"))
+        by_level[level]["team_staked"] += principal_dec
+        by_level[level]["referrals_count"] += 1
+
+    total_earnings = sum((b["earnings"] for b in by_level.values()), Decimal("0"))
+    total_team_staked = sum((b["team_staked"] for b in by_level.values()), Decimal("0"))
+
+    return {
+        "total_referral_earnings": float(total_earnings),
+        "total_team_staked": float(total_team_staked),
+        "levels": [
+            {
+                "level": b["level"],
+                "commission_pct": b["commission_pct"],
+                "earnings": float(b["earnings"]),
+                "team_staked": float(b["team_staked"]),
+                "referrals_count": b["referrals_count"],
+            }
+            for b in by_level.values()
+        ],
+    }
+
+
 # ─── Catalogue ───────────────────────────────────────────────────────
 
 async def list_plans(db: AsyncSession) -> list[dict]:

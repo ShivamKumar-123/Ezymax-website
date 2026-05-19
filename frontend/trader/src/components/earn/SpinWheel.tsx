@@ -26,7 +26,10 @@ type SpinResult = {
   new_ac_balance: number;
 };
 
-const SLICE_COLOURS = ['#d6a93d', '#9c7a30', '#c69a37', '#7a5e26', '#e0bc63', '#8c6c2b', '#b58a35'];
+// Alternating bright gold / deep walnut so each wedge reads as a distinct
+// slice. Earlier we used 7 near-identical gold tones and the wheel looked
+// like a flat disc.
+const SLICE_COLOURS = ['#d6a93d', '#3a2a10'];
 
 export default function SpinWheel({
   onResult,
@@ -159,21 +162,28 @@ export default function SpinWheel({
           }}
         >
           {prizes.map((p, i) => {
-            // Place a label in the centre of each slice. We rotate the label
-            // container into position and then rotate the text upright.
+            // Polar placement: anchor at wheel centre, rotate by the slice's
+            // mid-angle, push outward by ~70% of the radius, then counter-
+            // rotate the text so it always reads horizontally. `top/left:50%`
+            // + `translate(-50%,-50%)` keeps the rotation pivot on the exact
+            // centre regardless of label width.
             const rot = i * sliceAngle + sliceAngle / 2;
+            const isLight = (i % 2) === 0;
             return (
               <div
                 key={p.id}
                 aria-hidden
-                className="absolute left-1/2 top-1/2 origin-bottom-left"
+                className="absolute left-1/2 top-1/2 pointer-events-none"
                 style={{
-                  transform: `rotate(${rot}deg) translate(0, -42%)`,
+                  transform: `translate(-50%, -50%) rotate(${rot}deg) translateY(-38%)`,
                 }}
               >
                 <span
-                  className="block text-[11px] font-bold whitespace-nowrap text-bg-base"
-                  style={{ transform: `rotate(${-rot}deg) translate(-50%, 0)` }}
+                  className={
+                    'inline-block text-[11px] sm:text-xs font-extrabold whitespace-nowrap drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] ' +
+                    (isLight ? 'text-bg-base' : 'text-[#f5e6b8]')
+                  }
+                  style={{ transform: `rotate(${-rot}deg)` }}
                 >
                   {p.label}
                 </span>

@@ -8,42 +8,55 @@ import { useUIStore } from '@/stores/uiStore';
 import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
 
 /**
- * Classic widgetembed iframe — avoids injecting TV’s script into the DOM.
- * That pattern breaks under React Strict Mode (double mount): cleanup removes the node
- * while TradingView still touches iframe.contentWindow → console error + blank chart.
+ * Modern Advanced Chart embed iframe (`tradingview-widget.com/embed-widget/
+ * advanced-chart/`) — same pattern as TradingViewNewsTimeline /
+ * TradingViewEventsCalendar. Settings are encoded as a JSON fragment.
+ *
+ * Why not the script-based `embed-widget-advanced-chart.js` pattern: it
+ * breaks under React Strict Mode (double mount). On cleanup React removes
+ * the host node while TradingView still touches `iframe.contentWindow` →
+ * console error + blank chart. Direct iframe with `key={src}` sidesteps
+ * the issue cleanly.
+ *
+ * Width/height MUST be numeric pixels. `'100%'` inside the JSON fragment
+ * triggers `URIError: URI malformed` inside TradingView's bootstrap
+ * (`%"` is not a valid percent-encoded sequence). CSS sizes the iframe.
  */
+const ADVANCED_CHART_EMBED = 'https://www.tradingview-widget.com/embed-widget/advanced-chart/';
+
 function buildWidgetEmbedUrl(
   symbol: string,
-  theme: 'Dark' | 'Light',
+  theme: 'dark' | 'light',
   interval: string,
 ): string {
   const tvSymbol = toTradingViewSymbol(symbol);
-  const params = new URLSearchParams({
-    frameElementId: 'pt_tradingview_chart',
+  const settings: Record<string, string | number | boolean | unknown[]> = {
+    autosize: true,
+    width: 1400,
+    height: 900,
     symbol: tvSymbol,
     interval,
-    hidesidetoolbar: '0',
-    hidetoptoolbar: '0',
-    symboledit: '0',
-    saveimage: '1',
-    toolbarbg: theme === 'Dark' ? '131722' : 'f1f3f6',
-    studies: '[]',
-    hideideas: '1',
+    timezone: 'Etc/UTC',
     theme,
     style: '1',
-    timezone: 'Etc/UTC',
-    studies_overrides: '{}',
-    overrides: '{}',
-    enabled_features: '[]',
-    disabled_features: '[]',
     locale: 'en',
-    utm_source: typeof window !== 'undefined' ? window.location.hostname || 'fxartha' : 'fxartha',
-    utm_medium: 'widget',
-    utm_campaign: 'chart',
-    utm_term: tvSymbol,
-    withdateranges: '1',
-  });
-  return `https://www.tradingview.com/widgetembed/?${params.toString()}`;
+    // Drawing toolbar (left rail) — always visible. A toggle was tried
+    // but flipping this flag at runtime broke the iframe render on the
+    // free embed; the cost of the reload + the blank-state risk wasn't
+    // worth the cosmetic win.
+    hide_side_toolbar: false,
+    allow_symbol_change: true,
+    enable_publishing: false,
+    save_image: true,
+    details: true,
+    hotlist: true,
+    calendar: true,
+    studies: [],
+  };
+  const u = new URL(ADVANCED_CHART_EMBED);
+  u.searchParams.set('locale', 'en');
+  u.hash = JSON.stringify(settings);
+  return u.toString();
 }
 
 function TradingViewChartInner() {
@@ -51,7 +64,7 @@ function TradingViewChartInner() {
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const theme = useUIStore((s) => s.theme);
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const tvTheme: 'Dark' | 'Light' = theme === 'light' ? 'Light' : 'Dark';
+  const tvTheme: 'dark' | 'light' = theme === 'light' ? 'light' : 'dark';
   const interval = onTradingTerminal ? '5' : '15';
 
   const src = useMemo(
@@ -59,7 +72,7 @@ function TradingViewChartInner() {
     [selectedSymbol, tvTheme, interval],
   );
 
-  const surface = tvTheme === 'Light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
+  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
 
   return (
     <div className={clsx('w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>
