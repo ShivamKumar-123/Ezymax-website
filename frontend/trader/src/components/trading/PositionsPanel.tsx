@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import ShareTradeModal from '@/components/trading/ShareTradeModal';
+import MarginRing from '@/components/trading/MarginRing';
 
 interface ClosedTrade {
   id: string;
@@ -781,6 +782,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         {marginLevelDisplay}
                       </span>
                     </div>
+                    {activeAccount.margin_used > 0 && (
+                      <MarginRing
+                        marginLevel={Number(activeAccount.margin_level) || 0}
+                        size={44}
+                        className="shrink-0"
+                      />
+                    )}
                   </>
                 ) : null}
                 {isTerminal && activeTab === 'open' && (

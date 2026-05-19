@@ -21,6 +21,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
+import TerminalTicker from '@/components/trading/TerminalTicker';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
@@ -618,6 +619,7 @@ export default function TradingTerminalPage() {
         ref={centerColumnRef}
         className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0 relative z-0"
       >
+        <TerminalTicker />
         <div className="flex-1 min-h-0 flex overflow-hidden">
           <div
             className={clsx(

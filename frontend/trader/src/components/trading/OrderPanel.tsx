@@ -14,6 +14,7 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
 import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
+import SentimentGauge from '@/components/trading/SentimentGauge';
 import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
 
 type OrderSide = 'buy' | 'sell';
@@ -358,6 +359,13 @@ export default function OrderPanel() {
           )}
         >
           <div className={pad}>
+          {/* Market sentiment gauge — only on the trading terminal layout
+              where the rail is wide enough to host it without crowding
+              the order ticket. */}
+          {isTradingTerminal && selectedSymbol ? (
+            <SentimentGauge symbol={selectedSymbol} className="mb-2" />
+          ) : null}
+
           {/* Market / Pending tabs */}
           <div className="flex rounded-md overflow-hidden bg-bg-secondary border border-border-primary">
             {(['market', 'pending'] as const).map((t) => (
@@ -490,6 +498,27 @@ export default function OrderPanel() {
               >
                 <Plus size={isTradingTerminal ? 12 : 14} />
               </button>
+            </div>
+            {/* Quick-size chips: tap to set volume directly. */}
+            <div className="flex items-center gap-1 mt-1.5">
+              {(['0.01', '0.1', '1.00', '10', '100'] as const).map((v) => {
+                const active = parseFloat(lots) === parseFloat(v);
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setLots(v)}
+                    className={clsx(
+                      'flex-1 py-1 rounded-md text-[10px] font-bold font-mono tabular-nums border transition-colors',
+                      active
+                        ? 'border-accent/60 bg-accent/10 text-accent'
+                        : 'border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary hover:border-accent/30',
+                    )}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
