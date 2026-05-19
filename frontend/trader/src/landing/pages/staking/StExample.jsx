@@ -42,7 +42,7 @@ export default function StExample() {
           badge="Earnings Example"
           title="How It Works in Practice"
           highlight="in Practice"
-          subtitle="What the whole flow looks like end to end, with rough numbers."
+          subtitle="Multiple earning layers — staking + trading."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">

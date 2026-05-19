@@ -17,7 +17,7 @@ export default function TxModes() {
           badge="Trading Modes"
           title="Flexible Trading Modes"
           highlight="Trading Modes"
-          subtitle="Pick the mode that matches your risk profile — both share the same transparent cost rules."
+          subtitle="Two ways to trade — pick whichever fits how you want to handle risk. Same transparent rules apply to both."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

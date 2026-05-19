@@ -18,7 +18,7 @@ export default function AbHowItWorks() {
           badge="How It Works"
           title="A Smarter Trading Flow"
           highlight="Smarter Trading Flow"
-          subtitle="A normal broker bundles three things together: holding your money, running your trades, and settling them. We split those into three separate parts so you can actually see what's happening."
+          subtitle="A normal broker bundles three things together: holding your money, running your trades, and settling them. We split those into separate parts so you can actually see what's happening at each step."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
@@ -74,6 +74,14 @@ export default function AbHowItWorks() {
           </div>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Built around transparency, automation, and user control.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

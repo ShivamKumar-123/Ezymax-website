@@ -19,7 +19,7 @@ export default function AbPhilosophy() {
           badge="Our Philosophy"
           title="Trader-First Thinking"
           highlight="Trader-First"
-          subtitle="What the team keeps coming back to when we're deciding what to build."
+          subtitle="The simple idea behind every decision we make: modern traders deserve more transparency, more flexibility, and infrastructure that actually treats them as the customer."
         />
 
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
@@ -69,6 +69,22 @@ export default function AbPhilosophy() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal variant="fadeUp" delay={0.2}>
+            <div
+              className="mt-8 md:mt-10 rounded-2xl p-6 md:p-8 text-center"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(214,169,61,0.14), rgba(214,169,61,0.03))',
+                border: '1px solid rgba(214,169,61,0.40)',
+              }}
+            >
+              <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
+              <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
+                &ldquo;The future of trading is not just faster — it is smarter.&rdquo;
+              </p>
             </div>
           </ScrollReveal>
 

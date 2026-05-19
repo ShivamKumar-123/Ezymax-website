@@ -10,7 +10,7 @@ export default function InLogic() {
           badge="Coverage Logic"
           title="How Coverage Works"
           highlight="Coverage Works"
-          subtitle="Coverage applies across your activity — not individually per trade."
+          subtitle="Every plan comes with a pool of coverage for its duration. Losses draw down the pool — once it's empty, the plan stops covering until you activate a new one."
         />
 
         <ScrollReveal variant="fadeUp">
@@ -98,6 +98,14 @@ export default function InLogic() {
           </div>
         </ScrollReveal>
 
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Coverage applies across your activity — not individually per trade.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

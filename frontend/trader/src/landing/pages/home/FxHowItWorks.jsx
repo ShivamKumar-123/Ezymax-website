@@ -119,6 +119,14 @@ export default function FxHowItWorks() {
           </div>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Structured flow. No manual control. Fully system-driven.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

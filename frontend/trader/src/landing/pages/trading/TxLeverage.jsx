@@ -10,7 +10,7 @@ export default function TxLeverage() {
           badge="Leverage Rule"
           title="Leverage, Made Practical"
           highlight="Practical"
-          subtitle="Leverage allows you to control a larger position with less capital — but you only pay when you actually use it over time."
+          subtitle="Leverage lets you control a larger position with less capital. The catch most platforms hide — you only owe the fee when you actually hold the position overnight."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
@@ -153,6 +153,15 @@ export default function TxLeverage() {
             </div>
           </ScrollReveal>
         </div>
+
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;You only pay for leverage when you actually use it over time.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

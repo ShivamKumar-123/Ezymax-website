@@ -32,7 +32,7 @@ export default function TxExample() {
           badge="Trade Example"
           title="How a Trade Works"
           highlight="a Trade Works"
-          subtitle="All costs are known before execution — try the values."
+          subtitle="Walk through a real scenario. Change the numbers — every cost shows up before you'd ever click execute."
         />
 
         <ScrollReveal variant="fadeUp">
@@ -249,9 +249,18 @@ export default function TxExample() {
                 color: 'var(--fx-text-3)',
               }}
             >
-              Indicative figures · Spread shown is market-driven, not a fixed cost
+              Indicative figures · Spread is market-driven, not a fixed cost · Profit and loss settle automatically
             </div>
           </div>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.18}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;All costs are known before execution.&rdquo;
+          </p>
         </ScrollReveal>
 
       </div>

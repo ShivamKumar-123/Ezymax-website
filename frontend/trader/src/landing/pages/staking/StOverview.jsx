@@ -23,7 +23,7 @@ export default function StOverview() {
           badge="Overview"
           title="What is Staking in FX Artha?"
           highlight="Staking in FX Artha?"
-          subtitle="Your funds stay in a smart contract. The protocol uses that pool to run trading on the platform and pays a share of what it earns back to you."
+          subtitle="You are not depositing — you are participating."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">

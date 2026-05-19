@@ -92,6 +92,22 @@ export default function AbVision() {
             </div>
           </ScrollReveal>
 
+          <ScrollReveal variant="fadeUp" delay={0.2}>
+            <div
+              className="mt-8 md:mt-10 rounded-2xl p-6 md:p-8 text-center"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(214,169,61,0.14), rgba(214,169,61,0.03))',
+                border: '1px solid rgba(214,169,61,0.40)',
+              }}
+            >
+              <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
+              <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
+                &ldquo;Technology should increase transparency — not complexity.&rdquo;
+              </p>
+            </div>
+          </ScrollReveal>
+
         </div>
       </div>
     </section>

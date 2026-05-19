@@ -131,6 +131,15 @@ export default function FxTradeInsurance() {
             <Info size={14} /> Applicable on eligible trades · No hedging · Trade conditions apply
           </p>
         </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Trade with awareness. Not uncertainty.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

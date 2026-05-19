@@ -17,7 +17,7 @@ export default function FxReferral() {
           badge="Referral Program"
           title="Grow With the Platform"
           highlight="Platform"
-          subtitle="A clean referral setup. No tiered pyramids, no MLM-style fine print."
+          subtitle="Bring people you actually believe in. The program rewards real participation — no tiered pyramids, no MLM-style fine print, no fluff."
         />
 
         <ScrollReveal variant="fadeUp">
@@ -62,6 +62,15 @@ export default function FxReferral() {
               <ArrowRight size={16} />
             </Link>
           </div>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Growth driven by participation, not promises.&rdquo;
+          </p>
         </ScrollReveal>
       </div>
     </section>

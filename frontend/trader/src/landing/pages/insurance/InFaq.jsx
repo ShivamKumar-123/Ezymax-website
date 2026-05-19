@@ -41,7 +41,7 @@ export default function InFaq() {
           badge="FAQ"
           title="Frequently Asked Questions"
           highlight="Frequently Asked"
-          subtitle="Common questions about how Trade Insurance works."
+          subtitle="The questions that come up most often — answered straight, no hedging."
         />
 
         <ScrollReveal variant="fadeUp">

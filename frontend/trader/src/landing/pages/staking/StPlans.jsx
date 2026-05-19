@@ -54,7 +54,7 @@ export default function StPlans() {
           badge="Locked Plans"
           title="Long-Term Staking Plans"
           highlight="Long-Term"
-          subtitle="One, two, or three years. The longer you commit, the better the rate and the more you can do with the locked amount."
+          subtitle="Choose your commitment duration and unlock enhanced rewards."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">

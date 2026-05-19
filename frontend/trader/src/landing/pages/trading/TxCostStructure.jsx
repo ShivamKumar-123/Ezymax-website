@@ -1,4 +1,4 @@
-import { Receipt, Gauge, Activity } from 'lucide-react'
+import { Receipt, Gauge, Activity, Ban, EyeOff, Moon } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -29,6 +29,12 @@ const costs = [
   },
 ]
 
+const guarantees = [
+  { icon: Ban,    title: 'No Swap Charges',     sub: "We don't charge swap." },
+  { icon: EyeOff, title: 'No Hidden Fees',      sub: 'Zero hidden costs.' },
+  { icon: Moon,   title: 'No Overnight Penalty',sub: 'Only the fair leverage fee — nothing extra.' },
+]
+
 export default function TxCostStructure() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
@@ -37,7 +43,7 @@ export default function TxCostStructure() {
           badge="Cost Structure"
           title="Clear and Structured Trading Costs"
           highlight="Trading Costs"
-          subtitle="Three transparent components — nothing more."
+          subtitle="We've boiled trading costs down to three pieces. No layered fees, no surprise line items at the end of the month."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
@@ -86,6 +92,46 @@ export default function TxCostStructure() {
           })}
         </div>
 
+        {/* No-X guarantees row */}
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {guarantees.map(({ icon: Icon, title, sub }) => (
+              <div
+                key={title}
+                className="rounded-xl p-4 flex items-center gap-3"
+                style={{
+                  background: 'rgba(74,222,128,0.04)',
+                  border: '1px solid rgba(74,222,128,0.22)',
+                }}
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                  style={{
+                    background: 'rgba(74,222,128,0.12)',
+                    border: '1px solid rgba(74,222,128,0.35)',
+                  }}
+                >
+                  <Icon size={18} style={{ color: '#4ade80' }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white leading-tight">{title}</div>
+                  <div className="text-[11px] leading-tight mt-0.5" style={{ color: 'var(--fx-text-3)' }}>
+                    {sub}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.28}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;No hidden layers. Just transparent trading economics.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

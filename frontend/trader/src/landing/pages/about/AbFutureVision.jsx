@@ -17,7 +17,7 @@ export default function AbFutureVision() {
           badge="Future Vision"
           title="Building Beyond Traditional Trading"
           highlight="Beyond Traditional Trading"
-          subtitle="What the team is working on next."
+          subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure — toward a global trading system that scales."
         />
 
         <ScrollReveal variant="fadeUp">

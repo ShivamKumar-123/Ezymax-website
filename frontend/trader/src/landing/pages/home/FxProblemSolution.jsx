@@ -24,7 +24,7 @@ export default function FxProblemSolution() {
           badge="Problem vs Solution"
           title="Why Most Trading Platforms Still Require Blind Trust"
           highlight="Blind Trust"
-          subtitle="Custodial systems put you at the platform's mercy. FX Artha keeps you in control."
+          subtitle="In a custodial setup, the platform holds the money and approves the withdrawals. We don't think that should be the default anymore."
         />
 
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
@@ -136,6 +136,14 @@ export default function FxProblemSolution() {
           </div>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Control stays with you. Execution stays with the system.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

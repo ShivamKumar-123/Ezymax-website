@@ -25,7 +25,7 @@ export default function InUX() {
           badge="User Experience"
           title="Simple and Transparent Experience"
           highlight="Transparent Experience"
-          subtitle="Full visibility. No guesswork."
+          subtitle="The plan lives right inside your trading dashboard — switch durations, change coverage, watch your pool draw down, all without leaving the chart."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
@@ -201,6 +201,15 @@ export default function InUX() {
             </div>
           </ScrollReveal>
         </div>
+
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Full visibility. No guesswork.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

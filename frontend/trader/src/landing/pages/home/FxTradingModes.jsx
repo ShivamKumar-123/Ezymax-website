@@ -22,7 +22,7 @@ export default function FxTradingModes() {
           badge="Trading Modes"
           title="Flexible Trading Built Around Your Strategy"
           highlight="Your Strategy"
-          subtitle="Pick the mode that matches your risk profile — switch any time."
+          subtitle="Two ways to trade. Same platform, same fair rules — pick whichever matches how much risk you're willing to carry today."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

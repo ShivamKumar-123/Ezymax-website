@@ -53,7 +53,7 @@ export default function InRules() {
           badge="Rules & Conditions"
           title="Clear Usage Rules"
           highlight="Usage Rules"
-          subtitle="The fine print. Read it once and the rest of the page makes sense."
+          subtitle="The conditions in plain language. Read it once — it's the same set of rules that keeps the system fair for everyone."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
@@ -104,6 +104,14 @@ export default function InRules() {
           })}
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Structured rules ensure fairness and sustainability.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

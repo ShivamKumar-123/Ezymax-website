@@ -16,7 +16,7 @@ export default function InWhy() {
           badge="Why Trade Insurance"
           title="A Smarter Way to Manage Downside Risk"
           highlight="Downside Risk"
-          subtitle="Trading always involves uncertainty. Trade Insurance helps you manage that uncertainty."
+          subtitle="Markets move against everyone sooner or later. Trade Insurance gives back a slice of those losses — based on the coverage level you chose when you activated the plan."
         />
 
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
@@ -58,6 +58,14 @@ export default function InWhy() {
           </ScrollReveal>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Structured protection helps you stay consistent.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

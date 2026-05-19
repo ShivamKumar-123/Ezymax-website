@@ -16,7 +16,7 @@ export default function FxStaking() {
           badge="Staking"
           title="Activate Idle Assets"
           highlight="Idle Assets"
-          subtitle="Make your assets work beyond holding."
+          subtitle="Put the assets you're already holding to work inside the ecosystem — without forcing you to choose between earning and being able to trade."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -143,6 +143,15 @@ export default function FxStaking() {
             </div>
           </ScrollReveal>
         </div>
+
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Make your assets work beyond holding.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

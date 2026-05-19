@@ -35,7 +35,7 @@ export default function InDuration() {
           badge="Plan Durations"
           title="Flexible Plan Duration"
           highlight="Plan Duration"
-          subtitle="Coverage stays active for the selected duration — not per trade."
+          subtitle="Whether you're trading just for the day or settled in for the month, there's a plan that covers exactly the stretch you need."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
@@ -80,6 +80,14 @@ export default function InDuration() {
           })}
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Coverage stays active for the selected duration — not per trade.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

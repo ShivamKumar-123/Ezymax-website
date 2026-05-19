@@ -8,10 +8,11 @@ import { Menu, X, ChevronDown, ArrowRight } from 'lucide-react'
 
 const navItems = [
   { label: 'Home', path: '/' },
-  { label: 'Trading', path: '/trading/forex' },
+  { label: 'Trading', path: '/trading/overview' },
   { label: 'Partnership', path: '/company/partnership' },
   { label: 'Staking',    path: '/staking' },
   { label: 'Insurance',  path: '/insurance/overview' },
+  { label: 'Earning',    path: '/earning' },
   { label: 'About',      path: '/company/about' },
   { label: 'Contact',    path: '/company/contact' },
 ]
@@ -21,8 +22,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [mobileDropdown, setMobileDropdown] = useState(null)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const menuRef = useRef(null)
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -38,8 +42,8 @@ export default function Navbar() {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  const isActive = (path) => pathname === path
-  const isDropdownActive = (dropdown) => dropdown?.some(d => pathname?.startsWith(d.path))
+  const isActive = (path) => mounted && pathname === path
+  const isDropdownActive = (dropdown) => mounted && dropdown?.some(d => pathname?.startsWith(d.path))
 
   return (
     <motion.nav

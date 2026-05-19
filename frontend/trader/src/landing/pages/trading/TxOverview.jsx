@@ -39,7 +39,7 @@ export default function TxOverview() {
           badge="Trading Overview"
           title="Built for Transparency and Progress"
           highlight="Transparency"
-          subtitle="No account tiers. No artificial barriers. Every trader starts with the same conditions — and improves through activity."
+          subtitle="We've cut out the usual mess. No account tiers, no artificial barriers. Everyone starts on the same conditions and earns better ones by actually trading."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
@@ -85,6 +85,15 @@ export default function TxOverview() {
               ))}
             </ul>
           </div>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.32}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Your growth as a trader improves your trading conditions.&rdquo;
+          </p>
         </ScrollReveal>
 
       </div>

@@ -18,7 +18,7 @@ export default function FxCopyTrading() {
           badge="Copy Trading"
           title="Access Experience Without Guesswork"
           highlight="Without Guesswork"
-          subtitle="Skip writing your own strategy — borrow one that's already working."
+          subtitle="Pick a trader whose track record you actually trust. Their trades mirror into your account automatically, at your size, pause whenever you want."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
@@ -174,6 +174,15 @@ export default function FxCopyTrading() {
             </div>
           </ScrollReveal>
         </div>
+
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Strategy over speculation.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

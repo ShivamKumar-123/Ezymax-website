@@ -37,7 +37,7 @@ export default function StApy() {
           badge="APY & Reward Logic"
           title="How Rewards Are Generated"
           highlight="Rewards Are Generated"
-          subtitle="What you earn depends on how much you stake, how long you stake it, and how busy the protocol is. Nothing is promised in advance."
+          subtitle="Rewards are participation-based, not guaranteed returns."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">

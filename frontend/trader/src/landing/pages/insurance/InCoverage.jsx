@@ -42,7 +42,7 @@ export default function InCoverage() {
           badge="Coverage Levels"
           title="Choose Your Coverage Strength"
           highlight="Coverage Strength"
-          subtitle="Coverage scales by tier — coverage is subject to internal limits and safeguards."
+          subtitle="Four levels, from a basic cushion to maximum cover. Pick what matches how active you are — and how much loss you'd rather not absorb yourself."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">

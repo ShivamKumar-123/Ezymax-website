@@ -18,7 +18,7 @@ export default function InHow() {
           badge="How It Works"
           title="Simple and Continuous Protection"
           highlight="Continuous Protection"
-          subtitle="Activate a plan, pick how much cover you want, then go trade. The plan does its thing in the background."
+          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade — coverage kicks in automatically on eligible losses."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
@@ -74,6 +74,14 @@ export default function InHow() {
           </div>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;One plan. Continuous protection within defined limits.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

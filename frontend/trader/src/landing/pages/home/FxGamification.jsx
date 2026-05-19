@@ -44,7 +44,7 @@ export default function FxGamification() {
           badge="Gamification"
           title="Your Activity Has Value"
           highlight="Value"
-          subtitle="Trade and use the platform — earn XP, credits, and a performance score that quietly improves your account terms."
+          subtitle="Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up — your account terms get better while you're doing things you'd do anyway."
         />
 
         {/* ── 3 reward cards ──────────────────────────────────── */}
@@ -120,6 +120,14 @@ export default function FxGamification() {
           </div>
         </ScrollReveal>
 
+        <ScrollReveal variant="fadeUp" delay={0.32}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Stay active. Unlock more.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

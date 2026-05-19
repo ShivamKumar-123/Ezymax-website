@@ -33,7 +33,7 @@ export default function AbEcosystem() {
           badge="The FX Artha Ecosystem"
           title="One Ecosystem. Multiple Opportunities."
           highlight="Multiple Opportunities"
-          subtitle="Trading is the centre, but it's surrounded by other ways to put your account to work — copying, staking, rewards, partner programs."
+          subtitle="Trading sits at the centre, surrounded by other ways to put your account to work — copying, staking, rewards, partner programs. All of it connected, all of it in one place."
         />
 
         {/* Mobile-first layout: 2-col grid with hub on top. */}
@@ -83,6 +83,14 @@ export default function AbEcosystem() {
           </div>
         </div>
 
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Every feature is designed to strengthen the ecosystem experience.&rdquo;
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )

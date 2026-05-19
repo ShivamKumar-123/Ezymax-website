@@ -32,28 +32,38 @@ export default function AbHero() {
         }}
       />
       <div className="fx-grid-bg" />
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
+      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-10 md:pb-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* LEFT */}
           <div className="lg:col-span-7">
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[64px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
-              A trading platform that <br />
-              <span className="fx-gold-text">doesn't hold your money.</span>
+            <div className="fx-fade-up mb-5">
+              <span className="badge">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+                />
+                About FX Artha
+              </span>
+            </div>
+            <h1 className="fx-headline text-[32px] sm:text-[42px] md:text-[50px] lg:text-[56px] xl:text-[62px] fx-fade-up fx-fade-up-d1">
+              Reimagining How Modern <br />
+              <span className="fx-gold-text">Trading Works.</span>
             </h1>
             <p
               className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              Almost every broker out there takes your deposit and sits on it. We don't.
-              Your funds stay in a smart contract you can verify, and we just run the trading
-              side on top of that.
+              FX Artha is building a next-generation trading ecosystem powered by smart
+              contract infrastructure, transparent settlement systems, and trader-focused
+              innovation.
             </p>
 
             <p
               className="mt-5 max-w-xl text-sm md:text-base leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-3)' }}
             >
-              What that gets you:
+              Traditional platforms were built around brokers holding your money. We're
+              taking a different approach — one where:
             </p>
 
             <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl fx-fade-up fx-fade-up-d3">
@@ -74,7 +84,7 @@ export default function AbHero() {
               ))}
             </ul>
 
-            <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d4">
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d4">
               <Link to="#ecosystem" className="fx-btn-primary justify-center">
                 Explore Ecosystem
                 <ArrowRight size={18} />
