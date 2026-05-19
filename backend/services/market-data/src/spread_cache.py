@@ -20,6 +20,24 @@ logger = logging.getLogger("market-data.spread-cache")
 # How often to reload spread params from Postgres (admin edits).
 RELOAD_INTERVAL_SEC = 30.0
 
+# Category-aware fallback spreads (in pips) applied ONLY when:
+#   1. There's no spread_configs row for the specific instrument, AND
+#   2. There's no admin "default" row enabled.
+# As soon as admin saves anything in the spread UI, that wins (the
+# per-instrument row hits `self._params`; the default row hits
+# `self._default_spread`). The hardcoded values exist purely so that
+# a fresh DB (or a missed configuration step) doesn't ship the platform
+# with bid == ask — which previously made the order ticket look broken
+# next to the chart.
+_CATEGORY_FALLBACK_PIPS: Dict[str, Decimal] = {
+    "forex_major": Decimal("1.5"),
+    "forex_minor": Decimal("2.0"),
+    "commodity":   Decimal("30"),
+    "index":       Decimal("10"),
+    "crypto":      Decimal("50"),
+}
+_DEFAULT_FALLBACK_PIPS = Decimal("2.0")
+
 
 class StreamSpreadCache:
     """symbol -> (spread_value, spread_type, pip_size, digits).
@@ -106,6 +124,22 @@ class StreamSpreadCache:
             digits = int(info["decimals"])
         else:
             return mid, mid
+
+        # Apply category-aware fallback when the resolved spread is 0
+        # regardless of which branch above we took. `resolve_spread_config`
+        # populates `_params` for every active instrument even when no
+        # SpreadConfig row exists — and it returns `Decimal("0")` in that
+        # case. So both the per-instrument and the default-row paths can
+        # legitimately end up at `sv == 0`. Admin overrides still win:
+        # as soon as any non-zero spread is configured (per instrument or
+        # as a default-scope row), this branch is skipped.
+        if sv <= 0 and key in INSTRUMENTS:
+            info = INSTRUMENTS[key]
+            sv = _CATEGORY_FALLBACK_PIPS.get(
+                str(info.get("category") or ""),
+                _DEFAULT_FALLBACK_PIPS,
+            )
+            st = "pips"
         b, a = symmetric_quote_from_mid(
             Decimal(str(mid)), sv, st, pip, digits, Decimal("0"),
         )
