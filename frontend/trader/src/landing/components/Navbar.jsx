@@ -9,22 +9,6 @@ import { Menu, X, ChevronDown, ArrowRight } from 'lucide-react'
 const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Trading', path: '/trading/forex' },
-  {
-    label: 'Platforms',
-    dropdown: [
-      { name: 'Web Platform',   path: '/platforms/web' },
-      { name: 'Copy Trading',   path: '/platforms/copy-trading' },
-      { name: 'IB Management',  path: '/platforms/ib-management' },
-    ],
-  },
-  {
-    label: 'Accounts',
-    dropdown: [
-      { name: 'Standard', path: '/accounts/standard' },
-      { name: 'Pro',      path: '/accounts/pro' },
-      { name: 'Demo',     path: '/accounts/demo' },
-    ],
-  },
   { label: 'Partnership', path: '/company/partnership' },
   { label: 'Staking',    path: '/staking' },
   { label: 'Insurance',  path: '/insurance/overview' },
@@ -95,7 +79,7 @@ export default function Navbar() {
                 >
                   <button
                     type="button"
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
+                    className="flex items-center gap-1 px-3 py-2 rounded-full text-[15px] font-medium transition-colors duration-200"
                     style={{
                       color: isDropdownActive(item.dropdown) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                     }}
@@ -149,7 +133,7 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className="px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
+                  className="px-3 py-2 rounded-full text-[15px] font-medium transition-colors duration-200"
                   style={{
                     color: isActive(item.path) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                   }}
