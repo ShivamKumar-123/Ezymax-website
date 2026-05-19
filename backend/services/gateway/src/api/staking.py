@@ -63,6 +63,16 @@ async def withdraw_position(
     return res
 
 
+@router.get("/referral-summary")
+async def referral_summary(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Per-level earnings + team-staked totals for the staking referral
+    network of the requesting user (10 levels deep)."""
+    return await staking_service.referral_summary(current_user["user_id"], db)
+
+
 @router.post("/positions/{position_id}/claim-rewards")
 async def claim_rewards(
     position_id: UUID,
