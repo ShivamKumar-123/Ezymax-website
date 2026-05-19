@@ -10,9 +10,12 @@ export const TRADINGVIEW_SYMBOL_MAP: Record<string, string> = {
   EURGBP: 'FX:EURGBP',
   EURJPY: 'FX:EURJPY',
   GBPJPY: 'FX:GBPJPY',
-  XAUUSD: 'TVC:GOLD',
-  XAGUSD: 'TVC:SILVER',
-  USOIL: 'TVC:USOIL',
+  // TVC: prefixes are CFD-ratio symbols (TVC:GOLD ~ 4694) — visibly
+  // out of sync with the Infoway spot feed used by the order ticket.
+  // OANDA: maps stay close to broker spot price for the visible match.
+  XAUUSD: 'OANDA:XAUUSD',
+  XAGUSD: 'OANDA:XAGUSD',
+  USOIL: 'OANDA:WTICOUSD',
   US30: 'TVC:DJI',
   US500: 'SP:SPX',
   NAS100: 'NASDAQ:NDX',
