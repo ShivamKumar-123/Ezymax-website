@@ -49,6 +49,8 @@ export default function OrderPanel() {
 
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderTab, setOrderTab] = useState<OrderType>('market');
+  const [pendingKind, setPendingKind] = useState<'limit' | 'stop'>('limit');
+  const [triggerPrice, setTriggerPrice] = useState('');
   const [lots, setLots] = useState('0.01');
   const [slEnabled, setSlEnabled] = useState(false);
   const [tpEnabled, setTpEnabled] = useState(false);
@@ -71,6 +73,8 @@ export default function OrderPanel() {
     [selectedSymbol, segment, Math.floor(Date.now() / 60_000)],
   );
 
+  const bid = tick?.bid ?? 0;
+  const ask = tick?.ask ?? 0;
   const execPrice = tick ? (side === 'buy' ? tick.ask : tick.bid) : 0;
   const lotsNum = parseFloat(lots) || 0;
 
@@ -81,6 +85,16 @@ export default function OrderPanel() {
 
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
+
+  /** Pending tab requires a positive numeric trigger price. Side-vs-mid
+   *  validity (limit must be below ask, stop above ask, etc.) is enforced
+   *  in handleSubmit so the button only blocks on the simplest precondition. */
+  const pendingTriggerValid = orderTab !== 'pending'
+    ? true
+    : (() => {
+        const t = parseFloat(triggerPrice);
+        return Number.isFinite(t) && t > 0;
+      })();
 
   useEffect(() => {
     const unsub = wsManager.onStatusChange(setWsStatus);
@@ -156,6 +170,37 @@ export default function OrderPanel() {
       toast.error(`Insufficient margin`);
       return;
     }
+    // Pending orders require a trigger price + must be on the correct
+    // side of the current market (server re-validates but bail early so
+    // the user gets a clear toast instead of a 400).
+    let triggerPx: number | null = null;
+    if (orderTab === 'pending') {
+      const t = parseFloat(triggerPrice);
+      if (!Number.isFinite(t) || t <= 0) {
+        toast.error('Enter a trigger price');
+        return;
+      }
+      triggerPx = t;
+      if (pendingKind === 'limit') {
+        if (side === 'buy' && t >= ask) {
+          toast.error(`Buy limit must be below ask (${ask.toFixed(digits)})`);
+          return;
+        }
+        if (side === 'sell' && t <= bid) {
+          toast.error(`Sell limit must be above bid (${bid.toFixed(digits)})`);
+          return;
+        }
+      } else {
+        if (side === 'buy' && t <= ask) {
+          toast.error(`Buy stop must be above ask (${ask.toFixed(digits)})`);
+          return;
+        }
+        if (side === 'sell' && t >= bid) {
+          toast.error(`Sell stop must be below bid (${bid.toFixed(digits)})`);
+          return;
+        }
+      }
+    }
     // Optimistic: instant feedback, API fires in background.
     sounds.orderPlaced();
     toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
@@ -193,7 +238,8 @@ export default function OrderPanel() {
     api.post<{ id: string; position_id: string | null }>('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
-      order_type: orderTab === 'market' ? 'market' : 'limit',
+      order_type: orderTab === 'market' ? 'market' : pendingKind,
+      price: orderTab === 'pending' && triggerPx != null ? triggerPx : undefined,
       side,
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
@@ -514,6 +560,71 @@ export default function OrderPanel() {
             </div>
           </div>
 
+          {/* Pending order — type toggle + trigger price.
+              Only renders on the Pending tab. */}
+          {orderTab === 'pending' && (
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                  Pending type
+                </span>
+                <div className="flex rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
+                  {(['limit', 'stop'] as const).map((k) => {
+                    const active = pendingKind === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setPendingKind(k)}
+                        className={clsx(
+                          'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors',
+                          active
+                            ? 'bg-accent/15 text-accent'
+                            : 'text-text-tertiary hover:text-text-primary',
+                        )}
+                      >
+                        {k}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                    Trigger price
+                  </span>
+                  <span className="text-[9.5px] text-text-tertiary font-mono">
+                    {pendingKind === 'limit'
+                      ? side === 'buy'
+                        ? `< ${ask.toFixed(digits)}`
+                        : `> ${bid.toFixed(digits)}`
+                      : side === 'buy'
+                        ? `> ${ask.toFixed(digits)}`
+                        : `< ${bid.toFixed(digits)}`}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={triggerPrice}
+                  onChange={(e) => setTriggerPrice(e.target.value)}
+                  step={execPrice > 100 ? 0.01 : 0.00001}
+                  placeholder={(
+                    pendingKind === 'limit'
+                      ? side === 'buy'
+                        ? ask * 0.999
+                        : bid * 1.001
+                      : side === 'buy'
+                        ? ask * 1.001
+                        : bid * 0.999
+                  ).toFixed(digits)}
+                  className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary placeholder:text-text-tertiary focus:border-accent/50"
+                />
+              </div>
+            </div>
+          )}
+
           {/* SL input */}
           {slEnabled && (
             <div className="pt-2">
@@ -585,7 +696,7 @@ export default function OrderPanel() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
+                disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
                 style={{
                   background: side === 'buy' ? '#2962FF' : '#ef5350',
@@ -631,7 +742,7 @@ export default function OrderPanel() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen)}
+              disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
               className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
               style={{
                 background: side === 'buy' ? '#2962FF' : '#ef5350',
