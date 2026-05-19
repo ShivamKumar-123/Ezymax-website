@@ -22,6 +22,7 @@ import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 import TerminalTicker from '@/components/trading/TerminalTicker';
+import SentimentGauge from '@/components/trading/SentimentGauge';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
@@ -723,10 +724,20 @@ export default function TradingTerminalPage() {
         />
 
         <div
-          className="shrink-0 overflow-hidden min-h-0 flex flex-col relative z-[1] border-t border-border-primary"
+          className="shrink-0 overflow-hidden min-h-0 flex relative z-[1] border-t border-border-primary"
           style={{ height: bpH }}
         >
-          <PositionsPanel variant="terminal" />
+          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <PositionsPanel variant="terminal" />
+          </div>
+          {/* Market sentiment card lives in the bottom row alongside the
+              positions table, mirroring the May 2026 mockup. Hidden on
+              narrow terminals to keep the positions table readable. */}
+          {selectedSymbol ? (
+            <div className="hidden xl:flex shrink-0 w-[300px] border-l border-border-primary p-2 overflow-y-auto">
+              <SentimentGauge symbol={selectedSymbol} className="w-full" />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

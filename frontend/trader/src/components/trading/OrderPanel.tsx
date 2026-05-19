@@ -14,7 +14,6 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
 import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
-import SentimentGauge from '@/components/trading/SentimentGauge';
 import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
 
 type OrderSide = 'buy' | 'sell';
@@ -359,13 +358,6 @@ export default function OrderPanel() {
           )}
         >
           <div className={pad}>
-          {/* Market sentiment gauge — only on the trading terminal layout
-              where the rail is wide enough to host it without crowding
-              the order ticket. */}
-          {isTradingTerminal && selectedSymbol ? (
-            <SentimentGauge symbol={selectedSymbol} className="mb-2" />
-          ) : null}
-
           {/* Market / Pending tabs */}
           <div className="flex rounded-md overflow-hidden bg-bg-secondary border border-border-primary">
             {(['market', 'pending'] as const).map((t) => (
