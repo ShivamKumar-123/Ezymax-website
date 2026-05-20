@@ -55,6 +55,15 @@ const nextConfig = {
       },
     ];
   },
+  /** Old marketing route → new canonical Earn landing page.
+   *  `/earning` is the version that came in from `hero_part` (8 sections,
+   *  full FAQ accordions). `/platforms/earn` was the original 4-section
+   *  draft. Single canonical URL — 301 the old one. */
+  async redirects() {
+    return [
+      { source: '/platforms/earn', destination: '/earning', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
