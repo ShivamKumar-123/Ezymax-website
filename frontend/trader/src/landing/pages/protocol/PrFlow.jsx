@@ -1,36 +1,40 @@
-import { Search, MousePointer2, Wallet, Repeat2, Eye } from 'lucide-react'
+import {
+  Wallet,
+  UserCheck,
+  LayoutDashboard,
+  ArrowDownToLine,
+  Activity,
+  Coins,
+  ArrowUpFromLine,
+} from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
-import CtFaqList from './CtFaqList'
 
 const steps = [
-  { icon: Search,       title: 'Browse Traders',     desc: 'See verified Master Traders and their stats.' },
-  { icon: MousePointer2,title: 'Select a Trader',    desc: 'Pick one that matches your risk and goals.' },
-  { icon: Wallet,       title: 'Allocate Funds',     desc: 'Choose how much capital to copy with.' },
-  { icon: Repeat2,      title: 'Auto Copy',          desc: 'Every trade is mirrored in your account.' },
-  { icon: Eye,          title: 'Monitor & Control',  desc: 'Adjust or stop copying anytime.' },
+  { icon: Wallet,           title: 'Connect Wallet',          desc: 'Securely connect your wallet to access the platform.' },
+  { icon: UserCheck,        title: 'Access Dashboard (CRM)',  desc: 'Manage your profile, settings, and activity.' },
+  { icon: LayoutDashboard,  title: 'Create Trading Account',  desc: 'Choose your platform — FX Artha App or MT5.' },
+  { icon: ArrowDownToLine,  title: 'Allocate Funds to Contract', desc: 'Funds are allocated to a secure smart contract layer.' },
+  { icon: Activity,         title: 'Execute Trades',          desc: 'Trade normally using your selected trading account.' },
+  { icon: Coins,            title: 'Automatic P&L Settlement', desc: 'Profits are credited automatically. Losses are deducted automatically.' },
+  { icon: ArrowUpFromLine,  title: 'Withdraw Anytime',        desc: 'Funds are settled directly back to your wallet.' },
 ]
 
-const faq = [
-  { q: 'Can I copy multiple traders?', a: 'Yes, diversification is supported.' },
-  { q: 'Can I stop anytime?',          a: 'Yes, instantly.' },
-]
-
-export default function CtHow() {
+export default function PrFlow() {
   return (
-    <section id="explore" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+    <section id="flow" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
         <SectionHeader
-          badge="How To Copy"
-          title="How It Works"
-          highlight="It Works"
-          subtitle="Five quick steps from picking a trader to seeing the first mirrored trade in your account. No setup gymnastics."
+          badge="Step-by-Step Flow"
+          title="From Wallet to Trade — Step by Step"
+          highlight="Step by Step"
+          subtitle="Every step is system-driven. No manual control involved."
         />
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
-          <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">
+          <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-7 gap-4 md:gap-3 min-w-max md:min-w-0">
             <div
-              className="hidden md:block absolute top-[42px] left-[8%] right-[8%] h-px pointer-events-none"
+              className="hidden md:block absolute top-[42px] left-[7%] right-[7%] h-px pointer-events-none"
               style={{
                 backgroundImage:
                   'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
@@ -64,7 +68,7 @@ export default function CtHow() {
                         {i + 1}
                       </span>
                     </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5">
+                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5 px-1">
                       {s.title}
                     </h3>
                     <p
@@ -80,19 +84,13 @@ export default function CtHow() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.18}>
+        <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Simple setup. Full flexibility.&rdquo;
+            &ldquo;Every step is system-driven. No manual control involved.&rdquo;
           </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
-            <CtFaqList items={faq} />
-          </div>
         </ScrollReveal>
       </div>
     </section>

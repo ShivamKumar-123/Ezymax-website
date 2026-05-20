@@ -43,7 +43,7 @@ export default function CtControl() {
           badge="Control & Risk"
           title="Full Control. Transparent Risk."
           highlight="Transparent Risk"
-          subtitle="You control your capital at all times."
+          subtitle="Copy trading shouldn't mean handing over your account. Pause, change allocations, or pull out completely whenever you want — no waiting period, no calls."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -68,8 +68,17 @@ export default function CtControl() {
           })}
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+        <ScrollReveal variant="fadeUp" delay={0.22}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;You control your capital at all times.&rdquo;
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.3}>
+          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

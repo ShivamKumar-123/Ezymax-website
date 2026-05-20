@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         pathname === '/insurance/overview' ||
         pathname === '/trading/overview' ||
         pathname === '/earning' ||
+        pathname === '/protocol' ||
         ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
         ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
         ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');

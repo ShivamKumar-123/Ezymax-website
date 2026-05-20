@@ -1,0 +1,140 @@
+import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
+import SectionHeader from '@/landing/components/SectionHeader'
+import ScrollReveal from '@/landing/components/animations/ScrollReveal'
+
+const broker = [
+  'Funds are deposited into broker accounts',
+  'Withdrawal depends on approvals',
+  'Execution lacks transparency',
+  'Manual intervention possible',
+  'Limited control for users',
+]
+
+const protocol = [
+  'Funds interact with smart contract layer',
+  'No custody held by platform',
+  'Trades execute via system logic',
+  'Automatic P&L settlement',
+  'Full control stays with you',
+]
+
+export default function PrCompare() {
+  return (
+    <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+      <div className="fx-container">
+        <SectionHeader
+          badge="What Makes Us Different"
+          title="Traditional Broker vs FX Artha"
+          highlight="vs FX Artha"
+          subtitle="The short answer: in one model the broker holds your money. In the other, a smart contract does."
+        />
+
+        <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
+          {/* Traditional Broker */}
+          <ScrollReveal variant="fadeUp">
+            <div
+              className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(220,38,38,0.10) 0%, rgba(220,38,38,0.02) 60%), var(--fx-bg-elev)',
+                border: '1px solid rgba(220,38,38,0.30)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: 'rgba(220,38,38,0.18)',
+                    border: '1px solid rgba(220,38,38,0.35)',
+                  }}
+                >
+                  <AlertTriangle size={20} style={{ color: '#f87171' }} />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: '#f87171' }}>
+                    Traditional Brokers
+                  </div>
+                  <div className="text-lg md:text-xl font-bold text-white">
+                    Custodial Model
+                  </div>
+                </div>
+              </div>
+              <ul className="space-y-3.5">
+                {broker.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <XCircle size={18} className="mt-0.5 shrink-0" style={{ color: '#f87171' }} />
+                    <span className="text-sm md:text-base" style={{ color: 'var(--fx-text-2)' }}>
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollReveal>
+
+          {/* FX Artha Protocol */}
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <div
+              className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.02) 60%), var(--fx-bg-elev)',
+                border: '1px solid rgba(214,169,61,0.35)',
+                boxShadow: '0 24px 60px -28px rgba(214,169,61,0.35)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div className="feature-icon" style={{ width: 44, height: 44 }}>
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-gold-light)' }}>
+                    FX Artha Protocol
+                  </div>
+                  <div className="text-lg md:text-xl font-bold text-white">
+                    Smart-Contract Layer
+                  </div>
+                </div>
+              </div>
+              <ul className="space-y-3.5">
+                {protocol.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
+                    <span className="text-sm md:text-base" style={{ color: 'var(--fx-text-2)' }}>
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollReveal>
+
+          {/* VS badge */}
+          <div className="hidden lg:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-extrabold tracking-wider"
+              style={{
+                background:
+                  'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold) 70%, var(--fx-gold-dark))',
+                color: '#1a1408',
+                boxShadow:
+                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(214,169,61,0.45), 0 16px 40px -12px rgba(214,169,61,0.45)',
+              }}
+            >
+              VS
+            </div>
+          </div>
+        </div>
+
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;We don&apos;t hold your money. The system manages execution.&rdquo;
+          </p>
+        </ScrollReveal>
+      </div>
+    </section>
+  )
+}

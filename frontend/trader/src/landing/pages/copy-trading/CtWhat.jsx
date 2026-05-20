@@ -17,7 +17,7 @@ export default function CtWhat() {
           badge="Definition"
           title="What is Copy Trading?"
           highlight="Copy Trading?"
-          subtitle="Mirroring an experienced trader, position by position, at the size you choose."
+          subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose — no need to figure out your own setups."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
@@ -119,7 +119,16 @@ export default function CtWhat() {
           </ScrollReveal>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.2}>
+        <ScrollReveal variant="fadeUp" delay={0.15}>
+          <p
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Follow real performance — not predictions.&rdquo;
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.25}>
           <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>

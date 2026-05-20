@@ -9,10 +9,12 @@ import { Menu, X, ChevronDown, ArrowRight } from 'lucide-react'
 const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Trading', path: '/trading/overview' },
+  { label: 'Copy Trading', path: '/platforms/copy-trading' },
   { label: 'Partnership', path: '/company/partnership' },
   { label: 'Staking',    path: '/staking' },
   { label: 'Insurance',  path: '/insurance/overview' },
   { label: 'Earning',    path: '/earning' },
+  { label: 'Protocol',   path: '/protocol' },
   { label: 'About',      path: '/company/about' },
   { label: 'Contact',    path: '/company/contact' },
 ]
@@ -83,7 +85,7 @@ export default function Navbar() {
                 >
                   <button
                     type="button"
-                    className="flex items-center gap-1 px-3 py-2 rounded-full text-[15px] font-medium transition-colors duration-200"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
                     style={{
                       color: isDropdownActive(item.dropdown) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                     }}
@@ -137,7 +139,7 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className="px-3 py-2 rounded-full text-[15px] font-medium transition-colors duration-200"
+                  className="px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
                   style={{
                     color: isActive(item.path) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                   }}

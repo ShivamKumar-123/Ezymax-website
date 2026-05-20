@@ -1,12 +1,19 @@
 'use client'
 
 import { Link } from 'react-router-dom'
-import { ArrowRight, Crown, Star } from 'lucide-react'
+import { ArrowRight, Crown, Star, BadgeCheck, Sliders, Eye, Lock } from 'lucide-react'
 
 const leaders = [
   { rank: 1, name: 'AlphaQuant',  roi: '+48.2%', risk: 'Low',    color: '#4ade80' },
   { rank: 2, name: 'NorthStar.X', roi: '+34.7%', risk: 'Medium', color: '#f59e0b' },
   { rank: 3, name: 'SilkTrader',  roi: '+72.1%', risk: 'High',   color: '#f87171' },
+]
+
+const trustBadges = [
+  { icon: BadgeCheck, title: 'Verified Performance', sub: 'Only proven masters' },
+  { icon: Sliders,    title: 'Full Control',         sub: 'Adjust or stop anytime' },
+  { icon: Eye,        title: 'Transparent',          sub: 'Real-time trade tracking' },
+  { icon: Lock,       title: 'Secure & Reliable',    sub: 'Your funds, your control' },
 ]
 
 export default function CtHero() {
@@ -20,7 +27,7 @@ export default function CtHero() {
       }}
     >
       <div className="fx-grid-bg" />
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-20 md:pb-24">
+      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* LEFT */}
           <div className="lg:col-span-7">
@@ -33,19 +40,24 @@ export default function CtHero() {
                 Copy Trading
               </span>
             </div>
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
-              Copy Proven Traders. <br />
-              <span className="fx-gold-text">Stay in Control.</span>
+            <h1 className="fx-headline text-[36px] sm:text-[46px] md:text-[54px] lg:text-[60px] xl:text-[68px] fx-fade-up fx-fade-up-d1">
+              Copy Top Traders. <br />
+              <span className="fx-gold-text">Trade Smarter.</span>
             </h1>
             <p
-              className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
+              className="mt-5 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              Pick a trader whose track record you actually like. From then on, every trade
-              they place gets mirrored in your account at your size. Pause it whenever you
-              want.
+              Automatically copy the trades of verified Master Traders, or prove your own
+              performance and become one. Either side — you stay in full control.
             </p>
-            <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
+            <p
+              className="mt-4 text-sm md:text-base font-semibold fx-fade-up fx-fade-up-d2"
+              style={{ color: 'var(--fx-gold-light)' }}
+            >
+              Performance earns trust. Not promises.
+            </p>
+            <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d3">
               <Link to="#explore" className="fx-btn-primary justify-center">
                 Explore Traders
                 <ArrowRight size={18} />
@@ -54,6 +66,29 @@ export default function CtHero() {
                 <Crown size={16} />
                 Become a Master Trader
               </Link>
+            </div>
+
+            {/* Trust badges row */}
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 fx-fade-up fx-fade-up-d4 max-w-2xl">
+              {trustBadges.map(({ icon: Icon, title, sub }) => (
+                <div key={title} className="flex items-start gap-2">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{
+                      background: 'rgba(214,169,61,0.10)',
+                      border: '1px solid rgba(214,169,61,0.30)',
+                    }}
+                  >
+                    <Icon size={14} style={{ color: 'var(--fx-gold-light)' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-bold text-white leading-tight">{title}</div>
+                    <div className="text-[10px] leading-tight mt-0.5" style={{ color: 'var(--fx-text-3)' }}>
+                      {sub}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

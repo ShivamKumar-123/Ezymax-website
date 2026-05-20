@@ -15,7 +15,7 @@ export default function CtFee() {
           badge="Platform Fee"
           title="Platform Fee Structure"
           highlight="Fee Structure"
-          subtitle="The platform earns by taking a portion of the Master Trader's profit share."
+          subtitle="We get paid the same way Master Traders do — only when followers actually make money. No subscription, no surcharge on followers."
         />
 
         <ScrollReveal variant="fadeUp">
@@ -142,8 +142,17 @@ export default function CtFee() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <p
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Aligned incentives across all participants.&rdquo;
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.28}>
+          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>

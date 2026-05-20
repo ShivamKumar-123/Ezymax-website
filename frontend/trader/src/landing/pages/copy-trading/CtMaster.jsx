@@ -53,7 +53,7 @@ export default function CtMaster() {
           badge="Master Trader System"
           title="Become a Master Trader"
           highlight="Master Trader"
-          subtitle="FX Artha allows skilled traders to earn from their performance. Access is strictly controlled to ensure quality and trust."
+          subtitle="Two paths in. We're strict about who gets in because the people copying these traders deserve to know the track record is real."
         />
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -200,8 +200,17 @@ export default function CtMaster() {
           </ScrollReveal>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.2}>
-          <div className="mt-10 max-w-3xl mx-auto">
+        <ScrollReveal variant="fadeUp" delay={0.18}>
+          <p
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Only consistent performers become leaders.&rdquo;
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
