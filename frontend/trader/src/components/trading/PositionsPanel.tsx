@@ -844,7 +844,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     {activeAccount.margin_used > 0 && (
                       <MarginRing
                         marginLevel={Number(activeAccount.margin_level) || 0}
-                        size={44}
+                        size={56}
                         className="shrink-0"
                       />
                     )}

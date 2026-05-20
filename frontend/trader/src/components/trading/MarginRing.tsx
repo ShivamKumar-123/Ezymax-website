@@ -5,8 +5,10 @@
 // shows — equity / margin_used × 100. Above 200% = healthy green,
 // 100-200% = amber, < 100% = red (near stop-out).
 //
-// The percentage is clamped to [0, 999] for display so a near-zero
-// margin_used doesn't blow the ring to infinity.
+// Visual fill scales to a "safety ceiling" of 500% — anything at or
+// above that shows a fully-closed ring (so a healthy 1000% account
+// reads as "full / safe" rather than "60% of some arbitrary 1000% cap").
+// Color still encodes the absolute state (red/amber/green).
 
 import { memo } from 'react';
 import { clsx } from 'clsx';
@@ -26,15 +28,18 @@ function colorFor(pct: number): string {
   return '#22c55e';                       // > 200% → healthy
 }
 
-function MarginRingInner({ marginLevel, size = 56, className }: Props) {
-  const stroke = Math.max(4, Math.round(size * 0.12));
+function MarginRingInner({ marginLevel, size = 64, className }: Props) {
+  const stroke = Math.max(4, Math.round(size * 0.11));
   const r = (size - stroke) / 2;
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * r;
 
-  // Map [0, 1000%] → [0, 1] for the visual fill. Above 1000% always full.
-  const fill = Math.max(0, Math.min(1, (marginLevel || 0) / 1000));
+  // Fill saturates at 500% — anything ≥ 500% reads as a full ring (safe).
+  // Below 500% the arc shrinks linearly, so the visual fill correlates
+  // with the colour band: red < 100% (~20% arc), amber 100–200%
+  // (20–40% arc), green ≥ 200% (40%+ arc, full at 500%).
+  const fill = Math.max(0, Math.min(1, (marginLevel || 0) / 500));
   const dashOffset = circumference * (1 - fill);
   const color = colorFor(marginLevel);
 
@@ -71,13 +76,16 @@ function MarginRingInner({ marginLevel, size = 56, className }: Props) {
           style={{ transition: 'stroke-dashoffset 600ms ease, stroke 300ms ease' }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-[8px] uppercase tracking-wider text-text-tertiary leading-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-1">
+        <span
+          className="uppercase tracking-wider text-text-tertiary leading-none font-semibold"
+          style={{ fontSize: Math.max(7, Math.round(size * 0.14)) }}
+        >
           Margin
         </span>
         <span
-          className="text-[10px] font-bold font-mono tabular-nums leading-tight mt-0.5"
-          style={{ color }}
+          className="font-extrabold font-mono tabular-nums leading-none mt-1"
+          style={{ fontSize: Math.max(10, Math.round(size * 0.22)), color }}
         >
           {labelText}
         </span>
