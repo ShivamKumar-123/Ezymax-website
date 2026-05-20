@@ -588,6 +588,26 @@ async def kill_switch(
 async def login_as_user(
     user_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
+    """Issue a single-use, short-TTL redemption code instead of returning
+    the impersonation JWT directly.
+
+    Why: the previous flow returned the JWT in JSON and the admin UI then
+    placed it in `?token=` on a cross-origin URL — the token leaked to
+    browser history, server logs, and Referer headers. Now:
+
+      1. We mint the actual JWT here but stash it in Redis keyed by a
+         32-char hex code with a 60-second TTL.
+      2. We return only the code (+ a `redirect_url`).
+      3. The admin UI opens the trader at `/auth/impersonate?code=X`.
+      4. The trader bootstrap endpoint atomically GETDEL's the code from
+         Redis, sets HttpOnly cookies, and discards everything.
+
+    Result: the JWT is never visible in any URL. The code is harmless
+    after first use (deleted) and after 60 s (expired).
+    """
+    import secrets
+    import json
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -603,9 +623,20 @@ async def login_as_user(
         "exp": expire,
         "iat": datetime.utcnow(),
     }
-    # Sign with the gateway's JWT_SECRET so /auth/bootstrap-session (which uses
-    # decode_token → settings.JWT_SECRET) accepts the impersonation token.
+    # Sign with the gateway's JWT_SECRET so /auth/impersonate/redeem (which
+    # uses decode_token → settings.JWT_SECRET) accepts the token.
     token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    code = secrets.token_hex(16)  # 32-char hex, ~128 bits of entropy
+    payload_json = json.dumps({
+        "access_token": token,
+        "user_email": user.email,
+        "user_id": str(user.id),
+        "admin_id": str(admin_id),
+    })
+    # SETEX with 60-second TTL. Single-use enforcement happens on the
+    # gateway side via GETDEL when the trader bootstrap consumes it.
+    await _redis_db0.setex(f"impersonation:{code}", 60, payload_json)
 
     await write_audit_log(
         db, admin_id, "login_as_user", "user", user_id,
@@ -614,7 +645,11 @@ async def login_as_user(
     )
     await db.commit()
 
-    return {"access_token": token, "token_type": "bearer", "user_email": user.email}
+    return {
+        "code": code,
+        "user_email": user.email,
+        "expires_in": 60,
+    }
 
 
 async def delete_user(

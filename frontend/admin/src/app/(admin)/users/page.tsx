@@ -389,13 +389,17 @@ export default function UsersPage() {
     // blockers; we set the URL after the token is minted.
     const popup = window.open('about:blank', '_blank');
     try {
-      const data = await adminApi.post<{ access_token: string; user_email: string }>(`/users/${user.id}/login-as`);
-      if (!data?.access_token) throw new Error('No access token returned');
+      // Backend now returns a short-lived single-use code, not a JWT.
+      // The code in the URL is harmless after first redeem or 60 s TTL.
+      const data = await adminApi.post<{ code: string; user_email: string; expires_in: number }>(
+        `/users/${user.id}/login-as`,
+      );
+      if (!data?.code) throw new Error('No redemption code returned');
       const host = typeof window !== 'undefined' ? window.location.hostname : '';
       const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:';
       const traderUrl = process.env.NEXT_PUBLIC_TRADER_URL
         || (host.startsWith('admin.') ? `${proto}//${host.replace(/^admin\./, '')}` : 'http://localhost:3000');
-      const url = `${traderUrl}/auth/impersonate?token=${encodeURIComponent(data.access_token)}`;
+      const url = `${traderUrl}/auth/impersonate?code=${encodeURIComponent(data.code)}`;
       if (popup && !popup.closed) {
         popup.location.href = url;
       } else {

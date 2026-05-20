@@ -5,16 +5,22 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api/client';
 
 /**
- * Impersonation landing — admin opens this tab with ?token=<JWT>.
- * Establishes HttpOnly session cookies via POST /auth/bootstrap-session (same-origin proxy).
+ * Impersonation landing — admin opens this tab with `?code=<one-time>`.
+ * The code is a 32-char hex token (60 s TTL, single-use) issued by the
+ * admin API. We GETDEL it server-side via /auth/impersonate/redeem,
+ * which sets HttpOnly cookies on the trader domain.
+ *
+ * Legacy `?token=<JWT>` is still accepted for backward-compat with old
+ * admin builds — it routes through the existing bootstrap-session path.
  */
 function ImpersonateInner() {
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (!token) {
+    const code = searchParams.get('code');
+    const legacyToken = searchParams.get('token');
+    if (!code && !legacyToken) {
       window.location.replace('/auth/login');
       return;
     }
@@ -35,8 +41,14 @@ function ImpersonateInner() {
           /* api client may not expose clearToken in this build */
         }
 
-        // 2) Start the impersonated session.
-        await api.post('/auth/bootstrap-session', { access_token: token });
+        // 2) Start the impersonated session — prefer the redemption-code
+        //    path; fall back to legacy bootstrap-session if only ?token=
+        //    is present (older admin build that we haven't deployed yet).
+        if (code) {
+          await api.post('/auth/impersonate/redeem', { code });
+        } else {
+          await api.post('/auth/bootstrap-session', { access_token: legacyToken });
+        }
 
         // 3) Hard redirect so the auth store rehydrates from scratch.
         window.location.replace('/accounts');

@@ -150,9 +150,16 @@ async def kill_switch(
 async def login_as_user(
     user_id: uuid.UUID,
     request: Request,
-    admin: User = Depends(require_permission("users.view")),
+    admin: User = Depends(require_permission("users.impersonate")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Issue a single-use redemption code (NOT a bare JWT) that the
+    admin frontend opens at /auth/impersonate?code=X on the trader.
+
+    Permission `users.impersonate` is a separate grant from `users.view`
+    so a low-privilege analyst with "users.view" cannot impersonate a
+    customer. Super-admins bypass automatically. Audit-logged on every
+    successful start."""
     return await user_service.login_as_user(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
