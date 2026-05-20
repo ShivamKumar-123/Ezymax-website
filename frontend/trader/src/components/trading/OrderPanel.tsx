@@ -49,8 +49,9 @@ export default function OrderPanel() {
 
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderTab, setOrderTab] = useState<OrderType>('market');
-  const [pendingKind, setPendingKind] = useState<'limit' | 'stop'>('limit');
+  const [pendingKind, setPendingKind] = useState<'limit' | 'stop' | 'stop_limit'>('limit');
   const [triggerPrice, setTriggerPrice] = useState('');
+  const [stopLimitPrice, setStopLimitPrice] = useState('');
   const [lots, setLots] = useState('0.01');
   const [slEnabled, setSlEnabled] = useState(false);
   const [tpEnabled, setTpEnabled] = useState(false);
@@ -86,14 +87,20 @@ export default function OrderPanel() {
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
 
-  /** Pending tab requires a positive numeric trigger price. Side-vs-mid
-   *  validity (limit must be below ask, stop above ask, etc.) is enforced
-   *  in handleSubmit so the button only blocks on the simplest precondition. */
+  /** Pending tab requires a positive trigger price. Stop-limit also
+   *  requires the second (limit/target) price. Side-vs-mid validity is
+   *  enforced in handleSubmit so the button only blocks on simplest
+   *  preconditions here. */
   const pendingTriggerValid = orderTab !== 'pending'
     ? true
     : (() => {
         const t = parseFloat(triggerPrice);
-        return Number.isFinite(t) && t > 0;
+        if (!Number.isFinite(t) || t <= 0) return false;
+        if (pendingKind === 'stop_limit') {
+          const sl = parseFloat(stopLimitPrice);
+          if (!Number.isFinite(sl) || sl <= 0) return false;
+        }
+        return true;
       })();
 
   useEffect(() => {
@@ -174,6 +181,7 @@ export default function OrderPanel() {
     // side of the current market (server re-validates but bail early so
     // the user gets a clear toast instead of a 400).
     let triggerPx: number | null = null;
+    let stopLimitPx: number | null = null;
     if (orderTab === 'pending') {
       const t = parseFloat(triggerPrice);
       if (!Number.isFinite(t) || t <= 0) {
@@ -190,7 +198,7 @@ export default function OrderPanel() {
           toast.error(`Sell limit must be above bid (${bid.toFixed(digits)})`);
           return;
         }
-      } else {
+      } else if (pendingKind === 'stop') {
         if (side === 'buy' && t <= ask) {
           toast.error(`Buy stop must be above ask (${ask.toFixed(digits)})`);
           return;
@@ -198,6 +206,34 @@ export default function OrderPanel() {
         if (side === 'sell' && t >= bid) {
           toast.error(`Sell stop must be below bid (${bid.toFixed(digits)})`);
           return;
+        }
+      } else {
+        // stop_limit — stop triggers the order, limit is the resulting
+        // limit-order price. Backend rule: buy stop > ask AND limit < stop.
+        const sl = parseFloat(stopLimitPrice);
+        if (!Number.isFinite(sl) || sl <= 0) {
+          toast.error('Enter a stop-limit (target) price');
+          return;
+        }
+        stopLimitPx = sl;
+        if (side === 'buy') {
+          if (t <= ask) {
+            toast.error(`Buy stop must be above ask (${ask.toFixed(digits)})`);
+            return;
+          }
+          if (sl >= t) {
+            toast.error('Buy stop-limit: limit price must be below the stop price');
+            return;
+          }
+        } else {
+          if (t >= bid) {
+            toast.error(`Sell stop must be below bid (${bid.toFixed(digits)})`);
+            return;
+          }
+          if (sl <= t) {
+            toast.error('Sell stop-limit: limit price must be above the stop price');
+            return;
+          }
         }
       }
     }
@@ -240,6 +276,10 @@ export default function OrderPanel() {
       symbol: selectedSymbol,
       order_type: orderTab === 'market' ? 'market' : pendingKind,
       price: orderTab === 'pending' && triggerPx != null ? triggerPx : undefined,
+      stop_limit_price:
+        orderTab === 'pending' && pendingKind === 'stop_limit' && stopLimitPx != null
+          ? stopLimitPx
+          : undefined,
       side,
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
@@ -560,16 +600,20 @@ export default function OrderPanel() {
             </div>
           </div>
 
-          {/* Pending order — type toggle + trigger price.
-              Only renders on the Pending tab. */}
+          {/* Pending order — type toggle + trigger price (+ stop-limit
+              target). Only renders on the Pending tab. */}
           {orderTab === 'pending' && (
             <div className="pt-2 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary shrink-0">
                   Pending type
                 </span>
                 <div className="flex rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
-                  {(['limit', 'stop'] as const).map((k) => {
+                  {([
+                    { k: 'limit' as const, label: 'Limit' },
+                    { k: 'stop' as const, label: 'Stop' },
+                    { k: 'stop_limit' as const, label: 'Stop-Limit' },
+                  ]).map(({ k, label }) => {
                     const active = pendingKind === k;
                     return (
                       <button
@@ -577,13 +621,13 @@ export default function OrderPanel() {
                         type="button"
                         onClick={() => setPendingKind(k)}
                         className={clsx(
-                          'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors',
+                          'px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap',
                           active
                             ? 'bg-accent/15 text-accent'
                             : 'text-text-tertiary hover:text-text-primary',
                         )}
                       >
-                        {k}
+                        {label}
                       </button>
                     );
                   })}
@@ -592,7 +636,7 @@ export default function OrderPanel() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                    Trigger price
+                    {pendingKind === 'stop_limit' ? 'Stop (trigger) price' : 'Trigger price'}
                   </span>
                   <span className="text-[9.5px] text-text-tertiary font-mono">
                     {pendingKind === 'limit'
@@ -622,6 +666,36 @@ export default function OrderPanel() {
                   className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary placeholder:text-text-tertiary focus:border-accent/50"
                 />
               </div>
+              {/* Second price input only for stop-limit */}
+              {pendingKind === 'stop_limit' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                      Limit (target) price
+                    </span>
+                    <span className="text-[9.5px] text-text-tertiary font-mono">
+                      {side === 'buy' ? '< stop' : '> stop'}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={stopLimitPrice}
+                    onChange={(e) => setStopLimitPrice(e.target.value)}
+                    step={execPrice > 100 ? 0.01 : 0.00001}
+                    placeholder={
+                      Number.isFinite(parseFloat(triggerPrice))
+                        ? (
+                            side === 'buy'
+                              ? parseFloat(triggerPrice) * 0.999
+                              : parseFloat(triggerPrice) * 1.001
+                          ).toFixed(digits)
+                        : '—'
+                    }
+                    className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary placeholder:text-text-tertiary focus:border-accent/50"
+                  />
+                </div>
+              )}
             </div>
           )}
 
