@@ -9,28 +9,40 @@ import toast from 'react-hot-toast';
 interface BonusOffer {
   id: string;
   name: string;
-  bonus_type: string;
-  bonus_value: number;
+  bonus_type: string | null;
+  percentage: number | null;
+  fixed_amount: number | null;
   min_deposit: number;
+  max_bonus: number | null;
   lots_required: number;
   target_audience: string;
-  start_date: string;
-  end_date: string;
+  starts_at: string | null;
+  expires_at: string | null;
   is_active: boolean;
-  allocations_count?: number;
+  created_at: string | null;
 }
 
 interface BonusAllocation {
   id: string;
   user_id: string;
-  user_name: string;
-  user_email: string;
-  offer_name: string;
-  bonus_amount: number;
-  lots_completed: number;
+  account_id: string | null;
+  offer_id: string | null;
+  amount: number;
+  lots_traded: number;
   lots_required: number;
   status: string;
-  allocated_at: string;
+  released_at: string | null;
+  expires_at: string | null;
+  created_at: string | null;
+  user_email: string | null;
+  offer_name: string | null;
+}
+
+interface PaginatedAllocations {
+  items: BonusAllocation[];
+  total: number;
+  page: number;
+  per_page: number;
 }
 
 type Tab = 'offers' | 'allocations';
@@ -39,15 +51,32 @@ function formatMoney(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDate(iso: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+}
+
+function isoForDateInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
 const EMPTY_FORM = {
   name: '',
   bonus_type: 'deposit',
-  bonus_value: '',
+  percentage: '',
+  fixed_amount: '',
   min_deposit: '',
+  max_bonus: '',
   lots_required: '',
   target_audience: 'all',
-  start_date: '',
-  end_date: '',
+  starts_at: '',
+  expires_at: '',
+  is_active: true,
 };
 
 export default function BonusPage() {
@@ -64,11 +93,11 @@ export default function BonusPage() {
     setLoading(true);
     try {
       if (tab === 'offers') {
-        const res = await adminApi.get<{ offers: BonusOffer[] }>('/bonus/offers');
-        setOffers(res.offers || []);
+        const res = await adminApi.get<BonusOffer[]>('/bonus/offers');
+        setOffers(Array.isArray(res) ? res : []);
       } else {
-        const res = await adminApi.get<{ allocations: BonusAllocation[] }>('/bonus/allocations');
-        setAllocations(res.allocations || []);
+        const res = await adminApi.get<PaginatedAllocations>('/bonus/allocations');
+        setAllocations(res.items || []);
       }
     } catch (e: any) {
       toast.error(e.message || 'Failed to load data');
@@ -89,13 +118,16 @@ export default function BonusPage() {
     setEditId(offer.id);
     setForm({
       name: offer.name,
-      bonus_type: offer.bonus_type,
-      bonus_value: String(offer.bonus_value),
-      min_deposit: String(offer.min_deposit),
-      lots_required: String(offer.lots_required),
+      bonus_type: offer.bonus_type || 'deposit',
+      percentage: offer.percentage != null ? String(offer.percentage) : '',
+      fixed_amount: offer.fixed_amount != null ? String(offer.fixed_amount) : '',
+      min_deposit: String(offer.min_deposit ?? ''),
+      max_bonus: offer.max_bonus != null ? String(offer.max_bonus) : '',
+      lots_required: String(offer.lots_required ?? ''),
       target_audience: offer.target_audience,
-      start_date: offer.start_date,
-      end_date: offer.end_date,
+      starts_at: isoForDateInput(offer.starts_at),
+      expires_at: isoForDateInput(offer.expires_at),
+      is_active: offer.is_active,
     });
     setShowModal(true);
   };
@@ -107,12 +139,15 @@ export default function BonusPage() {
       const body = {
         name: form.name,
         bonus_type: form.bonus_type,
-        bonus_value: parseFloat(form.bonus_value) || 0,
+        percentage: form.percentage !== '' ? parseFloat(form.percentage) : null,
+        fixed_amount: form.fixed_amount !== '' ? parseFloat(form.fixed_amount) : null,
         min_deposit: parseFloat(form.min_deposit) || 0,
+        max_bonus: form.max_bonus !== '' ? parseFloat(form.max_bonus) : null,
         lots_required: parseFloat(form.lots_required) || 0,
         target_audience: form.target_audience,
-        start_date: form.start_date,
-        end_date: form.end_date,
+        starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+        is_active: form.is_active,
       };
       if (editId) {
         await adminApi.put(`/bonus/offers/${editId}`, body);
@@ -130,7 +165,8 @@ export default function BonusPage() {
     }
   };
 
-  const updateForm = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+  const updateForm = (key: string, val: string | boolean) =>
+    setForm((f) => ({ ...f, [key]: val }));
 
   return (
     <>
@@ -192,38 +228,43 @@ export default function BonusPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {offers.map((offer) => (
-                          <tr key={offer.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
-                            <td className="px-4 py-2.5">
-                              <div className="flex items-center gap-1.5">
-                                <Gift size={12} className="text-accent" />
-                                <span className="text-xs text-text-primary">{offer.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <span className="inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium bg-buy/15 text-buy">{offer.bonus_type}</span>
-                            </td>
-                            <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">
-                              {offer.bonus_type === 'percentage' ? `${offer.bonus_value}%` : `$${formatMoney(offer.bonus_value)}`}
-                            </td>
-                            <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">${formatMoney(offer.min_deposit)}</td>
-                            <td className="px-4 py-2.5 text-xs text-text-secondary font-mono tabular-nums">{offer.lots_required}</td>
-                            <td className="px-4 py-2.5 text-xs text-text-secondary">{offer.target_audience}</td>
-                            <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">
-                              {offer.start_date || '—'} → {offer.end_date || '—'}
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium', offer.is_active ? 'bg-success/15 text-success' : 'bg-text-tertiary/15 text-text-tertiary')}>
-                                {offer.is_active ? 'Active' : 'Inactive'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              <button onClick={() => openEdit(offer)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xxs font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">
-                                <Pencil size={12} /> Edit
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {offers.map((offer) => {
+                          const valueLabel = offer.percentage != null
+                            ? `${offer.percentage}%`
+                            : offer.fixed_amount != null
+                              ? `$${formatMoney(offer.fixed_amount)}`
+                              : '—';
+                          return (
+                            <tr key={offer.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                              <td className="px-4 py-2.5">
+                                <div className="flex items-center gap-1.5">
+                                  <Gift size={12} className="text-accent" />
+                                  <span className="text-xs text-text-primary">{offer.name}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium bg-buy/15 text-buy">{offer.bonus_type || '—'}</span>
+                              </td>
+                              <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">{valueLabel}</td>
+                              <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">${formatMoney(offer.min_deposit)}</td>
+                              <td className="px-4 py-2.5 text-xs text-text-secondary font-mono tabular-nums">{offer.lots_required}</td>
+                              <td className="px-4 py-2.5 text-xs text-text-secondary">{offer.target_audience}</td>
+                              <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">
+                                {formatDate(offer.starts_at)} → {formatDate(offer.expires_at)}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium', offer.is_active ? 'bg-success/15 text-success' : 'bg-text-tertiary/15 text-text-tertiary')}>
+                                  {offer.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <button onClick={() => openEdit(offer)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xxs font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">
+                                  <Pencil size={12} /> Edit
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -237,7 +278,7 @@ export default function BonusPage() {
                   <table className="w-full min-w-[900px]">
                     <thead>
                       <tr className="border-b border-border-primary bg-bg-tertiary/40">
-                        {['User', 'Offer', 'Bonus Amount', 'Lots Progress', 'Status', 'Allocated'].map((col) => (
+                        {['User', 'Offer', 'Bonus Amount', 'Lots Progress', 'Status', 'Released', 'Allocated'].map((col) => (
                           <th key={col} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', col === 'Bonus Amount' && 'text-right')}>
                             {col}
                           </th>
@@ -245,35 +286,41 @@ export default function BonusPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {allocations.map((a) => (
-                        <tr key={a.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
-                          <td className="px-4 py-2.5">
-                            <p className="text-xs text-text-primary">{a.user_name}</p>
-                            <p className="text-xxs text-text-tertiary">{a.user_email}</p>
-                          </td>
-                          <td className="px-4 py-2.5 text-xs text-text-secondary">{a.offer_name}</td>
-                          <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">${formatMoney(a.bonus_amount)}</td>
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-2">
-                              <div className="w-20 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
-                                <div className="h-full bg-buy rounded-full" style={{ width: `${Math.min((a.lots_completed / (a.lots_required || 1)) * 100, 100)}%` }} />
+                      {allocations.map((a) => {
+                        const progress = a.lots_required > 0
+                          ? Math.min((a.lots_traded / a.lots_required) * 100, 100)
+                          : 0;
+                        return (
+                          <tr key={a.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                            <td className="px-4 py-2.5">
+                              <p className="text-xs text-text-primary">{a.user_email || a.user_id}</p>
+                              <p className="text-xxs text-text-tertiary font-mono">{a.account_id || '—'}</p>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-text-secondary">{a.offer_name || '—'}</td>
+                            <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">${formatMoney(a.amount)}</td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+                                  <div className="h-full bg-buy rounded-full" style={{ width: `${progress}%` }} />
+                                </div>
+                                <span className="text-xxs text-text-tertiary font-mono tabular-nums">{a.lots_traded}/{a.lots_required}</span>
                               </div>
-                              <span className="text-xxs text-text-tertiary font-mono tabular-nums">{a.lots_completed}/{a.lots_required}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium',
-                              a.status === 'completed' ? 'bg-success/15 text-success' :
-                              a.status === 'active' ? 'bg-buy/15 text-buy' :
-                              a.status === 'cancelled' ? 'bg-danger/15 text-danger' :
-                              'bg-warning/15 text-warning'
-                            )}>
-                              {a.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums">{a.allocated_at}</td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium',
+                                a.status === 'released' || a.status === 'completed' ? 'bg-success/15 text-success' :
+                                a.status === 'active' ? 'bg-buy/15 text-buy' :
+                                a.status === 'cancelled' || a.status === 'expired' ? 'bg-danger/15 text-danger' :
+                                'bg-warning/15 text-warning'
+                              )}>
+                                {a.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums">{formatDate(a.released_at)}</td>
+                            <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums">{formatDate(a.created_at)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -294,30 +341,38 @@ export default function BonusPage() {
                 <label className="block text-xxs text-text-tertiary mb-1">Name</label>
                 <input value={form.name} onChange={(e) => updateForm('name', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. Welcome Bonus 50%" />
               </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Bonus Type</label>
+                <select value={form.bonus_type} onChange={(e) => updateForm('bonus_type', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md">
+                  <option value="deposit">Deposit Bonus</option>
+                  <option value="no_deposit">No Deposit</option>
+                  <option value="cashback">Cashback</option>
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">Bonus Type</label>
-                  <select value={form.bonus_type} onChange={(e) => updateForm('bonus_type', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md">
-                    <option value="deposit">Deposit Bonus</option>
-                    <option value="percentage">Percentage</option>
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="no_deposit">No Deposit</option>
-                  </select>
+                  <label className="block text-xxs text-text-tertiary mb-1">Percentage (%)</label>
+                  <input type="number" step="0.01" value={form.percentage} onChange={(e) => updateForm('percentage', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 50" />
                 </div>
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">Bonus Value</label>
-                  <input type="number" step="0.01" value={form.bonus_value} onChange={(e) => updateForm('bonus_value', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 50" />
+                  <label className="block text-xxs text-text-tertiary mb-1">Fixed Amount ($)</label>
+                  <input type="number" step="0.01" value={form.fixed_amount} onChange={(e) => updateForm('fixed_amount', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 100" />
                 </div>
               </div>
+              <p className="text-[10px] text-text-tertiary -mt-2">Use one or the other — percentage applies to the deposit, fixed amount is a flat grant.</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xxs text-text-tertiary mb-1">Min Deposit ($)</label>
                   <input type="number" step="0.01" value={form.min_deposit} onChange={(e) => updateForm('min_deposit', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 100" />
                 </div>
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">Lots Required</label>
-                  <input type="number" step="0.01" value={form.lots_required} onChange={(e) => updateForm('lots_required', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 5" />
+                  <label className="block text-xxs text-text-tertiary mb-1">Max Bonus ($)</label>
+                  <input type="number" step="0.01" value={form.max_bonus} onChange={(e) => updateForm('max_bonus', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="(optional cap)" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Lots Required (release threshold)</label>
+                <input type="number" step="0.01" value={form.lots_required} onChange={(e) => updateForm('lots_required', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" placeholder="e.g. 5" />
               </div>
               <div>
                 <label className="block text-xxs text-text-tertiary mb-1">Target Audience</label>
@@ -330,14 +385,18 @@ export default function BonusPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">Start Date</label>
-                  <input type="date" value={form.start_date} onChange={(e) => updateForm('start_date', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
+                  <label className="block text-xxs text-text-tertiary mb-1">Starts At</label>
+                  <input type="date" value={form.starts_at} onChange={(e) => updateForm('starts_at', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
                 </div>
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">End Date</label>
-                  <input type="date" value={form.end_date} onChange={(e) => updateForm('end_date', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
+                  <label className="block text-xxs text-text-tertiary mb-1">Expires At</label>
+                  <input type="date" value={form.expires_at} onChange={(e) => updateForm('expires_at', e.target.value)} className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
                 </div>
               </div>
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
+                <input type="checkbox" checked={form.is_active} onChange={(e) => updateForm('is_active', e.target.checked)} />
+                Active
+              </label>
             </div>
             <div className="px-5 py-3 border-t border-border-primary flex justify-end gap-2">
               <button onClick={() => setShowModal(false)} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>

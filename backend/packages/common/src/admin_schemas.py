@@ -779,6 +779,23 @@ class UserAuditLogOut(BaseModel):
         from_attributes = True
 
 
+class AdminAuditLogOut(BaseModel):
+    id: str
+    admin_id: Optional[str] = None
+    admin_email: Optional[str] = None
+    admin_name: Optional[str] = None
+    action: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    old_values: Optional[dict] = None
+    new_values: Optional[dict] = None
+    ip_address: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class SystemSettingOut(BaseModel):
     key: str
     value: Any

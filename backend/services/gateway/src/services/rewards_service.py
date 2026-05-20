@@ -651,8 +651,10 @@ async def list_store(db: AsyncSession, category: Optional[str] = None) -> list[d
         stmt = stmt.where(RewardStoreItem.category == category)
     stmt = stmt.order_by(RewardStoreItem.display_order, RewardStoreItem.label)
     rows = (await db.execute(stmt)).scalars().all()
-    return [
-        {
+    out: list[dict] = []
+    for r in rows:
+        payload = r.payload or {}
+        item = {
             "id": str(r.id),
             "slug": r.slug,
             "category": r.category,
@@ -660,8 +662,13 @@ async def list_store(db: AsyncSession, category: Optional[str] = None) -> list[d
             "description": r.description,
             "ac_price": float(r.ac_price),
         }
-        for r in rows
-    ]
+        # Lifestyle items can be PS-gated; surface the requirement so the
+        # store UI can render a "needs X PS" lock instead of blowing up
+        # at redeem-time with a 403.
+        if (r.category or "").lower() == "lifestyle":
+            item["min_ps"] = int(payload.get("min_ps") or 0)
+        out.append(item)
+    return out
 
 
 async def redeem(db: AsyncSession, user_id, item_id) -> dict:

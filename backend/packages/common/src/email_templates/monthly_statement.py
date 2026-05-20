@@ -20,12 +20,13 @@ def render_monthly_statement_available(
 
     body = f"""
     <p style="margin:0 0 14px;color:#f5f5f5;font-size:14px;line-height:1.65;">
-      You can view your latest account statement in the trader dashboard
-      under <strong>Wallet → Account statement</strong>.
+      Open <strong>Portfolio</strong> in the trader dashboard and click
+      <strong>Download PDF statement</strong> to get a full record of your
+      closed trades, P&amp;L, fees, and commissions.
     </p>
     <p style="margin:0 0 14px;color:#f5f5f5;font-size:14px;line-height:1.65;">
-      You can also review your trading and funding history under
-      <strong>Trading → History</strong> and <strong>Wallet → Transactions</strong>.
+      Funding history (deposits / withdrawals) is available under
+      <strong>Wallet → Transactions</strong>.
     </p>
     <p style="margin:18px 0 0;color:#9a9a9a;font-size:12px;line-height:1.55;">
       UID: <span style="font-family:Menlo,Consolas,monospace;color:#cfcfcf;">{user_uid}</span>
@@ -37,8 +38,8 @@ def render_monthly_statement_available(
         title=f"Your account statement for {statement_month_label} is ready",
         intro=f"Hi {name}, your latest FXArtha account statement is now available.",
         body_html=body,
-        cta_label="View statement",
-        cta_url=f"{base}/wallet",
+        cta_label="Download statement",
+        cta_url=f"{base}/portfolio",
         footer_note=(
             "If anything looks off, reply to this email and support will "
             "reconcile your records."
@@ -50,11 +51,11 @@ def render_monthly_statement_available(
         "",
         f"Your FXArtha account statement for {statement_month_label} is now available.",
         "",
-        "View it in the trader dashboard under Wallet → Account statement.",
-        "Trading and funding history live under Trading → History and Wallet → Transactions.",
+        "Open Portfolio in the trader dashboard and click 'Download PDF statement'.",
+        "Funding history (deposits / withdrawals) lives under Wallet → Transactions.",
         "",
         f"UID: {user_uid}",
         "",
-        f"Open the dashboard: {base}/wallet",
+        f"Open the dashboard: {base}/portfolio",
     ]
     return subject, html, "\n".join(text_lines)
