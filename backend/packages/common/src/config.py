@@ -53,7 +53,11 @@ class Settings(BaseSettings):
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
     ADMIN_EMAIL: str = "admin@fxartha.com"
-    ADMIN_PASSWORD: str = "FXArthaAdmin2025!"
+    # Initial seed password for the super-admin row created by the
+    # `migrate` profile. Empty by default so prod operators are forced
+    # to set a strong value in their .env before the first migration —
+    # see `_assert_production_secrets` below.
+    ADMIN_PASSWORD: str = ""
     USER_JWT_SECRET: str = "dev-secret-change-in-production"
     USER_JWT_ALGORITHM: str = "HS256"
 
@@ -154,27 +158,61 @@ _DEFAULT_JWT_SECRETS = {
     "",
 }
 
+_KNOWN_WEAK_ADMIN_PASSWORDS = {
+    # Historical default that shipped with .env.example for a while.
+    # Any deployment still using this in 2026+ is effectively unpassworded.
+    "FXArthaAdmin2025!",
+    "admin",
+    "password",
+    "changeme",
+    "",
+}
+
 
 def _assert_production_secrets(s: Settings) -> None:
-    """Refuse to start in production with default JWT secrets baked into
-    the binary. A missing or default secret means an attacker can mint
-    valid tokens with the public default — that's the codebase's #1
-    security risk if the env file is ever forgotten. Fail loudly at
-    process boot rather than silently authenticating forged tokens."""
+    """Refuse to start in production with default secrets baked into the
+    binary. Missing/default JWT secrets let an attacker mint valid tokens;
+    a default admin password is functionally an open super-admin login —
+    both are the codebase's #1 security risks if the env file is ever
+    forgotten. Fail loudly at process boot rather than silently
+    authenticating forged or default-credential sessions."""
     if s.ENVIRONMENT.lower() != "production":
+        # Dev hygiene: warn but don't refuse to boot — local devs need
+        # the convenience of running with no env file at all.
+        import logging
+        log = logging.getLogger("fxartha.config")
+        weak_jwt = [
+            n for n in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET")
+            if getattr(s, n, "") in _DEFAULT_JWT_SECRETS
+        ]
+        if weak_jwt:
+            log.warning(
+                "Using DEFAULT dev JWT secrets for: %s. Acceptable for local "
+                "development only; production deploys MUST set strong values.",
+                ", ".join(weak_jwt),
+            )
+        if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
+            log.warning(
+                "ADMIN_PASSWORD is empty or a known-weak default. Acceptable "
+                "for local dev; production deploys MUST set a strong password "
+                "(e.g. `openssl rand -base64 24`)."
+            )
         return
     bad: list[str] = []
     for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
         val = getattr(s, name, "")
         if val in _DEFAULT_JWT_SECRETS or len(val) < 32:
             bad.append(name)
+    if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
+        bad.append("ADMIN_PASSWORD")
     if bad:
         raise RuntimeError(
-            "Refusing to start: ENVIRONMENT=production but the following JWT "
-            "secrets are missing, default, or shorter than 32 chars: "
+            "Refusing to start: ENVIRONMENT=production but the following "
+            "secrets are missing, default, or known-weak: "
             + ", ".join(bad)
-            + ". Generate strong values with `openssl rand -hex 32` and set "
-            "them in /opt/fxartha/.env before deploying."
+            + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
+            "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
+            "set them in /opt/fxartha/.env before deploying."
         )
 
 
