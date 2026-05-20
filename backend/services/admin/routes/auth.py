@@ -51,15 +51,15 @@ async def admin_login(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
-    """Issue an admin session as an HttpOnly cookie.
+    """Issue an admin session as an HttpOnly cookie ONLY.
 
-    The legacy `access_token` field is still returned in the JSON for
-    backwards compatibility with curl / scripts, but the production
-    admin web app should rely solely on the cookie — that's what kills
-    the localStorage-XSS exfiltration path (audit C6)."""
+    The token is set on a `Set-Cookie` header marked HttpOnly + Secure +
+    SameSite=strict. We deliberately strip it from the JSON body so that
+    an XSS shell, an intercepted browser response, or a curl session that
+    forgot to ignore the body cannot exfiltrate the bearer credential."""
     result = await auth_service.admin_login(body=body, db=db)
     _set_admin_cookie(response, request, result.access_token)
-    return result
+    return result.model_dump(exclude={"access_token", "token_type"})
 
 
 @router.post("/refresh")
@@ -69,9 +69,11 @@ async def admin_refresh(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
+    """Same body-stripping as `/login` — refresh result returns the new
+    token only via the HttpOnly cookie."""
     result = await auth_service.admin_refresh(body=body, db=db)
     _set_admin_cookie(response, request, result.access_token)
-    return result
+    return result.model_dump(exclude={"access_token", "token_type"})
 
 
 @router.post("/logout")
