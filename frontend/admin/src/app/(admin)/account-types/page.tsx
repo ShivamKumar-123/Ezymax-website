@@ -220,7 +220,7 @@ export default function AccountTypesPage() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setModal(false)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setModal(false)}>
           <div
             className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -320,7 +320,7 @@ export default function AccountTypesPage() {
       )}
 
       {deleteId && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDeleteId(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setDeleteId(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md max-w-sm w-full p-5 space-y-3" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm text-text-primary font-semibold">Delete account type?</p>
             <p className="text-xs text-text-secondary">Only allowed if no trading accounts use this type.</p>

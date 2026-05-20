@@ -335,7 +335,7 @@ export default function EmployeesPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">{editId ? 'Edit Employee' : 'Add Employee'}</h3>
@@ -387,7 +387,7 @@ export default function EmployeesPage() {
       )}
 
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDeleteConfirm(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setDeleteConfirm(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Deactivate Employee</h3>
@@ -404,7 +404,7 @@ export default function EmployeesPage() {
       )}
 
       {permModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => !permSaving && setPermModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => !permSaving && setPermModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary flex items-center gap-2">
               <ShieldCheck size={14} className="text-accent" />
@@ -466,7 +466,7 @@ export default function EmployeesPage() {
       )}
 
       {activityModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setActivityModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setActivityModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Activity Log</h3>

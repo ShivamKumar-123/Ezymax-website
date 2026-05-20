@@ -88,7 +88,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
 
   const modal = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-bg-secondary border border-border-glass rounded-xl shadow-modal">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-glass">
           <h2 className="text-lg font-bold text-text-primary">Share</h2>

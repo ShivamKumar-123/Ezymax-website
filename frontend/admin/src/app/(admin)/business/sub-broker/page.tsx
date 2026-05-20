@@ -217,7 +217,7 @@ export default function SubBrokerPage() {
       </div>
 
       {approveModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setApproveModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setApproveModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Approve Sub-Broker</h3>
@@ -248,7 +248,7 @@ export default function SubBrokerPage() {
       )}
 
       {rejectModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRejectModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setRejectModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Reject Application</h3>

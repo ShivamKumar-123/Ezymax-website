@@ -260,7 +260,7 @@ export default function KYCPage() {
 
       {/* View Modal */}
       {viewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70 p-4">
           <div className="w-full max-w-2xl bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary sticky top-0 bg-bg-secondary">
               <h2 className="text-sm font-semibold text-text-primary">KYC Details</h2>
@@ -356,7 +356,7 @@ export default function KYCPage() {
 
       {/* Approve Modal */}
       {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70">
           <div className="w-full max-w-md bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary">Approve KYC</h2>
@@ -403,7 +403,7 @@ export default function KYCPage() {
 
       {/* Reject Modal */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70">
           <div className="w-full max-w-md bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary">Reject KYC</h2>

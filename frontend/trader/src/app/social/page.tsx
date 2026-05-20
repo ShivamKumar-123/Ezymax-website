@@ -299,7 +299,7 @@ function DetailModal({
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-lg rounded-2xl bg-bg-secondary border border-border-glass p-6 overflow-y-auto max-h-[90vh]"
@@ -437,7 +437,7 @@ function CopyModal({
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6"
@@ -642,7 +642,7 @@ function LeaderboardTab() {
 
       {/* Followers modal */}
       {showFollowers && createPortal(
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
           <div className="w-full max-w-3xl bg-bg-secondary border border-border-glass rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
               <h3 className="text-base font-bold text-text-primary">Followers ({followers.length})</h3>
@@ -854,7 +854,7 @@ function MyCopiesTab() {
       {/* Refill Modal */}
       {refillTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => !refilling && setRefillTarget(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
           <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6">
             <button type="button" onClick={() => setRefillTarget(null)} disabled={refilling} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
             <h3 className="text-sm font-semibold text-text-primary mb-1">Refill — {refillTarget.provider_name}</h3>
@@ -1614,7 +1614,7 @@ function MyDashboardTab() {
 
       {/* Followers Modal */}
       {showFollowers && createPortal(
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
           <div className="w-full max-w-4xl bg-bg-secondary border border-border-glass rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass bg-bg-tertiary/50">
               <h3 className="text-base font-bold text-text-primary">My Followers ({followers.length})</h3>

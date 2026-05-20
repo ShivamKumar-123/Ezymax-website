@@ -612,7 +612,7 @@ export default function TradesSection() {
       {/* Detail modal — portal to body to avoid transform containment */}
       {selected && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-bg-base/75 backdrop-blur-sm"
           onClick={() => setSelected(null)}
         >
           <div

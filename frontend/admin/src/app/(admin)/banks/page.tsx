@@ -333,7 +333,7 @@ export default function BanksPage() {
 
       {/* Add / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70">
           <div className="w-full max-w-lg bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary">
@@ -506,7 +506,7 @@ export default function BanksPage() {
 
       {/* Delete Confirmation */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70">
           <div className="w-full max-w-sm bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary">Delete Bank Account</h2>

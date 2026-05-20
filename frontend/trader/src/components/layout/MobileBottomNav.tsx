@@ -237,7 +237,7 @@ export default function MobileBottomNav() {
       {/* ── More Bottom Sheet ─── */}
       {showMore && (
         <div className="fixed inset-0 z-[80] lg:hidden flex flex-col justify-end" onClick={() => setShowMore(false)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
           <div
             className="relative rounded-t-3xl border-t border-border-primary shadow-2xl bg-bg-primary"
             style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}

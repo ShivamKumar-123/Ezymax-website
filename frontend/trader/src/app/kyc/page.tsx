@@ -438,7 +438,7 @@ export default function KycPage() {
         >
           <button
             type="button"
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-bg-base/80 backdrop-blur-sm"
             aria-label="Close"
             onClick={() => !submitting && setShowFormModal(false)}
           />

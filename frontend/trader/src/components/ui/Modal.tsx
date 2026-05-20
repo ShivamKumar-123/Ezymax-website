@@ -60,7 +60,7 @@ export default function Modal({
   // modal centered in the viewport regardless of page scroll position.
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="absolute inset-0 bg-bg-base/75" onClick={onClose} />
       <div className={cn(
         'relative w-full max-h-[90vh] overflow-y-auto bg-bg-tertiary border border-border-primary rounded-lg shadow-modal animate-fade-in',
         widths[width],

@@ -663,7 +663,7 @@ export default function IBPage() {
 
       {/* Approve Modal */}
       {approveModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setApproveModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setApproveModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Approve IB Application</h3>
@@ -702,7 +702,7 @@ export default function IBPage() {
 
       {/* Reject Modal */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRejectModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setRejectModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Reject IB Application</h3>
@@ -726,7 +726,7 @@ export default function IBPage() {
 
       {/* Edit Commission Modal */}
       {editCommissionModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEditCommissionModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setEditCommissionModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Edit IB Commission</h3>
@@ -768,7 +768,7 @@ export default function IBPage() {
 
       {/* Reject Agent Modal */}
       {rejectAgentModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRejectAgentModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setRejectAgentModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Reject Active IB</h3>
@@ -795,7 +795,7 @@ export default function IBPage() {
 
       {/* Commission Plans Modal */}
       {commissionPlansModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => { setCommissionPlansModal(false); setEditingPlan(null); }}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => { setCommissionPlansModal(false); setEditingPlan(null); }}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary flex items-center justify-between">
               <div>
@@ -960,7 +960,7 @@ export default function IBPage() {
 
       {/* Delete plan confirmation */}
       {deletingPlanId && (
-        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={() => setDeletingPlanId(null)}>
+        <div className="fixed inset-0 z-[60] bg-bg-base/75 flex items-center justify-center p-4" onClick={() => setDeletingPlanId(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">Delete Plan?</h3>
@@ -980,7 +980,7 @@ export default function IBPage() {
 
       {/* Transfer / Assign User Modal */}
       {transferModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setTransferModal(null)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setTransferModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">

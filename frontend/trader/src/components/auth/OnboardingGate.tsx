@@ -60,7 +60,7 @@ export default function OnboardingGate() {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-bg-base/85 backdrop-blur-sm p-4 overflow-y-auto"
       // Intentionally NO onClick handler — the backdrop is non-dismissible.
       role="dialog"
       aria-modal="true"

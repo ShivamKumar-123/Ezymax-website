@@ -50,7 +50,7 @@ export function BulkCloseModal({
         type="button"
         tabIndex={-1}
         aria-label="Dismiss"
-        className="absolute inset-0 z-0 m-0 h-full w-full cursor-default border-0 bg-black/60 p-0 backdrop-blur-sm"
+        className="absolute inset-0 z-0 m-0 h-full w-full cursor-default border-0 bg-bg-base/75 p-0 backdrop-blur-sm"
         onClick={() => setBulkConfirm(null)}
       />
       <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">

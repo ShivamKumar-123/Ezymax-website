@@ -180,7 +180,7 @@ function AuthImage({ src, token, alt, className }: { src: string; token: string 
         onClick={() => setExpanded(true)}
       />
       {expanded && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setExpanded(false)}>
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-bg-base/80 backdrop-blur-sm" onClick={() => setExpanded(false)}>
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setExpanded(false)} className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center text-text-primary hover:bg-sell/20 hover:text-sell">
               <X size={16} />
@@ -843,7 +843,7 @@ export default function DepositsPage() {
 
       {/* Action modal */}
       {actionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/70">
           <div className="w-full max-w-md bg-bg-secondary border border-border-primary rounded-md shadow-modal animate-fade-in">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary capitalize">

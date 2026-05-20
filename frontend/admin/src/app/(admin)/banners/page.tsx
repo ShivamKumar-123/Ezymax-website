@@ -317,7 +317,7 @@ export default function BannersPage() {
 
       {showModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4"
           onClick={() => setShowModal(false)}
         >
           <div
@@ -448,7 +448,7 @@ export default function BannersPage() {
 
       {deleteConfirm && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4"
           onClick={() => setDeleteConfirm(null)}
         >
           <div

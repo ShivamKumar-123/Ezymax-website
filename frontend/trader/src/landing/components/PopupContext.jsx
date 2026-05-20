@@ -35,7 +35,7 @@ export const PopupProvider = ({ children }) => {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-bg-base/80 backdrop-blur-sm animate-fade-in"
           onClick={closePopup}
         >
           <div

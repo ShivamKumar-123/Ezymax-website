@@ -169,7 +169,7 @@ export default function MastersPage() {
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-[1000] bg-black/60 flex items-center justify-center p-4" onClick={() => !deleting && setDeleteTarget(null)}>
+        <div className="fixed inset-0 z-[1000] bg-bg-base/75 flex items-center justify-center p-4" onClick={() => !deleting && setDeleteTarget(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary flex items-start justify-between">
               <div className="flex items-start gap-3">

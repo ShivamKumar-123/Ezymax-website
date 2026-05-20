@@ -111,7 +111,7 @@ function Modal({ open, onClose, title, children, wide }: { open: boolean; onClos
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in p-4 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" onClick={onClose} />
       <div
         className={cn(
           'relative bg-bg-secondary border border-border-primary rounded-md shadow-modal p-5 animate-slide-down w-full my-auto',

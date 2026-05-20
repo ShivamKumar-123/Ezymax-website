@@ -115,9 +115,9 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
 
   return (
     <div className="fixed inset-0 z-[80] md:hidden">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+      {/* Backdrop — dimmed app background so it reads correctly in light mode too. */}
+      <div
+        className="absolute inset-0 bg-bg-base/70 backdrop-blur-sm animate-in fade-in duration-150"
         onClick={onClose}
       />
       

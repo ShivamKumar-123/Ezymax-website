@@ -284,7 +284,7 @@ export default function BonusPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
               <h3 className="text-sm font-semibold text-text-primary">{editId ? 'Edit Offer' : 'Create Bonus Offer'}</h3>

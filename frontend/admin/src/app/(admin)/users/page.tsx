@@ -98,7 +98,7 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center animate-fade-in">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-bg-secondary border border-border-primary rounded-t-xl sm:rounded-xl shadow-modal w-full sm:max-w-lg sm:mx-4 p-6 animate-slide-down">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-text-primary">{title}</h3>

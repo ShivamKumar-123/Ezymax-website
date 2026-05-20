@@ -316,7 +316,7 @@ function Modal({
   title, children, onClose, onSubmit, submitting,
 }: { title: string; children: React.ReactNode; onClose: () => void; onSubmit: () => void; submitting: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/80 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-lg rounded-xl border border-border-primary bg-bg-secondary p-5 space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">{title}</h2>

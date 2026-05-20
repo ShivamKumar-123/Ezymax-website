@@ -285,7 +285,7 @@ export default function CreateTradePage() {
       {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
+          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
           <div className="relative bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md mx-4 p-5 animate-slide-down">
             <h3 className="text-sm font-semibold text-text-primary mb-4">Confirm Trade</h3>
 
