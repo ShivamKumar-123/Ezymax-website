@@ -174,6 +174,71 @@ async def bootstrap_session(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
+class _ImpersonateRedeemRequest(BaseModel):
+    code: str
+
+
+@router.post("/impersonate/redeem")
+async def impersonate_redeem(
+    body: _ImpersonateRedeemRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Redeem a single-use admin impersonation code (issued by
+    `/admin/users/{id}/login-as`) for an HttpOnly session cookie pair.
+
+    Why this exists: the admin UI used to embed the raw impersonation
+    JWT in `?token=...` on the trader URL. The token leaked to browser
+    history, server logs, and Referer headers. Now the admin gets back
+    a 32-char hex code with a 60-second TTL — that's what travels via
+    the URL. We GETDEL it from Redis (atomic, single-use), recover the
+    JWT it was wrapping, and set HttpOnly cookies on the trader domain.
+
+    Rate-limited so a stolen URL can't be retried indefinitely if the
+    attacker races the legitimate redemption."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "impersonate-redeem", 10, 60.0)
+
+    code = (body.code or "").strip()
+    if not code or len(code) < 16 or len(code) > 64:
+        raise HTTPException(status_code=400, detail="Invalid redemption code")
+
+    # Same Redis db-0 the admin service writes into. GETDEL is atomic —
+    # the second caller of the same code can never succeed.
+    import os
+    import json
+    import redis.asyncio as aioredis
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    pool = aioredis.from_url(
+        redis_url.rsplit("/", 1)[0] + "/0", decode_responses=True,
+    )
+    try:
+        raw = await pool.getdel(f"impersonation:{code}")
+    finally:
+        try:
+            await pool.aclose()
+        except Exception:
+            pass
+
+    if not raw:
+        raise HTTPException(status_code=404, detail="Code expired or already used")
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=500, detail="Corrupted impersonation payload")
+
+    access_token = data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=500, detail="Missing token in redemption payload")
+
+    try:
+        return await _bootstrap_session(
+            access_token=access_token, request=request, db=db,
+        )
+    except AuthServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
 @router.post("/forgot-password", response_model=MessageResponse)
 async def forgot_password(req: ForgotPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
     try:
@@ -209,11 +274,22 @@ async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSes
 
 
 @router.post("/2fa/verify")
-async def verify_2fa(code: str, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def verify_2fa(
+    code: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """Confirms the freshly-set TOTP secret and returns 8 one-time backup
     codes. Display those to the user once — they can't be retrieved
     later. The /2fa/regenerate-backup-codes endpoint mints a fresh batch
-    if the original sheet is lost."""
+    if the original sheet is lost.
+
+    Rate-limited at 5 attempts / 10 minutes per IP because 6-digit TOTP
+    codes have ~1M states — without throttling a determined attacker
+    could exhaust them in well under an hour."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "2fa-verify", 5, 600.0)
     try:
         return await _verify_2fa(user_id=current_user["user_id"], code=code, db=db)
     except AuthServiceError as e:
@@ -291,7 +367,13 @@ async def verify_email_otp(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Consume the latest OTP and promote target_email → users.email."""
+    """Consume the latest OTP and promote target_email → users.email.
+
+    Rate-limited at 5 attempts / 10 minutes per IP. 6-digit codes have
+    only ~1M states; an unthrottled attacker who already has a session
+    could brute-force the OTP in a few thousand seconds."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "email-otp-verify", 5, 600.0)
     return await email_otp_service.verify_otp(
         user_id=current_user["user_id"],
         otp=body.otp,
