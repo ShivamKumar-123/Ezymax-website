@@ -55,6 +55,11 @@ export default function OrderPanel() {
   const [lots, setLots] = useState('0.01');
   const [slEnabled, setSlEnabled] = useState(false);
   const [tpEnabled, setTpEnabled] = useState(false);
+  // Smart Trade Mode (pitch slide 4): when ON, the position is funded
+  // 100% from user capital — no leverage, no overnight (swap) cost.
+  // Margin == notional, so the trade size is implicitly capped by the
+  // account's free margin.
+  const [fullyFunded, setFullyFunded] = useState(false);
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -284,6 +289,7 @@ export default function OrderPanel() {
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
+      fully_funded: fullyFunded,
     }).then(async (resp) => {
       // Insurance — only for market orders that immediately produced a position_id.
       if (insuranceChoice && resp?.position_id) {
@@ -536,6 +542,24 @@ export default function OrderPanel() {
               />
             )}
           </div>
+
+          {/* Smart Trade Mode — Fully Funded toggle. When ON, the position
+              uses no leverage and never accrues an overnight (swap) fee.
+              Margin equals notional, so the trade size is implicitly capped
+              by free margin. */}
+          <label className={clsx('flex items-center justify-between gap-2 rounded-md px-2 py-1 border', isTradingTerminal ? 'mt-1' : 'mt-2', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-border-primary bg-bg-secondary')} title="No leverage. No overnight cost.">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-primary">Fully Funded</span>
+              <span className="text-[9px] text-text-tertiary leading-tight">No leverage · No overnight fee</span>
+            </div>
+            <div
+              onClick={() => setFullyFunded((p) => !p)}
+              className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary shrink-0"
+              style={{ background: fullyFunded ? 'var(--buy, #16a34a)' : 'var(--bg-secondary)' }}
+            >
+              <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: fullyFunded ? '18px' : '3px' }} />
+            </div>
+          </label>
 
           {/* Volume */}
           <div className={isTradingTerminal ? 'pt-1' : 'pt-2'}>

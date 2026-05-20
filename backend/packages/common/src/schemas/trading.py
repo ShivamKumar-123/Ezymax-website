@@ -48,6 +48,9 @@ class PlaceOrderRequest(BaseModel):
     stop_limit_price: Optional[Decimal] = None
     comment: Optional[str] = None
     magic_number: Optional[int] = None
+    # Smart Trade Mode: opt out of leverage for this position only. Margin
+    # equals the full notional; no overnight (swap) fee will accrue.
+    fully_funded: bool = False
 
 
 class ModifyOrderRequest(BaseModel):

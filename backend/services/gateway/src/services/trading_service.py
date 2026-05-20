@@ -250,7 +250,12 @@ async def place_order(
         )
 
         contract_size = instrument.contract_size or Decimal("100000")
-        required_margin = calc_margin(req.lots, fill_price, contract_size, account.leverage)
+        # Smart Trade Mode: when `fully_funded=True` is set on the request,
+        # the position uses no borrowed funds — effective leverage is 1
+        # for both margin calc here and the overnight fee engine. Pitch
+        # promise: "No leverage? No overnight cost."
+        effective_leverage = 1 if getattr(req, "fully_funded", False) else account.leverage
+        required_margin = calc_margin(req.lots, fill_price, contract_size, effective_leverage)
 
         unrealized_pnl = Decimal("0")
         open_pos_result = await db.execute(
@@ -315,6 +320,7 @@ async def place_order(
             take_profit=req.take_profit,
             status="open",
             commission=commission,
+            is_fully_funded=bool(getattr(req, "fully_funded", False)),
         )
         db.add(position)
 

@@ -117,6 +117,11 @@ class Position(Base):
     closed_at = Column(DateTime(timezone=True))
     comment = Column(Text)
     is_admin_modified = Column(Boolean, default=False)
+    # "Smart Trade" mode (pitch slide 4): when TRUE the position was
+    # opened fully cash-backed — margin == notional, no leverage used,
+    # so the overnight fee engine charges $0 swap. The account's
+    # default leverage is irrelevant for this position.
+    is_fully_funded = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

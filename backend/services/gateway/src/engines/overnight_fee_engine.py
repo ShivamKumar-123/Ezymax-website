@@ -135,10 +135,17 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             pos.last_swap_at = now
             continue
 
+        # Per-position Smart Trade override: when the trader chose
+        # "Fully Funded" at trade-open time, the position carries no
+        # borrowed funds regardless of the account's default leverage.
+        if bool(getattr(pos, "is_fully_funded", False)):
+            pos.last_swap_at = now
+            continue
+
         leverage = int(account.leverage or 1)
         if leverage <= 1:
-            # Fully funded — never charged. Stamp last_swap_at so the engine
-            # doesn't re-evaluate this position every hour for nothing.
+            # Account-level fully-funded — never charged. Stamp last_swap_at
+            # so the engine doesn't re-evaluate this position every hour.
             pos.last_swap_at = now
             continue
 

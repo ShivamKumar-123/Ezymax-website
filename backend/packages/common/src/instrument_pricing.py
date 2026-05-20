@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     ChargeConfig, SpreadConfig, Instrument, InstrumentConfig,
-    AccountGroup, RewardsUserState,
+    AccountGroup, RewardsUserState, VipPass, StakingPosition,
 )
 
 
@@ -19,6 +19,33 @@ from packages.common.src.models import (
 # design — the smart-fee engine and account tier do most of the work.
 XP_DISCOUNT_PER_LEVEL = Decimal("0.01")
 XP_DISCOUNT_MAX_LEVELS = 9  # so max discount = 9% at level 10
+
+
+# ─── VIP brokerage discount ─────────────────────────────────────────
+# Pitch deck slide 7 / slide 11: VIP pass cuts trading fees so an
+# Elite+VIP user pays roughly half of the Elite rack rate (0.03% → ~0.015%).
+# We model that as a flat 40% multiplier on the resolved base commission,
+# stacked multiplicatively with the XP discount: max-stack at level 10
+# gives ~0.03% × 0.91 × 0.60 = ~0.0164% — close to the pitch promise
+# without being a flat 50% off (which felt too generous against the
+# B-book P&L target).
+VIP_COMMISSION_DISCOUNT = Decimal("0.40")  # 40% off
+
+
+# ─── Staking-balance brokerage discount ─────────────────────────────
+# Pitch deck slide 9 / slide 11: stakers get a fee discount. Tiered on
+# total active staked principal (USD-denominated) — keeps incentives
+# meaningful without rewarding token grinding. Tiers are intentionally
+# coarse so users don't optimise around micro thresholds.
+#   $0–999      → 0%
+#   $1,000+     → 5%
+#   $5,000+     → 10%
+#   $20,000+    → 15%
+STAKING_DISCOUNT_TIERS: tuple[tuple[Decimal, Decimal], ...] = (
+    (Decimal("20000"), Decimal("0.15")),
+    (Decimal("5000"),  Decimal("0.10")),
+    (Decimal("1000"),  Decimal("0.05")),
+)
 
 
 async def _xp_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
@@ -37,6 +64,36 @@ async def _xp_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
             level = i + 1
     levels_above_one = max(0, min(XP_DISCOUNT_MAX_LEVELS, level - 1))
     return Decimal("1") - (XP_DISCOUNT_PER_LEVEL * Decimal(levels_above_one))
+
+
+async def _vip_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
+    """Returns a multiplier in [0.60, 1.00]. 1.00 means the user has no
+    active VIP pass. Cancelled passes are ignored."""
+    row = (await db.execute(
+        select(VipPass.id).where(
+            VipPass.user_id == user_id,
+            VipPass.cancelled_at.is_(None),
+        ).limit(1)
+    )).scalar_one_or_none()
+    if row is None:
+        return Decimal("1")
+    return Decimal("1") - VIP_COMMISSION_DISCOUNT
+
+
+async def _staking_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
+    """Returns a multiplier based on the user's active staked principal.
+    Sums all StakingPosition rows in state='active' (locked + flexible)."""
+    total = (await db.execute(
+        select(func.coalesce(func.sum(StakingPosition.principal), 0)).where(
+            StakingPosition.user_id == user_id,
+            StakingPosition.state == "active",
+        )
+    )).scalar() or 0
+    total_dec = Decimal(str(total))
+    for threshold, discount in STAKING_DISCOUNT_TIERS:
+        if total_dec >= threshold:
+            return Decimal("1") - discount
+    return Decimal("1")
 
 async def _get_instrument_config_row(
     db: AsyncSession, instrument_id: UUID
@@ -324,10 +381,16 @@ async def resolve_commission(
 
     if apply_xp_discount and user_id is not None:
         try:
-            multiplier = await _xp_discount_for_user(db, user_id)
-            base_commission = base_commission * multiplier
+            xp_mult = await _xp_discount_for_user(db, user_id)
+            vip_mult = await _vip_discount_for_user(db, user_id)
+            stk_mult = await _staking_discount_for_user(db, user_id)
+            # Discounts compose multiplicatively. A maxed-out user
+            # (L10 + VIP + $20k staked) lands at 0.91 × 0.60 × 0.85
+            # ≈ 0.46 — still leaves the B-book around half the rack rate.
+            base_commission = base_commission * xp_mult * vip_mult * stk_mult
         except Exception:
-            # XP discount is best-effort; never fail the trade because of it.
+            # Loyalty discounts are best-effort; never fail the trade
+            # because the rewards / VIP / staking tables hiccup.
             pass
 
     return base_commission
