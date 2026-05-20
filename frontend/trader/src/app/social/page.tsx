@@ -966,7 +966,7 @@ function SocialPageInner() {
   return (
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-10 py-4 sm:py-6">
           {/* Hero — compact on mobile */}
           <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-3 sm:mb-5">
             <div
