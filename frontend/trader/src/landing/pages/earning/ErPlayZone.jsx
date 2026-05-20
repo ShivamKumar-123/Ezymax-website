@@ -1,4 +1,4 @@
-import { Dices, Ticket, Gavel } from 'lucide-react'
+﻿import { Dices, Ticket, Gavel } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -33,12 +33,15 @@ export default function ErPlayZone() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Play Zone"
           title="Use Your Rewards in the Play Zone"
           highlight="Play Zone"
           subtitle="Your earned Coins can be used to participate in interactive reward experiences."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {features.map((f, i) => {
@@ -89,6 +92,7 @@ export default function ErPlayZone() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

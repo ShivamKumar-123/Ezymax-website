@@ -1,4 +1,4 @@
-import {
+﻿import {
   GraduationCap,
   Users,
   Mic,
@@ -26,12 +26,15 @@ export default function IbAudience() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Who This Is For"
           title="Designed for Modern Trading Communities"
           highlight="Trading Communities"
           subtitle="If you already do any of this, you're already most of the way there."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
           {audiences.map((a, i) => {
@@ -58,6 +61,7 @@ export default function IbAudience() {
               </ScrollReveal>
             )
           })}
+        </div>
         </div>
       </div>
     </section>

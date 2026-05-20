@@ -1,4 +1,4 @@
-import { Sparkles, Lock, AlertTriangle, ArrowRight, Coins, Activity } from 'lucide-react'
+﻿import { Sparkles, Lock, AlertTriangle, ArrowRight, Coins, Activity } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -12,12 +12,15 @@ export default function StBonus() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trading Bonus"
           title="Unlock Trading Power with Staking"
           highlight="Trading Power"
           subtitle="Long-term stakers receive a trading bonus equal to their committed liquidity."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -39,7 +42,7 @@ export default function StBonus() {
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />
 
             <div className="relative p-8 md:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              {/* Left — mechanism flow */}
+              {/* Left â€” mechanism flow */}
               <div className="lg:col-span-7">
                 <span className="badge mb-5" style={{ display: 'inline-flex' }}>
                   <Sparkles size={11} style={{ color: 'var(--fx-gold)' }} />
@@ -68,7 +71,7 @@ export default function StBonus() {
                 </div>
               </div>
 
-              {/* Right — bonus illustration */}
+              {/* Right â€” bonus illustration */}
               <div className="lg:col-span-5">
                 <div
                   className="rounded-2xl p-6 md:p-7"
@@ -139,7 +142,7 @@ export default function StBonus() {
                   Important Rule
                 </div>
                 <div className="text-sm md:text-[15px] text-white">
-                  If trading bonus is activated, funds are locked for the selected duration —{' '}
+                  If trading bonus is activated, funds are locked for the selected duration â€”{' '}
                   <span style={{ color: '#f87171' }}>withdrawal is restricted</span> during the lock period.
                 </div>
               </div>
@@ -156,6 +159,7 @@ export default function StBonus() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

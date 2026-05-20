@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { ArrowRight, Copy, Star, Users } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
@@ -14,6 +14,7 @@ export default function FxCopyTrading() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Copy Trading"
           title="Access Experience Without Guesswork"
@@ -21,8 +22,10 @@ export default function FxCopyTrading() {
           subtitle="Pick a trader whose track record you actually trust. Their trades mirror into your account automatically, at your size, pause whenever you want."
         />
 
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* ── Left content ──────────────────────────────────── */}
+          {/* â”€â”€ Left content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -80,7 +83,7 @@ export default function FxCopyTrading() {
             </div>
           </ScrollReveal>
 
-          {/* ── Right traders table ──────────────────────────── */}
+          {/* â”€â”€ Right traders table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-7">
             <div
               className="rounded-2xl overflow-hidden"
@@ -183,6 +186,7 @@ export default function FxCopyTrading() {
             &ldquo;Strategy over speculation.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

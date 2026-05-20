@@ -1,4 +1,4 @@
-import { Wallet, UserCheck, BarChart3, Lock, Cog, TrendingUp } from 'lucide-react'
+﻿import { Wallet, UserCheck, BarChart3, Lock, Cog, TrendingUp } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -16,12 +16,15 @@ export default function PrFundsFlow() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="How Funds Move"
           title="How Funds Move Inside the System"
           highlight="Inside the System"
           subtitle="Your funds move through a structured smart-contract flow. Trades are executed, results are calculated, and balance is updated in real-time."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -75,6 +78,7 @@ export default function PrFundsFlow() {
             </p>
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

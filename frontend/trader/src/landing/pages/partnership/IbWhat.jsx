@@ -1,4 +1,4 @@
-import { Handshake, Users, Activity, Coins, ArrowRight } from 'lucide-react'
+﻿import { Handshake, Users, Activity, Coins, ArrowRight } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -29,6 +29,7 @@ export default function IbWhat() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="What is an IB?"
           title="What is an Introducing Broker (IB)?"
@@ -36,8 +37,10 @@ export default function IbWhat() {
           subtitle="If you already work with traders, this is the boring-but-honest version of an affiliate program."
         />
 
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT — copy */}
+          {/* LEFT â€” copy */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -64,7 +67,7 @@ export default function IbWhat() {
             </div>
           </ScrollReveal>
 
-          {/* RIGHT — IB → Traders → Activity → Rewards flow */}
+          {/* RIGHT â€” IB â†’ Traders â†’ Activity â†’ Rewards flow */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-6 md:p-7 relative overflow-hidden"
@@ -122,6 +125,7 @@ export default function IbWhat() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

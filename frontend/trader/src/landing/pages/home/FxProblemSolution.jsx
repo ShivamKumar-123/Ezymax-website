@@ -1,9 +1,9 @@
-import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
+﻿import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const problems = [
-  'You deposit funds → platform controls them',
+  'You deposit funds â†’ platform controls them',
   'Withdrawals depend on approvals',
   'Execution is not fully transparent',
   'You rely on centralized systems',
@@ -20,6 +20,7 @@ export default function FxProblemSolution() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Problem vs Solution"
           title="Why Most Trading Platforms Still Require Blind Trust"
@@ -27,8 +28,10 @@ export default function FxProblemSolution() {
           subtitle="In a custodial setup, the platform holds the money and approves the withdrawals. We don't think that should be the default anymore."
         />
 
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
+
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-          {/* ── Problem Card ───────────────────────────────────── */}
+          {/* â”€â”€ Problem Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp">
             <div
               className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
@@ -74,7 +77,7 @@ export default function FxProblemSolution() {
             </div>
           </ScrollReveal>
 
-          {/* ── Solution Card ─────────────────────────────────── */}
+          {/* â”€â”€ Solution Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <div
               className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
@@ -119,7 +122,7 @@ export default function FxProblemSolution() {
             </div>
           </ScrollReveal>
 
-          {/* ── VS Badge (desktop only, centered between cards) ─ */}
+          {/* â”€â”€ VS Badge (desktop only, centered between cards) â”€ */}
           <div className="hidden lg:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
             <div
               className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-extrabold tracking-wider"
@@ -144,6 +147,7 @@ export default function FxProblemSolution() {
             &ldquo;Control stays with you. Execution stays with the system.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

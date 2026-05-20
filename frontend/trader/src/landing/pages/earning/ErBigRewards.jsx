@@ -1,4 +1,4 @@
-import { Smartphone, Plane, Sparkles, Trophy } from 'lucide-react'
+﻿import { Smartphone, Plane, Sparkles, Trophy } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -18,12 +18,15 @@ export default function ErBigRewards() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Big Rewards"
           title="Unlock Premium Rewards"
           highlight="Premium Rewards"
           subtitle="High engagement and performance unlock access to larger rewards."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {examples.map((ex, i) => {
@@ -71,6 +74,7 @@ export default function ErBigRewards() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { Lock, Eye, Coins, Wallet, ArrowRight, Users } from 'lucide-react'
+﻿import { Lock, Eye, Coins, Wallet, ArrowRight, Users } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -19,15 +19,18 @@ export default function StOverview() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Overview"
           title="What is Staking in FX Artha?"
           highlight="Staking in FX Artha?"
-          subtitle="You are not depositing — you are participating."
+          subtitle="You are not depositing â€” you are participating."
         />
 
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT — copy + mechanics */}
+          {/* LEFT â€” copy + mechanics */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -42,7 +45,7 @@ export default function StOverview() {
               </div>
               <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 Staking in FX Artha means providing liquidity to the protocol through a smart
-                contract. Your funds are <span style={{ color: 'var(--fx-gold-light)' }}>not held by a broker</span> —
+                contract. Your funds are <span style={{ color: 'var(--fx-gold-light)' }}>not held by a broker</span> â€”
                 they remain in a decentralized structure where they contribute to the trading
                 ecosystem.
               </p>
@@ -68,7 +71,7 @@ export default function StOverview() {
             </div>
           </ScrollReveal>
 
-          {/* RIGHT — User → Contract → Rewards diagram */}
+          {/* RIGHT â€” User â†’ Contract â†’ Rewards diagram */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
@@ -95,6 +98,7 @@ export default function StOverview() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

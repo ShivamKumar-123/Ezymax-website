@@ -1,4 +1,4 @@
-import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
+﻿import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
@@ -12,12 +12,15 @@ export default function CtProfit() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Profit Sharing"
           title="Performance-Based Earnings"
           highlight="Performance-Based"
-          subtitle="Master Traders take a slice of the profit they generate for followers — and only when there's actual profit to take a slice of."
+          subtitle="Master Traders take a slice of the profit they generate for followers â€” and only when there's actual profit to take a slice of."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         {/* Flow diagram */}
         <ScrollReveal variant="fadeUp">
@@ -95,6 +98,7 @@ export default function CtProfit() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

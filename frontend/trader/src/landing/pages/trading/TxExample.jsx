@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo } from 'react'
 import { Calculator, Sun, Moon, Receipt, Gauge, Activity, TrendingUp } from 'lucide-react'
@@ -28,12 +28,15 @@ export default function TxExample() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trade Example"
           title="How a Trade Works"
           highlight="a Trade Works"
-          subtitle="Walk through a real scenario. Change the numbers — every cost shows up before you'd ever click execute."
+          subtitle="Walk through a real scenario. Change the numbers â€” every cost shows up before you'd ever click execute."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -101,6 +104,11 @@ export default function TxExample() {
                       value={tradeSize}
                       onChange={(e) => setTradeSize(Math.max(100, Number(e.target.value) || 0))}
                       className="flex-1 bg-transparent py-3 text-base font-bold text-white outline-none"
+                      autoComplete="off"
+                      data-form-type="other"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      suppressHydrationWarning
                     />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -132,7 +140,7 @@ export default function TxExample() {
                     <label className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-text-3)' }}>
                       Leverage
                     </label>
-                    <span className="text-sm font-bold gradient-text">{leverage}×</span>
+                    <span className="text-sm font-bold gradient-text">{leverage}Ã—</span>
                   </div>
                   <input
                     type="range"
@@ -144,9 +152,9 @@ export default function TxExample() {
                     className="mt-3 w-full accent-[#ecc657]"
                   />
                   <div className="mt-1 flex justify-between text-[10px]" style={{ color: 'var(--fx-text-3)' }}>
-                    <span>1×</span>
-                    <span>10×</span>
-                    <span>20×</span>
+                    <span>1Ã—</span>
+                    <span>10Ã—</span>
+                    <span>20Ã—</span>
                   </div>
                 </div>
 
@@ -213,7 +221,7 @@ export default function TxExample() {
                   iconColor={overnight ? '#f87171' : '#4ade80'}
                   label="Leverage Fee"
                   value={overnight ? `$${fmt(leverageFee)}` : '$0.00'}
-                  sub={overnight ? 'Overnight rate applied' : 'Intraday — none'}
+                  sub={overnight ? 'Overnight rate applied' : 'Intraday â€” none'}
                   highlight={overnight}
                 />
                 <Row
@@ -249,7 +257,7 @@ export default function TxExample() {
                 color: 'var(--fx-text-3)',
               }}
             >
-              Indicative figures · Spread is market-driven, not a fixed cost · Profit and loss settle automatically
+              Indicative figures Â· Spread is market-driven, not a fixed cost Â· Profit and loss settle automatically
             </div>
           </div>
         </ScrollReveal>
@@ -263,6 +271,7 @@ export default function TxExample() {
           </p>
         </ScrollReveal>
 
+        </div>
       </div>
     </section>
   )

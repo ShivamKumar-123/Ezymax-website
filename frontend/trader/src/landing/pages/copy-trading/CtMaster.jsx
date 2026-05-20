@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import {
   BadgeCheck,
   Crown,
@@ -22,7 +22,7 @@ const applyCriteria = [
 const qualifyCriteria = [
   { icon: CalendarClock, label: 'Minimum 1 month active trading' },
   { icon: Activity,      label: 'Must be profitable during the period' },
-  { icon: Banknote,      label: 'Minimum trading volume — $100,000+' },
+  { icon: Banknote,      label: 'Minimum trading volume â€” $100,000+' },
   { icon: BadgeCheck,    label: 'Minimum 100+ trades executed' },
 ]
 
@@ -36,7 +36,7 @@ const faq = [
     a: 'To ensure followers copy only reliable and consistent traders.',
   },
   {
-    q: 'Can I apply if I’m new to FX Artha?',
+    q: 'Can I apply if Iâ€™m new to FX Artha?',
     a: 'Yes, via verified external performance.',
   },
   {
@@ -49,12 +49,15 @@ export default function CtMaster() {
   return (
     <section id="master" className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Master Trader System"
           title="Become a Master Trader"
           highlight="Master Trader"
           subtitle="Two paths in. We're strict about who gets in because the people copying these traders deserve to know the track record is real."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Apply with verified P&L */}
@@ -78,7 +81,7 @@ export default function CtMaster() {
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
                       style={{ color: 'var(--fx-gold-light)' }}
                     >
-                      Path 1 · For Professionals
+                      Path 1 Â· For Professionals
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       Apply with Verified P&amp;L
@@ -146,7 +149,7 @@ export default function CtMaster() {
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
                       style={{ color: '#a78bfa' }}
                     >
-                      Path 2 · For Platform Users
+                      Path 2 Â· For Platform Users
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       Qualify Through FX Artha
@@ -214,6 +217,7 @@ export default function CtMaster() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

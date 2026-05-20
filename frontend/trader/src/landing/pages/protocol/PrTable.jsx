@@ -1,4 +1,4 @@
-import SectionHeader from '@/landing/components/SectionHeader'
+﻿import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const rows = [
@@ -13,12 +13,15 @@ export default function PrTable() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Side by Side"
           title="FX Artha vs Traditional Brokers"
           highlight="vs Traditional Brokers"
           subtitle="The five differences that matter most, laid out plainly."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -78,6 +81,7 @@ export default function PrTable() {
             </div>
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

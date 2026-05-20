@@ -241,6 +241,227 @@
   @media (min-width: 768px)  { .fx-section { padding-top: 7rem;  padding-bottom: 7rem; } }
   @media (min-width: 1280px) { .fx-section { padding-top: 9rem;  padding-bottom: 9rem; } }
 
+  /* ── Section Frame ──────────────────────────────────────────
+     The rounded outer container that wraps the body of each
+     mid-page section. Modeled on the "Flexible Funds" /
+     "Much more than just a payment card" blocks in the
+     reference design. */
+  .fx-section-frame {
+    position: relative;
+    border-radius: 1.5rem;
+    padding: 2rem 1.5rem;
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(214,169,61,0.05), rgba(214,169,61,0) 55%),
+      radial-gradient(110% 80% at 100% 100%, rgba(214,169,61,0.03), rgba(214,169,61,0) 60%),
+      linear-gradient(180deg, rgba(22,24,28,0.96) 0%, rgba(13,14,17,0.96) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 30px 80px -40px rgba(0,0,0,0.85),
+      0 0 0 1px rgba(214,169,61,0.04);
+    overflow: hidden;
+  }
+  .fx-section-frame::before {
+    /* Top-edge hairline highlight — like glass-card but wider */
+    content: '';
+    position: absolute;
+    top: 0; left: 22%; right: 22%;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(214,169,61,0.45) 30%,
+      rgba(236,198,87,0.7) 50%,
+      rgba(214,169,61,0.45) 70%,
+      transparent);
+    opacity: .55;
+    pointer-events: none;
+  }
+  @media (min-width: 768px)  { .fx-section-frame { padding: 3rem 2.5rem; border-radius: 1.75rem; } }
+  @media (min-width: 1280px) { .fx-section-frame { padding: 3.5rem 3rem; border-radius: 2rem; } }
+
+  /* Tighter section frame for shorter / banner-style sections. */
+  .fx-section-frame-tight {
+    padding: 1.75rem 1.5rem;
+  }
+  @media (min-width: 768px)  { .fx-section-frame-tight { padding: 2.5rem 2.25rem; } }
+  @media (min-width: 1280px) { .fx-section-frame-tight { padding: 3rem 2.75rem; } }
+
+  /* When the frame contains an inline visual (image space) on
+     one side, this lets the content sit comfortably without
+     gutter. */
+  .fx-section-frame > * { position: relative; z-index: 1; }
+
+  /* ── Image Placeholder ─────────────────────────────────────
+     A styled empty box that holds the place where a real
+     photo/render would go. Used wherever the reference design
+     shows a product visual but we don't have the asset yet.
+     The corner brackets and the dim "IMAGE" label make it
+     clear it's intentional, not broken. */
+  .fx-image-slot {
+    position: relative;
+    width: 100%;
+    border-radius: 1rem;
+    background:
+      radial-gradient(110% 80% at 50% 30%, rgba(214,169,61,0.10), rgba(214,169,61,0) 65%),
+      linear-gradient(180deg, rgba(28,30,34,1) 0%, rgba(16,17,20,1) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
+  }
+  .fx-image-slot::before,
+  .fx-image-slot::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: rgba(214,169,61,0.45);
+    border-style: solid;
+    border-width: 0;
+    pointer-events: none;
+  }
+  .fx-image-slot::before {
+    top: 14px; left: 14px;
+    border-top-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-left-radius: 6px;
+  }
+  .fx-image-slot::after {
+    bottom: 14px; right: 14px;
+    border-bottom-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-right-radius: 6px;
+  }
+  .fx-image-slot:hover {
+    transform: translateY(-2px);
+    border-color: rgba(214,169,61,0.25);
+    box-shadow: 0 24px 60px -28px rgba(214,169,61,0.20);
+  }
+  /* Aspect ratios for slot variants. */
+  .fx-image-slot-4x3   { aspect-ratio: 4 / 3; }
+  .fx-image-slot-3x2   { aspect-ratio: 3 / 2; }
+  .fx-image-slot-16x9  { aspect-ratio: 16 / 9; }
+  .fx-image-slot-21x9  { aspect-ratio: 21 / 9; }
+  .fx-image-slot-3x1   { aspect-ratio: 3 / 1; }
+  .fx-image-slot-4x1   { aspect-ratio: 4 / 1; }
+  .fx-image-slot-1x1   { aspect-ratio: 1 / 1; }
+  .fx-image-slot-9x16  { aspect-ratio: 9 / 16; }
+
+  /* Section banner — a wide slim image placeholder that sits
+     between the SectionHeader and the section content. Slim
+     enough not to dominate, wide enough to feel like a real
+     banner space when a 3:1 product render or hero shot lands
+     in it. */
+  .fx-section-banner {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 1;
+    border-radius: 1rem;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(214,169,61,0.10), rgba(214,169,61,0) 60%),
+      linear-gradient(180deg, rgba(20,22,26,1) 0%, rgba(12,13,16,1) 100%);
+    border: 1px dashed rgba(214,169,61,0.22);
+    overflow: hidden;
+    margin: 2rem 0 0;
+    transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
+  }
+  @media (min-width: 768px) {
+    .fx-section-banner {
+      aspect-ratio: 4 / 1;
+      margin-top: 2.5rem;
+    }
+  }
+  .fx-section-banner::before,
+  .fx-section-banner::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: rgba(214,169,61,0.45);
+    border-style: solid;
+    border-width: 0;
+    pointer-events: none;
+  }
+  .fx-section-banner::before {
+    top: 12px; left: 12px;
+    border-top-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-left-radius: 6px;
+  }
+  .fx-section-banner::after {
+    bottom: 12px; right: 12px;
+    border-bottom-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-right-radius: 6px;
+  }
+  .fx-section-banner:hover {
+    border-color: rgba(214,169,61,0.40);
+    transform: translateY(-2px);
+    box-shadow: 0 24px 60px -28px rgba(214,169,61,0.20);
+  }
+  .fx-section-banner > span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(214,169,61,0.55);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* Centred label inside an image slot ("IMAGE", "PRODUCT SHOT", etc.) */
+  .fx-image-slot-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: rgba(214,169,61,0.55);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* ── Stats Row ─────────────────────────────────────────────
+     The 3-column stat strip from the reference image. Thin
+     gold hairline on top of each cell with a small numeric
+     index label. */
+  .fx-stats-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  @media (min-width: 768px) {
+    .fx-stats-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  .fx-stats-cell {
+    position: relative;
+    padding: 1.5rem 1.25rem;
+  }
+  .fx-stats-cell + .fx-stats-cell {
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  @media (min-width: 768px) {
+    .fx-stats-cell + .fx-stats-cell {
+      border-top: none;
+      border-left: 1px solid rgba(255,255,255,0.06);
+    }
+  }
+  .fx-stats-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 30%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(214,169,61,0.45), rgba(214,169,61,0));
+  }
+
   /* ── Decorative ────────────────────────────────────────── */
   .fx-divider-gold {
     height: 1px;

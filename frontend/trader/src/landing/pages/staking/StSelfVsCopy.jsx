@@ -1,4 +1,4 @@
-import { Activity, Copy, CheckCircle2 } from 'lucide-react'
+﻿import { Activity, Copy, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -14,12 +14,15 @@ export default function StSelfVsCopy() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Self vs Copy"
           title="Use Your Capital Your Way"
           highlight="Your Way"
-          subtitle="Active or passive — your choice."
+          subtitle="Active or passive â€” your choice."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Self */}
@@ -88,6 +91,7 @@ export default function StSelfVsCopy() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

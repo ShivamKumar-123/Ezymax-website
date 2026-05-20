@@ -1,4 +1,4 @@
-import { CheckCircle2, Layers, Power, RotateCcw } from 'lucide-react'
+﻿import { CheckCircle2, Layers, Power, RotateCcw } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -49,12 +49,15 @@ export default function InRules() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Rules & Conditions"
           title="Clear Usage Rules"
           highlight="Usage Rules"
-          subtitle="The conditions in plain language. Read it once — it's the same set of rules that keeps the system fair for everyone."
+          subtitle="The conditions in plain language. Read it once â€” it's the same set of rules that keeps the system fair for everyone."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
           {groups.map((g, i) => {
@@ -112,6 +115,7 @@ export default function InRules() {
             &ldquo;Structured rules ensure fairness and sustainability.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

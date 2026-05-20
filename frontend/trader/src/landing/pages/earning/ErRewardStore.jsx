@@ -1,4 +1,4 @@
-import { Smartphone, Gift, TrendingUp, KeyRound } from 'lucide-react'
+﻿import { Smartphone, Gift, TrendingUp, KeyRound } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -19,12 +19,15 @@ export default function ErRewardStore() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Reward Store"
           title="Redeem What You Earn"
           highlight="Redeem"
           subtitle="Convert your Coins and achievements into real value."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {rewards.map((r, i) => {
@@ -65,6 +68,7 @@ export default function ErRewardStore() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

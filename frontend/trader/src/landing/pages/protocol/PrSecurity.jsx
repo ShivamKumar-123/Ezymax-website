@@ -1,4 +1,4 @@
-import { ShieldCheck, Cog, Eye, UserCog } from 'lucide-react'
+﻿import { ShieldCheck, Cog, Eye, UserCog } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -11,7 +11,7 @@ const cards = [
   {
     icon: Cog,
     title: 'Automated Execution',
-    desc: 'Trades execute based on predefined system logic — not human approvals.',
+    desc: 'Trades execute based on predefined system logic â€” not human approvals.',
   },
   {
     icon: Eye,
@@ -29,12 +29,15 @@ export default function PrSecurity() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Security & Trust"
           title="Built for Transparency and Control"
           highlight="Transparency and Control"
           subtitle="FX Artha is designed to minimize trust dependency and maximize system-based execution."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((c, i) => {
@@ -69,6 +72,7 @@ export default function PrSecurity() {
             Security depends on both system architecture and user responsibility (wallet security, access control).
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

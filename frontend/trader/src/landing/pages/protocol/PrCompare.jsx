@@ -1,4 +1,4 @@
-import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
+﻿import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -22,12 +22,15 @@ export default function PrCompare() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="What Makes Us Different"
           title="Traditional Broker vs FX Artha"
           highlight="vs FX Artha"
           subtitle="The short answer: in one model the broker holds your money. In the other, a smart contract does."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Traditional Broker */}
@@ -134,6 +137,7 @@ export default function PrCompare() {
             &ldquo;We don&apos;t hold your money. The system manages execution.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

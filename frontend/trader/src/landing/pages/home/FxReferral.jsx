@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { Handshake, ArrowRight, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
@@ -13,12 +13,15 @@ export default function FxReferral() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Referral Program"
           title="Grow With the Platform"
           highlight="Platform"
-          subtitle="Bring people you actually believe in. The program rewards real participation — no tiered pyramids, no MLM-style fine print, no fluff."
+          subtitle="Bring people you actually believe in. The program rewards real participation â€” no tiered pyramids, no MLM-style fine print, no fluff."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -72,6 +75,7 @@ export default function FxReferral() {
             &ldquo;Growth driven by participation, not promises.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { Rocket, Cog, Globe2, Cpu, Quote } from 'lucide-react'
+﻿import { Rocket, Cog, Globe2, Cpu, Quote } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -13,12 +13,15 @@ export default function AbFutureVision() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Future Vision"
           title="Building Beyond Traditional Trading"
           highlight="Beyond Traditional Trading"
-          subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure — toward a global trading system that scales."
+          subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure â€” toward a global trading system that scales."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -61,14 +64,15 @@ export default function AbFutureVision() {
               >
                 <Quote size={24} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
                 <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                  “We are not just building a platform.
+                  â€œWe are not just building a platform.
                   <br />
-                  We are building infrastructure for the future of trading.”
+                  We are building infrastructure for the future of trading.â€
                 </p>
               </div>
             </div>
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

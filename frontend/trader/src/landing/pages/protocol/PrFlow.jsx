@@ -1,4 +1,4 @@
-import {
+﻿import {
   Wallet,
   UserCheck,
   LayoutDashboard,
@@ -13,7 +13,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 const steps = [
   { icon: Wallet,           title: 'Connect Wallet',          desc: 'Securely connect your wallet to access the platform.' },
   { icon: UserCheck,        title: 'Access Dashboard (CRM)',  desc: 'Manage your profile, settings, and activity.' },
-  { icon: LayoutDashboard,  title: 'Create Trading Account',  desc: 'Choose your platform — FX Artha App or MT5.' },
+  { icon: LayoutDashboard,  title: 'Create Trading Account',  desc: 'Choose your platform â€” FX Artha App or MT5.' },
   { icon: ArrowDownToLine,  title: 'Allocate Funds to Contract', desc: 'Funds are allocated to a secure smart contract layer.' },
   { icon: Activity,         title: 'Execute Trades',          desc: 'Trade normally using your selected trading account.' },
   { icon: Coins,            title: 'Automatic P&L Settlement', desc: 'Profits are credited automatically. Losses are deducted automatically.' },
@@ -24,12 +24,15 @@ export default function PrFlow() {
   return (
     <section id="flow" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Step-by-Step Flow"
-          title="From Wallet to Trade — Step by Step"
+          title="From Wallet to Trade â€” Step by Step"
           highlight="Step by Step"
           subtitle="Every step is system-driven. No manual control involved."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-7 gap-4 md:gap-3 min-w-max md:min-w-0">
@@ -92,6 +95,7 @@ export default function PrFlow() {
             &ldquo;Every step is system-driven. No manual control involved.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

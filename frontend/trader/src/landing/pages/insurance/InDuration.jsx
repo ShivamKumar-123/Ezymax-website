@@ -1,4 +1,4 @@
-import { Sun, CalendarDays, CalendarRange } from 'lucide-react'
+﻿import { Sun, CalendarDays, CalendarRange } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -31,12 +31,15 @@ export default function InDuration() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Plan Durations"
           title="Flexible Plan Duration"
           highlight="Plan Duration"
           subtitle="Whether you're trading just for the day or settled in for the month, there's a plan that covers exactly the stretch you need."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {durations.map((d, i) => {
@@ -85,9 +88,10 @@ export default function InDuration() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Coverage stays active for the selected duration — not per trade.&rdquo;
+            &ldquo;Coverage stays active for the selected duration â€” not per trade.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { Crown, Building2, Users } from 'lucide-react'
+﻿import { Crown, Building2, Users } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
@@ -11,18 +11,21 @@ export default function CtFee() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Platform Fee"
           title="Platform Fee Structure"
           highlight="Fee Structure"
-          subtitle="We get paid the same way Master Traders do — only when followers actually make money. No subscription, no surcharge on followers."
+          subtitle="We get paid the same way Master Traders do â€” only when followers actually make money. No subscription, no surcharge on followers."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-stretch"
           >
-            {/* Visual split — Master share & Platform cut */}
+            {/* Visual split â€” Master share & Platform cut */}
             <div
               className="relative rounded-2xl p-7 md:p-8 overflow-hidden"
               style={{
@@ -91,7 +94,7 @@ export default function CtFee() {
                     icon={Crown}
                     color="#ecc657"
                     label="Master share (illustrative 20%)"
-                    value="$20 → $15 net"
+                    value="$20 â†’ $15 net"
                     note="After platform cut"
                     highlight
                   />
@@ -156,6 +159,7 @@ export default function CtFee() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

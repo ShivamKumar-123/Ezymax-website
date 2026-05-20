@@ -1,4 +1,4 @@
-import { LogIn, Activity, Compass, MousePointerClick, CheckCircle2 } from 'lucide-react'
+﻿import { LogIn, Activity, Compass, MousePointerClick, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -19,12 +19,15 @@ export default function ErTasks() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Daily Tasks"
           title="Stay Active. Get Rewarded."
           highlight="Get Rewarded"
           subtitle="Complete simple tasks daily to boost your rewards."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <ScrollReveal variant="fadeUp">
           <div
@@ -92,6 +95,7 @@ export default function ErTasks() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

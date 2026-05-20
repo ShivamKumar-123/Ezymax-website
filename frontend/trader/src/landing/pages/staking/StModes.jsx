@@ -1,4 +1,4 @@
-import { Zap, Lock, CheckCircle2, XCircle } from 'lucide-react'
+﻿import { Zap, Lock, CheckCircle2, XCircle } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -26,12 +26,15 @@ export default function StModes() {
   return (
     <section id="modes" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Liquidity Modes"
           title="Two Ways to Provide Liquidity"
           highlight="Two Ways"
           subtitle="Longer commitment unlocks stronger benefits."
         />
+
+        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
 
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Flexible */}
@@ -152,6 +155,7 @@ export default function StModes() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )
