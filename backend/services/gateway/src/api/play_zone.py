@@ -1,50 +1,29 @@
 """Play Zone API — Spin & Win, Lottery, Bidding (user + admin endpoints)."""
 from __future__ import annotations
 
-from datetime import datetime
-from decimal import Decimal
-from typing import Any, Literal, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.auth import get_current_user, require_admin
 from packages.common.src.database import get_db
 from packages.common.src.models import LotteryRound, BiddingRound
+from packages.common.src.schemas import (
+    BidRequest,
+    CreateBiddingRoundRequest,
+    CreateLotteryRoundRequest,
+)
 
 from ..services import play_zone_service
 
 router = APIRouter()
 
 
-class BidRequest(BaseModel):
-    amount: Decimal = Field(gt=0)
 
-
-# ─── Admin payloads ─────────────────────────────────────────────────
-
-
-class CreateLotteryRoundRequest(BaseModel):
-    slug: str = Field(min_length=3, max_length=80)
-    prize_label: str = Field(min_length=1, max_length=120)
-    prize_kind: Literal["xp", "ac", "cashback", "external"]
-    prize_amount: Decimal = Field(default=Decimal("0"), ge=0)
-    ticket_cost_ac: Decimal = Field(default=Decimal("100"), gt=0)
-    draws_at: datetime
-    opens_at: Optional[datetime] = None
-
-
-class CreateBiddingRoundRequest(BaseModel):
-    slug: str = Field(min_length=3, max_length=80)
-    prize_label: str = Field(min_length=1, max_length=120)
-    prize_kind: Literal["xp", "ac", "cashback", "external"]
-    prize_amount: Decimal = Field(default=Decimal("0"), ge=0)
-    min_bid_ac: Decimal = Field(default=Decimal("100"), gt=0)
-    closes_at: datetime
-    opens_at: Optional[datetime] = None
+# BidRequest + Create{Lottery,Bidding}RoundRequest moved to schemas/play_zone.py.
 
 
 @router.get("/spin/prizes")

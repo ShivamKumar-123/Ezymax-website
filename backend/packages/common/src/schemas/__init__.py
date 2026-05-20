@@ -21,6 +21,8 @@ from .wallet import (
     TransferTradingToMainRequest, TransferMainToTradingRequest,
     InternalWalletTransferRequest,
     DepositResponse, WithdrawalResponse, BankAccountCreate,
+    WalletDepositRequest, TxHashSaveRequest, HostedInvoiceDepositRequest,
+    OnchainDepositRequest, OnchainWithdrawRequest,
 )
 from .market import TickData, OHLCVBar, InstrumentResponse
 from .admin import AdminFundAdjustment, AdminTradeCreate, AdminModifyTrade
@@ -30,6 +32,14 @@ from .insurance import (
     InsuranceActivateRequest, InsuranceActivateResponse,
     InsurancePolicyOut, InsuranceClaimOut,
 )
+from .profile import UpdateProfileRequest, ChangePasswordRequest
+from .play_zone import (
+    BidRequest, CreateLotteryRoundRequest, CreateBiddingRoundRequest,
+)
+from .share_support import (
+    CreateShareRequest, CreateTicketRequest, ReplyTicketRequest,
+)
+from .staking import OpenStakingPositionRequest
 
 
 __all__ = [
@@ -47,6 +57,8 @@ __all__ = [
     "TransferTradingToMainRequest", "TransferMainToTradingRequest",
     "InternalWalletTransferRequest",
     "DepositResponse", "WithdrawalResponse", "BankAccountCreate",
+    "WalletDepositRequest", "TxHashSaveRequest", "HostedInvoiceDepositRequest",
+    "OnchainDepositRequest", "OnchainWithdrawRequest",
     # market
     "TickData", "OHLCVBar", "InstrumentResponse",
     # admin
@@ -57,4 +69,12 @@ __all__ = [
     "InsuranceQuoteRequest", "InsuranceTierQuote",
     "InsuranceActivateRequest", "InsuranceActivateResponse",
     "InsurancePolicyOut", "InsuranceClaimOut",
+    # profile
+    "UpdateProfileRequest", "ChangePasswordRequest",
+    # play zone
+    "BidRequest", "CreateLotteryRoundRequest", "CreateBiddingRoundRequest",
+    # share + support
+    "CreateShareRequest", "CreateTicketRequest", "ReplyTicketRequest",
+    # staking
+    "OpenStakingPositionRequest",
 ]

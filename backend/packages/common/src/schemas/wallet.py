@@ -85,3 +85,45 @@ class BankAccountCreate(BaseModel):
     tier: int = 1
     min_amount: Decimal = Decimal("0")
     max_amount: Decimal = Decimal("999999999")
+
+
+# ─── NOWPayments wallet-connect deposit flow ──────────────────────────────
+
+
+class WalletDepositRequest(BaseModel):
+    """On-site NOWPayments direct payment — no hosted-page redirect."""
+    amount: Decimal
+    # Frontend asset id, e.g. "USDT_ERC", "USDT_TRC", "ETH".
+    crypto_currency: str
+
+
+class TxHashSaveRequest(BaseModel):
+    """User-supplied on-chain tx hash. Purely informational; settlement
+    still gates on the NOWPayments IPN."""
+    tx_hash: str
+
+
+class HostedInvoiceDepositRequest(BaseModel):
+    """NOWPayments Mode B — server returns a hosted payment_url the
+    browser redirects to. `crypto_currency` is optional; when omitted
+    NOWPayments shows its full asset picker on the hosted page."""
+    amount: Decimal
+    crypto_currency: Optional[str] = None
+
+
+# ─── Decentralised on-chain USDT deposit + withdraw ───────────────────────
+
+
+class OnchainDepositRequest(BaseModel):
+    """User picks chain + amount, then signs a transfer in their own
+    wallet. The chain_verifier_engine confirms the deposit on-chain."""
+    network: str            # eth | bsc | tron
+    amount: Decimal
+
+
+class OnchainWithdrawRequest(BaseModel):
+    """Mirror of OnchainDepositRequest for payouts. Admin reviews +
+    sends manually; chain_verifier_engine confirms once tx is mined."""
+    network: str            # eth | bsc | tron
+    amount: Decimal
+    destination_address: str  # user's own wallet on the picked chain

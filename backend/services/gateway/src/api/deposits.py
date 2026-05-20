@@ -1,17 +1,20 @@
 """Wallet API — Deposits, Withdrawals, Transactions."""
-from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.schemas import (
     DepositRequest,
+    HostedInvoiceDepositRequest,
     InternalWalletTransferRequest,
+    OnchainDepositRequest,
+    OnchainWithdrawRequest,
     TransferMainToTradingRequest,
     TransferTradingToMainRequest,
+    TxHashSaveRequest,
+    WalletDepositRequest,
     WithdrawalRequest,
 )
 from packages.common.src.auth import get_current_user
@@ -32,15 +35,6 @@ async def create_deposit(
 
 
 # ─── On-site wallet-connect deposits (NOWPayments /v1/payment) ────────────
-
-
-class WalletDepositRequest(BaseModel):
-    amount: Decimal
-    crypto_currency: str  # frontend asset id, e.g. "USDT_ERC", "ETH"
-
-
-class TxHashSaveRequest(BaseModel):
-    tx_hash: str
 
 
 @router.post("/deposit/wallet", status_code=201)
@@ -81,13 +75,6 @@ async def create_wallet_deposit(
         status_code=201, db=db,
     )
     return result
-
-
-class HostedInvoiceDepositRequest(BaseModel):
-    amount: Decimal
-    # Optional: when present, NOWPayments page pre-locks to this currency.
-    # When omitted/null, NOWPayments shows its full 300+ currency picker.
-    crypto_currency: str | None = None
 
 
 @router.post("/deposit/hosted-invoice", status_code=201)
@@ -166,11 +153,6 @@ async def save_wallet_deposit_tx_hash(
 # tx hash. The chain_verifier_engine confirms on-chain and credits.
 
 
-class OnchainDepositRequest(BaseModel):
-    network: str  # eth | bsc | tron
-    amount: Decimal
-
-
 @router.post("/deposit/onchain", status_code=201)
 async def create_onchain_deposit(
     req: OnchainDepositRequest,
@@ -230,12 +212,6 @@ async def create_withdrawal(
 
 
 # ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────
-
-
-class OnchainWithdrawRequest(BaseModel):
-    network: str            # eth | bsc | tron
-    amount: Decimal
-    destination_address: str  # user's own wallet on the picked chain
 
 
 @router.post("/withdraw/onchain", status_code=201)

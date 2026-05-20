@@ -2,26 +2,14 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.auth import get_current_user
+from packages.common.src.schemas import CreateTicketRequest, ReplyTicketRequest
 from ..services import support_service
 
 router = APIRouter()
-
-
-class CreateTicketRequest(BaseModel):
-    subject: str = Field(min_length=1, max_length=255)
-    message: str = Field(min_length=1)
-    priority: str = Field(default="medium", pattern="^(low|medium|high|urgent)$")
-
-
-class ReplyTicketRequest(BaseModel):
-    message: str = Field(min_length=1)
-    attachments: list | None = None
-
 
 @router.get("/tickets")
 async def list_tickets(

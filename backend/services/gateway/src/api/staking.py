@@ -1,27 +1,19 @@
 """Staking API."""
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.auth import get_current_user
 from packages.common.src.database import get_db
+from packages.common.src.schemas import OpenStakingPositionRequest
 
 from ..services import staking_service
 
 router = APIRouter()
-
-
-class OpenPositionRequest(BaseModel):
-    plan_id: UUID
-    amount: Decimal = Field(gt=0)
-    use_trading_bonus: bool = False
-
 
 @router.get("/plans")
 async def list_plans(
@@ -41,7 +33,7 @@ async def list_positions(
 
 @router.post("/positions")
 async def open_position(
-    req: OpenPositionRequest,
+    req: OpenStakingPositionRequest,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
