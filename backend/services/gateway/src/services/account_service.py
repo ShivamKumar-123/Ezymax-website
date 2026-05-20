@@ -192,27 +192,53 @@ async def open_live_account(
             )
         )
         existing_live = list(live_q.scalars().all())
-        if min_d > 0 and existing_live:
-            total = sum((a.balance or Decimal("0")) for a in existing_live)
-            if total < min_d:
+        wallet_bal = user.main_wallet_balance or Decimal("0")
+        live_total = sum((a.balance or Decimal("0")) for a in existing_live)
+        available = wallet_bal + live_total
+        # First-time signups (no prior live account AND no wallet balance)
+        # open at $0 — they'll deposit later. Only enforce min_deposit when
+        # the user already has *some* money in the system; that way a user
+        # holding $504k in the wallet can't be told "you have no balance".
+        enforce_min = min_d > 0 and available > 0
+        if enforce_min:
+            # Funding pool = main wallet + existing live account balances.
+            # If even the combined pool can't cover min_deposit, refuse.
+            if available < min_d:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        f"You need at least ${float(min_d):.2f} across your existing live accounts "
-                        "to open this account type. Deposit or add funds first."
+                        f"You need at least ${float(min_d):.2f} available across your main wallet "
+                        "and existing live accounts to open this account type. Deposit or add funds first."
                     ),
                 )
+            # Prefer the main wallet first (the natural place users expect
+            # funding to come from after deposits / account closures).
             remaining = min_d
-            for acc in sorted(existing_live, key=lambda x: x.balance or Decimal("0"), reverse=True):
-                if remaining <= 0:
-                    break
-                bal = acc.balance or Decimal("0")
-                take = min(bal, remaining)
-                if take > 0:
-                    acc.balance = bal - take
-                    acc.equity = acc.balance
-                    acc.free_margin = acc.balance
-                    remaining -= take
+            take_from_wallet = min(wallet_bal, remaining)
+            if take_from_wallet > 0:
+                user.main_wallet_balance = wallet_bal - take_from_wallet
+                remaining -= take_from_wallet
+                db.add(Transaction(
+                    user_id=user.id,
+                    type="transfer",
+                    amount=-take_from_wallet,
+                    balance_after=user.main_wallet_balance,
+                    description="Main wallet → new trading account funding",
+                ))
+            # If wallet alone wasn't enough, top up by sweeping the existing
+            # live accounts (largest-first) — preserves the prior fallback
+            # behaviour for users who never used the main wallet flow.
+            if remaining > 0:
+                for acc in sorted(existing_live, key=lambda x: x.balance or Decimal("0"), reverse=True):
+                    if remaining <= 0:
+                        break
+                    bal = acc.balance or Decimal("0")
+                    take = min(bal, remaining)
+                    if take > 0:
+                        acc.balance = bal - take
+                        acc.equity = acc.balance
+                        acc.free_margin = acc.balance
+                        remaining -= take
             new_balance = min_d
 
     num = generate_account_number()
