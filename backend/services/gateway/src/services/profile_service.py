@@ -397,6 +397,15 @@ async def submit_kyc(
 
 
 async def get_kyc_file(user_id: UUID, document_id: UUID, db: AsyncSession) -> Path:
+    """Resolve a KYC document path for serving.
+
+    Defense-in-depth: even though the row's `file_url` is written from
+    `safe_join_under_base` on upload, we re-validate here that the
+    stored path resolves under `KYC_UPLOAD_ROOT/{user_id}/`. If the DB
+    is ever tampered with (manual SQL, replication bug, malicious
+    dump-restore), a stored path like `../../etc/passwd` won't escape
+    the upload directory at serve time.
+    """
     result = await db.execute(
         select(KYCDocument).where(
             KYCDocument.id == document_id,
@@ -407,8 +416,21 @@ async def get_kyc_file(user_id: UUID, document_id: UUID, db: AsyncSession) -> Pa
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    file_path = Path(doc.file_url)
-    if not file_path.exists():
+    stored = Path(doc.file_url).resolve()
+    root = Path(get_settings().KYC_UPLOAD_ROOT.strip() or "uploads/kyc").resolve()
+    user_base = (root / str(user_id)).resolve()
+
+    # Stored path must sit under the per-user upload directory.
+    try:
+        stored.relative_to(user_base)
+    except ValueError:
+        logger.warning(
+            "KYC file path outside user upload dir blocked: doc_id=%s stored=%s user_base=%s",
+            document_id, stored, user_base,
+        )
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not stored.exists() or not stored.is_file():
         raise HTTPException(status_code=404, detail="File not found on server")
 
-    return file_path
+    return stored
