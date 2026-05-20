@@ -21,6 +21,7 @@ import {
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
+import { formatCurrency as fmtUsd, formatNumber as fmtNum } from '@/lib/formatters';
 
 interface AccountRow {
   id: string;
@@ -47,14 +48,6 @@ interface PriceTick { symbol?: string; bid?: number; ask?: number; }
 interface BarRow { time: number; open: number; close: number; }
 
 const TOP_MOVER_SYMBOLS = ['XAUUSD', 'NAS100', 'BTCUSD', 'EURUSD'];
-
-const fmtUsd = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-    .format(Number.isFinite(n) ? n : 0);
-
-const fmtNum = (n: number, dp = 2) =>
-  new Intl.NumberFormat('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
-    .format(Number.isFinite(n) ? n : 0);
 
 const tradeUrl = (accountId: string) => {
   const host = process.env.NEXT_PUBLIC_TRADE_HOST;

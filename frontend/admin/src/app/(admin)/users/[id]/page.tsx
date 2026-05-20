@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { formatNumber, formatDateTime } from '@/lib/formatters';
 import {
   ArrowLeft, ArrowDownCircle, ArrowUpCircle, CreditCard, DollarSign,
   Loader2, Mail, MapPin, Phone, Shield, UserRound, Wallet, Activity,
@@ -119,14 +120,10 @@ interface WithdrawalRow {
   created_at: string | null;
 }
 
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatDate(d: string | null | undefined) {
-  if (!d) return '—';
-  try { return new Date(d).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return d; }
-}
+// `fmt` + `formatDate` re-exported from the shared formatters module
+// so this page stays consistent with the rest of the admin app.
+const fmt = formatNumber;
+const formatDate = formatDateTime;
 
 function statusColor(s: string) {
   switch (s?.toLowerCase()) {

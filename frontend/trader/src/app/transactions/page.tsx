@@ -33,6 +33,7 @@ import {
   PAGE_SIZES,
 } from '@/lib/wallet/transactionHistoryModel';
 import TradesSection from './TradesSection';
+import { formatCurrency } from '@/lib/formatters';
 
 interface WalletSummaryResponse {
   main_wallet_balance?: number;
@@ -132,8 +133,7 @@ export default function TransactionsPage() {
     return () => window.clearInterval(id);
   }, [fetchData, mainTab]);
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
+  const fmt = (n: number) => formatCurrency(n, currency);
 
   const filteredTx = transactions.filter((tx) => {
     if (!transactionMatchesTypeFilter(tx, typeFilter)) return false;

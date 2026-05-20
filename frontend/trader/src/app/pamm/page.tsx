@@ -8,6 +8,7 @@ import DemoLockGate from '@/components/demo/DemoLockGate';
 import Modal from '@/components/ui/Modal';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import { formatNumber as fmt } from '@/lib/formatters';
 import {
   TrendingUp, Users, DollarSign, AlertCircle, BarChart2,
   Wallet, Clock, CheckCircle, Info,
@@ -113,10 +114,8 @@ interface TradingAccount {
 type Tab = 'browse' | 'investments' | 'apply' | 'dashboard';
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────────
-
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+// `fmt` re-exported from the shared formatter module so PAMM stays
+// consistent with the rest of the trader app.
 
 function TypeBadge({ type }: { type: string }) {
   return (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
+import { formatCurrencySigned, formatDateTime } from '@/lib/formatters';
 import toast from 'react-hot-toast';
 import {
   ArrowDownCircle,
@@ -96,22 +97,14 @@ function typeLabel(type: string) {
 }
 
 function formatMoney(n: number) {
-  const abs = Math.abs(n);
-  const formatted = abs.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return n >= 0 ? `+$${formatted}` : `-$${formatted}`;
+  // Signed dollar format: "+$1,234.56" / "-$1,234.56". Matches the
+  // earlier inline version exactly; the shared formatter handles
+  // the formatting + the sign prefix in one call.
+  return formatCurrencySigned(n);
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(d);
 }
 
 const PAGE_SIZE = 25;

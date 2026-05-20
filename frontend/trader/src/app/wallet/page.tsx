@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/Card';
 import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
+import { formatCurrency } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import WalletDepositModal from '@/components/wallet/WalletDepositModal';
@@ -320,11 +321,7 @@ function WalletPageContent() {
     void fetchData();
   }, [fetchData]);
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: wallet?.currency || 'USD',
-    }).format(n);
+  const fmt = (n: number) => formatCurrency(n, wallet?.currency || 'USD');
 
   const selectedDepositCrypto = CRYPTO_ASSETS.find((c) => c.id === selectedCryptoDeposit) ?? CRYPTO_ASSETS[0];
 
@@ -850,7 +847,7 @@ function WalletPageContent() {
               {liveAccounts.map((a) => {
                 const cur = a.currency || wallet?.currency || 'USD';
                 const bal = Number(a.balance) || 0;
-                const line = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(bal);
+                const line = formatCurrency(bal, cur);
                 const isSel = a.id === selectedAccountId;
                 const num = a.account_number || '';
                 const isManaged = num.startsWith('IF') || num.startsWith('CF');
@@ -938,7 +935,7 @@ function WalletPageContent() {
               <p className="px-1 text-[11px] text-text-tertiary">
                 All live accounts total:{' '}
                 <span className="font-mono font-semibold text-text-secondary">
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: wallet?.currency || 'USD' }).format(wallet.total_live_balance)}
+                  {formatCurrency(wallet.total_live_balance, wallet?.currency || 'USD')}
                 </span>
               </p>
             )}
