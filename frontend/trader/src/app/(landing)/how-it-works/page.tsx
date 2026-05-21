@@ -5,7 +5,7 @@
  * Copy adapted from DETAILED_CONTENT_HOW_IT_WORKS_PAGE.docx (May 2026 client deck).
  */
 import Link from 'next/link';
-import { Wallet, ShieldCheck, Cpu, ArrowRight, Check, Zap } from 'lucide-react';
+import { Wallet, ShieldCheck, Cpu, ArrowRight, Check, Zap, ChevronRight, Plus } from 'lucide-react';
 
 export default function HowItWorksPage() {
   return (
@@ -82,6 +82,33 @@ export default function HowItWorksPage() {
         </ol>
       </section>
 
+      {/* Visual flow — wallet → CRM → account → contract → engine → result → wallet */}
+      <section className="fx-container relative z-10 py-16">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
+          How Funds Move Inside the System
+        </h2>
+        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--fx-text-2)' }}>
+          Funds move only based on trading outcomes.
+        </p>
+        <div className="rounded-2xl border border-[#d6a93d]/20 p-6 md:p-10 bg-[rgba(214,169,61,0.03)]">
+          <ol className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+            {FLOW_NODES.map((node, i) => (
+              <li key={node} className="flex items-center gap-2 md:gap-3">
+                <span className="inline-flex items-center justify-center rounded-full border border-[#d6a93d]/40 bg-[rgba(214,169,61,0.08)] px-3 md:px-4 py-2 text-[11px] md:text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--fx-text)' }}>
+                  {node}
+                </span>
+                {i < FLOW_NODES.length - 1 && (
+                  <ChevronRight size={16} className="text-[#d6a93d] shrink-0" aria-hidden />
+                )}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-8 text-center text-[11px] md:text-xs uppercase tracking-[0.25em] text-[#d6a93d]/85">
+            One direction · System decides
+          </p>
+        </div>
+      </section>
+
       {/* Security pillars */}
       <section className="fx-container relative z-10 py-16">
         <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
@@ -121,6 +148,34 @@ export default function HowItWorksPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* FAQ — trust questions */}
+      <section className="fx-container relative z-10 py-16">
+        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
+          Common Questions
+        </h2>
+        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--fx-text-2)' }}>
+          Direct answers on custody, withdrawals, and execution.
+        </p>
+        <div className="max-w-3xl mx-auto space-y-3">
+          {FAQS.map((f) => (
+            <details
+              key={f.q}
+              className="group rounded-xl border border-[#d6a93d]/20 bg-[rgba(255,255,255,0.02)] open:border-[#d6a93d]/45 open:bg-[rgba(214,169,61,0.04)] transition-colors"
+            >
+              <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none">
+                <span className="text-sm md:text-base font-semibold" style={{ color: 'var(--fx-text)' }}>
+                  {f.q}
+                </span>
+                <Plus size={18} className="text-[#d6a93d] shrink-0 transition-transform duration-200 group-open:rotate-45" aria-hidden />
+              </summary>
+              <div className="px-5 pb-5 -mt-1 text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                {f.a}
+              </div>
+            </details>
+          ))}
         </div>
       </section>
 
@@ -164,6 +219,43 @@ const COMPARE: Array<[string, string, string]> = [
   ['Execution', 'Automated Logic', 'Broker-Controlled'],
   ['Transparency', 'Structured Flow', 'Limited Visibility'],
   ['User Control', 'High', 'Limited'],
+];
+
+const FLOW_NODES = [
+  'Wallet',
+  'CRM',
+  'Trading Account',
+  'Smart Contract',
+  'Trade Engine',
+  'Result',
+  'Wallet',
+];
+
+const FAQS: Array<{ q: string; a: string }> = [
+  {
+    q: 'Does FX Artha hold my funds?',
+    a: 'No. Funds are allocated to a system-controlled contract environment — the platform does not custody trader balances directly.',
+  },
+  {
+    q: 'Can withdrawals be delayed?',
+    a: 'Withdrawals follow system rules and are not manually controlled. Once a withdrawal qualifies under the protocol logic, settlement returns to your wallet on the next on-chain cycle.',
+  },
+  {
+    q: 'Who controls trade execution?',
+    a: 'Execution is based on predefined system logic. The engine fills orders against live market data; no human dealer sits between the trader and the fill.',
+  },
+  {
+    q: 'Is this a decentralized system?',
+    a: 'It is a structured protocol combining smart-contract custody with a centralized matching engine. The custody layer is on-chain; the matching layer is off-chain for latency.',
+  },
+  {
+    q: 'What happens if I make profit?',
+    a: 'Profit is automatically credited to your trading balance based on the closing price and lot size. Withdrawal back to your wallet is on-demand from there.',
+  },
+  {
+    q: 'What happens if I incur loss?',
+    a: 'Loss is automatically deducted from the position’s margin pool at close, just like any standard derivatives platform. Stop-loss orders enforce the deduction at your chosen threshold.',
+  },
 ];
 
 function Card({
