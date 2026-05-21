@@ -29,9 +29,6 @@ export default function PrCompare() {
           highlight="vs FX Artha"
           subtitle="The short answer: in one model the broker holds your money. In the other, a smart contract does."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Traditional Broker */}
           <ScrollReveal variant="fadeUp">

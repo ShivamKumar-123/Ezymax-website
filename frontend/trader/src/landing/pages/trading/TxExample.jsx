@@ -35,9 +35,6 @@ export default function TxExample() {
           highlight="a Trade Works"
           subtitle="Walk through a real scenario. Change the numbers â€” every cost shows up before you'd ever click execute."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 max-w-4xl mx-auto rounded-2xl overflow-hidden"
@@ -116,6 +113,7 @@ export default function TxExample() {
                       <button
                         key={v}
                         type="button"
+                        suppressHydrationWarning
                         onClick={() => setTradeSize(v)}
                         className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
                         style={{
@@ -166,6 +164,7 @@ export default function TxExample() {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <button
                       type="button"
+                      suppressHydrationWarning
                       onClick={() => setOvernight(false)}
                       className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
                       style={{
@@ -183,6 +182,7 @@ export default function TxExample() {
                     </button>
                     <button
                       type="button"
+                      suppressHydrationWarning
                       onClick={() => setOvernight(true)}
                       className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
                       style={{

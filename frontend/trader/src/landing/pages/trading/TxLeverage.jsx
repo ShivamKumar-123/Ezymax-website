@@ -13,9 +13,6 @@ export default function TxLeverage() {
           highlight="Practical"
           subtitle="Leverage lets you control a larger position with less capital. The catch most platforms hide â€” you only owe the fee when you actually hold the position overnight."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
           {/* LEFT â€” Explanation + example */}
           <ScrollReveal variant="fadeUp">

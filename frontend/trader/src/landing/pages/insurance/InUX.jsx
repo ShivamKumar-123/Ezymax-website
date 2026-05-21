@@ -28,9 +28,6 @@ export default function InUX() {
           highlight="Transparent Experience"
           subtitle="The plan lives right inside your trading dashboard â€” switch durations, change coverage, watch your pool draw down, all without leaving the chart."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* LEFT â€” features */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">

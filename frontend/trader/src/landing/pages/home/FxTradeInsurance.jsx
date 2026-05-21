@@ -27,9 +27,6 @@ export default function FxTradeInsurance() {
           highlight="Protection"
           subtitle="Before you place a trade you can flip on a cushion that absorbs part of the loss if it goes wrong."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10 items-stretch">
           {/* â”€â”€ Left content (40%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-2">

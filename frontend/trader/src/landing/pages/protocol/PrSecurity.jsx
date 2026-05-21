@@ -36,9 +36,6 @@ export default function PrSecurity() {
           highlight="Transparency and Control"
           subtitle="FX Artha is designed to minimize trust dependency and maximize system-based execution."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((c, i) => {
             const Icon = c.icon

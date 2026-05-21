@@ -10,6 +10,7 @@ import TxExample from '@/landing/pages/trading/TxExample'
 import TxRiskControl from '@/landing/pages/trading/TxRiskControl'
 import TxDemoReal from '@/landing/pages/trading/TxDemoReal'
 import TxFinalCTA from '@/landing/pages/trading/TxFinalCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function TradingOverviewPage() {
   return (
@@ -17,12 +18,15 @@ export default function TradingOverviewPage() {
       <TxHero />
       <TxOverview />
       <TxModes />
+      <FxPageBanner label="Banner / Image" />
       <TxLeverage />
       <TxCostStructure />
       <TxXP />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <TxExample />
       <TxRiskControl />
       <TxDemoReal />
+      <FxPageBanner label="Banner / Image" />
       <TxFinalCTA />
     </>
   )

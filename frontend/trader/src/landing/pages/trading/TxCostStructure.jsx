@@ -46,9 +46,6 @@ export default function TxCostStructure() {
           highlight="Trading Costs"
           subtitle="We've boiled trading costs down to three pieces. No layered fees, no surprise line items at the end of the month."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {costs.map((c, i) => {
             const Icon = c.icon

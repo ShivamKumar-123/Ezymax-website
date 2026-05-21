@@ -47,9 +47,6 @@ export default function FxGamification() {
           highlight="Value"
           subtitle="Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up â€” your account terms get better while you're doing things you'd do anyway."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         {/* â”€â”€ 3 reward cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {rewards.map((r, i) => {

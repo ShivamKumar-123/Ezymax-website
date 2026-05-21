@@ -8,6 +8,7 @@ import ErRewardStore from '@/landing/pages/earning/ErRewardStore'
 import ErTasks from '@/landing/pages/earning/ErTasks'
 import ErBigRewards from '@/landing/pages/earning/ErBigRewards'
 import ErCTA from '@/landing/pages/earning/ErCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function EarningPage() {
   return (
@@ -15,9 +16,11 @@ export default function EarningPage() {
       <ErHero />
       <ErRewardSystem />
       <ErHowYouEarn />
+      <FxPageBanner label="Banner / Image" />
       <ErPlayZone />
       <ErRewardStore />
       <ErTasks />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <ErBigRewards />
       <ErCTA />
     </>

@@ -42,9 +42,6 @@ export default function TxOverview() {
           highlight="Transparency"
           subtitle="We've cut out the usual mess. No account tiers, no artificial barriers. Everyone starts on the same conditions and earns better ones by actually trading."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {cards.map((c, i) => {
             const Icon = c.icon

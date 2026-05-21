@@ -9,6 +9,7 @@ import IbAudience from '@/landing/pages/partnership/IbAudience'
 import IbTrust from '@/landing/pages/partnership/IbTrust'
 import IbFaq from '@/landing/pages/partnership/IbFaq'
 import IbCTA from '@/landing/pages/partnership/IbCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function PartnershipPage() {
   return (
@@ -16,9 +17,11 @@ export default function PartnershipPage() {
       <IbHero />
       <IbWhat />
       <IbHow />
+      <FxPageBanner label="Banner / Image" />
       <IbBenefits />
       <IbDashboard />
       <IbAudience />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <IbTrust />
       <IbFaq />
       <IbCTA />

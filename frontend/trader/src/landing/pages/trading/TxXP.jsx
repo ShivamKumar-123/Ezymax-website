@@ -27,9 +27,6 @@ export default function TxXP() {
           highlight="Better Conditions"
           subtitle="Forget 'Gold tier' upgrades and locked-up benefits. We replaced account tiers with XP â€” every trade you place quietly improves your conditions."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 rounded-2xl p-6 md:p-8 lg:p-10"

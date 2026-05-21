@@ -20,9 +20,6 @@ export default function PrTable() {
           highlight="vs Traditional Brokers"
           subtitle="The five differences that matter most, laid out plainly."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 max-w-5xl mx-auto rounded-2xl overflow-hidden"

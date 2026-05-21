@@ -13,9 +13,6 @@ export default function InLogic() {
           highlight="Coverage Works"
           subtitle="Every plan comes with a pool of coverage for its duration. Losses draw down the pool â€” once it's empty, the plan stops covering until you activate a new one."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-2xl p-7 md:p-10 overflow-hidden"

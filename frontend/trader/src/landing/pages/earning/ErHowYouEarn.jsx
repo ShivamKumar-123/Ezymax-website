@@ -47,9 +47,6 @@ export default function ErHowYouEarn() {
           highlight="Multiple Ways"
           subtitle="You earn rewards not just by trading â€” but by participating in the ecosystem."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {sources.map((s, i) => {
             const Icon = s.icon

@@ -8,6 +8,7 @@ import CtProfit from '@/landing/pages/copy-trading/CtProfit'
 import CtFee from '@/landing/pages/copy-trading/CtFee'
 import CtControl from '@/landing/pages/copy-trading/CtControl'
 import CtCTA from '@/landing/pages/copy-trading/CtCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function CopyTradingPage() {
   return (
@@ -15,9 +16,11 @@ export default function CopyTradingPage() {
       <CtHero />
       <CtWhat />
       <CtHow />
+      <FxPageBanner label="Banner / Image" />
       <CtMaster />
       <CtProfit />
       <CtFee />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <CtControl />
       <CtCTA />
     </>

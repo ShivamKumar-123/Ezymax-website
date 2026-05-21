@@ -40,9 +40,6 @@ export default function TxRiskControl() {
           highlight="Risk Management"
           subtitle="The unglamorous part of trading â€” knowing what you're walking into. These are the controls that catch most surprises before you click Buy."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {items.map((it, i) => {
             const Icon = it.icon

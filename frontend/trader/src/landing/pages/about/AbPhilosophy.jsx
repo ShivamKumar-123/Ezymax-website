@@ -22,9 +22,6 @@ export default function AbPhilosophy() {
           highlight="Trader-First"
           subtitle="The simple idea behind every decision we make: modern traders deserve more transparency, more flexibility, and infrastructure that actually treats them as the customer."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
           <ScrollReveal variant="fadeUp">
             <div

@@ -56,9 +56,6 @@ export default function CtMaster() {
           highlight="Master Trader"
           subtitle="Two paths in. We're strict about who gets in because the people copying these traders deserve to know the track record is real."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Apply with verified P&L */}
           <ScrollReveal variant="fadeUp">

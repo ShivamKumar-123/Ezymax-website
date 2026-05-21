@@ -63,9 +63,6 @@ export default function FxHowItWorks() {
           highlight="Seamless Flow"
           subtitle="From the moment you connect a wallet to the moment a profit lands back in it â€” here is what actually happens."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         {/* â”€â”€ Horizontal step rail (scrolls on mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[260px] md:auto-cols-auto md:grid-cols-7 gap-4 md:gap-3 min-w-max md:min-w-0">

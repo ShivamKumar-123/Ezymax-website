@@ -10,6 +10,7 @@ import InRules from '@/landing/pages/insurance/InRules'
 import InUX from '@/landing/pages/insurance/InUX'
 import InFaq from '@/landing/pages/insurance/InFaq'
 import InCTA from '@/landing/pages/insurance/InCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function InsuranceOverviewPage() {
   return (
@@ -17,12 +18,15 @@ export default function InsuranceOverviewPage() {
       <InHero />
       <InWhy />
       <InHow />
+      <FxPageBanner label="Banner / Image" />
       <InCoverage />
       <InDuration />
       <InLogic />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <InRules />
       <InUX />
       <InFaq />
+      <FxPageBanner label="Banner / Image" />
       <InCTA />
     </>
   )

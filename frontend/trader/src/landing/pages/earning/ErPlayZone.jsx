@@ -40,9 +40,6 @@ export default function ErPlayZone() {
           highlight="Play Zone"
           subtitle="Your earned Coins can be used to participate in interactive reward experiences."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {features.map((f, i) => {
             const Icon = f.icon

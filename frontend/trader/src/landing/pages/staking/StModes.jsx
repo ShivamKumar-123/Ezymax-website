@@ -33,9 +33,6 @@ export default function StModes() {
           highlight="Two Ways"
           subtitle="Longer commitment unlocks stronger benefits."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Flexible */}
           <ScrollReveal variant="fadeUp">

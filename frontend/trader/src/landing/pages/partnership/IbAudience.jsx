@@ -33,9 +33,6 @@ export default function IbAudience() {
           highlight="Trading Communities"
           subtitle="If you already do any of this, you're already most of the way there."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
           {audiences.map((a, i) => {
             const Icon = a.icon

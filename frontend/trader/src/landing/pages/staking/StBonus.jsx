@@ -19,9 +19,6 @@ export default function StBonus() {
           highlight="Trading Power"
           subtitle="Long-term stakers receive a trading bonus equal to their committed liquidity."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-3xl overflow-hidden"

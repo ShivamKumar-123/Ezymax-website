@@ -21,9 +21,6 @@ export default function FxCopyTrading() {
           highlight="Without Guesswork"
           subtitle="Pick a trader whose track record you actually trust. Their trades mirror into your account automatically, at your size, pause whenever you want."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* â”€â”€ Left content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">

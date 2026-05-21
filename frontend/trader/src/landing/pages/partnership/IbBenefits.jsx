@@ -52,9 +52,6 @@ export default function IbBenefits() {
           highlight="FX Artha"
           subtitle="The honest reasons people send their audience here instead of somewhere else."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {benefits.map((b, i) => {
             const Icon = b.icon

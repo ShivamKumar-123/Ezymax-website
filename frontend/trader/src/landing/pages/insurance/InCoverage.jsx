@@ -45,9 +45,6 @@ export default function InCoverage() {
           highlight="Coverage Strength"
           subtitle="Four levels, from a basic cushion to maximum cover. Pick what matches how active you are â€” and how much loss you'd rather not absorb yourself."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
           {tiers.map((t, i) => {
             const Icon = t.icon

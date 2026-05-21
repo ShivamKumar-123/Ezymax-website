@@ -20,9 +20,6 @@ export default function AbFutureVision() {
           highlight="Beyond Traditional Trading"
           subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure â€” toward a global trading system that scales."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-2xl p-8 md:p-12 overflow-hidden text-center"

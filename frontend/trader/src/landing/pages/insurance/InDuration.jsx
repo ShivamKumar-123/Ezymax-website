@@ -38,9 +38,6 @@ export default function InDuration() {
           highlight="Plan Duration"
           subtitle="Whether you're trading just for the day or settled in for the month, there's a plan that covers exactly the stretch you need."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {durations.map((d, i) => {
             const Icon = d.icon

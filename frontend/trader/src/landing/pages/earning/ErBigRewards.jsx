@@ -25,9 +25,6 @@ export default function ErBigRewards() {
           highlight="Premium Rewards"
           subtitle="High engagement and performance unlock access to larger rewards."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {examples.map((ex, i) => {
             const Icon = ex.icon

@@ -19,9 +19,6 @@ export default function InWhy() {
           highlight="Downside Risk"
           subtitle="Markets move against everyone sooner or later. Trade Insurance gives back a slice of those losses â€” based on the coverage level you chose when you activated the plan."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
           <ScrollReveal variant="fadeUp">
             <div

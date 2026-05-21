@@ -10,6 +10,7 @@ import AbSecurity from '@/landing/pages/about/AbSecurity'
 import AbAudience from '@/landing/pages/about/AbAudience'
 import AbFutureVision from '@/landing/pages/about/AbFutureVision'
 import AbCTA from '@/landing/pages/about/AbCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function AboutUsPage() {
   return (
@@ -17,12 +18,15 @@ export default function AboutUsPage() {
       <AbHero />
       <AbVision />
       <AbWhatMakes />
+      <FxPageBanner label="Banner / Image" />
       <AbHowItWorks />
       <AbEcosystem />
       <AbPhilosophy />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <AbSecurity />
       <AbAudience />
       <AbFutureVision />
+      <FxPageBanner label="Banner / Image" />
       <AbCTA />
     </>
   )

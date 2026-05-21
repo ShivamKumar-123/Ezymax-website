@@ -36,9 +36,6 @@ export default function IbWhat() {
           highlight="Introducing Broker (IB)"
           subtitle="If you already work with traders, this is the boring-but-honest version of an affiliate program."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* LEFT â€” copy */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">

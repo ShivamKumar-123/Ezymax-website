@@ -22,9 +22,6 @@ export default function PrFaq() {
           highlight="Frequently Asked"
           subtitle="The questions about trust, control, and how the system actually behaves."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div className="mt-12 md:mt-14 max-w-3xl mx-auto">
             <CtFaqList items={faq} title="Protocol FAQ" />

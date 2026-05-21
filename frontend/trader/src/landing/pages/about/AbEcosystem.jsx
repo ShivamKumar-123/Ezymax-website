@@ -36,9 +36,6 @@ export default function AbEcosystem() {
           highlight="Multiple Opportunities"
           subtitle="Trading sits at the centre, surrounded by other ways to put your account to work â€” copying, staking, rewards, partner programs. All of it connected, all of it in one place."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         {/* Mobile-first layout: 2-col grid with hub on top. */}
         <div className="mt-12 md:mt-16 md:hidden grid grid-cols-2 gap-3">
           <div className="col-span-2">

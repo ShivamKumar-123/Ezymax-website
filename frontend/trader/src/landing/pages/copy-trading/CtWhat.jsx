@@ -20,9 +20,6 @@ export default function CtWhat() {
           highlight="Copy Trading?"
           subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose â€” no need to figure out your own setups."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* Text */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">

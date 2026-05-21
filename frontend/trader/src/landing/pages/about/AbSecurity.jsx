@@ -29,9 +29,6 @@ export default function AbSecurity() {
           highlight="Trust"
           subtitle="The architecture leans on transparent systems, protocol-based infrastructure, and smart-contract logic â€” not on asking you to take our word for it."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {pillars.map((p, i) => {
             const Icon = p.icon

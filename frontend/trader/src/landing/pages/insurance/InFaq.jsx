@@ -44,9 +44,6 @@ export default function InFaq() {
           highlight="Frequently Asked"
           subtitle="The questions that come up most often â€” answered straight, no hedging."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div className="mt-12 md:mt-14 max-w-3xl mx-auto">
             <CtFaqList items={faq} title="Insurance FAQ" />

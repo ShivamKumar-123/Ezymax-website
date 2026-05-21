@@ -23,9 +23,6 @@ export default function AbAudience() {
           highlight="Digital Traders"
           subtitle="Whether you've been trading for years, are just starting out, or you're a community leader building an audience â€” FX Artha is built to feel right at home."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {personas.map((p, i) => {
             const Icon = p.icon

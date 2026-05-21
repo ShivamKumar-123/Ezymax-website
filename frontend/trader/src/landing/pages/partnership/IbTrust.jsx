@@ -20,9 +20,6 @@ export default function IbTrust() {
           highlight="Transparency"
           subtitle="The bits you can actually inspect: the contract, the reward math, the dashboard, and your own wallet."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-2xl p-8 md:p-12 overflow-hidden text-center"

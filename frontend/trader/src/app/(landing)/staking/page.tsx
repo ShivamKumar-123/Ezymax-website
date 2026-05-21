@@ -9,6 +9,7 @@ import StBonus from '@/landing/pages/staking/StBonus'
 import StSelfVsCopy from '@/landing/pages/staking/StSelfVsCopy'
 import StExample from '@/landing/pages/staking/StExample'
 import StCTA from '@/landing/pages/staking/StCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function StakingPage() {
   return (
@@ -16,9 +17,11 @@ export default function StakingPage() {
       <StHero />
       <StOverview />
       <StModes />
+      <FxPageBanner label="Banner / Image" />
       <StPlans />
       <StApy />
       <StBonus />
+      <FxPageBanner label="Banner / Image" tone="elev" />
       <StSelfVsCopy />
       <StExample />
       <StCTA />

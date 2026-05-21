@@ -73,9 +73,6 @@ export default function AbWhatMakes() {
           highlight="Trading Platform"
           subtitle="FX Artha combines multiple layers of innovation into one unified ecosystem â€” each piece exists because something in traditional platforms was missing or broken."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
           {features.map((f, i) => {
             const Icon = f.icon

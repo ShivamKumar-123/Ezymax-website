@@ -19,9 +19,6 @@ export default function FxStaking() {
           highlight="Idle Assets"
           subtitle="Put the assets you're already holding to work inside the ecosystem â€” without forcing you to choose between earning and being able to trade."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* â”€â”€ Left visual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp">

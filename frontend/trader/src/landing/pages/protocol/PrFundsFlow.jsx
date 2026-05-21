@@ -23,9 +23,6 @@ export default function PrFundsFlow() {
           highlight="Inside the System"
           subtitle="Your funds move through a structured smart-contract flow. Trades are executed, results are calculated, and balance is updated in real-time."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 rounded-2xl p-6 md:p-10 overflow-x-auto"

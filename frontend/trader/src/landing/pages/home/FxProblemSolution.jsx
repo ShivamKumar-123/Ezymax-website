@@ -27,9 +27,6 @@ export default function FxProblemSolution() {
           highlight="Blind Trust"
           subtitle="In a custodial setup, the platform holds the money and approves the withdrawals. We don't think that should be the default anymore."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
           {/* â”€â”€ Problem Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp">

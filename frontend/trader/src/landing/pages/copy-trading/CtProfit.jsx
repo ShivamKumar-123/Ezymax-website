@@ -19,9 +19,6 @@ export default function CtProfit() {
           highlight="Performance-Based"
           subtitle="Master Traders take a slice of the profit they generate for followers â€” and only when there's actual profit to take a slice of."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         {/* Flow diagram */}
         <ScrollReveal variant="fadeUp">
           <div

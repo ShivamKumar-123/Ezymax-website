@@ -26,9 +26,6 @@ export default function ErRewardStore() {
           highlight="Redeem"
           subtitle="Convert your Coins and achievements into real value."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {rewards.map((r, i) => {
             const Icon = r.icon

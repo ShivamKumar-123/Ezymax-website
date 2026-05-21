@@ -23,9 +23,6 @@ export default function AbVision() {
           highlight="Next Generation"
           subtitle="The trading software people use every day still runs on stuff designed for 2010. We thought it was time someone rebuilt it."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <div className="mt-12 md:mt-16 max-w-4xl mx-auto">
           <ScrollReveal variant="fadeUp">
             <div

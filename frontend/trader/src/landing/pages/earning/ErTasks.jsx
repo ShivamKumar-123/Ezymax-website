@@ -26,9 +26,6 @@ export default function ErTasks() {
           highlight="Get Rewarded"
           subtitle="Complete simple tasks daily to boost your rewards."
         />
-
-        <div className="fx-section-banner" aria-hidden><span>Banner / Image</span></div>
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 max-w-3xl mx-auto rounded-2xl overflow-hidden"
