@@ -28,6 +28,14 @@ import WalletLinkStep from './WalletLinkStep';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee']);
 
+// TEMP feature flag — wallet linking is paused until the on-chain
+// integration is finalised (planned next sprint). When FALSE the gate
+// skips the WalletLinkStep entirely so Google + email/password signups
+// land directly on the email-OTP step (or pass through if email already
+// verified). Flip back to TRUE once the SIWE flow + vault wiring is
+// production-ready. Backend mirror: WALLET_LINK_REQUIRED in auth_service.
+const WALLET_LINK_REQUIRED = false;
+
 export default function OnboardingGate() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -50,8 +58,11 @@ export default function OnboardingGate() {
     // Already onboarded — nothing to do.
     if (user.onboarding_complete) return 'hidden' as const;
 
-    if (!user.wallet_linked) return 'wallet' as const;
-    if (!user.email_verified || user.is_wallet_placeholder) return 'email' as const;
+    if (WALLET_LINK_REQUIRED && !user.wallet_linked) return 'wallet' as const;
+    // Wallet-placeholder email check is also wallet-gated for now.
+    // When wallet linking comes back, drop the WALLET_LINK_REQUIRED
+    // guard so placeholder emails are forced to swap to a real one.
+    if (!user.email_verified || (WALLET_LINK_REQUIRED && user.is_wallet_placeholder)) return 'email' as const;
 
     return 'hidden' as const;
   }, [isInitialized, isAuthenticated, user]);

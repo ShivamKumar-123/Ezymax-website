@@ -156,7 +156,16 @@ async def require_onboarded(
     wallet_linked = bool((user.wallet_address or "").strip())
     email_verified = bool(getattr(user, "email_verified", False))
 
-    if profile_complete and wallet_linked and email_verified and not is_placeholder:
+    # TEMP feature flag — wallet linking paused (mirror of
+    # WALLET_LINK_REQUIRED in auth_service.get_me + OnboardingGate.tsx).
+    # When False, skip wallet_linked + placeholder checks here too so
+    # the server-side gate matches the frontend gate. Per-action wallet
+    # checks (e.g. wallet required for withdrawal) still apply.
+    WALLET_LINK_REQUIRED = False
+    wallet_ok = wallet_linked if WALLET_LINK_REQUIRED else True
+    placeholder_block = is_placeholder if WALLET_LINK_REQUIRED else False
+
+    if profile_complete and wallet_ok and email_verified and not placeholder_block:
         return current_user
 
     # 428 Precondition Required is the closest standard status code for

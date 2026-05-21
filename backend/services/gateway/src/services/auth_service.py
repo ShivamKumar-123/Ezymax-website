@@ -1075,6 +1075,14 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
     is_pre_policy = (
         user.created_at is not None and user.created_at < ONBOARDING_RULE_CUTOFF
     )
+    # TEMP feature flag — wallet linking is paused until the on-chain
+    # integration is finalised. When False, onboarding_complete no longer
+    # requires wallet_linked (frontend mirror: WALLET_LINK_REQUIRED in
+    # OnboardingGate.tsx — keep both in sync). Per-action wallet checks
+    # like withdrawal still apply at the point of action.
+    WALLET_LINK_REQUIRED = False
+    wallet_ok = wallet_linked if WALLET_LINK_REQUIRED else True
+    placeholder_block = is_wallet_placeholder if WALLET_LINK_REQUIRED else False
     if (
         user.role in ("admin", "super_admin", "employee")
         or bool(user.is_demo)
@@ -1083,7 +1091,7 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
         onboarding_complete = True
     else:
         onboarding_complete = bool(
-            complete and wallet_linked and email_verified and not is_wallet_placeholder
+            complete and wallet_ok and email_verified and not placeholder_block
         )
 
     return {
