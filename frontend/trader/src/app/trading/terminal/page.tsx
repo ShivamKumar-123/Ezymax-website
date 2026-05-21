@@ -22,7 +22,6 @@ import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 import TerminalTicker from '@/components/trading/TerminalTicker';
-import SentimentGauge from '@/components/trading/SentimentGauge';
 import TradingViewTechnicalAnalysis from '@/components/charts/TradingViewTechnicalAnalysis';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
@@ -731,14 +730,11 @@ export default function TradingTerminalPage() {
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
             <PositionsPanel variant="terminal" />
           </div>
-          {/* Right rail in the bottom row: in-house Market Sentiment
-              (FXArtha trader flow) + TradingView Technical Analysis
-              (TA-indicator consensus). Two different signals stacked —
-              hidden on narrow terminals so the positions table stays
-              readable. */}
+          {/* Right rail in the bottom row: TradingView Technical
+              Analysis (TA-indicator consensus). Hidden on narrow
+              terminals so the positions table stays readable. */}
           {selectedSymbol ? (
-            <div className="hidden xl:flex flex-col shrink-0 w-[340px] gap-2 border-l border-border-primary p-2 overflow-y-auto">
-              <SentimentGauge symbol={selectedSymbol} className="w-full" />
+            <div className="hidden xl:flex shrink-0 w-[340px] border-l border-border-primary p-2 overflow-y-auto">
               <TradingViewTechnicalAnalysis className="w-full" />
             </div>
           ) : null}
