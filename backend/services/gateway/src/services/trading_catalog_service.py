@@ -13,10 +13,11 @@ from packages.common.src.instrument_pricing import (
     resolve_commission,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 
 
 async def _mid_price(symbol: str) -> Decimal:
-    raw = await redis_client.get(PriceChannel.tick_key(symbol))
+    raw = await price_cache.get(symbol)
     if not raw:
         return Decimal("1")
     t = json.loads(raw)

@@ -217,6 +217,12 @@ class InfowayFeed:
         codes_str = ",".join(sorted(set(codes)))
         url = self._ws_url(business)
 
+        # Exponential reconnect backoff: 2 → 4 → 8 → 16 → 32 → 60 (cap)
+        # seconds. Counter resets to 0 on a successful subscribe so transient
+        # blips don't pile up into a long sleep. Cap prevents the gateway
+        # waiting forever; CRITICAL log every 5 attempts so operators know.
+        reconnect_attempts = 0
+
         while self._running:
             hb_task: Optional[asyncio.Task] = None
             try:
@@ -240,6 +246,9 @@ class InfowayFeed:
                         business,
                         len(set(codes)),
                     )
+                    # Healthy subscribe — reset the backoff counter so the
+                    # next failure starts at 2s, not wherever we ended up.
+                    reconnect_attempts = 0
 
                     hb_task = asyncio.create_task(self._heartbeat_loop(ws))
 
@@ -264,8 +273,19 @@ class InfowayFeed:
             except asyncio.CancelledError:
                 break
             except Exception as exc:
-                logger.warning("Infoway [%s] WebSocket error: %s — reconnect in 5s", business, exc)
-                await asyncio.sleep(5)
+                reconnect_attempts += 1
+                delay = min(60.0, 2.0 ** min(reconnect_attempts, 6))
+                if reconnect_attempts % 5 == 0:
+                    logger.error(
+                        "Infoway [%s] still down after %d attempts: %s",
+                        business, reconnect_attempts, exc,
+                    )
+                else:
+                    logger.warning(
+                        "Infoway [%s] WebSocket error: %s — reconnect in %.0fs (attempt %d)",
+                        business, exc, delay, reconnect_attempts,
+                    )
+                await asyncio.sleep(delay)
             finally:
                 if hb_task:
                     hb_task.cancel()

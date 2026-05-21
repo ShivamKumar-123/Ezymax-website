@@ -14,6 +14,7 @@ from packages.common.src.models import (
     SharedTrade, Position, TradingAccount, User, Instrument, PositionStatus,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 
 SHARE_TTL_DAYS = 7
 CODE_ALPHABET = string.ascii_letters + string.digits
@@ -24,7 +25,7 @@ def _generate_code(length: int = 7) -> str:
 
 
 async def _get_current_price(symbol: str) -> tuple[float, float] | tuple[None, None]:
-    tick = await redis_client.get(PriceChannel.tick_key(symbol))
+    tick = await price_cache.get(symbol)
     if not tick:
         return None, None
     try:

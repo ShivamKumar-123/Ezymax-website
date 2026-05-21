@@ -25,6 +25,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 
 
 # ─── Per-user leverage cap (Trading_Mechanism.docx risk control) ──────
@@ -308,7 +309,7 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
         )
         for pos in pos_result.scalars().all():
             try:
-                tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
+                tick_data = await price_cache.get(pos.instrument.symbol)
                 if tick_data:
                     tick = json.loads(tick_data)
                     sv = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
@@ -400,7 +401,7 @@ async def get_account_summary(
     from .trading_service import quote_to_account_pnl
     unrealized_pnl = Decimal("0")
     for pos in open_positions:
-        tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
+        tick_data = await price_cache.get(pos.instrument.symbol)
         if tick_data:
             tick = json.loads(tick_data)
             current_price = Decimal(str(tick["bid"])) if pos.side.value == "buy" else Decimal(str(tick["ask"]))

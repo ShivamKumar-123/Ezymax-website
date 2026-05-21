@@ -21,6 +21,7 @@ from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pa
 from . import rewards_service, wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
 from packages.common.src.market_hours import is_market_open
@@ -32,7 +33,7 @@ logger = logging.getLogger("trading_service")
 # ─── Shared helpers ───────────────────────────────────────────────────────
 
 async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
-    tick_data = await redis_client.get(PriceChannel.tick_key(symbol))
+    tick_data = await price_cache.get(symbol)
     if not tick_data:
         raise HTTPException(status_code=400, detail=f"No price available for {symbol}")
     tick = json.loads(tick_data)
@@ -266,16 +267,18 @@ async def place_order(
         )
         open_positions = open_pos_result.scalars().all()
 
-        # Batch-load all prices in one Redis mget call (instead of N+1 calls)
+        # Reads come from the in-memory PriceCache (~µs each). The
+        # legacy mget batched Redis I/O to amortise round-trips, but
+        # the in-process cache makes per-symbol lookups effectively
+        # free, so we just iterate.
         if open_positions:
             pos_symbols = list({
                 pos.instrument.symbol for pos in open_positions
                 if pos.instrument
             })
-            tick_keys = [PriceChannel.tick_key(s) for s in pos_symbols]
-            tick_values = await redis_client.mget(tick_keys) if tick_keys else []
             price_map: dict[str, tuple[Decimal, Decimal]] = {}
-            for sym, val in zip(pos_symbols, tick_values):
+            for sym in pos_symbols:
+                val = await price_cache.get(sym)
                 if val:
                     try:
                         d = json.loads(val)
@@ -682,7 +685,7 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
         sv = side_val(pos.side)
         contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
-        tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
+        tick_data = await price_cache.get(pos.instrument.symbol)
         pos_status = pos.status.value if hasattr(pos.status, 'value') else str(pos.status)
 
         if tick_data and pos_status == "open":
@@ -834,7 +837,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             detail="This is a MAM mirrored trade. Only the master can close it.",
         )
 
-    tick_data = await redis_client.get(PriceChannel.tick_key(pos.instrument.symbol))
+    tick_data = await price_cache.get(pos.instrument.symbol)
     if not tick_data:
         raise HTTPException(status_code=400, detail="No price available")
 

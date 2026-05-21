@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Instrument, CopyTrade,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 
 
 def _public_close_reason(reason: str | None) -> str:
@@ -40,7 +41,7 @@ async def _get_user_accounts(user_id: UUID, db: AsyncSession) -> list[TradingAcc
 
 
 async def _get_current_price(symbol: str) -> tuple[Decimal, Decimal] | None:
-    tick_data = await redis_client.get(PriceChannel.tick_key(symbol))
+    tick_data = await price_cache.get(symbol)
     if not tick_data:
         return None
     tick = json.loads(tick_data)

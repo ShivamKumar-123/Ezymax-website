@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.models import Instrument, InstrumentSegment
 from packages.common.src.schemas import InstrumentResponse, TickData
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 from packages.common.src.market_hours import market_status_dict
 
 
@@ -96,7 +97,7 @@ async def get_all_prices() -> list[dict]:
 
 
 async def get_price(symbol: str) -> TickData:
-    tick_data = await redis_client.get(PriceChannel.tick_key(symbol.upper()))
+    tick_data = await price_cache.get(symbol)
     if not tick_data:
         raise HTTPException(status_code=404, detail=f"No price data for {symbol}")
 

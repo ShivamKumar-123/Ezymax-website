@@ -29,6 +29,7 @@ from packages.common.src.models import (
     TradingAccount, TradeHistory, Transaction, Order,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 from packages.common.src.admin_fees import credit_admin_fee
 from packages.common.src.engine_lock import engine_lock
 
@@ -487,7 +488,7 @@ class CopyTradeEngine:
 
         # Prefer the live tick so in-progress closes mirror the master's
         # exit price tightly.
-        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
+        tick_data = await price_cache.get(instrument.symbol)
         if tick_data:
             try:
                 tick = json.loads(tick_data)

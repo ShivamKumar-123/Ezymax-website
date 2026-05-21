@@ -16,6 +16,7 @@ from packages.common.src.models import (
     Referral, RewardsTransaction,
 )
 from packages.common.src.redis_client import redis_client
+from packages.common.src.price_cache import price_cache
 
 
 def _gen_investor_account_number(copy_type: str = "signal") -> str:
@@ -508,7 +509,7 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             copy.status = "closed"
             continue
 
-        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
+        tick_data = await price_cache.get(instrument.symbol)
         if not tick_data:
             continue
 
@@ -722,7 +723,7 @@ async def withdraw_managed_account(
             copy.status = "closed"
             continue
 
-        tick_data = await redis_client.get(PriceChannel.tick_key(instrument.symbol))
+        tick_data = await price_cache.get(instrument.symbol)
         if not tick_data:
             continue  # defer — can't close without price
 

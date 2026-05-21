@@ -39,7 +39,12 @@ async def publish_price(symbol: str, bid: float, ask: float, timestamp: str):
         "timestamp": timestamp,
         "spread": round(ask - bid, 8),
     })
-    await redis_client.set(PriceChannel.tick_key(symbol), data)
+    # 120 s TTL: if market-data dies, stale prices clear themselves
+    # within 2 min instead of persisting forever. Live feed refreshes
+    # the key on every tick (sub-second cadence), so the TTL never
+    # actually expires during healthy operation — it's a crash safety
+    # net, not a cache window.
+    await redis_client.set(PriceChannel.tick_key(symbol), data, ex=120)
     await redis_client.publish(PriceChannel.price_channel(symbol), data)
     await redis_client.publish(PriceChannel.PRICE_CHANNEL, data)
 

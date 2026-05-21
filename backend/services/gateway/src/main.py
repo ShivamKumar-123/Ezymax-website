@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.config import get_settings
 from packages.common.src.database import get_db, AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import close_producer
 from packages.common.src.auth import decode_token, require_onboarded
 from packages.common.src.models import TradingAccount
@@ -157,6 +158,10 @@ async def lifespan(app: FastAPI):
     # gateway was down), then kick off the periodic loop.
     await _heal_missing_trade_history()
     healer_task = asyncio.create_task(_trade_history_healer_loop())
+    # In-memory tick cache fed by Redis pub/sub. Must start BEFORE the
+    # engines so they hit a warm cache instead of falling through to
+    # Redis on first-tick reads (which would defeat the point).
+    await price_cache.start()
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()
@@ -181,6 +186,7 @@ async def lifespan(app: FastAPI):
     await stats_engine.stop()
     await copy_engine.stop()
     await sltp_engine.stop()
+    await price_cache.stop()
     await close_producer()
     await redis_client.close()
 
