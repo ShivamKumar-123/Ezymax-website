@@ -734,6 +734,13 @@ async def google_oauth(
                 )
             if not user.google_id:
                 user.google_id = google_id
+            # Linking proves the user controls this Google-verified
+            # mailbox (we checked email_verified above), so promote
+            # email_verified so the OnboardingGate stops asking them
+            # for an OTP they already passed at Google.
+            if not user.email_verified:
+                user.email_verified = True
+                user.email_verified_at = datetime.utcnow()
         else:
             user = User(
                 email=email,
@@ -747,6 +754,13 @@ async def google_oauth(
                 is_demo=False,
                 language="en",
                 theme="dark",
+                # Google verifies the user's mailbox upstream and we
+                # validated the email_verified claim above. Skip our
+                # own OTP — it would just re-prove what Google already
+                # proved, and was the cause of "verification email
+                # going to Google signups" UX bug.
+                email_verified=True,
+                email_verified_at=datetime.utcnow(),
             )
             db.add(user)
             await db.flush()
