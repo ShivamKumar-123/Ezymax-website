@@ -346,6 +346,14 @@ async def open_position(
     except Exception as _e:
         logger.warning("staking referral distribution failed for position %s: %s", pos.id, _e)
 
+    # Slide 16: lump XP/PS credit on stake open (100 XP + 1000 PS per
+    # $1000 staked, pro-rated). Best-effort — never block the stake.
+    try:
+        from . import rewards_service as _rewards
+        await _rewards.award_staking_open_bonus(db, user_id, amount, position_id=pos.id)
+    except Exception as _e:
+        logger.warning("staking open-bonus failed for position %s: %s", pos.id, _e)
+
     return {
         "position_id": str(pos.id),
         "principal": float(pos.principal),

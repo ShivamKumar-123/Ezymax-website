@@ -371,15 +371,32 @@ async def _distribute_to_referral_chain(
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Signup referral bonus (XP_Reward_mechanism slide 4)
-# Direct + flat: when a referred user signs up, the IB referrer gets a
-# one-time +30 XP / +20 AC / +500 PS — same shape as the daily
-# refer_friend mission so it's not double-paying the IB.
+# Direct referral bonuses (XP_Reward_mechanism slide 4)
+# Three milestones a referrer earns from when their downline acts:
+#   • signup   → 150 XP / 80 AC / 0 PS   (acquisition)
+#   • 1st trade → 50 XP / 30 AC / 500 PS (activation)
+#   • deposit  → 100 XP / 50 AC / 0 PS   (funding — fires on every
+#                deposit, not just the first — caller decides cadence)
+# All flat (not %-of-volume); these stack on top of the per-trade
+# 10-level referral distribution.
 # ─────────────────────────────────────────────────────────────────────
 
-SIGNUP_REFERRAL_XP = 30
-SIGNUP_REFERRAL_AC = Decimal("20")
-SIGNUP_REFERRAL_PS = 500
+SIGNUP_REFERRAL_XP = 150
+SIGNUP_REFERRAL_AC = Decimal("80")
+SIGNUP_REFERRAL_PS = 0
+
+REFEREE_FIRST_TRADE_XP = 50
+REFEREE_FIRST_TRADE_AC = Decimal("30")
+REFEREE_FIRST_TRADE_PS = 500
+
+REFEREE_DEPOSIT_XP = 100
+REFEREE_DEPOSIT_AC = Decimal("50")
+REFEREE_DEPOSIT_PS = 0
+
+# First-time-trader self bonus — credits the trader themselves on
+# their very first closed trade (slide 3, "First Trade Bonus").
+FIRST_TRADE_SELF_XP = 30
+FIRST_TRADE_SELF_AC = Decimal("20")
 
 
 async def award_signup_referral_bonus(
@@ -396,6 +413,103 @@ async def award_signup_referral_bonus(
         type="referral_signup",
         source="signup",
         reference_id=referred_user_id,
+    )
+
+
+async def award_referee_first_trade_bonus(
+    db: AsyncSession,
+    referrer_user_id,
+    referred_user_id,
+    *,
+    trade_reference_id=None,
+) -> None:
+    """One-time bonus to the referrer when their referee closes their
+    first ever trade. Idempotent only via caller — pass the trader's
+    user_id so the referee-first-trade detection runs exactly once.
+    Caller commits."""
+    await _award(
+        db, referrer_user_id,
+        xp=REFEREE_FIRST_TRADE_XP,
+        ac=REFEREE_FIRST_TRADE_AC,
+        ps=REFEREE_FIRST_TRADE_PS,
+        type="referral_first_trade",
+        source="trade_close",
+        reference_id=trade_reference_id or referred_user_id,
+    )
+
+
+async def award_referee_deposit_bonus(
+    db: AsyncSession,
+    referrer_user_id,
+    referred_user_id,
+    *,
+    deposit_reference_id=None,
+) -> None:
+    """Bonus to the referrer each time their referee makes a deposit.
+    Slide 4 doesn't specify "first deposit only" so this fires on
+    every deposit; if you want one-shot, gate at the caller."""
+    await _award(
+        db, referrer_user_id,
+        xp=REFEREE_DEPOSIT_XP,
+        ac=REFEREE_DEPOSIT_AC,
+        ps=REFEREE_DEPOSIT_PS,
+        type="referral_deposit",
+        source="deposit",
+        reference_id=deposit_reference_id or referred_user_id,
+    )
+
+
+async def award_first_trade_self_bonus(
+    db: AsyncSession,
+    user_id,
+    *,
+    trade_reference_id=None,
+) -> None:
+    """One-time +30 XP / +20 AC for the trader's first ever closed
+    trade. Idempotency lives in the caller — only invoke when the
+    closed-trade count for this user is exactly 1."""
+    await _award(
+        db, user_id,
+        xp=FIRST_TRADE_SELF_XP,
+        ac=FIRST_TRADE_SELF_AC,
+        ps=0,
+        type="first_trade_bonus",
+        source="trade_close",
+        reference_id=trade_reference_id,
+    )
+
+
+# Per slide 16: "$1000 stake → 100 XP / 1000 PS". Pro-rated linearly
+# by principal so a $500 stake → 50 XP / 500 PS, $2000 → 200 XP / 2000
+# PS, etc. Awarded once on stake open.
+STAKE_XP_PER_1K_USD = 100
+STAKE_PS_PER_1K_USD = 1000
+
+
+async def award_staking_open_bonus(
+    db: AsyncSession,
+    user_id,
+    principal_usd: Decimal,
+    *,
+    position_id=None,
+) -> None:
+    """Lump XP/PS credit when a user opens a stake. Pro-rated linearly
+    by principal — no AC granted (slide 16 only specifies XP + PS)."""
+    if principal_usd <= 0:
+        return
+    blocks = principal_usd / Decimal("1000")
+    xp_award = int(blocks * STAKE_XP_PER_1K_USD)
+    ps_award = int(blocks * STAKE_PS_PER_1K_USD)
+    if xp_award <= 0 and ps_award <= 0:
+        return
+    await _award(
+        db, user_id,
+        xp=xp_award,
+        ac=Decimal("0"),
+        ps=ps_award,
+        type="stake_open_bonus",
+        source="stake_open",
+        reference_id=position_id,
     )
 
 

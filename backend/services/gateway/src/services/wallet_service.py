@@ -11,15 +11,34 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
-    BankAccount, BonusOffer, Deposit, Transaction, TradingAccount, User,
+    BankAccount, BonusOffer, Deposit, Referral, Transaction, TradingAccount, User,
     UserBonus, Withdrawal,
 )
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
-from . import oxapay_service, nowpayments_service
+from . import oxapay_service, nowpayments_service, rewards_service
 
 logger = logging.getLogger("wallet_service")
+
+
+async def _maybe_award_referrer_deposit_bonus(
+    db, depositing_user_id, deposit_id,
+) -> None:
+    """Look up the depositor's referrer (if any) and credit them the
+    one-time deposit referral bonus (slide 4). Best-effort: any error
+    is swallowed so a rewards quirk never blocks a deposit credit."""
+    try:
+        ref_row = (await db.execute(
+            select(Referral).where(Referral.referred_id == depositing_user_id).limit(1)
+        )).scalar_one_or_none()
+        if ref_row is not None and ref_row.referrer_id:
+            await rewards_service.award_referee_deposit_bonus(
+                db, ref_row.referrer_id, depositing_user_id,
+                deposit_reference_id=deposit_id,
+            )
+    except Exception as exc:
+        logger.debug("referrer deposit-bonus dispatch failed: %s", exc)
 
 DEPOSIT_PROOF_EXT = {".jpg", ".jpeg", ".png", ".pdf", ".webp"}
 MAX_PROOF_BYTES = 10 * 1024 * 1024
@@ -442,6 +461,12 @@ async def handle_oxapay_webhook(
             reference_id=deposit.id,
             description=f"Deposit to main wallet - oxapay (auto)",
         ))
+
+        # Slide 4: credit the depositor's referrer (one bonus per
+        # deposit). Demo accounts skipped because they don't have real
+        # money flowing.
+        if not bool(getattr(user_row, "is_demo", False)):
+            await _maybe_award_referrer_deposit_bonus(db, deposit.user_id, deposit.id)
 
         # Apply bonus offers (mirrors admin approve_deposit logic)
         bonus_msg = ""
@@ -919,6 +944,12 @@ async def handle_nowpayments_webhook(
             reference_id=deposit.id,
             description="Deposit to main wallet - nowpayments (auto)",
         ))
+
+        # Slide 4: credit the depositor's referrer (one bonus per
+        # deposit). Mirrors the OxaPay path so behaviour is identical
+        # regardless of provider.
+        if not bool(getattr(user_row, "is_demo", False)):
+            await _maybe_award_referrer_deposit_bonus(db, deposit.user_id, deposit.id)
 
         # Apply active bonus offers — mirrors the OxaPay path so promo
         # behaviour is identical regardless of provider.

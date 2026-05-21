@@ -971,6 +971,37 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
                 await rewards_service.award_trading_volume_rewards(
                     db, user_id, notional, reference_id=pos.id,
                 )
+
+                # Slide 3 + Slide 4: "First Trade Bonus" milestones — fire
+                # exactly once when the trader closes their first ever
+                # trade. We count TradeHistory rows for this user (joined
+                # via TradingAccount because TradeHistory has no
+                # user_id column); == 1 means "the one we just inserted
+                # is their first". Wrapped in try/except so a quirk
+                # never blocks the close.
+                try:
+                    from packages.common.src.models import Referral
+                    closed_count = (await db.execute(
+                        select(func.count(TradeHistory.id))
+                        .join(TradingAccount, TradingAccount.id == TradeHistory.account_id)
+                        .where(TradingAccount.user_id == user_id)
+                    )).scalar() or 0
+                    if closed_count == 1:
+                        # Self-bonus to the trader.
+                        await rewards_service.award_first_trade_self_bonus(
+                            db, user_id, trade_reference_id=pos.id,
+                        )
+                        # Referrer bonus if this trader was referred.
+                        ref_row = (await db.execute(
+                            select(Referral).where(Referral.referred_id == user_id).limit(1)
+                        )).scalar_one_or_none()
+                        if ref_row is not None and ref_row.referrer_id:
+                            await rewards_service.award_referee_first_trade_bonus(
+                                db, ref_row.referrer_id, user_id,
+                                trade_reference_id=pos.id,
+                            )
+                except Exception as _first_exc:
+                    logger.debug("first-trade bonus dispatch failed: %s", _first_exc)
         except Exception as _vol_exc:
             logger.debug("rewards trade-volume distribution failed: %s", _vol_exc)
     except Exception as _exc:
