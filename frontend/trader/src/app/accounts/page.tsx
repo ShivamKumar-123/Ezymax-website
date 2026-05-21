@@ -236,7 +236,16 @@ export default function AccountsPage() {
   }, [tab, user?.is_demo, fetchWalletSummary]);
 
   const demoFundingBlocked = rows.length > 0 && !rows.some((a) => !a.is_demo);
-  const liveAccounts = useMemo(() => rows.filter((a) => !a.is_demo), [rows]);
+  // Live accounts available for transfers / trading. Mirrors the
+  // is_active filter used by `visibleRows` below — closed accounts
+  // (delete_master sets is_active=false) were previously leaking into
+  // the Internal Transfer FROM/TO dropdowns even after deletion.
+  const liveAccounts = useMemo(
+    () => rows.filter(
+      (a) => !a.is_demo && (a as { is_active?: boolean }).is_active !== false,
+    ),
+    [rows],
+  );
 
   useEffect(() => {
     if (loading || transferKindsInitialized) return;
