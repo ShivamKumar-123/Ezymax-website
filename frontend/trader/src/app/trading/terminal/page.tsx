@@ -731,10 +731,12 @@ export default function TradingTerminalPage() {
             <PositionsPanel variant="terminal" />
           </div>
           {/* Right rail in the bottom row: TradingView Technical
-              Analysis (TA-indicator consensus). Hidden on narrow
-              terminals so the positions table stays readable. */}
+              Analysis (TA-indicator consensus). Fixed height matches
+              the widget's natural size so no scrollbar appears.
+              Hidden on narrow terminals so the positions table stays
+              readable. */}
           {selectedSymbol ? (
-            <div className="hidden xl:flex shrink-0 w-[340px] border-l border-border-primary p-2 overflow-y-auto">
+            <div className="hidden xl:flex shrink-0 w-[340px] border-l border-border-primary p-2 overflow-hidden">
               <TradingViewTechnicalAnalysis className="w-full" />
             </div>
           ) : null}

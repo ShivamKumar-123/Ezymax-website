@@ -20,11 +20,15 @@ const TA_EMBED = 'https://www.tradingview-widget.com/embed-widget/technical-anal
 
 function buildEmbedUrl(symbol: string, theme: 'dark' | 'light'): string {
   const tvSymbol = toTradingViewSymbol(symbol);
+  // TradingView's TA widget renders its own "Technical Analysis for
+  // <symbol>" header, interval tabs and gauge, so we don't add a
+  // duplicate header on our side. `isTransparent: true` lets our
+  // surface colour bleed through and removes the double-padding look.
   const settings: Record<string, string | number | boolean> = {
     interval: '15m',
-    width: 380,
-    isTransparent: false,
-    height: 420,
+    width: 340,
+    isTransparent: true,
+    height: 100,
     symbol: tvSymbol,
     showIntervalTabs: true,
     displayMode: 'single',
@@ -47,31 +51,27 @@ function TradingViewTechnicalAnalysisInner({ className }: { className?: string }
     [selectedSymbol, tvTheme],
   );
 
+  // The iframe's content height is fixed by TradingView (~410 px for
+  // single-display TA). Giving the wrapper that exact height (no
+  // overflow) is what kills the scrollbar — anything less and the
+  // gauge + "Strong sell / Strong buy" labels overflow.
   return (
     <div
       className={clsx(
-        'rounded-xl border border-border-primary bg-bg-secondary overflow-hidden flex flex-col',
+        'rounded-xl border border-border-primary bg-bg-secondary overflow-hidden flex',
         className,
       )}
+      style={{ height: 410 }}
     >
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
-        <span className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary">
-          Technical Consensus
-        </span>
-        <span className="text-[10px] text-text-tertiary font-mono">
-          {selectedSymbol || 'EURUSD'}
-        </span>
-      </div>
-      <div className="flex-1 min-h-[260px]">
-        <iframe
-          key={src}
-          title={`Technical analysis ${selectedSymbol || 'EURUSD'}`}
-          src={src}
-          className="w-full h-full border-0"
-          allow="clipboard-write"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
+      <iframe
+        key={src}
+        title={`Technical analysis ${selectedSymbol || 'EURUSD'}`}
+        src={src}
+        className="w-full h-full border-0 block"
+        allow="clipboard-write"
+        referrerPolicy="no-referrer-when-downgrade"
+        scrolling="no"
+      />
     </div>
   );
 }
