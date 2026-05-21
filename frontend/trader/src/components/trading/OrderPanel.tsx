@@ -242,9 +242,12 @@ export default function OrderPanel() {
         }
       }
     }
-    // Optimistic: instant feedback, API fires in background.
+    // Optimistic: instant feedback, API fires in background. Sound
+    // plays NOW so the tap feels synchronous, but the toast.success
+    // only fires after the API confirms — otherwise the user sees
+    // "BUY 0.01 EURUSD" success even when the server rejects the
+    // trade for insufficient balance, which is confusing.
     sounds.orderPlaced();
-    toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
 
     // Only market orders hit the book immediately — show the position in
     // the panel without waiting for the API round-trip so the UI feels
@@ -291,6 +294,21 @@ export default function OrderPanel() {
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
       fully_funded: fullyFunded,
     }).then(async (resp) => {
+      // Confirm success only now — the request actually went through.
+      toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
+
+      // Swap the optimistic placeholder's id with the real position_id
+      // in-place. The React row keeps its mount (no flicker) — refresh
+      // can then quietly fill in server-side fields (commission, swap)
+      // without unmounting the row.
+      if (resp?.position_id && orderTab === 'market') {
+        setPositions(
+          useTradingStore.getState().positions.map((p) =>
+            p.id === optimisticId ? { ...p, id: resp.position_id! } : p,
+          ),
+        );
+      }
+
       // Insurance — only for market orders that immediately produced a position_id.
       if (insuranceChoice && resp?.position_id) {
         try {
@@ -303,8 +321,11 @@ export default function OrderPanel() {
       }
       // Reset the picker so the next order starts fresh.
       setInsuranceSelection(null);
-      // Reconcile with server-authoritative state (replaces the optimistic row).
-      Promise.all([refreshPositions(), refreshAccount()]).catch(() => {});
+      // refreshAccount updates balance/margin numbers. refreshPositions
+      // would tear down + rebuild the row we just swapped — skip it,
+      // the periodic poll already syncs server-side fields without
+      // remounting React rows.
+      refreshAccount().catch(() => {});
     }).catch((e: any) => {
       if (rollback) rollback();
       toast.error(e.message || 'Order failed');

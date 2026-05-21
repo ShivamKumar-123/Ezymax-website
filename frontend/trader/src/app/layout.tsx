@@ -66,10 +66,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               toastOptions={{
                 duration: 2500,
                 className: 'fxartha-hot-toast',
+                // maxWidth caps the toast at a readable column so long
+                // backend error messages (e.g. balance-gate copy) wrap
+                // onto a second line instead of stretching across the
+                // chart and overlapping other UI. Tested down to 320 px
+                // mobile widths — copy still readable.
                 style: {
                   background: 'var(--toast-bg)',
                   color: 'var(--toast-fg)',
                   border: '1px solid var(--toast-border)',
+                  maxWidth: '380px',
+                  lineHeight: 1.4,
                 },
                 success: {
                   duration: 2200,
