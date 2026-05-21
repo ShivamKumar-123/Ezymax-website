@@ -53,7 +53,11 @@ export const useUIStore = create<UIState>()(
       theme: 'dark' as Theme,
       watchlistWidth: WATCHLIST_DEFAULT_PX,
       orderPanelWidth: 340,
-      bottomPanelHeight: 320,
+      // 480 px is the minimum that lets the TradingView Technical
+      // Analysis widget (470 px natural height) fit alongside the
+      // positions table without clipping the "Sell · Neutral · Buy"
+      // legend at the bottom of the gauge.
+      bottomPanelHeight: 480,
       activeBottomTab: 'positions',
       chartTimeframe: '15m',
       chartType: 'candlestick',

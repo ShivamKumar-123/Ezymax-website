@@ -20,15 +20,15 @@ const TA_EMBED = 'https://www.tradingview-widget.com/embed-widget/technical-anal
 
 function buildEmbedUrl(symbol: string, theme: 'dark' | 'light'): string {
   const tvSymbol = toTradingViewSymbol(symbol);
-  // TradingView's TA widget renders its own "Technical Analysis for
-  // <symbol>" header, interval tabs and gauge, so we don't add a
-  // duplicate header on our side. `isTransparent: true` lets our
-  // surface colour bleed through and removes the double-padding look.
+  // `isTransparent: false` makes the widget render its own opaque
+  // surface (white in light, dark in dark). That's what we want — our
+  // wrapper bg was producing a double-card look in light mode and a
+  // visible seam between the widget's internal padding and our border.
   const settings: Record<string, string | number | boolean> = {
     interval: '15m',
     width: 340,
-    isTransparent: true,
-    height: 100,
+    isTransparent: false,
+    height: 470,
     symbol: tvSymbol,
     showIntervalTabs: true,
     displayMode: 'single',
@@ -51,17 +51,16 @@ function TradingViewTechnicalAnalysisInner({ className }: { className?: string }
     [selectedSymbol, tvTheme],
   );
 
-  // The iframe's content height is fixed by TradingView (~410 px for
-  // single-display TA). Giving the wrapper that exact height (no
-  // overflow) is what kills the scrollbar — anything less and the
-  // gauge + "Strong sell / Strong buy" labels overflow.
+  // 470 px matches the TV TA widget's natural single-display height
+  // with interval tabs. Less than this clips the "Sell · Neutral ·
+  // Buy" row that appears below the gauge in some themes/locales.
   return (
     <div
       className={clsx(
-        'rounded-xl border border-border-primary bg-bg-secondary overflow-hidden flex',
+        'rounded-xl overflow-hidden flex',
         className,
       )}
-      style={{ height: 410 }}
+      style={{ height: 470 }}
     >
       <iframe
         key={src}
