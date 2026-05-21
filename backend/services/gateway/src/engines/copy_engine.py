@@ -32,6 +32,7 @@ from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
 from packages.common.src.admin_fees import credit_admin_fee
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.notify import create_notification
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("copy-engine")
@@ -333,6 +334,43 @@ class CopyTradeEngine:
         )
         if existing_q.scalar_one_or_none():
             return
+
+        # Max-drawdown safety stop: if cumulative loss as a percentage of
+        # the allocation principal exceeds the follower's configured
+        # threshold, pause this allocation and skip the open. Status flips
+        # to "paused_drawdown" so the engine stops opening new copies on
+        # this allocation; existing open copies continue and may recover.
+        # The follower can manually re-activate from the social UI once
+        # they're comfortable.
+        if investor.max_drawdown_pct is not None and investor.max_drawdown_pct > 0:
+            principal = Decimal(str(investor.allocation_amount or 0))
+            profit = Decimal(str(investor.total_profit or 0))
+            if principal > 0 and profit < 0:
+                drawdown_pct = (-profit / principal) * Decimal("100")
+                if drawdown_pct >= Decimal(str(investor.max_drawdown_pct)):
+                    investor.status = "paused_drawdown"
+                    logger.warning(
+                        "Allocation %s paused: drawdown %.2f%% >= cap %.2f%%",
+                        investor.id, float(drawdown_pct), float(investor.max_drawdown_pct),
+                    )
+                    try:
+                        await create_notification(
+                            db,
+                            investor.investor_user_id,
+                            title="Copy trading paused — drawdown limit hit",
+                            message=(
+                                f"Your copy of this master was paused after a "
+                                f"{float(drawdown_pct):.1f}% loss (your limit: "
+                                f"{float(investor.max_drawdown_pct):.1f}%). "
+                                "No new trades will be copied. You can resume from /social."
+                            ),
+                            notif_type="copy_trade",
+                            action_url="/social",
+                            commit=False,
+                        )
+                    except Exception:
+                        pass
+                    return
 
         side_val = master_pos.side.value if hasattr(master_pos.side, "value") else str(master_pos.side)
         master_lots = float(master_pos.lots or 0)

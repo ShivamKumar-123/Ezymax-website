@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -14,8 +14,13 @@ router = APIRouter(prefix="/social", tags=["Social Trading"])
 
 
 class ApproveRequest(BaseModel):
-    admin_commission_pct: Optional[float] = None
-    max_investors: Optional[int] = None
+    # Platform's cut of the master's performance fee, in percent.
+    # 0–50% range matches the performance-fee API constraint at
+    # `/copy` so admin can't accidentally set "200%" and zero-out
+    # every master's payout. NULL keeps the existing value when
+    # updating an already-approved master.
+    admin_commission_pct: Optional[float] = Field(default=None, ge=0, le=50)
+    max_investors: Optional[int] = Field(default=None, ge=0)
     master_type: Optional[str] = None
 
 
