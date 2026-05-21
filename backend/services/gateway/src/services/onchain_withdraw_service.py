@@ -142,6 +142,19 @@ async def create_onchain_withdrawal(
         withdrawal.id, user.id, net, amount,
     )
 
+    # Confirmation email — uses the shared helper that all three
+    # withdrawal-creation paths share (legacy bank/crypto, manual UPI,
+    # this on-chain WalletConnect one). Previously this path silently
+    # skipped the email, which is what the client noticed: "user takes
+    # a withdrawal but no mail comes with transaction id".
+    try:
+        from . import wallet_service
+        await wallet_service.send_withdrawal_requested_email(
+            db, withdrawal, user_row=user, method_label=f"WalletConnect ({net.upper()})",
+        )
+    except Exception as _e:
+        logger.warning("onchain withdrawal-requested email failed: %s", _e)
+
     return {
         "withdrawal_id": str(withdrawal.id),
         "status": withdrawal.status,

@@ -22,6 +22,55 @@ from . import oxapay_service, nowpayments_service, rewards_service
 logger = logging.getLogger("wallet_service")
 
 
+async def send_withdrawal_requested_email(
+    db, withdrawal, user_row=None, method_label: str | None = None,
+) -> None:
+    """Fire-and-forget confirmation email when a withdrawal request is
+    created. Safe to call from any withdrawal-creation path (legacy
+    bank/crypto, on-chain WalletConnect, manual UPI) — handles missing
+    user row, missing SMTP config, missing email gracefully.
+    Includes the withdrawal request ID so support can correlate. The
+    actual on-chain tx_hash isn't known at this stage; the "your
+    withdrawal has been paid" email (sent on mark-paid) carries that."""
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_withdrawal_requested
+        from packages.common.src.config import get_settings as _gs
+        if not smtp_configured():
+            return
+        if user_row is None:
+            user_row = (await db.execute(
+                select(User).where(User.id == withdrawal.user_id)
+            )).scalar_one_or_none()
+        if not user_row or not user_row.email:
+            return
+        destination_str: str | None = None
+        if withdrawal.crypto_address:
+            ca = str(withdrawal.crypto_address)
+            destination_str = f"{ca[:6]}…{ca[-4:]}" if len(ca) > 12 else ca
+        elif withdrawal.bank_details and isinstance(withdrawal.bank_details, dict):
+            acct = withdrawal.bank_details.get("account_number") or ""
+            upi = withdrawal.bank_details.get("upi_id") or ""
+            if acct:
+                destination_str = f"Bank ****{str(acct)[-4:]}"
+            elif upi:
+                destination_str = f"UPI {upi}"
+        subject, html, text = render_withdrawal_requested(
+            first_name=user_row.first_name,
+            amount=withdrawal.amount,
+            currency=withdrawal.currency or "USD",
+            method=method_label or withdrawal.method or "manual",
+            destination=destination_str,
+            request_id=str(withdrawal.id),
+            trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+        )
+        fire_and_forget(send_email(user_row.email, subject, html, text=text))
+    except Exception as _e:
+        logger.warning("withdrawal-requested email failed: %s", _e)
+
+
 async def _maybe_award_referrer_deposit_bonus(
     db, depositing_user_id, deposit_id,
 ) -> None:
@@ -1105,34 +1154,9 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     await db.commit()
 
     # Confirmation email — fire-and-forget so SMTP never blocks the response.
-    try:
-        from packages.common.src.smtp_mail import (
-            send_email, smtp_configured, fire_and_forget,
-        )
-        from packages.common.src.email_templates import render_withdrawal_requested
-        from packages.common.src.config import get_settings as _gs
-        if smtp_configured() and user_row.email:
-            destination_str: str | None = None
-            if withdrawal.crypto_address:
-                ca = str(withdrawal.crypto_address)
-                # Mask middle of crypto address for the email log.
-                destination_str = f"{ca[:6]}…{ca[-4:]}" if len(ca) > 12 else ca
-            elif withdrawal.bank_details and isinstance(withdrawal.bank_details, dict):
-                acct = withdrawal.bank_details.get("account_number") or ""
-                if acct:
-                    destination_str = f"Bank ****{str(acct)[-4:]}"
-            subject, html, text = render_withdrawal_requested(
-                first_name=user_row.first_name,
-                amount=req.amount,
-                currency="USD",
-                method=req.method,
-                destination=destination_str,
-                request_id=str(withdrawal.id),
-                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
-            )
-            fire_and_forget(send_email(user_row.email, subject, html, text=text))
-    except Exception as _e:
-        logger.warning("withdrawal-requested email failed: %s", _e)
+    await send_withdrawal_requested_email(
+        db, withdrawal, user_row=user_row, method_label=req.method,
+    )
 
     return {"id": str(withdrawal.id), "status": "pending", "amount": float(withdrawal.amount)}
 
@@ -1227,6 +1251,10 @@ async def create_manual_withdrawal(
         notif_type="withdrawal", action_url="/wallet",
     )
     await db.commit()
+
+    # Confirmation email — same template + helper as the legacy /
+    # WalletConnect paths so all three flows emit the same trigger.
+    await send_withdrawal_requested_email(db, withdrawal, method_label="manual")
 
     return {"id": str(withdrawal.id), "status": "pending", "amount": float(withdrawal.amount)}
 
