@@ -6,15 +6,25 @@ import { ArrowRight } from 'lucide-react'
 export default function TxHero() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden min-h-screen flex items-center"
       style={{
         backgroundColor: 'var(--fx-bg)',
-        backgroundImage:
-          'radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%), radial-gradient(40% 40% at 15% 90%, rgba(214,169,61,0.06) 0%, rgba(214,169,61,0) 60%)',
+        backgroundImage: "url('/images/trading_hero.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="fx-grid-bg" />
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
+      {/* Dark overlay for text legibility */}
+      <div
+        aria-hidden
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(8,9,11,0.55) 0%, rgba(8,9,11,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
+        }}
+      />
+      <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
         <div className="max-w-3xl">
           <h1 className="fx-headline text-[36px] sm:text-[44px] md:text-[52px] lg:text-[56px] xl:text-[64px] fx-fade-up fx-fade-up-d1">
             Trade Smart. <br />

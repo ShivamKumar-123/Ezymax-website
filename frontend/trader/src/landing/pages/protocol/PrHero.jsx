@@ -6,14 +6,14 @@ import { ArrowRight, Wallet } from 'lucide-react'
 export default function PrHero() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden min-h-screen flex items-center"
       style={{ backgroundColor: 'var(--fx-bg)' }}
     >
       {/* Background banner */}
       <div
         aria-hidden
         className="absolute inset-0 z-0 bg-no-repeat bg-center bg-cover"
-        style={{ backgroundImage: 'url(/images/banner2.png)' }}
+        style={{ backgroundImage: 'url(/images/Protocol_hero.png)' }}
       />
       {/* Dark overlay */}
       <div
@@ -24,8 +24,7 @@ export default function PrHero() {
             'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
         }}
       />
-      <div className="fx-grid-bg" />
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
+      <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           <div className="lg:col-span-7">
             <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[64px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
