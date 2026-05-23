@@ -22,6 +22,42 @@ from . import oxapay_service, nowpayments_service, rewards_service
 logger = logging.getLogger("wallet_service")
 
 
+async def _resolve_credit_target(db, user_id):
+    """Decide where an incoming crypto deposit / refund should land.
+
+    Returns a tuple ``(target_kind, target_row)``:
+      - ``("trading", trading_account)`` when the user has an active
+        wallet-bound trading account (is_wallet_account=TRUE).
+        Deposits credit `trading_account.balance` directly; the
+        main_wallet_balance step is skipped.
+      - ``("main_wallet", user_row)`` otherwise. Legacy two-step
+        flow — credit `users.main_wallet_balance`, user manually
+        transfers to a trading account later.
+
+    Caller is responsible for the actual balance update (this helper
+    only resolves which row to mutate). Both branches return the row
+    locked-for-update via the caller's existing query strategy.
+    """
+    from .account_service import get_wallet_account
+    wallet_acc = await get_wallet_account(user_id, db)
+    if wallet_acc is not None:
+        return ("trading", wallet_acc)
+    user_row = (await db.execute(
+        select(User).where(User.id == user_id)
+    )).scalar_one_or_none()
+    return ("main_wallet", user_row)
+
+
+async def _resolve_debit_source(db, user_id):
+    """Decide which balance to debit when the user requests a withdrawal.
+
+    Mirrors `_resolve_credit_target`: wallet-bound trading account
+    when one exists, otherwise the user's main wallet. Returns
+    ``(source_kind, source_row)``.
+    """
+    return await _resolve_credit_target(db, user_id)
+
+
 async def send_withdrawal_requested_email(
     db, withdrawal, user_row=None, method_label: str | None = None,
 ) -> None:
@@ -499,17 +535,33 @@ async def handle_oxapay_webhook(
             logger.error("OxaPay webhook: user not found for deposit %s", order_id)
             return
 
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="deposit",
-            amount=deposit.amount,
-            balance_after=user_row.main_wallet_balance,
-            reference_id=deposit.id,
-            description=f"Deposit to main wallet - oxapay (auto)",
-        ))
+        # Resolve credit target — wallet-bound trading account if user
+        # has one, otherwise legacy main_wallet_balance path.
+        target_kind, target_row = await _resolve_credit_target(db, deposit.user_id)
+        if target_kind == "trading":
+            target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
+            target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
+            target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=target_row.id,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=target_row.balance,
+                reference_id=deposit.id,
+                description="Deposit to wallet account - oxapay (auto)",
+            ))
+        else:
+            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=None,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=user_row.main_wallet_balance,
+                reference_id=deposit.id,
+                description="Deposit to main wallet - oxapay (auto)",
+            ))
 
         # Slide 4: credit the depositor's referrer (one bonus per
         # deposit). Demo accounts skipped because they don't have real
@@ -982,17 +1034,33 @@ async def handle_nowpayments_webhook(
             logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
             return
 
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="deposit",
-            amount=deposit.amount,
-            balance_after=user_row.main_wallet_balance,
-            reference_id=deposit.id,
-            description="Deposit to main wallet - nowpayments (auto)",
-        ))
+        # Resolve credit target — wallet-bound trading account if user
+        # has one, otherwise legacy main_wallet_balance path.
+        target_kind, target_row = await _resolve_credit_target(db, deposit.user_id)
+        if target_kind == "trading":
+            target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
+            target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
+            target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=target_row.id,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=target_row.balance,
+                reference_id=deposit.id,
+                description="Deposit to wallet account - nowpayments (auto)",
+            ))
+        else:
+            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+            db.add(Transaction(
+                user_id=deposit.user_id,
+                account_id=None,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=user_row.main_wallet_balance,
+                reference_id=deposit.id,
+                description="Deposit to main wallet - nowpayments (auto)",
+            ))
 
         # Slide 4: credit the depositor's referrer (one bonus per
         # deposit). Mirrors the OxaPay path so behaviour is identical
@@ -1103,15 +1171,25 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
-    main_bal = user_row.main_wallet_balance or Decimal("0")
-    if main_bal < req.amount:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Insufficient main wallet balance. Available: ${float(main_bal):.2f}. "
+    # Resolve debit source — wallet-bound trading account if user has
+    # one, otherwise legacy main_wallet_balance. Balance check uses
+    # whichever source is authoritative.
+    source_kind, source_row = await _resolve_debit_source(db, user_id)
+    if source_kind == "trading":
+        available = source_row.balance or Decimal("0")
+    else:
+        available = source_row.main_wallet_balance if source_row else Decimal("0")
+    if available < req.amount:
+        if source_kind == "trading":
+            detail = (
+                f"Insufficient wallet account balance. Available: ${float(available):.2f}."
+            )
+        else:
+            detail = (
+                f"Insufficient main wallet balance. Available: ${float(available):.2f}. "
                 "Transfer profit from your trading accounts to your main wallet first (Wallet page)."
-            ),
-        )
+            )
+        raise HTTPException(status_code=400, detail=detail)
 
     # SECURITY — withdrawals always go to the user's linked wallet, never
     # to whatever address the frontend sent. The trader UI shows the
@@ -1134,7 +1212,10 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
 
     withdrawal = Withdrawal(
         user_id=user_id,
-        account_id=None,
+        # Tag the source account when it's a wallet-bound account so the
+        # admin approve flow knows where to debit. NULL means "debit
+        # main_wallet_balance" (legacy path).
+        account_id=source_row.id if source_kind == "trading" else None,
         amount=req.amount,
         method=METHOD_MAP.get(req.method, "bank_transfer"),
         bank_details=getattr(req, "bank_details", None),
@@ -1215,12 +1296,22 @@ async def create_manual_withdrawal(
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
-    main_bal = user_row.main_wallet_balance or Decimal("0")
-    if main_bal < amount:
+    # Resolve debit source — same logic as create_withdrawal.
+    source_kind, source_row = await _resolve_debit_source(db, user_id)
+    if source_kind == "trading":
+        available = source_row.balance or Decimal("0")
+    else:
+        available = source_row.main_wallet_balance if source_row else Decimal("0")
+    if available < amount:
+        if source_kind == "trading":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient wallet account balance. Available: ${float(available):.2f}.",
+            )
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Insufficient main wallet balance. Available: ${float(main_bal):.2f}. "
+                f"Insufficient main wallet balance. Available: ${float(available):.2f}. "
                 "Transfer profit from trading accounts first."
             ),
         )
@@ -1234,7 +1325,10 @@ async def create_manual_withdrawal(
 
     withdrawal = Withdrawal(
         user_id=user_id,
-        account_id=None,
+        # Tag the source account when wallet-bound, NULL for legacy
+        # main_wallet path so admin approval knows which balance to
+        # debit at the time of approval.
+        account_id=source_row.id if source_kind == "trading" else None,
         amount=amount,
         method="manual",
         bank_details=bank_details,

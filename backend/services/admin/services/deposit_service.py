@@ -173,20 +173,48 @@ async def approve_deposit(
     if not user_row:
         raise HTTPException(status_code=400, detail="User not found for deposit")
 
-    user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-
-    db.add(
-        Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="deposit",
-            amount=deposit.amount,
-            balance_after=user_row.main_wallet_balance,
-            reference_id=deposit.id,
-            description=f"Deposit to main wallet - {deposit.method or 'manual'}",
-            created_by=admin_id,
-        )
+    # Resolve credit target — wallet-bound trading account if the user
+    # has one, otherwise legacy main_wallet_balance path. Inlined here
+    # to avoid an admin → gateway service dependency.
+    wallet_acc_q = await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.user_id == deposit.user_id,
+            TradingAccount.is_wallet_account.is_(True),
+            TradingAccount.is_active.is_(True),
+        ).with_for_update().limit(1)
     )
+    wallet_acc = wallet_acc_q.scalar_one_or_none()
+
+    if wallet_acc is not None:
+        wallet_acc.balance = (wallet_acc.balance or Decimal("0")) + deposit.amount
+        wallet_acc.equity = (wallet_acc.equity or Decimal("0")) + deposit.amount
+        wallet_acc.free_margin = (wallet_acc.free_margin or Decimal("0")) + deposit.amount
+        db.add(
+            Transaction(
+                user_id=deposit.user_id,
+                account_id=wallet_acc.id,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=wallet_acc.balance,
+                reference_id=deposit.id,
+                description=f"Deposit to wallet account - {deposit.method or 'manual'}",
+                created_by=admin_id,
+            )
+        )
+    else:
+        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+        db.add(
+            Transaction(
+                user_id=deposit.user_id,
+                account_id=None,
+                type="deposit",
+                amount=deposit.amount,
+                balance_after=user_row.main_wallet_balance,
+                reference_id=deposit.id,
+                description=f"Deposit to main wallet - {deposit.method or 'manual'}",
+                created_by=admin_id,
+            )
+        )
 
     bonus_msg = ""
     applied_bonuses: list[tuple[str, Decimal]] = []
@@ -464,30 +492,60 @@ async def reject_withdrawal(
     if withdrawal.status != "pending":
         raise HTTPException(status_code=400, detail="Withdrawal is not pending")
 
-    # wallet_connect withdrawals had main_wallet_balance debited at REQUEST
-    # time so we must refund here. All other methods debit at approve, so
-    # a still-pending row never moved money — nothing to refund.
+    # wallet_connect withdrawals had funds debited at REQUEST time so
+    # we must refund here. All other methods debit at approve, so a
+    # still-pending row never moved money — nothing to refund.
+    #
+    # Refund destination follows the source: if the withdrawal was
+    # tagged with `account_id` (wallet-bound source) re-credit that
+    # account. Otherwise refund the user's main_wallet_balance
+    # (legacy behaviour).
     if (withdrawal.method or "") == "wallet_connect":
-        uw = await db.execute(
-            select(User).where(User.id == withdrawal.user_id).with_for_update()
-        )
-        user_row = uw.scalar_one_or_none()
-        if user_row:
-            user_row.main_wallet_balance = (
-                Decimal(str(user_row.main_wallet_balance or 0)) + Decimal(str(withdrawal.amount))
+        if withdrawal.account_id:
+            acc_q = await db.execute(
+                select(TradingAccount).where(
+                    TradingAccount.id == withdrawal.account_id
+                ).with_for_update()
             )
-            db.add(
-                Transaction(
-                    user_id=withdrawal.user_id,
-                    account_id=None,
-                    type="withdrawal_refund",
-                    amount=Decimal(str(withdrawal.amount)),
-                    balance_after=user_row.main_wallet_balance,
-                    reference_id=withdrawal.id,
-                    description="Withdrawal rejected — main wallet refunded",
-                    created_by=admin_id,
+            acc = acc_q.scalar_one_or_none()
+            if acc is not None:
+                amt = Decimal(str(withdrawal.amount))
+                acc.balance = (acc.balance or Decimal("0")) + amt
+                acc.equity = (acc.equity or Decimal("0")) + amt
+                acc.free_margin = (acc.free_margin or Decimal("0")) + amt
+                db.add(
+                    Transaction(
+                        user_id=withdrawal.user_id,
+                        account_id=acc.id,
+                        type="withdrawal_refund",
+                        amount=amt,
+                        balance_after=acc.balance,
+                        reference_id=withdrawal.id,
+                        description="Withdrawal rejected — wallet account refunded",
+                        created_by=admin_id,
+                    )
                 )
+        else:
+            uw = await db.execute(
+                select(User).where(User.id == withdrawal.user_id).with_for_update()
             )
+            user_row = uw.scalar_one_or_none()
+            if user_row:
+                user_row.main_wallet_balance = (
+                    Decimal(str(user_row.main_wallet_balance or 0)) + Decimal(str(withdrawal.amount))
+                )
+                db.add(
+                    Transaction(
+                        user_id=withdrawal.user_id,
+                        account_id=None,
+                        type="withdrawal_refund",
+                        amount=Decimal(str(withdrawal.amount)),
+                        balance_after=user_row.main_wallet_balance,
+                        reference_id=withdrawal.id,
+                        description="Withdrawal rejected — main wallet refunded",
+                        created_by=admin_id,
+                    )
+                )
 
     withdrawal.status = "rejected"
     withdrawal.rejection_reason = reason

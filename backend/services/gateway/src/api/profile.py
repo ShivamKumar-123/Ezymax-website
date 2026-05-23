@@ -1,4 +1,5 @@
 """Profile API — User profile, password change, sessions, KYC."""
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
@@ -10,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.auth import get_current_user
-from packages.common.src.models import User, UserAuditLog
+from packages.common.src.models import (
+    TradingAccount,
+    Transaction,
+    User,
+    UserAuditLog,
+)
 from packages.common.src.schemas import (
     WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
     UpdateProfileRequest, ChangePasswordRequest,
@@ -216,6 +222,34 @@ async def link_wallet(
         ip_address=client_ip_for_inet(request),
         device_info=f"address={addr_lower}",
     ))
+
+    # Auto-provision a wallet-bound trading account for brand-new users
+    # (no existing live trading accounts AND no main_wallet_balance).
+    # Existing users go through the opt-in migration endpoint instead,
+    # so we don't surprise them by changing where their funds live.
+    try:
+        from ..services.account_service import create_wallet_bound_account
+        existing_live_q = await db.execute(
+            select(func.count(TradingAccount.id)).where(
+                TradingAccount.user_id == user.id,
+                TradingAccount.is_demo.is_(False),
+                TradingAccount.is_active.is_(True),
+            )
+        )
+        existing_live_count = int(existing_live_q.scalar() or 0)
+        has_main_bal = Decimal(str(user.main_wallet_balance or 0)) > 0
+        is_brand_new = existing_live_count == 0 and not has_main_bal
+        if is_brand_new:
+            await create_wallet_bound_account(db, user.id)
+    except Exception as _e:
+        # Best-effort: never block wallet linking if account
+        # auto-provisioning fails. User can still opt-in later via the
+        # migration endpoint or admin can backfill the account.
+        import logging as _logging
+        _logging.getLogger("profile_api").warning(
+            "wallet-bound account auto-provision failed for user %s: %s", user.id, _e,
+        )
+
     try:
         await db.commit()
     except IntegrityError as e:
@@ -265,3 +299,128 @@ async def unlink_wallet(
         ))
     await db.commit()
     return await auth_service.get_me(user.id, db)
+
+
+class _MigrateToWalletAccountRequest(BaseModel):
+    # Optional — if provided, sweep this live trading account's balance
+    # into the new wallet-bound account too (and deactivate the source).
+    # When omitted only the main_wallet_balance is moved.
+    merge_from_account_id: UUID | None = None
+
+
+@router.post("/wallet/migrate-to-wallet-account")
+async def migrate_to_wallet_account(
+    body: _MigrateToWalletAccountRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Opt-in migration for existing users.
+
+    Atomically:
+      1. Provision a wallet-bound trading account (fails 409 if one
+         already exists).
+      2. Move users.main_wallet_balance into account.balance.
+      3. Optionally sweep one existing live account's balance into the
+         new account (caller passes `merge_from_account_id`), then
+         deactivate that source account.
+      4. Write Transaction audit rows for each move.
+
+    All changes flushed in one DB transaction so a failure midway
+    leaves the user's funds exactly where they started.
+    """
+    user_id = current_user["user_id"]
+    user_q = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
+    user = user_q.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Wallet must be linked first — the wallet account is meaningless
+    # without a withdrawal destination.
+    if not (user.wallet_address or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Link a wallet first, then migrate.",
+        )
+
+    # Optional source-account validation up-front.
+    source_acc: TradingAccount | None = None
+    if body.merge_from_account_id is not None:
+        src_q = await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.id == body.merge_from_account_id,
+                TradingAccount.user_id == user_id,
+                TradingAccount.is_active.is_(True),
+                TradingAccount.is_demo.is_(False),
+            ).with_for_update()
+        )
+        source_acc = src_q.scalar_one_or_none()
+        if source_acc is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Source account not found or not eligible.",
+            )
+        if bool(getattr(source_acc, "is_wallet_account", False)):
+            raise HTTPException(
+                status_code=400,
+                detail="That account is already the wallet account.",
+            )
+
+    # Compute starting balance from main_wallet + optional source acc.
+    main_amount = Decimal(str(user.main_wallet_balance or 0))
+    sweep_amount = Decimal(str(source_acc.balance or 0)) if source_acc else Decimal("0")
+    starting = main_amount + sweep_amount
+
+    from ..services.account_service import create_wallet_bound_account
+    try:
+        new_acc = await create_wallet_bound_account(
+            db, user_id, starting_balance=starting,
+        )
+    except HTTPException:
+        raise
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Wallet account already exists — migration already complete.",
+        )
+
+    # Zero out the legacy sources + ledger rows.
+    if main_amount > 0:
+        user.main_wallet_balance = Decimal("0")
+        db.add(Transaction(
+            user_id=user_id,
+            account_id=new_acc.id,
+            type="transfer",
+            amount=main_amount,
+            balance_after=new_acc.balance,
+            description="Migration: main wallet → wallet account",
+        ))
+    if source_acc is not None and sweep_amount > 0:
+        source_acc.balance = Decimal("0")
+        source_acc.equity = Decimal("0")
+        source_acc.free_margin = Decimal("0")
+        source_acc.is_active = False
+        db.add(Transaction(
+            user_id=user_id,
+            account_id=new_acc.id,
+            type="transfer",
+            amount=sweep_amount,
+            balance_after=new_acc.balance,
+            description=f"Migration: account {source_acc.account_number} → wallet account (account closed)",
+        ))
+
+    db.add(UserAuditLog(
+        user_id=user_id,
+        action_type="WALLET_ACCOUNT_MIGRATED",
+        ip_address=client_ip_for_inet(request),
+        device_info=(
+            f"new_account={new_acc.account_number} starting=${float(starting):.2f} "
+            f"main=${float(main_amount):.2f} sweep=${float(sweep_amount):.2f}"
+        ),
+    ))
+
+    await db.commit()
+    return await auth_service.get_me(user_id, db)

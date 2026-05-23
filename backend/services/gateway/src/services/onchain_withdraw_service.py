@@ -107,23 +107,44 @@ async def create_onchain_withdrawal(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    main_bal = user.main_wallet_balance or Decimal("0")
-    if main_bal < amount:
+    # Resolve debit source — wallet-bound trading account if user has
+    # one, otherwise legacy main_wallet_balance path.
+    from .wallet_service import _resolve_debit_source
+    source_kind, source_row = await _resolve_debit_source(db, user_id)
+    if source_kind == "trading":
+        available = source_row.balance or Decimal("0")
+    else:
+        available = user.main_wallet_balance or Decimal("0")
+    if available < amount:
+        if source_kind == "trading":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient wallet account balance. Available: ${float(available):.2f}.",
+            )
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Insufficient main wallet balance. Available: ${float(main_bal):.2f}. "
+                f"Insufficient main wallet balance. Available: ${float(available):.2f}. "
                 "Transfer profit from your trading accounts to your main wallet first."
             ),
         )
 
     # Debit immediately (frozen). Admin re-credits on reject.
-    user.main_wallet_balance = main_bal - Decimal(amount)
+    amt = Decimal(amount)
+    if source_kind == "trading":
+        source_row.balance = available - amt
+        source_row.equity = (source_row.equity or Decimal("0")) - amt
+        source_row.free_margin = (source_row.free_margin or Decimal("0")) - amt
+    else:
+        user.main_wallet_balance = available - amt
 
     withdrawal = Withdrawal(
         user_id=user.id,
-        account_id=None,
-        amount=Decimal(amount),
+        # Tag wallet-bound source so admin reject/refund knows where to
+        # re-credit (and reporting can split wallet-bound vs main-wallet
+        # withdrawals cleanly).
+        account_id=source_row.id if source_kind == "trading" else None,
+        amount=amt,
         currency="USDT",
         method="wallet_connect",
         crypto_address=destination,

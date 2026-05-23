@@ -56,6 +56,14 @@ class TradingAccount(Base):
     currency = Column(String(5), default="USD")
     is_demo = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    # "Wallet-bound" account — the single dedicated trading account
+    # that's tied to the user's linked on-chain wallet. When TRUE this
+    # account receives all crypto deposits directly (skipping the
+    # main_wallet_balance step) and is the source for withdrawals back
+    # to the linked wallet. Enforced at most one active wallet-bound
+    # account per user via partial unique index
+    # ux_one_wallet_account_per_user (migration 0047).
+    is_wallet_account = Column(Boolean, default=False, server_default="false", nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

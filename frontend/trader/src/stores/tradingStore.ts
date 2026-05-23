@@ -65,6 +65,11 @@ export interface TradingAccount {
   leverage: number;
   currency: string;
   is_demo: boolean;
+  /** True when this account is the user's single wallet-bound account
+   *  — deposits route here directly and withdrawals leave from here
+   *  back to the linked wallet. Exactly one active wallet-bound
+   *  account allowed per user (enforced by partial unique index). */
+  is_wallet_account?: boolean;
   account_group?: AccountGroupInfo | null;
 }
 
@@ -185,12 +190,29 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     try {
       const positions = await api.get<any[]>(`/positions/`, { account_id: account.id, status: 'open' });
       const list = Array.isArray(positions) ? positions : [];
-      set({
-        positions: list.map((p: any) => ({
-          id: p.id,
-          account_id: p.account_id,
-          symbol: p.symbol || '',
-          side: p.side,
+
+      // Merge instead of replace — preserves React keys for any
+      // optimistic positions still in flight, eliminating the flicker
+      // when a freshly-opened trade transitions from optim-xxx to its
+      // real server UUID. The poll fires every 1.5s; without this
+      // merge, every poll briefly unmounts + remounts every row.
+      //
+      // Match heuristic: optimistic position (id prefix "optim-")
+      // matches a server position by account_id + symbol + side +
+      // lots, picked within a 10s open-time window. Heuristic is
+      // intentionally tight — open_price gets a small tolerance only
+      // because the user's optimistic price may differ from the
+      // server fill by a tick or two during a fast-moving market.
+      const prevPositions = get().positions;
+      const optimisticPrev = prevPositions.filter((p) => p.id.startsWith('optim-'));
+      const optimMatched = new Set<string>();
+
+      const merged = list.map((p: any) => {
+        const serverPos = {
+          id: p.id as string,
+          account_id: p.account_id as string,
+          symbol: (p.symbol || '') as string,
+          side: p.side as 'buy' | 'sell',
           lots: Number(p.lots) || 0,
           open_price: Number(p.open_price) || 0,
           current_price: p.current_price != null ? Number(p.current_price) : undefined,
@@ -199,10 +221,26 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
           swap: Number(p.swap) || 0,
           commission: Number(p.commission) || 0,
           profit: Number(p.profit) || 0,
-          trade_type: p.trade_type,
-          created_at: p.created_at,
-        })),
+          trade_type: p.trade_type as string | undefined,
+          created_at: p.created_at as string,
+        };
+        // Try to inherit an unmatched optimistic position's key so the
+        // React row stays mounted across the optim → real transition.
+        const candidate = optimisticPrev.find((opt) =>
+          !optimMatched.has(opt.id) &&
+          opt.account_id === serverPos.account_id &&
+          opt.symbol === serverPos.symbol &&
+          opt.side === serverPos.side &&
+          Math.abs(opt.lots - serverPos.lots) < 1e-8,
+        );
+        if (candidate) {
+          optimMatched.add(candidate.id);
+          return { ...serverPos, id: candidate.id };
+        }
+        return serverPos;
       });
+
+      set({ positions: merged });
     } catch {}
   },
 

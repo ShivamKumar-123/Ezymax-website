@@ -290,6 +290,106 @@ async def open_live_account(
     }
 
 
+async def get_wallet_account(
+    user_id: UUID,
+    db: AsyncSession,
+) -> TradingAccount | None:
+    """Return the user's active wallet-bound trading account, if any.
+    Partial unique index ux_one_wallet_account_per_user guarantees at
+    most one row matches."""
+    row = (await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.user_id == user_id,
+            TradingAccount.is_wallet_account.is_(True),
+            TradingAccount.is_active.is_(True),
+        ).limit(1)
+    )).scalar_one_or_none()
+    return row
+
+
+async def create_wallet_bound_account(
+    db: AsyncSession,
+    user_id: UUID,
+    *,
+    account_group_id: UUID | None = None,
+    starting_balance: Decimal | None = None,
+) -> TradingAccount:
+    """Provision the dedicated wallet-bound trading account.
+
+    Used in two places:
+      1. wallet_auth_service.verify_message() — when a user links their
+         first wallet AND has no prior trading history, we auto-create
+         this account at $0 so the deposit flow lands here from day 1.
+      2. profile.migrate_to_wallet_account endpoint — for existing
+         users who opt in via Settings; this is where `starting_balance`
+         is non-zero (their main_wallet_balance + optionally a merged
+         live account balance).
+
+    Raises HTTPException(409) if the user already has an active
+    wallet-bound account. Caller must commit.
+    """
+    from .auth_service import generate_account_number
+
+    existing = await get_wallet_account(user_id, db)
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Wallet-bound account already exists for this user.",
+        )
+
+    # Pick group: default to "Standard" live group if caller didn't
+    # specify. The Standard tier has the lowest min_deposit gate that
+    # still has full feature access (Micro is more limited).
+    if account_group_id is None:
+        std_q = await db.execute(
+            select(AccountGroup).where(
+                AccountGroup.name == "Standard",
+                AccountGroup.is_demo == False,
+                AccountGroup.is_active == True,
+            ).limit(1)
+        )
+        std = std_q.scalar_one_or_none()
+        if std is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Default Standard account group not found. Run seed migrations.",
+            )
+        group_id = std.id
+        default_leverage = int(std.leverage_default or 100)
+    else:
+        grp_q = await db.execute(
+            select(AccountGroup).where(
+                AccountGroup.id == account_group_id,
+                AccountGroup.is_active == True,
+                AccountGroup.is_demo == False,
+            ).limit(1)
+        )
+        grp = grp_q.scalar_one_or_none()
+        if grp is None:
+            raise HTTPException(status_code=400, detail="Invalid account group.")
+        group_id = grp.id
+        default_leverage = int(grp.leverage_default or 100)
+
+    bal = Decimal(str(starting_balance or 0))
+    acc = TradingAccount(
+        user_id=user_id,
+        account_group_id=group_id,
+        account_number=generate_account_number(),
+        balance=bal,
+        equity=bal,
+        free_margin=bal,
+        margin_used=Decimal("0"),
+        leverage=default_leverage,
+        currency="USD",
+        is_demo=False,
+        is_active=True,
+        is_wallet_account=True,
+    )
+    db.add(acc)
+    await db.flush()
+    return acc
+
+
 async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
     result = await db.execute(
         select(TradingAccount)
@@ -358,6 +458,7 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
             "currency": a.currency,
             "is_demo": a.is_demo,
             "is_active": a.is_active,
+            "is_wallet_account": bool(getattr(a, "is_wallet_account", False)),
             "account_group": group_payload,
         })
 

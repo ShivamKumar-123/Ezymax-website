@@ -46,6 +46,8 @@ interface AccountRow {
   leverage: number;
   currency: string;
   is_demo: boolean;
+  is_wallet_account?: boolean;
+  is_active?: boolean;
   account_group?: AccountGroupInfo | null;
   created_at?: string;
 }
@@ -86,6 +88,7 @@ function toTradingAccount(row: AccountRow): TradingAccount {
     leverage: row.leverage,
     currency: row.currency,
     is_demo: row.is_demo,
+    is_wallet_account: Boolean(row.is_wallet_account),
     account_group: row.account_group ?? null,
   };
 }
@@ -1253,6 +1256,14 @@ function AccountCard({
           <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mb-3 sm:mb-4">
             <span className="text-sm sm:text-base font-bold text-text-primary">{accountLabel}</span>
             <span className="text-xs sm:text-sm text-text-tertiary font-mono">{idLabel}</span>
+            {row.is_wallet_account && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#d6a93d]/15 text-[#d6a93d] border border-[#d6a93d]/35"
+                title="Wallet-bound account — deposits land here and withdrawals return to your linked wallet"
+              >
+                <Wallet size={10} /> Wallet
+              </span>
+            )}
             {!editingAlias ? (
               <span className="inline-flex items-center gap-1 text-sm" onClick={(e) => e.stopPropagation()}>
                 {alias ? (

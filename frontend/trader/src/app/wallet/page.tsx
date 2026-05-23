@@ -12,6 +12,8 @@ import { formatCurrency } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import WalletDepositModal from '@/components/wallet/WalletDepositModal';
+import OnChainWalletBalance from '@/components/wallet/OnChainWalletBalance';
+import WalletAccountMigrateBanner from '@/components/wallet/WalletAccountMigrateBanner';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -30,8 +32,11 @@ import {
 
 interface AccountItem {
   id: string;
+  account_number?: string;
   currency?: string;
   is_demo?: boolean;
+  is_active?: boolean;
+  is_wallet_account?: boolean;
   balance?: number;
 }
 
@@ -43,6 +48,7 @@ interface LiveAccountRow {
   margin_used?: number;
   currency?: string;
   free_margin?: number;
+  is_wallet_account?: boolean;
 }
 
 interface WalletData {
@@ -54,6 +60,15 @@ interface WalletData {
   total_withdrawn: number;
   pending_withdrawals: number;
   total_live_balance?: number;
+  /** When the user has migrated to the wallet-bound model, the
+   *  primary spendable balance lives on this trading account instead
+   *  of main_wallet_balance. The "Main Balance" card swaps to a
+   *  "Wallet Account" card backed by these numbers. */
+  wallet_account?: {
+    id: string;
+    account_number: string;
+    balance: number;
+  } | null;
 }
 
 interface WalletSummaryResponse {
@@ -282,6 +297,23 @@ function WalletPageContent() {
           (w) => (w.status || '').toLowerCase() === 'pending',
         ).length;
 
+        // Pick out the user's wallet-bound account (if any) so the UI
+        // can swap the "Main Balance" card for a "Wallet Account" card
+        // when migration has happened. Backend's partial unique index
+        // guarantees at most one active wallet-bound account.
+        const accountItems =
+          accountsRes.status === 'fulfilled' ? accountsRes.value?.items || [] : [];
+        const walletAcc = accountItems.find(
+          (a) => Boolean(a.is_wallet_account) && a.is_active !== false,
+        );
+        const walletAccount = walletAcc
+          ? {
+              id: walletAcc.id,
+              account_number: walletAcc.account_number || '',
+              balance: Number(walletAcc.balance) || 0,
+            }
+          : null;
+
         setWallet({
           balance,
           currency,
@@ -291,6 +323,7 @@ function WalletPageContent() {
           total_withdrawn: totalWithdrawn,
           pending_withdrawals: pendingWd,
           total_live_balance: totalLiveBalance,
+          wallet_account: walletAccount,
         });
       } catch (err) {
         if (id !== loadGen.current) return;
@@ -710,6 +743,14 @@ function WalletPageContent() {
             </div>
           )}
 
+          {/* ── Migration banner: shown only when user has linked a
+                wallet but hasn't yet migrated to the wallet-bound
+                account model. Hidden after migration. ── */}
+          <WalletAccountMigrateBanner
+            mainWalletBalance={wallet?.main_wallet_balance ?? 0}
+            onMigrated={() => { void fetchData(); }}
+          />
+
           {/* ── Wallet overview (KYC card removed per client — it lives on /profile) ── */}
           <div>
             <div>
@@ -725,12 +766,11 @@ function WalletPageContent() {
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Main Balance — blue. This is also the withdrawable
-                    bucket: external payouts only ever debit main_wallet_balance.
-                    A separate "Withdrawable Balance" card used to live here
-                    but it was rendering the same number twice, so it was
-                    removed in favour of placing Deposit + Withdraw side by
-                    side. */}
+                {/* Primary balance card. For non-migrated users it's the
+                    legacy Main Balance (main_wallet_balance). For migrated
+                    users it swaps to the Wallet Account — deposits land
+                    there directly and withdrawals leave from there back
+                    to the linked wallet. */}
                 <div
                   className="rounded-2xl p-4 border flex flex-col"
                   style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
@@ -742,10 +782,19 @@ function WalletPageContent() {
                     >
                       <WalletIcon size={18} style={{ color: 'var(--card-blue-icon)' }} />
                     </div>
-                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Main Balance</p>
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>
+                        {wallet?.wallet_account ? 'Wallet Account' : 'Main Balance'}
+                      </p>
+                      {wallet?.wallet_account && (
+                        <p className="text-[10px] font-mono text-text-tertiary truncate">
+                          #{wallet.wallet_account.account_number}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
-                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
+                    ${(wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
@@ -791,6 +840,23 @@ function WalletPageContent() {
                   </button>
                 </div>
               </div>
+
+              {/* On-chain balance for the user's linked external wallet.
+                  Strictly read-only — shows live USDT balances on every
+                  supported chain so the trader can see "what's in my
+                  MetaMask" without leaving the app. The Deposit button
+                  next to chains with non-zero USDT scrolls to the fund
+                  panel and pre-selects that network's invoice. */}
+              <OnChainWalletBalance
+                onDepositClick={(slug) => {
+                  // Slug maps to the deposit-asset radio in the modal
+                  // (USDT_ERC / USDT_BSC / etc.). The fund panel uses
+                  // its own state, so we just scroll for now; user
+                  // picks the network manually in the picker.
+                  setFundMainTab('deposit');
+                  scrollToFundPanel();
+                }}
+              />
             </div>
 
           </div>
@@ -823,9 +889,11 @@ function WalletPageContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#d6a93d]/60 mb-0.5 sm:mb-1">Main Wallet</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#d6a93d]/60 mb-0.5 sm:mb-1">
+                      {wallet?.wallet_account ? 'Wallet Account' : 'Main Wallet'}
+                    </p>
                     <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">
-                      {fmt(wallet?.main_wallet_balance ?? 0)}
+                      {fmt(wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)}
                     </p>
                   </div>
                   {liveAccounts.length > 0 && (
@@ -1149,21 +1217,29 @@ function WalletPageContent() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-text-primary">Withdraw funds</h2>
-                      <p className="text-sm text-text-secondary">Withdraw from your main wallet</p>
+                      <p className="text-sm text-text-secondary">
+                        {wallet?.wallet_account ? 'Withdraw from your wallet account' : 'Withdraw from your main wallet'}
+                      </p>
                     </div>
                   </div>
 
                   {/* Wallet balance */}
                   <div className="rounded-xl border border-border-primary bg-bg-secondary p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary mb-1">Wallet Balance</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary mb-1">
+                      {wallet?.wallet_account ? 'Wallet Account Balance' : 'Wallet Balance'}
+                    </p>
                     <p className="text-xl font-mono font-bold text-text-primary tabular-nums">
-                      {fmt(wallet?.main_wallet_balance ?? 0)}
+                      {fmt(wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)}
                     </p>
                   </div>
 
                   <p className="text-xs text-text-tertiary leading-relaxed">
-                    Withdrawals are sent from your <span className="text-text-primary font-medium">main wallet</span> only. Ensure the amount
-                    you need is available on the main wallet before requesting a payout.
+                    {wallet?.wallet_account ? (
+                      <>Withdrawals are sent from your <span className="text-text-primary font-medium">wallet account</span> directly to your linked wallet.</>
+                    ) : (
+                      <>Withdrawals are sent from your <span className="text-text-primary font-medium">main wallet</span> only. Ensure the amount
+                      you need is available on the main wallet before requesting a payout.</>
+                    )}
                   </p>
 
                   {withdrawUiSection === 'crypto' ? (
@@ -1213,7 +1289,7 @@ function WalletPageContent() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setWithdrawAmount(String(Math.max(0, wallet?.main_wallet_balance ?? 0)))
+                                  setWithdrawAmount(String(Math.max(0, wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)))
                                 }
                                 className="text-xs font-bold text-[#d6a93d] hover:underline"
                               >
