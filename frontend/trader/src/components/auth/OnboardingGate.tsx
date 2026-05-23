@@ -28,13 +28,14 @@ import WalletLinkStep from './WalletLinkStep';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee']);
 
-// TEMP feature flag — wallet linking is paused until the on-chain
-// integration is finalised (planned next sprint). When FALSE the gate
-// skips the WalletLinkStep entirely so Google + email/password signups
-// land directly on the email-OTP step (or pass through if email already
-// verified). Flip back to TRUE once the SIWE flow + vault wiring is
-// production-ready. Backend mirror: WALLET_LINK_REQUIRED in auth_service.
-const WALLET_LINK_REQUIRED = false;
+// Wallet linking gate — flip to false only as a temporary kill-switch
+// if the wallet flow regresses. Today the SIWE plumbing is verified
+// working (users can connect via the profile/settings page). The
+// onboarding modal forces every new signup to link a wallet before
+// trading so we always have a withdrawal target on file.
+// Backend mirror: WALLET_LINK_REQUIRED in auth_service.get_me and
+// require_onboarded — keep all three in sync.
+const WALLET_LINK_REQUIRED = true;
 
 export default function OnboardingGate() {
   const user = useAuthStore((s) => s.user);

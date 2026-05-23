@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import AppSidebar from './AppSidebar';
 import AppHeader from './AppHeader';
+import DashboardFooter from './DashboardFooter';
 
 export default function DashboardShell({
   children,
@@ -44,6 +45,11 @@ export default function DashboardShell({
           )}
         >
           {children}
+          {/* Compliance + nav footer — full-width band at the bottom
+              of every dashboard page. Renders below the page content
+              and scrolls with it (not fixed) so it doesn't eat
+              terminal vertical space. */}
+          <DashboardFooter />
         </main>
       </div>
       <Link

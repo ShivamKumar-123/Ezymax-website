@@ -172,6 +172,13 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-docker}
+        # WalletConnect (Reown) project ID — baked into the Next.js
+        # client bundle so the wallet-link modal can negotiate sessions.
+        # Read from the root .env (or shell env). When empty,
+        # isWalletConnectConfigured() returns false and the wallet
+        # button shows "Wallet sign-in not configured" — surface that
+        # to the user instead of silently failing.
+        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
     ports:
       # Host 3010 if 3000 is already taken (local Next/other apps)
       - "3010:3000"

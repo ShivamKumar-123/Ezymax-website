@@ -316,17 +316,12 @@ export default function OrderPanel() {
       // Confirm success only now — the request actually went through.
       toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
 
-      // Swap the optimistic placeholder's id with the real position_id
-      // in-place. The React row keeps its mount (no flicker) — refresh
-      // can then quietly fill in server-side fields (commission, swap)
-      // without unmounting the row.
-      if (resp?.position_id && orderTab === 'market') {
-        setPositions(
-          useTradingStore.getState().positions.map((p) =>
-            p.id === optimisticId ? { ...p, id: resp.position_id! } : p,
-          ),
-        );
-      }
+      // Note: we no longer swap the optimistic row's id with the real
+      // position_id here. The store's refreshPositions does that merge
+      // by matching on (account_id, symbol, side, lots) and preserving
+      // the optimistic React key, which is what actually prevents the
+      // unmount/remount flicker. Swapping the id here would just churn
+      // the key between this microtask and the next poll.
 
       // Insurance — only for market orders that immediately produced a position_id.
       if (insuranceChoice && resp?.position_id) {
