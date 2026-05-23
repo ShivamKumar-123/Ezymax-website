@@ -168,6 +168,7 @@ async def create_onchain_deposit(
         network=req.network,
         amount=req.amount,
         db=db,
+        target=req.target,
     )
 
 
@@ -231,6 +232,7 @@ async def create_onchain_withdrawal(
         amount=req.amount,
         destination_address=req.destination_address,
         db=db,
+        source=req.source,
     )
 
 

@@ -20,12 +20,22 @@ class DepositRequest(BaseModel):
 
 
 class WithdrawalRequest(BaseModel):
-    """Withdraw to external payout (OxaPay, etc.) from main wallet only — not from trading accounts."""
+    """Withdraw to external payout (OxaPay, etc.).
+
+    `source` picks where the funds come FROM when the user has both a
+    legacy main_wallet_balance AND a wallet-bound trading account:
+      - "wallet" → wallet-bound trading account (recommended for users
+        who've migrated)
+      - "main"   → legacy main_wallet_balance
+      - None / unset → server resolver picks (wallet-bound if present,
+        else main wallet)
+    """
 
     amount: Decimal = Field(gt=0)
     method: str
     bank_details: Optional[dict] = None
     crypto_address: Optional[str] = None
+    source: Optional[str] = None
 
 
 class TransferTradingToMainRequest(BaseModel):
@@ -91,10 +101,19 @@ class BankAccountCreate(BaseModel):
 
 
 class WalletDepositRequest(BaseModel):
-    """On-site NOWPayments direct payment — no hosted-page redirect."""
+    """On-site NOWPayments direct payment — no hosted-page redirect.
+
+    `target` lets the user pick where the credit should land when the
+    deposit eventually settles (webhook):
+      - "wallet" → wallet-bound trading account
+      - "main"   → legacy main_wallet_balance
+      - None / unset → server resolver picks (wallet-bound if present,
+        else main wallet) — preserves the auto-route default
+    """
     amount: Decimal
     # Frontend asset id, e.g. "USDT_ERC", "USDT_TRC", "ETH".
     crypto_currency: str
+    target: Optional[str] = None
 
 
 class TxHashSaveRequest(BaseModel):
@@ -106,9 +125,13 @@ class TxHashSaveRequest(BaseModel):
 class HostedInvoiceDepositRequest(BaseModel):
     """NOWPayments Mode B — server returns a hosted payment_url the
     browser redirects to. `crypto_currency` is optional; when omitted
-    NOWPayments shows its full asset picker on the hosted page."""
+    NOWPayments shows its full asset picker on the hosted page.
+
+    `target` — same semantics as WalletDepositRequest.
+    """
     amount: Decimal
     crypto_currency: Optional[str] = None
+    target: Optional[str] = None
 
 
 # ─── Decentralised on-chain USDT deposit + withdraw ───────────────────────
@@ -116,14 +139,22 @@ class HostedInvoiceDepositRequest(BaseModel):
 
 class OnchainDepositRequest(BaseModel):
     """User picks chain + amount, then signs a transfer in their own
-    wallet. The chain_verifier_engine confirms the deposit on-chain."""
+    wallet. The chain_verifier_engine confirms the deposit on-chain.
+
+    `target` — same semantics as WalletDepositRequest.
+    """
     network: str            # eth | bsc | tron
     amount: Decimal
+    target: Optional[str] = None
 
 
 class OnchainWithdrawRequest(BaseModel):
     """Mirror of OnchainDepositRequest for payouts. Admin reviews +
-    sends manually; chain_verifier_engine confirms once tx is mined."""
+    sends manually; chain_verifier_engine confirms once tx is mined.
+
+    `source` — same semantics as WithdrawalRequest.
+    """
     network: str            # eth | bsc | tron
     amount: Decimal
     destination_address: str  # user's own wallet on the picked chain
+    source: Optional[str] = None

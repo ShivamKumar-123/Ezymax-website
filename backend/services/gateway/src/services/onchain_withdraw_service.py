@@ -70,6 +70,8 @@ async def create_onchain_withdrawal(
     amount: Decimal,
     destination_address: str | None,
     db: AsyncSession,
+    *,
+    source: str | None = None,
 ) -> dict:
     """Open a USDT withdrawal request.
 
@@ -107,10 +109,10 @@ async def create_onchain_withdrawal(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Resolve debit source — wallet-bound trading account if user has
-    # one, otherwise legacy main_wallet_balance path.
+    # Resolve debit source — honor explicit user choice if provided,
+    # else auto-route (wallet-bound when present, else main_wallet).
     from .wallet_service import _resolve_debit_source
-    source_kind, source_row = await _resolve_debit_source(db, user_id)
+    source_kind, source_row = await _resolve_debit_source(db, user_id, preference=source)
     if source_kind == "trading":
         available = source_row.balance or Decimal("0")
     else:

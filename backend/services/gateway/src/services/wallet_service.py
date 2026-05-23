@@ -22,40 +22,110 @@ from . import oxapay_service, nowpayments_service, rewards_service
 logger = logging.getLogger("wallet_service")
 
 
-async def _resolve_credit_target(db, user_id):
+async def _resolve_credit_target(db, user_id, preference: str | None = None):
     """Decide where an incoming crypto deposit / refund should land.
 
+    `preference` lets the caller honor an explicit user choice:
+      - "wallet" → force wallet-bound trading account (errors if
+        the user doesn't have one)
+      - "main"   → force legacy main_wallet_balance
+      - None / unset → auto-route: wallet-bound if exists, else main
+
     Returns a tuple ``(target_kind, target_row)``:
-      - ``("trading", trading_account)`` when the user has an active
-        wallet-bound trading account (is_wallet_account=TRUE).
-        Deposits credit `trading_account.balance` directly; the
-        main_wallet_balance step is skipped.
-      - ``("main_wallet", user_row)`` otherwise. Legacy two-step
-        flow — credit `users.main_wallet_balance`, user manually
-        transfers to a trading account later.
+      - ``("trading", trading_account)`` when wallet-bound is chosen
+      - ``("main_wallet", user_row)`` otherwise
 
     Caller is responsible for the actual balance update (this helper
-    only resolves which row to mutate). Both branches return the row
-    locked-for-update via the caller's existing query strategy.
+    only resolves which row to mutate).
     """
     from .account_service import get_wallet_account
-    wallet_acc = await get_wallet_account(user_id, db)
-    if wallet_acc is not None:
-        return ("trading", wallet_acc)
+    pref = (preference or "").strip().lower() or None
+
     user_row = (await db.execute(
         select(User).where(User.id == user_id)
     )).scalar_one_or_none()
+
+    if pref == "main":
+        return ("main_wallet", user_row)
+
+    wallet_acc = await get_wallet_account(user_id, db)
+
+    if pref == "wallet":
+        if wallet_acc is None:
+            # User asked for wallet-bound credit but doesn't have one.
+            # Fall back to main_wallet rather than failing the deposit;
+            # downstream code logs a warning so support can spot the
+            # mismatch later.
+            return ("main_wallet", user_row)
+        return ("trading", wallet_acc)
+
+    # Auto-route default.
+    if wallet_acc is not None:
+        return ("trading", wallet_acc)
     return ("main_wallet", user_row)
 
 
-async def _resolve_debit_source(db, user_id):
+async def _resolve_debit_source(db, user_id, preference: str | None = None):
     """Decide which balance to debit when the user requests a withdrawal.
 
-    Mirrors `_resolve_credit_target`: wallet-bound trading account
-    when one exists, otherwise the user's main wallet. Returns
+    Mirrors `_resolve_credit_target`'s preference handling. Returns
     ``(source_kind, source_row)``.
     """
-    return await _resolve_credit_target(db, user_id)
+    return await _resolve_credit_target(db, user_id, preference)
+
+
+async def _credit_from_deposit_row(db, deposit, user_row):
+    """Webhook-side credit resolver.
+
+    Reads the Deposit row's tagged `account_id` (set at submit time
+    when the user explicitly chose "Wallet Account"). If set, returns
+    that trading account for crediting. Otherwise auto-routes via the
+    standard resolver (wallet-bound if present, else main_wallet).
+
+    Returns the same ``(target_kind, target_row)`` shape as
+    `_resolve_credit_target`.
+    """
+    if getattr(deposit, "account_id", None):
+        from packages.common.src.models import TradingAccount as _TA
+        acc = (await db.execute(
+            select(_TA).where(
+                _TA.id == deposit.account_id,
+                _TA.user_id == deposit.user_id,
+                _TA.is_active.is_(True),
+            ).with_for_update().limit(1)
+        )).scalar_one_or_none()
+        if acc is not None:
+            return ("trading", acc)
+        # Tagged account no longer exists / was closed — fall through
+        # to the resolver so the deposit still credits something.
+        logger.warning(
+            "Deposit %s tagged account_id=%s no longer active; falling back to resolver",
+            deposit.id, deposit.account_id,
+        )
+    return await _resolve_credit_target(db, deposit.user_id)
+
+
+async def _resolve_deposit_target_account_id(db, user_id, target: str | None):
+    """At deposit-creation time, decide whether the row should carry a
+    target account_id (forcing the webhook to credit a trading account)
+    or leave it NULL (legacy main_wallet flow / auto-route).
+
+    Honors the user's explicit choice at submit time:
+      - target == "wallet" → look up the user's wallet-bound account
+        and return its id. Falls back to None if they don't have one.
+      - target == "main"   → return None (explicit main_wallet route).
+      - None / unset       → return None (webhook resolver will
+        auto-route at credit time).
+
+    The webhook handler treats deposit.account_id as authoritative when
+    set; only falls through to the resolver when it's NULL.
+    """
+    pref = (target or "").strip().lower() or None
+    if pref == "wallet":
+        from .account_service import get_wallet_account
+        acc = await get_wallet_account(user_id, db)
+        return acc.id if acc is not None else None
+    return None
 
 
 async def send_withdrawal_requested_email(
@@ -535,9 +605,12 @@ async def handle_oxapay_webhook(
             logger.error("OxaPay webhook: user not found for deposit %s", order_id)
             return
 
-        # Resolve credit target — wallet-bound trading account if user
-        # has one, otherwise legacy main_wallet_balance path.
-        target_kind, target_row = await _resolve_credit_target(db, deposit.user_id)
+        # If the deposit row was tagged with a target account_id at
+        # submit time (user picked "Wallet Account" in the UI), honor
+        # that explicit choice. Otherwise auto-route via the resolver.
+        target_kind, target_row = await _credit_from_deposit_row(
+            db, deposit, user_row,
+        )
         if target_kind == "trading":
             target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
             target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
@@ -1034,9 +1107,10 @@ async def handle_nowpayments_webhook(
             logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
             return
 
-        # Resolve credit target — wallet-bound trading account if user
-        # has one, otherwise legacy main_wallet_balance path.
-        target_kind, target_row = await _resolve_credit_target(db, deposit.user_id)
+        # If the deposit row was tagged at submit time, honor it.
+        target_kind, target_row = await _credit_from_deposit_row(
+            db, deposit, user_row,
+        )
         if target_kind == "trading":
             target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
             target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
@@ -1171,10 +1245,11 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Resolve debit source — wallet-bound trading account if user has
-    # one, otherwise legacy main_wallet_balance. Balance check uses
-    # whichever source is authoritative.
-    source_kind, source_row = await _resolve_debit_source(db, user_id)
+    # Resolve debit source — honor explicit user choice if provided
+    # (`req.source`), else auto-route (wallet-bound when present, else
+    # main_wallet). Balance check uses whichever source is authoritative.
+    pref = getattr(req, "source", None)
+    source_kind, source_row = await _resolve_debit_source(db, user_id, preference=pref)
     if source_kind == "trading":
         available = source_row.balance or Decimal("0")
     else:

@@ -173,17 +173,28 @@ async def approve_deposit(
     if not user_row:
         raise HTTPException(status_code=400, detail="User not found for deposit")
 
-    # Resolve credit target — wallet-bound trading account if the user
-    # has one, otherwise legacy main_wallet_balance path. Inlined here
-    # to avoid an admin → gateway service dependency.
-    wallet_acc_q = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.user_id == deposit.user_id,
-            TradingAccount.is_wallet_account.is_(True),
-            TradingAccount.is_active.is_(True),
-        ).with_for_update().limit(1)
-    )
-    wallet_acc = wallet_acc_q.scalar_one_or_none()
+    # Credit target: honor the deposit row's tagged account_id first
+    # (user explicitly picked "Wallet Account" at submit time). Else
+    # fall back to wallet-bound account (auto-route). Else main_wallet.
+    wallet_acc = None
+    if getattr(deposit, "account_id", None):
+        tagged_q = await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.id == deposit.account_id,
+                TradingAccount.user_id == deposit.user_id,
+                TradingAccount.is_active.is_(True),
+            ).with_for_update().limit(1)
+        )
+        wallet_acc = tagged_q.scalar_one_or_none()
+    if wallet_acc is None:
+        wallet_acc_q = await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.user_id == deposit.user_id,
+                TradingAccount.is_wallet_account.is_(True),
+                TradingAccount.is_active.is_(True),
+            ).with_for_update().limit(1)
+        )
+        wallet_acc = wallet_acc_q.scalar_one_or_none()
 
     if wallet_acc is not None:
         wallet_acc.balance = (wallet_acc.balance or Decimal("0")) + deposit.amount

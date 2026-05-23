@@ -182,6 +182,12 @@ function WalletPageContent() {
   const fundPanelRef = useRef<HTMLDivElement>(null);
 
   const [fundMainTab, setFundMainTab] = useState<'deposit' | 'withdraw'>('deposit');
+  // Which balance the deposit/withdraw form should target when the
+  // user clicks an action button. 'main' = legacy main wallet flow,
+  // 'wallet' = wallet-bound account. Default 'main' so old flow stays
+  // intact for non-migrated users; the Wallet Account card's buttons
+  // pre-select 'wallet'.
+  const [fundTargetPreference, setFundTargetPreference] = useState<'main' | 'wallet'>('main');
   const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
@@ -481,6 +487,7 @@ function WalletPageContent() {
           network: opt.network,
           amount: amt,
           destination_address: addr,
+          source: wallet?.wallet_account ? fundTargetPreference : undefined,
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
         setWithdrawCryptoAddress('');
@@ -505,6 +512,7 @@ function WalletPageContent() {
       fd.append('upi_id', upi);
       fd.append('payout_notes', manualWithdrawNotes.trim());
       if (manualWithdrawQrFile) fd.append('file', manualWithdrawQrFile);
+      if (wallet?.wallet_account) fd.append('source', fundTargetPreference);
       const token = api.getToken();
       const res = await fetch('/api/v1/wallet/withdraw/manual/', {
         method: 'POST',
@@ -573,6 +581,7 @@ function WalletPageContent() {
       fd.append('amount', String(amt));
       fd.append('transaction_id', depositTxId.trim());
       fd.append('file', depositProofFile);
+      if (wallet?.wallet_account) fd.append('target', fundTargetPreference);
       const token = api.getToken();
       const res = await fetch('/api/v1/wallet/deposit/manual', {
         method: 'POST',
@@ -765,12 +774,11 @@ function WalletPageContent() {
                   Transaction History
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Primary balance card. For non-migrated users it's the
-                    legacy Main Balance (main_wallet_balance). For migrated
-                    users it swaps to the Wallet Account — deposits land
-                    there directly and withdrawals leave from there back
-                    to the linked wallet. */}
+              <div className={wallet?.wallet_account ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : 'grid grid-cols-1 md:grid-cols-2 gap-3'}>
+                {/* Main Balance — the legacy main_wallet_balance bucket.
+                    Shown for ALL users (even migrated ones — they can
+                    still receive deposits here by picking "Main Wallet"
+                    at deposit time). */}
                 <div
                   className="rounded-2xl p-4 border flex flex-col"
                   style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
@@ -782,37 +790,75 @@ function WalletPageContent() {
                     >
                       <WalletIcon size={18} style={{ color: 'var(--card-blue-icon)' }} />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>
-                        {wallet?.wallet_account ? 'Wallet Account' : 'Main Balance'}
-                      </p>
-                      {wallet?.wallet_account && (
-                        <p className="text-[10px] font-mono text-text-tertiary truncate">
-                          #{wallet.wallet_account.account_number}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Main Balance</p>
                   </div>
                   <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
-                    ${(wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => { setFundMainTab('deposit'); scrollToFundPanel(); }}
+                      onClick={() => { setFundMainTab('deposit'); setFundTargetPreference('main'); scrollToFundPanel(); }}
                       className="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
                     >
                       Deposit
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setFundMainTab('withdraw'); scrollToFundPanel(); }}
+                      onClick={() => { setFundMainTab('withdraw'); setFundTargetPreference('main'); scrollToFundPanel(); }}
                       className="py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover text-text-primary border border-border-primary text-xs font-bold transition-colors"
                     >
                       Withdraw
                     </button>
                   </div>
                 </div>
+
+                {/* Wallet Account — gold. Shown only after the user has
+                    migrated (auto-create on wallet link or opt-in via
+                    settings). Deposits CAN land here when picked at
+                    deposit time; withdrawals leave from here directly
+                    back to the linked wallet. */}
+                {wallet?.wallet_account && (
+                  <div
+                    className="rounded-2xl p-4 border flex flex-col"
+                    style={{ background: 'rgba(214,169,61,0.08)', borderColor: 'rgba(214,169,61,0.40)' }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div
+                        className="w-10 h-10 rounded-xl border flex items-center justify-center"
+                        style={{ background: 'rgba(214,169,61,0.15)', borderColor: 'rgba(214,169,61,0.35)' }}
+                      >
+                        <WalletIcon size={18} style={{ color: '#d6a93d' }} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wide font-bold" style={{ color: '#d6a93d' }}>Wallet Account</p>
+                        <p className="text-[10px] font-mono text-text-tertiary truncate">
+                          #{wallet.wallet_account.account_number}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold font-mono tabular-nums text-text-primary">
+                      ${wallet.wallet_account.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-text-tertiary">USD</span>
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setFundMainTab('deposit'); setFundTargetPreference('wallet'); scrollToFundPanel(); }}
+                        className="py-2 rounded-lg text-xs font-bold transition-colors"
+                        style={{ background: '#d6a93d', color: 'var(--bg-base)' }}
+                      >
+                        Deposit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFundMainTab('withdraw'); setFundTargetPreference('wallet'); scrollToFundPanel(); }}
+                        className="py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover text-text-primary border border-border-primary text-xs font-bold transition-colors"
+                      >
+                        Withdraw
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
                 <div
@@ -1067,6 +1113,36 @@ function WalletPageContent() {
               key={fundMainTab}
               className="space-y-5 bg-card-nested p-4 md:p-6 animate-wallet-fund-enter-lg"
             >
+              {/* Target/Source picker — only when user has BOTH Main
+                  Wallet and Wallet Account, so deposit/withdraw can
+                  route to either. Stays hidden for non-migrated users
+                  who only have Main Wallet. */}
+              {wallet?.wallet_account && (
+                <div className="flex items-center gap-2 p-1 rounded-lg border border-border-primary bg-bg-base">
+                  <button
+                    type="button"
+                    onClick={() => setFundTargetPreference('main')}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                      fundTargetPreference === 'main'
+                        ? 'bg-blue-500 text-white'
+                        : 'text-text-tertiary hover:text-text-primary'
+                    }`}
+                  >
+                    {fundMainTab === 'deposit' ? 'To' : 'From'} Main Wallet
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFundTargetPreference('wallet')}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                      fundTargetPreference === 'wallet'
+                        ? 'bg-[#d6a93d] text-bg-base'
+                        : 'text-text-tertiary hover:text-text-primary'
+                    }`}
+                  >
+                    {fundMainTab === 'deposit' ? 'To' : 'From'} Wallet Account
+                  </button>
+                </div>
+              )}
               {fundMainTab === 'deposit' ? (
                 <>
                   {/* Header */}

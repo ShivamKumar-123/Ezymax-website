@@ -69,6 +69,8 @@ async def _get_active_wallet(db: AsyncSession, network: str) -> AdminDepositWall
 
 async def create_onchain_deposit(
     user_id: UUID, network: str, amount: Decimal, db: AsyncSession,
+    *,
+    target: str | None = None,
 ) -> dict:
     """Create a wallet-connect deposit row and return everything the
     trader UI needs to invoke MetaMask / TronLink / similar."""
@@ -96,8 +98,15 @@ async def create_onchain_deposit(
     wallet = await _get_active_wallet(db, net)
     expires = datetime.now(timezone.utc) + timedelta(minutes=INVOICE_TTL_MINUTES)
 
+    # Honor the user's "where should this credit land" choice. Stored
+    # on the row so the chain verifier credits the right balance when
+    # the on-chain transfer is confirmed.
+    from .wallet_service import _resolve_deposit_target_account_id
+    target_account_id = await _resolve_deposit_target_account_id(db, user_id, target)
+
     deposit = Deposit(
         user_id=user_id,
+        account_id=target_account_id,
         amount=Decimal(amount),
         currency="USDT",
         method="wallet_connect",
