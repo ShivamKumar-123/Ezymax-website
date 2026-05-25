@@ -624,9 +624,10 @@ export default function TradingTerminalPage() {
         <div className="flex-1 min-h-0 flex overflow-hidden">
           <div
             className={clsx(
-              'flex flex-col overflow-hidden bg-bg-base flex-1 min-w-0 min-h-0 relative isolate z-0',
-              chartExpanded &&
-                'ring-1 ring-inset ring-accent/25 shadow-[inset_0_0_0_1px_rgba(214,169,61,0.08)]',
+              'flex flex-col overflow-hidden bg-bg-base min-w-0 min-h-0 isolate',
+              chartExpanded
+                ? 'fixed inset-0 z-[100] ring-1 ring-inset ring-accent/25'
+                : 'flex-1 relative z-0',
             )}
           >
             {chartExpanded ? (
@@ -647,6 +648,22 @@ export default function TradingTerminalPage() {
             ) : null}
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
               <TradingViewChart />
+              {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
+                  already expanded since the header's "Normal view" button
+                  collapses back. Positioned over the chart's top-right
+                  corner where TradingView's iframe has empty space. */}
+              {!chartExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setChartExpanded(true)}
+                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
+                  title="Expand chart to full screen"
+                  aria-label="Expand chart to full screen"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
+                  <span className="hidden sm:inline">Full screen</span>
+                </button>
+              )}
             </div>
           </div>
 
