@@ -37,6 +37,11 @@ INSURANCE_KEYS = (
     "insurance_dynamic_winrate_threshold",
     "insurance_dynamic_winrate_surcharge",
     "insurance_disable_atr_floor",
+    "insurance_disable_atr_ceiling",
+    "insurance_frequent_claim_count",
+    "insurance_frequent_claim_window_days",
+    "insurance_frequent_claim_coverage_reduction_pct",
+    "insurance_copy_trade_surcharge",
     "insurance_news_blackout_until",
 )
 
