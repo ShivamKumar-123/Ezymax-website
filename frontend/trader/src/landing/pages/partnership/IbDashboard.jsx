@@ -1,4 +1,4 @@
-import {
+﻿import {
   Users,
   Activity,
   Coins,
@@ -28,13 +28,13 @@ export default function IbDashboard() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Dashboard Preview"
           title="Built for Professional Partners"
           highlight="Professional Partners"
           subtitle="What you actually see when you log in on the partner side."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {widgets.map((w, i) => {
             const Icon = w.icon
@@ -65,6 +65,7 @@ export default function IbDashboard() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

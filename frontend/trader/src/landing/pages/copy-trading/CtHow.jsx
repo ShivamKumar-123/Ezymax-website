@@ -1,4 +1,4 @@
-import { Search, MousePointer2, Wallet, Repeat2, Eye } from 'lucide-react'
+﻿import { Search, MousePointer2, Wallet, Repeat2, Eye } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
@@ -20,13 +20,13 @@ export default function CtHow() {
   return (
     <section id="explore" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
-          badge="How It Works"
-          title="From Selection to Settlement"
-          highlight="Selection to Settlement"
-          subtitle="Five quick steps from picking a trader to seeing the first mirrored trade in your account."
+          badge="How To Copy"
+          title="How It Works"
+          highlight="It Works"
+          subtitle="Five quick steps from picking a trader to seeing the first mirrored trade in your account. No setup gymnastics."
         />
-
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">
             <div
@@ -80,11 +80,21 @@ export default function CtHow() {
           </div>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.2}>
-          <div className="mt-10 max-w-3xl mx-auto">
+        <ScrollReveal variant="fadeUp" delay={0.18}>
+          <p
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            style={{ color: 'var(--fx-text-2)' }}
+          >
+            &ldquo;Simple setup. Full flexibility.&rdquo;
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fadeUp" delay={0.25}>
+          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

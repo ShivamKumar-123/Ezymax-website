@@ -1,4 +1,4 @@
-import { Coins, Gauge, CheckCircle2 } from 'lucide-react'
+﻿import { Coins, Gauge, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -13,13 +13,13 @@ export default function TxModes() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trading Modes"
           title="Flexible Trading Modes"
           highlight="Trading Modes"
-          subtitle="Two ways to trade — pick whichever fits how you want to handle risk. Same transparent rules apply to both."
+          subtitle="Two ways to trade â€” pick whichever fits how you want to handle risk. Same transparent rules apply to both."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Fully Funded */}
           <ScrollReveal variant="fadeUp">
@@ -86,6 +86,7 @@ export default function TxModes() {
               </ul>
             </div>
           </ScrollReveal>
+        </div>
         </div>
       </div>
     </section>

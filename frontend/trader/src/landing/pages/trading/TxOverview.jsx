@@ -1,4 +1,4 @@
-import { Eye, Ban, TrendingUp, CheckCircle2 } from 'lucide-react'
+﻿import { Eye, Ban, TrendingUp, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -14,7 +14,7 @@ const cards = [
   {
     icon: Eye,
     title: 'Transparent Pricing',
-    desc: 'Every cost is visible before you execute — no hidden layers, no surprises.',
+    desc: 'Every cost is visible before you execute â€” no hidden layers, no surprises.',
     accent: '#ecc657',
   },
   {
@@ -35,13 +35,13 @@ export default function TxOverview() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trading Overview"
           title="Built for Transparency and Progress"
           highlight="Transparency"
           subtitle="We've cut out the usual mess. No account tiers, no artificial barriers. Everyone starts on the same conditions and earns better ones by actually trading."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {cards.map((c, i) => {
             const Icon = c.icon
@@ -96,6 +96,7 @@ export default function TxOverview() {
           </p>
         </ScrollReveal>
 
+        </div>
       </div>
     </section>
   )

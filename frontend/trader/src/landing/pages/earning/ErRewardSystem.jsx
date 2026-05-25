@@ -1,4 +1,4 @@
-import { Zap, Coins, Diamond, CheckCircle2 } from 'lucide-react'
+﻿import { Zap, Coins, Diamond, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -50,13 +50,13 @@ export default function ErRewardSystem() {
   return (
     <section id="rewards" className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Reward System"
           title="Understanding Your Rewards"
           highlight="Your Rewards"
           subtitle="FX Artha uses a structured reward system to recognize your activity and progress. Three pieces, each doing a different job."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {elements.map((el, i) => {
             const Icon = el.icon
@@ -119,6 +119,7 @@ export default function ErRewardSystem() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

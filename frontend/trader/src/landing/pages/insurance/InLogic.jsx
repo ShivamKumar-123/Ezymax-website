@@ -1,4 +1,4 @@
-import { ShieldCheck, TrendingDown, MinusCircle, Coins } from 'lucide-react'
+﻿import { ShieldCheck, TrendingDown, MinusCircle, Coins } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -6,13 +6,13 @@ export default function InLogic() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Coverage Logic"
           title="How Coverage Works"
           highlight="Coverage Works"
-          subtitle="Every plan comes with a pool of coverage for its duration. Losses draw down the pool — once it's empty, the plan stops covering until you activate a new one."
+          subtitle="Every plan comes with a pool of coverage for its duration. Losses draw down the pool â€” once it's empty, the plan stops covering until you activate a new one."
         />
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-2xl p-7 md:p-10 overflow-hidden"
@@ -41,7 +41,7 @@ export default function InLogic() {
                   icon={TrendingDown}
                   color="#f87171"
                   label="Trade Loss"
-                  title="–$1,000"
+                  title="â€“$1,000"
                   sub="Eligible trade"
                   step="2"
                 />
@@ -52,7 +52,7 @@ export default function InLogic() {
                   icon={MinusCircle}
                   color="#a78bfa"
                   label="Deduction"
-                  title="–$300 covered"
+                  title="â€“$300 covered"
                   sub="Coverage % of loss"
                   step="3"
                   highlight
@@ -103,9 +103,10 @@ export default function InLogic() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Coverage applies across your activity — not individually per trade.&rdquo;
+            &ldquo;Coverage applies across your activity â€” not individually per trade.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

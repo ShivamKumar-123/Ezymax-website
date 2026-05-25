@@ -1,4 +1,4 @@
-import { Receipt, Gauge, Activity, Ban, EyeOff, Moon } from 'lucide-react'
+﻿import { Receipt, Gauge, Activity, Ban, EyeOff, Moon } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -24,7 +24,7 @@ const costs = [
     accent: '#a78bfa',
     title: 'Market Spread',
     sub: 'Execution',
-    desc: 'Natural part of market pricing — never artificially inflated. Tightens as you progress.',
+    desc: 'Natural part of market pricing â€” never artificially inflated. Tightens as you progress.',
     when: 'Market-driven',
   },
 ]
@@ -32,20 +32,20 @@ const costs = [
 const guarantees = [
   { icon: Ban,    title: 'No Swap Charges',     sub: "We don't charge swap." },
   { icon: EyeOff, title: 'No Hidden Fees',      sub: 'Zero hidden costs.' },
-  { icon: Moon,   title: 'No Overnight Penalty',sub: 'Only the fair leverage fee — nothing extra.' },
+  { icon: Moon,   title: 'No Overnight Penalty',sub: 'Only the fair leverage fee â€” nothing extra.' },
 ]
 
 export default function TxCostStructure() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Cost Structure"
           title="Clear and Structured Trading Costs"
           highlight="Trading Costs"
           subtitle="We've boiled trading costs down to three pieces. No layered fees, no surprise line items at the end of the month."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {costs.map((c, i) => {
             const Icon = c.icon
@@ -132,6 +132,7 @@ export default function TxCostStructure() {
             &ldquo;No hidden layers. Just transparent trading economics.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )
