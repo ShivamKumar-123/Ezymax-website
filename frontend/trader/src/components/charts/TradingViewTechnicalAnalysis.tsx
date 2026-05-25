@@ -4,7 +4,7 @@ import { useMemo, memo } from 'react';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
-import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
+import { toTradingViewTASymbol } from '@/lib/tradingViewSymbols';
 
 /**
  * TradingView's free Technical Analysis widget — shows STRONG BUY /
@@ -19,7 +19,7 @@ import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
 const TA_EMBED = 'https://www.tradingview-widget.com/embed-widget/technical-analysis/';
 
 function buildEmbedUrl(symbol: string, theme: 'dark' | 'light'): string {
-  const tvSymbol = toTradingViewSymbol(symbol);
+  const tvSymbol = toTradingViewTASymbol(symbol);
   // `isTransparent: false` makes the widget render its own opaque
   // surface (white in light, dark in dark). That's what we want — our
   // wrapper bg was producing a double-card look in light mode and a
