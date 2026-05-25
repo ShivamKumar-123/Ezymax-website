@@ -16,11 +16,22 @@ export default function ProtocolPage() {
       <PrHero />
       <PrCompare />
       <PrFlow />
-      <FxPageBanner label="Banner / Image" />
+      <FxPageBanner
+        image="/images/Protocol_banner1.png"
+        alt="FX Artha Protocol"
+        tagline="Execution runs on logic — not control."
+        taglineSub="A transparent, system-driven trading protocol."
+      />
       <PrFundsFlow />
       <PrSecurity />
       <PrTable />
-      <FxPageBanner label="Banner / Image" tone="elev" />
+      <FxPageBanner
+        image="/images/Protocol_banner2.png"
+        alt="FX Artha Protocol"
+        tone="elev"
+        tagline="Your funds stay yours."
+        taglineSub="Non-custodial by design — verifiable, automated settlement."
+      />
       <PrFaq />
       <PrCTA />
     </>

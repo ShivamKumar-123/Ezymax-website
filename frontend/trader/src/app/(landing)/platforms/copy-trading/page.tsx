@@ -16,11 +16,22 @@ export default function CopyTradingPage() {
       <CtHero />
       <CtWhat />
       <CtHow />
-      <FxPageBanner label="Banner / Image" />
+      <FxPageBanner
+        image="/images/copy_banner1.png"
+        alt="FX Artha Copy Trading"
+        tagline="Copy proven traders."
+        taglineSub="Mirror verified strategies automatically — at your size, on your terms."
+      />
       <CtMaster />
       <CtProfit />
       <CtFee />
-      <FxPageBanner label="Banner / Image" tone="elev" />
+      <FxPageBanner
+        image="/images/copy_banner2.png"
+        alt="FX Artha Copy Trading"
+        tone="elev"
+        tagline="Performance earns trust."
+        taglineSub="Prove your results and become a verified Master Trader."
+      />
       <CtControl />
       <CtCTA />
     </>

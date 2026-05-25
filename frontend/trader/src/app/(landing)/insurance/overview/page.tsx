@@ -18,15 +18,25 @@ export default function InsuranceOverviewPage() {
       <InHero />
       <InWhy />
       <InHow />
-      <FxPageBanner label="Banner / Image" />
+      <FxPageBanner
+        image="/images/Insurance_banner1.png"
+        alt="FX Artha Trade Insurance"
+        tagline="Protection that works in the background."
+        taglineSub="Activate a plan, then trade — coverage applies automatically on eligible losses."
+      />
       <InCoverage />
       <InDuration />
       <InLogic />
-      <FxPageBanner label="Banner / Image" tone="elev" />
+      <FxPageBanner
+        image="/images/Insurance_banner2.png"
+        alt="FX Artha Trade Insurance"
+        tone="elev"
+        tagline="One pool. Continuous cover."
+        taglineSub="Coverage spans your whole plan duration — not single trades."
+      />
       <InRules />
       <InUX />
       <InFaq />
-      <FxPageBanner label="Banner / Image" />
       <InCTA />
     </>
   )

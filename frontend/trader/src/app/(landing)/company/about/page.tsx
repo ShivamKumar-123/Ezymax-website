@@ -26,7 +26,6 @@ export default function AboutUsPage() {
       <AbSecurity />
       <AbAudience />
       <AbFutureVision />
-      <FxPageBanner label="Banner / Image" />
       <AbCTA />
     </>
   )

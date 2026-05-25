@@ -18,15 +18,25 @@ export default function TradingOverviewPage() {
       <TxHero />
       <TxOverview />
       <TxModes />
-      <FxPageBanner label="Banner / Image" />
+      <FxPageBanner
+        image="/images/trading_banner1.png"
+        alt="FX Artha Trading"
+        tagline="Trade smart. Pay less over time."
+        taglineSub="Transparent pricing that improves the more you trade."
+      />
       <TxLeverage />
       <TxCostStructure />
       <TxXP />
-      <FxPageBanner label="Banner / Image" tone="elev" />
+      <FxPageBanner
+        image="/images/trading_banner2.png"
+        alt="FX Artha Trading"
+        tone="elev"
+        tagline="Every cost, known upfront."
+        taglineSub="No swap charges. No hidden fees. Just three clear components."
+      />
       <TxExample />
       <TxRiskControl />
       <TxDemoReal />
-      <FxPageBanner label="Banner / Image" />
       <TxFinalCTA />
     </>
   )

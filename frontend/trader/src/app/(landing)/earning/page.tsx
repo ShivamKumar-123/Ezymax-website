@@ -16,11 +16,22 @@ export default function EarningPage() {
       <ErHero />
       <ErRewardSystem />
       <ErHowYouEarn />
-      <FxPageBanner label="Banner / Image" />
+      <FxPageBanner
+        image="/images/Earning_banner1.png"
+        alt="FX Artha Earning"
+        tagline="Your activity has value."
+        taglineSub="Earn XP, credits, and rewards while you do what you'd do anyway."
+      />
       <ErPlayZone />
       <ErRewardStore />
       <ErTasks />
-      <FxPageBanner label="Banner / Image" tone="elev" />
+      <FxPageBanner
+        image="/images/Earning_banner2.png"
+        alt="FX Artha Earning"
+        tone="elev"
+        tagline="Stay active. Unlock more."
+        taglineSub="The more you engage, the more the ecosystem gives back."
+      />
       <ErBigRewards />
       <ErCTA />
     </>
