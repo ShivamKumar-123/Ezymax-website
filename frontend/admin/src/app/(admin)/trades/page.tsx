@@ -30,6 +30,11 @@ interface Position {
   swap: number;
   commission: number;
   profit: number;
+  /** Instrument contract_size from DB (units per 1 lot). When present
+   *  this is the authoritative multiplier for live-P&L calculations;
+   *  the per-symbol hardcoded fallbacks below are only used when this
+   *  field is missing (legacy data / API rollback). */
+  contract_size?: number;
   comment?: string;
   is_admin_modified: boolean;
   created_at: string;
@@ -645,12 +650,19 @@ export default function TradesPage() {
                       const isBuy = p.side?.toLowerCase() === 'buy';
                       const currentPrice = tick ? (isBuy ? tick.bid : tick.ask) : null;
                       const spread = tick ? ((tick.ask - tick.bid) * 100000).toFixed(1) : '—';
-                      const contractSize = p.instrument_symbol?.match(/BTC|ETH/) ? 1
-                        : p.instrument_symbol?.match(/XAU/) ? 100
-                        : p.instrument_symbol?.match(/XAG/) ? 50
-                        : p.instrument_symbol?.match(/OIL/) ? 1000
-                        : p.instrument_symbol?.match(/US30|US500|NAS/) ? 1
-                        : 100000;
+                      // Authoritative value from the API (admin's
+                      // trade_service.list_positions surfaces the DB
+                      // contract_size). Fallback table is for legacy
+                      // rows where the instrument was deleted —
+                      // silver fixed from 50 → 5000 to match the
+                      // standard XAG/USD contract.
+                      const contractSize = p.contract_size
+                        ?? (p.instrument_symbol?.match(/BTC|ETH/) ? 1
+                          : p.instrument_symbol?.match(/XAU/) ? 100
+                          : p.instrument_symbol?.match(/XAG/) ? 5000
+                          : p.instrument_symbol?.match(/OIL/) ? 1000
+                          : p.instrument_symbol?.match(/US30|US500|NAS/) ? 1
+                          : 100000);
                       const livePnl = currentPrice
                         ? (isBuy ? (currentPrice - p.open_price) : (p.open_price - currentPrice)) * p.lots * contractSize
                         : p.profit || 0;

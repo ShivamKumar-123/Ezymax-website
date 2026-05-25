@@ -173,6 +173,12 @@ class PositionOut(BaseModel):
     book_type: Optional[str] = None       # 'A' (forwarded to LP) or 'B'
     is_demo: bool = False
     is_lp_forwarded: bool = False         # True when non-demo + book_type == 'A'
+    # Instrument contract_size (units per 1 lot). Surfaced so the
+    # admin trades page can compute live P&L from the streaming bid/ask
+    # ticks using the SAME multiplier as the gateway, instead of the
+    # per-symbol hardcoded fallback that produced 100× mismatches on
+    # silver (XAGUSD: hardcoded 50 vs DB 5000).
+    contract_size: Optional[float] = None
 
     class Config:
         from_attributes = True

@@ -122,6 +122,7 @@ async def list_positions(
             swap=float(pos.swap or 0),
             commission=float(pos.commission or 0),
             profit=round(profit, 2),
+            contract_size=float(inst.contract_size) if inst and inst.contract_size is not None else None,
             comment=pos.comment,
             is_admin_modified=pos.is_admin_modified or False,
             created_at=pos.created_at,
