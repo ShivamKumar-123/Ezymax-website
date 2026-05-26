@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 export default function StHero() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden min-h-screen flex items-center"
       style={{ backgroundColor: 'var(--fx-bg)' }}
     >
       {/* Background banner */}
@@ -21,11 +21,10 @@ export default function StHero() {
         className="absolute inset-0 z-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.75) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%), radial-gradient(40% 40% at 15% 90%, rgba(96,165,250,0.08) 0%, rgba(96,165,250,0) 60%)',
+            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
         }}
       />
-      <div className="fx-grid-bg" />
-      <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
+      <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* LEFT */}
           <div className="lg:col-span-7">

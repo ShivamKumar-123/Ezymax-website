@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   Copy,
   ShieldCheck,
@@ -29,13 +29,13 @@ export default function AbEcosystem() {
   return (
     <section id="ecosystem" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="The FX Artha Ecosystem"
           title="One Ecosystem. Multiple Opportunities."
           highlight="Multiple Opportunities"
-          subtitle="Trading sits at the centre, surrounded by other ways to put your account to work — copying, staking, rewards, partner programs. All of it connected, all of it in one place."
+          subtitle="Trading sits at the centre, surrounded by other ways to put your account to work â€” copying, staking, rewards, partner programs. All of it connected, all of it in one place."
         />
-
         {/* Mobile-first layout: 2-col grid with hub on top. */}
         <div className="mt-12 md:mt-16 md:hidden grid grid-cols-2 gap-3">
           <div className="col-span-2">
@@ -46,7 +46,7 @@ export default function AbEcosystem() {
           ))}
         </div>
 
-        {/* Desktop ecosystem wheel — 3x3 grid w/ hub centered */}
+        {/* Desktop ecosystem wheel â€” 3x3 grid w/ hub centered */}
         <div className="hidden md:block mt-12 md:mt-16">
           <div className="relative max-w-5xl mx-auto">
             <div className="relative grid grid-cols-3 gap-5 lg:gap-7">
@@ -91,6 +91,7 @@ export default function AbEcosystem() {
             &ldquo;Every feature is designed to strengthen the ecosystem experience.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

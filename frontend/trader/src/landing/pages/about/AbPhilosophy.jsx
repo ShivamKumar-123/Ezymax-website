@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, Sliders, Cog, Sparkles, Quote } from 'lucide-react'
+﻿import { CheckCircle2, Eye, Sliders, Cog, Sparkles, Quote } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -15,13 +15,13 @@ export default function AbPhilosophy() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Our Philosophy"
           title="Trader-First Thinking"
           highlight="Trader-First"
           subtitle="The simple idea behind every decision we make: modern traders deserve more transparency, more flexibility, and infrastructure that actually treats them as the customer."
         />
-
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
           <ScrollReveal variant="fadeUp">
             <div
@@ -83,11 +83,12 @@ export default function AbPhilosophy() {
             >
               <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
               <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                &ldquo;The future of trading is not just faster — it is smarter.&rdquo;
+                &ldquo;The future of trading is not just faster â€” it is smarter.&rdquo;
               </p>
             </div>
           </ScrollReveal>
 
+        </div>
         </div>
       </div>
     </section>

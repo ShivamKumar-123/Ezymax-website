@@ -1,4 +1,4 @@
-import { Coins, TrendingUp, Sparkles, Activity, ArrowRight } from 'lucide-react'
+﻿import { Coins, TrendingUp, Sparkles, Activity, ArrowRight } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -38,13 +38,13 @@ export default function StExample() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Earnings Example"
           title="How It Works in Practice"
           highlight="in Practice"
-          subtitle="Multiple earning layers — staking + trading."
+          subtitle="Multiple earning layers â€” staking + trading."
         />
-
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[260px] md:auto-cols-auto md:grid-cols-4 gap-4 md:gap-3 min-w-max md:min-w-0">
             <div
@@ -129,6 +129,7 @@ export default function StExample() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

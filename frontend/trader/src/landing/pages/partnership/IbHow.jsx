@@ -1,4 +1,4 @@
-import { FileSignature, ShieldCheck, Share2, Activity, Coins } from 'lucide-react'
+﻿import { FileSignature, ShieldCheck, Share2, Activity, Coins } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -20,13 +20,13 @@ export default function IbHow() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="How It Works"
           title="How the FX Artha IB Program Works"
           highlight="IB Program Works"
           subtitle="Five steps from filling out the application to your first commission."
         />
-
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">
             <div
@@ -85,6 +85,7 @@ export default function IbHow() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

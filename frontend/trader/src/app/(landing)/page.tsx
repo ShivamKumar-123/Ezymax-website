@@ -17,12 +17,39 @@ export default function LandingHomePage() {
       <HeroSection />
       <FxProblemSolution />
       <FxHowItWorks />
+      <section style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container py-8 md:py-10 lg:py-12">
+          <img
+            src="/images/hero_banner1.png"
+            alt=""
+            className="w-full h-auto rounded-2xl"
+          />
+        </div>
+      </section>
       <FxTradingModes />
       <FxTradeInsurance />
       <FxGamification />
+      <section style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container py-8 md:py-10 lg:py-12">
+          <img
+            src="/images/hero_banner2.png"
+            alt=""
+            className="w-full h-auto rounded-2xl"
+          />
+        </div>
+      </section>
       <FxCopyTrading />
       <FxStaking />
       <FxReferral />
+      <section style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container py-8 md:py-10 lg:py-12">
+          <img
+            src="/images/hero_banner3.png"
+            alt=""
+            className="w-full h-auto rounded-2xl"
+          />
+        </div>
+      </section>
       <FxFinalCTA />
     </>
   )

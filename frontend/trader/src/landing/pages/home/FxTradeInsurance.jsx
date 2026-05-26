@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { ShieldCheck, ArrowRight, CheckCircle2, Info } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
@@ -20,15 +20,15 @@ export default function FxTradeInsurance() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trade Insurance"
           title="Add an Extra Layer of Protection"
           highlight="Protection"
           subtitle="Before you place a trade you can flip on a cushion that absorbs part of the loss if it goes wrong."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10 items-stretch">
-          {/* ── Left content (40%) ──────────────────────────────── */}
+          {/* â”€â”€ Left content (40%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-2">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -45,7 +45,7 @@ export default function FxTradeInsurance() {
               </h3>
               <p className="text-sm md:text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 Reduce downside risk by enabling protection on eligible trades. Based on
-                defined trading rules — no hedging required.
+                defined trading rules â€” no hedging required.
               </p>
 
               <ul className="space-y-3 mb-7">
@@ -64,7 +64,7 @@ export default function FxTradeInsurance() {
             </div>
           </ScrollReveal>
 
-          {/* ── Right tier grid (60%) ──────────────────────────── */}
+          {/* â”€â”€ Right tier grid (60%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <div className="lg:col-span-3 grid grid-cols-2 gap-4 md:gap-5">
             {tiers.map((tier, i) => (
               <ScrollReveal key={tier.name} variant="fadeUp" delay={i * 0.06}>
@@ -128,7 +128,7 @@ export default function FxTradeInsurance() {
             className="mt-8 text-center text-xs md:text-sm inline-flex items-center gap-2 justify-center w-full"
             style={{ color: 'var(--fx-text-3)' }}
           >
-            <Info size={14} /> Applicable on eligible trades · No hedging · Trade conditions apply
+            <Info size={14} /> Applicable on eligible trades Â· No hedging Â· Trade conditions apply
           </p>
         </ScrollReveal>
 
@@ -140,6 +140,7 @@ export default function FxTradeInsurance() {
             &ldquo;Trade with awareness. Not uncertainty.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

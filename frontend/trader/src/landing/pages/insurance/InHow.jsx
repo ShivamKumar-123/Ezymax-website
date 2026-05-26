@@ -1,4 +1,4 @@
-import { Calendar, Sliders, Power, Activity, ShieldCheck } from 'lucide-react'
+﻿import { Calendar, Sliders, Power, Activity, ShieldCheck } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -14,13 +14,13 @@ export default function InHow() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="How It Works"
           title="Simple and Continuous Protection"
           highlight="Continuous Protection"
-          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade — coverage kicks in automatically on eligible losses."
+          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade â€” coverage kicks in automatically on eligible losses."
         />
-
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">
             <div
@@ -82,6 +82,7 @@ export default function InHow() {
             &ldquo;One plan. Continuous protection within defined limits.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { TrendingUp, Users, Target, Gamepad2, CheckCircle2 } from 'lucide-react'
+﻿import { TrendingUp, Users, Target, Gamepad2, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -40,13 +40,13 @@ export default function ErHowYouEarn() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="How You Earn"
           title="Multiple Ways to Earn Rewards"
           highlight="Multiple Ways"
-          subtitle="You earn rewards not just by trading — but by participating in the ecosystem."
+          subtitle="You earn rewards not just by trading â€” but by participating in the ecosystem."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {sources.map((s, i) => {
             const Icon = s.icon
@@ -74,7 +74,7 @@ export default function ErHowYouEarn() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Your activity drives your rewards — not just outcomes.&rdquo;
+            &ldquo;Your activity drives your rewards â€” not just outcomes.&rdquo;
           </p>
         </ScrollReveal>
 
@@ -83,6 +83,7 @@ export default function ErHowYouEarn() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

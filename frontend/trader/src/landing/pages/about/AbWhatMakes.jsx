@@ -1,4 +1,4 @@
-import {
+﻿import {
   Lock,
   Zap,
   ShieldCheck,
@@ -66,13 +66,13 @@ export default function AbWhatMakes() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="What Makes Us Different"
           title="More Than a Trading Platform"
           highlight="Trading Platform"
-          subtitle="FX Artha combines multiple layers of innovation into one unified ecosystem — each piece exists because something in traditional platforms was missing or broken."
+          subtitle="FX Artha combines multiple layers of innovation into one unified ecosystem â€” each piece exists because something in traditional platforms was missing or broken."
         />
-
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
           {features.map((f, i) => {
             const Icon = f.icon
@@ -102,9 +102,10 @@ export default function AbWhatMakes() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;FX Artha is designed as an ecosystem — not just a platform.&rdquo;
+            &ldquo;FX Artha is designed as an ecosystem â€” not just a platform.&rdquo;
           </p>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

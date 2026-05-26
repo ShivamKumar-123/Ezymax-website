@@ -1,4 +1,4 @@
-import { Lock, Eye, Wallet, BarChart3 } from 'lucide-react'
+﻿import { Lock, Eye, Wallet, BarChart3 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -13,13 +13,13 @@ export default function IbTrust() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
+        <div className="fx-section-frame">
         <SectionHeader
           badge="Trust & Transparency"
           title="Built Around Transparency"
           highlight="Transparency"
           subtitle="The bits you can actually inspect: the contract, the reward math, the dashboard, and your own wallet."
         />
-
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 relative rounded-2xl p-8 md:p-12 overflow-hidden text-center"
@@ -54,6 +54,7 @@ export default function IbTrust() {
             </div>
           </div>
         </ScrollReveal>
+        </div>
       </div>
     </section>
   )

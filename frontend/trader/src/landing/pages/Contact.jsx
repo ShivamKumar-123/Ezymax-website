@@ -203,23 +203,6 @@ const Contact = () => {
         </div>
       </section>
 
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Need Immediate Assistance?
-            </h2>
-            <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Our live chat support is available 24/5 to answer your questions instantly.
-            </p>
-            <Button variant="primary" onClick={() => setIsChatOpen(true)}>
-              <MessageCircle className="w-5 h-5" />
-              Start Live Chat
-            </Button>
-          </ScrollReveal>
-        </div>
-      </section>
-
       {isChatOpen && (
         <div className="fixed bottom-6 right-6 z-[100] w-[calc(100vw-3rem)] sm:w-96 animate-fade-in">
           <div className="glass-card overflow-hidden flex flex-col h-[500px] shadow-2xl">
