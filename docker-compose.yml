@@ -179,6 +179,11 @@ services:
         # button shows "Wallet sign-in not configured" — surface that
         # to the user instead of silently failing.
         NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
+        # Google OAuth client ID — baked into the bundle so the
+        # "Continue with Google" button on the auth page can render.
+        # Same value as the backend's GOOGLE_CLIENT_ID. When empty,
+        # GoogleAuthButton returns null and the button silently disappears.
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     ports:
       # Host 3010 if 3000 is already taken (local Next/other apps)
       - "3010:3000"

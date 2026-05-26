@@ -28,14 +28,16 @@ import WalletLinkStep from './WalletLinkStep';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee']);
 
-// Wallet linking gate — flip to false only as a temporary kill-switch
-// if the wallet flow regresses. Today the SIWE plumbing is verified
-// working (users can connect via the profile/settings page). The
-// onboarding modal forces every new signup to link a wallet before
-// trading so we always have a withdrawal target on file.
+// Wallet linking gate — temporarily disabled while the wallet feature
+// is still being completed. New signups would otherwise be forced into
+// a non-dismissible "Connect a wallet" modal before they could use the
+// platform, which is a bad first-run experience while the SIWE/withdrawal
+// flow is still being polished. Users can still link a wallet later via
+// profile/security; per-action wallet checks (e.g. wallet required for
+// withdrawal) keep working independently of this flag.
 // Backend mirror: WALLET_LINK_REQUIRED in auth_service.get_me and
-// require_onboarded — keep all three in sync.
-const WALLET_LINK_REQUIRED = true;
+// packages/common/src/auth.require_onboarded — keep all three in sync.
+const WALLET_LINK_REQUIRED = false;
 
 export default function OnboardingGate() {
   const user = useAuthStore((s) => s.user);

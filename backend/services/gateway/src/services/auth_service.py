@@ -1075,13 +1075,13 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
     is_pre_policy = (
         user.created_at is not None and user.created_at < ONBOARDING_RULE_CUTOFF
     )
-    # Wallet linking gate — keep True. Onboarding requires a linked
-    # wallet so we always have a withdrawal target. Flip to False only
-    # as a temporary kill-switch if the wallet flow regresses (frontend
-    # mirror: WALLET_LINK_REQUIRED in OnboardingGate.tsx, and the same
-    # flag in packages/common/src/auth.require_onboarded — keep all
-    # three in sync).
-    WALLET_LINK_REQUIRED = True
+    # Wallet linking gate — temporarily False while the wallet feature
+    # is still being completed (frontend mirror: WALLET_LINK_REQUIRED in
+    # OnboardingGate.tsx, and the same flag in
+    # packages/common/src/auth.require_onboarded — keep all three in sync).
+    # Per-action wallet checks (e.g. wallet required for withdrawal)
+    # still apply independently of this flag.
+    WALLET_LINK_REQUIRED = False
     wallet_ok = wallet_linked if WALLET_LINK_REQUIRED else True
     placeholder_block = is_wallet_placeholder if WALLET_LINK_REQUIRED else False
     if (

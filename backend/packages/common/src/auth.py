@@ -157,11 +157,11 @@ async def require_onboarded(
     email_verified = bool(getattr(user, "email_verified", False))
 
     # Wallet linking gate — mirror of WALLET_LINK_REQUIRED in
-    # auth_service.get_me and OnboardingGate.tsx. Keep True so the
-    # server-side onboarding gate matches the frontend gate. Per-action
+    # auth_service.get_me and OnboardingGate.tsx. Temporarily False
+    # while the wallet feature is still being completed; per-action
     # wallet checks (e.g. wallet required for withdrawal) still apply
     # independently of this flag.
-    WALLET_LINK_REQUIRED = True
+    WALLET_LINK_REQUIRED = False
     wallet_ok = wallet_linked if WALLET_LINK_REQUIRED else True
     placeholder_block = is_placeholder if WALLET_LINK_REQUIRED else False
 
