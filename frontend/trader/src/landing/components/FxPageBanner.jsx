@@ -14,6 +14,17 @@
  * scrim is drawn behind it so the text stays readable on both bright and
  * dark banners.
  */
+/**
+ * @param {{
+ *   label?: string,
+ *   tone?: string,
+ *   image?: string,
+ *   alt?: string,
+ *   tagline?: string,
+ *   taglineSub?: string,
+ *   align?: 'left' | 'right' | 'center',
+ * }} props
+ */
 export default function FxPageBanner({
   label = 'Banner / Image',
   tone = 'bg',
