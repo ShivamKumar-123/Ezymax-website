@@ -1,4 +1,4 @@
-﻿import { Zap, Gift, BarChart3, Dices, Ticket, Gavel, Trophy } from 'lucide-react'
+import { Zap, Gift, BarChart3, Dices, Ticket, Gavel, Trophy } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -40,14 +40,14 @@ export default function FxGamification() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Gamification"
           title="Your Activity Has Value"
           highlight="Value"
-          subtitle="Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up â€” your account terms get better while you're doing things you'd do anyway."
+          subtitle="Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up — your account terms get better while you're doing things you'd do anyway."
         />
-        {/* â”€â”€ 3 reward cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+
+        {/* ── 3 reward cards ──────────────────────────────────── */}
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {rewards.map((r, i) => {
             const Icon = r.icon
@@ -94,7 +94,7 @@ export default function FxGamification() {
           })}
         </div>
 
-        {/* â”€â”€ Engagement icons row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Engagement icons row ─────────────────────────────── */}
         <ScrollReveal variant="fadeUp" delay={0.25}>
           <div
             className="mt-8 md:mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 p-5 md:p-6 rounded-2xl"
@@ -128,7 +128,6 @@ export default function FxGamification() {
             &ldquo;Stay active. Unlock more.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { FlaskConical, Zap, ArrowRight, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
@@ -10,13 +10,13 @@ export default function TxDemoReal() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Demo vs Real"
           title="Practice or Trade Live"
           highlight="or Trade Live"
-          subtitle="Same platform, same buttons. Demo runs on simulated funds â€” risk-free, just for learning. Real settles on-chain. Switch whenever you're ready."
+          subtitle="Same platform, same buttons. Demo runs on simulated funds — risk-free, just for learning. Real settles on-chain. Switch whenever you're ready."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Demo */}
           <ScrollReveal variant="fadeUp">
@@ -109,7 +109,6 @@ export default function TxDemoReal() {
               </Link>
             </div>
           </ScrollReveal>
-        </div>
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-﻿import { Coins, Gauge, CheckCircle2, Sparkles } from 'lucide-react'
+import { Coins, Gauge, CheckCircle2, Sparkles } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -18,15 +18,15 @@ export default function FxTradingModes() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Trading Modes"
           title="Flexible Trading Built Around Your Strategy"
           highlight="Your Strategy"
-          subtitle="Two ways to trade. Same platform, same fair rules â€” pick whichever matches how much risk you're willing to carry today."
+          subtitle="Two ways to trade. Same platform, same fair rules — pick whichever matches how much risk you're willing to carry today."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* â”€â”€ Fully Funded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Fully Funded ─────────────────────────────────── */}
           <ScrollReveal variant="fadeUp">
             <div
               className="relative h-full rounded-2xl overflow-hidden p-8 md:p-9"
@@ -78,7 +78,7 @@ export default function FxTradingModes() {
             </div>
           </ScrollReveal>
 
-          {/* â”€â”€ Leveraged â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Leveraged ────────────────────────────────────── */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <div
               className="relative h-full rounded-2xl overflow-hidden p-8 md:p-9"
@@ -137,7 +137,6 @@ export default function FxTradingModes() {
               </p>
             </div>
           </ScrollReveal>
-        </div>
         </div>
       </div>
     </section>

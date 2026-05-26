@@ -1,4 +1,4 @@
-﻿import { Award, Trophy, Gem, CheckCircle2, Info } from 'lucide-react'
+import { Award, Trophy, Gem, CheckCircle2, Info } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -50,13 +50,13 @@ export default function StPlans() {
   return (
     <section id="plans" className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Locked Plans"
           title="Long-Term Staking Plans"
           highlight="Long-Term"
           subtitle="Choose your commitment duration and unlock enhanced rewards."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           {plans.map((p, i) => {
             const Icon = p.icon
@@ -143,7 +143,6 @@ export default function StPlans() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

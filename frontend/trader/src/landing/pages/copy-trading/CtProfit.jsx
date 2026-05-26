@@ -1,4 +1,4 @@
-﻿import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
+import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
@@ -12,13 +12,13 @@ export default function CtProfit() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Profit Sharing"
           title="Performance-Based Earnings"
           highlight="Performance-Based"
-          subtitle="Master Traders take a slice of the profit they generate for followers â€” and only when there's actual profit to take a slice of."
+          subtitle="Master Traders earn a percentage of the profit generated for their followers."
         />
+
         {/* Flow diagram */}
         <ScrollReveal variant="fadeUp">
           <div
@@ -81,21 +81,11 @@ export default function CtProfit() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal variant="fadeUp" delay={0.18}>
-          <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
-            style={{ color: 'var(--fx-text-2)' }}
-          >
-            &ldquo;You earn only when your followers profit.&rdquo;
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
+        <ScrollReveal variant="fadeUp" delay={0.2}>
+          <div className="mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

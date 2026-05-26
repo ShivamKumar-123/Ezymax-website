@@ -1,4 +1,4 @@
-﻿import { Gem, ArrowRight, TrendingUp, Activity, CheckCircle2 } from 'lucide-react'
+import { Gem, ArrowRight, TrendingUp, Activity, CheckCircle2 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -12,15 +12,15 @@ export default function FxStaking() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Staking"
           title="Activate Idle Assets"
           highlight="Idle Assets"
-          subtitle="Put the assets you're already holding to work inside the ecosystem â€” without forcing you to choose between earning and being able to trade."
+          subtitle="Put the assets you're already holding to work inside the ecosystem — without forcing you to choose between earning and being able to trade."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          {/* â”€â”€ Left visual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Left visual ──────────────────────────────────── */}
           <ScrollReveal variant="fadeUp">
             <div
               className="relative rounded-2xl p-8 md:p-10 overflow-hidden"
@@ -111,7 +111,7 @@ export default function FxStaking() {
             </div>
           </ScrollReveal>
 
-          {/* â”€â”€ Right content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Right content ─────────────────────────────────── */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <h3 className="text-2xl md:text-[32px] font-bold text-white mb-5 leading-tight">
               Allocate your assets within the ecosystem to{' '}
@@ -119,7 +119,7 @@ export default function FxStaking() {
             </h3>
             <p className="text-base md:text-lg mb-7" style={{ color: 'var(--fx-text-2)' }}>
               Structured earning opportunities, trading utility, and direct participation
-              in ecosystem growth â€” all from assets that would otherwise sit idle.
+              in ecosystem growth — all from assets that would otherwise sit idle.
             </p>
 
             <ul className="space-y-3.5 mb-7">
@@ -152,7 +152,6 @@ export default function FxStaking() {
             &ldquo;Make your assets work beyond holding.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

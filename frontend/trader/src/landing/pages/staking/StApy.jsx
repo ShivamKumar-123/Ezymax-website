@@ -1,4 +1,4 @@
-﻿import { Activity, Clock, BarChart3 } from 'lucide-react'
+import { Activity, Clock, BarChart3 } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -33,13 +33,13 @@ export default function StApy() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="APY & Reward Logic"
           title="How Rewards Are Generated"
           highlight="Rewards Are Generated"
           subtitle="Rewards are participation-based, not guaranteed returns."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
           {factors.map((f, i) => {
             const Icon = f.icon
@@ -69,7 +69,6 @@ export default function StApy() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

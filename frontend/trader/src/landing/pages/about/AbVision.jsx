@@ -1,4 +1,4 @@
-﻿import { CheckCircle2, Quote } from 'lucide-react'
+import { CheckCircle2, Quote } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -16,13 +16,13 @@ export default function AbVision() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Our Vision"
           title="Built for the Next Generation of Traders"
           highlight="Next Generation"
           subtitle="The trading software people use every day still runs on stuff designed for 2010. We thought it was time someone rebuilt it."
         />
+
         <div className="mt-12 md:mt-16 max-w-4xl mx-auto">
           <ScrollReveal variant="fadeUp">
             <div
@@ -87,7 +87,7 @@ export default function AbVision() {
               </div>
 
               <p className="mt-7 text-base text-white">
-                â€¦into one connected experience.
+                …into one connected experience.
               </p>
             </div>
           </ScrollReveal>
@@ -103,12 +103,11 @@ export default function AbVision() {
             >
               <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
               <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                &ldquo;Technology should increase transparency â€” not complexity.&rdquo;
+                &ldquo;Technology should increase transparency — not complexity.&rdquo;
               </p>
             </div>
           </ScrollReveal>
 
-        </div>
         </div>
       </div>
     </section>

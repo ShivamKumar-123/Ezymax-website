@@ -1,4 +1,4 @@
-﻿import SectionHeader from '@/landing/components/SectionHeader'
+import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -37,19 +37,18 @@ export default function InFaq() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="FAQ"
           title="Frequently Asked Questions"
           highlight="Frequently Asked"
-          subtitle="The questions that come up most often â€” answered straight, no hedging."
+          subtitle="The questions that come up most often — answered straight, no hedging."
         />
+
         <ScrollReveal variant="fadeUp">
           <div className="mt-12 md:mt-14 max-w-3xl mx-auto">
             <CtFaqList items={faq} title="Insurance FAQ" />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

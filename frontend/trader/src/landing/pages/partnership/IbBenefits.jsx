@@ -1,4 +1,4 @@
-﻿import { Lock, Sparkles, Globe2, BarChart3, Coins, Handshake } from 'lucide-react'
+import { Lock, Sparkles, Globe2, BarChart3, Coins, Handshake } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -45,13 +45,13 @@ export default function IbBenefits() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Why FX Artha"
           title="Why IBs Choose FX Artha"
           highlight="FX Artha"
           subtitle="The honest reasons people send their audience here instead of somewhere else."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {benefits.map((b, i) => {
             const Icon = b.icon
@@ -74,7 +74,6 @@ export default function IbBenefits() {
           })}
         </div>
 
-        </div>
       </div>
     </section>
   )

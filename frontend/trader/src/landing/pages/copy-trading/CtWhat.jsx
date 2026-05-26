@@ -1,10 +1,10 @@
-﻿import { Copy, Users, ArrowRight, Activity } from 'lucide-react'
+import { Copy, Users, ArrowRight, Activity } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
 const faq = [
-  { q: 'Do I need experience to use this?', a: 'No. Itâ€™s designed for both beginners and experienced users.' },
+  { q: 'Do I need experience to use this?', a: 'No. It’s designed for both beginners and experienced users.' },
   { q: 'Do I lose control of my funds?',    a: 'No. You stay in full control and can stop anytime.' },
   { q: 'Is profit guaranteed?',             a: 'No. All trading involves risk.' },
 ]
@@ -13,13 +13,13 @@ export default function CtWhat() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
         <SectionHeader
           badge="Definition"
           title="What is Copy Trading?"
           highlight="Copy Trading?"
-          subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose â€” no need to figure out your own setups."
+          subtitle="Mirroring an experienced trader, position by position, at the size you choose."
         />
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* Text */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
@@ -43,7 +43,7 @@ export default function CtWhat() {
             </div>
           </ScrollReveal>
 
-          {/* Illustration â€” trader â†’ mirror â†’ follower */}
+          {/* Illustration — trader → mirror → follower */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
@@ -113,27 +113,17 @@ export default function CtWhat() {
                 <div className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--fx-text-3)' }}>
                   Your Allocation
                 </div>
-                <div className="text-lg font-extrabold gradient-text">$500 Â· 1Ã— ratio</div>
+                <div className="text-lg font-extrabold gradient-text">$500 · 1× ratio</div>
               </div>
             </div>
           </ScrollReveal>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.15}>
-          <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
-            style={{ color: 'var(--fx-text-2)' }}
-          >
-            &ldquo;Follow real performance â€” not predictions.&rdquo;
-          </p>
-        </ScrollReveal>
-
-        <ScrollReveal variant="fadeUp" delay={0.25}>
+        <ScrollReveal variant="fadeUp" delay={0.2}>
           <div className="mt-8 md:mt-10 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
