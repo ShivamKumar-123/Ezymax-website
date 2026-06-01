@@ -204,12 +204,33 @@ async def get_onchain_deposit_status(
 @router.post("/withdraw", status_code=201)
 async def create_withdrawal(
     req: WithdrawalRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await wallet_service.create_withdrawal(
+    """Create a manual (bank/UPI/crypto-via-admin) withdrawal request.
+
+    Honours the `Idempotency-Key` header — a retried POST with the same
+    key returns the cached response without creating a second withdrawal
+    row or freezing the user's balance twice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="withdraw_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await wallet_service.create_withdrawal(
         req=req, user_id=current_user["user_id"], db=db,
     )
+    await store_response(
+        request, scope="withdraw_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
 
 
 # ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────
@@ -218,15 +239,29 @@ async def create_withdrawal(
 @router.post("/withdraw/onchain", status_code=201)
 async def create_onchain_withdrawal(
     req: OnchainWithdrawRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """User initiates a wallet-connect withdrawal: pick chain + paste their
-    own destination address. We freeze the user's main wallet balance,
-    queue the row for admin review. Admin signs the on-chain payout and
-    pastes the tx hash; the chain_verifier_engine confirms and flips the
-    row to 'paid'."""
-    return await onchain_withdraw_service.create_onchain_withdrawal(
+    """User initiates a wallet-connect withdrawal. Destination is locked
+    server-side to the user's linked SIWE wallet — any client-supplied
+    address is ignored (and logged for audit). We freeze the user's main
+    wallet balance, queue the row for admin review. Admin signs the
+    on-chain payout and pastes the tx hash; the chain_verifier_engine
+    confirms and flips the row to 'paid'.
+
+    Honours `Idempotency-Key` so a retried submit can't freeze balance
+    twice."""
+    from packages.common.src.idempotency import get_cached_response, store_response
+
+    cached = await get_cached_response(
+        request, scope="withdraw_onchain_create",
+        user_id=current_user["user_id"], db=db,
+    )
+    if cached is not None:
+        return cached
+
+    result = await onchain_withdraw_service.create_onchain_withdrawal(
         user_id=current_user["user_id"],
         network=req.network,
         amount=req.amount,
@@ -234,6 +269,12 @@ async def create_onchain_withdrawal(
         db=db,
         source=req.source,
     )
+    await store_response(
+        request, scope="withdraw_onchain_create",
+        user_id=current_user["user_id"], response_json=result,
+        status_code=201, db=db,
+    )
+    return result
 
 
 @router.get("/withdraw/{withdrawal_id}/onchain-status")

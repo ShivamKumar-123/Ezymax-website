@@ -15,7 +15,12 @@ class Settings(BaseSettings):
     # module is a no-op shim.
     KAFKA_BOOTSTRAP_SERVERS: str = ""
 
-    JWT_SECRET: str = "dev-secret-change-in-production"
+    # JWT secrets are loaded from env. They have NO baked-in default because
+    # a forgotten env file in production would silently authenticate forged
+    # tokens against a known string. Empty values are tolerated only when
+    # ENVIRONMENT in {"development","test"}; everywhere else the process
+    # refuses to boot (see `_assert_production_secrets`).
+    JWT_SECRET: str = ""
     JWT_ALGORITHM: str = "HS256"
     # Short-lived access JWT (browser cookie + optional JSON for legacy clients).
     JWT_ACCESS_EXPIRY_MINUTES: int = Field(
@@ -48,7 +53,7 @@ class Settings(BaseSettings):
     # /auth/google endpoint returns 503 and the frontend hides the button.
     GOOGLE_CLIENT_ID: str = ""
 
-    ADMIN_JWT_SECRET: str = "admin-secret-change-in-production"
+    ADMIN_JWT_SECRET: str = ""
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
@@ -58,7 +63,7 @@ class Settings(BaseSettings):
     # to set a strong value in their .env before the first migration —
     # see `_assert_production_secrets` below.
     ADMIN_PASSWORD: str = ""
-    USER_JWT_SECRET: str = "dev-secret-change-in-production"
+    USER_JWT_SECRET: str = ""
     USER_JWT_ALGORITHM: str = "HS256"
 
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
@@ -151,11 +156,13 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-_DEFAULT_JWT_SECRETS = {
+# Historical default strings that used to ship in the codebase. Kept here
+# as a deny-list so a stale .env carrying one of these is treated as
+# "secret not set" rather than authenticating real tokens.
+_LEGACY_DEFAULT_JWT_SECRETS = {
     "dev-secret-change-in-production",
     "admin-secret-change-in-production",
     "change-me",
-    "",
 }
 
 _KNOWN_WEAK_ADMIN_PASSWORDS = {
@@ -168,51 +175,59 @@ _KNOWN_WEAK_ADMIN_PASSWORDS = {
     "",
 }
 
+# Environments where missing/weak secrets are warned but tolerated.
+# Anything else (production, staging, prod, live, …) fails closed.
+_DEV_ENVIRONMENTS = {"development", "dev", "local", "test", "testing", "ci"}
+
 
 def _assert_production_secrets(s: Settings) -> None:
-    """Refuse to start in production with default secrets baked into the
-    binary. Missing/default JWT secrets let an attacker mint valid tokens;
-    a default admin password is functionally an open super-admin login —
-    both are the codebase's #1 security risks if the env file is ever
-    forgotten. Fail loudly at process boot rather than silently
-    authenticating forged or default-credential sessions."""
-    if s.ENVIRONMENT.lower() != "production":
+    """Refuse to boot when JWT secrets are missing/weak outside of an
+    explicit dev environment. A forged token against a known default
+    string is the codebase's #1 security risk if the env file is ever
+    forgotten — fail loud at boot, never silently authenticate."""
+    env = (s.ENVIRONMENT or "").lower().strip()
+
+    def _weak_jwt(val: str) -> bool:
+        return (not val) or val in _LEGACY_DEFAULT_JWT_SECRETS or len(val) < 32
+
+    weak_jwt = [
+        n for n in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET")
+        if _weak_jwt(getattr(s, n, "") or "")
+    ]
+    weak_pwd = s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS
+
+    if env in _DEV_ENVIRONMENTS:
         # Dev hygiene: warn but don't refuse to boot — local devs need
         # the convenience of running with no env file at all.
         import logging
         log = logging.getLogger("fxartha.config")
-        weak_jwt = [
-            n for n in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET")
-            if getattr(s, n, "") in _DEFAULT_JWT_SECRETS
-        ]
         if weak_jwt:
             log.warning(
-                "Using DEFAULT dev JWT secrets for: %s. Acceptable for local "
-                "development only; production deploys MUST set strong values.",
+                "Using empty/weak/default JWT secrets for: %s. Acceptable for "
+                "local development only; production deploys MUST set strong "
+                "values via `openssl rand -hex 32`.",
                 ", ".join(weak_jwt),
             )
-        if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
+        if weak_pwd:
             log.warning(
                 "ADMIN_PASSWORD is empty or a known-weak default. Acceptable "
                 "for local dev; production deploys MUST set a strong password "
                 "(e.g. `openssl rand -base64 24`)."
             )
         return
-    bad: list[str] = []
-    for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
-        val = getattr(s, name, "")
-        if val in _DEFAULT_JWT_SECRETS or len(val) < 32:
-            bad.append(name)
-    if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
+
+    bad: list[str] = list(weak_jwt)
+    if weak_pwd:
         bad.append("ADMIN_PASSWORD")
     if bad:
         raise RuntimeError(
-            "Refusing to start: ENVIRONMENT=production but the following "
-            "secrets are missing, default, or known-weak: "
+            f"Refusing to start: ENVIRONMENT={s.ENVIRONMENT!r} but the following "
+            "secrets are missing, empty, default, or known-weak: "
             + ", ".join(bad)
             + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
             "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
-            "set them in /opt/fxartha/.env before deploying."
+            "set them in /opt/fxartha/.env before deploying. If this is a "
+            "local dev box, set ENVIRONMENT=development."
         )
 
 

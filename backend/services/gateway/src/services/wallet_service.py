@@ -775,11 +775,16 @@ async def create_wallet_deposit(
             order_id=str(deposit.id),
             description=f"FXArtha deposit ${float(amount):,.2f}",
         )
-    except Exception as e:
+    except Exception:
         logger.exception("NOWPayments create_direct_payment failed for deposit %s", deposit.id)
         await db.delete(deposit)
         await db.commit()
-        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
+        # Don't surface the upstream provider's raw error to the user —
+        # full detail is in the server logs above.
+        raise HTTPException(
+            status_code=502,
+            detail="Crypto payment creation failed. Please try again in a moment.",
+        )
 
     deposit.transaction_id = np["payment_id"]
     deposit.crypto_address = np["pay_address"]
@@ -855,14 +860,17 @@ async def create_hosted_invoice_deposit(
             order_id=str(deposit.id),
             description=f"FXArtha deposit ${float(amount):,.2f}",
         )
-    except Exception as e:
+    except Exception:
         logger.exception(
             "NOWPayments create_payment (hosted invoice) failed for deposit %s",
             deposit.id,
         )
         await db.delete(deposit)
         await db.commit()
-        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail="Crypto payment creation failed. Please try again in a moment.",
+        )
 
     # Store the invoice id in transaction_id; the IPN webhook looks up by
     # order_id (deposit.id), so we don't strictly need this column to match

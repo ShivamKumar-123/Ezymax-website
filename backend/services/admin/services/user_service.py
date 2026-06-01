@@ -618,7 +618,10 @@ async def login_as_user(
         "sub": str(user.id),
         "email": user.email,
         "role": user.role,
-        "type": "user",
+        # Same realm marker as a normal trader login — decode_token in
+        # the gateway enforces type=="trader". `impersonated_by` is the
+        # audit signal that this session was minted by an admin.
+        "type": "trader",
         "impersonated_by": str(admin_id),
         "exp": expire,
         "iat": datetime.utcnow(),

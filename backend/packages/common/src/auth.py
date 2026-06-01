@@ -39,6 +39,11 @@ def create_access_token(
     payload = {
         "sub": user_id,
         "role": role,
+        # Realm marker — the trader gateway issues "trader"; the admin
+        # service issues "admin". decode_token() rejects mismatches so a
+        # leaked trader secret can never mint an admin token (and vice
+        # versa, even though they're nominally separate secrets).
+        "type": "trader",
         "exp": expires,
         "iat": now,
     }
@@ -46,13 +51,23 @@ def create_access_token(
     return token, expires
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str, *, expected_type: str = "trader") -> dict:
     try:
-        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    # Tokens issued before this change have no "type" claim. Treat absent
+    # type as "trader" so existing sessions keep working through deploy.
+    # "user" is accepted as a legacy alias for "trader" — older impersonation
+    # tokens in the wild use it; they expire within 2h of the rollout.
+    token_type = payload.get("type", "trader")
+    if expected_type == "trader" and token_type == "user":
+        token_type = "trader"
+    if token_type != expected_type:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token realm")
+    return payload
 
 
 def hash_token(token: str) -> str:

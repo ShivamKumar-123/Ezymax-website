@@ -2,18 +2,21 @@
 
 Mirrors `onchain_deposit_service.py` for the payout direction:
 
-  Trader picks chain (eth/bsc/tron) + types their USDT destination + USD
-  amount → server validates the address format for the chosen chain,
-  debits main_wallet_balance immediately (frozen for review), inserts a
-  `withdrawals` row with status='pending'. Admin reviews on the back
-  office, signs the on-chain transfer from the admin deposit wallet,
-  pastes the resulting tx hash; `chain_verifier_engine` confirms the
-  transfer landed and flips the row to 'paid'. Reject-path refunds the
-  debit.
+  Trader picks chain (eth/bsc/tron) + USD amount → server uses the
+  user's linked SIWE wallet address as the destination (ignoring any
+  client-supplied value), debits main_wallet_balance immediately
+  (frozen for review), inserts a `withdrawals` row with status='pending'.
+  Admin reviews on the back office, signs the on-chain transfer from
+  the admin deposit wallet, pastes the resulting tx hash;
+  `chain_verifier_engine` confirms the transfer landed and flips the
+  row to 'paid'. Reject-path refunds the debit.
 
-The destination is whatever the user typed; no wallet-connect required.
-We do basic format validation per chain so admin doesn't have to
-manually sanity-check every payout address.
+The destination is server-locked to `users.wallet_address` (set via
+SIWE link). A user must link a wallet before they can withdraw on-chain
+— this kills the "compromised account drains to attacker address"
+attack: an attacker would also have to socially-engineer the user into
+re-linking a wallet they control, which itself requires a fresh SIWE
+signature from the original wallet.
 """
 from __future__ import annotations
 
@@ -75,10 +78,12 @@ async def create_onchain_withdrawal(
 ) -> dict:
     """Open a USDT withdrawal request.
 
-    The user picks the chain and types their destination address
-    themselves — no wallet-connect required. Debits main_wallet_balance
-    atomically so the same funds can't be requested twice while one
-    withdrawal is pending. Admin reviews + sends on-chain manually.
+    Destination is server-locked to the user's linked SIWE wallet — the
+    client-supplied `destination_address` argument is logged (for audit)
+    but never used as the actual payout target. Debits
+    main_wallet_balance atomically so the same funds can't be requested
+    twice while one withdrawal is pending. Admin reviews + sends
+    on-chain manually.
     """
     from packages.common.src.settings_store import get_bool_setting
     if await get_bool_setting("maintenance_mode", False):
@@ -101,13 +106,52 @@ async def create_onchain_withdrawal(
             detail=f"Minimum withdrawal is ${MIN_USD_AMOUNT}",
         )
 
-    destination = _validate_destination(net, destination_address or "")
-
     user = (await db.execute(
         select(User).where(User.id == user_id).with_for_update()
     )).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Lock destination to the user's linked SIWE wallet. EVM-chain
+    # withdrawals (eth/bsc) reuse the linked EVM address; TRC-20 needs
+    # an explicit TRON address linked separately (not supported yet —
+    # users on TRC-20 must use the manual UPI/bank flow instead).
+    linked_addr = (user.wallet_address or "").strip()
+    if not linked_addr:
+        raise HTTPException(
+            status_code=428,
+            detail=(
+                "Link a wallet before requesting an on-chain withdrawal. "
+                "Go to Profile → Linked Wallet to sign in with the address "
+                "you want payouts sent to."
+            ),
+        )
+    if net in {"eth", "bsc"}:
+        # Linked address is always lowercased EVM (see users model).
+        destination = _validate_destination(net, linked_addr)
+    else:
+        # TRON / non-EVM chains aren't covered by the EVM SIWE link yet.
+        # Refuse rather than fall back to user-supplied input.
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "On-chain withdrawals on this network require a wallet "
+                "linked for that chain. Currently only EVM (eth/bsc) is "
+                "supported — use the manual bank/UPI withdrawal flow for "
+                "other chains."
+            ),
+        )
+
+    # Audit signal if the client tried to direct funds elsewhere. Helps
+    # spot account-takeover attempts on the admin side without changing
+    # the actual payout target.
+    client_supplied = (destination_address or "").strip().lower()
+    if client_supplied and client_supplied != destination.lower():
+        logger.warning(
+            "onchain withdraw: client tried to override destination "
+            "user=%s linked=%s client_supplied=%s",
+            user.id, destination, client_supplied,
+        )
 
     # Resolve debit source — honor explicit user choice if provided,
     # else auto-route (wallet-bound when present, else main_wallet).

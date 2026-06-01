@@ -103,8 +103,19 @@ async def create_payment(
 
 
 def verify_webhook_signature(raw_body: bytes, received_hmac: str) -> bool:
-    """Verify HMAC-SHA512 signature on an OxaPay webhook request."""
+    """Verify HMAC-SHA512 signature on an OxaPay webhook request.
+
+    Fails closed when the merchant key isn't configured — otherwise the
+    HMAC would be computed against an empty key, which an attacker can
+    forge trivially. Mirrors the NOWPayments handler so OxaPay can't
+    silently credit forged deposits if the env var goes missing.
+    """
     settings = get_settings()
-    key = settings.OXAPAY_MERCHANT_KEY.encode()
-    computed = hmac.new(key, raw_body, hashlib.sha512).hexdigest()
+    key = (settings.OXAPAY_MERCHANT_KEY or "").strip()
+    if not key:
+        logger.error("OxaPay merchant key not configured — refusing webhook")
+        return False
+    if not received_hmac:
+        return False
+    computed = hmac.new(key.encode(), raw_body, hashlib.sha512).hexdigest()
     return hmac.compare_digest(computed, received_hmac)
