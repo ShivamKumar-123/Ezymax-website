@@ -63,8 +63,11 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
       signal: ctrl,
     });
   } catch (e) {
+    // Log the path only — full URLs can contain user-identifiable
+    // query params (filter IDs, emails) we don't want in shared logs.
     const msg = e instanceof Error ? e.message : 'fetch failed';
-    console.error('[admin-api proxy]', targetUrl, msg);
+    const path = new URL(targetUrl).pathname;
+    console.error('[admin-api proxy] fetch', path, msg);
     return NextResponse.json(
       {
         detail:
@@ -80,7 +83,8 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
     buf = await res.arrayBuffer();
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'read failed';
-    console.error('[admin-api proxy] response body', targetUrl, msg);
+    const path = new URL(targetUrl).pathname;
+    console.error('[admin-api proxy] read', path, msg);
     return NextResponse.json({ detail: 'Failed to read admin API response' }, { status: 502 });
   }
 

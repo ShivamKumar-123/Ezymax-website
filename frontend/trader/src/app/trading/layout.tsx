@@ -107,20 +107,36 @@ function TradingSession({ children }: { children: React.ReactNode }) {
           : ((accountsRes as { items?: unknown[] })?.items ?? []);
         setAccounts((rawList as Record<string, unknown>[]).map(mapApiAccount));
       } catch (err) {
-        console.error('Trading bootstrap failed:', err);
+        // Log only the message — the raw error often pulls in API
+        // payloads (account ids, balances) that don't belong in
+        // browser-side logs or any forwarded telemetry.
+        const msg = err instanceof Error ? err.message : 'unknown';
+        console.error('[trading] bootstrap failed:', msg);
       }
     }
 
     void bootstrap();
 
+    // Track the last time the WS delivered a tick. When the WS is
+    // healthy, the HTTP poll below short-circuits — the WS is faster
+    // and the poll is only a fallback for when the WS is stalled.
+    let lastWsTickAt = 0;
+
     wsManager.connect();
     const unsub = wsManager.onMessage((data) => {
       const ticks = extractTicksFromPayload(data);
+      if (ticks.length > 0) {
+        lastWsTickAt = Date.now();
+      }
       for (const t of ticks) updatePrice(t);
     });
 
     let pollCancelled = false;
     const pollPricesFromApi = async () => {
+      // If the WS delivered a tick in the last 5s, trust it and skip
+      // the HTTP fetch. Saves /instruments/prices/all calls during
+      // healthy market hours (which is most of the time).
+      if (Date.now() - lastWsTickAt < 5_000) return;
       try {
         const raw = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
         if (pollCancelled) return;

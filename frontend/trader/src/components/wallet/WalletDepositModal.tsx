@@ -233,6 +233,25 @@ function DepositBody({
   // double-click before the browser navigates away.
   const [redirectingToHosted, setRedirectingToHosted] = useState(false);
 
+  // Domains we trust to receive a hosted-invoice redirect. If the
+  // backend ever gets compromised and tries to redirect us elsewhere
+  // (or a buggy upstream returns a phishing URL), we refuse and ask
+  // the user to retry instead of opening the browser at the bad host.
+  const PAYMENT_REDIRECT_ALLOWLIST = ['nowpayments.io', 'oxapay.com'];
+
+  const isAllowedPaymentUrl = (raw: string): boolean => {
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'https:') return false;
+      // Match exact host or any subdomain of a trusted host.
+      return PAYMENT_REDIRECT_ALLOWLIST.some(
+        (host) => u.hostname === host || u.hostname.endsWith(`.${host}`),
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const handlePayOnNowPayments = useCallback(async () => {
     if (redirectingToHosted) return;
     setRedirectingToHosted(true);
@@ -241,11 +260,17 @@ function DepositBody({
         '/wallet/deposit/hosted-invoice',
         { amount: deposit.amount_usd, crypto_currency: cryptoAsset },
       );
-      if (res?.payment_url) {
+      if (res?.payment_url && isAllowedPaymentUrl(res.payment_url)) {
         window.location.href = res.payment_url;
         return; // navigation away
       }
-      throw new Error('No payment URL returned');
+      if (res?.payment_url) {
+        // Logged-and-blocked, not redirected. This either means the
+        // backend returned a URL on an unexpected host (worth alerting
+        // engineering on) or the allowlist is out of date.
+        console.error('[wallet] refusing to redirect to untrusted payment URL');
+      }
+      throw new Error('No valid payment URL returned');
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string };
       const msg = err?.response?.data?.detail || err?.message || 'Could not create hosted invoice';
