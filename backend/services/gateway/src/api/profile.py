@@ -47,11 +47,17 @@ async def update_profile(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await profile_service.update_profile(
+    from packages.common.src.cache import cache_invalidate
+    result = await profile_service.update_profile(
         user_id=current_user["user_id"],
         update_data=req.model_dump(exclude_unset=True),
         db=db,
     )
+    # /auth/me is cached for 15s — bust the cache so the dashboard
+    # reflects the new profile values on the next paint instead of
+    # waiting for the TTL to expire.
+    await cache_invalidate("auth_me", str(current_user["user_id"]))
+    return result
 
 
 @router.put("/password")
@@ -109,8 +115,13 @@ async def submit_kyc(
     Allowed when kyc_status is pending/rejected. Blocked when submitted, under_review, or approved.
     Sets kyc_status to 'submitted' so admin KYC queue can pick it up.
     """
+    user_id = current_user["user_id"]
+    from packages.common.src.cache import cache_invalidate
+    # KYC submit flips kyc_status to 'submitted' — bust /auth/me cache
+    # so the dashboard hides the "verify identity" banner immediately.
+    await cache_invalidate("auth_me", str(user_id))
     return await profile_service.submit_kyc(
-        user_id=current_user["user_id"],
+        user_id=user_id,
         document_type=document_type,
         file=file,
         document_type_2=document_type_2,
@@ -260,6 +271,10 @@ async def link_wallet(
             status_code=409,
             detail="This wallet is already linked to another account.",
         ) from e
+    # Wallet link is one of the fields /auth/me caches — bust it so the
+    # dashboard's onboarding gate clears immediately.
+    from packages.common.src.cache import cache_invalidate
+    await cache_invalidate("auth_me", str(user.id))
     return await auth_service.get_me(user.id, db)
 
 
@@ -298,6 +313,8 @@ async def unlink_wallet(
             device_info=f"prior_address={prior_address}",
         ))
     await db.commit()
+    from packages.common.src.cache import cache_invalidate
+    await cache_invalidate("auth_me", str(user.id))
     return await auth_service.get_me(user.id, db)
 
 

@@ -282,10 +282,25 @@ async def reset_password(req: ResetPasswordRequest, request: Request, db: AsyncS
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Cached for 15s — /auth/me is the AuthProvider heartbeat that fires
+    every 60s and is also polled on every page transition. The fields it
+    returns (name / email / kyc_status / wallet linkage / role / locale)
+    change at human pace, so a 15s freshness window is invisible to UX
+    while cutting the DB read by ~10x at scale. Mutation paths that
+    change these fields call cache.cache_invalidate("auth_me", user_id)
+    to bust the cache immediately."""
+    from packages.common.src.cache import cache_get, cache_set
+
+    user_id = current_user["user_id"]
+    cached = await cache_get("auth_me", str(user_id))
+    if cached is not None:
+        return cached
     try:
-        return await _get_me(user_id=current_user["user_id"], db=db)
+        result = await _get_me(user_id=user_id, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    await cache_set("auth_me", str(user_id), result, ttl_seconds=15)
+    return result
 
 
 @router.post("/2fa/setup")

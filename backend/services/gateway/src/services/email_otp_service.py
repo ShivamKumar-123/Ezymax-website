@@ -292,6 +292,14 @@ async def verify_otp(
     ))
 
     await db.commit()
+    # /auth/me's cached payload includes `email` and `email_verified` —
+    # bust it so the dashboard reflects the change on the next render
+    # instead of waiting up to 15s for the TTL.
+    try:
+        from packages.common.src.cache import cache_invalidate
+        await cache_invalidate("auth_me", str(user_id))
+    except Exception:
+        pass
     logger.info(
         "OTP verified user=%s action=%s prior=%s new=%s",
         user_id, audit_action, prior_email, row.target_email,
