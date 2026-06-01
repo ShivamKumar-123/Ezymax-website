@@ -8,8 +8,11 @@ Usage in any FastAPI service:
     app = FastAPI(...)
     add_middleware_stack(app)
 """
+import json
 import logging
+import os
 import time
+import uuid
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
@@ -18,6 +21,14 @@ from .config import get_settings
 
 logger = logging.getLogger("instrumentation")
 settings = get_settings()
+
+
+# Comma-separated list of IPs/CIDRs allowed to scrape /metrics. Empty
+# means "any". Production deploys should set this to the loopback +
+# the Prometheus scraper's address so metrics aren't world-readable.
+_METRICS_ALLOWLIST = {
+    s.strip() for s in (os.environ.get("METRICS_IP_ALLOWLIST") or "").split(",") if s.strip()
+}
 
 
 # ---------------------------------------------------------------------------
@@ -146,12 +157,25 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
 
 
 def add_metrics_endpoint(app):
-    """Add /metrics endpoint for Prometheus scraping."""
+    """Add /metrics endpoint for Prometheus scraping.
+
+    When METRICS_IP_ALLOWLIST env var is set (comma-separated IPs), the
+    endpoint returns 404 to anyone outside the allowlist. Default: no
+    list, endpoint open — nginx must front-gate it on production. The
+    404 (not 403) hides the endpoint's existence from probes."""
     if not _PROM_AVAILABLE:
         return
 
     @app.get("/metrics", include_in_schema=False)
-    async def metrics():
+    async def metrics(request: Request):
+        if _METRICS_ALLOWLIST:
+            client = (request.client.host if request.client else "") or ""
+            forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+            ips = {client, forwarded} - {""}
+            if not (ips & _METRICS_ALLOWLIST):
+                # 404, not 403, so we don't advertise the endpoint to
+                # outside scanners.
+                return JSONResponse(status_code=404, content={"detail": "Not Found"})
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -159,19 +183,53 @@ def add_metrics_endpoint(app):
 # 5. Structured Request Logging Middleware
 # ---------------------------------------------------------------------------
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """Per-request log line. Each request carries an X-Request-ID
+    header (generated if the caller didn't supply one) so traces fan
+    out across services and log aggregators. The log line is JSON when
+    LOG_FORMAT=json (default in production) so structured backends can
+    index method/path/status/duration_ms/request_id directly. In dev
+    we keep the short text format so console reading stays readable.
+    """
+
     async def dispatch(self, request: Request, call_next):
+        # Reuse upstream's request id if present (Cloudflare, nginx,
+        # k8s ingress all forward one); otherwise mint a fresh one.
+        request_id = (
+            request.headers.get("x-request-id")
+            or request.headers.get("x-correlation-id")
+            or uuid.uuid4().hex
+        )
+        # Stash on request.state so handlers can include it in their
+        # own structured logs / Sentry breadcrumbs.
+        request.state.request_id = request_id
+
         start = time.perf_counter()
         response = await call_next(request)
         duration_ms = (time.perf_counter() - start) * 1000
 
+        # Always echo the id back to the client — saves us from asking
+        # "do you have a request id?" when a user reports an issue.
+        response.headers["X-Request-ID"] = request_id
+
         if not request.url.path.startswith(("/health", "/metrics")):
-            logger.info(
-                "%s %s %d %.1fms",
-                request.method,
-                request.url.path,
-                response.status_code,
-                duration_ms,
-            )
+            if (os.environ.get("LOG_FORMAT") or "").lower() == "json":
+                logger.info(json.dumps({
+                    "event": "request",
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": response.status_code,
+                    "duration_ms": round(duration_ms, 1),
+                }))
+            else:
+                logger.info(
+                    "%s %s %d %.1fms rid=%s",
+                    request.method,
+                    request.url.path,
+                    response.status_code,
+                    duration_ms,
+                    request_id,
+                )
         return response
 
 

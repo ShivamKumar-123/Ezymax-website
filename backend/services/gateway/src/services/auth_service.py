@@ -685,11 +685,17 @@ async def google_oauth(
     except ImportError:
         raise AuthServiceError("Google sign-in dependency missing on server", 503)
 
+    # `verify_oauth2_token` does a sync HTTPS roundtrip to Google's JWKS
+    # (200-500ms). Inside an async handler this blocks the entire event
+    # loop, which is the gateway's bottleneck under burst signups.
+    # Offload to a worker thread so other requests keep flowing.
+    import asyncio
     try:
-        claims = google_id_token.verify_oauth2_token(
+        claims = await asyncio.to_thread(
+            google_id_token.verify_oauth2_token,
             id_token_str,
             google_requests.Request(),
-            audience=st.GOOGLE_CLIENT_ID,
+            st.GOOGLE_CLIENT_ID,
         )
     except ValueError as e:
         # Defensive: log without echoing the raw token payload back to the client.
