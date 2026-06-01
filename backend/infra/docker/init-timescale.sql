@@ -148,6 +148,33 @@ SELECT
 FROM ohlcv_1m
 GROUP BY time_bucket('1 hour', time), symbol;
 
--- Retention policy: keep ticks for 30 days, 1m bars for 1 year
-SELECT add_retention_policy('ticks', INTERVAL '30 days');
-SELECT add_retention_policy('ohlcv_1m', INTERVAL '1 year');
+-- Retention policies — finer-grain bars expire sooner; daily/weekly
+-- keep forever (cheap, and back-testing/charts rely on long history).
+SELECT add_retention_policy('ticks',     INTERVAL '30 days');
+SELECT add_retention_policy('ohlcv_1m',  INTERVAL '1 year');
+SELECT add_retention_policy('ohlcv_5m',  INTERVAL '2 years');
+SELECT add_retention_policy('ohlcv_15m', INTERVAL '3 years');
+SELECT add_retention_policy('ohlcv_1h',  INTERVAL '5 years');
+SELECT add_retention_policy('ohlcv_4h',  INTERVAL '10 years');
+
+-- Enable ZSTD compression segmented by symbol so range queries against
+-- (symbol, time) decompress only the relevant chunks. Without segmentby,
+-- compression ratios are far worse and queries scan more bytes.
+ALTER TABLE ticks     SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_1m  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_5m  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_15m SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_1h  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_4h  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_1d  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+ALTER TABLE ohlcv_1w  SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol', timescaledb.compress_orderby = 'time DESC');
+
+-- Compression policies — chunks older than the window get auto-compressed.
+SELECT add_compression_policy('ticks',     INTERVAL '7 days');
+SELECT add_compression_policy('ohlcv_1m',  INTERVAL '7 days');
+SELECT add_compression_policy('ohlcv_5m',  INTERVAL '14 days');
+SELECT add_compression_policy('ohlcv_15m', INTERVAL '14 days');
+SELECT add_compression_policy('ohlcv_1h',  INTERVAL '30 days');
+SELECT add_compression_policy('ohlcv_4h',  INTERVAL '60 days');
+SELECT add_compression_policy('ohlcv_1d',  INTERVAL '90 days');
+SELECT add_compression_policy('ohlcv_1w',  INTERVAL '180 days');
