@@ -20,7 +20,7 @@ from packages.common.src.models import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
     RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
     User, TradeHistory, TradingAccount,
-    Referral,
+    Referral, VipPass,
 )
 
 logger = logging.getLogger("rewards_service")
@@ -201,6 +201,36 @@ async def daily_login_check_in(db: AsyncSession, user_id) -> dict:
 # RewardsTransaction stays a complete audit trail.
 # ─────────────────────────────────────────────────────────────────────
 
+async def _get_vip_boost(db: AsyncSession, user_id) -> tuple[Decimal, Decimal, Decimal]:
+    """Return (xp_mult, ac_mult, ps_mult) for the user.
+
+    When the user holds an active (non-cancelled) VipPass, each multiplier
+    is 1 + boost_pct/100. Default boost is +20% per the deck (slide 18).
+    Otherwise all three multipliers are 1.0 — no-op for non-VIPs.
+
+    Fail-open: any error (Redis blip, table missing pre-migration, etc.)
+    drops back to 1.0 so a reward path never crashes due to VIP lookup
+    failure. The boost is a nice-to-have layered on top of the canonical
+    award math, not a load-bearing input.
+    """
+    try:
+        row = (await db.execute(
+            select(VipPass).where(
+                VipPass.user_id == user_id,
+                VipPass.cancelled_at.is_(None),
+            ).limit(1)
+        )).scalar_one_or_none()
+    except Exception:
+        return Decimal("1"), Decimal("1"), Decimal("1")
+    if row is None:
+        return Decimal("1"), Decimal("1"), Decimal("1")
+    return (
+        Decimal("1") + (Decimal(int(row.xp_boost_pct or 0)) / Decimal("100")),
+        Decimal("1") + (Decimal(int(row.ac_boost_pct or 0)) / Decimal("100")),
+        Decimal("1") + (Decimal(int(row.ps_boost_pct or 0)) / Decimal("100")),
+    )
+
+
 async def _award(
     db: AsyncSession,
     user_id,
@@ -211,12 +241,28 @@ async def _award(
     type: str,
     source: str,
     reference_id=None,
+    apply_vip_boost: bool = True,
 ) -> None:
     """Add XP/AC/PS to a user's state and write a RewardsTransaction row.
+
+    Applies the user's VIP boost multiplier when one is active (default
+    +20% per the slide-18 spec). Set `apply_vip_boost=False` for paths
+    that pay out non-earned amounts (refunds, spin payouts, lottery wins)
+    — boost is for "earned" XP/AC/PS only, not for game-prize coinage
+    which is already at the deck's intended rate.
+
     Caller is responsible for db.commit() — typically batched with the
     underlying event (trade close, signup, etc.)."""
     if xp <= 0 and ac <= 0 and ps <= 0:
         return
+    if apply_vip_boost:
+        xp_mult, ac_mult, ps_mult = await _get_vip_boost(db, user_id)
+        if xp and xp_mult != 1:
+            xp = int((Decimal(int(xp)) * xp_mult).quantize(Decimal("1")))
+        if ac and ac_mult != 1:
+            ac = (Decimal(str(ac)) * ac_mult).quantize(Decimal("0.01"))
+        if ps and ps_mult != 1:
+            ps = int((Decimal(int(ps)) * ps_mult).quantize(Decimal("1")))
     state_q = await db.execute(
         select(RewardsUserState).where(RewardsUserState.user_id == user_id).with_for_update()
     )
@@ -282,24 +328,37 @@ async def award_trading_volume_rewards(
     notional_usd: Decimal,
     *,
     reference_id=None,
+    is_copy_trade: bool = False,
 ) -> None:
     """Credit the trader for their trade volume + walk the referral chain
     crediting their uplines. Idempotent only via call-site discipline:
-    intended to fire exactly once per trade close."""
+    intended to fire exactly once per trade close.
+
+    `is_copy_trade=True` applies the slide-12 PS haircut: a follower's
+    copy-trade earns 70% of the PS an own-trade would have earned. XP
+    and AC are unaffected (slide 6 lists them at full rate). The
+    referral chain inherits the haircut so an upline can't game the
+    system by sending all traffic through copy trading."""
     if notional_usd <= 0:
         return
     # The trader's own slice.
     blocks = (notional_usd / Decimal("1000"))
     own_xp = int(blocks * XP_PER_1K_USD)
     own_ac = (blocks * AC_PER_1K_USD).quantize(Decimal("0.01"))
-    own_ps = int(blocks * PS_PER_1K_USD)
+    own_ps_base = int(blocks * PS_PER_1K_USD)
+    own_ps = (
+        int((Decimal(own_ps_base) * Decimal("0.70")).quantize(Decimal("1")))
+        if is_copy_trade else own_ps_base
+    )
     if own_xp <= 0 and own_ac <= 0 and own_ps <= 0:
         return
+    type_ = "copy_trade_volume" if is_copy_trade else "trade_volume"
+    src = "copy_trade_close" if is_copy_trade else "trade_close"
     await _award(
         db, user_id,
         xp=own_xp, ac=own_ac, ps=own_ps,
-        type="trade_volume",
-        source="trade_close",
+        type=type_,
+        source=src,
         reference_id=reference_id,
     )
     # Walk uplines.
@@ -309,8 +368,8 @@ async def award_trading_volume_rewards(
         base_xp=own_xp,
         base_ac=own_ac,
         base_ps=own_ps,
-        type_prefix="referral_trade",
-        source="trade_close",
+        type_prefix="referral_copy_trade" if is_copy_trade else "referral_trade",
+        source=src,
         reference_id=reference_id,
     )
 

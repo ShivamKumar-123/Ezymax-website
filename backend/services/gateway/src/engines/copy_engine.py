@@ -679,6 +679,31 @@ class CopyTradeEngine:
 
         copy.status = "closed"
 
+        # XP_Reward_mechanism slide 6 — "Follower earns profits + XP +
+        # ARTC + PS". Award the follower exactly as they would for an
+        # own trade, with the slide-12 PS haircut (70% of own-trade PS).
+        # Best-effort: a rewards-service failure must not roll back the
+        # trade close itself.
+        try:
+            if investor_account and investor_account.user_id and instrument:
+                contract_size_dec = Decimal(str(contract_size))
+                notional = (
+                    Decimal(str(investor_pos.lots))
+                    * contract_size_dec
+                    * Decimal(str(investor_pos.open_price))
+                )
+                if notional > 0:
+                    from ..services import rewards_service
+                    await rewards_service.award_trading_volume_rewards(
+                        db,
+                        investor_account.user_id,
+                        notional,
+                        reference_id=investor_pos.id,
+                        is_copy_trade=True,
+                    )
+        except Exception as _e:
+            logger.warning("follower copy-trade rewards failed: %s", _e)
+
         logger.info(
             "Copy closed: %s %s %s lots | gross=%s perf_fee=%s net=%s master_pos=%s",
             instrument.symbol,
