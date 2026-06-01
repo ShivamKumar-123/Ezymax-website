@@ -56,8 +56,10 @@ class PlaceOrderRequest(BaseModel):
 class ModifyOrderRequest(BaseModel):
     stop_loss: Optional[Decimal] = None
     take_profit: Optional[Decimal] = None
-    price: Optional[Decimal] = None
-    lots: Optional[Decimal] = None
+    price: Optional[Decimal] = Field(default=None, gt=0)
+    # Same gt=0/le=100 envelope as PlaceOrderRequest — a modify can't
+    # turn a long into a short by passing a negative lots value.
+    lots: Optional[Decimal] = Field(default=None, gt=0, le=100)
 
 
 class OrderResponse(BaseModel):

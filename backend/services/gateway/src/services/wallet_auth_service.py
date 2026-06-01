@@ -267,18 +267,18 @@ async def verify_message(
     if not siwe_address or not siwe_nonce:
         raise AuthServiceError("Malformed SIWE fields", 401)
 
-    # 3. Atomic single-use nonce consume.
+    # 3. Look up the nonce (NOT consumed yet). This is a plain read —
+    # consumption is deferred until after signature verification so an
+    # attacker who fires a bad signature can't burn a victim's nonce
+    # and lock them out of a real login.
     res = await db.execute(
-        update(WalletAuthNonce)
-        .where(
+        select(WalletAuthNonce).where(
             WalletAuthNonce.nonce == siwe_nonce,
             WalletAuthNonce.consumed_at.is_(None),
             WalletAuthNonce.expires_at > func.now(),
             func.lower(WalletAuthNonce.address) == siwe_address,
             WalletAuthNonce.chain_id == chain_id,
         )
-        .values(consumed_at=func.now())
-        .returning(WalletAuthNonce)
     )
     nonce_row = res.scalar_one_or_none()
     if nonce_row is None:
@@ -286,17 +286,34 @@ async def verify_message(
 
     # 4. Link-flow ownership check.
     if expected_user_id is not None and nonce_row.user_id != expected_user_id:
-        await db.rollback()
         raise AuthServiceError("Nonce not issued for this session", 401)
 
-    # 5. Signature verification.
+    # 5. Signature verification — pure CPU, no DB write. A bad signature
+    # leaves the nonce untouched so the legitimate signer can still use it.
     try:
         siwe_msg.verify(signature)
     except Exception as e:
         logger.info("siwe signature verify failed: %s", e)
-        await db.commit()  # keep the nonce consumed — single-use enforced
         raise AuthServiceError("Signature verification failed", 401)
 
+    # 6. Atomic single-use consume — only now do we burn the nonce. The
+    # WHERE consumed_at IS NULL clause makes a concurrent winner of two
+    # legitimate-looking verify requests deterministic: exactly one row
+    # is updated, the loser gets nonce_row=None and a 401.
+    consumed = await db.execute(
+        update(WalletAuthNonce)
+        .where(
+            WalletAuthNonce.id == nonce_row.id,
+            WalletAuthNonce.consumed_at.is_(None),
+        )
+        .values(consumed_at=func.now())
+        .returning(WalletAuthNonce)
+    )
+    if consumed.scalar_one_or_none() is None:
+        # Another concurrent verifier (with their own valid signature)
+        # already consumed this nonce. Reject this attempt to keep
+        # single-use semantics intact.
+        raise AuthServiceError("Nonce already used", 401)
     await db.commit()
     return siwe_address, nonce_row
 

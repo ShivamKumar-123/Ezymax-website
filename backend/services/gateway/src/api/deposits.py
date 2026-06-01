@@ -212,7 +212,16 @@ async def create_withdrawal(
 
     Honours the `Idempotency-Key` header — a retried POST with the same
     key returns the cached response without creating a second withdrawal
-    row or freezing the user's balance twice."""
+    row or freezing the user's balance twice.
+
+    Per-user rate limit: 5 withdrawal-creates per 10 minutes. A legit
+    user almost never bursts past this; an attacker who has somehow
+    bypassed step-up auth still can't dump 200 small payouts in 30s."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(
+        request, "withdraw_create", 5, 600.0,
+        subject=f"user:{current_user['user_id']}",
+    )
     from packages.common.src.idempotency import get_cached_response, store_response
 
     cached = await get_cached_response(
@@ -251,7 +260,12 @@ async def create_onchain_withdrawal(
     confirms and flips the row to 'paid'.
 
     Honours `Idempotency-Key` so a retried submit can't freeze balance
-    twice."""
+    twice. Per-user rate-limited to 5 per 10 minutes."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(
+        request, "withdraw_onchain_create", 5, 600.0,
+        subject=f"user:{current_user['user_id']}",
+    )
     from packages.common.src.idempotency import get_cached_response, store_response
 
     cached = await get_cached_response(

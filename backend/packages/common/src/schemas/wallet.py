@@ -110,7 +110,7 @@ class WalletDepositRequest(BaseModel):
       - None / unset → server resolver picks (wallet-bound if present,
         else main wallet) — preserves the auto-route default
     """
-    amount: Decimal
+    amount: Decimal = Field(gt=0)
     # Frontend asset id, e.g. "USDT_ERC", "USDT_TRC", "ETH".
     crypto_currency: str
     target: Optional[str] = None
@@ -129,7 +129,7 @@ class HostedInvoiceDepositRequest(BaseModel):
 
     `target` — same semantics as WalletDepositRequest.
     """
-    amount: Decimal
+    amount: Decimal = Field(gt=0)
     crypto_currency: Optional[str] = None
     target: Optional[str] = None
 
@@ -144,7 +144,7 @@ class OnchainDepositRequest(BaseModel):
     `target` — same semantics as WalletDepositRequest.
     """
     network: str            # eth | bsc | tron
-    amount: Decimal
+    amount: Decimal = Field(gt=0)
     target: Optional[str] = None
 
 
@@ -153,8 +153,12 @@ class OnchainWithdrawRequest(BaseModel):
     sends manually; chain_verifier_engine confirms once tx is mined.
 
     `source` — same semantics as WithdrawalRequest.
+
+    Note: `destination_address` is accepted for back-compat with older
+    clients but the server overrides it with the user's linked SIWE
+    wallet — see onchain_withdraw_service.create_onchain_withdrawal.
     """
     network: str            # eth | bsc | tron
-    amount: Decimal
-    destination_address: str  # user's own wallet on the picked chain
+    amount: Decimal = Field(gt=0)
+    destination_address: Optional[str] = None
     source: Optional[str] = None

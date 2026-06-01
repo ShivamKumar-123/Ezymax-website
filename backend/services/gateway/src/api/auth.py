@@ -50,6 +50,10 @@ async def platform_status():
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    # 5 fresh signups per IP per 10 minutes — far above any organic rate
+    # but stops spam-account creation from a single host.
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "register", 5, 600.0)
     try:
         return await register_user(
             email=req.email, password=req.password,
@@ -64,6 +68,12 @@ async def register(req: RegisterRequest, request: Request, db: AsyncSession = De
 
 @router.post("/login")
 async def login(req: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    # 10 attempts per IP per minute — generous enough that a user can
+    # mistype their password a few times, tight enough to block
+    # credential stuffing. The per-bucket limiter falls back to in-process
+    # if Redis is down, so a Redis blip never opens the floodgates.
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "login", 10, 60.0)
     try:
         return await login_user(
             email=req.email, password=req.password,
@@ -244,6 +254,11 @@ async def impersonate_redeem(
 
 @router.post("/forgot-password", response_model=MessageResponse)
 async def forgot_password(req: ForgotPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    # 3 reset emails per IP per 10 minutes — stops a single host from
+    # spamming the queue / SMTP throughput and prevents enumeration
+    # attempts via timing.
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "forgot-password", 3, 600.0)
     try:
         result = await _forgot_password(email=req.email, request=request, db=db)
         return MessageResponse(**result)
@@ -253,6 +268,11 @@ async def forgot_password(req: ForgotPasswordRequest, request: Request, db: Asyn
 
 @router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(req: ResetPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    # 10 attempts per IP per 10 minutes — a real user reading from email
+    # only ever submits this once; a token-guessing attacker would need
+    # massive throughput to succeed at this rate.
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "reset-password", 10, 600.0)
     try:
         result = await _reset_password(token=req.token, new_password=req.new_password, request=request, db=db)
         return MessageResponse(**result)

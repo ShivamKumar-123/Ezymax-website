@@ -107,16 +107,26 @@ def client_ip_for_inet(request: Request) -> str | None:
 _LOCAL_RATE_BUCKETS: dict[str, list[float]] = {}
 
 
-def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec: float) -> None:
-    """Sliding-window rate limiter, scoped to (bucket, client IP).
+def rate_limit_http(
+    request: Request,
+    bucket: str,
+    max_requests: int,
+    window_sec: float,
+    *,
+    subject: str | None = None,
+) -> None:
+    """Sliding-window rate limiter, scoped to (bucket, subject).
 
     Best-effort: tries Redis first via fire-and-forget asyncio scheduling
     (so we never block the request hot path on Redis latency), and falls
     back to a per-process in-memory window if Redis is unreachable.
 
-    Raises HTTPException(429) when the cap is exceeded. Whitelisting is
-    by IP; if `client_ip_for_inet` returns None (e.g. unit test request
-    with no client) the bucket is keyed on the bucket name alone.
+    Raises HTTPException(429) when the cap is exceeded. By default the
+    subject is the client IP (good for unauthenticated endpoints like
+    login). Pass `subject="user:<uuid>"` for authenticated endpoints
+    where the user is the natural quota unit (withdrawals, order
+    placement) so a shared NAT/VPN doesn't drag legit users into
+    someone else's bucket.
 
     Earlier this was a no-op, which left every auth endpoint (login,
     register, password reset, 2FA, wallet nonce) wide open to brute
@@ -125,8 +135,8 @@ def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec
     """
     from fastapi import HTTPException
 
-    ip = client_ip_for_inet(request) or "anon"
-    key = f"rl:{bucket}:{ip}"
+    subj = subject or (client_ip_for_inet(request) or "anon")
+    key = f"rl:{bucket}:{subj}"
     now = monotonic()
     floor = now - window_sec
 
@@ -152,7 +162,7 @@ def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec
             try:
                 pipe = redis_client.pipeline()
                 pipe.zremrangebyscore(key, 0, floor)
-                pipe.zadd(key, {f"{now}:{ip}": now})
+                pipe.zadd(key, {f"{now}:{subj}": now})
                 pipe.zcard(key)
                 pipe.expire(key, int(window_sec) + 5)
                 _, _, count, _ = await pipe.execute()
