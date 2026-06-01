@@ -24,12 +24,22 @@
  * automatic — wagmi batches reads to a single RPC request per chain.
  */
 import { memo, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useReadContracts } from 'wagmi';
 import { erc20Abi, formatUnits } from 'viem';
 import { arbitrum, bsc, mainnet, polygon } from 'wagmi/chains';
 import { useAuthStore } from '@/stores/authStore';
 import { isWalletConnectConfigured } from '@/lib/web3/config';
 import { ExternalLink, Wallet as WalletIcon, Loader2 } from 'lucide-react';
+
+// Lazy-load Web3Provider so the wallet page doesn't pay the wagmi +
+// RainbowKit bundle cost when WalletConnect isn't configured (or before
+// the user even scrolls to this card). ssr:false because wagmi can't
+// render server-side and we don't need SEO for a wallet balance widget.
+const Web3Provider = dynamic(
+  () => import('@/components/providers/Web3Provider'),
+  { ssr: false },
+);
 
 // USDT contract addresses per chain. These are the canonical mainnet
 // addresses — confirm before editing. Decimals are 6 on Ethereum/
@@ -138,7 +148,6 @@ function OnChainWalletBalanceInner({
     },
   });
 
-  if (!isWalletConnectConfigured()) return null;
   if (!linkedAddress) return null;
 
   const shortAddr =
@@ -227,4 +236,35 @@ function OnChainWalletBalanceInner({
   );
 }
 
-export default memo(OnChainWalletBalanceInner);
+type Props = {
+  onDepositClick?: (slug: ChainEntry['depositSlug']) => void;
+};
+
+/**
+ * Public wrapper — checks WalletConnect configuration + linked wallet
+ * BEFORE mounting `<Web3Provider>`. Two failure modes that this guard
+ * fixes:
+ *
+ *   1. Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID at build time:
+ *      Web3Provider would still mount with a dummy ID, but rendering
+ *      a wallet card a user can't act on is pointless — bail to null.
+ *   2. User has no linked wallet: we don't have an address to query
+ *      balances for, so there is nothing to show.
+ *
+ * Calling any wagmi hook outside <WagmiProvider> throws
+ * WagmiProviderNotFoundError on the client, which crashes the entire
+ * wallet page. Mounting Web3Provider here as the outer wrapper makes
+ * `useReadContracts()` in the inner component safe.
+ */
+function OnChainWalletBalanceWrapper(props: Props) {
+  const hasWallet = useAuthStore((s) => Boolean(s.user?.wallet_address));
+  if (!isWalletConnectConfigured()) return null;
+  if (!hasWallet) return null;
+  return (
+    <Web3Provider>
+      <OnChainWalletBalanceInner {...props} />
+    </Web3Provider>
+  );
+}
+
+export default memo(OnChainWalletBalanceWrapper);
