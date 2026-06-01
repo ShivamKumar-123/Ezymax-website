@@ -67,28 +67,36 @@ async def list_leaderboard(
     result = await db.execute(query)
     rows = result.all()
 
-    items = []
-    for master, first_name, last_name in rows:
-        is_copying = False
-        alloc_result = await db.execute(
-            select(InvestorAllocation).where(
-                InvestorAllocation.master_id == master.id,
+    # Batch two lookups across all masters on this page instead of two
+    # queries per master (was 2*N+1; now 3 total). At per_page=20 that's
+    # 41 → 3, and at per_page=100 it's 201 → 3.
+    master_ids = [m.id for m, _fn, _ln in rows]
+
+    is_copying_ids: set[UUID] = set()
+    follower_counts: dict[UUID, int] = {}
+    if master_ids:
+        copying_rows = await db.execute(
+            select(InvestorAllocation.master_id).where(
+                InvestorAllocation.master_id.in_(master_ids),
                 InvestorAllocation.investor_user_id == user_id,
                 InvestorAllocation.status == "active",
             )
         )
-        if alloc_result.scalar_one_or_none():
-            is_copying = True
+        is_copying_ids = {r[0] for r in copying_rows.all()}
 
-        # Real follower count = count of ACTIVE allocations (excludes closed/paused/etc)
-        real_followers_q = await db.execute(
-            select(func.count()).select_from(InvestorAllocation).where(
-                InvestorAllocation.master_id == master.id,
+        followers_rows = await db.execute(
+            select(
+                InvestorAllocation.master_id,
+                func.count().label("c"),
+            ).where(
+                InvestorAllocation.master_id.in_(master_ids),
                 InvestorAllocation.status == "active",
-            )
+            ).group_by(InvestorAllocation.master_id)
         )
-        real_followers = real_followers_q.scalar() or 0
+        follower_counts = {mid: c for mid, c in followers_rows.all()}
 
+    items = []
+    for master, first_name, last_name in rows:
         items.append({
             "id": str(master.id),
             "user_id": str(master.user_id),
@@ -96,13 +104,13 @@ async def list_leaderboard(
             "total_return_pct": float(master.total_return_pct),
             "max_drawdown_pct": float(master.max_drawdown_pct),
             "sharpe_ratio": float(master.sharpe_ratio),
-            "followers_count": real_followers,
+            "followers_count": follower_counts.get(master.id, 0),
             "performance_fee_pct": float(master.performance_fee_pct),
             "min_investment": float(master.min_investment),
             "description": master.description,
             "strategy_info": getattr(master, "strategy_info", None),
             "created_at": master.created_at.isoformat() if master.created_at else None,
-            "is_copying": is_copying,
+            "is_copying": master.id in is_copying_ids,
         })
 
     return {
