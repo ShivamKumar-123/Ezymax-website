@@ -63,24 +63,24 @@ function Inner() {
       return;
     }
     if (amount < r.min_bid_ac) {
-      toast.error(`Minimum bid is ${fmt(r.min_bid_ac)} AC`);
+      toast.error(`Minimum bid is ${fmt(r.min_bid_ac)} FXA`);
       return;
     }
     if (amount > acBalance) {
-      toast.error('Insufficient Artha Coins');
+      toast.error('Insufficient FXArtha Coins');
       return;
     }
     setBusyId(r.id);
     try {
       await api.post(`/play/bidding/${r.id}/bid`, { amount });
-      toast.success(`Bid of ${fmt(amount)} AC placed. 50% refunded if you don't win.`);
+      toast.success(`Bid of ${fmt(amount)} FXA placed. 50% refunded if you don't win.`);
       setBidInput((prev) => ({ ...prev, [r.id]: '' }));
       await load();
     } catch (err: any) {
       const detail = err?.response?.data?.detail || '';
-      if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
+      if (detail === 'insufficient_ac') toast.error('Not enough FXArtha Coins');
       else if (detail === 'round_expired') toast.error('Auction has closed');
-      else if (typeof detail === 'string' && detail.startsWith('min_bid_ac_')) toast.error(`Minimum bid is ${detail.replace('min_bid_ac_', '')} AC`);
+      else if (typeof detail === 'string' && detail.startsWith('min_bid_ac_')) toast.error(`Minimum bid is ${detail.replace('min_bid_ac_', '')} FXA`);
       else toast.error(detail || err?.message || 'Could not place bid');
     } finally {
       setBusyId(null);
@@ -102,12 +102,12 @@ function Inner() {
             <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
               Bidding <Gavel size={22} className="text-[#d6a93d]" />
             </h1>
-            <p className="text-sm text-text-secondary mt-0.5">Highest bid wins. Losers get 50% of their bid AC refunded automatically.</p>
+            <p className="text-sm text-text-secondary mt-0.5">Highest bid wins. Losers get 50% of their bid FXA refunded automatically.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5">
           <Coins size={14} className="text-[#d6a93d]" />
-          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} AC</span>
+          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} FXA</span>
         </div>
       </header>
 
@@ -169,9 +169,9 @@ function RoundCard({
         </h3>
       </div>
       <div className="grid grid-cols-3 gap-2 text-[11px] text-text-tertiary">
-        <Stat label="Min bid" value={`${fmt(r.min_bid_ac)} AC`} />
-        <Stat label="Top bid" value={r.current_top_ac > 0 ? `${fmt(r.current_top_ac)} AC` : '—'} />
-        <Stat label="Yours" value={r.my_top_ac > 0 ? `${fmt(r.my_top_ac)} AC` : '—'} accent />
+        <Stat label="Min bid" value={`${fmt(r.min_bid_ac)} FXA`} />
+        <Stat label="Top bid" value={r.current_top_ac > 0 ? `${fmt(r.current_top_ac)} FXA` : '—'} />
+        <Stat label="Yours" value={r.my_top_ac > 0 ? `${fmt(r.my_top_ac)} FXA` : '—'} accent />
       </div>
       <p className="text-[11px] text-text-tertiary">
         Closes {expired ? 'now' : closes.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}

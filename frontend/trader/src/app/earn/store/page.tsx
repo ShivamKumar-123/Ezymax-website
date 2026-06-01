@@ -68,11 +68,11 @@ function Inner() {
     setBusyId(item.id);
     try {
       const res = await api.post<{ redeemed: string; ac_spent: number }>(`/rewards/store/${item.id}/redeem`, {});
-      toast.success(`Redeemed ${res.redeemed} (−${formatInteger(res.ac_spent)} AC)`);
+      toast.success(`Redeemed ${res.redeemed} (−${formatInteger(res.ac_spent)} FXA)`);
       await load();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
+      if (detail === 'insufficient_ac') toast.error('Not enough FXArtha Coins');
       else if (detail === 'insufficient_ps') toast.error('Not enough Power Score for this lifestyle reward');
       else toast.error(detail || err?.message || 'Could not redeem');
     } finally {
@@ -90,13 +90,13 @@ function Inner() {
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             Rewards Store <ShoppingBag size={22} className="text-primary-accent" />
           </h1>
-          <p className="text-sm text-text-secondary mt-1">Spend Artha Coins on cashback, perks, tools, and lifestyle rewards.</p>
+          <p className="text-sm text-text-secondary mt-1">Spend FXArtha Coins on cashback, perks, tools, and lifestyle rewards.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary-accent/30 bg-primary-accent/5">
             <Coins size={14} className="text-primary-accent" />
             <span className="text-sm font-semibold text-text-primary tabular-nums">
-              {state ? formatInteger(acBalance) : '—'} AC
+              {state ? formatInteger(acBalance) : '—'} FXA
             </span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-info/30 bg-info/5">
@@ -145,7 +145,7 @@ function Inner() {
                 const cta = !meetsPs
                   ? `Locked · needs ${formatInteger(psGate)} PS`
                   : !canAffordAc
-                    ? 'Not enough AC'
+                    ? 'Not enough FXA'
                     : 'Redeem';
                 return (
                   <div
@@ -157,7 +157,7 @@ function Inner() {
                         {it.category}
                       </span>
                       <span className="text-[12px] font-semibold text-text-primary tabular-nums">
-                        {formatInteger(it.ac_price)} AC
+                        {formatInteger(it.ac_price)} FXA
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold text-text-primary">{it.label}</h3>

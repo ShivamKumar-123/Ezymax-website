@@ -83,7 +83,7 @@ export default function SpinWheel({
   const handleSpin = async () => {
     if (spinning) return;
     if (acBalance < costAc) {
-      toast.error(`Not enough Artha Coins. Need ${costAc} AC.`);
+      toast.error(`Not enough FXArtha Coins. Need ${costAc} FXA.`);
       return;
     }
     setSpinning(true);
@@ -113,7 +113,7 @@ export default function SpinWheel({
         } else if (res.payout_kind === 'xp') {
           toast.success(`+${res.payout_amount} XP`);
         } else {
-          toast.success(`+${res.payout_amount} AC`);
+          toast.success(`+${res.payout_amount} FXA`);
         }
         onResult?.(res);
         onAcChange?.(res.new_ac_balance);
@@ -121,7 +121,7 @@ export default function SpinWheel({
       }, 3500);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
+      if (detail === 'insufficient_ac') toast.error('Not enough FXArtha Coins');
       else if (detail === 'spin_unavailable') toast.error('Spin is temporarily unavailable');
       else toast.error(detail || err?.message || 'Spin failed');
       setSpinning(false);
@@ -214,7 +214,7 @@ export default function SpinWheel({
           </>
         ) : (
           <>
-            <Coins size={16} /> Spin for {costAc} AC
+            <Coins size={16} /> Spin for {costAc} FXA
           </>
         )}
       </button>

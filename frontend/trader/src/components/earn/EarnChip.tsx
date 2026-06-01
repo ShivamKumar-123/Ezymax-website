@@ -22,7 +22,7 @@ function formatCompact(n: number) {
   return Math.round(n).toString();
 }
 
-/** Topbar chip showing total XP + AC balance + level/rank, links to /earn/tasks. */
+/** Topbar chip showing total XP + FXA balance + level/rank, links to /earn/tasks. */
 export default function EarnChip() {
   const [s, setS] = useState<RewardsState | null>(null);
 

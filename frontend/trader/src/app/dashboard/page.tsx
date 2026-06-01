@@ -71,7 +71,7 @@ function BrokerHome() {
   const [movers, setMovers] = useState<{ symbol: string; pct: number; price: number }[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  // Rewards state for Level + DGC Coins (Artha Coin) display.
+  // Rewards state for Level + FXArtha Coin (FXA) display.
   const [rewardsState, setRewardsState] = useState<{
     level?: number; level_label?: string;
     xp?: number; xp_next_level?: number;

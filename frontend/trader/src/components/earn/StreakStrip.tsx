@@ -38,7 +38,7 @@ export default function StreakStrip() {
         try {
           const res = await api.post<CheckInResult>('/rewards/streak/check-in', {});
           if (res.bonus_awarded) {
-            toast.success(`7-day streak bonus! +${res.xp_earned} XP, +${res.ac_earned} AC`);
+            toast.success(`7-day streak bonus! +${res.xp_earned} XP, +${res.ac_earned} FXA`);
           } else if (res.xp_earned > 0) {
             toast.success(`Daily check-in: +${res.xp_earned} XP`);
           }
@@ -73,7 +73,7 @@ export default function StreakStrip() {
         <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
           <Gift size={12} className="text-[#d6a93d]" />
           <span>
-            Day {total} bonus: +{state?.streak_bonus_xp ?? 50} XP, +{state?.streak_bonus_ac ?? 20} AC
+            Day {total} bonus: +{state?.streak_bonus_xp ?? 50} XP, +{state?.streak_bonus_ac ?? 20} FXA
           </span>
         </div>
       </div>

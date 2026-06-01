@@ -125,7 +125,7 @@ export default function PlayZoneAdminPage() {
   };
 
   const cancel = async (kind: 'lottery' | 'bidding', id: string) => {
-    if (!confirm(`Cancel this ${kind} round? Participants will be refunded 100% of their AC.`)) return;
+    if (!confirm(`Cancel this ${kind} round? Participants will be refunded 100% of their FXA.`)) return;
     setBusyId(id);
     try {
       await adminApi.post(`/play-zone/${kind}/rounds/${id}/cancel`, {});
@@ -192,7 +192,7 @@ export default function PlayZoneAdminPage() {
           rows={lottery.map((r) => ({
             id: r.id, slug: r.slug, label: r.prize_label,
             prize: r.prize_kind === 'external' ? 'External' : `${fmt(r.prize_amount)} ${r.prize_kind.toUpperCase()}`,
-            cost: `${fmt(r.ticket_cost_ac)} AC / ticket`,
+            cost: `${fmt(r.ticket_cost_ac)} FXA / ticket`,
             count: `${r.ticket_count} tickets`,
             ends_at: r.draws_at,
             state: r.state,
@@ -206,7 +206,7 @@ export default function PlayZoneAdminPage() {
           rows={bidding.map((r) => ({
             id: r.id, slug: r.slug, label: r.prize_label,
             prize: r.prize_kind === 'external' ? 'External' : `${fmt(r.prize_amount)} ${r.prize_kind.toUpperCase()}`,
-            cost: `Min ${fmt(r.min_bid_ac)} AC`,
+            cost: `Min ${fmt(r.min_bid_ac)} FXA`,
             count: `${r.bid_count} bids`,
             ends_at: r.closes_at,
             state: r.state,
@@ -219,10 +219,10 @@ export default function PlayZoneAdminPage() {
       {modal === 'lottery' && (
         <Modal title="New Lottery Round" onClose={() => setModal(null)} onSubmit={submitLottery} submitting={submitting}>
           <Field label="Slug (unique key)" value={lotteryForm.slug} onChange={(v) => setLotteryForm((p) => ({ ...p, slug: v }))} placeholder="e.g. weekly_2k_2026_05_15" />
-          <Field label="Prize label" value={lotteryForm.prize_label} onChange={(v) => setLotteryForm((p) => ({ ...p, prize_label: v }))} placeholder="Weekly 2,000 AC Prize" />
+          <Field label="Prize label" value={lotteryForm.prize_label} onChange={(v) => setLotteryForm((p) => ({ ...p, prize_label: v }))} placeholder="Weekly 2,000 FXA Prize" />
           <Select label="Prize kind" value={lotteryForm.prize_kind} onChange={(v) => setLotteryForm((p) => ({ ...p, prize_kind: v as PrizeKind }))} options={['xp', 'ac', 'cashback', 'external']} />
           <Field label="Prize amount (0 for external)" type="number" value={lotteryForm.prize_amount} onChange={(v) => setLotteryForm((p) => ({ ...p, prize_amount: v }))} />
-          <Field label="Ticket cost (AC)" type="number" value={lotteryForm.ticket_cost_ac} onChange={(v) => setLotteryForm((p) => ({ ...p, ticket_cost_ac: v }))} />
+          <Field label="Ticket cost (FXA)" type="number" value={lotteryForm.ticket_cost_ac} onChange={(v) => setLotteryForm((p) => ({ ...p, ticket_cost_ac: v }))} />
           <Field label="Draws at" type="datetime-local" value={lotteryForm.draws_at} onChange={(v) => setLotteryForm((p) => ({ ...p, draws_at: v }))} />
         </Modal>
       )}
@@ -232,7 +232,7 @@ export default function PlayZoneAdminPage() {
           <Field label="Prize label" value={bidForm.prize_label} onChange={(v) => setBidForm((p) => ({ ...p, prize_label: v }))} placeholder="Premium Smartphone Auction" />
           <Select label="Prize kind" value={bidForm.prize_kind} onChange={(v) => setBidForm((p) => ({ ...p, prize_kind: v as PrizeKind }))} options={['xp', 'ac', 'cashback', 'external']} />
           <Field label="Prize amount (0 for external)" type="number" value={bidForm.prize_amount} onChange={(v) => setBidForm((p) => ({ ...p, prize_amount: v }))} />
-          <Field label="Min bid (AC)" type="number" value={bidForm.min_bid_ac} onChange={(v) => setBidForm((p) => ({ ...p, min_bid_ac: v }))} />
+          <Field label="Min bid (FXA)" type="number" value={bidForm.min_bid_ac} onChange={(v) => setBidForm((p) => ({ ...p, min_bid_ac: v }))} />
           <Field label="Closes at" type="datetime-local" value={bidForm.closes_at} onChange={(v) => setBidForm((p) => ({ ...p, closes_at: v }))} />
         </Modal>
       )}

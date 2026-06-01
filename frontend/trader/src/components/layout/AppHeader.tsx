@@ -92,7 +92,7 @@ export default function AppHeader() {
 
         {/* RIGHT — XP/Coin chip + balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* XP + AC chip — links to /earn/tasks */}
+          {/* XP + FXA chip — links to /earn/tasks */}
           <EarnChip />
 
           {/* Balance pill */}

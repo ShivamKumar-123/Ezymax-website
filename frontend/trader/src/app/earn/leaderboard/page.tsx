@@ -89,7 +89,7 @@ function Inner() {
                   <span className="flex-1 text-sm text-text-primary truncate">{r.name}</span>
                   <span className="text-sm font-semibold tabular-nums text-text-primary">
                     {tab === 'earners'
-                      ? `${fmt(r.ac_balance ?? 0)} AC`
+                      ? `${fmt(r.ac_balance ?? 0)} FXA`
                       : fmtUsd(r.roi_30d_usd ?? 0)}
                   </span>
                 </li>

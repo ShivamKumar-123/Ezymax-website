@@ -117,7 +117,7 @@ export default function LifestylePage() {
                 <th className="text-left px-3 py-2">Requested</th>
                 <th className="text-left px-3 py-2">User</th>
                 <th className="text-left px-3 py-2">Item</th>
-                <th className="text-left px-3 py-2">AC Paid</th>
+                <th className="text-left px-3 py-2">FXA Paid</th>
                 <th className="text-left px-3 py-2">PS at Redeem</th>
                 <th className="text-left px-3 py-2">Tracking</th>
                 <th className="text-left px-3 py-2">Status</th>
@@ -186,7 +186,7 @@ export default function LifestylePage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (!confirm('Cancel this fulfillment? Note: AC is NOT auto-refunded — handle separately if required.')) return;
+                          if (!confirm('Cancel this fulfillment? Note: FXA is NOT auto-refunded — handle separately if required.')) return;
                           void update(f.id, { status: 'cancelled' });
                         }}
                         disabled={busyId === f.id}

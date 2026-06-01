@@ -63,7 +63,7 @@ function Inner() {
     setBusyId(m.id);
     try {
       const res = await api.post<{ xp_earned: number; ac_earned: number }>(`/rewards/missions/${m.id}/claim`, {});
-      toast.success(`+${res.xp_earned} XP · +${res.ac_earned} AC`);
+      toast.success(`+${res.xp_earned} XP · +${res.ac_earned} FXA`);
       await load();
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || err?.message || 'Could not claim');
@@ -157,7 +157,7 @@ function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null;
         <div className="flex items-center gap-3 mt-1.5 text-[11px] text-text-tertiary">
           <span>+{m.xp_reward} XP</span>
           <span>•</span>
-          <span>+{m.ac_reward} AC</span>
+          <span>+{m.ac_reward} FXA</span>
         </div>
       </div>
       <div className="shrink-0 self-center">

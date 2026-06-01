@@ -68,12 +68,12 @@ function Inner() {
           </Link>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">Spin &amp; Win</h1>
-            <p className="text-sm text-text-secondary mt-0.5">Spend Artha Coins to spin the wheel and win cashback or bonus AC.</p>
+            <p className="text-sm text-text-secondary mt-0.5">Spend FXArtha Coins to spin the wheel and win cashback or bonus FXA.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5">
           <Coins size={14} className="text-[#d6a93d]" />
-          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} AC</span>
+          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} FXA</span>
         </div>
       </header>
 
@@ -113,7 +113,7 @@ function Inner() {
                     >
                       {r.payout_kind === 'nothing'
                         ? '—'
-                        : `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'AC'}`}
+                        : `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'FXA'}`}
                     </span>
                   </li>
                 ))}

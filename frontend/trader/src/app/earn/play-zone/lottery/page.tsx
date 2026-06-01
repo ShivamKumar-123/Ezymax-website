@@ -55,17 +55,17 @@ function Inner() {
 
   const buy = async (r: Round) => {
     if (acBalance < r.ticket_cost_ac) {
-      toast.error(`Need ${fmt(r.ticket_cost_ac)} AC for a ticket`);
+      toast.error(`Need ${fmt(r.ticket_cost_ac)} FXA for a ticket`);
       return;
     }
     setBusyId(r.id);
     try {
       await api.post(`/play/lottery/${r.id}/buy`, {});
-      toast.success(`Ticket purchased for ${fmt(r.ticket_cost_ac)} AC`);
+      toast.success(`Ticket purchased for ${fmt(r.ticket_cost_ac)} FXA`);
       await load();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
+      if (detail === 'insufficient_ac') toast.error('Not enough FXArtha Coins');
       else if (detail === 'round_expired') toast.error('Round has closed');
       else toast.error(detail || err?.message || 'Could not buy ticket');
     } finally {
@@ -93,7 +93,7 @@ function Inner() {
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5">
           <Coins size={14} className="text-[#d6a93d]" />
-          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} AC</span>
+          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} FXA</span>
         </div>
       </header>
 
@@ -147,7 +147,7 @@ function RoundCard({ r, busy, onBuy, acBalance }: { r: Round; busy: boolean; onB
         )}
       </div>
       <div className="grid grid-cols-3 gap-2 text-[11px] text-text-tertiary">
-        <Stat label="Ticket" value={`${fmt(r.ticket_cost_ac)} AC`} />
+        <Stat label="Ticket" value={`${fmt(r.ticket_cost_ac)} FXA`} />
         <Stat label="Total" value={fmt(r.ticket_count)} />
         <Stat label="Yours" value={fmt(r.my_tickets)} accent />
       </div>
@@ -162,7 +162,7 @@ function RoundCard({ r, busy, onBuy, acBalance }: { r: Round; busy: boolean; onB
           className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-bold bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60"
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Ticket size={14} />}
-          {canAfford ? `Buy ticket for ${fmt(r.ticket_cost_ac)} AC` : 'Not enough AC'}
+          {canAfford ? `Buy ticket for ${fmt(r.ticket_cost_ac)} FXA` : 'Not enough FXA'}
         </button>
       ) : (
         <span className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-xs text-text-tertiary border border-border-primary">

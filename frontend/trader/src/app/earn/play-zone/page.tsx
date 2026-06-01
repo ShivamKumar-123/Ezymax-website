@@ -12,26 +12,26 @@ export default function EarnPlayZonePage() {
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             Play Zone <Sparkles size={22} className="text-[#d6a93d]" />
           </h1>
-          <p className="text-sm text-text-secondary mt-1">Spend your Artha Coins on Spin, Lottery, and Bidding rewards.</p>
+          <p className="text-sm text-text-secondary mt-1">Spend your FXArtha Coins on Spin, Lottery, and Bidding rewards.</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <ActiveCard
             icon={Sparkles}
             title="Spin & Win"
-            blurb="30 AC per spin. Win up to 500 AC instantly."
+            blurb="30 FXA per spin. Win up to 500 FXA instantly."
             href="/earn/play-zone/spin"
           />
           <ActiveCard
             icon={Ticket}
             title="Lottery"
-            blurb="100 AC per ticket. Weekly draws for big rewards."
+            blurb="100 FXA per ticket. Weekly draws for big rewards."
             href="/earn/play-zone/lottery"
           />
           <ActiveCard
             icon={Gavel}
             title="Bidding"
-            blurb="Bid Artha Coins on premium prizes. Losers refunded 50%."
+            blurb="Bid FXArtha Coins on premium prizes. Losers refunded 50%."
             href="/earn/play-zone/bidding"
           />
         </div>
