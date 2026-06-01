@@ -45,7 +45,34 @@ export function useLocation() {
 /* ── useNavigate ── */
 export function useNavigate() {
   return (to: string) => {
-    if (typeof window !== 'undefined') window.location.href = to
+    if (typeof window === 'undefined') return
+    // Refuse anything that isn't an internal path or a same-origin URL.
+    // Internal callers only ever pass paths like "/products/forex" today,
+    // but a future caller threading a query-param value through here
+    // would otherwise be an open-redirect (or worse, a javascript: URL
+    // sink).
+    const safe = (() => {
+      if (typeof to !== 'string') return null
+      const trimmed = to.trim()
+      if (!trimmed) return null
+      // Internal path — exactly what the landing pages use.
+      if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
+      // Absolute URL must be HTTP(S) and same-origin.
+      try {
+        const parsed = new URL(trimmed, window.location.origin)
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+        if (parsed.origin !== window.location.origin) return null
+        return parsed.pathname + parsed.search + parsed.hash
+      } catch {
+        return null
+      }
+    })()
+    if (!safe) {
+      // eslint-disable-next-line no-console
+      console.error('[router-shim] refusing unsafe navigate target')
+      return
+    }
+    window.location.href = safe
   }
 }
 

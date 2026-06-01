@@ -283,13 +283,28 @@ def _ws_token_from_websocket(ws: WebSocket, fallback_query_token: str | None) ->
     Preferred path: HttpOnly `pt_access` cookie (browser sends it
     automatically — never leaks into URLs / logs / browser history).
     Fallback: ?token= query string for legacy mobile clients that can't
-    attach cookies. The query path is retained for backward
-    compatibility but the trader frontend has been switched to cookies
-    so its access token never appears in nginx access logs (audit H4)."""
+    attach cookies. The query path is RETAINED but DEPRECATED; the
+    token shows up in nginx access logs and any forwarded telemetry,
+    so we emit a warning every time it's used. Once log-monitoring
+    confirms no client still uses the fallback, delete it."""
     cookie_name = (get_settings().ACCESS_TOKEN_COOKIE_NAME or "pt_access").strip()
     cookie_token = ws.cookies.get(cookie_name)
     if cookie_token:
         return cookie_token
+    if fallback_query_token:
+        # Hash a prefix so the warning is identifiable across log entries
+        # without echoing the bearer itself back to the logs we're
+        # complaining about.
+        import hashlib
+        token_fp = hashlib.sha256(fallback_query_token.encode()).hexdigest()[:12]
+        logger.warning(
+            "ws-auth deprecation: client used ?token= query fallback "
+            "(no cookie). client=%s path=%s token_fp=%s — migrate to "
+            "cookie-based auth before removal",
+            ws.client.host if ws.client else "?",
+            ws.url.path,
+            token_fp,
+        )
     return fallback_query_token
 
 

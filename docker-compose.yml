@@ -87,6 +87,12 @@ services:
       - ./backend/packages/common:/app/packages/common
       - ./backend/uploads:/app/uploads
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health', timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   gateway:
     build:
@@ -109,6 +115,17 @@ services:
       - ./backend/services/gateway:/app/services/gateway
       - ./backend/packages:/app/packages
       - ./backend/uploads:/app/uploads
+    # Hit /health (sync endpoint, no DB). If three consecutive checks
+    # fail Docker marks the container unhealthy so an orchestrator (or
+    # `restart: unless-stopped` in the prod overlay) can recycle it
+    # before nginx routes traffic to a hung worker. Uses python instead
+    # of curl/wget since the gateway image already has python on PATH.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   market-data:
     build:
