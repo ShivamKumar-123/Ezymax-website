@@ -1,0 +1,539 @@
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { WebView } from 'react-native-webview';
+
+import {
+  Screen,
+  BuySellSplit,
+  NumberStepper,
+  IconButton,
+  PillButton,
+  showToast,
+} from '../../components/vantage';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import ApiService from '../../services/ApiService';
+import webSocketService from '../../services/WebSocketService';
+import { getInstruments } from '../../utils/instrumentsCache';
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../../utils/watchlistStorage';
+
+const TIMEFRAMES = [
+  { key: 'Tick', tv: '1',  label: 'Tick' },
+  { key: '1m',   tv: '1',  label: '1m' },
+  { key: '15m',  tv: '15', label: '15m' },
+  { key: '1h',   tv: '60', label: '1h' },
+  { key: '1D',   tv: 'D',  label: '1D' },
+  { key: '1W',   tv: 'W',  label: '1W' },
+];
+
+const TABS = [
+  { key: 'chart',    label: 'Chart' },
+  { key: 'orders',   label: 'Orders' },
+  { key: 'analysis', label: 'Analysis' },
+  { key: 'info',     label: 'Info' },
+];
+
+// Best-effort TradingView symbol mapping for the embedded widget.
+function toTvSymbol(sym) {
+  const s = String(sym || '').toUpperCase();
+  const MAP = {
+    XAUUSD:   'OANDA:XAUUSD',
+    XAGUSD:   'OANDA:XAGUSD',
+    BTCUSD:   'BINANCE:BTCUSDT',
+    ETHUSD:   'BINANCE:ETHUSDT',
+    EURUSD:   'FX:EURUSD',
+    GBPUSD:   'FX:GBPUSD',
+    USDJPY:   'FX:USDJPY',
+    AUDUSD:   'FX:AUDUSD',
+    NZDUSD:   'FX:NZDUSD',
+    USDCAD:   'FX:USDCAD',
+    USDCHF:   'FX:USDCHF',
+    NAS100:   'NASDAQ:NDX',
+    SPX500:   'TVC:SPX',
+    DJ30:     'DJ:DJI',
+    NIKKEI225:'TVC:NI225',
+    HK50:     'HKEX:HSI',
+  };
+  return MAP[s] || `FX:${s}`;
+}
+
+export default function InstrumentDetailScreen() {
+  const nav = useNavigation();
+  const route = useRoute();
+  const initialSymbol = String(route.params?.symbol || 'XAUUSD').toUpperCase();
+
+  const [symbol, setSymbol] = useState(initialSymbol);
+  const [tab, setTab] = useState('chart');
+  const [tf, setTf] = useState('1m');
+  const [instrument, setInstrument] = useState(null);
+  const [tick, setTick] = useState(null);
+  const [bars1D, setBars1D] = useState([]);
+  const [bars1W, setBars1W] = useState([]);
+  const [bars1M, setBars1M] = useState([]);
+  const [pinned, setPinned] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [activeAccount, setActiveAccount] = useState(null);
+  const [side, setSide] = useState('sell');
+  const [lots, setLots] = useState(0.01);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Load instrument metadata + initial pin state + accounts
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [list, watchlist, accs] = await Promise.allSettled([
+        getInstruments(),
+        getWatchlist(),
+        ApiService.getAccounts(),
+      ]);
+      if (cancelled) return;
+      if (list.status === 'fulfilled') {
+        const found = (list.value || []).find((i) => String(i.symbol || '').toUpperCase() === symbol);
+        setInstrument(found || null);
+      }
+      if (watchlist.status === 'fulfilled') setPinned((watchlist.value || []).includes(symbol));
+      if (accs.status === 'fulfilled') {
+        const arr = Array.isArray(accs.value) ? accs.value : (Array.isArray(accs.value?.items) ? accs.value.items : []);
+        setAccounts(arr);
+        if (!activeAccount && arr[0]) setActiveAccount(arr[0]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [symbol]);
+
+  // Refresh tick + bars
+  const refresh = useCallback(async () => {
+    const [prices, b1d, b1w, b1m] = await Promise.allSettled([
+      ApiService.getAllPrices(),
+      ApiService.getBars(symbol, { resolution: '60', limit: 24 }),
+      ApiService.getBars(symbol, { resolution: 'D',  limit: 7 }),
+      ApiService.getBars(symbol, { resolution: 'D',  limit: 30 }),
+    ]);
+    if (prices.status === 'fulfilled') {
+      const arr = Array.isArray(prices.value) ? prices.value : (Array.isArray(prices.value?.items) ? prices.value.items : []);
+      const t = arr.find((x) => String(x.symbol || x.ticker || '').toUpperCase() === symbol);
+      if (t) setTick(t);
+    }
+    const arrOr = (s) => Array.isArray(s) ? s : [];
+    if (b1d.status === 'fulfilled') setBars1D(arrOr(b1d.value));
+    if (b1w.status === 'fulfilled') setBars1W(arrOr(b1w.value));
+    if (b1m.status === 'fulfilled') setBars1M(arrOr(b1m.value));
+  }, [symbol]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+
+  // Live ticks
+  useEffect(() => {
+    if (typeof webSocketService?.onPriceUpdate !== 'function') return;
+    const unsub = webSocketService.onPriceUpdate((msg) => {
+      if (!msg) return;
+      const sym = String(msg.symbol || msg.s || '').toUpperCase();
+      if (sym !== symbol) return;
+      setTick((prev) => ({
+        ...(prev || {}),
+        symbol: sym,
+        bid: msg.bid != null ? Number(msg.bid) : prev?.bid,
+        ask: msg.ask != null ? Number(msg.ask) : prev?.ask,
+      }));
+    });
+    webSocketService.connectPriceStream?.();
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [symbol]);
+
+  // Derived
+  const bid = tick?.bid != null ? Number(tick.bid) : null;
+  const ask = tick?.ask != null ? Number(tick.ask) : null;
+  const change = tick?.change != null ? Number(tick.change) : null;
+  const changePct = tick?.change_pct != null ? Number(tick.change_pct) : null;
+  const positive = (changePct ?? 0) >= 0;
+  const spread = bid != null && ask != null ? Math.round((ask - bid) * 100000) : null;
+
+  const ohlc = useMemo(() => {
+    if (!bars1D.length) return { open: null, high: null, low: null, close: null };
+    const sorted = [...bars1D].sort((a, b) => (a.time || 0) - (b.time || 0));
+    const first = sorted[0] || {};
+    const last  = sorted[sorted.length - 1] || {};
+    const high  = Math.max(...sorted.map((b) => Number(b.high ?? b.h ?? 0)).filter(Number.isFinite));
+    const low   = Math.min(...sorted.map((b) => Number(b.low  ?? b.l ?? 0)).filter((v) => Number.isFinite(v) && v > 0));
+    return {
+      open:  Number(first.open  ?? first.o ?? null),
+      close: Number(last.close  ?? last.c ?? null),
+      high:  Number.isFinite(high) ? high : null,
+      low:   Number.isFinite(low)  ? low  : null,
+    };
+  }, [bars1D]);
+
+  const pctFor = (bars) => {
+    if (!bars?.length) return null;
+    const sorted = [...bars].sort((a, b) => (a.time || 0) - (b.time || 0));
+    const first = Number(sorted[0]?.close ?? sorted[0]?.c ?? 0);
+    const last  = Number(sorted[sorted.length - 1]?.close ?? sorted[sorted.length - 1]?.c ?? 0);
+    if (!first) return null;
+    return (last - first) / first * 100;
+  };
+  const pct1D = changePct ?? pctFor(bars1D);
+  const pct1W = pctFor(bars1W);
+  const pct1M = pctFor(bars1M);
+
+  // 1h Low/High range
+  const range1h = useMemo(() => {
+    if (!bars1D.length) return null;
+    const lastHour = bars1D.slice(-1)[0];
+    if (!lastHour) return null;
+    const low = Number(lastHour.low ?? lastHour.l ?? 0);
+    const high = Number(lastHour.high ?? lastHour.h ?? 0);
+    if (!(low > 0) || !(high > 0)) return null;
+    const cur = bid ?? Number(lastHour.close ?? lastHour.c ?? low);
+    const pos = (cur - low) / (high - low || 1);
+    return { low, high, posPct: Math.max(0, Math.min(1, pos)) };
+  }, [bars1D, bid]);
+
+  const togglePin = useCallback(async () => {
+    if (pinned) {
+      await removeFromWatchlist(symbol);
+      setPinned(false);
+      showToast({ kind: 'info', message: `${symbol} removed from watchlist` });
+    } else {
+      await addToWatchlist(symbol);
+      setPinned(true);
+      showToast({ kind: 'success', message: `${symbol} added to watchlist` });
+    }
+  }, [pinned, symbol]);
+
+  const placeOrder = useCallback(async () => {
+    if (!activeAccount || !(lots > 0)) return;
+    setSubmitting(true);
+    try {
+      await ApiService.placeOrder({
+        account_id: activeAccount.id || activeAccount._id,
+        symbol,
+        side,
+        order_type: 'market',
+        volume: Number(lots),
+      });
+      showToast({ kind: 'success', message: `${side.toUpperCase()} ${lots} ${symbol} placed` });
+    } catch (e) {
+      showToast({ kind: 'error', message: e?.message || 'Order failed' });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [activeAccount, lots, side, symbol]);
+
+  const tvSym = toTvSymbol(symbol);
+  const interval = (TIMEFRAMES.find((x) => x.key === tf) || TIMEFRAMES[1]).tv;
+  const chartHtml = useMemo(() => buildTvHtml(tvSym, interval), [tvSym, interval]);
+
+  return (
+    <Screen edges={['top']}>
+      <Header
+        symbol={symbol}
+        pinned={pinned}
+        onBack={() => nav.goBack()}
+        onPin={togglePin}
+        onAlert={() => showToast({ kind: 'info', message: 'Alerts coming soon' })}
+        onShare={() => showToast({ kind: 'info', message: 'Share coming soon' })}
+      />
+
+      <View style={styles.tabRow}>
+        {TABS.map((t) => (
+          <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.tabCell} accessibilityRole="tab" accessibilityState={{ selected: tab === t.key }}>
+            <Text style={[styles.tabLabel, tab === t.key && { color: vantage.textPrimary, fontWeight: weights.heavy }]}>
+              {t.label}
+            </Text>
+            <View style={[styles.tabUnderline, tab === t.key && { backgroundColor: vantage.accent }]} />
+          </Pressable>
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 200 }}>
+        {tab === 'chart' ? (
+          <>
+            <View style={styles.heroRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroPrice}>{bid != null ? bid.toLocaleString('en-US', { maximumFractionDigits: 5 }) : '—'}</Text>
+                <Text style={[styles.heroChange, { color: positive ? vantage.up : vantage.down }]}>
+                  {change != null ? `${positive ? '+' : '−'}${Math.abs(change).toFixed(2)}` : '—'}
+                  {' '}
+                  {changePct != null ? `(${positive ? '+' : '−'}${Math.abs(changePct).toFixed(2)}%)` : ''}
+                </Text>
+                <Text style={styles.heroTime}>{new Date().toLocaleString('en-GB', { hour12: false })}</Text>
+              </View>
+              <View style={styles.ohlcGrid}>
+                <Cell label="Open"  value={fmt(ohlc.open)} />
+                <Cell label="High"  value={fmt(ohlc.high)} />
+                <Cell label="Close" value={fmt(ohlc.close)} />
+                <Cell label="Low"   value={fmt(ohlc.low)} />
+              </View>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tfRow}>
+              {TIMEFRAMES.map((x) => (
+                <Pressable key={x.key} onPress={() => setTf(x.key)} style={styles.tfCell} accessibilityRole="button">
+                  <Text style={[styles.tfTxt, tf === x.key && { color: vantage.textPrimary, fontWeight: weights.heavy }]}>{x.label}</Text>
+                </Pressable>
+              ))}
+              <View style={styles.tfMore}>
+                <Text style={styles.tfTxt}>More ▾</Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.chartWrap}>
+              <WebView
+                source={{ html: chartHtml, baseUrl: 'https://www.tradingview.com' }}
+                style={styles.chart}
+                javaScriptEnabled
+                domStorageEnabled
+                allowsInlineMediaPlayback
+                startInLoadingState={false}
+                originWhitelist={['*']}
+                onError={() => {}}
+              />
+            </View>
+
+            <View style={styles.periodRow}>
+              <PeriodCell label="1D" pct={pct1D} />
+              <PeriodCell label="1W" pct={pct1W} />
+              <PeriodCell label="1M" pct={pct1M} />
+            </View>
+
+            <RangeBar range={range1h} />
+          </>
+        ) : tab === 'orders' ? (
+          <View style={{ padding: space.lg }}>
+            <Text style={styles.empty}>Open the Trade tab to manage orders for this symbol.</Text>
+            <PillButton label="Go to Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol } })} style={{ marginTop: space.md }} />
+          </View>
+        ) : tab === 'analysis' ? (
+          <View style={{ padding: space.lg }}>
+            <Text style={styles.empty}>Analysis articles coming soon.</Text>
+          </View>
+        ) : (
+          <View style={{ padding: space.lg }}>
+            <InfoRow label="Symbol" value={symbol} />
+            <InfoRow label="Name" value={instrument?.display_name || instrument?.name || '—'} />
+            <InfoRow label="Segment" value={instrument?.segment || instrument?.category || '—'} />
+            <InfoRow label="Bid" value={bid != null ? bid.toFixed(5) : '—'} />
+            <InfoRow label="Ask" value={ask != null ? ask.toFixed(5) : '—'} />
+            <InfoRow label="Spread (pts)" value={spread != null ? String(spread) : '—'} last />
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <View style={styles.lotsBar}>
+          <Text style={styles.lotsLabel}>Lots</Text>
+          <NumberStepper value={lots} onChange={setLots} min={0.01} max={1000} step={0.01} precision={2} />
+        </View>
+        <BuySellSplit
+          bid={bid}
+          ask={ask}
+          spreadPoints={spread}
+          side={side}
+          onChange={setSide}
+        />
+        <View style={styles.freeMarginRow}>
+          <Text style={styles.freeMarginLab}>Free Margin:</Text>
+          <Text style={styles.freeMarginVal}>
+            {activeAccount?.balance != null ? `${Number(activeAccount.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount.currency || 'USD'}` : '—'}
+          </Text>
+        </View>
+        <PillButton
+          label={submitting ? 'Placing…' : `${side === 'buy' ? 'Buy' : 'Sell'} ${lots} ${symbol}`}
+          variant={side === 'buy' ? 'buy' : 'sell'}
+          size="md"
+          loading={submitting}
+          disabled={!activeAccount || !(lots > 0) || submitting}
+          onPress={placeOrder}
+          style={{ marginTop: space.sm }}
+        />
+      </View>
+    </Screen>
+  );
+}
+
+function Header({ symbol, pinned, onBack, onPin, onAlert, onShare }) {
+  return (
+    <View style={styles.header}>
+      <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={onBack} />
+      <View style={styles.symbolWrap}>
+        <Text style={styles.symbolTxt}>{symbol}</Text>
+        <Ionicons name="chevron-down" size={16} color={vantage.textPrimary} />
+      </View>
+      <View style={{ flex: 1 }} />
+      <Pressable onPress={onPin} hitSlop={8} accessibilityRole="button" accessibilityLabel={pinned ? 'Unpin' : 'Pin to watchlist'} style={styles.hdrIcon}>
+        <Ionicons name={pinned ? 'star' : 'star-outline'} size={22} color={pinned ? vantage.accent : vantage.textPrimary} />
+      </Pressable>
+      <Pressable onPress={onAlert} hitSlop={8} accessibilityRole="button" accessibilityLabel="Set alert" style={styles.hdrIcon}>
+        <Ionicons name="notifications-outline" size={22} color={vantage.textPrimary} />
+      </Pressable>
+      <Pressable onPress={onShare} hitSlop={8} accessibilityRole="button" accessibilityLabel="Share" style={styles.hdrIcon}>
+        <Ionicons name="share-outline" size={22} color={vantage.textPrimary} />
+      </Pressable>
+    </View>
+  );
+}
+
+function Cell({ label, value }) {
+  return (
+    <View style={styles.ohlcCell}>
+      <Text style={styles.ohlcLab}>{label}</Text>
+      <Text style={styles.ohlcVal}>{value}</Text>
+    </View>
+  );
+}
+
+function PeriodCell({ label, pct }) {
+  const has = pct != null && Number.isFinite(pct);
+  const positive = has && pct >= 0;
+  return (
+    <View style={styles.periodCell}>
+      <Text style={styles.periodLab}>{label}</Text>
+      <Text style={[styles.periodVal, { color: !has ? vantage.textMuted : positive ? vantage.up : vantage.down }]}>
+        {has ? `${positive ? '+' : ''}${pct.toFixed(2)}%` : '—'}
+      </Text>
+    </View>
+  );
+}
+
+function RangeBar({ range }) {
+  if (!range) return null;
+  return (
+    <View style={styles.rangeWrap}>
+      <View style={styles.rangeRow}>
+        <Text style={styles.rangeLab}>Low</Text>
+        <Text style={styles.rangeLab}>High</Text>
+      </View>
+      <View style={styles.rangeTrack}>
+        <View style={[styles.rangeMarker, { left: `${range.posPct * 100}%` }]}>
+          <Ionicons name="caret-down" size={12} color={vantage.textPrimary} />
+        </View>
+      </View>
+      <View style={styles.rangeRow}>
+        <Text style={styles.rangeVal}>{fmt(range.low)}</Text>
+        <Text style={[styles.rangeLab, { fontSize: sizes.label }]}>1h</Text>
+        <Text style={styles.rangeVal}>{fmt(range.high)}</Text>
+      </View>
+    </View>
+  );
+}
+
+function InfoRow({ label, value, last }) {
+  return (
+    <View style={[styles.infoRow, !last && styles.infoBorder]}>
+      <Text style={styles.infoLab}>{label}</Text>
+      <Text style={styles.infoVal} selectable>{value}</Text>
+    </View>
+  );
+}
+
+function fmt(v) {
+  if (v == null || !Number.isFinite(Number(v))) return '—';
+  const n = Number(v);
+  if (n >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  if (n >= 1) return n.toFixed(2);
+  return n.toFixed(5);
+}
+
+function buildTvHtml(tvSymbol, interval) {
+  // TradingView Advanced Chart widget via iframe-style embed.
+  const cfg = {
+    autosize: true,
+    symbol: tvSymbol,
+    interval,
+    timezone: 'Etc/UTC',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    enable_publishing: false,
+    backgroundColor: '#000000',
+    gridColor: 'rgba(255,255,255,0.06)',
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    studies: ['MASimple@tv-basicstudies', 'Volume@tv-basicstudies'],
+    show_popup_button: false,
+    container_id: 'tv-container',
+  };
+  return `<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;width:100%;background:#000;overflow:hidden}#tv-container{height:100%;width:100%}</style>
+</head><body>
+<div id="tv-container"></div>
+<script src="https://s3.tradingview.com/tv.js"></script>
+<script>
+try {
+  new TradingView.widget(${JSON.stringify(cfg)});
+} catch (e) {
+  document.body.innerHTML = '<div style="color:#888;font-family:system-ui;padding:20px;text-align:center">Chart unavailable</div>';
+}
+</script>
+</body></html>`;
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs,
+    gap: space.xs,
+  },
+  symbolWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  symbolTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
+  hdrIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+
+  tabRow: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: vantage.border },
+  tabCell: { flex: 1, alignItems: 'center', paddingVertical: space.sm },
+  tabLabel: { color: vantage.textMuted, fontFamily, fontSize: sizes.h3 },
+  tabUnderline: { height: 2, width: 36, borderRadius: 1, marginTop: space.xs },
+
+  heroRow: { flexDirection: 'row', padding: space.lg, gap: space.md },
+  heroPrice: { color: vantage.textPrimary, fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy },
+  heroChange: { fontFamily, fontSize: sizes.body, fontWeight: weights.bold, marginTop: 2 },
+  heroTime: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
+
+  ohlcGrid: { width: 160, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start' },
+  ohlcCell: { width: '50%', paddingVertical: 2 },
+  ohlcLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro },
+  ohlcVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+
+  tfRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.sm },
+  tfCell: { paddingVertical: space.xs },
+  tfTxt: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
+  tfMore: { marginLeft: 'auto' },
+
+  chartWrap: { height: 320, marginHorizontal: space.sm, backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden' },
+  chart: { flex: 1, backgroundColor: '#000' },
+
+  periodRow: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border, marginTop: space.md },
+  periodCell: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: vantage.border },
+  periodLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  periodVal: { fontFamily, fontSize: sizes.body, fontWeight: weights.bold, marginTop: 2 },
+
+  rangeWrap: { paddingHorizontal: space.lg, paddingVertical: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border },
+  rangeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rangeLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro },
+  rangeVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+  rangeTrack: { height: 4, backgroundColor: vantage.bgRaised, borderRadius: 2, marginVertical: space.sm, position: 'relative' },
+  rangeMarker: { position: 'absolute', top: -10, marginLeft: -6, alignItems: 'center' },
+
+  empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, textAlign: 'center', padding: space.lg },
+
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.sm },
+  infoBorder: { borderBottomColor: vantage.border, borderBottomWidth: StyleSheet.hairlineWidth },
+  infoLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
+  infoVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+
+  footer: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    backgroundColor: vantage.bg,
+    paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border,
+    gap: space.sm,
+  },
+  lotsBar: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  lotsLabel: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, width: 50 },
+  freeMarginRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  freeMarginLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  freeMarginVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+});

@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Swisscresta",
+    "slug": "swisscresta",
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/swisscresta-icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "jsEngine": "hermes",
+    "splash": {
+      "image": "./assets/swisscresta-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "image": "./assets/swisscresta-logo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#121212"
+      }
+    },
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 3000
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "swisscresta.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2"
+            }
+          }
+        }
+      },
+      "bundleIdentifier": "com.swisscresta.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/swisscresta-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.swisscresta.app",
+      "splash": {
+        "image": "./assets/swisscresta-logo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/swisscresta-logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#121212"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/swisscresta-favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-updates",
+      "expo-secure-store"
+    ]
+  }
+}
