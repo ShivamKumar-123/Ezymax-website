@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
+import { getDigits } from '@/lib/utils';
 
 /**
  * Modern Advanced Chart embed iframe (`tradingview-widget.com/embed-widget/
@@ -63,6 +64,12 @@ function TradingViewChartInner() {
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const theme = useUIStore((s) => s.theme);
+  // Live broker tick for the active symbol — drives the overlay below
+  // so the user always sees the executable price, not just the chart's
+  // reference price from an external exchange.
+  const tick = useTradingStore(
+    (s) => s.prices[(selectedSymbol ?? 'EURUSD').toUpperCase()],
+  );
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
   const tvTheme: 'dark' | 'light' = theme === 'light' ? 'light' : 'dark';
   const interval = onTradingTerminal ? '5' : '15';
@@ -73,9 +80,12 @@ function TradingViewChartInner() {
   );
 
   const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
+  const digits = getDigits(selectedSymbol ?? 'EURUSD');
+  const fmt = (n: number | undefined | null) =>
+    n == null || !Number.isFinite(n) ? '—' : n.toFixed(digits);
 
   return (
-    <div className={clsx('w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>
+    <div className={clsx('relative w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>
       <iframe
         key={src}
         title={`Chart ${selectedSymbol || 'EURUSD'}`}
@@ -84,6 +94,28 @@ function TradingViewChartInner() {
         allow="clipboard-write; fullscreen"
         referrerPolicy="no-referrer-when-downgrade"
       />
+      {/* Broker-quote overlay. The embedded TradingView chart pulls
+        * candle data from public exchanges (BINANCE for crypto, OANDA
+        * for metals, FX:* for forex) — those prices can diverge from
+        * the broker's executable quote by spread + LP latency. This
+        * overlay anchors the user to the ACTUAL price their orders
+        * will fill against, so a $200 gap between Binance candles
+        * and the broker's BTC quote doesn't look like a bug. The
+        * overlay is `pointer-events-none` so it doesn't block chart
+        * interactions underneath. */}
+      <div
+        className="pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
+        aria-label="Broker quote — actual execution price"
+      >
+        <span className="text-text-tertiary uppercase tracking-wider">Broker</span>
+        <span className="text-sell font-mono tabular-nums">
+          Bid {fmt(tick?.bid)}
+        </span>
+        <span className="text-text-tertiary">·</span>
+        <span className="text-buy font-mono tabular-nums">
+          Ask {fmt(tick?.ask)}
+        </span>
+      </div>
     </div>
   );
 }
