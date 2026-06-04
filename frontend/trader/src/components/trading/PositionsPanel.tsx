@@ -434,10 +434,15 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     // flicker into a "Loading history…" placeholder every 4 s.
     if (!opts.silent) setHistoryLoading(true);
     try {
-      const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', {
-        page: '1',
-        per_page: '200',
-      });
+      // Scope the history to the currently-selected trading account.
+      // Without this, /portfolio/trades returns every trade the user
+      // ever closed across ALL their accounts — so a brand-new second
+      // account would show the original account's 51 closed trades
+      // even though no trade was ever placed on it. The backend
+      // already supports the account_id filter (api/portfolio.py:40).
+      const params: Record<string, string> = { page: '1', per_page: '200' };
+      if (activeAccount?.id) params.account_id = String(activeAccount.id);
+      const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', params);
       setHistoryTrades(
         (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
       );
@@ -446,9 +451,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       if (!opts.silent) setHistoryTrades([]);
     }
     if (!opts.silent) setHistoryLoading(false);
-  }, []);
+  }, [activeAccount?.id]);
 
   useEffect(() => {
+    // Re-fetch when either the tab opens OR the user switches accounts
+    // while the tab is open — the dependency on activeAccount?.id is
+    // baked into loadHistory's identity.
     if (activeTab === 'history') void loadHistory();
   }, [activeTab, loadHistory]);
 
