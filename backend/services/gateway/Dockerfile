@@ -27,9 +27,18 @@ WORKDIR /app
 
 # Install wheels built above, then drop the wheelhouse to keep the layer
 # size down. No pip / gcc / build-essential in the runtime image.
+# IMPORTANT: install via `-r requirements.txt` (NOT `pip install /wheels/*.whl`).
+# The literal-wheels form tries to install every wheel including transitive
+# duplicates (e.g. websockets 15.x AND 16.x ended up in the wheelhouse when
+# different deps pinned different versions), which makes pip explode with
+# "ResolutionImpossible". Letting pip resolve from requirements.txt with the
+# wheelhouse as the only source keeps the offline guarantee but picks ONE
+# version per package.
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/*.whl \
- && rm -rf /wheels
+COPY backend/services/gateway/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --no-index --find-links=/wheels \
+        -r /tmp/requirements.txt fxartha-common \
+ && rm -rf /wheels /tmp/requirements.txt
 
 # Source mounted at runtime under dev compose; baked in for prod images.
 COPY backend/packages/common /app/packages/common

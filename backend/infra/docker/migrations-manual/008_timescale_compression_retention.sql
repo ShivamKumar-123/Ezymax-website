@@ -14,8 +14,12 @@
 --   4. Compression-segmentby is missing — without it, ZSTD doesn't
 --      group-by-symbol and compression ratios are far worse.
 --
--- Apply once on the TimescaleDB instance:
---   docker exec -i fxartha-timescaledb-1 psql -U fxartha -d fxartha_timeseries \
+-- Apply once on the TimescaleDB instance. The DB name is taken from
+-- the TIMESCALE_DB env var (default 'marketdata' per docker-compose.yml).
+-- If you've overridden TIMESCALE_DB in /opt/fxartha/.env, substitute it
+-- into the -d flag below.
+--
+--   docker exec -i fxartha-timescaledb-1 psql -U fxartha -d marketdata \
 --     < backend/infra/docker/migrations-manual/008_timescale_compression_retention.sql
 --
 -- Idempotent: every ALTER and add_*_policy is guarded so re-running is safe.

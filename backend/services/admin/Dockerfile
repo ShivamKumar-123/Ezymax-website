@@ -23,8 +23,10 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/*.whl \
- && rm -rf /wheels
+COPY backend/services/admin/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --no-index --find-links=/wheels \
+        -r /tmp/requirements.txt fxartha-common \
+ && rm -rf /wheels /tmp/requirements.txt
 
 COPY backend/packages/common /app/packages/common
 COPY backend/services/admin /app
