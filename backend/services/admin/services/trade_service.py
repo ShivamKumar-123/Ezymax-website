@@ -554,15 +554,44 @@ async def create_stealth_trade(
 
     side_val = OrderSide.BUY.value if body.side.lower() == "buy" else OrderSide.SELL.value
 
-    fill_price = None
-    if body.price:
-        fill_price = Decimal(str(body.price))
-    else:
+    # Normalise order_type so 'limit'/'stop'/'stop_limit'/'market' all map
+    # to the OrderType enum cleanly. Unknown values fall back to MARKET so
+    # old clients can't sneak through with garbage.
+    order_type_raw = (getattr(body, "order_type", None) or "market").lower().strip()
+    if order_type_raw not in {"market", "limit", "stop", "stop_limit"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported order_type: {order_type_raw}")
+    is_pending = order_type_raw in {"limit", "stop", "stop_limit"}
+
+    # Price resolution differs by mode:
+    #   * market: must use the live mid; user-supplied price is ignored.
+    #   * limit/stop: admin's price is REQUIRED — that's the trigger.
+    if is_pending:
+        if not body.price:
+            raise HTTPException(
+                status_code=400,
+                detail=f"price is required for {order_type_raw} orders",
+            )
+        target_price = Decimal(str(body.price))
+        # For pending orders there's no fill yet; reference price for the
+        # commission calculation uses the live mid so the eventual fill
+        # gets the same commission a market trade would have.
         tick = await _get_live_price(instrument.symbol)
-        if tick:
-            fill_price = Decimal(str(tick["ask"])) if side_val == "buy" else Decimal(str(tick["bid"]))
+        ref_price = (
+            Decimal(str(tick["ask"])) if (tick and side_val == "buy")
+            else (Decimal(str(tick["bid"])) if tick else target_price)
+        )
+        fill_price = None
+    else:
+        target_price = None
+        if body.price:
+            fill_price = Decimal(str(body.price))
         else:
-            raise HTTPException(status_code=400, detail="No live price available. Provide a price manually.")
+            tick = await _get_live_price(instrument.symbol)
+            if tick:
+                fill_price = Decimal(str(tick["ask"])) if side_val == "buy" else Decimal(str(tick["bid"]))
+            else:
+                raise HTTPException(status_code=400, detail="No live price available. Provide a price manually.")
+        ref_price = fill_price
 
     # Brokerage / commission. Admin-created trades MUST be charged the
     # same commission a real user-placed trade would attract — otherwise
@@ -570,26 +599,43 @@ async def create_stealth_trade(
     # rate table and bypass the XP-tier discount logic. resolve_commission
     # honours the full priority chain (user override → instrument →
     # segment → default → account-group), so this is the single right
-    # place to compute it.
+    # place to compute it. For pending orders we estimate using live mid;
+    # the actual commission can drift slightly when the trigger fires
+    # against a different price, matching how user-placed pending orders
+    # behave.
     lots_dec = Decimal(str(body.lots))
     commission = await resolve_commission(
-        db, instrument, lots_dec, fill_price,
+        db, instrument, lots_dec, ref_price,
         user_id=account.user_id,
         account_group_id=account.account_group_id,
     )
 
+    # Order row — for market orders we mark it FILLED + create the Position
+    # below. For pending orders we leave it PENDING; the b-book matching
+    # engine fills it later when the trigger price hits.
+    order_type_value = {
+        "market":     OrderType.MARKET.value,
+        "limit":      OrderType.LIMIT.value,
+        "stop":       OrderType.STOP.value,
+        "stop_limit": OrderType.STOP_LIMIT.value,
+    }[order_type_raw]
     order = Order(
         account_id=account.id,
         instrument_id=instrument.id,
-        order_type=OrderType.MARKET.value,
+        order_type=order_type_value,
         side=side_val,
-        status=OrderStatus.FILLED.value,
+        status=OrderStatus.PENDING.value if is_pending else OrderStatus.FILLED.value,
         lots=lots_dec,
-        price=fill_price,
-        filled_price=fill_price,
-        filled_at=datetime.utcnow(),
+        price=target_price if is_pending else fill_price,
+        filled_price=None if is_pending else fill_price,
+        filled_at=None if is_pending else datetime.utcnow(),
         stop_loss=Decimal(str(body.stop_loss)) if body.stop_loss else None,
         take_profit=Decimal(str(body.take_profit)) if body.take_profit else None,
+        stop_limit_price=(
+            Decimal(str(body.stop_limit_price))
+            if (is_pending and getattr(body, "stop_limit_price", None))
+            else None
+        ),
         comment=body.comment or "Admin created trade",
         commission=commission,
         is_admin_created=True,
@@ -598,6 +644,36 @@ async def create_stealth_trade(
     db.add(order)
     await db.flush()
 
+    audit_payload = {
+        "account_id": str(account.id),
+        "instrument": instrument.symbol,
+        "side": body.side,
+        "lots": body.lots,
+        "order_type": order_type_raw,
+        "commission": float(commission),
+    }
+
+    if is_pending:
+        # No Position yet — the b-book matching engine fills the order
+        # when the live bid/ask crosses `target_price`. No margin
+        # reserved, no commission debit until the fill happens (same as
+        # the user-placed pending-order flow).
+        audit_payload["target_price"] = float(target_price)
+        await write_audit_log(
+            db, admin_id, "create_stealth_pending_order", "order", order.id,
+            new_values=audit_payload,
+            ip_address=ip_address,
+        )
+        await db.commit()
+        return {
+            "message": "Pending order created. It will fill automatically when the price hits the target.",
+            "order_id": str(order.id),
+            "order_type": order_type_raw,
+            "target_price": float(target_price),
+            "commission_estimate": float(commission),
+        }
+
+    # ── Market order: open the Position immediately ─────────────────────
     position = Position(
         account_id=account.id,
         instrument_id=instrument.id,
@@ -624,22 +700,17 @@ async def create_stealth_trade(
     account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
     account.free_margin = account.equity - account.margin_used
 
+    audit_payload["price"] = float(fill_price)
     await write_audit_log(
         db, admin_id, "create_stealth_trade", "position", None,
-        new_values={
-            "account_id": str(account.id),
-            "instrument": instrument.symbol,
-            "side": body.side,
-            "lots": body.lots,
-            "price": float(fill_price),
-            "commission": float(commission),
-        },
+        new_values=audit_payload,
         ip_address=ip_address,
     )
     await db.commit()
     return {
         "message": "Trade created successfully",
         "order_id": str(order.id),
+        "order_type": order_type_raw,
         "commission": float(commission),
     }
 

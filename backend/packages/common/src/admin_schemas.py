@@ -258,15 +258,32 @@ class ClosePositionRequest(BaseModel):
 
 
 class CreateTradeRequest(BaseModel):
+    """Admin-on-behalf-of-user trade creation.
+
+    The admin UI sends some fields with shorter names (`type`, `sl`,
+    `tp`, `reason`) — aliases below normalise both legacy and new clients
+    to the same canonical names the service uses. Without these aliases,
+    Pydantic silently dropped unknown fields and the server always
+    treated the request as a market order with no SL/TP and no audit
+    reason — which is exactly the "pending price not showing" bug the
+    client reported.
+    """
+    model_config = {"populate_by_name": True}
+
     account_id: str
+    user_id: Optional[str] = None    # frontend sends it for cross-check; service resolves via account_id
     instrument_id: Optional[str] = None
     symbol: Optional[str] = None
     side: str
     lots: float
+    # Default 'market' so old clients that omit the field keep working.
+    # Allowed values match OrderType enum: market | limit | stop | stop_limit.
+    order_type: str = Field(default="market", alias="type")
     price: Optional[float] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    comment: Optional[str] = None
+    stop_loss: Optional[float] = Field(default=None, alias="sl")
+    take_profit: Optional[float] = Field(default=None, alias="tp")
+    stop_limit_price: Optional[float] = None
+    comment: Optional[str] = Field(default=None, alias="reason")
 
 
 class BulkCreateTradeRequest(BaseModel):
