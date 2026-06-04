@@ -114,6 +114,13 @@ async def list_users(
 
     user_ids = [u.id for u in users]
     balance_map: dict = {}
+    # Per-user account lists. Admin features (Create Trade, Fund Move, etc.)
+    # need to surface the user's accounts in a dropdown so the admin can
+    # pick which one to act on. Without this the trade-create form falls
+    # back to a "type account ID manually" input — which is what the
+    # client reported as a bug. One batched query is cheap (results are
+    # already capped to per_page) and the payload addition is small.
+    accounts_by_user: dict = {}
     if user_ids:
         acc_q = await db.execute(
             select(
@@ -129,6 +136,31 @@ async def list_users(
         )
         for row in acc_q.all():
             balance_map[row[0]] = {"balance": float(row[1]), "equity": float(row[2])}
+
+        full_acc_q = await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.user_id.in_(user_ids),
+                TradingAccount.is_active.is_(True),
+            )
+            .order_by(
+                TradingAccount.is_demo.asc(),       # live first, demo last
+                TradingAccount.created_at.desc(),   # newest first within each group
+            )
+        )
+        for acc in full_acc_q.scalars().all():
+            accounts_by_user.setdefault(acc.user_id, []).append({
+                "id": str(acc.id),
+                "account_number": acc.account_number,
+                # `name` is the field the Create-Trade dropdown reads. Use
+                # the account number prefixed with LIVE/DEMO so the admin
+                # can tell at a glance.
+                "name": f"{'DEMO' if acc.is_demo else 'LIVE'} · {acc.account_number}",
+                "balance": float(acc.balance or 0),
+                "equity": float(acc.equity or 0),
+                "currency": acc.currency,
+                "leverage": acc.leverage,
+                "is_demo": acc.is_demo,
+            })
 
     # Presence: one MGET for the visible page. Any non-null value at
     # presence:user:<id> means the user has hit an authenticated endpoint
@@ -165,6 +197,13 @@ async def list_users(
             "kyc_status": u.kyc_status or "pending",
             "status": u.status or "active",
             "is_online": u.id in online_ids,
+            # All of this user's active trading accounts. The Create Trade
+            # / Fund Move modals iterate this to populate their account
+            # dropdown. Empty array (not undefined) when the user has no
+            # accounts so the frontend can render an explicit "no
+            # accounts" empty state instead of falling back to a manual
+            # input.
+            "accounts": accounts_by_user.get(u.id, []),
         })
 
     pages = max(1, (total + per_page - 1) // per_page)
