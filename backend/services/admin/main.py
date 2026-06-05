@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
 
+import jwt
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from packages.common.src.config import get_settings
 from packages.common.src.database import engine
@@ -82,6 +84,63 @@ app.add_middleware(
     allow_methods=_cors_methods,
     allow_headers=_cors_headers,
 )
+
+
+class AdminReadOnlyMiddleware(BaseHTTPMiddleware):
+    """Belt-and-braces guard for the read-only `demo_admin` role.
+
+    require_permission already rejects every non-`.view` permission
+    for demo_admin, but some endpoints in the admin API (auth, /me,
+    a few legacy routes) only depend on get_current_admin without a
+    permission scope. This middleware adds a coarser second layer:
+    if the request's admin JWT carries role='demo_admin' AND the
+    HTTP method is anything other than GET/HEAD/OPTIONS, reject 403.
+
+    The check is cheap (one jwt.decode on each request — same key
+    the auth dependency uses, no DB hit). The middleware fails open
+    on decode errors / missing tokens because get_current_admin will
+    catch those itself with a 401."""
+
+    _READ_ONLY_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method in self._READ_ONLY_METHODS:
+            return await call_next(request)
+        # Skip the static endpoints — they have no auth and no side effects.
+        path = request.url.path
+        if path in ("/health", "/metrics") or path.startswith("/api/v1/admin/auth/login"):
+            return await call_next(request)
+        token = request.cookies.get("fx_admin")
+        if not token:
+            auth_hdr = request.headers.get("authorization") or ""
+            if auth_hdr.lower().startswith("bearer "):
+                token = auth_hdr.split(None, 1)[1].strip()
+        if not token:
+            # No token — let the per-route auth dep return 401.
+            return await call_next(request)
+        try:
+            payload = jwt.decode(
+                token,
+                app_settings.ADMIN_JWT_SECRET,
+                algorithms=[app_settings.ADMIN_JWT_ALGORITHM],
+                options={"verify_exp": True},
+            )
+        except jwt.PyJWTError:
+            # Bad token — let the per-route auth dep handle the 401.
+            return await call_next(request)
+        # The role embedded in the token is stamped at login time. Even
+        # if a viewer somehow forges a different role, the per-route
+        # require_permission falls back on a fresh DB lookup, so this
+        # middleware is a hint, not the only safeguard.
+        if payload.get("role") == "demo_admin":
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Demo admin is read-only — cannot perform this action."},
+            )
+        return await call_next(request)
+
+
+app.add_middleware(AdminReadOnlyMiddleware)
 
 add_middleware_stack(app)
 

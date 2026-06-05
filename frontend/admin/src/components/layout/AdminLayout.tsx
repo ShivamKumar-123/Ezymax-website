@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import { useAuthStore } from '@/stores/authStore';
-import { Search, User, LogOut, Loader2 } from 'lucide-react';
+import { Search, User, LogOut, Loader2, Eye } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthRehydrated } from '@/hooks/useAuthRehydrated';
 
@@ -76,10 +76,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const isDemoAdmin = admin?.role === 'demo_admin';
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg-page">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Read-only viewer banner — visible to every page so the user
+            always knows their session can't mutate anything. The
+            backend (require_permission + AdminReadOnlyMiddleware)
+            enforces this independently; the banner is UX-only. */}
+        {isDemoAdmin && (
+          <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-warning/15 border-b border-warning/30 text-[11px] font-medium text-warning">
+            <Eye size={12} />
+            <span>
+              READ-ONLY DEMO VIEW · You can browse the entire panel but cannot make any changes.
+            </span>
+          </div>
+        )}
         {/* Top bar — glass effect */}
         <div className="flex items-center h-14 px-5 glass border-b border-border-primary/30">
           <div className="relative flex-1 max-w-md">

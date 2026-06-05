@@ -47,7 +47,7 @@ async def admin_login(body: AdminLoginRequest, db: AsyncSession) -> AdminLoginRe
         result = await db.execute(
             select(User).where(
                 func.lower(User.email) == email_norm,
-                User.role.in_(["admin", "super_admin"]),
+                User.role.in_(["admin", "super_admin", "demo_admin"]),
             )
         )
     except (OperationalError, DBAPIError) as e:
@@ -130,10 +130,19 @@ async def change_admin_password(admin: User, current_password: str, new_password
 async def get_admin_me(admin: User, db: AsyncSession) -> dict:
     employee_role = None
     permissions = set()
+    read_only = False
 
     if admin.role == "super_admin":
         employee_role = "super_admin"
         permissions = {"*"}
+    elif admin.role == "demo_admin":
+        # Read-only viewer — surface a `read_only=True` flag so the
+        # frontend can hide / disable mutation controls and show a
+        # banner. The backend still enforces this independently
+        # (require_permission + AdminReadOnlyMiddleware).
+        employee_role = "demo_admin"
+        permissions = {p for p in _ALL_VIEW_PERMISSIONS}
+        read_only = True
     else:
         emp_q = await db.execute(
             select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)
@@ -151,4 +160,21 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
         "role": admin.role,
         "employee_role": employee_role,
         "permissions": list(permissions),
+        "read_only": read_only,
     }
+
+
+# Comprehensive list of view-only permissions across the panel — what a
+# demo_admin's /me response advertises. Keep in sync with EMPLOYEE_ROLE_PERMISSIONS
+# whenever a new `.view` permission is added. The actual enforcement is
+# in require_permission (perm.endswith(".view")), so a missing entry
+# here only affects what the frontend renders, never security.
+_ALL_VIEW_PERMISSIONS = {
+    "users.view", "trades.view", "positions.view", "orders.view",
+    "deposits.view", "withdrawals.view", "kyc.view", "tickets.view",
+    "audit_logs.view", "banks.view", "ib.view", "social.view",
+    "banners.view", "bonus.view", "analytics.view", "exposure.view",
+    "config.view", "instruments.view", "insurance.view", "play_zone.view",
+    "lifestyle.view", "employees.view", "settings.view",
+    "transactions.view", "account_types.view", "deposit_wallets.view",
+}

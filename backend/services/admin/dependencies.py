@@ -54,6 +54,12 @@ EMPLOYEE_ROLE_PERMISSIONS = {
 ADMIN_COOKIE_NAME = "fx_admin"
 
 
+# Roles that may authenticate against the admin API. `demo_admin` is a
+# read-only viewer role (see require_permission + AdminReadOnlyMiddleware
+# in main.py) — they can navigate the panel but every mutation is blocked.
+ADMIN_AUTH_ROLES = ("admin", "super_admin", "demo_admin")
+
+
 async def get_current_admin(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(
@@ -91,7 +97,7 @@ async def get_current_admin(
     result = await db.execute(
         select(User).where(
             User.id == uuid.UUID(admin_id),
-            User.role.in_(["admin", "super_admin"]),
+            User.role.in_(ADMIN_AUTH_ROLES),
             User.status == "active",
         )
     )
@@ -103,11 +109,29 @@ async def get_current_admin(
 
 
 def require_permission(permission: str):
-    """FastAPI dependency factory that checks if the current admin has the required permission."""
+    """FastAPI dependency factory that checks if the current admin has the
+    required permission.
+
+    Read-only viewers (role='demo_admin') are allowed only `.view`
+    permissions. Anything else — `.create`, `.update`, `.delete`,
+    `.approve`, `.reject`, `.ban`, etc. — returns 403 immediately.
+    The AdminReadOnlyMiddleware in main.py provides a second, broader
+    safety net (rejects non-GET HTTP methods) so even a route that
+    forgets to call require_permission can't be mutated by a viewer.
+    """
     async def _check(
         admin: User = Depends(get_current_admin),
         db: AsyncSession = Depends(get_db),
     ) -> User:
+        # Demo / read-only role: only ".view" perms pass.
+        if admin.role == "demo_admin":
+            if permission.endswith(".view"):
+                return admin
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Demo admin is read-only — cannot perform this action.",
+            )
+
         # Full admins (role 'admin' or 'super_admin') bypass per-permission checks.
         if admin.role in ("admin", "super_admin"):
             return admin
