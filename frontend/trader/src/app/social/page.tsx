@@ -375,6 +375,9 @@ interface TradingAccount {
   id: string;
   account_number: string;
   balance: number;
+  equity?: number;
+  is_demo?: boolean;
+  is_active?: boolean;
 }
 
 function CopyModal({
@@ -386,8 +389,16 @@ function CopyModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [amount, setAmount] = useState('');
+  // Two follow modes, mirroring the backend:
+  //   "existing" -> link an existing live account (no wallet debit,
+  //                 engine scales by account_equity / master_equity)
+  //   "new"      -> auto-create a CF sub-account funded from main_wallet
+  // We default to "existing" whenever the user has at least one live
+  // account; otherwise the modal forces "new" with an amount input.
+  type Mode = 'existing' | 'new';
+  const [mode, setMode] = useState<Mode>('existing');
   const [accountId, setAccountId] = useState('');
+  const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
@@ -399,13 +410,25 @@ function CopyModal({
       try {
         setLoadingAccounts(true);
         const [accRes, walRes] = await Promise.all([
-          api.get<{ items: TradingAccount[] }>('/accounts'),
+          api.get<{ items: TradingAccount[] } | TradingAccount[]>('/accounts'),
           api.get<{ main_wallet_balance?: number }>('/wallet/summary'),
         ]);
         if (cancelled) return;
-        const items = accRes.items ?? [];
-        setAccounts(items);
-        if (items.length > 0) setAccountId(items[0].id);
+        const itemsRaw =
+          accRes && typeof accRes === 'object' && 'items' in accRes
+            ? (accRes as { items: TradingAccount[] }).items
+            : Array.isArray(accRes) ? (accRes as TradingAccount[]) : [];
+        // Only live, active accounts can be used to copy a master.
+        const live = (itemsRaw || []).filter(
+          (a) => !a.is_demo && (a.is_active ?? true),
+        );
+        setAccounts(live);
+        if (live.length > 0) {
+          setAccountId(live[0].id);
+          setMode('existing');
+        } else {
+          setMode('new');
+        }
         setWalletBalance(Number(walRes.main_wallet_balance) || 0);
       } catch {
         // non-critical
@@ -417,18 +440,30 @@ function CopyModal({
   }, []);
 
   const handleSubmit = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    if (amt > walletBalance) { toast.error('Insufficient wallet balance'); return; }
     setSubmitting(true);
     try {
-      // account_id is sent for API compat but backend auto-creates a dedicated account
-      const acctId = accounts.length > 0 ? accounts[0].id : '00000000-0000-0000-0000-000000000000';
-      await api.post(`/social/copy?master_id=${provider.id}&account_id=${acctId}&amount=${amt}`, {});
-      toast.success(`Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
+      const params = new URLSearchParams({ master_id: String(provider.id) });
+      if (mode === 'existing') {
+        if (!accountId) { toast.error('Pick a trading account'); setSubmitting(false); return; }
+        params.set('account_id', accountId);
+        await api.post(`/social/copy?${params.toString()}`, {});
+        toast.success(`Now following ${provider.provider_name}`);
+      } else {
+        const amt = parseFloat(amount);
+        if (!amt || amt <= 0) { toast.error('Enter a valid amount'); setSubmitting(false); return; }
+        if (amt < provider.min_investment) {
+          toast.error(`Minimum investment is $${provider.min_investment}`);
+          setSubmitting(false); return;
+        }
+        if (amt > walletBalance) { toast.error('Insufficient wallet balance'); setSubmitting(false); return; }
+        params.set('amount', String(amt));
+        await api.post(`/social/copy?${params.toString()}`, {});
+        toast.success(`Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
+      }
       onSuccess();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start subscription');
+      const e = err as { response?: { data?: { detail?: string } }; message?: string };
+      toast.error(e?.response?.data?.detail || e?.message || 'Failed to start subscription');
     } finally {
       setSubmitting(false);
     }
@@ -446,38 +481,86 @@ function CopyModal({
         <h3 className="text-sm font-semibold text-text-primary mb-1">Follow {provider.provider_name}</h3>
         <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
 
-        {/* Wallet balance */}
-        <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
-            <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </div>
-          <button type="button" onClick={() => setAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-accent hover:underline">Max</button>
-        </div>
+        {loadingAccounts ? (
+          <div className="py-6 text-center text-xs text-text-tertiary">Loading your accounts…</div>
+        ) : (
+          <>
+            {/* Mode toggle — only meaningful when the user actually has
+                a live account; if not, we lock to "new". */}
+            {accounts.length > 0 && (
+              <div className="flex items-center gap-1 mb-3 p-1 rounded-md bg-bg-primary border border-border-glass">
+                <button
+                  type="button"
+                  onClick={() => setMode('existing')}
+                  className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'existing' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Use existing account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('new')}
+                  className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'new' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  New copy account
+                </button>
+              </div>
+            )}
 
-        <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
-          A dedicated trading account will be auto-created for this MAM subscription. Mirrored trades will appear there.
-        </div>
+            {mode === 'existing' && accounts.length > 0 && (
+              <>
+                <label className="block text-xs text-text-secondary mb-1">Trading Account</label>
+                <select
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  className="mb-3 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary focus:border-accent/50 focus:outline-none"
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      LIVE · {a.account_number} — ${(a.equity ?? a.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xxs text-text-tertiary mb-4">
+                  Master trades will mirror onto this account scaled by your account&apos;s equity vs the master&apos;s equity. No deposit required.
+                </p>
+              </>
+            )}
 
-        <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min={provider.min_investment}
-          max={walletBalance}
-          placeholder={`Min $${provider.min_investment}`}
-          className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none [data-theme='light']:border-black"
-        />
+            {mode === 'new' && (
+              <>
+                <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
+                    <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  </div>
+                  <button type="button" onClick={() => setAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-accent hover:underline">Max</button>
+                </div>
+                <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
+                  A dedicated copy-trading account will be auto-created and funded from your main wallet. Mirrored trades appear there.
+                </div>
+                <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  min={provider.min_investment}
+                  max={walletBalance}
+                  placeholder={`Min $${provider.min_investment}`}
+                  className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                />
+              </>
+            )}
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || accounts.length === 0}
-          className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-black transition-all hover:bg-accent/90 disabled:opacity-50"
-        >
-          {submitting ? 'Processing…' : 'Start Following'}
-        </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-black transition-all hover:bg-accent/90 disabled:opacity-50"
+            >
+              {submitting ? 'Processing…' : 'Start Following'}
+            </button>
+          </>
+        )}
       </div>
     </div>,
     document.body,
@@ -1221,6 +1304,14 @@ function BecomeProviderTab() {
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Master-account resolution. Same two modes as the follow flow:
+  // "existing" -> broadcast from a live account the user already owns.
+  // "new"      -> admin auto-creates a CT pool account on approval.
+  type MasterMode = 'existing' | 'new';
+  const [masterMode, setMasterMode] = useState<MasterMode>('new');
+  const [accounts, setAccounts] = useState<TradingAccount[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+
   // Strategy Info fields
   const [strategyName, setStrategyName] = useState('');
   const [market, setMarket] = useState('');
@@ -1238,6 +1329,26 @@ function BecomeProviderTab() {
         let provRes = null;
         try { provRes = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
         if (provRes) setExisting(provRes);
+        // Fetch the user's live accounts so they can pick one to
+        // broadcast from. Demo + inactive accounts are filtered out —
+        // the backend will reject them anyway.
+        try {
+          const accRes = await api.get<{ items: TradingAccount[] } | TradingAccount[]>('/accounts');
+          const itemsRaw =
+            accRes && typeof accRes === 'object' && 'items' in accRes
+              ? (accRes as { items: TradingAccount[] }).items
+              : Array.isArray(accRes) ? (accRes as TradingAccount[]) : [];
+          const live = (itemsRaw || []).filter(
+            (a) => !a.is_demo && (a.is_active ?? true),
+          );
+          setAccounts(live);
+          if (live.length > 0) {
+            setSelectedAccountId(live[0].id);
+            setMasterMode('existing');
+          } else {
+            setMasterMode('new');
+          }
+        } catch { /* fallback to "new" mode */ }
       } catch {} finally { setLoading(false); }
     })();
   }, []);
@@ -1255,26 +1366,33 @@ function BecomeProviderTab() {
       if (expectedReturns) strategyInfo.expected_returns = expectedReturns;
       if (strategyDescription) strategyInfo.description = strategyDescription;
 
-      const params = new URLSearchParams({
+      const paramObj: Record<string, string> = {
         master_type: masterType,
         performance_fee_pct: perfFee,
         min_investment: minInvest,
         max_investors: maxInvestors,
         ...(description ? { description } : {}),
-      });
+      };
+      if (masterMode === 'existing' && selectedAccountId) {
+        paramObj.account_id = selectedAccountId;
+      }
+      const params = new URLSearchParams(paramObj);
       const res = await api.post<{ account_number?: string }>(
         `/social/become-provider?${params.toString()}`,
         Object.keys(strategyInfo).length > 0 ? strategyInfo : null,
       );
       toast.success(
         res?.account_number
-          ? `Application submitted! Master trading account ${res.account_number} created.`
-          : 'Application submitted! Admin will review.',
+          ? `Application submitted! Linked to account ${res.account_number}.`
+          : 'Application submitted! Admin will review and create your master account on approval.',
       );
       let refreshed = null;
       try { refreshed = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
       if (refreshed) setExisting(refreshed);
-    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setSubmitting(false); }
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || 'Failed';
+      toast.error(msg);
+    } finally { setSubmitting(false); }
   };
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
@@ -1322,9 +1440,50 @@ function BecomeProviderTab() {
           <a href="/pamm" className="text-buy underline underline-offset-2 whitespace-nowrap">Apply on PAMM page →</a>
         </div>
 
+        {/* Master account picker — pick existing or auto-create on approval. */}
         <div className="p-3 rounded-xl border border-accent/30 bg-accent/5 text-xxs text-text-secondary">
-          <p className="font-semibold text-accent mb-1">Dedicated Master Trading Account</p>
-          <p>When approved, a dedicated master trading account will be created for you automatically. Fund it from your main wallet to start trading — your followers will mirror only this account.</p>
+          <p className="font-semibold text-accent mb-2">Trading account to broadcast from</p>
+          {accounts.length > 0 ? (
+            <>
+              <div className="flex items-center gap-1 mb-2 p-1 rounded-md bg-bg-primary border border-border-glass">
+                <button
+                  type="button"
+                  onClick={() => setMasterMode('existing')}
+                  className={`flex-1 py-1.5 rounded text-xs font-medium transition ${masterMode === 'existing' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Use my existing account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMasterMode('new')}
+                  className={`flex-1 py-1.5 rounded text-xs font-medium transition ${masterMode === 'new' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  Auto-create on approval
+                </button>
+              </div>
+              {masterMode === 'existing' ? (
+                <>
+                  <label className="block text-xs text-text-secondary mb-1">Pick a live account</label>
+                  <select
+                    value={selectedAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-xs text-text-primary focus:border-accent/50 focus:outline-none"
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        LIVE · {a.account_number} — ${(a.equity ?? a.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-[11px]">Your followers will mirror trades from this account, scaled by each follower&apos;s equity vs yours.</p>
+                </>
+              ) : (
+                <p>A fresh dedicated master trading account will be created when admin approves your application. Fund it from your main wallet to start trading.</p>
+              )}
+            </>
+          ) : (
+            <p>You don&apos;t have a live trading account yet — a dedicated master account will be created automatically on admin approval.</p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

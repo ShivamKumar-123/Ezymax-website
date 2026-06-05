@@ -39,17 +39,27 @@ async def get_provider_detail(
 @router.post("/copy", status_code=201)
 async def start_copy(
     master_id: UUID = Query(...),
-    account_id: UUID = Query(...),
-    amount: Decimal = Query(..., gt=0),
+    account_id: UUID | None = Query(
+        None,
+        description="Existing live account to link. If omitted, a new CF sub-account is funded from `amount`.",
+    ),
+    amount: Decimal | None = Query(
+        None, gt=0,
+        description="Required only when account_id is omitted — funds the auto-created sub-account from main_wallet.",
+    ),
     max_drawdown_pct: Decimal = Query(None),
     max_lot_override: Decimal = Query(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await social_service.start_copy(
-        master_id=master_id, account_id=account_id, amount=amount,
-        max_drawdown_pct=max_drawdown_pct, max_lot_override=max_lot_override,
-        user_id=current_user["user_id"], db=db,
+        master_id=master_id,
+        account_id=account_id,
+        amount=amount,
+        max_drawdown_pct=max_drawdown_pct,
+        max_lot_override=max_lot_override,
+        user_id=current_user["user_id"],
+        db=db,
     )
 
 
@@ -105,14 +115,17 @@ async def become_provider(
     management_fee_pct: Decimal = Query(Decimal("0"), ge=0, le=10),
     min_investment: Decimal = Query(Decimal("100"), gt=0),
     max_investors: int = Query(100, ge=1, le=1000),
+    account_id: UUID | None = Query(
+        None,
+        description="Existing live trading account to broadcast from. Omit to have the server auto-create a fresh pool account on admin approval.",
+    ),
     strategy_info: dict | None = Body(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # account_id removed — server auto-creates a dedicated master trading
-    # account so the user's personal live accounts stay separate.
     return await social_service.become_provider(
-        account_id=None, master_type=master_type, description=description,
+        account_id=account_id,
+        master_type=master_type, description=description,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors,
         strategy_info=strategy_info,

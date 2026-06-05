@@ -303,26 +303,40 @@ async def approve_master_request(
     if user:
         user.role = "master_trader"
 
-    # ── Auto-create a dedicated pool trading account for the master ──
-    effective_type = (master.master_type or "signal_provider").lower()
-    prefix = "PM" if effective_type == "pamm" else ("MM" if effective_type == "mamm" else "CT")
-    pool_account = TradingAccount(
-        user_id=master.user_id,
-        account_number=_generate_pool_account_number(prefix),
-        balance=Decimal("0"),
-        equity=Decimal("0"),
-        free_margin=Decimal("0"),
-        margin_used=Decimal("0"),
-        leverage=500,
-        currency="USD",
-        is_demo=False,
-        is_active=True,
-    )
-    db.add(pool_account)
-    await db.flush()  # get pool_account.id
+    # ── Pool account resolution ────────────────────────────────────────
+    # If the applicant linked an existing live account at apply time,
+    # honour that — admin approval is just status flip, no new account.
+    # Otherwise (legacy / "create one for me" path) we mint a fresh
+    # CT/PM/MM pool account here, on approval.
+    pool_account = None
+    if master.account_id is None:
+        effective_type = (master.master_type or "signal_provider").lower()
+        prefix = "PM" if effective_type == "pamm" else ("MM" if effective_type == "mamm" else "CT")
+        pool_account = TradingAccount(
+            user_id=master.user_id,
+            account_number=_generate_pool_account_number(prefix),
+            balance=Decimal("0"),
+            equity=Decimal("0"),
+            free_margin=Decimal("0"),
+            margin_used=Decimal("0"),
+            leverage=500,
+            currency="USD",
+            is_demo=False,
+            is_active=True,
+        )
+        db.add(pool_account)
+        await db.flush()  # get pool_account.id
+        master.account_id = pool_account.id
 
-    # Link the pool account to the master
-    master.account_id = pool_account.id
+    # Look up the resolved account (either freshly minted above OR
+    # the one the applicant linked at apply time).
+    linked_acct = pool_account or (
+        await db.execute(
+            select(TradingAccount).where(TradingAccount.id == master.account_id)
+        )
+    ).scalar_one_or_none() if pool_account is None else pool_account
+    acct_id_str = str(master.account_id) if master.account_id else None
+    acct_number = linked_acct.account_number if linked_acct is not None else None
 
     await write_audit_log(
         db, admin_id, "approve_master_request", "master_account", master_id,
@@ -330,16 +344,18 @@ async def approve_master_request(
             "status": "approved",
             "admin_commission_pct": float(master.admin_commission_pct or 0),
             "master_type": master.master_type,
-            "pool_account_id": str(pool_account.id),
-            "pool_account_number": pool_account.account_number,
+            "pool_account_id": acct_id_str,
+            "pool_account_number": acct_number,
+            "pool_account_auto_created": pool_account is not None,
         },
         ip_address=ip_address,
     )
     await db.commit()
     return {
         "message": "Master request approved",
-        "pool_account_id": str(pool_account.id),
-        "pool_account_number": pool_account.account_number,
+        "pool_account_id": acct_id_str,
+        "pool_account_number": acct_number,
+        "pool_account_auto_created": pool_account is not None,
     }
 
 

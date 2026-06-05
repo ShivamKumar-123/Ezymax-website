@@ -208,16 +208,33 @@ async def get_provider_detail(
 
 
 async def start_copy(
-    master_id: UUID, account_id: UUID, amount: Decimal,
-    max_drawdown_pct: Decimal | None, max_lot_override: Decimal | None,
-    user_id: UUID, db: AsyncSession,
+    master_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    account_id: UUID | None = None,
+    amount: Decimal | None = None,
+    max_drawdown_pct: Decimal | None = None,
+    max_lot_override: Decimal | None = None,
 ) -> dict:
     """Follower starts copying a master — auto-approved.
 
-    Creates a dedicated CF trading account for the follower, debits their main
-    wallet, and activates the allocation in one step so the copy engine starts
-    mirroring the master's trades immediately. Funds stay in the follower's
-    own CF account; the master never touches them.
+    Two account-resolution modes:
+
+      A. `account_id` provided -> link to the follower's EXISTING live
+         account. No wallet debit, no separate sub-account. The copy
+         engine scales each master trade by (account.equity /
+         master.equity) live every tick, so the follower's full
+         account is in play. Good when the user already has a live
+         account they want to use.
+
+      B. `amount` provided, no `account_id` -> auto-create a dedicated
+         CF (Copy-Fund) sub-account funded from main_wallet_balance.
+         Preserves the legacy onboarding path for users who have NO
+         active live account yet.
+
+    `allocation_amount` is recorded as a snapshot for max_drawdown
+    calculations; the actual lot sizing always reads
+    `investor_account.equity` live every tick.
     """
     master_result = await db.execute(
         select(MasterAccount).where(
@@ -240,9 +257,6 @@ async def start_copy(
             detail="This manager runs a pooled account. Invest from the MAM/PAMM tab instead.",
         )
 
-    if amount < master.min_investment:
-        raise HTTPException(status_code=400, detail=f"Minimum investment is {master.min_investment}")
-
     investor_count = await db.execute(
         select(func.count()).select_from(InvestorAllocation).where(
             InvestorAllocation.master_id == master.id,
@@ -256,9 +270,6 @@ async def start_copy(
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    wallet_bal = user.main_wallet_balance or Decimal("0")
-    if wallet_bal < amount:
-        raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
     existing = await db.execute(
         select(InvestorAllocation).where(
@@ -270,34 +281,108 @@ async def start_copy(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Already copying this provider")
 
-    investor_account = TradingAccount(
-        user_id=user_id,
-        account_number=_gen_investor_account_number("signal"),
-        balance=amount,
-        equity=amount,
-        free_margin=amount,
-        margin_used=Decimal("0"),
-        leverage=500,
-        currency="USD",
-        is_demo=False,
-        is_active=True,
-    )
-    db.add(investor_account)
-    await db.flush()
+    investor_account: TradingAccount
+    snapshot_amount: Decimal
 
-    user.main_wallet_balance = wallet_bal - amount
-    db.add(Transaction(
-        user_id=user_id, account_id=investor_account.id,
-        type="withdrawal", amount=-amount,
-        description=f"Copy trading investment → account {investor_account.account_number}",
-    ))
+    if account_id is not None:
+        # MODE A — link to an existing live account.
+        acct = (await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.id == account_id,
+                TradingAccount.user_id == user_id,
+                TradingAccount.is_active.is_(True),
+            )
+        )).scalar_one_or_none()
+        if acct is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Selected trading account not found or not yours",
+            )
+        if acct.is_demo:
+            raise HTTPException(
+                status_code=400,
+                detail="Demo accounts can't be used for live copy trading",
+            )
+        # Refuse to attach two active allocations to the same account —
+        # the engine would mirror trades from multiple masters into the
+        # same balance, which the lot-sizing math doesn't anticipate.
+        clash = (await db.execute(
+            select(InvestorAllocation).where(
+                InvestorAllocation.investor_account_id == acct.id,
+                InvestorAllocation.status == "active",
+            )
+        )).scalar_one_or_none()
+        if clash is not None:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This account is already used to copy another provider. "
+                    "Stop that copy first or pick a different account."
+                ),
+            )
+        cur_eq = Decimal(str(acct.equity or acct.balance or 0))
+        if cur_eq < (master.min_investment or Decimal("0")):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Account equity ${float(cur_eq):.2f} is below the "
+                    f"provider's minimum of ${float(master.min_investment):.2f}."
+                ),
+            )
+        investor_account = acct
+        snapshot_amount = cur_eq
+        result_msg = (
+            f"Now copying — using existing account {investor_account.account_number} "
+            f"(equity ${float(cur_eq):.2f})"
+        )
+    else:
+        # MODE B — no existing account chosen; auto-create a CF
+        # sub-account funded from main_wallet_balance.
+        if amount is None or amount <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Provide either an existing account_id or an amount to fund a new copy account.",
+            )
+        if amount < (master.min_investment or Decimal("0")):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Minimum investment is {master.min_investment}",
+            )
+        wallet_bal = user.main_wallet_balance or Decimal("0")
+        if wallet_bal < amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient wallet balance (available: {wallet_bal})",
+            )
+        investor_account = TradingAccount(
+            user_id=user_id,
+            account_number=_gen_investor_account_number("signal"),
+            balance=amount,
+            equity=amount,
+            free_margin=amount,
+            margin_used=Decimal("0"),
+            leverage=500,
+            currency="USD",
+            is_demo=False,
+            is_active=True,
+        )
+        db.add(investor_account)
+        await db.flush()
+        user.main_wallet_balance = wallet_bal - amount
+        db.add(Transaction(
+            user_id=user_id, account_id=investor_account.id,
+            type="withdrawal", amount=-amount,
+            description=f"Copy trading investment → account {investor_account.account_number}",
+        ))
+        snapshot_amount = amount
+        result_msg = f"Now copying — new account {investor_account.account_number} funded with ${amount}"
 
     allocation = InvestorAllocation(
         master_id=master_id,
         investor_user_id=user_id,
         investor_account_id=investor_account.id,
         copy_type=AllocationCopyType.SIGNAL.value,
-        allocation_amount=amount,
+        allocation_amount=snapshot_amount,
         max_drawdown_pct=max_drawdown_pct,
         max_lot_override=max_lot_override,
         status="active",
@@ -310,10 +395,10 @@ async def start_copy(
     return {
         "id": str(allocation.id), "master_id": str(master_id),
         "investor_account": investor_account.account_number,
-        "amount": float(amount),
+        "amount": float(snapshot_amount),
         "copy_type": allocation.copy_type, "status": allocation.status,
-        "wallet_balance": float(user.main_wallet_balance),
-        "message": f"Now copying — account {investor_account.account_number} funded with ${amount}",
+        "wallet_balance": float(user.main_wallet_balance or 0),
+        "message": result_msg,
         "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
     }
 
@@ -1047,6 +1132,20 @@ async def become_provider(
     user_id: UUID, db: AsyncSession,
     strategy_info: dict | None = None,
 ) -> dict:
+    """Submit a provider application.
+
+    Two account-resolution modes (mirrors the follower flow):
+
+      A. `account_id` provided -> link to the applicant's EXISTING live
+         account. The master row stores that account_id immediately and
+         admin approval just flips status; no new pool account is
+         created. Use this when the trader already has a live account
+         they want to broadcast from.
+
+      B. `account_id` is None -> account stays NULL until admin approves;
+         approval auto-creates a fresh CT/PM/MM pool account. Preserves
+         the legacy flow for users with no live account yet.
+    """
     # Retired "mamm" master type — callers that still send it get remapped
     # to signal_provider so no new MAMM rows are created. Users may hold one
     # PAMM and one signal_provider application simultaneously.
@@ -1064,13 +1163,47 @@ async def become_provider(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a provider application of this type")
 
-    # Pool trading account is created on admin approval, not here — otherwise
-    # a pending row would leave an orphan CT/PM/MM account if the admin
-    # rejects, and approve_master_request() would create a second one and
-    # overwrite master.account_id, stranding the first. Keep account_id=None
-    # until approved.
+    resolved_account_id: UUID | None = None
+    resolved_account_number: str | None = None
+    if account_id is not None:
+        acct = (await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.id == account_id,
+                TradingAccount.user_id == user_id,
+                TradingAccount.is_active.is_(True),
+            )
+        )).scalar_one_or_none()
+        if acct is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Selected trading account not found or not yours",
+            )
+        if acct.is_demo:
+            raise HTTPException(
+                status_code=400,
+                detail="Demo accounts can't be used as a provider account",
+            )
+        # Refuse to point two provider applications at the same account —
+        # the engine would publish trades from the same balance under
+        # multiple master ids.
+        clash = (await db.execute(
+            select(MasterAccount).where(
+                MasterAccount.account_id == acct.id,
+                MasterAccount.status.in_(["pending", "approved", "active"]),
+            )
+        )).scalar_one_or_none()
+        if clash is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="This account is already used by another provider application.",
+            )
+        resolved_account_id = acct.id
+        resolved_account_number = acct.account_number
+
     master = MasterAccount(
-        user_id=user_id, account_id=None, status="pending",
+        user_id=user_id,
+        account_id=resolved_account_id,
+        status="pending",
         master_type=normalized_type,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors, description=description,
@@ -1080,11 +1213,20 @@ async def become_provider(
     await db.commit()
     await db.refresh(master)
 
+    if resolved_account_id is not None:
+        msg = (
+            f"Application submitted — linked to your existing account "
+            f"{resolved_account_number}. Trades will broadcast from this "
+            "account after admin approval."
+        )
+    else:
+        msg = "Application submitted — your pool trading account will be created after admin approval."
+
     return {
         "id": str(master.id),
         "status": master.status,
-        "account_number": None,
-        "message": "Application submitted — your pool trading account will be created after admin approval.",
+        "account_number": resolved_account_number,
+        "message": msg,
     }
 
 
