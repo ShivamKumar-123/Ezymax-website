@@ -250,7 +250,20 @@ export default function TradesPage() {
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
   // Create trade modal state
-  type PickedUser = { id: string; name: string; email: string };
+  type PickedAccount = {
+    id: string;
+    name?: string;
+    account_number?: string;
+    balance?: number;
+    currency?: string;
+    is_demo?: boolean;
+  };
+  type PickedUser = {
+    id: string;
+    name: string;
+    email: string;
+    accounts?: PickedAccount[];
+  };
   const [createUserSearch, setCreateUserSearch] = useState('');
   const [createUsers, setCreateUsers] = useState<PickedUser[]>([]);
   const [createSelectedUsers, setCreateSelectedUsers] = useState<PickedUser[]>([]);
@@ -268,6 +281,11 @@ export default function TradesPage() {
   const [createTp, setCreateTp] = useState('');
   const [createReason, setCreateReason] = useState('');
   const [userSearchLoading, setUserSearchLoading] = useState(false);
+  // When exactly one user is targeted (and we're not broadcasting via
+  // "apply to all"), the admin can override the auto "primary live
+  // account" pick with an explicit account from the user's list. Empty
+  // string keeps the default (backend resolves to primary live).
+  const [createAccountId, setCreateAccountId] = useState('');
 
   /** Full fetch with loading spinner — only on initial load or manual refresh. */
   const fetchPositions = useCallback(async (silent = false) => {
@@ -396,6 +414,7 @@ export default function TradesPage() {
     setCreateUsers([]);
     setCreateSelectedUsers([]);
     setApplyToAllUsers(false);
+    setCreateAccountId('');
     setCreateSymbol('');
     setCreateInstrumentId('');
     setInstrumentSearch('');
@@ -495,10 +514,15 @@ export default function TradesPage() {
     setCreateSelectedUsers((prev) =>
       prev.some((p) => p.id === u.id) ? prev : [...prev, u]
     );
+    // Any change to the user list invalidates the account override —
+    // accounts belong to one user, so a previously-picked id may no
+    // longer be on the active user.
+    setCreateAccountId('');
   };
 
   const removeUserFromSelection = (id: string) => {
     setCreateSelectedUsers((prev) => prev.filter((p) => p.id !== id));
+    setCreateAccountId('');
   };
 
   const submitCreateTrade = async () => {
@@ -525,6 +549,10 @@ export default function TradesPage() {
       if (createTp) body.take_profit = parseFloat(createTp);
       if (applyToAllUsers) {
         body.apply_to_all = true;
+      } else if (createAccountId) {
+        // Single user + specific account picked — bypass the
+        // "primary live" auto-resolve and target this exact account.
+        body.account_ids = [createAccountId];
       } else {
         body.user_ids = createSelectedUsers.map((u) => u.id);
       }
@@ -1037,8 +1065,40 @@ export default function TradesPage() {
                   {userSearchLoading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-text-tertiary" />}
                 </div>
                 <p className="text-xxs text-text-tertiary mt-1">
-                  Each user's primary live (non-demo) account is used.
+                  Each user's primary live (non-demo) account is used by default.
+                  {createSelectedUsers.length === 1 && (createSelectedUsers[0].accounts?.length || 0) > 1 && (
+                    <> Pick a specific account below to override.</>
+                  )}
                 </p>
+
+                {/* Account override — only when exactly ONE user is
+                    targeted (multi-user bulk has no "specific account"
+                    concept; "apply to all" can't override either). The
+                    list of accounts comes from the /admin/users
+                    search response. */}
+                {createSelectedUsers.length === 1 && (createSelectedUsers[0].accounts?.length || 0) > 0 && (
+                  <div className="mt-3">
+                    <label className="block text-xxs text-text-tertiary mb-1">
+                      Trading Account
+                    </label>
+                    <select
+                      value={createAccountId}
+                      onChange={(e) => setCreateAccountId(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md focus:border-buy"
+                    >
+                      <option value="">
+                        Primary live account (default)
+                      </option>
+                      {createSelectedUsers[0].accounts!.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {(a.name || a.account_number || a.id.slice(0, 8))}
+                          {a.balance != null ? ` — $${Number(a.balance).toLocaleString()}` : ''}
+                          {a.currency ? ` ${a.currency}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </>
             )}
           </div>
