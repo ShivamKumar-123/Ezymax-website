@@ -18,7 +18,7 @@ CREATE TABLE users (
     date_of_birth DATE,
     country VARCHAR(100),
     address TEXT,
-    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'super_admin', 'ib', 'sub_broker', 'master_trader')),
+    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'super_admin', 'ib', 'sub_broker', 'master_trader', 'demo_admin')),
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'banned', 'blocked', 'pending_kyc', 'suspended')),
     kyc_status VARCHAR(20) DEFAULT 'pending' CHECK (kyc_status IN ('pending', 'submitted', 'approved', 'rejected')),
     is_demo BOOLEAN DEFAULT FALSE,
