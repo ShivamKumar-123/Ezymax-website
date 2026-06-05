@@ -11,6 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Sparkles, Package,
+  Eye,
 } from 'lucide-react';
 
 interface NavItem {
@@ -67,6 +68,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Banners', href: '/banners', icon: Image, perm: 'banners.view' },
   { label: 'Support', href: '/support', icon: HeadphonesIcon, perm: 'tickets.view' },
   { label: 'Employees', href: '/employees', icon: UserCog, perm: '_super_admin' },
+  { label: 'Demo Admins', href: '/demo-admins', icon: Eye, perm: '_super_admin' },
   { label: 'Settings', href: '/settings', icon: Settings, perm: '_super_admin' },
 ];
 
