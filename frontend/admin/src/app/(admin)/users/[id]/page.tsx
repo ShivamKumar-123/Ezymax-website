@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatNumber, formatDateTime } from '@/lib/formatters';
@@ -17,7 +18,7 @@ import {
 // Deposits, and Withdrawals without leaving the user context. Backend
 // endpoints honour `?user_id=` for everything we render here.
 
-type TabId = 'overview' | 'positions' | 'trades' | 'transactions' | 'deposits' | 'withdrawals';
+type TabId = 'overview' | 'positions' | 'trades' | 'transactions' | 'deposits' | 'withdrawals' | 'copy-fees';
 
 interface UserDetail {
   user: {
@@ -166,6 +167,7 @@ const TABS: { id: TabId; label: string; icon: typeof UserRound }[] = [
   { id: 'transactions', label: 'Transactions', icon: Receipt },
   { id: 'deposits', label: 'Deposits', icon: ArrowDownCircle },
   { id: 'withdrawals', label: 'Withdrawals', icon: ArrowUpCircle },
+  { id: 'copy-fees', label: 'Copy Fees', icon: Receipt },
 ];
 
 export default function UserDetailPage() {
@@ -510,6 +512,166 @@ export default function UserDetailPage() {
             <span className="text-text-tertiary text-xxs font-mono">{formatDate(w.created_at)}</span>,
           ])}
         />
+      )}
+
+      {activeTab === 'copy-fees' && <CopyFeesPaidSection userId={userId} />}
+    </div>
+  );
+}
+
+// ─── Copy-trade fees paid by this user as a follower ────────────────
+//
+// Tab for support — answers "why was this user charged a fee?"
+// Backed by GET /admin/social/users/{user_id}/copy-fees-paid. Same
+// data shape as the master drill-down on /admin/social, just from
+// the follower side. Includes which master collected each share
+// (email + name) so support can trace the fee to a specific
+// allocation in one step.
+interface CopyFeeRow {
+  transaction_id: string;
+  timestamp: string | null;
+  symbol: string;
+  side: string;
+  investor_lots: number;
+  investor_profit: number;
+  fee_paid: number;
+  master_email: string;
+  master_name: string;
+}
+
+function CopyFeesPaidSection({ userId }: { userId: string }) {
+  const [rows, setRows] = useState<CopyFeeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(0);
+  const [range, setRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), per_page: '50' });
+      if (range !== 'all') {
+        const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - days);
+        params.set('from_date', d.toISOString());
+      }
+      const res = await adminApi.get<{
+        items: CopyFeeRow[];
+        total_paid: number;
+        total_rows: number;
+        pages: number;
+      }>(`/social/users/${userId}/copy-fees-paid?${params.toString()}`);
+      setRows(res.items || []);
+      setTotalPaid(res.total_paid || 0);
+      setTotalRows(res.total_rows || 0);
+      setPages(res.pages || 0);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load copy fees');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, range, page]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-border-primary flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-sm font-semibold text-text-primary">Copy-Trade Fees Paid</h3>
+          <p className="text-xxs text-text-tertiary mt-0.5">
+            Performance fees deducted from this user&rsquo;s positions when they followed a master trader
+          </p>
+        </div>
+        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-bg-primary border border-border-primary">
+          {(['7d', '30d', '90d', 'all'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => { setRange(p); setPage(1); }}
+              className={cn('px-2.5 py-1 rounded text-[11px] font-medium transition',
+                range === p ? 'bg-buy text-white' : 'text-text-secondary hover:text-text-primary')}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 px-3 py-2.5 border-b border-border-primary bg-bg-primary/40">
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Trades in Range</p>
+          <p className="text-base font-bold font-mono tabular-nums text-text-primary mt-0.5">{totalRows}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total Fees Paid</p>
+          <p className="text-base font-bold font-mono tabular-nums text-danger mt-0.5">-${fmt(totalPaid)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Avg / Trade</p>
+          <p className="text-base font-bold font-mono tabular-nums text-text-primary mt-0.5">
+            ${fmt(totalRows > 0 ? totalPaid / totalRows : 0)}
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        {loading ? (
+          <div className="flex justify-center py-10"><Loader2 size={18} className="animate-spin text-text-tertiary" /></div>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-10 text-xs text-text-tertiary">
+            No copy-trade fees in this range. This user hasn&rsquo;t followed a profitable trader yet.
+          </div>
+        ) : (
+          <table className="w-full min-w-[800px] text-xs">
+            <thead className="bg-bg-tertiary/40">
+              <tr>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">When</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Symbol</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Side</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Paid To Master</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Lots</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Their Profit</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Fee Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.transaction_id} className="border-t border-border-primary/40 hover:bg-bg-hover/30">
+                  <td className="px-3 py-2 text-text-secondary">
+                    {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-text-primary font-medium">{r.symbol}</td>
+                  <td className={cn('px-3 py-2 font-medium uppercase', r.side === 'buy' ? 'text-buy' : 'text-sell')}>{r.side}</td>
+                  <td className="px-3 py-2">
+                    <p className="text-text-primary">{r.master_name}</p>
+                    <p className="text-xxs text-text-tertiary">{r.master_email}</p>
+                  </td>
+                  <td className="px-3 py-2 text-right text-text-primary font-mono tabular-nums">{r.investor_lots.toFixed(2)}</td>
+                  <td className={cn('px-3 py-2 text-right font-mono tabular-nums', r.investor_profit >= 0 ? 'text-success' : 'text-danger')}>
+                    {r.investor_profit >= 0 ? '+' : ''}${fmt(r.investor_profit)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-danger font-medium">-${fmt(r.fee_paid)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {pages > 1 && (
+        <div className="px-3 py-2 flex items-center justify-between border-t border-border-primary text-xxs text-text-tertiary">
+          <span>Page {page} of {pages}</span>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+              className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover">Prev</button>
+            <button type="button" onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page >= pages}
+              className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover">Next</button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -22,6 +22,13 @@ interface ActiveMaster {
   aum: number; total_investor_profit: number; master_earnings: number;
   admin_revenue: number; total_return_pct: number; min_investment: number;
   created_at: string;
+  // Optional fields the backend may or may not return depending on the
+  // shape of the masters endpoint. Declared here so the table renderer
+  // doesn't need per-row `as any` casts to read them.
+  total_master_trades?: number;
+  total_copy_trades?: number;
+  live_positions?: number;
+  master_pnl?: number;
 }
 
 type Tab = 'requests' | 'masters' | 'pamm';
@@ -167,9 +174,9 @@ export default function SocialPage() {
   const totalAdminRev = masters.reduce((s, m) => s + m.admin_revenue, 0);
   const totalMasterEarnings = masters.reduce((s, m) => s + m.master_earnings, 0);
   const totalFollowers = masters.reduce((s, m) => s + (m.active_investors || 0), 0);
-  const totalCopyTrades = masters.reduce((s, m) => s + ((m as any).total_copy_trades || 0), 0);
-  const totalLive = masters.reduce((s, m) => s + ((m as any).live_positions || 0), 0);
-  const totalMasterPnl = masters.reduce((s, m) => s + ((m as any).master_pnl || 0), 0);
+  const totalCopyTrades = masters.reduce((s, m) => s + (m.total_copy_trades || 0), 0);
+  const totalLive = masters.reduce((s, m) => s + (m.live_positions || 0), 0);
+  const totalMasterPnl = masters.reduce((s, m) => s + (m.master_pnl || 0), 0);
 
   return (
     <>
@@ -264,17 +271,20 @@ export default function SocialPage() {
                   </tr></thead>
                   <tbody>
                     {masters.map(m => {
-                      const ma = m as any;
+                      // All previously-untyped fields are now declared
+                      // on ActiveMaster as Optional; no cast needed.
+                      const live = m.live_positions || 0;
+                      const pnl = m.master_pnl || 0;
                       return (
                       <tr key={m.id} className="border-b border-border-primary/50 hover:bg-bg-hover transition-fast">
                         <td className="px-2 py-2"><p className="text-xs text-text-primary">{m.user_name}</p><p className="text-xxs text-text-tertiary">{m.user_email}</p></td>
                         <td className="px-2 py-2"><span className="text-xxs px-1.5 py-0.5 rounded-sm bg-buy/15 text-buy font-medium capitalize">{m.master_type?.replace('_', ' ')}</span></td>
                         <td className="px-2 py-2 text-xs text-text-primary font-mono">{m.active_investors}<span className="text-text-tertiary">/{m.max_investors}</span></td>
                         <td className="px-2 py-2 text-xs text-right font-mono tabular-nums text-success">${fmt(m.aum)}</td>
-                        <td className="px-2 py-2 text-xs text-text-primary font-mono tabular-nums">{ma.total_master_trades || 0}</td>
-                        <td className="px-2 py-2 text-xs text-text-secondary font-mono tabular-nums">{ma.total_copy_trades || 0}</td>
-                        <td className="px-2 py-2 text-xs font-mono tabular-nums">{ma.live_positions > 0 ? <span className="text-buy font-medium">{ma.live_positions}</span> : <span className="text-text-tertiary">0</span>}</td>
-                        <td className={cn('px-2 py-2 text-xs text-right font-mono tabular-nums font-medium', (ma.master_pnl || 0) >= 0 ? 'text-success' : 'text-danger')}>{(ma.master_pnl || 0) >= 0 ? '+' : ''}${fmt(ma.master_pnl || 0)}</td>
+                        <td className="px-2 py-2 text-xs text-text-primary font-mono tabular-nums">{m.total_master_trades || 0}</td>
+                        <td className="px-2 py-2 text-xs text-text-secondary font-mono tabular-nums">{m.total_copy_trades || 0}</td>
+                        <td className="px-2 py-2 text-xs font-mono tabular-nums">{live > 0 ? <span className="text-buy font-medium">{live}</span> : <span className="text-text-tertiary">0</span>}</td>
+                        <td className={cn('px-2 py-2 text-xs text-right font-mono tabular-nums font-medium', pnl >= 0 ? 'text-success' : 'text-danger')}>{pnl >= 0 ? '+' : ''}${fmt(pnl)}</td>
                         <td className="px-2 py-2 text-xs text-text-secondary">{m.performance_fee_pct}%</td>
                         <td className="px-2 py-2 text-xs text-warning font-medium">{m.admin_commission_pct}%</td>
                         <td className="px-2 py-2 text-xs text-right font-mono tabular-nums text-text-primary">${fmt(m.master_earnings)}</td>

@@ -612,18 +612,24 @@ export default function UsersPage() {
         const u = sorted.find(x => x.id === openActionsId);
         if (!u) return null;
         const closeMenu = () => { setOpenActionsId(null); setMenuPos(null); };
-        const menuItems = [
+        // Discriminated union: a menu entry is either a divider or a
+        // real button. Encoding it this way lets the renderer narrow
+        // safely instead of forcing per-element type casts.
+        type MenuEntry =
+          | { divider: true }
+          | { label: string; icon: typeof Eye; action: () => void; danger?: boolean };
+        const menuItems: MenuEntry[] = [
           { label: 'View Profile', icon: Eye, action: () => { closeMenu(); router.push(`/users/${u.id}`); } },
           { label: 'Add Fund', icon: Plus, action: () => openModal('add-fund', u) },
           { label: 'Deduct Fund', icon: Minus, action: () => openModal('deduct-fund', u) },
           { label: 'Give Credit', icon: CreditCard, action: () => openModal('give-credit', u) },
           { label: 'Take Credit', icon: DollarSign, action: () => openModal('take-credit', u) },
-          { divider: true } as any,
+          { divider: true },
           { label: u.status?.toLowerCase() === 'banned' ? 'Unban User' : 'Ban User', icon: Ban, action: () => openModal(u.status?.toLowerCase() === 'banned' ? 'unban' : 'ban', u), danger: true },
           { label: 'Kill Switch', icon: Power, action: () => openModal('kill-switch', u), danger: true },
-          { divider: true } as any,
+          { divider: true },
           { label: 'Login As User', icon: LogIn, action: () => handleLoginAs(u) },
-          { divider: true } as any,
+          { divider: true },
           { label: 'Delete User', icon: Trash2, action: () => openModal('delete', u), danger: true },
         ];
         // Portal the dropdown to document.body so `position: fixed` stays
@@ -642,7 +648,12 @@ export default function UsersPage() {
               onClick={e => e.stopPropagation()}
             >
               {menuItems.map((item, idx) => {
-                if (item.divider) return <div key={idx} className="my-1.5 border-t border-border-primary" />;
+                // Narrow via the discriminator field — TypeScript pulls
+                // the divider variant out on this branch, the action
+                // variant falls through to the button render below.
+                if ('divider' in item) {
+                  return <div key={idx} className="my-1.5 border-t border-border-primary" />;
+                }
                 return (
                   <button
                     key={idx}

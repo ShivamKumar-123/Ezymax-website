@@ -70,7 +70,7 @@ export default function OrderPanel() {
 
   const tick = prices[selectedSymbol];
   const instrumentInfo = instruments.find((i) => i.symbol === selectedSymbol);
-  const segment = (instrumentInfo as any)?.segment as string | undefined;
+  const segment = instrumentInfo?.segment;
   const digits = getDigits(selectedSymbol);
   const contractSize = instrumentInfo?.contract_size || 100000;
 
@@ -796,7 +796,7 @@ export default function OrderPanel() {
                 symbol={selectedSymbol}
                 side={side}
                 lots={lotsNum}
-                leverage={(activeAccount as any).leverage || 100}
+                leverage={activeAccount.leverage || 100}
                 stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
                 takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
                 onSelect={setInsuranceSelection}
