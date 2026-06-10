@@ -1,4 +1,5 @@
 """Social Trading API — Leaderboard, copy trading, MAM/PAMM."""
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import get_db
 from packages.common.src.auth import get_current_user
 from ..services import social_service
+from packages.common.src import copy_earnings as copy_earnings_service
 
 router = APIRouter()
 
@@ -184,6 +186,28 @@ async def my_provider_stats(
 ):
     return await social_service.my_provider_stats(
         user_id=current_user["user_id"], db=db, master_type=master_type,
+    )
+
+
+@router.get("/my-earnings")
+async def my_earnings(
+    from_date: datetime | None = Query(None),
+    to_date: datetime | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Master self-view: every commission row earned from copy followers,
+    most recent first. Returns aggregate `total_earned` alongside the
+    paginated items so the UI can render a header without a second call."""
+    return await copy_earnings_service.get_master_earnings(
+        user_id=current_user["user_id"],
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        page=page,
+        per_page=per_page,
     )
 
 

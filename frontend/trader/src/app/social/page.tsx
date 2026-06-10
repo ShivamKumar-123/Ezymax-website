@@ -1659,6 +1659,9 @@ function MyDashboardTab() {
         </div>
       </div>
 
+      {/* Commission History — per-trade detail of every fee earned. */}
+      <CommissionHistorySection />
+
       {/* Trading Activity */}
       <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
         <div className="px-4 py-3 border-b border-border-primary">
@@ -1842,6 +1845,237 @@ function MyDashboardTab() {
           </div>
         </div>,
         document.body,
+      )}
+    </div>
+  );
+}
+
+
+// ─── Commission History (master self-view) ──────────────────────────
+/**
+ * Per-trade ledger of every commission the current master has earned.
+ * Backed by GET /social/my-earnings — joined view across Transaction +
+ * Position + CopyTrade + Instrument + follower User.
+ *
+ * Date filter uses simple presets (7d / 30d / 90d / all) so the master
+ * gets a quick snapshot without typing dates; the API still supports
+ * arbitrary from/to ranges if we ever need a custom picker.
+ *
+ * CSV export reuses the in-memory rows — no separate /export endpoint
+ * needed because the API caps at per_page=200 which fits most
+ * single-master windows in one page.
+ */
+interface EarningsRow {
+  transaction_id: string;
+  timestamp: string | null;
+  symbol: string;
+  side: string;
+  investor_lots: number;
+  investor_profit: number;
+  master_share_earned: number;
+  follower_display: string;
+}
+
+type RangePreset = '7d' | '30d' | '90d' | 'all';
+
+function presetToFrom(p: RangePreset): string | null {
+  if (p === 'all') return null;
+  const days = p === '7d' ? 7 : p === '30d' ? 30 : 90;
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}
+
+function CommissionHistorySection() {
+  const [rows, setRows] = useState<EarningsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [pages, setPages] = useState(0);
+  const [page, setPage] = useState(1);
+  const [range, setRange] = useState<RangePreset>('30d');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), per_page: '50' });
+      const fromISO = presetToFrom(range);
+      if (fromISO) params.set('from_date', fromISO);
+      const res = await api.get<{
+        items: EarningsRow[];
+        total_earned: number;
+        total_rows: number;
+        pages: number;
+      }>(`/social/my-earnings?${params.toString()}`);
+      setRows(res.items || []);
+      setTotalEarned(res.total_earned || 0);
+      setTotalRows(res.total_rows || 0);
+      setPages(res.pages || 0);
+    } catch (e) {
+      const err = e as { message?: string };
+      toast.error(err?.message || 'Failed to load earnings history');
+    } finally {
+      setLoading(false);
+    }
+  }, [range, page]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const fmt = (n: number) =>
+    (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const exportCsv = () => {
+    if (rows.length === 0) {
+      toast.error('No rows to export');
+      return;
+    }
+    const header = ['Timestamp', 'Symbol', 'Side', 'Follower', 'Lots', 'Follower Profit', 'Your Share'];
+    const lines = [header.join(',')];
+    for (const r of rows) {
+      lines.push([
+        r.timestamp || '',
+        r.symbol,
+        r.side,
+        `"${r.follower_display.replace(/"/g, '""')}"`,
+        r.investor_lots.toFixed(2),
+        r.investor_profit.toFixed(2),
+        r.master_share_earned.toFixed(2),
+      ].join(','));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission-history-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-sm font-semibold text-text-primary">Commission History</h3>
+          <p className="text-xxs text-text-tertiary mt-0.5">
+            Per-trade record of every fee earned from your followers
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Range picker */}
+          <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-bg-primary border border-border-glass">
+            {(['7d', '30d', '90d', 'all'] as RangePreset[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => { setRange(p); setPage(1); }}
+                className={clsx(
+                  'px-2.5 py-1 rounded text-[11px] font-medium transition',
+                  range === p ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary',
+                )}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-border-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition disabled:opacity-50"
+          >
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-3 gap-3 border-b border-border-primary bg-bg-primary/40">
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Earned in Range</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-warning mt-0.5">${fmt(totalEarned)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Trades</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-text-primary mt-0.5">{totalRows}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Avg / Trade</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-text-primary mt-0.5">
+            ${fmt(totalRows > 0 ? totalEarned / totalRows : 0)}
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-5 h-5 border-2 border-buy border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-10 text-xs text-text-tertiary">
+            No commissions in this range yet. Once your followers close profitable trades, fees appear here.
+          </div>
+        ) : (
+          <table className="w-full min-w-[700px] text-xs">
+            <thead className="bg-bg-tertiary/40">
+              <tr>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">When</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Symbol</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Side</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Follower</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Lots</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Their Profit</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Your Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.transaction_id} className="border-t border-border-primary/40 hover:bg-bg-hover/30">
+                  <td className="px-3 py-2 text-text-secondary">
+                    {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-text-primary font-medium">{r.symbol}</td>
+                  <td className={clsx('px-3 py-2 font-medium uppercase', r.side === 'buy' ? 'text-buy' : 'text-sell')}>
+                    {r.side}
+                  </td>
+                  <td className="px-3 py-2 text-text-secondary">{r.follower_display}</td>
+                  <td className="px-3 py-2 text-right text-text-primary font-mono tabular-nums">{r.investor_lots.toFixed(2)}</td>
+                  <td className={clsx('px-3 py-2 text-right font-mono tabular-nums', r.investor_profit >= 0 ? 'text-buy' : 'text-sell')}>
+                    {r.investor_profit >= 0 ? '+' : ''}${fmt(r.investor_profit)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-warning font-medium">
+                    ${fmt(r.master_share_earned)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {pages > 1 && (
+        <div className="px-4 py-2 flex items-center justify-between border-t border-border-primary text-xxs text-text-tertiary">
+          <span>Page {page} of {pages}</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover"
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              disabled={page >= pages}
+              className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

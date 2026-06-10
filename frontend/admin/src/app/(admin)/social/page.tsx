@@ -66,6 +66,11 @@ export default function SocialPage() {
   const [distributeModal, setDistributeModal] = useState<PammPool | null>(null);
   const [distributing, setDistributing] = useState(false);
 
+  // Commission drill-down modal for the masters tab. Holds the master
+  // whose history is being inspected — the actual fetch + paging happens
+  // inside MasterCommissionsModal below.
+  const [commissionsModal, setCommissionsModal] = useState<ActiveMaster | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -276,6 +281,9 @@ export default function SocialPage() {
                         <td className="px-2 py-2 text-xs text-right font-mono tabular-nums text-warning font-medium">${fmt(m.admin_revenue)}</td>
                         <td className="px-2 py-2">
                           <div className="flex items-center gap-1">
+                            <button onClick={() => setCommissionsModal(m)} className="px-2 py-1 text-xxs font-medium bg-warning/15 text-warning border border-warning/30 rounded hover:bg-warning/25 transition-fast inline-flex items-center gap-1">
+                              <BarChart2 size={11} /> History
+                            </button>
                             <button onClick={() => { setEditModal(m); setEditCommission(String(m.admin_commission_pct)); setEditMaxInv(String(m.max_investors)); }} className="px-2 py-1 text-xxs font-medium bg-buy/15 text-buy border border-buy/30 rounded hover:bg-buy/25 transition-fast inline-flex items-center gap-1">
                               <Edit3 size={11} /> Edit
                             </button>
@@ -540,6 +548,226 @@ export default function SocialPage() {
           </div>
         </div>
       )}
+
+      {commissionsModal && (
+        <MasterCommissionsModal
+          master={commissionsModal}
+          onClose={() => setCommissionsModal(null)}
+        />
+      )}
     </>
+  );
+}
+
+
+/* ─── Master Commission Drill-Down ──────────────────────────────────
+ * Renders per-trade rows for ONE master: each row is one closed copy
+ * trade that produced a commission. Shows both the master's earned
+ * share AND the platform's admin revenue on the same row so an admin
+ * can audit revenue split at a glance.
+ *
+ * Backed by GET /admin/social/masters/{id}/commissions. Honours a 7d
+ * /30d/90d/all range preset + CSV export for finance teams.
+ */
+interface CommissionRow {
+  transaction_id: string;
+  timestamp: string | null;
+  symbol: string;
+  side: string;
+  investor_lots: number;
+  investor_profit: number;
+  master_share: number;
+  admin_share: number;
+  follower_name: string;
+  follower_email: string;
+}
+
+type CRange = '7d' | '30d' | '90d' | 'all';
+function rangeToFromISO(r: CRange): string | null {
+  if (r === 'all') return null;
+  const days = r === '7d' ? 7 : r === '30d' ? 30 : 90;
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}
+
+function MasterCommissionsModal({
+  master,
+  onClose,
+}: {
+  master: ActiveMaster;
+  onClose: () => void;
+}) {
+  const [rows, setRows] = useState<CommissionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(0);
+  const [range, setRange] = useState<CRange>('30d');
+  const [totals, setTotals] = useState({ master_earned: 0, admin_revenue: 0, gross_fee: 0 });
+  const [totalRows, setTotalRows] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), per_page: '50' });
+      const fromISO = rangeToFromISO(range);
+      if (fromISO) params.set('from_date', fromISO);
+      const res = await adminApi.get<{
+        items: CommissionRow[];
+        totals: { master_earned: number; admin_revenue: number; gross_fee: number };
+        total_rows: number;
+        pages: number;
+      }>(`/social/masters/${master.id}/commissions?${params.toString()}`);
+      setRows(res.items || []);
+      setTotals(res.totals || { master_earned: 0, admin_revenue: 0, gross_fee: 0 });
+      setTotalRows(res.total_rows || 0);
+      setPages(res.pages || 0);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load history');
+    } finally {
+      setLoading(false);
+    }
+  }, [master.id, range, page]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const exportCsv = () => {
+    if (rows.length === 0) { toast.error('No rows to export'); return; }
+    const header = ['Timestamp', 'Symbol', 'Side', 'Follower', 'Email', 'Lots', 'Follower Profit', 'Master Share', 'Admin Revenue'];
+    const lines = [header.join(',')];
+    for (const r of rows) {
+      lines.push([
+        r.timestamp || '',
+        r.symbol, r.side,
+        `"${(r.follower_name || '').replace(/"/g, '""')}"`,
+        r.follower_email,
+        r.investor_lots.toFixed(2),
+        r.investor_profit.toFixed(2),
+        r.master_share.toFixed(2),
+        r.admin_share.toFixed(2),
+      ].join(','));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `master-${master.account_number}-commissions-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
+      <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-5xl bg-bg-secondary border border-border-primary rounded-lg shadow-2xl flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary">Commission History · {master.user_name}</h3>
+            <p className="text-xxs text-text-tertiary mt-0.5">{master.account_number} · {master.user_email}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-bg-primary border border-border-primary">
+              {(['7d', '30d', '90d', 'all'] as CRange[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => { setRange(p); setPage(1); }}
+                  className={cn(
+                    'px-2.5 py-1 rounded text-[11px] font-medium transition',
+                    range === p ? 'bg-buy text-white' : 'text-text-secondary hover:text-text-primary',
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={exportCsv} disabled={rows.length === 0} className="px-3 py-1.5 text-xs font-medium rounded-md border border-border-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-50">
+              CSV
+            </button>
+            <button type="button" onClick={onClose} className="p-1.5 text-text-tertiary hover:text-text-primary rounded hover:bg-bg-hover">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Totals strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 py-3 border-b border-border-primary bg-bg-primary/40">
+          <div>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Trades in range</p>
+            <p className="text-base font-bold font-mono tabular-nums text-text-primary mt-0.5">{totalRows}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Master Earned</p>
+            <p className="text-base font-bold font-mono tabular-nums text-text-primary mt-0.5">${fmt(totals.master_earned)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Admin Revenue</p>
+            <p className="text-base font-bold font-mono tabular-nums text-warning mt-0.5">${fmt(totals.admin_revenue)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Gross Fee</p>
+            <p className="text-base font-bold font-mono tabular-nums text-success mt-0.5">${fmt(totals.gross_fee)}</p>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 size={18} className="animate-spin text-text-tertiary" /></div>
+          ) : rows.length === 0 ? (
+            <div className="text-center py-10 text-xs text-text-tertiary">
+              No commission rows in this range yet.
+            </div>
+          ) : (
+            <table className="w-full min-w-[850px] text-xs">
+              <thead className="bg-bg-tertiary/40 sticky top-0">
+                <tr>
+                  <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">When</th>
+                  <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Symbol</th>
+                  <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Side</th>
+                  <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Follower</th>
+                  <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Lots</th>
+                  <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Follower P&L</th>
+                  <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Master Share</th>
+                  <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-text-tertiary font-medium">Admin Rev</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.transaction_id} className="border-t border-border-primary/40 hover:bg-bg-hover/30">
+                    <td className="px-3 py-2 text-text-secondary">
+                      {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-text-primary font-medium">{r.symbol}</td>
+                    <td className={cn('px-3 py-2 font-medium uppercase', r.side === 'buy' ? 'text-buy' : 'text-sell')}>{r.side}</td>
+                    <td className="px-3 py-2">
+                      <p className="text-text-primary">{r.follower_name}</p>
+                      <p className="text-xxs text-text-tertiary">{r.follower_email}</p>
+                    </td>
+                    <td className="px-3 py-2 text-right text-text-primary font-mono tabular-nums">{r.investor_lots.toFixed(2)}</td>
+                    <td className={cn('px-3 py-2 text-right font-mono tabular-nums', r.investor_profit >= 0 ? 'text-success' : 'text-danger')}>
+                      {r.investor_profit >= 0 ? '+' : ''}${fmt(r.investor_profit)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums text-text-primary font-medium">${fmt(r.master_share)}</td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums text-warning font-medium">${fmt(r.admin_share)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {pages > 1 && (
+          <div className="px-4 py-2 flex items-center justify-between border-t border-border-primary text-xxs text-text-tertiary">
+            <span>Page {page} of {pages}</span>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover">Prev</button>
+              <button type="button" onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page >= pages} className="px-2 py-1 rounded border border-border-primary disabled:opacity-40 hover:bg-bg-hover">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

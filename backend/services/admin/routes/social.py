@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -9,6 +10,11 @@ from packages.common.src.database import get_db
 from dependencies import require_permission
 from packages.common.src.models import User
 from services import social_service
+# Copy-trade commission ledger queries live in packages.common because
+# both the gateway (master self-view) and the admin (per-master and
+# per-follower drill-downs) need them. Single source of truth — same
+# Transaction joins, same anonymisation rules.
+from packages.common.src import copy_earnings as copy_earnings_service
 
 router = APIRouter(prefix="/social", tags=["Social Trading"])
 
@@ -129,4 +135,53 @@ async def distribute_pamm_profit(
     return await social_service.distribute_pamm_profit(
         master_id=master_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+# ─── Per-master commission drill-down ─────────────────────────────────
+@router.get("/masters/{master_id}/commissions")
+async def master_commission_history(
+    master_id: uuid.UUID,
+    from_date: datetime | None = Query(None),
+    to_date: datetime | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    admin: User = Depends(require_permission("social.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every commission row tied to ONE master account, plus the matching
+    admin (platform) fee on each trade. Returns aggregate totals
+    alongside the paginated items so the page header doesn't need a
+    second call."""
+    return await copy_earnings_service.get_master_commission_history(
+        master_id=master_id,
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        page=page,
+        per_page=per_page,
+    )
+
+
+# ─── Per-follower paid-fees view (for support tickets) ────────────────
+@router.get("/users/{user_id}/copy-fees-paid")
+async def user_copy_fees_paid(
+    user_id: uuid.UUID,
+    from_date: datetime | None = Query(None),
+    to_date: datetime | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    admin: User = Depends(require_permission("users.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every copy-trade fee THIS user paid, with which master collected
+    each share. Use case: support ticket 'why was this commission
+    debited from my account?'."""
+    return await copy_earnings_service.get_user_copy_fees_paid(
+        user_id=user_id,
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        page=page,
+        per_page=per_page,
     )
