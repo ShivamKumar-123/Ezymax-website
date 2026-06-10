@@ -967,9 +967,9 @@ function WalletPageContent() {
                 const isManaged = num.startsWith('IF') || num.startsWith('CF');
                 const isPool = num.startsWith('PM') || num.startsWith('MM') || num.startsWith('CT');
                 const cardLabel = num.startsWith('IF') ? 'PAMM Investment'
-                  : num.startsWith('CF') ? 'MAM Account'
+                  : num.startsWith('CF') ? 'Copy Fund Account'
                   : num.startsWith('PM') ? 'PAMM Master Pool'
-                  : num.startsWith('CT') ? 'MAM Master Pool'
+                  : num.startsWith('CT') ? 'Master Trader Pool'
                   : num;
                 const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '214,169,61', hex: '#d6a93d' };
 

@@ -1215,9 +1215,9 @@ function AccountCard({
       : row.account_number.startsWith('MM')
         ? 'MAM Pool Account'
         : row.account_number.startsWith('CT')
-          ? 'MAM Master Account'
+          ? 'Master Trader Account'
           : row.account_number.startsWith('CF')
-            ? 'MAM Account'
+            ? 'Copy Fund Account'
             : row.account_number.startsWith('IF')
               ? 'Investment Account'
               : 'Live Account';
@@ -1373,7 +1373,7 @@ function AccountCard({
                 </Link>
                 <div className="rounded-lg border border-border-primary bg-bg-secondary px-4 py-2.5 text-xs text-text-tertiary flex items-center gap-2 sm:ml-auto">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by MAM master'}
+                  {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Following a master trader'}
                 </div>
               </>
             ) : isPoolAccount ? (
