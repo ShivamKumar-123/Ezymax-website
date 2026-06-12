@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { Screen, PillButton, IconButton, showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
 export default function WithdrawManual() {
@@ -49,7 +50,7 @@ export default function WithdrawManual() {
         <Text style={styles.title}>UPI / Bank Withdraw</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.huge }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>UPI ID</Text>
         <TextInput value={upiId} onChangeText={setUpiId} placeholder="name@bank" placeholderTextColor={vantage.textMuted} style={styles.input} autoCapitalize="none" autoCorrect={false} />
 

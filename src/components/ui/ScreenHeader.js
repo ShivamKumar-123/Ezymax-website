@@ -2,10 +2,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../context/ThemeContext';
+import { vantage } from '../../theme/vantageTheme';
+
+const colors = {
+  bgPrimary: vantage.bg,
+  border: vantage.border,
+  textPrimary: vantage.textPrimary,
+  textMuted: vantage.textMuted,
+};
 
 export default function ScreenHeader({ title, subtitle, onBack, rightAction }) {
-  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (

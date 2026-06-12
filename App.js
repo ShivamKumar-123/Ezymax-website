@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import React, { Component, useEffect } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import { I18nProvider } from './src/i18n';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ToastHost } from './src/components/vantage';
+import AppLoader from './src/components/vantage/AppLoader';
 import { vantage } from './src/theme/vantageTheme';
 
 LogBox.ignoreLogs([
@@ -56,6 +57,14 @@ class ErrorBoundary extends Component {
 }
 
 function AppShell() {
+  // Hold the branded GIF loader for a minimum time so it's actually visible
+  // (provider loading alone can finish in a flash).
+  const [booted, setBooted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setBooted(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const checkAndApply = async () => {
       try {
@@ -74,6 +83,8 @@ function AppShell() {
     });
     return () => sub.remove();
   }, []);
+
+  if (!booted) return <AppLoader />;
 
   return (
     <>

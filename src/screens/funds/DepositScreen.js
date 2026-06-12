@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { Screen, Card, IconButton } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
@@ -26,7 +27,7 @@ export default function DepositScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.huge }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>Amount (USD)</Text>
         <TextInput
           value={amount}

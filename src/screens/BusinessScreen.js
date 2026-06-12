@@ -16,8 +16,25 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
-import { useTheme } from '../context/ThemeContext';
+import { vantage } from '../theme/vantageTheme';
+import ScreenGlow from '../components/vantage/ScreenGlow';
 import IBScreen from './IBScreen';
+
+// Vantage dark/orange palette mapped onto the legacy `colors` keys.
+const colors = {
+  bgPrimary: vantage.bg,
+  bgSecondary: vantage.bgRaised,
+  bgCard: vantage.bgElevated,
+  bgHover: vantage.bgPressed,
+  border: vantage.border,
+  textPrimary: vantage.textPrimary,
+  textSecondary: vantage.textSecondary,
+  textMuted: vantage.textMuted,
+  primary: vantage.accent,
+  accent: vantage.accent,
+  profitColor: vantage.up,
+};
+const isDark = true;
 
 const MAIN_TABS = [
   { id: 'ib', label: 'IB Program' },
@@ -73,7 +90,6 @@ function NetworkTreeNode({ node, depth, colors }) {
 }
 
 export default function BusinessScreen({ navigation, route }) {
-  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState(route.params?.initialTab || 'ib');
 
@@ -86,6 +102,7 @@ export default function BusinessScreen({ navigation, route }) {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgPrimary }]}>
+      <ScreenGlow />
       <View style={[styles.topBar, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backHit} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={colors.primary} />
@@ -94,20 +111,15 @@ export default function BusinessScreen({ navigation, route }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[styles.tabScroll, { borderBottomColor: colors.border }]}
-        contentContainerStyle={styles.tabScrollContent}
-      >
+      <View style={[styles.tabRow, { borderBottomColor: colors.border }]}>
         {MAIN_TABS.map((t) => (
           <TouchableOpacity
             key={t.id}
             style={[
               styles.mainTab,
               {
-                backgroundColor: tab === t.id ? colors.primary : isDark ? colors.bgSecondary : colors.bgHover,
-                borderColor: colors.border,
+                backgroundColor: tab === t.id ? colors.primary : colors.bgSecondary,
+                borderColor: tab === t.id ? colors.primary : colors.border,
               },
             ]}
             onPress={() => setTab(t.id)}
@@ -122,7 +134,7 @@ export default function BusinessScreen({ navigation, route }) {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       <View style={styles.body}>
         {tab === 'ib' && (
@@ -437,14 +449,19 @@ const styles = StyleSheet.create({
   },
   backHit: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '700' },
-  tabScroll: { borderBottomWidth: StyleSheet.hairlineWidth },
-  tabScrollContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  mainTab: {
-    paddingHorizontal: 16,
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 22,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  mainTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    marginRight: 8,
+    alignItems: 'center',
   },
   mainTabText: { fontSize: 13, fontWeight: '600', lineHeight: 18, includeFontPadding: false, textAlignVertical: 'center' },
   body: { flex: 1 },

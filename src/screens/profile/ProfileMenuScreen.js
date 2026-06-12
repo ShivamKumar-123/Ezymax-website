@@ -1,16 +1,31 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { AuthContext } from '../../context/AuthContext';
 import { Screen, Card, MenuRow, IconButton, PillButton, showToast } from '../../components/vantage';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
+import { fetchKycStatus, isKycApproved, kycStatusLabel } from '../../utils/kycGate';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 
 export default function ProfileMenuScreen() {
   const nav = useNavigation();
   const { user, logout } = useContext(AuthContext) || {};
 
+  // The stored `user` object has no kyc_status — pull the live status from /profile.
+  const [kycStatus, setKycStatus] = useState(user?.kyc_status || null);
+
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    (async () => {
+      const s = await fetchKycStatus();
+      if (!cancelled) setKycStatus(s);
+    })();
+    return () => { cancelled = true; };
+  }, []));
+
+  const kycApproved = isKycApproved(kycStatus);
   const initials = (user?.email || '?').slice(0, 1).toUpperCase();
 
   return (
@@ -23,7 +38,7 @@ export default function ProfileMenuScreen() {
         />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: space.huge }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         {/* Profile header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
@@ -32,7 +47,7 @@ export default function ProfileMenuScreen() {
           <View style={{ flex: 1, marginLeft: space.md }}>
             <Text style={styles.name}>{user?.full_name || user?.email || 'Account'}</Text>
             <Text style={styles.email}>{user?.email || ''}</Text>
-            {user?.kyc_status === 'approved' ? (
+            {kycApproved ? (
               <View style={[styles.badge, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
                 <Ionicons name="shield-checkmark" size={12} color={vantage.up} />
                 <Text style={[styles.badgeTxt, { color: vantage.up }]}>KYC Verified</Text>
@@ -40,38 +55,37 @@ export default function ProfileMenuScreen() {
             ) : (
               <View style={[styles.badge, { backgroundColor: vantage.accentMuted }]}>
                 <Ionicons name="alert-circle-outline" size={12} color={vantage.accent} />
-                <Text style={[styles.badgeTxt, { color: vantage.accent }]}>KYC Pending</Text>
+                <Text style={[styles.badgeTxt, { color: vantage.accent }]}>{kycStatusLabel(kycStatus)}</Text>
               </View>
             )}
           </View>
         </View>
 
         <Section title="ACCOUNTS">
-          <MenuRow icon={<Ionicons name="card-outline" size={20} color={vantage.textPrimary} />} label="My Accounts" onPress={() => nav.navigate('Accounts')} />
-          <MenuRow icon={<Ionicons name="trending-up-outline" size={20} color={vantage.textPrimary} />} label="Portfolio" onPress={() => nav.navigate('Portfolio')} />
+          <MenuRow icon={<Ionicons name="card-outline" size={18} color={vantage.textPrimary} />} label="My Accounts" onPress={() => nav.navigate('Accounts')} />
+          <MenuRow icon={<Ionicons name="trending-up-outline" size={18} color={vantage.textPrimary} />} label="Portfolio" onPress={() => nav.navigate('Portfolio')} />
         </Section>
 
         <Section title="VERIFICATION">
-          <MenuRow icon={<Ionicons name="shield-checkmark-outline" size={20} color={vantage.up} />} label="KYC" value={user?.kyc_status || 'Pending'} onPress={() => nav.navigate('Kyc')} />
+          <MenuRow icon={<Ionicons name="shield-checkmark-outline" size={18} color={vantage.up} />} label="KYC" value={kycStatusLabel(kycStatus)} onPress={() => nav.navigate('Kyc')} />
         </Section>
 
         <Section title="PROGRAMS">
-          <MenuRow icon={<Ionicons name="people-outline" size={20} color={vantage.textPrimary} />} label="Refer & Earn (IB)" onPress={() => nav.navigate('IB')} />
-          <MenuRow icon={<Ionicons name="briefcase-outline" size={20} color={vantage.textPrimary} />} label="Business / Sub-Broker" onPress={() => nav.navigate('Business')} />
-          <MenuRow icon={<Ionicons name="bar-chart-outline" size={20} color={vantage.textPrimary} />} label="PAMM Investments" onPress={() => nav.navigate('Pamm')} />
+          <MenuRow icon={<Ionicons name="briefcase-outline" size={18} color={vantage.textPrimary} />} label="Business / Sub-Broker" onPress={() => nav.navigate('Business')} />
+          <MenuRow icon={<Ionicons name="bar-chart-outline" size={18} color={vantage.textPrimary} />} label="PAMM Investments" onPress={() => nav.navigate('Pamm')} />
         </Section>
 
         <Section title="TOOLS">
-          <MenuRow icon={<Ionicons name="school-outline" size={20} color={vantage.textPrimary} />} label="Academy" onPress={() => nav.navigate('Academy')} />
-          <MenuRow icon={<Ionicons name="calculator-outline" size={20} color={vantage.textPrimary} />} label="Risk Calculator" onPress={() => nav.navigate('RiskCalculator')} />
-          <MenuRow icon={<Ionicons name="calendar-outline" size={20} color={vantage.textPrimary} />} label="Economic Calendar" onPress={() => nav.navigate('EconomicCalendar')} />
-          <MenuRow icon={<Ionicons name="book-outline" size={20} color={vantage.textPrimary} />} label="Order History" onPress={() => nav.navigate('OrderBook')} />
+          <MenuRow icon={<Ionicons name="school-outline" size={18} color={vantage.textPrimary} />} label="Academy" onPress={() => nav.navigate('Academy')} />
+          <MenuRow icon={<Ionicons name="calculator-outline" size={18} color={vantage.textPrimary} />} label="Risk Calculator" onPress={() => nav.navigate('RiskCalculator')} />
+          <MenuRow icon={<Ionicons name="calendar-outline" size={18} color={vantage.textPrimary} />} label="Economic Calendar" onPress={() => nav.navigate('EconomicCalendar')} />
+          <MenuRow icon={<Ionicons name="book-outline" size={18} color={vantage.textPrimary} />} label="Order History" onPress={() => nav.navigate('OrderBook')} />
         </Section>
 
         <Section title="HELP">
-          <MenuRow icon={<Ionicons name="chatbubble-outline" size={20} color={vantage.textPrimary} />} label="Support" onPress={() => nav.navigate('Support')} />
-          <MenuRow icon={<Ionicons name="notifications-outline" size={20} color={vantage.textPrimary} />} label="Notifications" onPress={() => nav.navigate('Notifications')} />
-          <MenuRow icon={<Ionicons name="book-outline" size={20} color={vantage.textPrimary} />} label="How to use" onPress={() => nav.navigate('Instructions')} />
+          <MenuRow icon={<Ionicons name="chatbubble-outline" size={18} color={vantage.textPrimary} />} label="Support" onPress={() => nav.navigate('Support')} />
+          <MenuRow icon={<Ionicons name="notifications-outline" size={18} color={vantage.textPrimary} />} label="Notifications" onPress={() => nav.navigate('Notifications')} />
+          <MenuRow icon={<Ionicons name="book-outline" size={18} color={vantage.textPrimary} />} label="How to use" onPress={() => nav.navigate('Instructions')} />
         </Section>
 
         <View style={{ padding: space.lg, marginTop: space.lg }}>

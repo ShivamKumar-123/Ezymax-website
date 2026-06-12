@@ -14,10 +14,12 @@ import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 import MarketsHeader from './markets/MarketsHeader';
 import MarketsExplore from './markets/MarketsExplore';
 import MarketsWatchlist from './markets/MarketsWatchlist';
+import SymbolPicker from './trade/SymbolPicker';
 
 export default function MarketsScreen() {
   const nav = useNavigation();
   const [view, setView] = useState('watchlist');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [segment, setSegment] = useState('overview');
   const [moversDirection, setMoversDirection] = useState('up');
 
@@ -109,7 +111,12 @@ export default function MarketsScreen() {
       <MarketsHeader
         view={view}
         onChangeView={setView}
-        onSearch={() => nav.navigate('WatchlistEdit')}
+        onSearch={() => setSearchOpen(true)}
+      />
+      <SymbolPicker
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSelect={(sym) => nav.navigate('InstrumentDetail', { symbol: sym })}
       />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }]}

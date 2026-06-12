@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { Screen, Card, PillButton, SymbolIcon, IconButton, StatCard, showToast } from '../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
 export default function StrategyDetailScreen() {
@@ -15,20 +16,71 @@ export default function StrategyDetailScreen() {
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const [amount, setAmount] = useState('');
+  const [showCopy, setShowCopy] = useState(false);
+  const [copying, setCopying] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await ApiService.getLeaderboard({ limit: 50 });
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        const found = list.find((p) => (p.id || p.provider_id) === providerId);
-        if (!cancelled) setProvider(found || null);
+        // Prefer the dedicated provider endpoint, fall back to the leaderboard.
+        let found = null;
+        try {
+          found = await ApiService.getProvider(providerId);
+        } catch (_) {}
+        if (!found) {
+          const res = await ApiService.getLeaderboard({ limit: 50 });
+          const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+          found = list.find((p) => (p.id || p.provider_id) === providerId) || null;
+        }
+        if (!cancelled) {
+          setProvider(found);
+          if (found?.min_investment) setAmount(String(found.min_investment));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, [providerId]);
+
+  // Live accounts the copy can be funded from (demo can't host copies).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await ApiService.getAccounts();
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+        const live = list.filter((a) => !a.is_demo);
+        if (!cancelled) {
+          setAccounts(live);
+          if (live[0]) setSelectedAccountId(live[0].id || live[0]._id);
+        }
+      } catch (_) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const submitCopy = async () => {
+    const amt = Number(amount);
+    if (!(amt > 0)) { showToast({ kind: 'warn', message: 'Enter a valid amount' }); return; }
+    const minInv = Number(provider?.min_investment || 0);
+    if (minInv && amt < minInv) { showToast({ kind: 'warn', message: `Minimum investment is ${minInv}` }); return; }
+    setCopying(true);
+    try {
+      await ApiService.copyMaster(providerId, amt, selectedAccountId);
+      showToast({ kind: 'success', message: 'Copying started' });
+      setShowCopy(false);
+      nav.navigate('Trade');
+    } catch (e) {
+      showToast({ kind: 'error', message: e?.message || 'Could not start copy' });
+    } finally {
+      setCopying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -60,7 +112,7 @@ export default function StrategyDetailScreen() {
   return (
     <Screen edges={['top']}>
       <BackHeader onBack={() => nav.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.huge }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <View style={styles.head}>
           <SymbolIcon symbol={displayName.slice(0, 2).toUpperCase()} size={56} />
           <View style={{ flex: 1 }}>
@@ -84,14 +136,68 @@ export default function StrategyDetailScreen() {
           <Row label="Allocations" value={provider.allocation_count != null ? String(provider.allocation_count) : '—'} last />
         </Card>
 
-        <PillButton
-          label={provider.is_full ? 'Strategy is full' : 'Copy Strategy'}
-          variant="primary"
-          size="lg"
-          disabled={!!provider.is_full}
-          onPress={() => showToast({ kind: 'info', message: 'Copy flow coming soon' })}
-          style={{ marginTop: space.xl }}
-        />
+        {!showCopy ? (
+          <PillButton
+            label={provider.is_full ? 'Strategy is full' : 'Copy Strategy'}
+            variant="primary"
+            size="lg"
+            disabled={!!provider.is_full}
+            onPress={() => setShowCopy(true)}
+            style={{ marginTop: space.xl }}
+          />
+        ) : (
+          <Card style={{ marginTop: space.xl }}>
+            <Text style={styles.copyTitle}>Copy this strategy</Text>
+
+            <Text style={styles.copyLabel}>Investment amount (USD)</Text>
+            <TextInput
+              value={amount}
+              onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ''))}
+              keyboardType="decimal-pad"
+              placeholder={provider.min_investment ? `Min ${provider.min_investment}` : '0.00'}
+              placeholderTextColor={vantage.textMuted}
+              style={styles.copyInput}
+            />
+
+            {accounts.length > 0 ? (
+              <>
+                <Text style={styles.copyLabel}>Fund from account</Text>
+                <View style={styles.acctRow}>
+                  {accounts.map((a) => {
+                    const id = a.id || a._id;
+                    const active = id === selectedAccountId;
+                    return (
+                      <Pressable
+                        key={id}
+                        onPress={() => setSelectedAccountId(id)}
+                        style={[styles.acctChip, active && styles.acctChipActive]}
+                      >
+                        <Text style={[styles.acctChipTxt, active && { color: vantage.textPrimary }]}>
+                          {a.account_number || a.group || id}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : (
+              <Text style={styles.copyHint}>No live account — copy will use your wallet balance.</Text>
+            )}
+
+            <PillButton
+              label={copying ? 'Starting…' : 'Confirm copy'}
+              variant="primary"
+              size="lg"
+              loading={copying}
+              disabled={copying}
+              onPress={submitCopy}
+              style={{ marginTop: space.lg }}
+            />
+            <Pressable onPress={() => setShowCopy(false)} hitSlop={8} style={{ alignSelf: 'center', marginTop: space.md }}>
+              <Text style={styles.cancelTxt}>Cancel</Text>
+            </Pressable>
+          </Card>
+        )}
       </ScrollView>
     </Screen>
   );
@@ -122,6 +228,19 @@ const styles = StyleSheet.create({
   sub: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
   full: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, backgroundColor: vantage.bgPressed, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6 },
   statsRow: { flexDirection: 'row', gap: space.md, marginTop: space.lg, flexWrap: 'wrap' },
+  copyTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.heavy, marginBottom: space.md },
+  copyLabel: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, marginTop: space.md, marginBottom: space.xs },
+  copyInput: {
+    backgroundColor: vantage.bgRaised, borderRadius: radius.md,
+    paddingHorizontal: space.md, paddingVertical: space.md,
+    color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold,
+  },
+  acctRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  acctChip: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border },
+  acctChipActive: { borderColor: vantage.accent, backgroundColor: vantage.accentMuted },
+  acctChipTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  copyHint: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: space.sm },
+  cancelTxt: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
 });
 
 const rowStyles = StyleSheet.create({

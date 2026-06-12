@@ -43,7 +43,7 @@ export default function FundsScreen() {
   const showSplit = main != null && trading != null && main !== trading;
 
   return (
-    <Screen edges={['top']}>
+    <Screen edges={['top']} glow>
       <View style={styles.headerWrap}>
         <Text style={styles.title}>Funds</Text>
       </View>

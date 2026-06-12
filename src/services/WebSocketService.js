@@ -109,15 +109,11 @@ class WebSocketService {
   }
 
   handleReconnect(type, accountId = null) {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Max reconnect attempts reached for ${type} stream`);
-      return;
-    }
-
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * this.reconnectAttempts;
-
-    console.log(`Reconnecting ${type} stream in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    // Keep retrying quietly with a capped backoff (prices also have a REST
+    // polling fallback, so this is best-effort). reconnectAttempts resets to 0
+    // on a successful open.
+    const delay = Math.min(this.reconnectDelay * this.reconnectAttempts, 15000);
 
     setTimeout(() => {
       if (type === 'price') {

@@ -6,17 +6,18 @@
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/swisscresta-icon.png",
-    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#000000",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "jsEngine": "hermes",
     "splash": {
       "image": "./assets/swisscresta-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#000000",
       "dark": {
         "image": "./assets/swisscresta-logo.png",
         "resizeMode": "contain",
-        "backgroundColor": "#121212"
+        "backgroundColor": "#000000"
       }
     },
     "updates": {
@@ -47,15 +48,16 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "backgroundColor": "#000000",
       "package": "com.swisscresta.app",
       "splash": {
         "image": "./assets/swisscresta-logo.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#000000",
         "dark": {
           "image": "./assets/swisscresta-logo.png",
           "resizeMode": "contain",
-          "backgroundColor": "#121212"
+          "backgroundColor": "#000000"
         }
       }
     },

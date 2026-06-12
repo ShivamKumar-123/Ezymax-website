@@ -35,7 +35,14 @@ export default function Sparkline({
     <View style={{ width, height }}>
       {path ? (
         <Svg width={width} height={height}>
-          <Path d={path} stroke={stroke} strokeWidth={strokeWidth} fill="none" />
+          <Path
+            d={path}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       ) : null}
     </View>

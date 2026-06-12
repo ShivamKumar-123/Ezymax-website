@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { Screen, Card, IconButton } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 
 const METHODS = [
   { key: 'crypto', icon: 'link-outline', title: 'Crypto Withdrawal', subtitle: 'TRC20 / BEP20 / ERC20', route: 'WithdrawCrypto' },
@@ -20,7 +21,7 @@ export default function WithdrawScreen() {
         <Text style={styles.title}>Withdraw</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: space.lg }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>Choose withdrawal method</Text>
         {METHODS.map((m) => (
           <Card key={m.key} onPress={() => nav.navigate(m.route)} style={styles.card}>

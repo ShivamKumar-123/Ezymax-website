@@ -24,7 +24,7 @@ export default function BottomNavPill({ tabs, activeKey, onChange }) {
               accessibilityLabel={t.label}
               style={[styles.tab, active && styles.tabActive]}
             >
-              <View style={styles.icon}>{active ? t.icon : t.iconInactive}</View>
+              <View style={styles.icon}>{t.renderIcon ? t.renderIcon(active) : (active ? t.icon : t.iconInactive)}</View>
               <Text style={[styles.label, active && { color: vantage.textPrimary, fontWeight: weights.bold }]}>{t.label}</Text>
             </Pressable>
           );

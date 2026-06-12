@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { Screen, IconButton, SymbolIcon, CategoryTabs } from '../../components/vantage';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import { getInstruments } from '../../utils/instrumentsCache';
 import { getWatchlist, setWatchlist } from '../../utils/watchlistStorage';
@@ -101,6 +102,8 @@ export default function WatchlistEditScreen() {
 
       <FlatList
         data={visible}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.lg }}
         keyExtractor={(item) => String(item.symbol || item.id)}
         renderItem={({ item }) => {
           const sym = String(item.symbol || '').toUpperCase();

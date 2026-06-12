@@ -1,10 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
+import { vantage } from '../../theme/vantageTheme';
+
+const colors = {
+  bgSecondary: vantage.bgRaised,
+  textMuted: vantage.textMuted,
+  textSecondary: vantage.textSecondary,
+};
 
 export default function EmptyState({ icon = 'file-tray-outline', title, subtitle }) {
-  const { colors } = useTheme();
   return (
     <View style={styles.wrap}>
       <View style={[styles.iconWrap, { backgroundColor: colors.bgSecondary }]}>

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { Screen, Sheet, MenuRow, PillButton, IconButton, showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
 export default function TransferScreen() {
@@ -51,7 +52,7 @@ export default function TransferScreen() {
         <Text style={styles.title}>Transfer</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: space.lg }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>From</Text>
         <Pressable onPress={() => setPicking('from')} style={styles.pickRow}>
           <Text style={styles.pickTxt}>{fromAccount ? labelOf(fromAccount) : 'Select source account'}</Text>

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { Screen, PillButton, IconButton, showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
 const CHAINS = [
@@ -46,7 +47,7 @@ export default function WithdrawCrypto() {
         <Text style={styles.title}>Crypto Withdrawal</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.huge }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>Network</Text>
         <View style={styles.chainRow}>
           {CHAINS.map((c) => (

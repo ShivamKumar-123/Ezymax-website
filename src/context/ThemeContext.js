@@ -1,35 +1,36 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { View, ActivityIndicator } from 'react-native';
+import AppLoader from '../components/vantage/AppLoader';
 
-/** Dark — BG #121212, Card #1E1E1E, Blue #1a73e8 */
+/** Dark — BG #121212, Card #1E1E1E, Blue #F26A1F */
 const darkTheme = {
   name: 'Dark',
   isDark: true,
   colors: {
-    primary: '#1a73e8',
-    primaryHover: '#1557b0',
-    secondary: '#1a73e8',
-    accent: '#1a73e8',
-    bgPrimary: '#121212',
-    bgSecondary: '#252525',
-    bgCard: '#1E1E1E',
-    bgHover: '#2A2A2A',
-    textPrimary: '#F4F4F5',
-    textSecondary: '#A1A1AA',
-    textMuted: '#71717A',
-    border: '#333333',
-    borderLight: '#404040',
+    primary: '#F26A1F',
+    primaryHover: '#D2590F',
+    secondary: '#F26A1F',
+    accent: '#F26A1F',
+    bgPrimary: '#000000',
+    bgSecondary: '#242424',
+    bgCard: '#1A1A1A',
+    bgHover: '#2E2E2E',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#9CA3AF',
+    textMuted: '#6B7280',
+    border: '#262626',
+    borderLight: '#363636',
     success: '#22C55E',
     error: '#EF4444',
     warning: '#F59E0B',
-    info: '#1a73e8',
+    info: '#F26A1F',
     buyColor: '#22C55E',
     sellColor: '#EF4444',
     profitColor: '#22C55E',
     lossColor: '#EF4444',
-    tabBarBg: '#121212',
-    cardBg: '#1E1E1E',
+    tabBarBg: '#000000',
+    cardBg: '#1A1A1A',
     purple: '#4285f4',
     cyan: '#22D3EE',
     orange: '#F97316',
@@ -46,10 +47,10 @@ const lightTheme = {
   name: 'Light',
   isDark: false,
   colors: {
-    primary: '#1a73e8',
-    primaryHover: '#1557b0',
-    secondary: '#1a73e8',
-    accent: '#1a73e8',
+    primary: '#F26A1F',
+    primaryHover: '#D2590F',
+    secondary: '#F26A1F',
+    accent: '#F26A1F',
     bgPrimary: '#FFFFFF',
     bgSecondary: '#F4F6F9',
     bgCard: '#FFFFFF',
@@ -62,7 +63,7 @@ const lightTheme = {
     success: '#16A34A',
     error: '#DC2626',
     warning: '#D97706',
-    info: '#1a73e8',
+    info: '#F26A1F',
     buyColor: '#16A34A',
     sellColor: '#DC2626',
     profitColor: '#16A34A',
@@ -79,7 +80,7 @@ const lightTheme = {
 };
 
 const LOADING_BG = '#FFFFFF';
-const LOADING_ACCENT = '#1a73e8';
+const LOADING_ACCENT = '#F26A1F';
 
 const ThemeContext = createContext({
   theme: lightTheme,
@@ -90,23 +91,10 @@ const ThemeContext = createContext({
 });
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadThemePreference = async () => {
-      try {
-        const savedTheme = await SecureStore.getItemAsync('themeMode');
-        if (savedTheme !== null) {
-          setIsDark(savedTheme === 'dark');
-        }
-      } catch (error) {
-        console.log('Error loading theme preference:', error.message);
-      }
-      setLoading(false);
-    };
-    loadThemePreference();
-  }, []);
+  // The app is dark-only — always start dark and ignore any previously saved
+  // light preference so no screen flashes white.
+  const [isDark, setIsDark] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const toggleTheme = async () => {
     const newIsDark = !isDark;
@@ -121,11 +109,7 @@ export const ThemeProvider = ({ children }) => {
   const theme = isDark ? darkTheme : lightTheme;
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: LOADING_BG }}>
-        <ActivityIndicator size="large" color={LOADING_ACCENT} />
-      </View>
-    );
+    return <AppLoader />;
   }
 
   return (

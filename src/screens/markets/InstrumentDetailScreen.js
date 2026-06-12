@@ -1,17 +1,19 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import {
   Screen,
   BuySellSplit,
-  NumberStepper,
   IconButton,
   PillButton,
   showToast,
 } from '../../components/vantage';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
+import SymbolPicker from '../trade/SymbolPicker';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
 import webSocketService from '../../services/WebSocketService';
@@ -61,6 +63,7 @@ function toTvSymbol(sym) {
 export default function InstrumentDetailScreen() {
   const nav = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   const initialSymbol = String(route.params?.symbol || 'XAUUSD').toUpperCase();
 
   const [symbol, setSymbol] = useState(initialSymbol);
@@ -77,6 +80,20 @@ export default function InstrumentDetailScreen() {
   const [side, setSide] = useState('sell');
   const [lots, setLots] = useState(0.01);
   const [submitting, setSubmitting] = useState(false);
+  const [footerH, setFooterH] = useState(330);
+  const [kbHeight, setKbHeight] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Lift the (absolutely-positioned) footer above the keyboard when typing Lots.
+  // Edge-to-edge (Expo SDK 54 default) breaks Android `adjustResize`, so the
+  // footer won't move on its own — we translate it up by the keyboard height.
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => setKbHeight(e?.endCoordinates?.height || 0));
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // Load instrument metadata + initial pin state + accounts
   useEffect(() => {
@@ -96,7 +113,7 @@ export default function InstrumentDetailScreen() {
       if (accs.status === 'fulfilled') {
         const arr = Array.isArray(accs.value) ? accs.value : (Array.isArray(accs.value?.items) ? accs.value.items : []);
         setAccounts(arr);
-        if (!activeAccount && arr[0]) setActiveAccount(arr[0]);
+        if (!activeAccount && arr.length) setActiveAccount(arr.find((a) => a.is_active) || arr[0]);
       }
     })();
     return () => { cancelled = true; };
@@ -115,10 +132,12 @@ export default function InstrumentDetailScreen() {
       const t = arr.find((x) => String(x.symbol || x.ticker || '').toUpperCase() === symbol);
       if (t) setTick(t);
     }
+    // Backend ignores `limit` and returns full history — keep the most recent
+    // bars so the OHLC / 1D-1W-1M figures reflect the intended window.
     const arrOr = (s) => Array.isArray(s) ? s : [];
-    if (b1d.status === 'fulfilled') setBars1D(arrOr(b1d.value));
-    if (b1w.status === 'fulfilled') setBars1W(arrOr(b1w.value));
-    if (b1m.status === 'fulfilled') setBars1M(arrOr(b1m.value));
+    if (b1d.status === 'fulfilled') setBars1D(arrOr(b1d.value).slice(-24));
+    if (b1w.status === 'fulfilled') setBars1W(arrOr(b1w.value).slice(-7));
+    if (b1m.status === 'fulfilled') setBars1M(arrOr(b1m.value).slice(-30));
   }, [symbol]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -211,7 +230,7 @@ export default function InstrumentDetailScreen() {
         symbol,
         side,
         order_type: 'market',
-        volume: Number(lots),
+        lots: Number(lots),
       });
       showToast({ kind: 'success', message: `${side.toUpperCase()} ${lots} ${symbol} placed` });
     } catch (e) {
@@ -231,9 +250,16 @@ export default function InstrumentDetailScreen() {
         symbol={symbol}
         pinned={pinned}
         onBack={() => nav.goBack()}
+        onSymbolPress={() => setPickerOpen(true)}
         onPin={togglePin}
         onAlert={() => showToast({ kind: 'info', message: 'Alerts coming soon' })}
         onShare={() => showToast({ kind: 'info', message: 'Share coming soon' })}
+      />
+
+      <SymbolPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(sym) => setSymbol(String(sym).toUpperCase())}
       />
 
       <View style={styles.tabRow}>
@@ -247,7 +273,7 @@ export default function InstrumentDetailScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 200 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: footerH + space.lg }}>
         {tab === 'chart' ? (
           <>
             <View style={styles.heroRow}>
@@ -268,16 +294,13 @@ export default function InstrumentDetailScreen() {
               </View>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tfRow}>
+            <View style={styles.tfRow}>
               {TIMEFRAMES.map((x) => (
                 <Pressable key={x.key} onPress={() => setTf(x.key)} style={styles.tfCell} accessibilityRole="button">
                   <Text style={[styles.tfTxt, tf === x.key && { color: vantage.textPrimary, fontWeight: weights.heavy }]}>{x.label}</Text>
                 </Pressable>
               ))}
-              <View style={styles.tfMore}>
-                <Text style={styles.tfTxt}>More ▾</Text>
-              </View>
-            </ScrollView>
+            </View>
 
             <View style={styles.chartWrap}>
               <WebView
@@ -291,14 +314,6 @@ export default function InstrumentDetailScreen() {
                 onError={() => {}}
               />
             </View>
-
-            <View style={styles.periodRow}>
-              <PeriodCell label="1D" pct={pct1D} />
-              <PeriodCell label="1W" pct={pct1W} />
-              <PeriodCell label="1M" pct={pct1M} />
-            </View>
-
-            <RangeBar range={range1h} />
           </>
         ) : tab === 'orders' ? (
           <View style={{ padding: space.lg }}>
@@ -321,10 +336,16 @@ export default function InstrumentDetailScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View
+        style={[styles.footer, {
+          bottom: kbHeight,
+          paddingBottom: kbHeight > 0 ? space.md : BOTTOM_NAV_PILL_HEIGHT + insets.bottom + space.sm,
+        }]}
+        onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
+      >
         <View style={styles.lotsBar}>
           <Text style={styles.lotsLabel}>Lots</Text>
-          <NumberStepper value={lots} onChange={setLots} min={0.01} max={1000} step={0.01} precision={2} />
+          <LotsField value={lots} onChange={setLots} />
         </View>
         <BuySellSplit
           bid={bid}
@@ -346,21 +367,54 @@ export default function InstrumentDetailScreen() {
           loading={submitting}
           disabled={!activeAccount || !(lots > 0) || submitting}
           onPress={placeOrder}
-          style={{ marginTop: space.sm }}
+          style={{ marginTop: space.xs, minHeight: 42, paddingVertical: space.sm }}
         />
       </View>
     </Screen>
   );
 }
 
-function Header({ symbol, pinned, onBack, onPin, onAlert, onShare }) {
+// Type-only Lots input — no +/- steppers, just tap and type the volume.
+function LotsField({ value, onChange }) {
+  const [text, setText] = useState('');
+  const [editing, setEditing] = useState(false);
+  const commit = () => {
+    setEditing(false);
+    const n = Number(String(text).replace(',', '.'));
+    if (Number.isFinite(n) && n > 0) onChange(Math.min(1000, Math.max(0.01, n)));
+  };
+  return (
+    <TextInput
+      style={styles.lotsInput}
+      value={editing ? text : Number(value).toFixed(2)}
+      onFocus={() => { setEditing(true); setText(Number(value).toFixed(2)); }}
+      onChangeText={setText}
+      onBlur={commit}
+      onSubmitEditing={commit}
+      keyboardType="decimal-pad"
+      returnKeyType="done"
+      selectTextOnFocus
+      placeholder="0.00"
+      placeholderTextColor={vantage.textMuted}
+      accessibilityLabel="Lots volume"
+    />
+  );
+}
+
+function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare }) {
   return (
     <View style={styles.header}>
       <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={onBack} />
-      <View style={styles.symbolWrap}>
+      <Pressable
+        style={styles.symbolWrap}
+        onPress={onSymbolPress}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Change symbol"
+      >
         <Text style={styles.symbolTxt}>{symbol}</Text>
         <Ionicons name="chevron-down" size={16} color={vantage.textPrimary} />
-      </View>
+      </Pressable>
       <View style={{ flex: 1 }} />
       <Pressable onPress={onPin} hitSlop={8} accessibilityRole="button" accessibilityLabel={pinned ? 'Unpin' : 'Pin to watchlist'} style={styles.hdrIcon}>
         <Ionicons name={pinned ? 'star' : 'star-outline'} size={22} color={pinned ? vantage.accent : vantage.textPrimary} />
@@ -487,7 +541,7 @@ const styles = StyleSheet.create({
   tabLabel: { color: vantage.textMuted, fontFamily, fontSize: sizes.h3 },
   tabUnderline: { height: 2, width: 36, borderRadius: 1, marginTop: space.xs },
 
-  heroRow: { flexDirection: 'row', padding: space.lg, gap: space.md },
+  heroRow: { flexDirection: 'row', paddingHorizontal: space.lg, paddingVertical: space.sm, gap: space.md },
   heroPrice: { color: vantage.textPrimary, fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy },
   heroChange: { fontFamily, fontSize: sizes.body, fontWeight: weights.bold, marginTop: 2 },
   heroTime: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
@@ -502,7 +556,7 @@ const styles = StyleSheet.create({
   tfTxt: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
   tfMore: { marginLeft: 'auto' },
 
-  chartWrap: { height: 320, marginHorizontal: space.sm, backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden' },
+  chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden' },
   chart: { flex: 1, backgroundColor: '#000' },
 
   periodRow: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border, marginTop: space.md },
@@ -527,12 +581,26 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     backgroundColor: vantage.bg,
-    paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md,
+    paddingHorizontal: space.lg, paddingTop: space.xs,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border,
-    gap: space.sm,
+    gap: space.xs,
   },
   lotsBar: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   lotsLabel: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, width: 50 },
+  lotsInput: {
+    flex: 1,
+    height: 42,
+    backgroundColor: vantage.bgRaised,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: vantage.border,
+    paddingHorizontal: space.md,
+    color: vantage.textPrimary,
+    fontFamily,
+    fontSize: sizes.h3,
+    fontWeight: weights.bold,
+    textAlign: 'center',
+  },
   freeMarginRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   freeMarginLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
   freeMarginVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },

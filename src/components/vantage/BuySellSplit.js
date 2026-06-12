@@ -15,7 +15,7 @@ export default function BuySellSplit({
       <View style={styles.row}>
         <Pressable
           onPress={() => onChange('sell')}
-          style={[styles.half, styles.left, { backgroundColor: side === 'sell' ? vantage.sellBg : vantage.buyBg }]}
+          style={[styles.half, styles.left, { backgroundColor: side === 'sell' ? vantage.sellBtn : vantage.sellBtnDim }]}
           accessibilityRole="button"
           accessibilityState={{ selected: side === 'sell' }}
         >
@@ -27,7 +27,7 @@ export default function BuySellSplit({
         </View>
         <Pressable
           onPress={() => onChange('buy')}
-          style={[styles.half, styles.right, { backgroundColor: side === 'buy' ? vantage.up : vantage.buyBg }]}
+          style={[styles.half, styles.right, { backgroundColor: side === 'buy' ? vantage.buyBtn : vantage.buyBtnDim }]}
           accessibilityRole="button"
           accessibilityState={{ selected: side === 'buy' }}
         >
@@ -35,14 +35,18 @@ export default function BuySellSplit({
           <Text style={styles.price}>{formatPrice(ask)}</Text>
         </Pressable>
       </View>
-      {changePoints != null ? (
-        <View style={styles.changeRow}>
-          <View style={styles.changeBar} />
-          <Text style={[styles.changeTxt, { color: changePoints >= 0 ? vantage.up : vantage.down }]}>
-            {changePoints >= 0 ? '▲' : '▼'} {changePoints}
-          </Text>
+      <View style={styles.changeRow}>
+        <View style={styles.changeBar}>
+          <View style={[styles.changeSeg, styles.segLeft, { backgroundColor: vantage.buyBtn }]} />
+          <View style={[styles.changeSeg, styles.segRight, { backgroundColor: vantage.sellBtn }]} />
         </View>
-      ) : null}
+        <View style={styles.changeMarker}>
+          <Text style={[styles.changeArrow, { color: (changePoints ?? 0) >= 0 ? vantage.buyBtn : vantage.sellBtn }]}>
+            {(changePoints ?? 0) >= 0 ? '▲' : '▼'}
+          </Text>
+          <Text style={styles.changeNum}>{changePoints != null ? Math.abs(changePoints) : 0}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -54,7 +58,7 @@ function formatPrice(p) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'stretch', height: 80, position: 'relative' },
+  row: { flexDirection: 'row', alignItems: 'stretch', height: 58, position: 'relative' },
   half: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
   left:  { borderTopLeftRadius: radius.lg, borderBottomLeftRadius: radius.lg },
   right: { borderTopRightRadius: radius.lg, borderBottomRightRadius: radius.lg },
@@ -71,9 +75,14 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   chipTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
-  lab: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
-  price: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, marginTop: 2 },
-  changeRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.xs, justifyContent: 'flex-end' },
-  changeBar: { flex: 1, height: 2, backgroundColor: vantage.down, marginRight: space.sm, borderRadius: 1 },
-  changeTxt: { fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+  lab: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  price: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.heavy, marginTop: 1 },
+  changeRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.sm, gap: space.sm },
+  changeBar: { flex: 1, height: 3, flexDirection: 'row', borderRadius: 2, overflow: 'hidden' },
+  changeSeg: { flex: 1, height: 3 },
+  segLeft: { borderTopLeftRadius: 2, borderBottomLeftRadius: 2 },
+  segRight: { borderTopRightRadius: 2, borderBottomRightRadius: 2 },
+  changeMarker: { alignItems: 'center', minWidth: 20 },
+  changeArrow: { fontFamily, fontSize: 9, lineHeight: 11 },
+  changeNum: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro, fontWeight: weights.semibold },
 });

@@ -1,10 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
+import { vantage } from '../../theme/vantageTheme';
+
+const colors = {
+  primary: vantage.accent,
+  bgSecondary: vantage.bgRaised,
+  border: vantage.border,
+  textSecondary: vantage.textSecondary,
+};
 
 export default function TabBar({ tabs, activeTab, onTabPress, scrollable = false }) {
-  const { colors } = useTheme();
-
   const content = tabs.map((tab) => {
     const active = tab.key === activeTab;
     return (

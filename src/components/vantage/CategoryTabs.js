@@ -7,6 +7,7 @@ export default function CategoryTabs({ value, onChange, options }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={styles.row}
     >
       {options.map((o) => {
@@ -34,8 +35,11 @@ export default function CategoryTabs({ value, onChange, options }) {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: space.xl, paddingHorizontal: space.lg, paddingVertical: space.sm },
-  tab: { paddingVertical: space.sm, alignItems: 'center' },
-  label: { fontFamily, fontSize: sizes.h3, marginBottom: space.xs },
+  // Explicit height keeps the horizontal ScrollView from collapsing vertically
+  // (and clipping the labels) when it sits as a flex-column child.
+  scroll: { height: 52, flexGrow: 0 },
+  row: { gap: space.xl, paddingHorizontal: space.lg, paddingVertical: 6, alignItems: 'flex-end' },
+  tab: { paddingVertical: 6, alignItems: 'center' },
+  label: { fontFamily, fontSize: 15, marginBottom: 4 },
   underline: { height: 2, width: 24, borderRadius: 2 },
 });

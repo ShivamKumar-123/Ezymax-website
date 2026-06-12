@@ -17,7 +17,10 @@ export async function getSparkData(symbol) {
   const p = (async () => {
     try {
       const bars = await ApiService.getBars(sym, { resolution: '60', limit: 24 });
-      const points = Array.isArray(bars) ? bars.map((b) => Number(b?.close ?? b?.c ?? 0)).filter(Number.isFinite) : [];
+      const closes = Array.isArray(bars) ? bars.map((b) => Number(b?.close ?? b?.c ?? 0)).filter(Number.isFinite) : [];
+      // The backend ignores `limit` and returns the full history — keep only the
+      // most recent points so the sparkline (and derived change %) reflect ~1 day.
+      const points = closes.slice(-30);
       cache.set(sym, { ts: Date.now(), data: points });
       return points;
     } catch (_) {

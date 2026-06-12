@@ -14,6 +14,7 @@ import QuickActionsGrid from './home/QuickActionsGrid';
 import PromoBanner from './home/PromoBanner';
 import StrategyCarousel from './home/StrategyCarousel';
 import WatchlistSection from './home/WatchlistSection';
+import AccountSwitcher from './trade/AccountSwitcher';
 
 export default function HomeScreen() {
   const nav = useNavigation();
@@ -26,13 +27,20 @@ export default function HomeScreen() {
   const [banner, setBanner] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pricesBySymbol, setPricesBySymbol] = useState({});
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [accountSummary, setAccountSummary] = useState(null);
+  const [accountSheet, setAccountSheet] = useState(false);
 
   const fetchAll = useCallback(async () => {
     await Promise.allSettled([
       ApiService.getPortfolioSummary().then(setSummary).catch(() => setSummary(null)),
+      // `/social/leaderboard` is the live copy-trade source (/social/masters 404s).
       ApiService.getLeaderboard({ sort: 'overall', limit: 10 }).then((res) => {
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        setStrategies(list);
+        const list = Array.isArray(res)
+          ? res
+          : (res?.items || res?.masters || []);
+        setStrategies(Array.isArray(list) ? list : []);
       }).catch(() => setStrategies([])),
       ApiService.getBanners('dashboard').then((res) => {
         const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
@@ -52,8 +60,24 @@ export default function HomeScreen() {
         const unread = list.filter((n) => !n?.is_read && !n?.read).length;
         setUnreadNotifications(unread);
       }).catch(() => setUnreadNotifications(0)),
+      ApiService.getAccounts().then((res) => {
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+        setAccounts(list);
+        setSelectedAccount((cur) => cur || list.find((a) => a.is_active) || list[0] || null);
+      }).catch(() => {}),
     ]);
   }, []);
+
+  // Fetch live equity/PnL for the selected account.
+  useEffect(() => {
+    const id = selectedAccount?.id || selectedAccount?._id;
+    if (!id) { setAccountSummary(null); return; }
+    let cancelled = false;
+    ApiService.getAccountSummary(id)
+      .then((s) => { if (!cancelled) setAccountSummary(s); })
+      .catch(() => { if (!cancelled) setAccountSummary(null); });
+    return () => { cancelled = true; };
+  }, [selectedAccount]);
 
   useEffect(() => {
     fetchAll();
@@ -97,8 +121,22 @@ export default function HomeScreen() {
       ?? perfDay?.pl
       ?? null;
 
+  // When an account is picked, show that account's equity/PnL; otherwise the
+  // portfolio total across all accounts.
+  const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const acctValue = selectedAccount
+    ? (num(accountSummary?.equity) ?? num(accountSummary?.balance) ?? num(selectedAccount?.equity) ?? num(selectedAccount?.balance))
+    : (typeof totalValue === 'number' ? totalValue : num(totalValue));
+  const acctPnl = selectedAccount
+    ? (num(accountSummary?.today_pnl) ?? num(accountSummary?.pnl) ?? num(accountSummary?.floating_pnl) ?? num(todayPnl))
+    : (typeof todayPnl === 'number' ? todayPnl : num(todayPnl));
+  const acctCurrency = selectedAccount?.currency || 'USD';
+  const acctLabel = selectedAccount
+    ? `${selectedAccount.is_demo ? 'Demo' : 'Live'} ${selectedAccount.account_number || selectedAccount.id || ''}`.trim()
+    : 'All accounts';
+
   return (
-    <Screen edges={['top']}>
+    <Screen edges={['top']} glow>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }]}
         refreshControl={
@@ -109,18 +147,26 @@ export default function HomeScreen() {
           <HomeHeader unreadNotifications={unreadNotifications} />
         </Pressable>
 
-        <View style={styles.balanceWrap}>
+        <Pressable
+          style={styles.balanceWrap}
+          onPress={() => nav.navigate('TradeTab')}
+          accessibilityRole="button"
+          accessibilityLabel="Open trade"
+        >
           <BalanceBlock
             label="Total Value"
-            amount={typeof totalValue === 'number' ? totalValue : null}
-            currency="USD"
+            amount={acctValue}
+            currency={acctCurrency}
             hidden={hidden}
             onToggleHide={toggleHidden}
             subLabel="Today's PnL"
-            subAmount={typeof todayPnl === 'number' ? todayPnl : null}
-            subPositive={typeof todayPnl === 'number' ? todayPnl >= 0 : true}
+            subAmount={acctPnl}
+            subPositive={acctPnl != null ? acctPnl >= 0 : true}
+            accountLabel={acctLabel}
+            onPickAccount={() => setAccountSheet(true)}
+            onAddAccount={() => nav.navigate('Accounts', { action: 'open' })}
           />
-        </View>
+        </Pressable>
 
         <QuickActionsGrid />
 
@@ -135,6 +181,14 @@ export default function HomeScreen() {
           onSeeAll={() => nav.navigate('MarketsTab')}
         />
       </ScrollView>
+
+      <AccountSwitcher
+        visible={accountSheet}
+        onClose={() => setAccountSheet(false)}
+        accounts={accounts}
+        selectedId={selectedAccount?.id || selectedAccount?._id}
+        onSelect={setSelectedAccount}
+      />
     </Screen>
   );
 }

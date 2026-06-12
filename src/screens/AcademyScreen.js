@@ -3,7 +3,24 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+import { vantage } from '../theme/vantageTheme';
+
+const colors = {
+  bgPrimary: vantage.bg,
+  bgSecondary: vantage.bgRaised,
+  bgCard: vantage.bgElevated,
+  bgHover: vantage.bgPressed,
+  border: vantage.border,
+  textPrimary: vantage.textPrimary,
+  textSecondary: vantage.textSecondary,
+  textMuted: vantage.textMuted,
+  primary: vantage.accent,
+  accent: vantage.accent,
+  success: vantage.up,
+  error: vantage.down,
+  warning: '#F59E0B',
+  profitColor: vantage.up,
+};
 import { useI18n } from '../i18n';
 import useAcademy from '../hooks/useAcademy';
 import ScreenHeader from '../components/ui/ScreenHeader';
@@ -181,7 +198,7 @@ function LessonContentView({ moduleId, colors }) {
 }
 
 export default function AcademyScreen({ navigation }) {
-  const { colors } = useTheme();
+  const isDark = true;
   const { t } = useI18n();
   const academy = useAcademy();
   const [quizModal, setQuizModal] = useState(null); // { phaseIndex, questionIndex, answers }

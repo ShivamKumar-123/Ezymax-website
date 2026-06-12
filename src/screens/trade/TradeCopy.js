@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { Card, SegmentedTabs, CategoryTabs, SymbolIcon } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
+
+function copyKey(x) {
+  return x != null ? String(x) : null;
+}
 
 const SORT_OPTIONS = [
   { value: 'most_copied',     label: 'Most Copied' },
@@ -18,6 +22,7 @@ export default function TradeCopy() {
   const [tab, setTab] = useState('discover');
   const [sort, setSort] = useState('most_copied');
   const [providers, setProviders] = useState([]);
+  const [copiedIds, setCopiedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,17 +42,39 @@ export default function TradeCopy() {
     return () => { cancelled = true; };
   }, [sort]);
 
+  // Which masters the user is already copying — refreshed on focus so the
+  // "Following" badge updates right after copying from the detail screen.
+  const loadCopies = useCallback(async () => {
+    try {
+      const res = await ApiService.getMyCopies();
+      const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+      const ids = new Set();
+      list.forEach((c) => {
+        [c.master_id, c.provider_id, c.provider?.id, c.master?.id, c.provider_user_id]
+          .map(copyKey).filter(Boolean).forEach((k) => ids.add(k));
+      });
+      setCopiedIds(ids);
+    } catch (_) {}
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadCopies(); }, [loadCopies]));
+
+  const isFollowing = useCallback(
+    (p) => copiedIds.has(copyKey(p?.id)) || copiedIds.has(copyKey(p?.provider_id)) || copiedIds.has(copyKey(p?.user_id)),
+    [copiedIds]
+  );
+
   const top1 = providers[0];
   const rest = providers.slice(1);
 
   return (
     <View>
-      <Card style={styles.becomeCard} onPress={() => nav.navigate('Business')}>
+      <Card style={styles.becomeCard} onPress={() => nav.navigate('BecomeMaster')}>
         <View style={styles.becomeRow}>
           <View style={[styles.iconCircle, { backgroundColor: vantage.accentMuted }]}>
-            <Ionicons name="radio-outline" size={22} color={vantage.accent} />
+            <Ionicons name="ribbon-outline" size={22} color={vantage.accent} />
           </View>
-          <Text style={styles.becomeTxt}>Become a Signal Provider</Text>
+          <Text style={styles.becomeTxt}>Become a Master</Text>
           <Ionicons name="chevron-forward" size={18} color={vantage.textMuted} />
         </View>
       </Card>
@@ -67,10 +94,12 @@ export default function TradeCopy() {
         <>
           {top1 ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Best Overall Strategy</Text>
-              <Card onPress={() => nav.navigate('StrategyDetail', { providerId: top1.id || top1.provider_id })}>
-                <BigStrategyRow item={top1} />
-              </Card>
+              <Text style={styles.sectionTitle}>Best Overall Strategies</Text>
+              <StrategyDeck
+                items={providers.slice(0, 10)}
+                isFollowing={isFollowing}
+                onOpen={(p) => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
+              />
             </View>
           ) : null}
 
@@ -88,7 +117,7 @@ export default function TradeCopy() {
                 android_ripple={{ color: vantage.bgPressed }}
                 style={styles.row}
               >
-                <StrategyMiniRow item={p} />
+                <StrategyMiniRow item={p} following={isFollowing(p)} />
               </Pressable>
             ))}
           </View>
@@ -102,7 +131,16 @@ export default function TradeCopy() {
   );
 }
 
-function BigStrategyRow({ item }) {
+function FollowingBadge() {
+  return (
+    <View style={badgeStyles.following}>
+      <Ionicons name="checkmark-circle" size={12} color={vantage.up} />
+      <Text style={badgeStyles.followingTxt}>Following</Text>
+    </View>
+  );
+}
+
+function BigStrategyRow({ item, following }) {
   const ret = Number(item.total_return_pct ?? item.return_30d ?? item.roi_30d ?? 0);
   const positive = ret >= 0;
   const aum = item.total_aum ?? item.aum ?? item.aum_usd ?? null;
@@ -113,7 +151,10 @@ function BigStrategyRow({ item }) {
       <View style={bigStyles.head}>
         <SymbolIcon symbol={displayName.slice(0, 2).toUpperCase()} size={40} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={bigStyles.name}>{displayName}</Text>
+          <View style={bigStyles.nameRow}>
+            <Text style={bigStyles.name} numberOfLines={1}>{displayName}</Text>
+            {following ? <FollowingBadge /> : null}
+          </View>
           {displayCategory ? (
             <View style={bigStyles.badge}><Text style={bigStyles.badgeTxt}>{displayCategory}</Text></View>
           ) : null}
@@ -138,7 +179,7 @@ function BigStrategyRow({ item }) {
   );
 }
 
-function StrategyMiniRow({ item }) {
+function StrategyMiniRow({ item, following }) {
   const ret = Number(item.total_return_pct ?? item.return_30d ?? item.roi_30d ?? 0);
   const positive = ret >= 0;
   const aum = item.total_aum ?? item.aum ?? item.aum_usd ?? null;
@@ -148,7 +189,10 @@ function StrategyMiniRow({ item }) {
     <View style={miniStyles.row}>
       <SymbolIcon symbol={displayName.slice(0, 2).toUpperCase()} size={36} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={miniStyles.name} numberOfLines={1}>{displayName}</Text>
+        <View style={bigStyles.nameRow}>
+          <Text style={miniStyles.name} numberOfLines={1}>{displayName}</Text>
+          {following ? <FollowingBadge /> : null}
+        </View>
         {followers != null ? (
           <Text style={miniStyles.sub} numberOfLines={1}>{followers} followers</Text>
         ) : null}
@@ -159,6 +203,128 @@ function StrategyMiniRow({ item }) {
           {`${positive ? '+' : ''}${ret.toFixed(2)}%`}
         </Text>
       </View>
+    </View>
+  );
+}
+
+// Swipeable card stack — the front card can be flung left/right to reveal the
+// next one behind it (cards peek out from the top, like a deck).
+const SCREEN_W = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = SCREEN_W * 0.28;
+
+function DeckCard({ item, following, onOpen }) {
+  const ret = Number(item.total_return_pct ?? item.return_30d ?? item.roi_30d ?? 0);
+  const positive = ret >= 0;
+  const aum = item.total_aum ?? item.aum ?? item.aum_usd ?? null;
+  const displayName = item.provider_name || item.name || 'Strategy';
+  const displayCategory = item.strategy_info?.category || item.category || 'Forex';
+  return (
+    <View style={deckStyles.card}>
+      <View style={deckStyles.head}>
+        <SymbolIcon symbol={displayName.slice(0, 2).toUpperCase()} size={40} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={bigStyles.nameRow}>
+            <Text style={deckStyles.name} numberOfLines={1}>{displayName}</Text>
+            {following ? <FollowingBadge /> : null}
+          </View>
+          <View style={deckStyles.badge}><Text style={deckStyles.badgeTxt}>{displayCategory}</Text></View>
+        </View>
+        <Pressable
+          onPress={() => onOpen(item)}
+          style={deckStyles.copyBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Copy ${displayName}`}
+        >
+          <Text style={deckStyles.copyTxt}>{following ? 'Copied' : 'Copy'}</Text>
+        </Pressable>
+      </View>
+      <View style={deckStyles.statsRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={deckStyles.lab}>30D Return</Text>
+          <Text style={[deckStyles.val, { color: positive ? vantage.up : vantage.down }]}>
+            {`${positive ? '+' : ''}${ret.toFixed(2)}%`}
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          <Text style={deckStyles.lab}>AUM (USD)</Text>
+          <Text style={deckStyles.aum}>
+            {aum != null ? Number(aum).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function StrategyDeck({ items, isFollowing, onOpen }) {
+  const [index, setIndex] = useState(0);
+  const pan = useRef(new Animated.ValueXY()).current;
+  const n = items.length;
+
+  const advance = useCallback((dir) => {
+    Animated.timing(pan, {
+      toValue: { x: dir * SCREEN_W * 1.3, y: 0 },
+      duration: 220,
+      useNativeDriver: false,
+    }).start(() => {
+      pan.setValue({ x: 0, y: 0 });
+      setIndex((i) => (i + 1) % n);
+    });
+  }, [pan, n]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
+      onPanResponderRelease: (_, g) => {
+        if (Math.abs(g.dx) > SWIPE_THRESHOLD) {
+          advance(g.dx > 0 ? 1 : -1);
+        } else {
+          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false, friction: 6 }).start();
+        }
+      },
+    })
+  ).current;
+
+  if (!n) return null;
+
+  const visible = Math.min(3, n);
+  const rotate = pan.x.interpolate({
+    inputRange: [-SCREEN_W, 0, SCREEN_W],
+    outputRange: ['-7deg', '0deg', '7deg'],
+  });
+
+  const layers = [];
+  for (let k = visible - 1; k >= 0; k--) {
+    const item = items[(index + k) % n];
+    const following = isFollowing(item);
+    if (k === 0) {
+      layers.push(
+        <Animated.View
+          key={`front-${index}`}
+          style={[deckStyles.layer, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}
+          {...panResponder.panHandlers}
+        >
+          <DeckCard item={item} following={following} onOpen={onOpen} />
+        </Animated.View>
+      );
+    } else {
+      layers.push(
+        <Animated.View
+          key={`back-${k}`}
+          pointerEvents="none"
+          style={[deckStyles.layer, { transform: [{ translateY: -k * 9 }, { scale: 1 - k * 0.05 }], opacity: 1 - k * 0.22 }]}
+        >
+          <DeckCard item={item} following={following} onOpen={onOpen} />
+        </Animated.View>
+      );
+    }
+  }
+
+  return (
+    <View>
+      <View style={deckStyles.stack}>{layers}</View>
+      <Text style={deckStyles.counter}>{`${(index % n) + 1} / ${n}  ·  swipe to browse`}</Text>
     </View>
   );
 }
@@ -174,10 +340,20 @@ const styles = StyleSheet.create({
   row: { paddingVertical: space.sm },
 });
 
+const badgeStyles = StyleSheet.create({
+  following: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: vantage.upMuted,
+    paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill,
+  },
+  followingTxt: { color: vantage.up, fontFamily, fontSize: sizes.micro, fontWeight: weights.bold },
+});
+
 const bigStyles = StyleSheet.create({
   wrap: { padding: space.sm, gap: space.md },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  name: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  name: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, flexShrink: 1 },
   badge: { alignSelf: 'flex-start', backgroundColor: vantage.bgPressed, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.sm, marginTop: 2 },
   badgeTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.micro, fontWeight: weights.medium },
   full: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, backgroundColor: vantage.bgPressed, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.sm },
@@ -193,4 +369,28 @@ const miniStyles = StyleSheet.create({
   sub: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
   aum: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
   ret: { fontFamily, fontSize: sizes.label, fontWeight: weights.bold, marginTop: 2 },
+});
+
+const deckStyles = StyleSheet.create({
+  stack: { height: 158, marginTop: 4 },
+  layer: { position: 'absolute', left: 0, right: 0, top: 16 },
+  card: {
+    backgroundColor: vantage.bgElevated,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    borderWidth: 1,
+    borderColor: vantage.border,
+    gap: space.lg,
+  },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  name: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, flexShrink: 1 },
+  badge: { alignSelf: 'flex-start', backgroundColor: vantage.bgPressed, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.sm, marginTop: 3 },
+  badgeTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.micro, fontWeight: weights.medium },
+  copyBtn: { backgroundColor: vantage.textPrimary, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill },
+  copyTxt: { color: vantage.textInverse, fontFamily, fontSize: sizes.label, fontWeight: weights.heavy },
+  statsRow: { flexDirection: 'row' },
+  lab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  val: { fontFamily, fontSize: sizes.h1, fontWeight: weights.heavy, marginTop: 2 },
+  aum: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h1, fontWeight: weights.heavy, marginTop: 2 },
+  counter: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro, textAlign: 'center', marginTop: space.sm },
 });

@@ -1,9 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
+import { vantage } from '../../theme/vantageTheme';
+
+const colors = {
+  bgCard: vantage.bgElevated,
+  border: vantage.border,
+  textMuted: vantage.textMuted,
+  textPrimary: vantage.textPrimary,
+};
 
 export default function StatCard({ label, value, valueColor, prefix = '', suffix = '' }) {
-  const { colors } = useTheme();
   return (
     <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
       <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>

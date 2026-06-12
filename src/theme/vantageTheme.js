@@ -1,13 +1,14 @@
 import { Platform } from 'react-native';
 
 export const vantage = {
-  // Surfaces
+  // Surfaces — lifted off pure black so cards stand out against the
+  // black→orange gradient background.
   bg:           '#000000',
-  bgElevated:   '#0F0F0F',
-  bgRaised:     '#161616',
-  bgPressed:    '#1F1F1F',
-  border:       '#1F1F1F',
-  borderStrong: '#2A2A2A',
+  bgElevated:   '#242424',
+  bgRaised:     '#2E2E2E',
+  bgPressed:    '#383838',
+  border:       '#303030',
+  borderStrong: '#424242',
 
   // Text
   textPrimary:   '#FFFFFF',
@@ -26,10 +27,17 @@ export const vantage = {
   down:         '#EF4565',
   downMuted:    'rgba(239,69,101,0.10)',
 
-  // Trade-screen specific
+  // Trade-screen specific — Sell uses the reference red/pink.
   sellBg:       '#EF4565',
-  buyBg:        '#1F1F1F',
+  buyBg:        '#2E2E2E',
   spreadChip:   '#000000',
+
+  // Sell/Buy action buttons — vibrant Vantage-style red & green. The dim
+  // variants color the unselected side so both stay readable as red/green.
+  sellBtn:      '#FF3B5C',
+  sellBtnDim:   'rgba(255,59,92,0.30)',
+  buyBtn:       '#16C784',
+  buyBtnDim:    'rgba(22,199,132,0.30)',
 };
 
 export const fontFamily = Platform.select({ ios: 'System', android: 'Roboto' });
@@ -43,13 +51,13 @@ export const weights = {
 };
 
 export const sizes = {
-  hero:  32,
-  h1:    24,
-  h2:    20,
-  h3:    17,
-  body:  15,
-  label: 13,
-  micro: 11,
+  hero:  28,
+  h1:    22,
+  h2:    18,
+  h3:    15,
+  body:  14,
+  label: 12,
+  micro: 10,
 };
 
 export const space = {

@@ -25,6 +25,7 @@ export default function TradeScreen() {
   const [tick, setTick] = useState(null);
   const [positions, setPositions] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [history, setHistory] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const accountId = selectedAccount?.id || selectedAccount?._id;
@@ -33,21 +34,35 @@ export default function TradeScreen() {
     if (route.params?.symbol) setSymbol(String(route.params.symbol).toUpperCase());
   }, [route.params?.symbol]);
 
+  // Pre-select the account passed in from elsewhere (e.g. Accounts screen).
+  useEffect(() => {
+    const wanted = route.params?.selectedAccountId;
+    if (!wanted || !accounts.length) return;
+    const match = accounts.find((a) => String(a.id || a._id) === String(wanted));
+    if (match) setSelectedAccount(match);
+  }, [accounts, route.params?.selectedAccountId]);
+
   const loadAccounts = useCallback(async () => {
     try {
       const res = await ApiService.getAccounts();
       const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
       setAccounts(list);
-      if (!selectedAccount && list[0]) setSelectedAccount(list[0]);
+      // Default to an ACTIVE account — an inactive one rejects every call with
+      // "Account is not active".
+      if (!selectedAccount && list.length) {
+        setSelectedAccount(list.find((a) => a.is_active) || list[0]);
+      }
     } catch (_) { setAccounts([]); }
   }, [selectedAccount]);
 
   const refreshAccountData = useCallback(async () => {
-    if (!accountId) return;
-    const [summary, pos, ords] = await Promise.allSettled([
+    // Skip account-specific calls for an inactive account (avoids spammy errors).
+    if (!accountId || selectedAccount?.is_active === false) return;
+    const [summary, pos, ords, hist] = await Promise.allSettled([
       ApiService.getAccountSummary(accountId),
       ApiService.getPositions(accountId, 'open'),
       ApiService.getOrders(accountId, 'pending'),
+      ApiService.getTradeHistory(accountId, 1, 50),
     ]);
     if (summary.status === 'fulfilled') setAccountSummary(summary.value);
     if (pos.status === 'fulfilled') {
@@ -58,7 +73,12 @@ export default function TradeScreen() {
       const list = Array.isArray(ords.value) ? ords.value : (Array.isArray(ords.value?.items) ? ords.value.items : []);
       setOrders(list);
     }
-  }, [accountId]);
+    if (hist.status === 'fulfilled') {
+      const list = Array.isArray(hist.value) ? hist.value : (Array.isArray(hist.value?.items) ? hist.value.items : []);
+      // History = closed trades only.
+      setHistory(list.filter((t) => t.close_time || t.close_price));
+    }
+  }, [accountId, selectedAccount]);
 
   const refreshTick = useCallback(async () => {
     if (!symbol) return;
@@ -70,6 +90,21 @@ export default function TradeScreen() {
     } catch (_) {}
   }, [symbol]);
 
+  // Light live refresh — account summary + open positions — so P&L / margin
+  // keep moving without re-fetching orders/history every tick.
+  const refreshLive = useCallback(async () => {
+    if (!accountId || selectedAccount?.is_active === false) return;
+    const [summary, pos] = await Promise.allSettled([
+      ApiService.getAccountSummary(accountId),
+      ApiService.getPositions(accountId, 'open'),
+    ]);
+    if (summary.status === 'fulfilled') setAccountSummary(summary.value);
+    if (pos.status === 'fulfilled') {
+      const list = Array.isArray(pos.value) ? pos.value : (Array.isArray(pos.value?.items) ? pos.value.items : []);
+      setPositions(list);
+    }
+  }, [accountId, selectedAccount]);
+
   useEffect(() => { loadAccounts(); }, [loadAccounts]);
   useEffect(() => { refreshAccountData(); }, [refreshAccountData]);
   useEffect(() => { refreshTick(); }, [refreshTick]);
@@ -78,6 +113,18 @@ export default function TradeScreen() {
     refreshAccountData();
     refreshTick();
   }, [refreshAccountData, refreshTick]));
+
+  // Poll while focused: price every 1s (snappy Sell/Buy movement), and
+  // P&L / positions every 2s. Works even if the live WebSocket stalls.
+  useFocusEffect(useCallback(() => {
+    let n = 0;
+    const id = setInterval(() => {
+      refreshTick();
+      if (n % 2 === 1) refreshLive();
+      n += 1;
+    }, 1000);
+    return () => clearInterval(id);
+  }, [refreshTick, refreshLive]));
 
   useEffect(() => {
     if (typeof webSocketService?.onPriceUpdate !== 'function') return;
@@ -132,6 +179,7 @@ export default function TradeScreen() {
             accountSummary={accountSummary}
             positions={positions}
             orders={orders}
+            history={history}
             onChange={refreshAccountData}
           />
         ) : (

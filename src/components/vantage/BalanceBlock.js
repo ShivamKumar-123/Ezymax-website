@@ -12,15 +12,35 @@ export default function BalanceBlock({
   subLabel,
   subAmount,
   subPositive,
+  accountLabel,
+  onPickAccount,
+  onAddAccount,
 }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.labRow}>
-        <Text style={styles.label}>{label}</Text>
-        {onToggleHide ? (
-          <Pressable onPress={onToggleHide} hitSlop={10} accessibilityRole="button" accessibilityLabel={hidden ? 'Show balance' : 'Hide balance'}>
-            <Ionicons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={14} color={vantage.textMuted} />
-          </Pressable>
+        <View style={styles.labLeft}>
+          <Text style={styles.label}>{label}</Text>
+          {onToggleHide ? (
+            <Pressable onPress={onToggleHide} hitSlop={10} accessibilityRole="button" accessibilityLabel={hidden ? 'Show balance' : 'Hide balance'}>
+              <Ionicons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={14} color={vantage.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
+        {(onPickAccount || onAddAccount) ? (
+          <View style={styles.acctControls}>
+            {onPickAccount ? (
+              <Pressable onPress={onPickAccount} hitSlop={6} style={styles.acctChip} accessibilityRole="button" accessibilityLabel="Switch account">
+                <Text style={styles.acctChipTxt} numberOfLines={1}>{accountLabel || 'All accounts'}</Text>
+                <Ionicons name="chevron-down" size={14} color={vantage.textSecondary} />
+              </Pressable>
+            ) : null}
+            {onAddAccount ? (
+              <Pressable onPress={onAddAccount} hitSlop={6} style={styles.addBtn} accessibilityRole="button" accessibilityLabel="Add account">
+                <Ionicons name="add" size={18} color={vantage.textPrimary} />
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
       </View>
       <View style={styles.amtRow}>
@@ -55,8 +75,21 @@ function formatSigned(v) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 4, paddingVertical: space.sm },
-  labRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  labRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  labLeft: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   label: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  acctControls: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  acctChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border,
+    borderRadius: 999, paddingHorizontal: space.md, paddingVertical: 6, maxWidth: 180,
+  },
+  acctChipTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, flexShrink: 1 },
+  addBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
   amtRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
   amount: { color: vantage.textPrimary, fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy },
   ccyChip: { backgroundColor: vantage.bgRaised, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6 },

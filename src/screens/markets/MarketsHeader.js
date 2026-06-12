@@ -19,7 +19,7 @@ export default function MarketsHeader({ view, onChangeView, onSearch }) {
         />
       </View>
       <IconButton
-        icon={<Ionicons name="search" size={20} color={vantage.textPrimary} />}
+        icon={<Ionicons name="search" size={18} color={vantage.textPrimary} />}
         accessibilityLabel="Search"
         onPress={onSearch}
       />

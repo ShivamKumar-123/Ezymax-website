@@ -15,7 +15,7 @@ const Stack = createNativeStackNavigator();
 
 export default function FundsStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000' } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
       <Stack.Screen name="Funds" component={FundsScreen} />
       <Stack.Screen name="Deposit" component={DepositScreen} />
       <Stack.Screen name="DepositRazorpay" component={DepositRazorpay} />

@@ -1,81 +1,128 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
-import { Screen, IconButton, CategoryTabs } from '../../components/vantage';
+import { Screen, IconButton, CategoryTabs, showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
 const FILTER_OPTIONS = [
   { value: 'all',         label: 'All' },
   { value: 'deposit',     label: 'Deposits' },
-  { value: 'withdrawal',  label: 'Withdrawals' },
+  { value: 'withdraw',    label: 'Withdrawals' },
   { value: 'transfer',    label: 'Transfers' },
+  { value: 'swap',        label: 'Swaps' },
 ];
 
 export default function TransactionHistoryScreen() {
   const nav = useNavigation();
   const [filter, setFilter] = useState('all');
-  const [items, setItems] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const fetchPage = useCallback(async (p, replace = false) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const type = filter === 'all' ? null : filter;
-      const res = await ApiService.getTransactions({ page: p, perPage: 30, type });
+      // Backend ignores per_page/type — it returns the full ledger, so we fetch
+      // once and filter on the client.
+      const res = await ApiService.getTransactions({ page: 1, perPage: 1000 });
       const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-      setItems((prev) => replace ? list : [...prev, ...list]);
-      setHasMore(list.length === 30);
+      setAllItems(list);
     } catch (_) {
-      if (replace) setItems([]);
-    } finally { setLoading(false); }
-  }, [filter]);
+      setAllItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchPage(1, true);
-  }, [filter, fetchPage]);
-
-  const onEndReached = useCallback(() => {
-    if (loading || !hasMore) return;
-    const next = page + 1;
-    setPage(next);
-    fetchPage(next);
-  }, [loading, hasMore, page, fetchPage]);
+  useEffect(() => { load(); }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setPage(1);
-    await fetchPage(1, true);
+    await load();
     setRefreshing(false);
-  }, [fetchPage]);
+  }, [load]);
+
+  const items = useMemo(() => {
+    if (filter === 'all') return allItems;
+    return allItems.filter((tx) => String(tx.type || tx.kind || '').toLowerCase().includes(filter));
+  }, [allItems, filter]);
+
+  const exportPdf = useCallback(async () => {
+    if (!items.length) { showToast({ kind: 'warn', message: 'No transactions to export' }); return; }
+    setExporting(true);
+    try {
+      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter) });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Transactions PDF', UTI: 'com.adobe.pdf' });
+      } else {
+        showToast({ kind: 'info', message: `Saved to: ${uri}` });
+      }
+    } catch (e) {
+      showToast({ kind: 'error', message: e?.message || 'Could not export PDF' });
+    } finally {
+      setExporting(false);
+    }
+  }, [items, filter]);
 
   return (
     <Screen edges={['top']}>
       <View style={styles.header}>
         <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={() => nav.goBack()} />
         <Text style={styles.title}>Transactions</Text>
-        <View style={{ width: 40 }} />
+        <IconButton
+          icon={<Ionicons name={exporting ? 'hourglass-outline' : 'download-outline'} size={20} color={vantage.accent} />}
+          accessibilityLabel="Download PDF"
+          onPress={exporting ? undefined : exportPdf}
+        />
       </View>
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
       <FlatList
         data={items}
+        contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}
         keyExtractor={(item, idx) => String(item.id || item._id || idx)}
         renderItem={({ item }) => <Row tx={item} />}
         ListEmptyComponent={loading ? null : <Text style={styles.empty}>No transactions.</Text>}
-        ListFooterComponent={loading && page > 1 ? <Text style={styles.loading}>Loading…</Text> : null}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.3}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
       />
     </Screen>
   );
+}
+
+function buildHtml(items, filter) {
+  const rows = items.map((tx) => {
+    const type = String(tx.type || tx.kind || '').toUpperCase();
+    const method = tx.payment_method || tx.method || tx.gateway || tx.type || '';
+    const amount = Number(tx.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const status = tx.status || 'pending';
+    let date = '';
+    try { date = tx.created_at ? new Date(tx.created_at).toLocaleString() : ''; } catch (_) {}
+    return `<tr><td>${date}</td><td>${type}</td><td>${method}</td><td style="text-align:right">${amount}</td><td>${status}</td></tr>`;
+  }).join('');
+  let now = '';
+  try { now = new Date().toLocaleString(); } catch (_) {}
+  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  body{font-family:-apple-system,Roboto,Helvetica,sans-serif;padding:24px;color:#111}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#666;font-size:12px;margin:0 0 16px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
+  th{background:#fafafa;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#555}
+</style></head><body>
+  <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}</h1>
+  <p class="sub">Generated ${now} · ${items.length} records</p>
+  <table>
+    <thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Amount (USD)</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</body></html>`;
 }
 
 function Row({ tx }) {
@@ -87,7 +134,8 @@ function Row({ tx }) {
   const amount = Math.abs(Number(tx.amount ?? 0));
   const method = tx.payment_method || tx.method || tx.gateway || tx.type || 'Transaction';
   const status = String(tx.status || '').toLowerCase();
-  const dateStr = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : '';
+  let dateStr = '';
+  try { dateStr = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : ''; } catch (_) {}
   return (
     <View style={rowStyles.row}>
       <Ionicons name={isDeposit ? 'arrow-down-circle' : isWithdraw ? 'arrow-up-circle' : 'swap-horizontal'} size={22} color={color} />
@@ -107,7 +155,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
   title: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, textAlign: 'center' },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.huge, textAlign: 'center' },
-  loading: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, padding: space.md, textAlign: 'center' },
 });
 
 const rowStyles = StyleSheet.create({

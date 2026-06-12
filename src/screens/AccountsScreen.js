@@ -610,20 +610,11 @@ const AccountsScreen = ({ navigation, route }) => {
 
   const selectAccountForTrading = async (account) => {
     const aid = account.id || account._id;
-    console.log('[AccountsScreen] Trade pressed for account:', aid);
     try {
       await SecureStore.setItemAsync('selectedAccountId', aid);
     } catch (e) {}
-    // First: send selectedAccountId to MainTrading stack route (triggers TradingProvider's useEffect to switch active account)
-    navigation.navigate('MainTrading', { selectedAccountId: aid });
-    // Then: jump to the Chart tab inside MainTrading's bottom tab navigator
-    setTimeout(() => {
-      try {
-        navigation.navigate('MainTrading', { screen: 'Chart' });
-      } catch (e) {
-        console.warn('[AccountsScreen] Could not switch to Chart tab:', e?.message);
-      }
-    }, 80);
+    // Jump to the Trade tab (CFDs) with this account pre-selected.
+    navigation.navigate('TradeTab', { screen: 'Trade', params: { selectedAccountId: aid } });
   };
 
   if (loading) {

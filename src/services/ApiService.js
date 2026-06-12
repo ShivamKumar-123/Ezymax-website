@@ -1,6 +1,7 @@
 import { API_URL } from '../config';
 import * as SecureStore from 'expo-secure-store';
 import { silentRelogin } from '../utils/authedFetch';
+import { toMessage } from '../utils/errorMessage';
 
 class ApiService {
   constructor() {
@@ -44,7 +45,7 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error((data && (data.detail || data.message)) || `Request failed (${response.status})`);
+        throw new Error(toMessage(data, `Request failed (${response.status})`));
       }
 
       return data;
@@ -64,8 +65,10 @@ class ApiService {
     return this.request(`/portfolio/performance?period=${period}`);
   }
 
-  async getTradeHistory(page = 1, perPage = 50) {
-    return this.request(`/portfolio/trades?page=${page}&per_page=${perPage}`);
+  async getTradeHistory(accountId = null, page = 1, perPage = 50) {
+    const q = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (accountId) q.append('account_id', accountId);
+    return this.request(`/portfolio/trades?${q.toString()}`);
   }
 
   // Wallet APIs
@@ -141,7 +144,7 @@ class ApiService {
       body: formData,
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error((data && (data.detail || data.message)) || `Manual deposit failed (${res.status})`);
+    if (!res.ok) throw new Error(toMessage(data, `Manual deposit failed (${res.status})`));
     return data;
   }
 
@@ -163,7 +166,7 @@ class ApiService {
       body: formData,
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error((data && (data.detail || data.message)) || `Manual withdrawal failed (${res.status})`);
+    if (!res.ok) throw new Error(toMessage(data, `Manual withdrawal failed (${res.status})`));
     return data;
   }
 
@@ -187,16 +190,32 @@ class ApiService {
     return this.request('/social/my-copies');
   }
 
-  async followProvider(providerId, settings) {
-    return this.request('/social/follow', {
-      method: 'POST',
-      body: JSON.stringify({ provider_id: providerId, ...settings }),
-    });
+  // Provider detail.
+  async getProvider(providerId) {
+    return this.request(`/social/providers/${providerId}`);
   }
 
-  async unfollowProvider(copyId) {
-    return this.request(`/social/unfollow/${copyId}`, {
-      method: 'DELETE',
+  // Start copying a master. Backend takes master_id + amount (+ optional
+  // account_id) as QUERY params, not a JSON body.
+  async copyMaster(masterId, amount, accountId) {
+    const q = new URLSearchParams({ master_id: masterId, amount: String(amount) });
+    if (accountId) q.append('account_id', accountId);
+    return this.request(`/social/copy?${q.toString()}`, { method: 'POST' });
+  }
+
+  // Stop an active copy allocation.
+  async stopCopy(allocationId) {
+    return this.request(`/social/copy/${allocationId}`, { method: 'DELETE' });
+  }
+
+  async getFollowRequests() {
+    return this.request('/social/follow-requests');
+  }
+
+  async respondFollowRequest(allocationId, approve) {
+    return this.request(`/social/follow-requests/${allocationId}`, {
+      method: 'POST',
+      body: JSON.stringify({ approve: !!approve }),
     });
   }
 
@@ -215,10 +234,39 @@ class ApiService {
     return this.request('/social/my-provider');
   }
 
-  async becomeProvider(data) {
-    return this.request('/social/become-provider', {
+  // PAMM / MAM master application.
+  async getMasterEligibility() {
+    return this.request('/social/masters/eligibility');
+  }
+
+  async applyAsMaster(data) {
+    return this.request('/social/masters/apply', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(data || {}),
+    });
+  }
+
+  // Apply to become a master/provider. Config goes in the QUERY string;
+  // strategy_info (optional) is the JSON body.
+  // master_type: 'signal_provider' | 'pamm' | 'mam'
+  async becomeProvider({
+    master_type = 'signal_provider',
+    performance_fee_pct,
+    management_fee_pct,
+    min_investment,
+    max_investors,
+    account_id,
+    strategy_info,
+  } = {}) {
+    const q = new URLSearchParams({ master_type });
+    if (performance_fee_pct != null) q.append('performance_fee_pct', String(performance_fee_pct));
+    if (management_fee_pct != null) q.append('management_fee_pct', String(management_fee_pct));
+    if (min_investment != null) q.append('min_investment', String(min_investment));
+    if (max_investors != null) q.append('max_investors', String(max_investors));
+    if (account_id) q.append('account_id', account_id);
+    return this.request(`/social/become-provider?${q.toString()}`, {
+      method: 'POST',
+      body: JSON.stringify(strategy_info || {}),
     });
   }
 
@@ -285,7 +333,7 @@ class ApiService {
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.detail || data.message || 'Upload failed');
+      throw new Error(toMessage(data, 'Upload failed'));
     }
     return data;
   }
@@ -379,16 +427,17 @@ class ApiService {
     });
   }
 
-  // KYC API (matches web /profile/kyc/submit/)
+  // KYC API. No trailing slash — `/submit/` 307-redirects and React Native
+  // drops the multipart body across the redirect ("Network request failed").
   async submitKyc(formData) {
     const token = await SecureStore.getItemAsync('token');
-    const res = await fetch(`${this.baseUrl}/profile/kyc/submit/`, {
+    const res = await fetch(`${this.baseUrl}/profile/kyc/submit`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || data.message || 'KYC submit failed');
+    if (!res.ok) throw new Error(toMessage(data, 'KYC submit failed'));
     return data;
   }
 
@@ -420,20 +469,34 @@ class ApiService {
     return this.request('/instruments/prices/all');
   }
 
+  // Single-symbol live price: { symbol, bid, ask, spread }.
+  async getPrice(symbol) {
+    return this.request(`/instruments/${encodeURIComponent(symbol)}/price`);
+  }
+
   async getBars(symbol, { resolution = '60', limit = 24 } = {}) {
     const query = new URLSearchParams({ resolution: String(resolution), limit: String(limit) });
-    return this.request(`/instruments/${encodeURIComponent(symbol)}/bars?${query.toString()}`);
+    const res = await this.request(`/instruments/${encodeURIComponent(symbol)}/bars?${query.toString()}`);
+    // Backend returns UDF-style { s, bars, noData } — normalise to a bars array.
+    if (Array.isArray(res)) return res;
+    return res?.bars || res?.items || res?.data || res?.candles || [];
   }
 
   // Orders APIs
   async getOrders(accountId, status = null) {
     const query = new URLSearchParams({ account_id: accountId });
     if (status) query.append('status', status);
-    return this.request(`/orders?${query.toString()}`);
+    // Trailing slash is required — `/orders` (no slash) 307-redirects and the
+    // Authorization header is dropped, returning 401.
+    return this.request(`/orders/?${query.toString()}`);
   }
 
   async placeOrder(data) {
-    return this.request('/orders', {
+    // Backend requires account_id as a query param on POST /orders (it also
+    // stays in the body for the order payload).
+    const accountId = data?.account_id;
+    const query = accountId ? `?account_id=${encodeURIComponent(accountId)}` : '';
+    return this.request(`/orders/${query}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -455,7 +518,8 @@ class ApiService {
   // Positions APIs
   async getPositions(accountId, status = 'open') {
     const query = new URLSearchParams({ account_id: accountId, status });
-    return this.request(`/positions?${query.toString()}`);
+    // Trailing slash required (see getOrders) — otherwise 401 on redirect.
+    return this.request(`/positions/?${query.toString()}`);
   }
 
   async modifyPosition(positionId, data) {

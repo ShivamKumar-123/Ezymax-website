@@ -19,7 +19,7 @@ function pwdStrength(p) {
 }
 
 export default function SignupScreen({ navigation }) {
-  const { signup } = useContext(AuthContext);
+  const { registerStart } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -34,16 +34,36 @@ export default function SignupScreen({ navigation }) {
 
   const onSubmit = async () => {
     if (!email.trim() || !password || !fullName.trim() || !terms) return;
-    setSubmitting(true);
-    const res = await signup({
-      email: email.trim(),
+
+    // Backend expects separate first_name / last_name — split the full name.
+    const parts = fullName.trim().split(/\s+/);
+    const firstName = parts[0];
+    const lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+    if (!lastName) {
+      showToast({ kind: 'warn', message: 'Please enter your first and last name' });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const signupData = {
+      email: cleanEmail,
       password,
+      first_name: firstName,
+      last_name: lastName,
       full_name: fullName.trim(),
       country,
       ...(referral.trim() ? { referral_code: referral.trim() } : {}),
-    });
+    };
+    setSubmitting(true);
+    // Step 1 of the OTP signup: this emails a verification code. The account is
+    // only created (and verified) once the code is confirmed on the next screen.
+    const res = await registerStart(signupData);
     setSubmitting(false);
-    if (!res.success) showToast({ kind: 'error', message: res.message || 'Signup failed' });
+    if (!res.success) {
+      showToast({ kind: 'error', message: res.message || 'Signup failed' });
+      return;
+    }
+    navigation.navigate('RegisterOtp', { email: cleanEmail, password, signupData });
   };
 
   return (

@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import AppLoader from '../components/vantage/AppLoader';
 import { vantage } from '../theme/vantageTheme';
 
 export default function RootNavigator() {
@@ -32,9 +33,7 @@ export default function RootNavigator() {
       }}
     >
       {!ready ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: vantage.bg }}>
-          <ActivityIndicator color={vantage.accent} />
-        </View>
+        <AppLoader />
       ) : auth?.user ? (
         <MainTabs />
       ) : (

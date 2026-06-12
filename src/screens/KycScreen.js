@@ -17,7 +17,23 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
-import { useTheme } from '../context/ThemeContext';
+import { vantage } from '../theme/vantageTheme';
+import ScreenGlow from '../components/vantage/ScreenGlow';
+
+// Vantage dark/orange palette mapped onto the legacy `colors` keys.
+const colors = {
+  bgPrimary: vantage.bg,
+  bgCard: vantage.bgElevated,
+  bgSecondary: vantage.bgRaised,
+  border: vantage.border,
+  textPrimary: vantage.textPrimary,
+  textSecondary: vantage.textSecondary,
+  textMuted: vantage.textMuted,
+  primary: vantage.accent,
+  success: vantage.up,
+  warning: '#F59E0B',
+  error: vantage.down,
+};
 
 const DOC_TYPES = [
   { value: 'passport', label: 'Passport' },
@@ -47,7 +63,6 @@ async function authHeaders() {
 }
 
 export default function KycScreen({ navigation }) {
-  const { colors } = useTheme();
   const accent = colors.primary;
   const insets = useSafeAreaInsets();
 
@@ -189,7 +204,10 @@ export default function KycScreen({ navigation }) {
       if (country) fd.append('country_of_residence', country);
 
       const h = await authHeaders();
-      const res = await fetch(`${API_URL}/profile/kyc/submit/`, {
+      // No trailing slash: `/submit/` 307-redirects to `/submit`, and React
+      // Native can't replay the multipart body across the redirect — that was
+      // surfacing as "Network request failed".
+      const res = await fetch(`${API_URL}/profile/kyc/submit`, {
         method: 'POST',
         headers: { ...h },
         body: fd,
@@ -244,6 +262,7 @@ export default function KycScreen({ navigation }) {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgPrimary, paddingTop: insets.top }]}>
+      <ScreenGlow />
       <View style={styles.topRow}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backHit}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
@@ -479,7 +498,7 @@ export default function KycScreen({ navigation }) {
           </View>
         )}
 
-        <View style={{ height: 60 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
       {/* Source picker action sheet */}

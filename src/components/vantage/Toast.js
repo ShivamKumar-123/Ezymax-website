@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, Animated, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { toMessage } from '../../utils/errorMessage';
 
 let queue = [];
 let listeners = new Set();
@@ -49,7 +50,7 @@ export default function ToastHost() {
     <Animated.View style={[styles.host, { opacity, pointerEvents: 'none' }]}>
       <View style={styles.toast}>
         <Ionicons name={k.icon} size={18} color={k.color} />
-        <Text style={styles.txt}>{current.message}</Text>
+        <Text style={styles.txt}>{toMessage(current.message)}</Text>
       </View>
     </Animated.View>
   );
