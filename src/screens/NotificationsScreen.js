@@ -246,6 +246,31 @@ const NotificationsScreen = ({ navigation }) => {
     }
   };
 
+  // Map a notification (backend action_url or type) to an in-app destination.
+  const routeNotification = (notif) => {
+    const url = String(notif.action_url || notif.actionUrl || '').toLowerCase();
+    const type = String(notif.type || '').toLowerCase();
+    try {
+      if (url.includes('kyc') || type.includes('kyc')) { navigation.navigate('Kyc'); return; }
+      if (url.includes('wallet') || url.includes('deposit') || url.includes('withdraw')
+        || type.includes('deposit') || type.includes('withdraw')) {
+        navigation.navigate('FundsTab', { screen: 'Funds' }); return;
+      }
+      if (url.includes('portfolio')) { navigation.navigate('Portfolio'); return; }
+      if (url.includes('support') || type.includes('support') || type.includes('ticket')) { navigation.navigate('Support'); return; }
+      if (url.includes('account')) { navigation.navigate('Accounts'); return; }
+      if (type.includes('trade') || type.includes('order') || type.includes('position')
+        || type.includes('copy') || type.includes('stop') || type.includes('profit') || type.includes('pending')) {
+        navigation.navigate('TradeTab', { screen: 'Trade' }); return;
+      }
+    } catch (_) {}
+  };
+
+  const onNotificationPress = (notif) => {
+    if (!notif.read) markAsRead(notif._id);
+    routeNotification(notif);
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
@@ -307,7 +332,7 @@ const NotificationsScreen = ({ navigation }) => {
                       { backgroundColor: colors.bgCard, borderColor: colors.border },
                       !notif.read && { backgroundColor: colors.primary + '12', borderColor: colors.primary + '40' },
                     ]}
-                    onPress={() => markAsRead(notif._id)}
+                    onPress={() => onNotificationPress(notif)}
                     activeOpacity={0.7}
                   >
                     {/* iOS-style notification */}
@@ -320,7 +345,7 @@ const NotificationsScreen = ({ navigation }) => {
                           <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{notif.title}</Text>
                           <Text style={[styles.notifTime, { color: colors.textMuted }]}>{formatTime(notif.createdAt)}</Text>
                         </View>
-                        <Text style={[styles.notifMessage, { color: colors.textMuted }]} numberOfLines={2}>{notif.message}</Text>
+                        <Text style={[styles.notifMessage, { color: colors.textMuted }]}>{notif.message}</Text>
                       </View>
                     </View>
                     {!notif.read && <View style={styles.unreadIndicator} />}

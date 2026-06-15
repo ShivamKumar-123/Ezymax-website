@@ -133,6 +133,77 @@ class ApiService {
     return this.request(`/wallet/deposit/${encodeURIComponent(depositId)}/onchain-status`);
   }
 
+  // OxaPay automated crypto gateway. Goes through the generic /wallet/deposit
+  // route with method:"oxapay"; backend returns a hosted payment_url to open.
+  async createOxapayDeposit({ amount, accountId = null, cryptoCurrency = null } = {}) {
+    const body = { amount: Number(amount), method: 'oxapay' };
+    if (accountId) body.account_id = accountId;
+    if (cryptoCurrency) body.crypto_currency = cryptoCurrency;
+    return this.request('/wallet/deposit', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  // Local banking — Stage 1: submit a request (amount optional). KYC-gated;
+  // backend 403s with detail "KYC_REQUIRED" if not verified.
+  async createLocalBankingRequest(amount) {
+    const token = await SecureStore.getItemAsync('token');
+    const fd = new FormData();
+    fd.append('amount', String(amount || 0));
+    const res = await fetch(`${this.baseUrl}/wallet/deposit/local-banking`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        'Accept': 'application/json',
+      },
+      body: fd,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(toMessage(data, `Request failed (${res.status})`));
+    return data;
+  }
+
+  // Local banking — Stage 3: user paid via admin's link, uploads proof.
+  async confirmLocalBankingPayment(depositId, { amount, transactionId, file }) {
+    const token = await SecureStore.getItemAsync('token');
+    const fd = new FormData();
+    fd.append('amount', String(amount));
+    fd.append('transaction_id', String(transactionId || '').trim());
+    fd.append('file', {
+      uri: file.uri,
+      type: file.mimeType || 'image/jpeg',
+      name: file.fileName || 'proof.jpg',
+    });
+    const res = await fetch(`${this.baseUrl}/wallet/deposit/local-banking/${encodeURIComponent(depositId)}/confirm-payment`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        'Accept': 'application/json',
+      },
+      body: fd,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(toMessage(data, `Submit failed (${res.status})`));
+    return data;
+  }
+
+  // Razorpay on a local-banking deposit. Stage-2 admin "Approve & Razorpay"
+  // sets payment_link="razorpay:awaiting"; user enters amount → this creates
+  // the order: { order_id, key_id, amount_inr }.
+  async createLbRazorpayOrder(depositId, amount) {
+    return this.request(`/wallet/deposit/${encodeURIComponent(depositId)}/razorpay-order`, {
+      method: 'POST',
+      body: JSON.stringify({ amount: Number(amount) }),
+    });
+  }
+
+  // Publishable key + locked INR amount for an already-created Razorpay order
+  // (payment_link="razorpay:<order_id>"): { key_id, amount_inr, amount_paise }.
+  async getRazorpayOrderMeta(orderId) {
+    return this.request(`/wallet/deposit/razorpay/${encodeURIComponent(orderId)}/meta`);
+  }
+
   async submitManualDeposit(formData) {
     const token = await SecureStore.getItemAsync('token');
     const res = await fetch(`${this.baseUrl}/wallet/deposit/manual`, {
@@ -230,8 +301,9 @@ class ApiService {
     });
   }
 
-  async getMyProvider() {
-    return this.request('/social/my-provider');
+  async getMyProvider(masterType) {
+    const q = masterType ? `?master_type=${encodeURIComponent(masterType)}` : '';
+    return this.request(`/social/my-provider${q}`);
   }
 
   // PAMM / MAM master application.
@@ -379,6 +451,22 @@ class ApiService {
   async deleteNotification(notificationId) {
     return this.request(`/notifications/${notificationId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Register this device's Expo push token so the backend can deliver push
+  // notifications even when the app is closed.
+  async registerPushToken(token, platform) {
+    return this.request('/profile/push-token', {
+      method: 'POST',
+      body: JSON.stringify({ token, platform }),
+    });
+  }
+
+  async unregisterPushToken(token) {
+    return this.request('/profile/push-token', {
+      method: 'DELETE',
+      body: JSON.stringify({ token }),
     });
   }
 

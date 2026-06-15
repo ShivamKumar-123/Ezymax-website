@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { vantage, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { sizes, weights, fontFamily } from '../../theme/vantageTheme';
 
 const SYMBOL_COLORS = {
   XAUUSD:   { bg: '#E8A53A', initials: 'Au' },
@@ -19,17 +19,25 @@ const SYMBOL_COLORS = {
   SP500:    { bg: '#4DA89B', initials: '500' },
 };
 
+// Fallback for non-market symbols (e.g. trader initials like "KA"): a distinct
+// orange shade per string so avatars read clearly on both light and dark
+// themes. Lightness is kept mid-range so white text stays legible.
 function hashColor(sym) {
   let h = 0;
   for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) & 0xffffff;
-  const r = (h >> 16) & 0xff, g = (h >> 8) & 0xff, b = h & 0xff;
-  return `rgb(${r},${g},${b})`;
+  const hue = 14 + (h % 22);          // 14–35° → red-orange to amber
+  const sat = 78 + (h % 14);          // 78–92%
+  const light = 44 + (h % 10);        // 44–54%
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
 export default function SymbolIcon({ symbol, size = 40 }) {
   const cfg = SYMBOL_COLORS[symbol];
-  const bg = cfg ? cfg.bg : hashColor(symbol);
-  const fg = cfg && cfg.fg ? cfg.fg : vantage.textPrimary;
+  // Every circle uses a distinct orange shade with white text so the
+  // initials stay readable on both light and dark themes. The configured
+  // glyphs/initials (e.g. "Au", "₿", "225") are still used for the label.
+  const bg = hashColor(symbol);
+  const fg = '#FFFFFF';
   const initials = cfg ? cfg.initials : symbol.slice(0, 2).toUpperCase();
   const fontSize = Math.max(10, Math.floor(size * 0.36));
 

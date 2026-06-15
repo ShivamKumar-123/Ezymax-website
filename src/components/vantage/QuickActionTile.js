@@ -7,11 +7,11 @@ export default function QuickActionTile({
   label,
   onPress,
   badge,
-  size = 56,
+  size = 58,
 }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.wrap}>
-      <View style={[styles.icon, { width: size, height: size, borderRadius: size / 2 }]}>
+      <View style={[styles.icon, { width: size, height: size, borderRadius: radius.lg }]}>
         {icon}
         {badge ? (
           <View style={styles.badge}>
@@ -29,9 +29,9 @@ const styles = StyleSheet.create({
   icon: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: vantage.bgElevated,
+    backgroundColor: vantage.accentMuted,
     borderWidth: 1,
-    borderColor: vantage.border,
+    borderColor: 'rgba(242,106,31,0.22)',
     position: 'relative',
   },
   badge: {

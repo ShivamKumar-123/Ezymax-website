@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { View, ActivityIndicator } from 'react-native';
+import React, { createContext, useContext, useState } from 'react';
 import AppLoader from '../components/vantage/AppLoader';
+import { showToast } from '../components/vantage';
+import { vantage } from '../theme/vantageTheme';
+import { setThemeAndReload } from '../theme/themeRuntime';
 
 /** Dark — BG #121212, Card #1E1E1E, Blue #F26A1F */
 const darkTheme = {
@@ -83,28 +84,31 @@ const LOADING_BG = '#FFFFFF';
 const LOADING_ACCENT = '#F26A1F';
 
 const ThemeContext = createContext({
-  theme: lightTheme,
-  colors: lightTheme.colors,
-  isDark: false,
+  theme: darkTheme,
+  colors: darkTheme.colors,
+  isDark: true,
   toggleTheme: () => {},
+  setTheme: () => {},
   loading: true,
 });
 
 export const ThemeProvider = ({ children }) => {
-  // The app is dark-only — always start dark and ignore any previously saved
-  // light preference so no screen flashes white.
-  const [isDark, setIsDark] = useState(true);
-  const [loading, setLoading] = useState(false);
+  // The active theme is decided at startup (index.js) and baked into the
+  // `vantage` tokens before any screen loads. Mirror it here so legacy screens
+  // that read `colors` from this context match the rest of the app.
+  const [isDark] = useState(vantage.isDark !== false);
+  const [loading] = useState(false);
 
-  const toggleTheme = async () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    try {
-      await SecureStore.setItemAsync('themeMode', newIsDark ? 'dark' : 'light');
-    } catch (error) {
-      console.log('Error saving theme preference:', error.message);
+  // Switching theme repaints the whole app, so persist the choice and reload
+  // the JS bundle — this keeps the static `vantage` tokens and these `colors`
+  // perfectly in sync.
+  const setTheme = async (name) => {
+    const reloaded = await setThemeAndReload(name);
+    if (!reloaded) {
+      showToast({ kind: 'info', message: 'Theme saved — reopen the app to apply' });
     }
   };
+  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
   const theme = isDark ? darkTheme : lightTheme;
 
@@ -119,6 +123,7 @@ export const ThemeProvider = ({ children }) => {
         colors: theme.colors,
         isDark,
         toggleTheme,
+        setTheme,
         loading,
       }}
     >
@@ -131,10 +136,11 @@ export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
     return {
-      theme: lightTheme,
-      colors: lightTheme.colors,
-      isDark: false,
+      theme: darkTheme,
+      colors: darkTheme.colors,
+      isDark: true,
       toggleTheme: () => {},
+      setTheme: () => {},
       loading: false,
     };
   }

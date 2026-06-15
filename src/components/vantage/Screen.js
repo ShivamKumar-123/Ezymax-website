@@ -7,7 +7,7 @@ import { vantage } from '../../theme/vantageTheme';
 export default function Screen({ children, edges = ['top'], style, glow = true }) {
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={vantage.bg} translucent={false} />
+      <StatusBar barStyle={vantage.isDark ? 'light-content' : 'dark-content'} backgroundColor={vantage.bg} translucent={false} />
       {glow ? <ScreenGlow /> : null}
       <SafeAreaView style={[styles.safe, style]} edges={edges}>
         {children}

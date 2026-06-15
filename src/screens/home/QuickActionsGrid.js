@@ -11,22 +11,22 @@ export default function QuickActionsGrid() {
   return (
     <View style={styles.row}>
       <QuickActionTile
-        icon={<Ionicons name="calculator-outline" size={22} color={vantage.textPrimary} />}
+        icon={<Ionicons name="calculator-outline" size={24} color={vantage.accent} />}
         label="Risk Calc"
         onPress={() => nav.navigate('RiskCalculator')}
       />
       <QuickActionTile
-        icon={<Ionicons name="calendar-outline" size={22} color={vantage.textPrimary} />}
+        icon={<Ionicons name="calendar-outline" size={24} color={vantage.accent} />}
         label="Calendar"
         onPress={() => nav.navigate('EconomicCalendar')}
       />
       <QuickActionTile
-        icon={<Ionicons name="school-outline" size={22} color={vantage.textPrimary} />}
+        icon={<Ionicons name="school-outline" size={24} color={vantage.accent} />}
         label="Academy"
         onPress={() => nav.navigate('Academy')}
       />
       <QuickActionTile
-        icon={<Ionicons name="people-outline" size={22} color={vantage.textPrimary} />}
+        icon={<Ionicons name="people-outline" size={24} color={vantage.accent} />}
         label="IB"
         onPress={() => nav.navigate('Business', { initialTab: 'ib' })}
       />

@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 80 },
   emptyTitle: { fontSize: 20, fontWeight: '600', marginTop: 16 },
   emptyText: { color: '#666', fontSize: 14, marginTop: 8 },
-  createBtn: { backgroundColor: '#1a73e8', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 24 },
+  createBtn: { backgroundColor: '#F26A1F', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 24 },
   createBtnText: { color: '#000', fontSize: 16, fontWeight: '600' },
   
   ticketsList: { padding: 16 },
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   priorityOptionText: { color: '#666', fontSize: 14, fontWeight: '500' },
   priorityOptionTextActive: { color: '#000' },
   
-  submitBtn: { backgroundColor: '#1a73e8', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24 },
+  submitBtn: { backgroundColor: '#F26A1F', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24 },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
   

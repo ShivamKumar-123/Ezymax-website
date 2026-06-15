@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
-import { View, Image, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import { AuthContext } from '../../context/AuthContext';
@@ -8,7 +9,7 @@ import { IconButton } from '../../components/vantage';
 import SymbolPicker from '../trade/SymbolPicker';
 import { vantage, space } from '../../theme/vantageTheme';
 
-const AVATAR_PLACEHOLDER = null;
+const AVATAR_ANIM = require('../../../assets/avatar f04024.json');
 
 export default function HomeHeader({ unreadNotifications = 0 }) {
   const nav = useNavigation();
@@ -24,13 +25,9 @@ export default function HomeHeader({ unreadNotifications = 0 }) {
         accessibilityLabel="Open profile menu"
       >
         <View style={styles.avatarWrap}>
-          {AVATAR_PLACEHOLDER ? (
-            <Image source={{ uri: AVATAR_PLACEHOLDER }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Ionicons name="person" size={22} color={vantage.textPrimary} />
-            </View>
-          )}
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <LottieView source={AVATAR_ANIM} autoPlay loop style={styles.avatarAnim} />
+          </View>
         </View>
       </Pressable>
 
@@ -68,10 +65,11 @@ const styles = StyleSheet.create({
   },
   avatarWrap: { padding: 2 },
   avatar: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: 18, overflow: 'hidden',
   },
   avatarFallback: {
     backgroundColor: vantage.bgRaised,
     alignItems: 'center', justifyContent: 'center',
   },
+  avatarAnim: { width: 30, height: 30 },
 });

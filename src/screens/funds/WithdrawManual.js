@@ -13,8 +13,12 @@ export default function WithdrawManual() {
   const nav = useNavigation();
   const [amount, setAmount] = useState('');
   const [upiId, setUpiId] = useState('');
+  const [notes, setNotes] = useState('');
   const [qr, setQr] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Website rule: UPI id and/or QR — at least one is required.
+  const canSubmit = (upiId.trim() || qr) && Number(amount) > 0 && !submitting;
 
   const pickQr = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -24,11 +28,14 @@ export default function WithdrawManual() {
   };
 
   const submit = async () => {
-    if (!upiId.trim() || !(Number(amount) > 0)) return;
+    if (!((upiId.trim() || qr) && Number(amount) > 0)) {
+      return showToast({ kind: 'warn', message: 'Enter a UPI ID and/or attach a QR' });
+    }
     setSubmitting(true);
     const fd = new FormData();
     fd.append('amount', String(amount));
     fd.append('upi_id', upiId.trim());
+    fd.append('payout_notes', notes.trim());
     if (qr) {
       fd.append('file', { uri: qr.uri, type: qr.mimeType || 'image/jpeg', name: qr.fileName || 'qr.jpg' });
     }
@@ -67,7 +74,10 @@ export default function WithdrawManual() {
           )}
         </Pressable>
 
-        <PillButton label={submitting ? 'Submitting…' : 'Submit Withdrawal'} variant="primary" size="lg" loading={submitting} disabled={!upiId.trim() || !(Number(amount) > 0) || submitting} onPress={submit} style={{ marginTop: space.xl }} />
+        <Text style={[styles.label, { marginTop: space.md }]}>Notes (optional)</Text>
+        <TextInput value={notes} onChangeText={setNotes} placeholder="Account name, bank, or payout instructions" placeholderTextColor={vantage.textMuted} style={styles.input} />
+
+        <PillButton label={submitting ? 'Submitting…' : 'Submit Withdrawal'} variant="primary" size="lg" loading={submitting} disabled={!canSubmit} onPress={submit} style={{ marginTop: space.xl }} />
       </ScrollView>
     </Screen>
   );

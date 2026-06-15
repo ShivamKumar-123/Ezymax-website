@@ -8,14 +8,30 @@ import MarketsStack from './MarketsStack';
 import TradeStack from './TradeStack';
 import FundsStack from './FundsStack';
 import { BottomNavPill } from '../components/vantage';
+import { vantage } from '../theme/vantageTheme';
 
-const HOME_ICON = require('../../assets/swisscresta-homebar-white.png');
+// Active theme is already applied (index.js) before this module loads, so the
+// branch below picks the right Home icon at evaluation time.
+const LIGHT_THEME = vantage.isDark === false;
 
-const LOTTIE = {
-  MarketsTab: require('../../assets/market.json'),
-  TradeTab:   require('../../assets/trade.json'),
-  FundsTab:   require('../../assets/funds.json'),
-};
+// Light theme uses the brand-coloured logo; dark theme uses the white cut-out.
+const HOME_ICON = LIGHT_THEME
+  ? require('../../assets/swisscresta-homebar.png')
+  : require('../../assets/swisscresta-homebar-white.png');
+
+// Each theme has its own Lottie set — the f04024 variants are the brand-red
+// icons used on the light theme.
+const LOTTIE = LIGHT_THEME
+  ? {
+      MarketsTab: require('../../assets/market f04024.json'),
+      TradeTab:   require('../../assets/trade f04024.json'),
+      FundsTab:   require('../../assets/funds f04024.json'),
+    }
+  : {
+      MarketsTab: require('../../assets/market.json'),
+      TradeTab:   require('../../assets/trade.json'),
+      FundsTab:   require('../../assets/funds.json'),
+    };
 
 const LOTTIE_SIZE = { width: 28, height: 28 };
 

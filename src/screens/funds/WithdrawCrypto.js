@@ -8,24 +8,33 @@ import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import ApiService from '../../services/ApiService';
 
-const CHAINS = [
-  { key: 'TRC20', label: 'TRC20' },
-  { key: 'BEP20', label: 'BEP20' },
-  { key: 'ERC20', label: 'ERC20' },
+// Mirrors WITHDRAW_NETWORK_OPTIONS on the website. Backend expects
+// network ∈ {tron, bsc, eth} and destination_address (NOT chain/address).
+const NETWORKS = [
+  { network: 'tron', label: 'USDT TRC20', sub: 'Tron',      hint: 'Address starts with T', regex: /^T[1-9A-HJ-NP-Za-km-z]{33}$/ },
+  { network: 'bsc',  label: 'USDT BEP20', sub: 'BSC',       hint: '0x + 40 hex characters', regex: /^0x[a-fA-F0-9]{40}$/ },
+  { network: 'eth',  label: 'USDT ERC20', sub: 'Ethereum',  hint: '0x + 40 hex characters', regex: /^0x[a-fA-F0-9]{40}$/ },
 ];
 
 export default function WithdrawCrypto() {
   const nav = useNavigation();
-  const [chain, setChain] = useState('TRC20');
+  const [network, setNetwork] = useState('tron');
   const [address, setAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const opt = NETWORKS.find((n) => n.network === network) || NETWORKS[0];
+
   const submit = async () => {
-    if (!address.trim() || !(Number(amount) > 0)) return;
+    const addr = address.trim();
+    if (!addr || !(Number(amount) > 0)) return;
+    if (!opt.regex.test(addr)) {
+      showToast({ kind: 'warn', message: `Invalid ${opt.label} address. ${opt.hint}` });
+      return;
+    }
     setSubmitting(true);
     try {
-      await ApiService.submitOnchainWithdrawal({ chain, address: address.trim(), amount: Number(amount) });
+      await ApiService.submitOnchainWithdrawal({ network: opt.network, amount: Number(amount), destination_address: addr });
       showToast({ kind: 'success', message: 'Withdrawal submitted' });
       nav.goBack();
     } catch (e) {
@@ -50,15 +59,15 @@ export default function WithdrawCrypto() {
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         <Text style={styles.label}>Network</Text>
         <View style={styles.chainRow}>
-          {CHAINS.map((c) => (
-            <Pressable key={c.key} onPress={() => setChain(c.key)} style={[styles.chainChip, chain === c.key && styles.chainChipActive]}>
-              <Text style={[styles.chainTxt, chain === c.key && { color: vantage.textPrimary, fontWeight: weights.bold }]}>{c.key}</Text>
+          {NETWORKS.map((c) => (
+            <Pressable key={c.network} onPress={() => setNetwork(c.network)} style={[styles.chainChip, network === c.network && styles.chainChipActive]}>
+              <Text style={[styles.chainTxt, network === c.network && { color: vantage.textPrimary, fontWeight: weights.bold }]}>{c.label.replace('USDT ', '')}</Text>
             </Pressable>
           ))}
         </View>
 
         <Text style={[styles.label, { marginTop: space.md }]}>Destination address</Text>
-        <TextInput value={address} onChangeText={setAddress} placeholder="T... / 0x..." placeholderTextColor={vantage.textMuted} style={styles.input} autoCapitalize="none" autoCorrect={false} />
+        <TextInput value={address} onChangeText={setAddress} placeholder={opt.hint} placeholderTextColor={vantage.textMuted} style={styles.input} autoCapitalize="none" autoCorrect={false} />
 
         <Text style={[styles.label, { marginTop: space.md }]}>Amount (USDT)</Text>
         <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={vantage.textMuted} style={styles.input} />

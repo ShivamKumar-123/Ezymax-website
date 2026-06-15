@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { StrategyCard } from '../../components/vantage';
@@ -39,18 +38,23 @@ function mapItem(s) {
     metricSigned = false;
   }
 
-  const aum =
-    typeof s.aum === 'number' ? s.aum
-    : typeof s.aum_usd === 'number' ? s.aum_usd
-    : typeof s.total_aum === 'number' ? s.total_aum
+  const followers =
+    typeof stats.activeFollowers === 'number' ? stats.activeFollowers
+    : typeof s.followers === 'number' ? s.followers
+    : typeof s.followers_count === 'number' ? s.followers_count
+    : typeof s.copiers === 'number' ? s.copiers
     : null;
-  const profit = typeof stats.totalProfitGenerated === 'number' ? stats.totalProfitGenerated : null;
-  let aumValue = aum;
-  let aumLabel = 'AUM';
-  if (aum == null && profit != null) {
-    aumValue = profit;
-    aumLabel = 'Profit';
-  }
+
+  // Derive a risk band from the win rate when the backend doesn't send one.
+  const riskScore =
+    s.risk_score || s.riskLevel || s.risk
+    || (winRate != null ? (winRate >= 70 ? 'Low' : winRate >= 55 ? 'Moderate' : 'High') : 'Moderate');
+
+  const chartData =
+    Array.isArray(s.equity_curve) ? s.equity_curve
+    : Array.isArray(s.performance) ? s.performance
+    : Array.isArray(s.chart) ? s.chart
+    : null;
 
   return {
     id: s.id || s._id || s.provider_id || s.account_id,
@@ -59,8 +63,10 @@ function mapItem(s) {
     metricLabel,
     metricValue,
     metricSigned,
-    aum: aumValue,
-    aumLabel,
+    followers,
+    riskScore,
+    winRate,
+    chartData,
     full: !!s.is_full,
     avatarSeed: name.slice(0, 2).toUpperCase(),
   };
@@ -89,7 +95,7 @@ export default function StrategyCarousel({ strategies = [], onSeeAll }) {
       <View style={styles.headerRow}>
         <Text style={styles.heading}>Copy Trade Masters</Text>
         <Pressable onPress={seeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel="See all copy trade masters">
-          <Ionicons name="chevron-forward" size={20} color={vantage.textMuted} />
+          <Text style={styles.viewAll}>View All</Text>
         </Pressable>
       </View>
       {data.length === 0 ? (
@@ -114,8 +120,10 @@ export default function StrategyCarousel({ strategies = [], onSeeAll }) {
                 metricLabel={s.metricLabel}
                 metricValue={s.metricValue}
                 metricSigned={s.metricSigned}
-                aum={s.aum}
-                aumLabel={s.aumLabel}
+                followers={s.followers}
+                riskScore={s.riskScore}
+                winRate={s.winRate}
+                chartData={s.chartData}
                 status={s.full ? 'full' : 'open'}
                 avatarSymbol={s.avatarSeed}
                 onPress={seeAll}
@@ -139,6 +147,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
   },
   heading: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
+  viewAll: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, paddingHorizontal: space.lg, paddingBottom: space.md },
   row: { gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.sm },
 });

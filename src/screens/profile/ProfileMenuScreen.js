@@ -1,17 +1,19 @@
-import React, { useContext, useState, useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useContext, useState, useCallback, useRef } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { AuthContext } from '../../context/AuthContext';
-import { Screen, Card, MenuRow, IconButton, PillButton, showToast } from '../../components/vantage';
+import { useTheme } from '../../context/ThemeContext';
+import { Screen, Card, MenuRow, PillButton, showToast } from '../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { fetchKycStatus, isKycApproved, kycStatusLabel } from '../../utils/kycGate';
-import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 export default function ProfileMenuScreen() {
   const nav = useNavigation();
   const { user, logout } = useContext(AuthContext) || {};
+  const { isDark, setTheme } = useTheme();
 
   // The stored `user` object has no kyc_status — pull the live status from /profile.
   const [kycStatus, setKycStatus] = useState(user?.kyc_status || null);
@@ -28,17 +30,20 @@ export default function ProfileMenuScreen() {
   const kycApproved = isKycApproved(kycStatus);
   const initials = (user?.email || '?').slice(0, 1).toUpperCase();
 
+  // Swipe left to close the drawer (it slides in from the left). Only claims
+  // the gesture on a clear leftward horizontal drag so vertical scrolling is
+  // unaffected.
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dx < -18 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderRelease: (_, g) => { if (g.dx < -55) nav.goBack(); },
+    })
+  ).current;
+
   return (
     <Screen edges={['top']}>
-      <View style={styles.headerRow}>
-        <IconButton
-          icon={<Ionicons name="close" size={22} color={vantage.textPrimary} />}
-          accessibilityLabel="Close"
-          onPress={() => nav.goBack()}
-        />
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
+      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+      <ScrollView contentContainerStyle={{ paddingTop: space.md, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
         {/* Profile header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
@@ -82,6 +87,35 @@ export default function ProfileMenuScreen() {
           <MenuRow icon={<Ionicons name="book-outline" size={18} color={vantage.textPrimary} />} label="Order History" onPress={() => nav.navigate('OrderBook')} />
         </Section>
 
+        <Section title="APPEARANCE">
+          <View style={styles.appearanceRow}>
+            <View style={styles.appearanceLabel}>
+              <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={vantage.accent} />
+              <Text style={styles.appearanceTxt}>Theme</Text>
+            </View>
+            <View style={styles.segment}>
+              <Pressable
+                onPress={() => { if (isDark) setTheme('light'); }}
+                style={[styles.segmentBtn, !isDark && styles.segmentBtnActive]}
+                accessibilityRole="button"
+                accessibilityLabel="Light theme"
+              >
+                <Ionicons name="sunny-outline" size={14} color={!isDark ? vantage.textInverse : vantage.textSecondary} />
+                <Text style={[styles.segmentTxt, !isDark && styles.segmentTxtActive]}>Light</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => { if (!isDark) setTheme('dark'); }}
+                style={[styles.segmentBtn, isDark && styles.segmentBtnActive]}
+                accessibilityRole="button"
+                accessibilityLabel="Dark theme"
+              >
+                <Ionicons name="moon-outline" size={14} color={isDark ? vantage.textInverse : vantage.textSecondary} />
+                <Text style={[styles.segmentTxt, isDark && styles.segmentTxtActive]}>Dark</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Section>
+
         <Section title="HELP">
           <MenuRow icon={<Ionicons name="chatbubble-outline" size={18} color={vantage.textPrimary} />} label="Support" onPress={() => nav.navigate('Support')} />
           <MenuRow icon={<Ionicons name="notifications-outline" size={18} color={vantage.textPrimary} />} label="Notifications" onPress={() => nav.navigate('Notifications')} />
@@ -100,6 +134,7 @@ export default function ProfileMenuScreen() {
           />
         </View>
       </ScrollView>
+      </View>
     </Screen>
   );
 }
@@ -116,7 +151,6 @@ function Section({ title, children }) {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: space.sm, paddingTop: space.sm },
   profileHeader: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: space.lg, paddingVertical: space.lg,
@@ -132,6 +166,23 @@ const styles = StyleSheet.create({
   email: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
   badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6, marginTop: space.sm },
   badgeTxt: { fontFamily, fontSize: sizes.micro, fontWeight: weights.heavy },
+  appearanceRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space.lg, paddingVertical: space.md,
+  },
+  appearanceLabel: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  appearanceTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
+  segment: {
+    flexDirection: 'row', backgroundColor: vantage.bgRaised,
+    borderRadius: radius.pill, padding: 3, gap: 2,
+  },
+  segmentBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill,
+  },
+  segmentBtnActive: { backgroundColor: vantage.accent },
+  segmentTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  segmentTxtActive: { color: vantage.textInverse },
   section: { paddingHorizontal: space.lg, marginTop: space.lg },
   sectionTitle: {
     color: vantage.textSecondary, fontFamily, fontSize: sizes.label,

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { InstrumentRow } from '../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import { getWatchlist } from '../../utils/watchlistStorage';
 import { getSparkData } from '../../utils/sparklineCache';
 
@@ -57,7 +57,7 @@ export default function WatchlistSection({ pricesBySymbol = {}, onSeeAll }) {
       <View style={styles.headerRow}>
         <Text style={styles.heading}>Watchlist</Text>
         <Pressable onPress={handleSeeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all watchlist">
-          <Ionicons name="chevron-forward" size={20} color={vantage.textMuted} />
+          <Text style={styles.viewAll}>View All</Text>
         </Pressable>
       </View>
       {symbols.map((sym) => {
@@ -77,8 +77,9 @@ export default function WatchlistSection({ pricesBySymbol = {}, onSeeAll }) {
           />
         );
       })}
-      <Pressable onPress={handleSeeAll} style={styles.viewMore} accessibilityRole="button" accessibilityLabel="View more">
-        <Text style={styles.viewMoreTxt}>View More ›</Text>
+      <Pressable onPress={handleSeeAll} style={styles.addSymbol} accessibilityRole="button" accessibilityLabel="Add symbol">
+        <Ionicons name="add" size={18} color={vantage.accent} />
+        <Text style={styles.addSymbolTxt}>Add Symbol</Text>
       </Pressable>
     </View>
   );
@@ -94,7 +95,13 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
   },
   heading: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
+  viewAll: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, paddingHorizontal: space.lg, paddingBottom: space.md },
-  viewMore: { alignItems: 'center', paddingVertical: space.md },
-  viewMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
+  addSymbol: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs,
+    marginHorizontal: space.lg, marginTop: space.md,
+    paddingVertical: space.md, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: vantage.accent, borderStyle: 'dashed',
+  },
+  addSymbolTxt: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 });

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { InstrumentRow, CategoryTabs } from '../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import { bySegment } from '../../utils/marketMovers';
 
 const FILTER_OPTIONS = [
@@ -73,16 +73,15 @@ export default function MarketsWatchlist({
         })
       )}
 
-      <View style={styles.actionsRow}>
-        <Pressable onPress={onEdit || (() => nav.navigate('WatchlistEdit'))} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Edit watchlist">
-          <Ionicons name="create-outline" size={18} color={vantage.textPrimary} />
-          <Text style={styles.actionTxt}>Edit</Text>
-        </Pressable>
-        <Pressable onPress={onAdd || (() => nav.navigate('WatchlistEdit'))} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Add to watchlist">
-          <Ionicons name="add" size={20} color={vantage.textPrimary} />
-          <Text style={styles.actionTxt}>Add</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onAdd || (() => nav.navigate('WatchlistEdit'))}
+        style={styles.addSymbol}
+        accessibilityRole="button"
+        accessibilityLabel="Add symbol to watchlist"
+      >
+        <Ionicons name="add" size={20} color={vantage.accent} />
+        <Text style={styles.addSymbolTxt}>Add Symbol</Text>
+      </Pressable>
     </View>
   );
 }
@@ -93,7 +92,11 @@ const styles = StyleSheet.create({
   emptyTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold },
   emptySub: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
   emptyInline: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.lg, textAlign: 'center' },
-  actionsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.xxl, paddingVertical: space.lg },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.sm },
-  actionTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
+  addSymbol: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs,
+    marginHorizontal: space.lg, marginTop: space.lg,
+    paddingVertical: space.md, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: vantage.accent, borderStyle: 'dashed',
+  },
+  addSymbolTxt: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 });

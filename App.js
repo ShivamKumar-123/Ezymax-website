@@ -88,7 +88,7 @@ function AppShell() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={vantage.isDark ? 'light' : 'dark'} />
       <RootNavigator />
       <ToastHost />
     </>

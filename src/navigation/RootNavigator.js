@@ -6,6 +6,8 @@ import { AuthContext } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import AppLoader from '../components/vantage/AppLoader';
+import NotificationsBridge from '../components/NotificationsBridge';
+import { navigationRef } from './navigationRef';
 import { vantage } from '../theme/vantageTheme';
 
 export default function RootNavigator() {
@@ -14,6 +16,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer
+      ref={navigationRef}
       theme={{
         dark: true,
         colors: {
@@ -35,7 +38,10 @@ export default function RootNavigator() {
       {!ready ? (
         <AppLoader />
       ) : auth?.user ? (
-        <MainTabs />
+        <>
+          <MainTabs />
+          <NotificationsBridge />
+        </>
       ) : (
         <AuthStack />
       )}

@@ -1,6 +1,11 @@
 import { Platform } from 'react-native';
 
-export const vantage = {
+// ── Theme token sets ────────────────────────────────────────────────────────
+// Two palettes share the same key names so every component can keep reading
+// `vantage.<token>` unchanged. The active set is applied into the live `vantage`
+// object at startup (before screens load) by applyVantageTheme().
+
+const darkTokens = {
   // Surfaces — lifted off pure black so cards stand out against the
   // black→orange gradient background.
   bg:           '#000000',
@@ -32,13 +37,70 @@ export const vantage = {
   buyBg:        '#2E2E2E',
   spreadChip:   '#000000',
 
-  // Sell/Buy action buttons — vibrant Vantage-style red & green. The dim
-  // variants color the unselected side so both stay readable as red/green.
+  // Sell/Buy action buttons — vibrant Vantage-style red & green.
   sellBtn:      '#FF3B5C',
   sellBtnDim:   'rgba(255,59,92,0.30)',
   buyBtn:       '#16C784',
   buyBtnDim:    'rgba(22,199,132,0.30)',
 };
+
+const lightTokens = {
+  // Surfaces — clean white UI with subtle off-white panels and visible borders.
+  bg:           '#FFFFFF',
+  bgElevated:   '#F5F7FA',
+  bgRaised:     '#EDF1F6',
+  bgPressed:    '#E2E8F0',
+  border:       '#E5E7EB',
+  borderStrong: '#D1D5DB',
+
+  // Text — strong contrast on white.
+  textPrimary:   '#0F172A',
+  textSecondary: '#475569',
+  textMuted:     '#64748B',
+  textInverse:   '#FFFFFF',
+
+  // Brand — same warm accent in both themes.
+  accent:       '#F26A1F',
+  accentGlow:   '#FF8A3D',
+  accentMuted:  'rgba(242,106,31,0.10)',
+
+  // Directionals
+  up:           '#16A34A',
+  upMuted:      'rgba(22,163,74,0.10)',
+  down:         '#DC2626',
+  downMuted:    'rgba(220,38,38,0.10)',
+
+  // Trade-screen specific
+  sellBg:       '#DC2626',
+  buyBg:        '#EDF1F6',
+  spreadChip:   '#FFFFFF',
+
+  sellBtn:      '#EF3B5C',
+  sellBtnDim:   'rgba(239,59,92,0.18)',
+  buyBtn:       '#16A34A',
+  buyBtnDim:    'rgba(22,163,74,0.18)',
+};
+
+export const VANTAGE_TOKENS = { dark: darkTokens, light: lightTokens };
+
+// Live token object. Components import this and read `vantage.<token>`. It is
+// MUTATED in place (never reassigned) so existing destructured imports keep
+// pointing at the up-to-date values. Defaults to dark; applyVantageTheme()
+// overrides it at startup based on the saved preference.
+export const vantage = { ...darkTokens, scheme: 'dark', isDark: true };
+
+/** Swap the live tokens to the named theme ('dark' | 'light'). */
+export function applyVantageTheme(name) {
+  const isDark = name !== 'light';
+  Object.assign(vantage, isDark ? darkTokens : lightTokens, {
+    scheme: isDark ? 'dark' : 'light',
+    isDark,
+  });
+  return vantage;
+}
+
+// SecureStore key used across the app for the theme preference.
+export const THEME_PREF_KEY = 'themeMode';
 
 export const fontFamily = Platform.select({ ios: 'System', android: 'Roboto' });
 
@@ -81,6 +143,7 @@ export const radius = {
 
 export default {
   vantage,
+  applyVantageTheme,
   fontFamily,
   weights,
   sizes,

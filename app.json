@@ -22,7 +22,8 @@
     },
     "updates": {
       "enabled": false,
-      "fallbackToCacheTimeout": 3000
+      "fallbackToCacheTimeout": 3000,
+      "url": "https://u.expo.dev/3b126a99-fd6b-445b-b2bf-f5ed733bedbe"
     },
     "ios": {
       "supportsTablet": true,
@@ -67,7 +68,19 @@
     "plugins": [
       "expo-font",
       "expo-updates",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#F26A1F"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3b126a99-fd6b-445b-b2bf-f5ed733bedbe"
+      }
+    },
+    "owner": "shivam92388"
   }
 }

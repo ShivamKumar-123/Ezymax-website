@@ -19,6 +19,11 @@ const TYPES = [
   { key: 'mam',             label: 'MAM',      desc: 'Pooled fund with a per-investor volume-scaling multiplier.' },
 ];
 
+// Backend keeps only two master records per user: 'pamm' and 'signal_provider'
+// (which also covers MAM). Normalize the UI type to the stored type so the
+// per-type status check looks up the right record.
+const normalizeType = (t) => (t === 'pamm' ? 'pamm' : 'signal_provider');
+
 export default function BecomeMasterScreen() {
   const nav = useNavigation();
   const [type, setType] = useState('signal_provider');
@@ -34,20 +39,27 @@ export default function BecomeMasterScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    // Eligibility (always 200).
+    // Eligibility (always 200) — global, not per type.
     try { setElig(await ApiService.getMasterEligibility()); } catch (_) {}
-    // my-provider via raw fetch so the expected 404 ("not a provider") doesn't
-    // surface as a red console error.
-    try {
-      const res = await authedFetch('/social/my-provider');
-      setProvider(res.ok ? await res.json() : null);
-    } catch (_) {
-      setProvider(null);
-    }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Provider status is PER master type: a user can be a PAMM master and still
+  // apply as a Signal/Copy master. Re-check whenever the selected type changes.
+  // Raw fetch so the expected 404 ("not a provider of this type") doesn't
+  // surface as a red console error.
+  const loadProvider = useCallback(async (t) => {
+    try {
+      const res = await authedFetch(`/social/my-provider?master_type=${normalizeType(t)}`);
+      setProvider(res.ok ? await res.json() : null);
+    } catch (_) {
+      setProvider(null);
+    }
+  }, []);
+
+  useEffect(() => { loadProvider(type); }, [type, loadProvider]);
 
   const apply = async () => {
     const pf = Number(perfFee), mf = Number(mgmtFee), mi = Number(minInv), mx = Number(maxInv);
@@ -66,7 +78,7 @@ export default function BecomeMasterScreen() {
         max_investors: mx,
       });
       showToast({ kind: 'success', message: res?.message || 'Application submitted for review' });
-      await load();
+      await loadProvider(type);
     } catch (e) {
       showToast({ kind: 'error', message: e?.message || 'Could not apply' });
     } finally {
@@ -100,33 +112,34 @@ export default function BecomeMasterScreen() {
           <Text style={styles.heroSub}>Approved masters accept followers/investors and earn a performance fee on profits.</Text>
         </View>
 
+        {/* Master type — ALWAYS visible so you can apply for another type even
+            after becoming a master of one. */}
+        <Text style={styles.sectionTitle}>Master type</Text>
+        <View style={styles.typeRow}>
+          {TYPES.map((t) => {
+            const active = t.key === type;
+            return (
+              <Pressable key={t.key} onPress={() => setType(t.key)} style={[styles.typeChip, active && styles.typeChipActive]}>
+                <Text style={[styles.typeTxt, active && { color: vantage.textInverse }]}>{t.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.typeDesc}>{selectedType?.desc}</Text>
+
         {alreadyApplied ? (
-          <Card>
+          <Card style={{ marginTop: space.lg }}>
             <Text style={styles.cardTitle}>
-              {status === 'approved' || status === 'active' ? "You're a Master" : 'Application under review'}
+              {status === 'approved' || status === 'active' ? `You're a ${selectedType?.label} Master` : 'Application under review'}
             </Text>
             <Text style={styles.cardSub}>
               {status === 'approved' || status === 'active'
-                ? 'Your master profile is active. Followers can now copy/allocate to you.'
+                ? `Your ${selectedType?.label} master profile is active. Pick another type above to apply for more.`
                 : 'An admin will review your application. You will be notified once approved.'}
             </Text>
           </Card>
         ) : (
           <>
-            {/* Master type */}
-            <Text style={styles.sectionTitle}>Master type</Text>
-            <View style={styles.typeRow}>
-              {TYPES.map((t) => {
-                const active = t.key === type;
-                return (
-                  <Pressable key={t.key} onPress={() => setType(t.key)} style={[styles.typeChip, active && styles.typeChipActive]}>
-                    <Text style={[styles.typeTxt, active && { color: vantage.textInverse }]}>{t.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.typeDesc}>{selectedType?.desc}</Text>
-
             {/* Settings */}
             <Text style={styles.sectionTitle}>Settings</Text>
             <Card>

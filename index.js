@@ -1,9 +1,10 @@
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { registerRootComponent } from 'expo';
-import { Text, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, TextInput, View } from 'react-native';
 
-import App from './App';
+import { applyVantageThemeFromStorage } from './src/theme/themeRuntime';
 
 // Lock font scaling so the UI renders at the designed pixel sizes on every
 // device. Without this, the OS "Font size" accessibility setting inflates all
@@ -15,7 +16,26 @@ TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.allowFontScaling = false;
 TextInput.defaultProps.maxFontSizeMultiplier = 1;
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+// Bootstrap: apply the saved light/dark theme to the design tokens BEFORE the
+// app (and all its screens' StyleSheets) is imported, so every component picks
+// up the correct colors at module-evaluation time. App is lazy-loaded for this
+// reason — a static import would run all screen modules with the default theme.
+function Root() {
+  const [App, setApp] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      await applyVantageThemeFromStorage();
+      const mod = await import('./App');
+      if (mounted) setApp(() => mod.default);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (!App) return <View style={{ flex: 1, backgroundColor: '#000000' }} />;
+  return <App />;
+}
+
+// registerRootComponent calls AppRegistry.registerComponent('main', () => Root);
+registerRootComponent(Root);
