@@ -475,6 +475,10 @@ class ApiService {
     return this.request(`/banners?page=${page}`);
   }
 
+  async trackBannerClick(bannerId) {
+    return this.request(`/banners/${bannerId}/click`, { method: 'POST' });
+  }
+
   // Accounts APIs
   async getAccounts() {
     return this.request('/accounts');

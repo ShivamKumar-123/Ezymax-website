@@ -11,7 +11,7 @@ import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 
 import HomeHeader from './home/HomeHeader';
 import QuickActionsGrid from './home/QuickActionsGrid';
-import PromoBanner from './home/PromoBanner';
+import BannerCarousel from './home/BannerCarousel';
 import StrategyCarousel from './home/StrategyCarousel';
 import WatchlistSection from './home/WatchlistSection';
 import AccountSwitcher from './trade/AccountSwitcher';
@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const [summary, setSummary] = useState(null);
   const [perfDay, setPerfDay] = useState(null);
   const [strategies, setStrategies] = useState([]);
-  const [banner, setBanner] = useState(null);
+  const [banners, setBanners] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pricesBySymbol, setPricesBySymbol] = useState({});
   const [accounts, setAccounts] = useState([]);
@@ -43,9 +43,12 @@ export default function HomeScreen() {
         setStrategies(Array.isArray(list) ? list : []);
       }).catch(() => setStrategies([])),
       ApiService.getBanners('dashboard').then((res) => {
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        setBanner(list[0] || null);
-      }).catch(() => setBanner(null)),
+        // Backend returns { banners: [...] }; keep array/items fallbacks too.
+        const list = Array.isArray(res)
+          ? res
+          : (res?.banners || res?.items || []);
+        setBanners(Array.isArray(list) ? list : []);
+      }).catch(() => setBanners([])),
       ApiService.getAllPrices().then((res) => {
         const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
         const map = {};
@@ -170,9 +173,8 @@ export default function HomeScreen() {
 
         <QuickActionsGrid />
 
-        {banner ? (
-          <PromoBanner banner={banner} onPress={() => nav.navigate('TradeTab')} />
-        ) : null}
+        {/* Admin-uploaded promo banners — shown just above Copy Trade Masters. */}
+        <BannerCarousel banners={banners} onPressFallback={() => nav.navigate('TradeTab')} />
 
         <StrategyCarousel strategies={strategies} onSeeAll={() => nav.navigate('TradeTab')} />
 
