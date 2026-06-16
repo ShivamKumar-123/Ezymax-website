@@ -171,10 +171,10 @@ export default function HomeScreen() {
           />
         </Pressable>
 
-        <QuickActionsGrid />
-
-        {/* Admin-uploaded promo banners — shown just above Copy Trade Masters. */}
+        {/* Admin-uploaded promo banners — shown above the quick-action boxes. */}
         <BannerCarousel banners={banners} onPressFallback={() => nav.navigate('TradeTab')} />
+
+        <QuickActionsGrid />
 
         <StrategyCarousel strategies={strategies} onSeeAll={() => nav.navigate('TradeTab')} />
 

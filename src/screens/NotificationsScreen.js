@@ -21,10 +21,10 @@ function iconFor(type) {
   if (t.includes('sl') || t.includes('stop')) return { C: AlertCircle, color: vantage.down };
   if (t.includes('tp') || t.includes('take_profit') || t.includes('profit')) return { C: Trophy, color: vantage.up };
   if (t.includes('close')) return { C: CheckCircle2, color: vantage.up };
-  if (t.includes('pending') || t.includes('order')) return { C: Clock, color: '#A855F7' };
+  if (t.includes('pending') || t.includes('order')) return { C: Clock, color: vantage.accent };
   if (t.includes('open') || t.includes('trade')) return { C: TrendingUp, color: vantage.accent };
   if (t.includes('triggered') || t.includes('flash')) return { C: Zap, color: vantage.accent };
-  if (t.includes('copy')) return { C: Copy, color: '#06B6D4' };
+  if (t.includes('copy')) return { C: Copy, color: vantage.accent };
   if (t.includes('kyc') || t.includes('security')) return { C: ShieldCheck, color: vantage.up };
   if (t.includes('support') || t.includes('ticket')) return { C: LifeBuoy, color: vantage.accent };
   return { C: Bell, color: vantage.textSecondary };
