@@ -45,7 +45,6 @@ export default function TradeCFDs({
         <View style={styles.equityCol}>
           <View style={styles.equityLabRow}>
             <Text style={styles.equityLab}>Equity ({selectedAccount?.currency || 'USD'})</Text>
-            <Ionicons name="chevron-down" size={12} color={vantage.textMuted} />
           </View>
           <Text style={styles.equityValue}>
             {equity != null ? Number(equity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}

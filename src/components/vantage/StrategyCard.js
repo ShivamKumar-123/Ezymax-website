@@ -23,7 +23,8 @@ export default function StrategyCard({
 }) {
   const hasMetric = typeof metricValue === 'number' && Number.isFinite(metricValue);
   const positive = (metricValue ?? 0) >= 0;
-  const metricColor = metricSigned ? (positive ? vantage.up : vantage.down) : vantage.up;
+  // Home Copy-Trade cards use the brand gold for positive returns.
+  const metricColor = metricSigned ? (positive ? '#FBAA45' : vantage.down) : '#FBAA45';
 
   const chart = Array.isArray(chartData) && chartData.length >= 2
     ? chartData
@@ -50,14 +51,6 @@ export default function StrategyCard({
         <View style={styles.chart}>
           <Sparkline data={chart} color={vantage.accent} width={chartW} height={72} strokeWidth={2} fill />
         </View>
-      </View>
-
-      <View style={styles.divider} />
-
-      <View style={styles.stats}>
-        <Stat icon="people-outline" label="Followers" value={fmtFollowers(followers)} />
-        <Stat icon="speedometer-outline" label="Risk Score" value={riskScore || '—'} />
-        <Stat icon="checkmark-circle-outline" label="Win Rate" value={winRate != null ? `${Number(winRate).toFixed(2)}%` : '—'} />
       </View>
     </Card>
   );

@@ -2,9 +2,19 @@ import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { registerRootComponent } from 'expo';
 import React, { useEffect, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View, LogBox } from 'react-native';
 
 import { applyVantageThemeFromStorage } from './src/theme/themeRuntime';
+
+// Expo Go (SDK 53+) no longer supports remote push; expo-notifications logs an
+// unactionable error about it on load. Local notifications still work, and real
+// builds are unaffected — so silence just this message. Registered before App
+// (and expo-notifications) is imported below.
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  'expo-notifications: iOS Push notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+]);
 
 // Lock font scaling so the UI renders at the designed pixel sizes on every
 // device. Without this, the OS "Font size" accessibility setting inflates all

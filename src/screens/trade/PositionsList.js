@@ -181,13 +181,13 @@ function PositionRow({ position, onClose, onSetSlTp }) {
       <View style={styles.cardRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.sym}>{position.symbol}</Text>
-          <Text style={[styles.side, { color: side === 'buy' ? vantage.up : vantage.down }]}>
+          <Text style={[styles.side, { color: side === 'buy' ? '#FFFFFF' : vantage.down, fontWeight: weights.bold }]}>
             {side.toUpperCase()} {lots} @ {open ? open.toFixed(5) : '—'}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={styles.plLabel}>P&L</Text>
-          <Text style={[styles.pl, { color: plPositive ? vantage.up : vantage.down }]}>
+          <Text style={[styles.pl, { color: plPositive ? '#FFFFFF' : vantage.down }]}>
             {pl != null ? `${plPositive ? '+' : ''}${Number(pl).toFixed(2)}` : '—'} USD
           </Text>
         </View>
@@ -309,9 +309,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs,
     paddingVertical: space.sm, borderRadius: 10, borderWidth: 1,
   },
-  slTpBtn: { borderColor: vantage.accent },
+  slTpBtn: { borderColor: '#FBA945' },
   slTpTxt: { color: vantage.accent, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
-  closeBtn: { borderColor: vantage.down },
+  closeBtn: { borderColor: '#FBA945' },
   closeTxt: { color: vantage.down, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
 });
 

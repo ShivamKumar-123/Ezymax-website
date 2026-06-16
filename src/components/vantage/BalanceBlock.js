@@ -12,53 +12,65 @@ export default function BalanceBlock({
   subLabel,
   subAmount,
   subPositive,
+  subColor,
   accountLabel,
   onPickAccount,
   onAddAccount,
+  showControls = true,
+  showBalance = true,
+  light = false,
 }) {
+  const whiteIf = light ? { color: '#FFFFFF' } : null;
   return (
     <View style={styles.wrap}>
-      <View style={styles.labRow}>
-        <View style={styles.labLeft}>
-          <Text style={styles.label}>{label}</Text>
-          {onToggleHide ? (
-            <Pressable onPress={onToggleHide} hitSlop={10} accessibilityRole="button" accessibilityLabel={hidden ? 'Show balance' : 'Hide balance'}>
-              <Ionicons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={14} color={vantage.textMuted} />
-            </Pressable>
-          ) : null}
-        </View>
-        {(onPickAccount || onAddAccount) ? (
-          <View style={styles.acctControls}>
-            {onPickAccount ? (
-              <Pressable onPress={onPickAccount} hitSlop={6} style={styles.acctChip} accessibilityRole="button" accessibilityLabel="Switch account">
-                <Text style={styles.acctChipTxt} numberOfLines={1}>{accountLabel || 'All accounts'}</Text>
-                <Ionicons name="chevron-down" size={14} color={vantage.textSecondary} />
-              </Pressable>
-            ) : null}
-            {onAddAccount ? (
-              <Pressable onPress={onAddAccount} hitSlop={6} style={styles.addBtn} accessibilityRole="button" accessibilityLabel="Add account">
-                <Ionicons name="add" size={18} color={vantage.textPrimary} />
+      {showControls ? (
+        <View style={styles.labRow}>
+          <View style={styles.labLeft}>
+            {label ? <Text style={styles.label}>{label}</Text> : null}
+            {onToggleHide ? (
+              <Pressable onPress={onToggleHide} hitSlop={10} accessibilityRole="button" accessibilityLabel={hidden ? 'Show balance' : 'Hide balance'}>
+                <Ionicons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={14} color={vantage.textMuted} />
               </Pressable>
             ) : null}
           </View>
-        ) : null}
-      </View>
-      <View style={styles.amtRow}>
-        <Text style={styles.amount}>
-          {hidden ? '••••••' : formatMoney(amount)}
-        </Text>
-        <View style={styles.ccyChip}>
-          <Text style={styles.ccyTxt}>{currency} ▾</Text>
+          {(onPickAccount || onAddAccount) ? (
+            <View style={styles.acctControls}>
+              {onPickAccount ? (
+                <Pressable onPress={onPickAccount} hitSlop={6} style={styles.acctChip} accessibilityRole="button" accessibilityLabel="Switch account">
+                  <Text style={styles.acctChipTxt} numberOfLines={1}>{accountLabel || 'All accounts'}</Text>
+                  <Ionicons name="chevron-down" size={14} color={vantage.textSecondary} />
+                </Pressable>
+              ) : null}
+              {onAddAccount ? (
+                <Pressable onPress={onAddAccount} hitSlop={6} style={styles.addBtn} accessibilityRole="button" accessibilityLabel="Add account">
+                  <Ionicons name="add" size={18} color={vantage.textPrimary} />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </View>
-      </View>
-      {subLabel ? (
-        <View style={styles.subRow}>
-          <Text style={styles.subLab}>{subLabel}</Text>
-          <Text style={[styles.subAmt, { color: subPositive ? vantage.up : vantage.down }]}>
-            {hidden ? '••' : (subAmount != null ? formatSigned(subAmount) : '—')}
-          </Text>
-          <Text style={styles.subLab}>{currency}</Text>
-        </View>
+      ) : null}
+
+      {showBalance ? (
+        <>
+          <View style={styles.amtRow}>
+            <Text style={[styles.amount, whiteIf]}>
+              {hidden ? '••••••' : formatMoney(amount)}
+            </Text>
+            <View style={[styles.ccyChip, light && styles.ccyChipLight]}>
+              <Text style={[styles.ccyTxt, whiteIf]}>{currency} ▾</Text>
+            </View>
+          </View>
+          {subLabel ? (
+            <View style={styles.subRow}>
+              <Text style={[styles.subLab, whiteIf]}>{subLabel}</Text>
+              <Text style={[styles.subAmt, { color: subColor || (subPositive ? vantage.up : vantage.down) }]}>
+                {hidden ? '••' : (subAmount != null ? formatSigned(subAmount) : '—')}
+              </Text>
+              <Text style={[styles.subLab, whiteIf]}>{currency}</Text>
+            </View>
+          ) : null}
+        </>
       ) : null}
     </View>
   );
@@ -93,6 +105,7 @@ const styles = StyleSheet.create({
   amtRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
   amount: { color: vantage.textPrimary, fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy },
   ccyChip: { backgroundColor: vantage.bgRaised, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6 },
+  ccyChipLight: { backgroundColor: 'rgba(0,0,0,0.28)' },
   ccyTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 2 },
   subLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },

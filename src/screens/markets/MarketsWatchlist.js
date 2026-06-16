@@ -3,8 +3,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-import { InstrumentRow, CategoryTabs } from '../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { InstrumentRow, CategoryTabs, GradientActionButton } from '../../components/vantage';
+import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 import { bySegment } from '../../utils/marketMovers';
 
 const FILTER_OPTIONS = [
@@ -68,20 +68,18 @@ export default function MarketsWatchlist({
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
               sparkData={sparksBySymbol[upper] || []}
               onPress={() => onPressInstrument(upper)}
+              upColor="#FBAA45"
             />
           );
         })
       )}
 
-      <Pressable
+      <GradientActionButton
+        label="Add Symbol"
         onPress={onAdd || (() => nav.navigate('WatchlistEdit'))}
         style={styles.addSymbol}
-        accessibilityRole="button"
         accessibilityLabel="Add symbol to watchlist"
-      >
-        <Ionicons name="add" size={20} color={vantage.accent} />
-        <Text style={styles.addSymbolTxt}>Add Symbol</Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -93,10 +91,6 @@ const styles = StyleSheet.create({
   emptySub: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
   emptyInline: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.lg, textAlign: 'center' },
   addSymbol: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs,
     marginHorizontal: space.lg, marginTop: space.lg,
-    paddingVertical: space.md, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: vantage.accent, borderStyle: 'dashed',
   },
-  addSymbolTxt: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 });

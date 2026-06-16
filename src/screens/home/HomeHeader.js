@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,11 +7,11 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { IconButton } from '../../components/vantage';
 import SymbolPicker from '../trade/SymbolPicker';
-import { vantage, space } from '../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 
 const AVATAR_ANIM = require('../../../assets/avatar f04024.json');
 
-export default function HomeHeader({ unreadNotifications = 0 }) {
+export default function HomeHeader({ unreadNotifications = 0, accountLabel, onPickAccount, onAddAccount }) {
   const nav = useNavigation();
   const { user } = useContext(AuthContext) || {};
   const [searchOpen, setSearchOpen] = useState(false);
@@ -30,6 +30,31 @@ export default function HomeHeader({ unreadNotifications = 0 }) {
           </View>
         </View>
       </Pressable>
+
+      {/* Account picker — sits right of the profile icon. */}
+      {onPickAccount ? (
+        <Pressable
+          onPress={onPickAccount}
+          hitSlop={6}
+          style={styles.acctChip}
+          accessibilityRole="button"
+          accessibilityLabel="Switch account"
+        >
+          <Text style={styles.acctChipTxt} numberOfLines={1}>{accountLabel || 'All accounts'}</Text>
+          <Ionicons name="chevron-down" size={14} color={vantage.textSecondary} />
+        </Pressable>
+      ) : null}
+      {onAddAccount ? (
+        <Pressable
+          onPress={onAddAccount}
+          hitSlop={6}
+          style={styles.addBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Add account"
+        >
+          <Ionicons name="add" size={18} color={vantage.textPrimary} />
+        </Pressable>
+      ) : null}
 
       <View style={{ flex: 1 }} />
 
@@ -72,4 +97,17 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarAnim: { width: 30, height: 30 },
+
+  acctChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginLeft: space.sm,
+    backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border,
+    borderRadius: 999, paddingHorizontal: space.md, paddingVertical: 6, maxWidth: 180,
+  },
+  acctChipTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, flexShrink: 1 },
+  addBtn: {
+    width: 32, height: 32, borderRadius: 16, marginLeft: space.xs,
+    backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

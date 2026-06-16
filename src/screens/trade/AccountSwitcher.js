@@ -5,9 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Sheet, MenuRow } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 
-export default function AccountSwitcher({ visible, onClose, accounts = [], selectedId, onSelect }) {
+export default function AccountSwitcher({ visible, onClose, accounts = [], selectedId, onSelect, onAddAccount }) {
   return (
     <Sheet visible={visible} onClose={onClose} title="Select account">
+      {onAddAccount ? (
+        <MenuRow
+          icon={<Ionicons name="add-circle-outline" size={20} color={vantage.accent} />}
+          label="Add account"
+          onPress={() => { onClose(); onAddAccount(); }}
+        />
+      ) : null}
       {accounts.length === 0 ? (
         <Text style={styles.empty}>No accounts. Open one in Funds.</Text>
       ) : accounts.map((a) => {

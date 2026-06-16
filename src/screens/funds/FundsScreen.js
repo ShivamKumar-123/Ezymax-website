@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ScrollView, RefreshControl, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, RefreshControl, View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
@@ -44,13 +44,21 @@ export default function FundsScreen() {
 
   return (
     <Screen edges={['top']} glow>
-      <View style={styles.headerWrap}>
-        <Text style={styles.title}>Funds</Text>
-      </View>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
-      >
+      {/* Fixed header — stays pinned while the transactions list scrolls. */}
+      <View style={styles.fixedHeader}>
+        <View style={styles.headerWrap}>
+          <Text style={styles.title}>Funds</Text>
+        </View>
+
+        {/* Banner div — fund_banner.png fills the card. */}
+        <View style={styles.bannerCard}>
+          <Image
+            source={require('../../../assets/fund_banner.png')}
+            style={styles.bannerImage}
+            resizeMode="cover"
+          />
+        </View>
+
         <View style={styles.balanceWrap}>
           <BalanceBlock
             label="Total Balance"
@@ -74,12 +82,17 @@ export default function FundsScreen() {
         </View>
 
         <View style={styles.tilesRow}>
-          <QuickActionTile icon={<Ionicons name="arrow-down-circle" size={26} color={vantage.up} />} label="Deposit" onPress={() => nav.navigate('Deposit')} />
-          <QuickActionTile icon={<Ionicons name="arrow-up-circle" size={26} color={vantage.down} />} label="Withdraw" onPress={() => nav.navigate('Withdraw')} />
-          <QuickActionTile icon={<Ionicons name="swap-horizontal" size={26} color={vantage.textPrimary} />} label="Transfer" onPress={() => nav.navigate('Transfer')} />
-          <QuickActionTile icon={<Ionicons name="receipt-outline" size={26} color={vantage.textPrimary} />} label="History" onPress={() => nav.navigate('TransactionHistory')} />
+          <QuickActionTile variant="flat" icon={<Ionicons name="arrow-up-outline" size={30} color="#B39166" />} label="Deposit" onPress={() => nav.navigate('Deposit')} />
+          <QuickActionTile variant="flat" icon={<Ionicons name="arrow-down-outline" size={30} color="#B39166" />} label="Withdraw" onPress={() => nav.navigate('Withdraw')} />
+          <QuickActionTile variant="flat" icon={<Ionicons name="swap-horizontal-outline" size={30} color="#B39166" />} label="Transfer" onPress={() => nav.navigate('Transfer')} />
+          <QuickActionTile variant="flat" icon={<Ionicons name="receipt-outline" size={30} color="#B39166" />} label="History" onPress={() => nav.navigate('TransactionHistory')} />
         </View>
+      </View>
 
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
+      >
         <View style={styles.recentSection}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
           {recent.length === 0 ? (
@@ -106,7 +119,7 @@ function TxRow({ tx }) {
     <View style={txStyles.row}>
       <Ionicons
         name={isDeposit ? 'arrow-down-circle' : isWithdraw ? 'arrow-up-circle' : 'swap-horizontal'}
-        size={22} color={color}
+        size={30} color={color}
       />
       <View style={{ flex: 1, marginLeft: space.md }}>
         <Text style={txStyles.method}>{String(method).toUpperCase()}</Text>
@@ -114,7 +127,7 @@ function TxRow({ tx }) {
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={[txStyles.amount, { color }]}>{sign}${amount.toFixed(2)}</Text>
-        <Text style={[txStyles.status, status === 'completed' ? { color: vantage.up } : status === 'failed' ? { color: vantage.down } : null]}>
+        <Text style={[txStyles.status, status === 'completed' ? { color: '#F04024' } : status === 'failed' ? { color: vantage.down } : null]}>
           {status || 'pending'}
         </Text>
       </View>
@@ -123,9 +136,24 @@ function TxRow({ tx }) {
 }
 
 const styles = StyleSheet.create({
+  fixedHeader: { backgroundColor: vantage.bg },
   headerWrap: { paddingHorizontal: space.lg, paddingTop: space.sm },
   title: { color: vantage.textPrimary, fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy },
   scroll: {},
+  // Empty banner placeholder. width = 92% of screen, height auto via aspectRatio.
+  // Recommended image: 1560 × 600 px (ratio 2.6) — or any image at the same ratio.
+  bannerCard: {
+    alignSelf: 'center',
+    width: '92%',
+    aspectRatio: 2.6,
+    marginTop: space.md,
+    borderRadius: 20,
+    backgroundColor: vantage.bgElevated,
+    borderWidth: 1,
+    borderColor: vantage.border,
+    overflow: 'hidden',
+  },
+  bannerImage: { width: '100%', height: '100%' },
   balanceWrap: { paddingHorizontal: space.lg, paddingTop: space.md },
   splitRow: { flexDirection: 'row', gap: space.lg, marginTop: space.md, padding: space.md, backgroundColor: vantage.bgElevated, borderRadius: 12 },
   splitLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
@@ -137,9 +165,9 @@ const styles = StyleSheet.create({
 });
 
 const txStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.sm, borderBottomColor: vantage.border, borderBottomWidth: StyleSheet.hairlineWidth },
-  method: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
-  date: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
-  amount: { fontFamily, fontSize: sizes.body, fontWeight: weights.heavy },
-  status: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2, textTransform: 'capitalize' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, borderBottomColor: vantage.border, borderBottomWidth: StyleSheet.hairlineWidth },
+  method: { color: vantage.textPrimary, fontFamily, fontSize: 16, fontWeight: weights.semibold },
+  date: { color: vantage.textMuted, fontFamily, fontSize: 13, marginTop: 2 },
+  amount: { fontFamily, fontSize: 16, fontWeight: weights.heavy },
+  status: { color: vantage.textMuted, fontFamily, fontSize: 13, marginTop: 2, textTransform: 'capitalize' },
 });

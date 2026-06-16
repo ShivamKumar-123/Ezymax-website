@@ -8,10 +8,22 @@ export default function QuickActionTile({
   onPress,
   badge,
   size = 58,
+  // 'accent' → orange-tinted tile (default, used across the app).
+  // 'flat'   → dark, borderless square tile that fills its column (reference look).
+  variant = 'accent',
 }) {
+  const flat = variant === 'flat';
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.wrap}>
-      <View style={[styles.icon, { width: size, height: size, borderRadius: radius.lg }]}>
+      <View
+        style={[
+          styles.icon,
+          flat ? styles.iconFlat : styles.iconAccent,
+          flat
+            ? { width: '78%', aspectRatio: 1, borderRadius: radius.lg }
+            : { width: size, height: size, borderRadius: radius.lg },
+        ]}
+      >
         {icon}
         {badge ? (
           <View style={styles.badge}>
@@ -19,7 +31,7 @@ export default function QuickActionTile({
           </View>
         ) : null}
       </View>
-      <Text style={styles.label} numberOfLines={2}>{label}</Text>
+      <Text style={[styles.label, flat && styles.labelFlat]} numberOfLines={2}>{label}</Text>
     </Pressable>
   );
 }
@@ -29,10 +41,15 @@ const styles = StyleSheet.create({
   icon: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  iconAccent: {
     backgroundColor: vantage.accentMuted,
     borderWidth: 1,
     borderColor: 'rgba(242,106,31,0.22)',
-    position: 'relative',
+  },
+  iconFlat: {
+    backgroundColor: vantage.bgRaised,
   },
   badge: {
     position: 'absolute',
@@ -45,4 +62,5 @@ const styles = StyleSheet.create({
   },
   badgeTxt: { color: vantage.textInverse, fontFamily, fontSize: sizes.micro, fontWeight: weights.heavy },
   label: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, textAlign: 'center' },
+  labelFlat: { color: vantage.textSecondary },
 });

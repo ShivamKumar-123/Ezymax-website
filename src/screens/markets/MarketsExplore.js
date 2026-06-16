@@ -110,6 +110,7 @@ export default function MarketsExplore({
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
               sparkData={sparksBySymbol[sym] || []}
               onPress={() => onPressInstrument(sym)}
+              upColor="#FBAA45"
             />
           );
         })}

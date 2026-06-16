@@ -8,25 +8,30 @@ import { vantage, space } from '../../theme/vantageTheme';
 
 export default function QuickActionsGrid() {
   const nav = useNavigation();
+  const iconColor = vantage.textPrimary;
   return (
     <View style={styles.row}>
       <QuickActionTile
-        icon={<Ionicons name="calculator-outline" size={24} color={vantage.accent} />}
+        variant="flat"
+        icon={<Ionicons name="calculator-outline" size={30} color={iconColor} />}
         label="Risk Calc"
         onPress={() => nav.navigate('RiskCalculator')}
       />
       <QuickActionTile
-        icon={<Ionicons name="calendar-outline" size={24} color={vantage.accent} />}
+        variant="flat"
+        icon={<Ionicons name="calendar-outline" size={30} color={iconColor} />}
         label="Calendar"
         onPress={() => nav.navigate('EconomicCalendar')}
       />
       <QuickActionTile
-        icon={<Ionicons name="school-outline" size={24} color={vantage.accent} />}
+        variant="flat"
+        icon={<Ionicons name="school-outline" size={30} color={iconColor} />}
         label="Academy"
         onPress={() => nav.navigate('Academy')}
       />
       <QuickActionTile
-        icon={<Ionicons name="people-outline" size={24} color={vantage.accent} />}
+        variant="flat"
+        icon={<Ionicons name="people-outline" size={30} color={iconColor} />}
         label="IB"
         onPress={() => nav.navigate('Business', { initialTab: 'ib' })}
       />
@@ -39,6 +44,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: space.lg,
     paddingVertical: space.md,
-    gap: space.md,
+    gap: space.sm,
   },
 });

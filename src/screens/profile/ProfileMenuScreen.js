@@ -1,7 +1,10 @@
 import React, { useContext, useState, useCallback, useRef } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+
+const AVATAR_ANIM = require('../../../assets/avatar f04024.json');
 
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,7 +31,6 @@ export default function ProfileMenuScreen() {
   }, []));
 
   const kycApproved = isKycApproved(kycStatus);
-  const initials = (user?.email || '?').slice(0, 1).toUpperCase();
 
   // Swipe left to close the drawer (it slides in from the left). Only claims
   // the gesture on a clear leftward horizontal drag so vertical scrolling is
@@ -47,7 +49,7 @@ export default function ProfileMenuScreen() {
         {/* Profile header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarTxt}>{initials}</Text>
+            <LottieView source={AVATAR_ANIM} autoPlay loop style={styles.avatarAnim} />
           </View>
           <View style={{ flex: 1, marginLeft: space.md }}>
             <Text style={styles.name}>{user?.full_name || user?.email || 'Account'}</Text>
@@ -157,11 +159,11 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   avatar: {
-    width: 56, height: 56, borderRadius: 28,
+    width: 56, height: 56, borderRadius: 28, overflow: 'hidden',
     backgroundColor: vantage.bgRaised,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h1, fontWeight: weights.heavy },
+  avatarAnim: { width: 48, height: 48 },
   name: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
   email: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
   badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6, marginTop: space.sm },

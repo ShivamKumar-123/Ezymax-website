@@ -24,3 +24,4 @@ export { default as MoversBars } from './MoversBars';
 export { default as SpotlightCard } from './SpotlightCard';
 export { default as DiscreteSlider } from './DiscreteSlider';
 export { default as EmptyState } from './EmptyState';
+export { default as GradientActionButton } from './GradientActionButton';

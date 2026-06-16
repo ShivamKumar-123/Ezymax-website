@@ -1,5 +1,11 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
+// Remote push (Expo push tokens) was removed from Expo Go in SDK 53 — calling
+// getExpoPushTokenAsync there throws a console error. `storeClient` is Expo Go;
+// dev/standalone builds report a different execution environment.
+const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
 // Foreground notifications must still surface as a banner + sound (default RN
 // behaviour suppresses them while the app is open). Set at module load.
@@ -46,6 +52,9 @@ const EAS_PROJECT_ID = '3b126a99-fd6b-445b-b2bf-f5ed733bedbe';
 // Returns this device's Expo push token (or null). Used for server-side push
 // so notifications arrive even when the app is fully killed.
 export async function registerForPushToken() {
+  // Skip in Expo Go — remote push isn't supported there (use a dev build for it).
+  // Local notifications still work, so the rest of the app is unaffected.
+  if (IS_EXPO_GO) return null;
   try {
     const granted = await ensureNotificationPermission();
     if (!granted) return null;

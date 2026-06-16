@@ -33,16 +33,17 @@ function hashColor(sym) {
 
 export default function SymbolIcon({ symbol, size = 40 }) {
   const cfg = SYMBOL_COLORS[symbol];
-  // Every circle uses a distinct orange shade with white text so the
-  // initials stay readable on both light and dark themes. The configured
-  // glyphs/initials (e.g. "Au", "₿", "225") are still used for the label.
-  const bg = hashColor(symbol);
-  const fg = '#FFFFFF';
+  // Rounded-rectangle tile (10px radius) with a warm sand background and a
+  // deep red glyph so the initials stay readable on both light and dark
+  // themes. The configured glyphs/initials (e.g. "Au", "₿", "225") are still
+  // used for the label.
+  const bg = '#FDCB8E';
+  const fg = '#C3350F';
   const initials = cfg ? cfg.initials : symbol.slice(0, 2).toUpperCase();
   const fontSize = Math.max(10, Math.floor(size * 0.36));
 
   return (
-    <View style={[styles.base, { width: size, height: size, borderRadius: size / 2, backgroundColor: bg }]}>
+    <View style={[styles.base, { width: size, height: size, borderRadius: 10, backgroundColor: bg }]}>
       <Text style={{ color: fg, fontFamily, fontSize, fontWeight: weights.heavy }}>{initials}</Text>
     </View>
   );

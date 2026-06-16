@@ -5,7 +5,7 @@ import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/
 const VARIANTS = {
   primary:   { bg: vantage.accent,   fg: vantage.textInverse, pressed: vantage.accentGlow },
   secondary: { bg: vantage.bgRaised, fg: vantage.textPrimary, pressed: vantage.bgPressed },
-  sell:      { bg: vantage.sellBg,   fg: vantage.textPrimary, pressed: '#D63D5C' },
+  sell:      { bg: vantage.sellBg,   fg: vantage.textPrimary, pressed: '#C9341C' },
   buy:       { bg: vantage.up,       fg: vantage.textPrimary, pressed: '#1FA958' },
   danger:    { bg: 'transparent',    fg: vantage.down,        pressed: vantage.downMuted, borderColor: vantage.down },
   ghost:     { bg: 'transparent',    fg: vantage.textPrimary, pressed: vantage.bgPressed },

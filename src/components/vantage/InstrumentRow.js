@@ -1,9 +1,9 @@
-import React, { memo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { memo, useEffect, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import SymbolIcon from './SymbolIcon';
 import Sparkline from './Sparkline';
-import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
+import { vantage, space, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 function InstrumentRow({
   symbol,
@@ -14,6 +14,8 @@ function InstrumentRow({
   sparkData,
   onPress,
   rightExtra,
+  card = false,
+  upColor = vantage.up,
 }) {
   // The price feed has no change field — derive movement from the sparkline
   // series (first vs last close) when an explicit changePct isn't supplied.
@@ -25,48 +27,75 @@ function InstrumentRow({
   }
   const hasChange = effChange != null && Number.isFinite(effChange);
   const positive = (effChange ?? 0) >= 0;
-  const sparkColor = positive ? vantage.up : vantage.down;
-  const glowColor = positive ? vantage.up : vantage.down;
+  const sparkColor = positive ? upColor : vantage.down;
+  const glowColor = positive ? upColor : vantage.down;
   const gradId = positive ? 'rowGlowUp' : 'rowGlowDown';
 
-  return (
-    <Pressable
-      onPress={onPress}
-      android_ripple={{ color: vantage.bgPressed }}
-      accessibilityRole="button"
-      style={styles.row}
-    >
-      {/* Right-anchored directional glow — only when we actually have a change value,
-          otherwise the row stays clean black instead of a misleading green block. */}
-      {hasChange ? (
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
-          <Defs>
-            <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={glowColor} stopOpacity="0" />
-              <Stop offset="0.62" stopColor={glowColor} stopOpacity="0" />
-              <Stop offset="1" stopColor={glowColor} stopOpacity="0.10" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradId})`} />
-        </Svg>
-      ) : null}
+  // ── Motion ────────────────────────────────────────────────────────────────
+  // Entrance: gentle fade + rise when the row first mounts.
+  const mount = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mount, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+  }, [mount]);
 
-      <SymbolIcon symbol={symbol} size={40} />
-      <View style={styles.left}>
-        <Text style={styles.name} numberOfLines={1}>{name || symbol}</Text>
-        {subtitle ? <Text style={styles.sub} numberOfLines={1}>{subtitle}</Text> : null}
-      </View>
-      <View style={styles.spark}>
-        <Sparkline data={sparkData || []} color={sparkColor} width={64} height={28} />
-      </View>
-      <View style={styles.right}>
-        <Text style={styles.price}>{formatPrice(price)}</Text>
-        <Text style={[styles.pct, { color: hasChange ? (positive ? vantage.up : vantage.down) : vantage.textMuted }]}>
-          {hasChange ? `${positive ? '+' : ''}${effChange.toFixed(2)}%` : '—'}
-        </Text>
-      </View>
-      {rightExtra}
-    </Pressable>
+  // Press: subtle scale-in for a tactile, professional feel.
+  const scale = useRef(new Animated.Value(1)).current;
+  const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+
+  // Live price flash: briefly tint the price up/down green/red when it ticks.
+  const prevPrice = useRef(price);
+  const flash = useRef(new Animated.Value(0)).current;
+  const flashDir = useRef(1);
+  useEffect(() => {
+    if (price != null && prevPrice.current != null && price !== prevPrice.current) {
+      flashDir.current = price > prevPrice.current ? 1 : -1;
+      flash.setValue(1);
+      Animated.timing(flash, { toValue: 0, duration: 650, useNativeDriver: false }).start();
+    }
+    prevPrice.current = price;
+  }, [price, flash]);
+
+  const priceColor = flash.interpolate({
+    inputRange: [0, 1],
+    outputRange: [vantage.textPrimary, flashDir.current >= 0 ? upColor : vantage.down],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        opacity: mount,
+        transform: [
+          { translateY: mount.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) },
+          { scale },
+        ],
+      }}
+    >
+      <Pressable
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        android_ripple={{ color: vantage.bgPressed }}
+        accessibilityRole="button"
+        style={[styles.row, card && styles.cardRow]}
+      >
+        <SymbolIcon symbol={symbol} size={40} />
+        <View style={styles.left}>
+          <Text style={styles.name} numberOfLines={1}>{name || symbol}</Text>
+          {subtitle ? <Text style={styles.sub} numberOfLines={1}>{subtitle}</Text> : null}
+        </View>
+        <View style={styles.spark}>
+          <Sparkline data={sparkData || []} color={sparkColor} width={64} height={28} />
+        </View>
+        <View style={styles.right}>
+          <Animated.Text style={[styles.price, { color: priceColor }]}>{formatPrice(price)}</Animated.Text>
+          <Text style={[styles.pct, { color: hasChange ? (positive ? upColor : vantage.down) : vantage.textMuted }]}>
+            {hasChange ? `${positive ? '+' : ''}${effChange.toFixed(2)}%` : '—'}
+          </Text>
+        </View>
+        {rightExtra}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -81,11 +110,22 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: space.sm + 2,
+    paddingVertical: space.md,
     paddingHorizontal: space.lg,
     gap: space.md,
     position: 'relative',
     overflow: 'hidden',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: vantage.border,
+  },
+  // Grey elevated card per row — matches the upper sections' surface. Removes
+  // the divider border and floats each row as its own rounded panel.
+  cardRow: {
+    backgroundColor: vantage.bgElevated,
+    borderRadius: radius.lg,
+    marginHorizontal: space.lg,
+    marginBottom: space.sm,
+    borderBottomWidth: 0,
   },
   left: { flex: 1, minWidth: 0 },
   name: { color: vantage.textPrimary, fontFamily, fontSize: 16, fontWeight: weights.bold },

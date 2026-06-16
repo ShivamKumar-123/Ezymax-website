@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-import { InstrumentRow } from '../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { InstrumentRow, GradientActionButton } from '../../components/vantage';
+import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 import { getWatchlist } from '../../utils/watchlistStorage';
 import { getSparkData } from '../../utils/sparklineCache';
 
@@ -74,13 +73,17 @@ export default function WatchlistSection({ pricesBySymbol = {}, onSeeAll }) {
             changePct={changePct}
             sparkData={sparks[sym] || []}
             onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol: sym } })}
+            card
+            upColor="#FBAA45"
           />
         );
       })}
-      <Pressable onPress={handleSeeAll} style={styles.addSymbol} accessibilityRole="button" accessibilityLabel="Add symbol">
-        <Ionicons name="add" size={18} color={vantage.accent} />
-        <Text style={styles.addSymbolTxt}>Add Symbol</Text>
-      </Pressable>
+      <GradientActionButton
+        label="Add Symbol"
+        onPress={handleSeeAll}
+        style={styles.addSymbol}
+        accessibilityLabel="Add symbol"
+      />
     </View>
   );
 }
@@ -98,10 +101,6 @@ const styles = StyleSheet.create({
   viewAll: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, paddingHorizontal: space.lg, paddingBottom: space.md },
   addSymbol: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs,
     marginHorizontal: space.lg, marginTop: space.md,
-    paddingVertical: space.md, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: vantage.accent, borderStyle: 'dashed',
   },
-  addSymbolTxt: { color: vantage.accent, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 });

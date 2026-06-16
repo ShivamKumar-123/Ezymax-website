@@ -32,14 +32,14 @@ const darkTokens = {
   down:         '#EF4565',
   downMuted:    'rgba(239,69,101,0.10)',
 
-  // Trade-screen specific — Sell uses the reference red/pink.
-  sellBg:       '#EF4565',
+  // Trade-screen specific — Sell uses the brand orange-red.
+  sellBg:       '#F04024',
   buyBg:        '#2E2E2E',
   spreadChip:   '#000000',
 
-  // Sell/Buy action buttons — vibrant Vantage-style red & green.
-  sellBtn:      '#FF3B5C',
-  sellBtnDim:   'rgba(255,59,92,0.30)',
+  // Sell/Buy action buttons — brand orange-red & green.
+  sellBtn:      '#F04024',
+  sellBtnDim:   'rgba(240,64,36,0.30)',
   buyBtn:       '#16C784',
   buyBtnDim:    'rgba(22,199,132,0.30)',
 };
@@ -71,12 +71,12 @@ const lightTokens = {
   downMuted:    'rgba(220,38,38,0.10)',
 
   // Trade-screen specific
-  sellBg:       '#DC2626',
+  sellBg:       '#F04024',
   buyBg:        '#EDF1F6',
   spreadChip:   '#FFFFFF',
 
-  sellBtn:      '#EF3B5C',
-  sellBtnDim:   'rgba(239,59,92,0.18)',
+  sellBtn:      '#F04024',
+  sellBtnDim:   'rgba(240,64,36,0.18)',
   buyBtn:       '#16A34A',
   buyBtnDim:    'rgba(22,163,74,0.18)',
 };
