@@ -71,6 +71,7 @@ from .staking import (
 )
 from .vip import VipPass
 from .share import SharedTrade
+from .rms import IpGeoCache, RmsAlert, AdminNotification, PricingTimeRule
 
 
 __all__ = [
@@ -113,4 +114,6 @@ __all__ = [
     "VipPass",
     # share
     "SharedTrade",
+    # rms / ip-management
+    "IpGeoCache", "RmsAlert", "AdminNotification", "PricingTimeRule",
 ]

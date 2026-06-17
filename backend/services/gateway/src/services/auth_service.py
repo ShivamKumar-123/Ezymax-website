@@ -18,6 +18,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.models import (
     User, UserSession, TradingAccount, AccountGroup,
     IBProfile, Referral, PasswordResetToken, UserRefreshToken, UserAuditLog,
+    IPLog,
 )
 from packages.common.src.schemas import TokenResponse
 from packages.common.src.auth import (
@@ -393,6 +394,22 @@ async def issue_auth_json_response(
         expires_at=expires,
     )
     db.add(new_session)
+    # Append-only IP sighting for the superadmin IP-management / RMS module.
+    # Previously this table was never written; the RMS engine aggregates
+    # over it (and user_sessions) to surface per-user IPs, geo-resolve them,
+    # and detect shared-IP collisions. Best-effort — wrapped so an INET
+    # parse edge case can never block a login.
+    try:
+        _ip = client_ip_for_inet(request)
+        if _ip:
+            db.add(IPLog(
+                user_id=user.id,
+                ip_address=_ip,
+                action=(user_audit_action or "login").lower()[:50],
+                user_agent=request.headers.get("user-agent"),
+            ))
+    except Exception:
+        pass
     st = get_settings()
     raw_refresh = secrets.token_urlsafe(48)
     ref_exp = datetime.now(timezone.utc) + timedelta(days=st.JWT_REFRESH_EXPIRY_DAYS)

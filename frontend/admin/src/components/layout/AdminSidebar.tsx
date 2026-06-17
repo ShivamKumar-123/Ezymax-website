@@ -11,7 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Sparkles, Package,
-  Eye,
+  Eye, Globe, ShieldAlert,
 } from 'lucide-react';
 
 interface NavItem {
@@ -45,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Charges', href: '/config/charges' },
       { label: 'Spreads', href: '/config/spreads' },
       { label: 'Swaps', href: '/config/swaps' },
+      { label: 'Time Rules', href: '/config/time-rules' },
     ],
   },
   { label: 'Social', href: '/social', icon: Share2, perm: 'social.view' },
@@ -59,6 +60,8 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Analytics', href: '/analytics', icon: BarChart3, perm: 'analytics.view' },
+  { label: 'IP Management', href: '/rms', icon: Globe, perm: 'rms.view' },
+  { label: 'Trade Risk', href: '/trade-risk', icon: ShieldAlert, perm: 'rms.view' },
   { label: 'Audit logs', href: '/audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Admin audit logs', href: '/admin-audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },

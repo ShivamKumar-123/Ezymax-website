@@ -256,6 +256,18 @@ async def place_order(
         # for both margin calc here and the overnight fee engine. Pitch
         # promise: "No leverage? No overnight cost."
         effective_leverage = 1 if getattr(req, "fully_funded", False) else account.leverage
+        # Time-windowed leverage cap: an active pricing_time_rule (e.g.
+        # reduced leverage during news hours / weekends) lowers the
+        # effective leverage for NEW positions, raising the margin needed.
+        # Fully-funded (leverage=1) is already the floor, so skip it there.
+        if not getattr(req, "fully_funded", False):
+            try:
+                from .pricing_rules_cache import leverage_cap_for
+                _cap = await leverage_cap_for(db, instrument)
+                if _cap and _cap < effective_leverage:
+                    effective_leverage = _cap
+            except Exception:
+                pass
         required_margin = calc_margin(req.lots, fill_price, contract_size, effective_leverage)
 
         unrealized_pnl = Decimal("0")

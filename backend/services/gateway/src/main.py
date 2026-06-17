@@ -35,6 +35,7 @@ from .engines.verification_reminder_engine import verification_reminder_engine
 from .engines.monthly_statement_engine import monthly_statement_engine
 from .engines.chain_verifier_engine import chain_verifier_engine
 from .engines.cleanup_engine import cleanup_engine
+from .engines.rms_engine import rms_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -173,12 +174,14 @@ async def lifespan(app: FastAPI):
     await monthly_statement_engine.start()
     await chain_verifier_engine.start()
     await cleanup_engine.start()
+    await rms_engine.start()
     yield
     healer_task.cancel()
     try:
         await healer_task
     except asyncio.CancelledError:
         pass
+    await rms_engine.stop()
     await cleanup_engine.stop()
     await chain_verifier_engine.stop()
     await monthly_statement_engine.stop()

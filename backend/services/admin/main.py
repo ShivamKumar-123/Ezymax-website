@@ -20,7 +20,8 @@ from routes import (
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
     admin_audit_logs,
     insurance as insurance_admin, play_zone as play_zone_admin,
-    lifestyle as lifestyle_admin, deposit_wallets, demo_admins,
+    lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk,
+    admin_notifications, pricing_rules,
 )
 
 app_settings = get_settings()
@@ -56,6 +57,110 @@ async def _apply_startup_ddl():
                     updated_by UUID REFERENCES users(id),
                     updated_at TIMESTAMPTZ DEFAULT now()
                 )
+            """))
+            # RMS / IP-management tables. Mirrors migration 0053 so the
+            # IP-management endpoints work even on a host where Alembic
+            # hasn't been run yet. CREATE … IF NOT EXISTS is a no-op once
+            # the migration has applied them.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ip_geo_cache (
+                    ip_address INET PRIMARY KEY,
+                    status VARCHAR(16) NOT NULL DEFAULT 'resolved',
+                    country VARCHAR(80),
+                    country_code VARCHAR(4),
+                    region VARCHAR(120),
+                    city VARCHAR(120),
+                    latitude NUMERIC(9,6),
+                    longitude NUMERIC(9,6),
+                    isp VARCHAR(160),
+                    org VARCHAR(160),
+                    timezone VARCHAR(64),
+                    is_proxy BOOLEAN,
+                    is_hosting BOOLEAN,
+                    resolved_at TIMESTAMPTZ DEFAULT now(),
+                    created_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS rms_alerts (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    alert_type VARCHAR(40) NOT NULL DEFAULT 'shared_ip',
+                    ip_address INET NOT NULL,
+                    user_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    user_count INTEGER NOT NULL DEFAULT 0,
+                    status VARCHAR(16) NOT NULL DEFAULT 'open',
+                    severity VARCHAR(16) NOT NULL DEFAULT 'medium',
+                    notes TEXT,
+                    reviewed_by UUID,
+                    reviewed_at TIMESTAMPTZ,
+                    first_seen_at TIMESTAMPTZ DEFAULT now(),
+                    last_seen_at TIMESTAMPTZ DEFAULT now(),
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    CONSTRAINT uq_rms_alert_type_ip UNIQUE (alert_type, ip_address)
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_rms_alerts_status ON rms_alerts (status)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_user_sessions_ip ON user_sessions (ip_address)"
+            ))
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS admin_notifications (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    category VARCHAR(40) NOT NULL,
+                    severity VARCHAR(16) NOT NULL DEFAULT 'medium',
+                    title VARCHAR(200) NOT NULL,
+                    body TEXT,
+                    meta JSONB,
+                    action_url VARCHAR(200),
+                    dedup_key VARCHAR(160),
+                    is_read BOOLEAN NOT NULL DEFAULT false,
+                    read_by UUID,
+                    read_at TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    CONSTRAINT uq_admin_notif_dedup UNIQUE (dedup_key)
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_admin_notif_unread ON admin_notifications (is_read, created_at)"
+            ))
+            # Time-windowed spread/leverage rules + dynamic-spread tunables.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS pricing_time_rules (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name VARCHAR(120) NOT NULL,
+                    scope VARCHAR(20) NOT NULL DEFAULT 'default',
+                    segment_id UUID,
+                    instrument_id UUID,
+                    kind VARCHAR(12) NOT NULL DEFAULT 'custom',
+                    session VARCHAR(30),
+                    days_of_week JSONB,
+                    start_min INTEGER,
+                    end_min INTEGER,
+                    spread_mode VARCHAR(12) NOT NULL DEFAULT 'multiplier',
+                    spread_multiplier NUMERIC(8,3) DEFAULT 1,
+                    spread_value NUMERIC(18,8),
+                    spread_type VARCHAR(20) DEFAULT 'pips',
+                    leverage_cap INTEGER,
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    is_enabled BOOLEAN NOT NULL DEFAULT true,
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    updated_at TIMESTAMPTZ DEFAULT now(),
+                    updated_by UUID
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_pricing_time_rules_enabled ON pricing_time_rules (is_enabled)"
+            ))
+            await conn.execute(text("""
+                INSERT INTO system_settings (key, value, description)
+                VALUES
+                    ('dynamic_spread_enabled',     'false'::jsonb, 'Widen spread with live market volatility'),
+                    ('dynamic_spread_max_mult',    '3.0'::jsonb,   'Max volatility spread multiplier'),
+                    ('dynamic_spread_sensitivity', '1.0'::jsonb,   'Volatility sensitivity'),
+                    ('dynamic_spread_window_sec',  '60'::jsonb,    'Rolling window (seconds) for volatility')
+                ON CONFLICT (key) DO NOTHING
             """))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
@@ -184,6 +289,10 @@ app.include_router(play_zone_admin.router, prefix=prefix)
 app.include_router(lifestyle_admin.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)
+app.include_router(rms.router, prefix=prefix)
+app.include_router(trade_risk.router, prefix=prefix)
+app.include_router(admin_notifications.router, prefix=prefix)
+app.include_router(pricing_rules.router, prefix=prefix)
 
 
 @app.get("/health")

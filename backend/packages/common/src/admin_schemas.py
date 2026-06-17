@@ -866,3 +866,158 @@ class AdminTransactionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── RMS / IP-management ──────────────────────────────────────────────────
+
+class GeoInfo(BaseModel):
+    """Resolved geo for an IP — null fields when unresolved/private."""
+    country: Optional[str] = None
+    country_code: Optional[str] = None
+    region: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    isp: Optional[str] = None
+    status: Optional[str] = None  # resolved | failed | private | pending
+
+
+class RmsUserIpRow(BaseModel):
+    """One user with their most-recent IP and its geo."""
+    user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+    ip_address: Optional[str] = None
+    last_seen: Optional[datetime] = None
+    session_count: int = 0           # distinct IPs this user has used (window)
+    shared: bool = False             # is this IP shared by 2+ users?
+    geo: GeoInfo = GeoInfo()
+
+
+class SharedIpUser(BaseModel):
+    user_id: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+
+
+class SharedIpGroup(BaseModel):
+    """An IP used by 2+ distinct users (collision)."""
+    ip_address: str
+    user_count: int
+    users: list[SharedIpUser] = []
+    last_seen: Optional[datetime] = None
+    geo: GeoInfo = GeoInfo()
+    alert_id: Optional[str] = None
+    alert_status: Optional[str] = None
+    severity: Optional[str] = None
+
+
+class RmsMapPoint(BaseModel):
+    """A geo-located point for the live map (one per user latest IP)."""
+    user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    ip_address: str
+    latitude: float
+    longitude: float
+    city: Optional[str] = None
+    country: Optional[str] = None
+    shared: bool = False
+
+
+class RmsAlertOut(BaseModel):
+    id: str
+    alert_type: str
+    ip_address: str
+    user_count: int
+    users: list[SharedIpUser] = []
+    status: str
+    severity: str
+    notes: Optional[str] = None
+    geo: GeoInfo = GeoInfo()
+    first_seen_at: Optional[datetime] = None
+    last_seen_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+
+class RmsAlertUpdate(BaseModel):
+    status: str = Field(pattern="^(open|reviewed|dismissed)$")
+    notes: Optional[str] = None
+
+
+class RmsSummary(BaseModel):
+    total_users_with_ip: int = 0
+    distinct_ips: int = 0
+    shared_ip_count: int = 0          # IPs used by 2+ users
+    open_alerts: int = 0
+    resolved_ips: int = 0
+    unresolved_ips: int = 0
+
+
+# ── Trade Risk (RMS) ─────────────────────────────────────────────────────
+
+class TradeRiskSummary(BaseModel):
+    open_trades: int = 0
+    at_risk_trades: int = 0           # critical + warning
+    critical_trades: int = 0          # account margin_level <= stop_out
+    warning_trades: int = 0           # <= margin_call
+    caution_trades: int = 0           # <= caution_level
+    accounts_at_risk: int = 0
+    coordinated_clusters: int = 0     # same instrument+side+window, >= min_users
+    stop_out_level: float = 50.0
+    margin_call_level: float = 80.0
+    caution_level: float = 150.0
+
+
+class AtRiskTradeRow(BaseModel):
+    position_id: str
+    user_id: str
+    user_email: Optional[str] = None
+    account_id: str
+    account_number: Optional[str] = None
+    is_demo: bool = False
+    symbol: Optional[str] = None
+    side: Optional[str] = None
+    lots: float = 0
+    open_price: float = 0
+    notional: float = 0               # lots * contract_size * open_price
+    profit: float = 0                 # last-known P/L (stale for open positions)
+    margin_level: float = 0           # account margin level (live)
+    equity: float = 0
+    margin_used: float = 0
+    risk_bucket: str = "healthy"      # critical | warning | caution | healthy
+    opened_at: Optional[datetime] = None
+
+
+class ClusterUser(BaseModel):
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+
+
+class AdminNotificationOut(BaseModel):
+    id: str
+    category: str
+    severity: str
+    title: str
+    body: Optional[str] = None
+    meta: Optional[dict] = None
+    action_url: Optional[str] = None
+    is_read: bool = False
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CoordinatedCluster(BaseModel):
+    symbol: str
+    side: str
+    bucket_start: Optional[datetime] = None   # window start (binned)
+    first_trade_at: Optional[datetime] = None
+    last_trade_at: Optional[datetime] = None
+    user_count: int = 0
+    trade_count: int = 0
+    total_lots: float = 0
+    users: list[ClusterUser] = []

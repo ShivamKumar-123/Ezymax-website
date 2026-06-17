@@ -42,6 +42,7 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "users.ban", "users.block_trading", "users.kill_switch",
         "analytics.view", "exposure.view",
         "audit_logs.view",
+        "rms.view", "rms.manage",
     },
     "marketing": {
         "banners.view", "banners.create", "banners.update", "banners.delete",
