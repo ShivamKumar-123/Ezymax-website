@@ -44,9 +44,27 @@ function MarginRingInner({ marginLevel, size = 64, className }: Props) {
   const color = colorFor(marginLevel);
 
   const labelPct = Number.isFinite(marginLevel) ? marginLevel : 0;
-  const labelText = labelPct >= 1000
-    ? `${(labelPct / 1000).toFixed(1)}k%`
-    : `${labelPct.toFixed(0)}%`;
+  // Compact format so the value always fits inside the ring:
+  //   ≥ 10,000% → "22k%" (no decimal), 1,000–9,999% → "1.5k%", else "850%".
+  const labelText =
+    labelPct >= 10000
+      ? `${Math.round(labelPct / 1000)}k%`
+      : labelPct >= 1000
+        ? `${(labelPct / 1000).toFixed(1)}k%`
+        : `${labelPct.toFixed(0)}%`;
+
+  // Inner usable width (ring diameter minus the stroke on both sides).
+  // Scale the value font down for longer strings so it never collides
+  // with the ring — monospace glyphs are ~0.6em wide.
+  const innerWidth = size - stroke * 2;
+  const valueFont = Math.max(
+    9,
+    Math.min(
+      Math.round(size * 0.24),
+      Math.floor((innerWidth * 0.88) / Math.max(3, labelText.length) / 0.6),
+    ),
+  );
+  const labelFont = Math.max(6, Math.round(size * 0.125));
 
   return (
     <div
@@ -76,16 +94,16 @@ function MarginRingInner({ marginLevel, size = 64, className }: Props) {
           style={{ transition: 'stroke-dashoffset 600ms ease, stroke 300ms ease' }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-1">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span
-          className="uppercase tracking-wider text-text-tertiary leading-none font-semibold"
-          style={{ fontSize: Math.max(7, Math.round(size * 0.14)) }}
+          className="uppercase tracking-wide text-text-tertiary leading-none font-semibold"
+          style={{ fontSize: labelFont }}
         >
           Margin
         </span>
         <span
-          className="font-extrabold font-mono tabular-nums leading-none mt-1"
-          style={{ fontSize: Math.max(10, Math.round(size * 0.22)), color }}
+          className="font-extrabold font-mono tabular-nums leading-none mt-0.5"
+          style={{ fontSize: valueFont, color }}
         >
           {labelText}
         </span>

@@ -338,6 +338,19 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const [bulkConfirm, setBulkConfirm] = useState<BulkCloseType | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const bulkMenuRef = useRef<HTMLDivElement>(null);
+  // The "Close All" dropdown lives inside an overflow-x-auto toolbar row,
+  // which also clips vertically — an inline absolute menu would be hidden.
+  // So we portal the menu to <body> and position it from the trigger rect.
+  const bulkTriggerRef = useRef<HTMLButtonElement>(null);
+  const bulkMenuPanelRef = useRef<HTMLDivElement>(null);
+  const [bulkMenuPos, setBulkMenuPos] = useState<{ top: number; right: number } | null>(null);
+
+  const openBulkMenu = () => {
+    if (bulkMenuOpen) { setBulkMenuOpen(false); return; }
+    const r = bulkTriggerRef.current?.getBoundingClientRect();
+    if (r) setBulkMenuPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+    setBulkMenuOpen(true);
+  };
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
@@ -356,9 +369,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   useEffect(() => {
     if (!bulkMenuOpen) return;
     const handler = (e: MouseEvent) => {
-      if (bulkMenuRef.current && !bulkMenuRef.current.contains(e.target as Node)) {
-        setBulkMenuOpen(false);
-      }
+      const t = e.target as Node;
+      const inTrigger = bulkMenuRef.current?.contains(t);
+      const inMenu = bulkMenuPanelRef.current?.contains(t);
+      if (!inTrigger && !inMenu) setBulkMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -863,8 +877,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     {positions.length > 0 && (
                       <div className="relative" ref={bulkMenuRef}>
                         <button
+                          ref={bulkTriggerRef}
                           type="button"
-                          onClick={() => setBulkMenuOpen((o) => !o)}
+                          onClick={openBulkMenu}
                           className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-primary hover:border-border-secondary transition-colors"
                         >
                           Close All
@@ -872,24 +887,22 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             className={clsx('w-3.5 h-3.5 transition-transform shrink-0', bulkMenuOpen && 'rotate-180')}
                           />
                         </button>
-                        {bulkMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-border-primary bg-card shadow-xl z-[100]">
+                        {bulkMenuOpen && bulkMenuPos && typeof document !== 'undefined' && createPortal(
+                          <div
+                            ref={bulkMenuPanelRef}
+                            className="fixed min-w-[190px] py-1 rounded-lg border border-border-primary bg-card shadow-xl"
+                            style={{ top: bulkMenuPos.top, right: bulkMenuPos.right, zIndex: 2147483646 }}
+                          >
                             <button
                               type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('all');
-                              }}
+                              onClick={() => { setBulkMenuOpen(false); setBulkConfirm('all'); }}
                               className="w-full text-left px-3 py-2 text-xs text-text-primary hover:bg-bg-hover"
                             >
                               Close all ({positions.length})
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('profit');
-                              }}
+                              onClick={() => { setBulkMenuOpen(false); setBulkConfirm('profit'); }}
                               disabled={profitPositions.length === 0}
                               className="w-full text-left px-3 py-2 text-xs text-accent hover:bg-bg-hover disabled:opacity-40"
                             >
@@ -897,16 +910,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('loss');
-                              }}
+                              onClick={() => { setBulkMenuOpen(false); setBulkConfirm('loss'); }}
                               disabled={lossPositions.length === 0}
                               className="w-full text-left px-3 py-2 text-xs text-[#ff5252] hover:bg-bg-hover disabled:opacity-40"
                             >
                               Close losing ({lossPositions.length})
                             </button>
-                          </div>
+                          </div>,
+                          document.body,
                         )}
                       </div>
                     )}

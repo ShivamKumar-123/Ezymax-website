@@ -86,8 +86,13 @@ export default function OrderPanel() {
 
   const marginRequired = useMemo(() => {
     if (!execPrice || !activeAccount) return 0;
-    return (lotsNum * contractSize * execPrice) / activeAccount.leverage;
-  }, [execPrice, lotsNum, activeAccount, contractSize]);
+    // Fully Funded = no leverage: margin equals full notional (÷1), matching
+    // the backend (trading_service forces effective_leverage=1). Without this
+    // the preview showed the leveraged margin while the server charged the
+    // full notional — the toggle looked like it did nothing.
+    const lev = fullyFunded ? 1 : (activeAccount.leverage || 1);
+    return (lotsNum * contractSize * execPrice) / lev;
+  }, [execPrice, lotsNum, activeAccount, contractSize, fullyFunded]);
 
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
@@ -573,6 +578,7 @@ export default function OrderPanel() {
             {activeAccount && (
               <LeveragePicker
                 account={activeAccount}
+                fullyFunded={fullyFunded}
                 onChanged={() => { void refreshAccount(); }}
               />
             )}
@@ -918,9 +924,11 @@ export default function OrderPanel() {
 function LeveragePicker({
   account,
   onChanged,
+  fullyFunded = false,
 }: {
   account: TradingAccount;
   onChanged: () => void;
+  fullyFunded?: boolean;
 }) {
   const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
   const [open, setOpen] = useState(false);
@@ -964,13 +972,13 @@ function LeveragePicker({
     <div className="ml-auto relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((p) => !p)}
-        disabled={saving}
+        onClick={() => { if (!fullyFunded) setOpen((p) => !p); }}
+        disabled={saving || fullyFunded}
         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50"
-        title={`Max 1:${maxLev} — click to change`}
+        title={fullyFunded ? 'Fully Funded — no leverage (1:1)' : `Max 1:${maxLev} — click to change`}
       >
-        1:{account.leverage}
-        <ChevronDown size={10} />
+        1:{fullyFunded ? 1 : account.leverage}
+        {!fullyFunded && <ChevronDown size={10} />}
       </button>
       {open && (
         <div
