@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import PriceTicker from './PriceTicker';
 
 export default function BuySellSplit({
   bid,
@@ -20,7 +21,7 @@ export default function BuySellSplit({
           accessibilityState={{ selected: side === 'sell' }}
         >
           <Text style={styles.lab}>Sell</Text>
-          <Text style={styles.price}>{formatPrice(bid)}</Text>
+          <PriceTicker value={bid} format={formatPrice} fontSize={sizes.h3} fontWeight={weights.heavy} fontFamily={fontFamily} upColor="#FFFFFF" downColor="#FFFFFF" neutralColor="#FFFFFF" style={{ marginTop: 1 }} />
         </Pressable>
         <View style={styles.chip}>
           <Text style={styles.chipTxt}>{spreadPoints != null ? spreadPoints : '—'}</Text>
@@ -32,7 +33,7 @@ export default function BuySellSplit({
           accessibilityState={{ selected: side === 'buy' }}
         >
           <Text style={styles.lab}>Buy</Text>
-          <Text style={styles.price}>{formatPrice(ask)}</Text>
+          <PriceTicker value={ask} format={formatPrice} fontSize={sizes.h3} fontWeight={weights.heavy} fontFamily={fontFamily} upColor="#FFFFFF" downColor="#FFFFFF" neutralColor="#FFFFFF" style={{ marginTop: 1 }} />
         </Pressable>
       </View>
       <View style={styles.changeRow}>

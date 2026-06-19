@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SegmentedTabs, Card, Sheet, PillButton, showToast, showAppAlert } from '../../components/vantage';
+import { SegmentedTabs, Card, Sheet, PillButton, PriceTicker, showToast, showAppAlert } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
 import { isSoftTradeError, handleTradeError } from '../../utils/tradeErrors';
@@ -376,9 +376,23 @@ function PositionRow({ position, onClose, onSetSlTp }) {
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={styles.plLabel}>P&L</Text>
-          <Text style={[styles.pl, { color: plPositive ? vantage.up : vantage.down }]}>
-            {pl != null ? `${plPositive ? '+' : ''}${Number(pl).toFixed(2)}` : '—'} USD
-          </Text>
+          {pl != null ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <PriceTicker
+                value={Number(pl)}
+                format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+                fontSize={sizes.h3}
+                fontWeight={weights.heavy}
+                fontFamily={fontFamily}
+                upColor={vantage.up}
+                downColor={vantage.down}
+                neutralColor={plPositive ? vantage.up : vantage.down}
+              />
+              <Text style={[styles.pl, { color: plPositive ? vantage.up : vantage.down }]}> USD</Text>
+            </View>
+          ) : (
+            <Text style={[styles.pl, { color: vantage.textMuted }]}>— USD</Text>
+          )}
         </View>
       </View>
 
