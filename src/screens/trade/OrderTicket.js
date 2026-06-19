@@ -183,7 +183,6 @@ export default function OrderTicket({ accountId, account, accountSummary, symbol
         <Text style={styles.lotsTxt}>Lots</Text>
       </View>
 
-      <DiscreteSlider value={LOT_PRESETS.includes(volume) ? volume : null} onChange={setVolume} stops={LOT_PRESETS} />
       <Text style={styles.maxOpen}>Max open {fmt(MAX_LOTS)} Lots</Text>
 
       <CheckboxRow label="TP/SL" checked={tpSlEnabled} onChange={setTpSlEnabled} />

@@ -45,7 +45,9 @@ export default function CategoryTabs({ value, onChange, options }) {
               style={[
                 styles.label,
                 {
-                  color: active ? '#FFFFFF' : vantage.textSecondary,
+                  // Selected chip: white in dark theme; black in light theme so
+                  // it stays readable (the bright pill can wash out white text).
+                  color: active ? (vantage.isDark ? '#FFFFFF' : '#000000') : vantage.textSecondary,
                   fontWeight: active ? weights.bold : weights.medium,
                 },
               ]}
