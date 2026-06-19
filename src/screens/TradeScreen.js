@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ScrollView, RefreshControl, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 
@@ -27,6 +27,7 @@ export default function TradeScreen() {
   const [positions, setPositions] = useState([]);
   const [orders, setOrders] = useState([]);
   const [history, setHistory] = useState([]);
+  const prevPosCountRef = useRef(0);   // detect when an open position closes
   const [refreshing, setRefreshing] = useState(false);
 
   const accountId = selectedAccount?.id || selectedAccount?._id;
@@ -64,6 +65,7 @@ export default function TradeScreen() {
     if (summary.status === 'fulfilled') setAccountSummary(summary.value);
     if (pos.status === 'fulfilled') {
       const list = Array.isArray(pos.value) ? pos.value : (Array.isArray(pos.value?.items) ? pos.value.items : []);
+      prevPosCountRef.current = list.length;
       setPositions(list);
     }
     if (ords.status === 'fulfilled') {
@@ -98,9 +100,14 @@ export default function TradeScreen() {
     if (summary.status === 'fulfilled') setAccountSummary(summary.value);
     if (pos.status === 'fulfilled') {
       const list = Array.isArray(pos.value) ? pos.value : (Array.isArray(pos.value?.items) ? pos.value.items : []);
+      // A drop in open positions means one closed (e.g. SL/TP hit) — pull
+      // orders + history right away so the closed trade shows immediately
+      // instead of waiting for the next focus/full refresh.
+      if (list.length < prevPosCountRef.current) refreshAccountData();
+      prevPosCountRef.current = list.length;
       setPositions(list);
     }
-  }, [accountId, selectedAccount]);
+  }, [accountId, selectedAccount, refreshAccountData]);
 
   useEffect(() => { loadAccounts(); }, [loadAccounts]);
   useEffect(() => { refreshAccountData(); }, [refreshAccountData]);
@@ -118,10 +125,11 @@ export default function TradeScreen() {
     const id = setInterval(() => {
       refreshTick();
       if (n % 2 === 1) refreshLive();
+      if (n % 6 === 5) refreshAccountData();   // periodic full refresh (orders + closed history)
       n += 1;
     }, 1000);
     return () => clearInterval(id);
-  }, [refreshTick, refreshLive]));
+  }, [refreshTick, refreshLive, refreshAccountData]));
 
   useEffect(() => {
     if (typeof webSocketService?.onPriceUpdate !== 'function') return;

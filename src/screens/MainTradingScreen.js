@@ -980,6 +980,7 @@ const TradingProvider = ({ children, navigation, route }) => {
   const [selectedChallengeAccount, setSelectedChallengeAccount] = useState(null);
   const [isChallengeMode, setIsChallengeMode] = useState(false);
   const [openTrades, setOpenTrades] = useState([]);
+  const prevOpenCountRef = useRef(0);   // detect when an open trade closes (SL/TP)
   const [pendingOrders, setPendingOrders] = useState([]);
   const [tradeHistory, setTradeHistory] = useState([]);
   const [instruments, setInstruments] = useState(defaultInstruments);
@@ -1201,13 +1202,14 @@ const TradingProvider = ({ children, navigation, route }) => {
         }
       }, 2000);
       
-      // Refresh history less frequently (every 10 seconds)
+      // Refresh history every 4s as a fallback (instant refresh on close is
+      // handled by the open-trade-count drop in fetchOpenTrades).
       const historyInterval = setInterval(() => {
         if (user) { // Double-check user is still authenticated
           fetchTradeHistory();
         }
-      }, 10000);
-      
+      }, 4000);
+
       // Refresh challenge account stats every 5 seconds (for DD, profit, balance)
       const challengeStatsInterval = setInterval(() => {
         if (isChallengeMode) {
@@ -1482,6 +1484,12 @@ const TradingProvider = ({ children, navigation, route }) => {
         swap: t.swap || 0,
         profit: t.profit || 0,
       }));
+      // A drop in open trades means one closed (e.g. SL/TP hit) — refresh
+      // history right away so the closed trade shows without the polling lag.
+      if (mappedTrades.length < prevOpenCountRef.current) {
+        try { fetchTradeHistory(); } catch (_) {}
+      }
+      prevOpenCountRef.current = mappedTrades.length;
       setOpenTrades(mappedTrades);
     } catch (e) {
       console.error('Error fetching open trades:', e);
