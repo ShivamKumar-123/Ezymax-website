@@ -10,6 +10,7 @@ import {
   showToast,
 } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import { handleTradeError } from '../../utils/tradeErrors';
 import ApiService from '../../services/ApiService';
 
 const ORDER_TYPES = ['market', 'limit', 'stop'];
@@ -87,7 +88,8 @@ export default function OrderTicket({ accountId, account, accountSummary, symbol
       showToast({ kind: 'success', message: `${side.toUpperCase()} ${volume} ${symbol} placed` });
       onPlaced?.();
     } catch (e) {
-      showToast({ kind: 'error', message: e?.message || 'Order failed' });
+      // Market-closed → calm info popup instead of a red error.
+      handleTradeError(e?.message, 'Order failed');
     } finally {
       setSubmitting(false);
     }

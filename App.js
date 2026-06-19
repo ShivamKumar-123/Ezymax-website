@@ -7,13 +7,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, LogBox, AppState } from 'react-native';
 import * as Updates from 'expo-updates';
+import * as SecureStore from 'expo-secure-store';
 
+import { SKIP_BOOT_LOADER_KEY } from './src/theme/themeRuntime';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { SettingsProvider } from './src/context/SettingsContext';
 import { I18nProvider } from './src/i18n';
 import RootNavigator from './src/navigation/RootNavigator';
-import { ToastHost } from './src/components/vantage';
+import { ToastHost, AppAlertHost } from './src/components/vantage';
 import AppLoader from './src/components/vantage/AppLoader';
 import { vantage } from './src/theme/vantageTheme';
 
@@ -58,11 +60,25 @@ class ErrorBoundary extends Component {
 
 function AppShell() {
   // Hold the branded GIF loader for a minimum time so it's actually visible
-  // (provider loading alone can finish in a flash).
+  // (provider loading alone can finish in a flash). But a theme switch reloads
+  // the bundle — in that case SKIP the loader so it only shows on a real cold
+  // start (theme change should feel like a quick refresh, not a fresh launch).
   const [booted, setBooted] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setBooted(true), 2500);
-    return () => clearTimeout(t);
+    let mounted = true;
+    let timer;
+    (async () => {
+      let skip = false;
+      try { skip = (await SecureStore.getItemAsync(SKIP_BOOT_LOADER_KEY)) === '1'; } catch (_) {}
+      if (!mounted) return;
+      if (skip) {
+        SecureStore.deleteItemAsync(SKIP_BOOT_LOADER_KEY).catch(() => {});
+        setBooted(true);
+      } else {
+        timer = setTimeout(() => { if (mounted) setBooted(true); }, 2500);
+      }
+    })();
+    return () => { mounted = false; if (timer) clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -91,6 +107,7 @@ function AppShell() {
       <StatusBar style={vantage.isDark ? 'light' : 'dark'} />
       <RootNavigator />
       <ToastHost />
+      <AppAlertHost />
     </>
   );
 }

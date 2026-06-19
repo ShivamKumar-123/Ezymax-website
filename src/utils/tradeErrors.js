@@ -1,0 +1,48 @@
+import { showToast } from '../components/vantage/Toast';
+import { showAppAlert } from '../components/vantage/AppAlert';
+
+// Trade actions occasionally fail for reasons that aren't really user-facing
+// "errors": a MAM/mirrored position is closed by the master (not the follower),
+// and a closed market simply can't be traded right now. These should appear as
+// a calm informational POPUP — never a red error.
+
+export function isSoftTradeError(msg) {
+  const m = String(msg || '').toLowerCase();
+  return (
+    m.includes('mam') ||
+    m.includes('mirror') ||
+    m.includes('master can close') ||
+    m.includes('no price') ||
+    m.includes('market is closed') ||
+    m.includes('market closed')
+  );
+}
+
+// Returns { title, message } for the soft cases above, or null otherwise.
+function softInfo(msg) {
+  const m = String(msg || '').toLowerCase();
+  if (m.includes('mam') || m.includes('mirror') || m.includes('master can close')) {
+    return {
+      title: 'Managed (MAM) trade',
+      message: 'This is a MAM trade. Only the master can close it — it will close automatically when the master closes their position.',
+    };
+  }
+  if (m.includes('no price') || m.includes('market is closed') || m.includes('market closed')) {
+    return {
+      title: 'Market closed',
+      message: 'The market is closed right now. Please try again once it reopens.',
+    };
+  }
+  return null;
+}
+
+// Single-action failure handler. Soft cases (MAM / market closed) show a clean
+// info popup; any genuine error falls back to the red error toast.
+export function handleTradeError(msg, fallback = 'Action failed') {
+  const soft = softInfo(msg);
+  if (soft) {
+    showAppAlert({ title: soft.title, message: soft.message });
+    return;
+  }
+  showToast({ kind: 'error', message: msg || fallback });
+}

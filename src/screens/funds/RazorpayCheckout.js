@@ -2,9 +2,11 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 import { Screen, IconButton, showToast } from '../../components/vantage';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
 
@@ -48,6 +50,7 @@ function buildHtml({ keyId, orderId, amountPaise, description }) {
 export default function RazorpayCheckout() {
   const nav = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   const { keyId, orderId, amountInr, depositId } = route.params || {};
   const [verifying, setVerifying] = useState(false);
 
@@ -101,7 +104,7 @@ export default function RazorpayCheckout() {
       ) : (
         <WebView
           source={{ html, baseUrl: 'https://checkout.razorpay.com' }}
-          style={styles.web}
+          style={[styles.web, { marginBottom: BOTTOM_NAV_PILL_HEIGHT + insets.bottom }]}
           javaScriptEnabled
           domStorageEnabled
           originWhitelist={['*']}

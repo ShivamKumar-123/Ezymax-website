@@ -14,6 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
 import { useTheme } from '../context/ThemeContext';
+import { useAccount } from '../context/AccountContext';
+import AccountSwitcher from './trade/AccountSwitcher';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 
 const TIMEFRAMES = [
   { label: '1M', period: '1m' },
@@ -82,6 +85,11 @@ function EquityMiniChart({ curve, colors }) {
 export default function PortfolioScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  // Account selector — pick a specific account (incl. PAMM/MAM/managed) to see
+  // its trades/equity/commission, like the website's per-account portfolio.
+  const { accounts, selectedAccount, selectAccount } = useAccount();
+  const acctId = selectedAccount?.id || selectedAccount?._id || null;
+  const [acctSheet, setAcctSheet] = useState(false);
   const [tab, setTab] = useState('overview');
   const [tf, setTf] = useState('1M');
   const [summary, setSummary] = useState(null);
@@ -103,9 +111,10 @@ export default function PortfolioScreen({ navigation }) {
       setError(null);
       if (firstLoadRef.current) setLoading(true);
       const h = await authHeaders();
+      const aq = acctId ? `&account_id=${encodeURIComponent(acctId)}` : '';
       const [sRes, pRes] = await Promise.all([
-        fetch(`${API_URL}/portfolio/summary`, { headers: h }),
-        fetch(`${API_URL}/portfolio/performance?period=${encodeURIComponent(period)}`, { headers: h }),
+        fetch(`${API_URL}/portfolio/summary${acctId ? `?account_id=${encodeURIComponent(acctId)}` : ''}`, { headers: h }),
+        fetch(`${API_URL}/portfolio/performance?period=${encodeURIComponent(period)}${aq}`, { headers: h }),
       ]);
       if (!sRes.ok) {
         const err = await sRes.json().catch(() => ({}));
@@ -125,14 +134,14 @@ export default function PortfolioScreen({ navigation }) {
       setLoading(false);
       firstLoadRef.current = false;
     }
-  }, [period]);
+  }, [period, acctId]);
 
   const loadTrades = useCallback(async (page) => {
     setHistLoading(true);
     try {
       const h = await authHeaders();
       const res = await fetch(
-        `${API_URL}/portfolio/trades?page=${page}&per_page=40`,
+        `${API_URL}/portfolio/trades?page=${page}&per_page=40${acctId ? `&account_id=${encodeURIComponent(acctId)}` : ''}`,
         { headers: h }
       );
       const data = await res.json().catch(() => ({}));
@@ -146,7 +155,7 @@ export default function PortfolioScreen({ navigation }) {
     } finally {
       setHistLoading(false);
     }
-  }, []);
+  }, [acctId]);
 
   useEffect(() => {
     loadMain();
@@ -236,12 +245,17 @@ export default function PortfolioScreen({ navigation }) {
           <Ionicons name="chevron-back" size={26} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Portfolio</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={() => setAcctSheet(true)} style={[styles.acctChip, { backgroundColor: colors.bgCard, borderColor: colors.border }]} hitSlop={8}>
+          <Text style={[styles.acctChipTxt, { color: colors.textPrimary }]} numberOfLines={1}>
+            {selectedAccount ? `${selectedAccount.is_demo ? 'Demo' : 'Live'} ${selectedAccount.account_number || ''}`.trim() : 'Account'}
+          </Text>
+          <Ionicons name="chevron-down" size={13} color={colors.textMuted} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + BOTTOM_NAV_PILL_HEIGHT + 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
@@ -499,6 +513,14 @@ export default function PortfolioScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+
+      <AccountSwitcher
+        visible={acctSheet}
+        onClose={() => setAcctSheet(false)}
+        accounts={accounts}
+        selectedId={selectedAccount?.id || selectedAccount?._id}
+        onSelect={selectAccount}
+      />
     </View>
   );
 }
@@ -515,6 +537,8 @@ const styles = StyleSheet.create({
   },
   backHit: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
+  acctChip: { flexDirection: 'row', alignItems: 'center', gap: 3, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, maxWidth: 130 },
+  acctChipTxt: { fontSize: 12, fontWeight: '600', flexShrink: 1 },
   scroll: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, fontSize: 14 },

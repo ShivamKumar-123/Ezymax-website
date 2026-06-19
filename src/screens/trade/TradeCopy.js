@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
+import { AuthContext } from '../../context/AuthContext';
 import { Card, SegmentedTabs, CategoryTabs, SymbolIcon } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
@@ -64,6 +65,14 @@ export default function TradeCopy() {
     [copiedIds]
   );
 
+  // Your own master account — never show a Copy button for it (show "You").
+  const { user } = useContext(AuthContext) || {};
+  const myId = user?.id ? String(user.id) : null;
+  const isSelf = useCallback(
+    (p) => !!myId && [p?.user_id, p?.master_user_id, p?.owner_user_id, p?.provider_user_id].map(copyKey).includes(myId),
+    [myId]
+  );
+
   const top1 = providers[0];
   const rest = providers.slice(1);
 
@@ -98,6 +107,7 @@ export default function TradeCopy() {
               <StrategyDeck
                 items={providers.slice(0, 10)}
                 isFollowing={isFollowing}
+                isSelf={isSelf}
                 onOpen={(p) => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
               />
             </View>
@@ -212,7 +222,7 @@ function StrategyMiniRow({ item, following }) {
 const SCREEN_W = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;
 
-function DeckCard({ item, following, onOpen }) {
+function DeckCard({ item, following, self, onOpen }) {
   const ret = Number(item.total_return_pct ?? item.return_30d ?? item.roi_30d ?? 0);
   const positive = ret >= 0;
   const aum = item.total_aum ?? item.aum ?? item.aum_usd ?? null;
@@ -229,14 +239,20 @@ function DeckCard({ item, following, onOpen }) {
           </View>
           <View style={deckStyles.badge}><Text style={deckStyles.badgeTxt}>{displayCategory}</Text></View>
         </View>
-        <Pressable
-          onPress={() => onOpen(item)}
-          style={deckStyles.copyBtn}
-          accessibilityRole="button"
-          accessibilityLabel={`Copy ${displayName}`}
-        >
-          <Text style={deckStyles.copyTxt}>{following ? 'Copied' : 'Copy'}</Text>
-        </Pressable>
+        {self ? (
+          <View style={deckStyles.youBadge}>
+            <Text style={deckStyles.youTxt}>You</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => onOpen(item)}
+            style={deckStyles.copyBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`Copy ${displayName}`}
+          >
+            <Text style={deckStyles.copyTxt}>{following ? 'Copied' : 'Copy'}</Text>
+          </Pressable>
+        )}
       </View>
       <View style={deckStyles.statsRow}>
         <View style={{ flex: 1 }}>
@@ -256,7 +272,7 @@ function DeckCard({ item, following, onOpen }) {
   );
 }
 
-function StrategyDeck({ items, isFollowing, onOpen }) {
+function StrategyDeck({ items, isFollowing, isSelf, onOpen }) {
   const [index, setIndex] = useState(0);
   const pan = useRef(new Animated.ValueXY()).current;
   const n = items.length;
@@ -298,6 +314,7 @@ function StrategyDeck({ items, isFollowing, onOpen }) {
   for (let k = visible - 1; k >= 0; k--) {
     const item = items[(index + k) % n];
     const following = isFollowing(item);
+    const self = isSelf ? isSelf(item) : false;
     if (k === 0) {
       layers.push(
         <Animated.View
@@ -305,7 +322,7 @@ function StrategyDeck({ items, isFollowing, onOpen }) {
           style={[deckStyles.layer, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}
           {...panResponder.panHandlers}
         >
-          <DeckCard item={item} following={following} onOpen={onOpen} />
+          <DeckCard item={item} following={following} self={self} onOpen={onOpen} />
         </Animated.View>
       );
     } else {
@@ -315,7 +332,7 @@ function StrategyDeck({ items, isFollowing, onOpen }) {
           pointerEvents="none"
           style={[deckStyles.layer, { transform: [{ translateY: -k * 9 }, { scale: 1 - k * 0.05 }], opacity: 1 - k * 0.22 }]}
         >
-          <DeckCard item={item} following={following} onOpen={onOpen} />
+          <DeckCard item={item} following={following} self={self} onOpen={onOpen} />
         </Animated.View>
       );
     }
@@ -388,6 +405,8 @@ const deckStyles = StyleSheet.create({
   badgeTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.micro, fontWeight: weights.medium },
   copyBtn: { backgroundColor: vantage.textPrimary, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill },
   copyTxt: { color: vantage.textInverse, fontFamily, fontSize: sizes.label, fontWeight: weights.heavy },
+  youBadge: { backgroundColor: vantage.accentMuted, borderWidth: 1, borderColor: vantage.accent, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.pill },
+  youTxt: { color: vantage.accent, fontFamily, fontSize: sizes.label, fontWeight: weights.heavy },
   statsRow: { flexDirection: 'row' },
   lab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
   val: { fontFamily, fontSize: sizes.h1, fontWeight: weights.heavy, marginTop: 2 },

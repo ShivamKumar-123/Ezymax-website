@@ -36,11 +36,12 @@ export default function FundsScreen() {
     setRefreshing(false);
   }, [fetchAll]);
 
-  const total = summary?.total_balance ?? summary?.balance ?? summary?.total_equity ?? null;
-  // Backend `/wallet/summary` doesn't currently split main vs trading — hide the split unless those fields exist.
-  const main = summary?.main_balance ?? summary?.main_wallet ?? summary?.main_wallet_balance ?? null;
-  const trading = summary?.trading_balance ?? summary?.total_equity ?? null;
-  const showSplit = main != null && trading != null && main !== trading;
+  // Main account balance (the wallet) and the combined balance of all trading
+  // accounts. "Total Balance" shows the trading-accounts total.
+  const main = summary?.main_wallet_balance ?? summary?.main_balance ?? summary?.main_wallet ?? null;
+  const trading = summary?.total_live_balance ?? summary?.trading_balance ?? summary?.total_equity ?? null;
+  const total = trading ?? summary?.total_balance ?? summary?.balance ?? null;
+  const showSplit = main != null || trading != null;
 
   return (
     <Screen edges={['top']} glow>
@@ -60,25 +61,16 @@ export default function FundsScreen() {
         </View>
 
         <View style={styles.balanceWrap}>
-          <BalanceBlock
-            label="Total Balance"
-            amount={typeof total === 'number' ? total : null}
-            currency="USD"
-            hidden={hidden}
-            onToggleHide={toggle}
-          />
-          {showSplit ? (
-            <View style={styles.splitRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.splitLab}>Main Wallet</Text>
-                <Text style={styles.splitVal}>{hidden ? '••••' : Number(main).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.splitLab}>Trading</Text>
-                <Text style={styles.splitVal}>{hidden ? '••••' : Number(trading).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-              </View>
+          <View style={styles.splitRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.splitLab}>Main Wallet</Text>
+              <Text style={styles.splitVal}>{hidden ? '••••' : Number(main || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
             </View>
-          ) : null}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.splitLab}>Trading Accounts</Text>
+              <Text style={styles.splitVal}>{hidden ? '••••' : Number(trading || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.tilesRow}>

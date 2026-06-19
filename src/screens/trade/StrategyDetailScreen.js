@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { ScrollView, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
+import { AuthContext } from '../../context/AuthContext';
 import { Screen, Card, PillButton, SymbolIcon, IconButton, StatCard, showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
@@ -15,12 +16,15 @@ export default function StrategyDetailScreen() {
 
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useContext(AuthContext) || {};
+  const myId = user?.id ? String(user.id) : null;
 
   const [accounts, setAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [amount, setAmount] = useState('');
   const [showCopy, setShowCopy] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [activity, setActivity] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +50,17 @@ export default function StrategyDetailScreen() {
     })();
     return () => { cancelled = true; };
   }, [providerId]);
+
+  // When already copying, pull the master's positions + trade history (since
+  // you started copying) to show what you're mirroring.
+  useEffect(() => {
+    if (!provider?.is_copying) { setActivity(null); return; }
+    let cancelled = false;
+    ApiService.getProviderActivity(providerId)
+      .then((res) => { if (!cancelled) setActivity(res); })
+      .catch(() => { if (!cancelled) setActivity(null); });
+    return () => { cancelled = true; };
+  }, [provider?.is_copying, providerId]);
 
   // Live accounts the copy can be funded from (demo can't host copies).
   useEffect(() => {
@@ -106,6 +121,10 @@ export default function StrategyDetailScreen() {
   const followers = provider.followers_count ?? provider.follower_count ?? null;
   const winRate = provider.win_rate ?? null;
   const drawdown = provider.max_drawdown_pct ?? provider.max_drawdown ?? provider.drawdown ?? null;
+  // Your own master account — hide Copy, show "You" (backend is_self, or match
+  // the master's owner user_id against the logged-in user as a fallback).
+  const isSelf = !!(provider.is_self || (myId && String(provider.user_id || provider.master_user_id || '') === myId));
+  const isCopying = !!provider.is_copying;     // already a follower → no re-copy
   const displayName = provider.provider_name || provider.name || 'Strategy';
   const displayCategory = provider.strategy_info?.category || provider.category || provider.description || null;
 
@@ -136,7 +155,23 @@ export default function StrategyDetailScreen() {
           <Row label="Allocations" value={provider.allocation_count != null ? String(provider.allocation_count) : '—'} last />
         </Card>
 
-        {!showCopy ? (
+        {isSelf ? (
+          <Card style={{ marginTop: space.xl }}>
+            <View style={styles.selfRow}>
+              <View style={styles.selfBadge}><Text style={styles.selfBadgeTxt}>You</Text></View>
+              <Text style={styles.selfTxt}>This is your own master account — you can’t copy yourself.</Text>
+            </View>
+          </Card>
+        ) : isCopying ? (
+          <Card style={{ marginTop: space.xl }}>
+            <View style={styles.selfRow}>
+              <View style={[styles.selfBadge, { backgroundColor: vantage.upMuted, borderColor: vantage.up }]}>
+                <Text style={[styles.selfBadgeTxt, { color: vantage.up }]}>Copying</Text>
+              </View>
+              <Text style={styles.selfTxt}>You’re already copying this master — their trades are mirrored to your account (below). A master can only be copied once.</Text>
+            </View>
+          </Card>
+        ) : !showCopy ? (
           <PillButton
             label={provider.is_full ? 'Strategy is full' : 'Copy Strategy'}
             variant="primary"
@@ -198,8 +233,50 @@ export default function StrategyDetailScreen() {
             </Pressable>
           </Card>
         )}
+
+        {isCopying ? <ActivitySection activity={activity} /> : null}
       </ScrollView>
     </Screen>
+  );
+}
+
+function ActivitySection({ activity }) {
+  const open = activity?.open_positions || [];
+  const history = activity?.history || [];
+  return (
+    <View style={{ marginTop: space.xl }}>
+      <Text style={styles.actHeader}>Open positions ({open.length})</Text>
+      <Card padding={0} style={{ marginBottom: space.lg }}>
+        {open.length === 0
+          ? <Text style={styles.actEmpty}>No open positions.</Text>
+          : open.map((p, i) => <ActRow key={p.id} t={p} open last={i === open.length - 1} />)}
+      </Card>
+      <Text style={styles.actHeader}>Trade history ({history.length})</Text>
+      <Card padding={0}>
+        {history.length === 0
+          ? <Text style={styles.actEmpty}>No trades since you started copying.</Text>
+          : history.map((t, i) => <ActRow key={t.id} t={t} last={i === history.length - 1} />)}
+      </Card>
+    </View>
+  );
+}
+
+function ActRow({ t, open, last }) {
+  const side = String(t.side || '').toLowerCase();
+  const pos = Number(t.profit ?? 0) >= 0;
+  return (
+    <View style={[styles.actRow, !last && styles.actBorder]}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.actSym} numberOfLines={1}>{t.symbol}</Text>
+        <Text style={[styles.actSide, { color: side === 'buy' ? vantage.up : vantage.down }]} numberOfLines={1}>
+          {side.toUpperCase()} {t.lots} @ {Number(t.open_price).toFixed(5)}
+          {!open && t.close_price != null ? ` → ${Number(t.close_price).toFixed(5)}` : ''}
+        </Text>
+      </View>
+      <Text style={[styles.actPnl, { color: pos ? vantage.up : vantage.down }]}>
+        {pos ? '+' : ''}{Number(t.profit ?? 0).toFixed(2)}
+      </Text>
+    </View>
   );
 }
 
@@ -215,7 +292,7 @@ function Row({ label, value, last }) {
   return (
     <View style={[rowStyles.row, !last && rowStyles.border]}>
       <Text style={rowStyles.label}>{label}</Text>
-      <Text style={rowStyles.value}>{value}</Text>
+      <Text style={rowStyles.value} numberOfLines={1} ellipsizeMode="middle">{value}</Text>
     </View>
   );
 }
@@ -229,6 +306,17 @@ const styles = StyleSheet.create({
   full: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, backgroundColor: vantage.bgPressed, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6 },
   statsRow: { flexDirection: 'row', gap: space.md, marginTop: space.lg, flexWrap: 'wrap' },
   copyTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.heavy, marginBottom: space.md },
+  selfRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  selfBadge: { backgroundColor: vantage.accentMuted, borderWidth: 1, borderColor: vantage.accent, paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: radius.pill },
+  selfBadgeTxt: { color: vantage.accent, fontFamily, fontSize: sizes.label, fontWeight: weights.heavy },
+  selfTxt: { flex: 1, color: vantage.textSecondary, fontFamily, fontSize: sizes.label, lineHeight: 18 },
+  actHeader: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: space.sm },
+  actEmpty: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, padding: space.lg, textAlign: 'center' },
+  actRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
+  actBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: vantage.border },
+  actSym: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+  actSide: { fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, marginTop: 2 },
+  actPnl: { fontFamily, fontSize: sizes.body, fontWeight: weights.heavy },
   copyLabel: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, marginTop: space.md, marginBottom: space.xs },
   copyInput: {
     backgroundColor: vantage.bgRaised, borderRadius: radius.md,
@@ -244,8 +332,8 @@ const styles = StyleSheet.create({
 });
 
 const rowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.sm },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space.sm, gap: space.md },
   border: { borderBottomColor: vantage.border, borderBottomWidth: StyleSheet.hairlineWidth },
-  label: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
-  value: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+  label: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, flexShrink: 0 },
+  value: { flex: 1, textAlign: 'right', color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 });

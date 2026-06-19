@@ -24,7 +24,7 @@ const Stack = createNativeStackNavigator();
 
 export default function HomeStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' }, animation: 'slide_from_right', animationDuration: 250 }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenuScreen} options={{ animation: 'slide_from_left' }} />
 

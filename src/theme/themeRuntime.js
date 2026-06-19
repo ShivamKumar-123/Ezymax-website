@@ -44,8 +44,13 @@ export async function reloadApp() {
   return false;
 }
 
+// Set just before a theme reload so the boot loader is skipped on the restart
+// — a theme switch should feel like a quick refresh, not a fresh cold start.
+export const SKIP_BOOT_LOADER_KEY = 'skipBootLoader';
+
 /** Persist + reload to switch theme app-wide. Returns whether a reload fired. */
 export async function setThemeAndReload(name) {
   await saveThemePreference(name);
+  try { await SecureStore.setItemAsync(SKIP_BOOT_LOADER_KEY, '1'); } catch (_) {}
   return reloadApp();
 }

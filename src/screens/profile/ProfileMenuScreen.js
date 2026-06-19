@@ -1,10 +1,14 @@
-import React, { useContext, useState, useCallback, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder } from 'react-native';
+import React, { useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
+import * as Updates from 'expo-updates';
+import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-const AVATAR_ANIM = require('../../../assets/avatar f04024.json');
+const APP_VERSION = Updates.runtimeVersion || '1.0.0';
+const AVATAR_KEY = 'profileAvatar';
 
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -12,10 +16,12 @@ import { Screen, Card, MenuRow, PillButton, showToast } from '../../components/v
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { fetchKycStatus, isKycApproved, kycStatusLabel } from '../../utils/kycGate';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import ApiService from '../../services/ApiService';
+import { LOTTIE_AVATARS, ICON_AVATARS, parseAvatar, renderAvatar } from '../../utils/avatarRender';
 
 export default function ProfileMenuScreen() {
   const nav = useNavigation();
-  const { user, logout } = useContext(AuthContext) || {};
+  const { user, logout, updateUser } = useContext(AuthContext) || {};
   const { isDark, setTheme } = useTheme();
 
   // The stored `user` object has no kyc_status — pull the live status from /profile.
@@ -32,6 +38,85 @@ export default function ProfileMenuScreen() {
 
   const kycApproved = isKycApproved(kycStatus);
 
+  // Profile avatar — user can set a photo or pick a preset; defaults to the
+  // existing animation.
+  const [avatar, setAvatar] = useState(() => parseAvatar(user?.avatar));
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  // Load from the user object first (synced from DB), then a local cache, then
+  // pull the latest from the server so it stays in sync across devices.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (user?.avatar) { setAvatar(parseAvatar(user.avatar)); }
+      else {
+        try { const raw = await SecureStore.getItemAsync(AVATAR_KEY); if (raw && !cancelled) setAvatar(parseAvatar(raw)); } catch {}
+      }
+      try {
+        const prof = await ApiService.getProfile();
+        if (!cancelled && prof && 'avatar' in prof) {
+          setAvatar(parseAvatar(prof.avatar));
+          if (user && prof.avatar !== user.avatar) updateUser?.({ ...user, avatar: prof.avatar });
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [user?.avatar]);
+
+  const saveAvatar = useCallback(async (av) => {
+    setAvatar(av);
+    setAvatarPickerOpen(false);
+    const raw = JSON.stringify(av);
+    try { await SecureStore.setItemAsync(AVATAR_KEY, raw); } catch {}
+    if (user) updateUser?.({ ...user, avatar: raw });       // reflect in home header instantly
+    try { await ApiService.updateProfile({ avatar: raw }); } // persist to DB
+    catch (e) { showToast({ kind: 'warn', message: 'Saved on device; server sync failed' }); }
+  }, [user, updateUser]);
+
+  const pickPhoto = useCallback(async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) { showToast({ kind: 'warn', message: 'Gallery permission chahiye' }); return; }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, aspect: [1, 1], quality: 0.4, base64: true,
+      });
+      if (!res.canceled && res.assets?.[0]) {
+        const a = res.assets[0];
+        // Store as a data-URI so it persists in the DB and syncs across devices.
+        const value = a.base64 ? `data:image/jpeg;base64,${a.base64}` : a.uri;
+        saveAvatar({ type: 'photo', value });
+      }
+    } catch (e) {
+      showToast({ kind: 'error', message: `Photo select fail: ${e?.message || ''}` });
+    }
+  }, [saveAvatar]);
+
+  // OTA / version update check via expo-updates.
+  const [checking, setChecking] = useState(false);
+  const checkForUpdate = useCallback(async () => {
+    if (checking) return;
+    if (__DEV__ || !Updates.isEnabled) {
+      showToast({ kind: 'info', message: 'Updates dev build me disabled hote hain — production build me chalega' });
+      return;
+    }
+    setChecking(true);
+    try {
+      const res = await Updates.checkForUpdateAsync();
+      if (res.isAvailable) {
+        showToast({ kind: 'info', message: 'Naya update mil gaya — download ho raha…' });
+        await Updates.fetchUpdateAsync();
+        showToast({ kind: 'success', message: 'Update ready — app restart ho raha…' });
+        setTimeout(() => { Updates.reloadAsync().catch(() => {}); }, 900);
+      } else {
+        showToast({ kind: 'success', message: 'Aap latest version par ho ✓' });
+      }
+    } catch (e) {
+      showToast({ kind: 'error', message: `Update check fail: ${e?.message || 'error'}` });
+    } finally {
+      setChecking(false);
+    }
+  }, [checking]);
+
   // Swipe left to close the drawer (it slides in from the left). Only claims
   // the gesture on a clear leftward horizontal drag so vertical scrolling is
   // unaffected.
@@ -45,12 +130,22 @@ export default function ProfileMenuScreen() {
   return (
     <Screen edges={['top']}>
       <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-      <ScrollView contentContainerStyle={{ paddingTop: space.md, paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}>
+        <View style={styles.backRow}>
+          <Pressable onPress={() => nav.goBack()} hitSlop={8} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back">
+            <Ionicons name="chevron-back" size={24} color={vantage.textPrimary} />
+          </Pressable>
+        </View>
         {/* Profile header */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <LottieView source={AVATAR_ANIM} autoPlay loop style={styles.avatarAnim} />
-          </View>
+          <Pressable onPress={() => setAvatarPickerOpen(true)} accessibilityRole="button" accessibilityLabel="Change profile picture">
+            <View style={styles.avatar}>
+              {renderAvatar(avatar, 56)}
+            </View>
+            <View style={styles.avatarEditBadge}>
+              <Ionicons name="camera" size={11} color="#fff" />
+            </View>
+          </Pressable>
           <View style={{ flex: 1, marginLeft: space.md }}>
             <Text style={styles.name}>{user?.full_name || user?.email || 'Account'}</Text>
             <Text style={styles.email}>{user?.email || ''}</Text>
@@ -124,6 +219,15 @@ export default function ProfileMenuScreen() {
           <MenuRow icon={<Ionicons name="book-outline" size={18} color={vantage.textPrimary} />} label="How to use" onPress={() => nav.navigate('Instructions')} />
         </Section>
 
+        <Section title="ABOUT">
+          <MenuRow
+            icon={<Ionicons name={checking ? 'sync' : 'cloud-download-outline'} size={18} color={vantage.accent} />}
+            label={checking ? 'Checking for update…' : 'Check for update'}
+            value={`v${APP_VERSION}`}
+            onPress={checkForUpdate}
+          />
+        </Section>
+
         <View style={{ padding: space.lg, marginTop: space.lg }}>
           <PillButton
             label="Log Out"
@@ -137,6 +241,38 @@ export default function ProfileMenuScreen() {
         </View>
       </ScrollView>
       </View>
+
+      <Modal visible={avatarPickerOpen} transparent animationType="fade" onRequestClose={() => setAvatarPickerOpen(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setAvatarPickerOpen(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Profile picture</Text>
+
+            <Pressable onPress={pickPhoto} style={styles.photoBtn}>
+              <Ionicons name="image-outline" size={18} color="#fff" />
+              <Text style={styles.photoBtnTxt}>Choose photo from gallery</Text>
+            </Pressable>
+
+            <Text style={styles.modalSub}>Or pick an avatar</Text>
+            <View style={styles.avatarGrid}>
+              {Object.keys(LOTTIE_AVATARS).map((k) => (
+                <Pressable key={k} onPress={() => saveAvatar({ type: 'lottie', value: k })} style={styles.gridItem}>
+                  <LottieView source={LOTTIE_AVATARS[k]} autoPlay loop style={{ width: 46, height: 46 }} />
+                </Pressable>
+              ))}
+              {ICON_AVATARS.map((ic) => (
+                <Pressable key={ic.key} onPress={() => saveAvatar({ type: 'icon', value: { name: ic.name, color: ic.color } })} style={[styles.gridItem, { backgroundColor: ic.color }]}>
+                  <Ionicons name={ic.name} size={26} color="#fff" />
+                </Pressable>
+              ))}
+            </View>
+
+            <Pressable onPress={() => saveAvatar({ type: 'default' })} style={styles.resetBtn}>
+              <Ionicons name="refresh-outline" size={15} color={vantage.textMuted} />
+              <Text style={styles.resetTxt}>Reset to default</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -153,6 +289,8 @@ function Section({ title, children }) {
 }
 
 const styles = StyleSheet.create({
+  backRow: { paddingHorizontal: space.sm, paddingTop: space.sm },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   profileHeader: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: space.lg, paddingVertical: space.lg,
@@ -164,6 +302,21 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarAnim: { width: 48, height: 48 },
+  avatarEditBadge: {
+    position: 'absolute', right: -2, bottom: -2, width: 20, height: 20, borderRadius: 10,
+    backgroundColor: vantage.accent, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: vantage.bg,
+  },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: space.lg },
+  modalCard: { width: '100%', maxWidth: 360, backgroundColor: vantage.bgRaised, borderRadius: radius.lg, borderWidth: 1, borderColor: vantage.border, padding: space.lg },
+  modalTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.heavy, marginBottom: space.md },
+  photoBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, backgroundColor: vantage.accent, borderRadius: radius.md, paddingVertical: 13 },
+  photoBtnTxt: { color: '#fff', fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+  modalSub: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, marginTop: space.lg, marginBottom: space.sm },
+  avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  gridItem: { width: 56, height: 56, borderRadius: 28, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: vantage.bgRaisedHover || vantage.bgRaised, borderWidth: 1, borderColor: vantage.border },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.lg, paddingVertical: 10 },
+  resetTxt: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   name: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
   email: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 2 },
   badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: 6, marginTop: space.sm },

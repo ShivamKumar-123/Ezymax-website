@@ -8,6 +8,7 @@ import ApiService from '../services/ApiService';
 import webSocketService from '../services/WebSocketService';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 
+import { useAccount } from '../context/AccountContext';
 import TradeCFDs from './trade/TradeCFDs';
 import TradeCopy from './trade/TradeCopy';
 
@@ -18,8 +19,8 @@ export default function TradeScreen() {
   const route = useRoute();
   const [view, setView] = useState('cfds');
 
-  const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(null);
+  // Global account selection — synced with Home and instrument-detail screens.
+  const { accounts, selectedAccount, selectAccount, refreshAccounts } = useAccount();
   const [accountSummary, setAccountSummary] = useState(null);
   const [symbol, setSymbol] = useState(route.params?.symbol || DEFAULT_SYMBOL);
   const [tick, setTick] = useState(null);
@@ -34,26 +35,22 @@ export default function TradeScreen() {
     if (route.params?.symbol) setSymbol(String(route.params.symbol).toUpperCase());
   }, [route.params?.symbol]);
 
+  // Honor an explicit sub-tab request (e.g. "Go to Trade" from a symbol always
+  // lands on CFDs, even if the Trade tab was last left on Copy).
+  useEffect(() => {
+    const t = route.params?.tradeView;
+    if (t === 'cfds' || t === 'copy') setView(t);
+  }, [route.params?.tradeView]);
+
   // Pre-select the account passed in from elsewhere (e.g. Accounts screen).
   useEffect(() => {
     const wanted = route.params?.selectedAccountId;
     if (!wanted || !accounts.length) return;
     const match = accounts.find((a) => String(a.id || a._id) === String(wanted));
-    if (match) setSelectedAccount(match);
-  }, [accounts, route.params?.selectedAccountId]);
+    if (match) selectAccount(match);
+  }, [accounts, route.params?.selectedAccountId, selectAccount]);
 
-  const loadAccounts = useCallback(async () => {
-    try {
-      const res = await ApiService.getAccounts();
-      const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-      setAccounts(list);
-      // Default to an ACTIVE account — an inactive one rejects every call with
-      // "Account is not active".
-      if (!selectedAccount && list.length) {
-        setSelectedAccount(list.find((a) => a.is_active) || list[0]);
-      }
-    } catch (_) { setAccounts([]); }
-  }, [selectedAccount]);
+  const loadAccounts = refreshAccounts;
 
   const refreshAccountData = useCallback(async () => {
     // Skip account-specific calls for an inactive account (avoids spammy errors).
@@ -172,7 +169,7 @@ export default function TradeScreen() {
           <TradeCFDs
             accounts={accounts}
             selectedAccount={selectedAccount}
-            onSelectAccount={setSelectedAccount}
+            onSelectAccount={selectAccount}
             symbol={symbol}
             onSelectSymbol={setSymbol}
             tick={tick}

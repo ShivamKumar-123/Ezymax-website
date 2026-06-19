@@ -66,7 +66,7 @@ export default function TradeCFDs({
         onPlaced={onChange}
       />
 
-      <PositionsList positions={positions} orders={orders} history={history} onChange={onChange} />
+      <PositionsList account={selectedAccount} accountSummary={accountSummary} positions={positions} orders={orders} history={history} onChange={onChange} />
 
       <AccountSwitcher
         visible={accountSheet}

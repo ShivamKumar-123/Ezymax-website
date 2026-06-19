@@ -60,7 +60,7 @@ function ResultBox({ label, value, valueColor, colors }) {
   return (
     <View style={[s.resultBox, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
       <Text style={[s.resultLabel, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[s.resultValue, { color: valueColor || colors.primary }]}>{value}</Text>
+      <Text style={[s.resultValue, { color: valueColor || colors.primary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{value}</Text>
     </View>
   );
 }
@@ -230,7 +230,9 @@ const s = StyleSheet.create({
   instrumentText: { fontSize: 15, fontWeight: '700' },
   inputRow: { marginBottom: 16 },
   inputLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
-  input: { borderRadius: 12, borderWidth: 1, padding: 14, fontSize: 16, fontWeight: '600' },
+  // Fixed height + centered text so the box never grows/jumps when focused
+  // (Android grows an unsized TextInput on focus due to font padding).
+  input: { borderRadius: 12, borderWidth: 1, height: 50, paddingHorizontal: 14, paddingVertical: 0, fontSize: 16, fontWeight: '600', textAlignVertical: 'center', includeFontPadding: false },
   dirRow: { marginBottom: 20 },
   dirBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
   dirBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },

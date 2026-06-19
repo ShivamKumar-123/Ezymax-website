@@ -81,9 +81,10 @@ export default function usePamm() {
 
   const invest = useCallback(async (masterId, amount, opts = {}) => {
     const headers = await getJsonAuthHeaders();
-    const accountId = opts.accountId || accounts.find((a) => !(a.is_demo || a.isDemo))?.id || accounts[0]?.id;
-    if (!accountId) throw new Error('No trading account available');
-    const params = new URLSearchParams({ account_id: accountId, amount: String(amount) });
+    // Funds come from the main wallet; the backend auto-creates a dedicated MAM
+    // sub-account. No account needs to be picked — account_id is optional.
+    const params = new URLSearchParams({ amount: String(amount) });
+    if (opts.accountId) params.set('account_id', opts.accountId);
     if (opts.volumeScalingPct != null) params.set('volume_scaling_pct', String(opts.volumeScalingPct));
     const res = await fetch(`${API_URL}/social/mamm-pamm/${masterId}/invest?${params.toString()}`, {
       method: 'POST', headers,
@@ -92,7 +93,7 @@ export default function usePamm() {
     if (!res.ok) throw new Error(data?.detail || data?.message || 'Investment failed');
     await fetchAllocations();
     return data;
-  }, [accounts, fetchAllocations]);
+  }, [fetchAllocations]);
 
   const withdrawAllocation = useCallback(async (allocationId) => {
     const headers = await getJsonAuthHeaders();

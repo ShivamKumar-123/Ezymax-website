@@ -1,29 +1,68 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, TextInput } from 'react-native';
+import { View, Text, Pressable, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SegmentedTabs, Card, Sheet, PillButton, showToast } from '../../components/vantage';
+import { SegmentedTabs, Card, Sheet, PillButton, showToast, showAppAlert } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
+import { isSoftTradeError, handleTradeError } from '../../utils/tradeErrors';
 
-export default function PositionsList({ positions = [], orders = [], history = [], onChange }) {
+export default function PositionsList({ positions = [], orders = [], history = [], account, accountSummary, onChange }) {
   const [view, setView] = useState('positions');
   const [slTpTarget, setSlTpTarget] = useState(null);
+  // Themed close-confirm flows. We track the position *id* (not the object) so
+  // the open sheet always re-reads the latest `positions` prop → live P&L.
+  const [closeId, setCloseId] = useState(null);
+  const [closeAllOpen, setCloseAllOpen] = useState(false);
 
-  const handleClosePosition = useCallback(async (id) => {
-    Alert.alert('Close position', 'Confirm closing this position?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Close', style: 'destructive', onPress: async () => {
-        try {
-          await ApiService.closePosition(id);
-          showToast({ kind: 'success', message: 'Position closed' });
-          onChange?.();
-        } catch (e) {
-          showToast({ kind: 'error', message: e?.message || 'Close failed' });
-        }
-      } },
-    ]);
-  }, [onChange]);
+  const confirmCloseOne = useCallback(async () => {
+    if (!closeId) return;
+    try {
+      await ApiService.closePosition(closeId);
+      showToast({ kind: 'success', message: 'Position closed' });
+      onChange?.();
+    } catch (e) {
+      // MAM-mirrored / market-closed responses surface as a calm info popup
+      // instead of a red error.
+      handleTradeError(e?.message, 'Close failed');
+    } finally {
+      setCloseId(null);
+    }
+  }, [closeId, onChange]);
+
+  const confirmCloseAll = useCallback(async () => {
+    const ids = positions.map((p) => p.id || p._id).filter(Boolean);
+    if (!ids.length) { setCloseAllOpen(false); return; }
+    const results = await Promise.allSettled(ids.map((id) => ApiService.closePosition(id)));
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    const rejected = results.filter((r) => r.status === 'rejected');
+    // MAM-mirrored / closed-market positions are "skipped", not failures.
+    const skipped = rejected.filter((r) => isSoftTradeError(r.reason?.message)).length;
+    const failed = rejected.length - skipped;
+
+    setCloseAllOpen(false);
+    onChange?.();
+
+    if (failed > 0) {
+      // Only genuine failures use the red error toast.
+      showToast({ kind: 'error', message: `Closed ${ok}${skipped ? `, ${skipped} skipped` : ''}, ${failed} failed` });
+    } else if (skipped > 0) {
+      // Managed (MAM) / market-closed positions can't be closed here — show a
+      // calm themed popup, not an error.
+      showAppAlert({
+        title: 'Some positions skipped',
+        message: ok > 0
+          ? `Closed ${ok} position(s). ${skipped} couldn't be closed here because they're managed (MAM) trades or the market is closed.`
+          : `These ${skipped} position(s) can't be closed here — they're managed (MAM) trades or the market is closed.`,
+      });
+    } else {
+      showToast({ kind: 'success', message: 'All positions closed' });
+    }
+  }, [positions, onChange]);
+
+  const closingPos = closeId
+    ? positions.find((p) => String(p.id || p._id) === String(closeId)) || null
+    : null;
 
   const handleCancelOrder = useCallback(async (id) => {
     try {
@@ -37,6 +76,8 @@ export default function PositionsList({ positions = [], orders = [], history = [
 
   return (
     <View style={styles.wrap}>
+      <AccountSummaryCard account={account} summary={accountSummary} openCount={positions.length} closedCount={history.length} />
+
       <View style={styles.headerRow}>
         <SegmentedTabs
           value={view}
@@ -44,7 +85,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
           options={[
             { value: 'positions', label: `Positions (${positions.length})` },
             { value: 'pending',   label: `Pending (${orders.length})` },
-            { value: 'history',   label: 'History' },
+            { value: 'history',   label: `History (${history.length})` },
           ]}
         />
       </View>
@@ -52,14 +93,24 @@ export default function PositionsList({ positions = [], orders = [], history = [
       {view === 'positions' ? (
         positions.length === 0 ? (
           <Text style={styles.empty}>No open positions.</Text>
-        ) : positions.map((p) => (
-          <PositionRow
-            key={p.id || p._id}
-            position={p}
-            onClose={() => handleClosePosition(p.id || p._id)}
-            onSetSlTp={() => setSlTpTarget(p)}
-          />
-        ))
+        ) : (
+          <>
+            <View style={styles.closeAllRow}>
+              <Pressable onPress={() => setCloseAllOpen(true)} style={styles.closeAllBtn} accessibilityRole="button" accessibilityLabel="Close all positions">
+                <Ionicons name="close-circle-outline" size={16} color={vantage.down} />
+                <Text style={styles.closeAllTxt}>Close all ({positions.length})</Text>
+              </Pressable>
+            </View>
+            {positions.map((p) => (
+              <PositionRow
+                key={p.id || p._id}
+                position={p}
+                onClose={() => setCloseId(p.id || p._id)}
+                onSetSlTp={() => setSlTpTarget(p)}
+              />
+            ))}
+          </>
+        )
       ) : view === 'pending' ? (
         orders.length === 0 ? (
           <Text style={styles.empty}>No pending orders.</Text>
@@ -79,9 +130,147 @@ export default function PositionsList({ positions = [], orders = [], history = [
         onClose={() => setSlTpTarget(null)}
         onSaved={onChange}
       />
+
+      <CloseConfirmSheet
+        position={closingPos}
+        onCancel={() => setCloseId(null)}
+        onConfirm={confirmCloseOne}
+      />
+
+      <CloseAllSheet
+        visible={closeAllOpen}
+        positions={positions}
+        onCancel={() => setCloseAllOpen(false)}
+        onConfirm={confirmCloseAll}
+      />
     </View>
   );
 }
+
+// Helper — pull a position's live P&L regardless of which field the API used.
+function plOf(p) {
+  if (!p) return null;
+  const v = p.profit ?? p.profit_loss ?? p.pl ?? p.pnl ?? null;
+  return v == null ? null : Number(v);
+}
+
+// Themed close-confirm sheet with a big, live-updating P&L. Because the parent
+// re-derives `position` from the latest props on every refresh tick, the P&L
+// shown here keeps moving while the sheet is open.
+function CloseConfirmSheet({ position, onCancel, onConfirm }) {
+  const [closing, setClosing] = useState(false);
+  const side = String(position?.side || '').toLowerCase();
+  const pl = plOf(position);
+  const plPositive = pl == null ? true : pl >= 0;
+  const lots = position?.volume ?? position?.lots ?? position?.quantity ?? '—';
+  const open = Number(position?.open_price ?? position?.openPrice ?? 0);
+  const current = position?.current_price ?? position?.currentPrice ?? null;
+
+  const confirm = useCallback(async () => {
+    setClosing(true);
+    try { await onConfirm(); } finally { setClosing(false); }
+  }, [onConfirm]);
+
+  return (
+    <Sheet visible={!!position} onClose={onCancel} title="Close position">
+      {position ? (
+        <View style={sheetStyles.wrap}>
+          <View style={sheetStyles.head}>
+            <Text style={styles.sym}>{position.symbol}</Text>
+            <Text style={[styles.side, { color: side === 'buy' ? vantage.up : vantage.down }]}>
+              {side.toUpperCase()} {lots} @ {open ? open.toFixed(5) : '—'}
+            </Text>
+          </View>
+
+          <View style={closeStyles.plBox}>
+            <Text style={closeStyles.plLab}>Live P&L</Text>
+            <Text style={[closeStyles.plBig, { color: plPositive ? vantage.up : vantage.down }]}>
+              {pl != null ? `${plPositive ? '+' : ''}${pl.toFixed(2)} USD` : '—'}
+            </Text>
+            {current != null ? (
+              <Text style={closeStyles.plSub}>Current {Number(current).toFixed(5)}</Text>
+            ) : null}
+          </View>
+
+          <Text style={sheetStyles.hint}>This closes the position at the current market price.</Text>
+
+          <PillButton
+            label={closing ? 'Closing…' : 'Close position'}
+            variant="sell"
+            size="lg"
+            loading={closing}
+            disabled={closing}
+            onPress={confirm}
+            style={{ marginTop: space.lg }}
+          />
+          <Pressable onPress={onCancel} disabled={closing} style={closeStyles.cancel} accessibilityRole="button">
+            <Text style={closeStyles.cancelTxt}>Cancel</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </Sheet>
+  );
+}
+
+// Close-all confirm sheet — shows the combined live P&L across every open
+// position and closes them all at market on confirm.
+function CloseAllSheet({ visible, positions, onCancel, onConfirm }) {
+  const [closing, setClosing] = useState(false);
+  const total = (positions || []).reduce((sum, p) => sum + (plOf(p) ?? 0), 0);
+  const positive = total >= 0;
+
+  const confirm = useCallback(async () => {
+    setClosing(true);
+    try { await onConfirm(); } finally { setClosing(false); }
+  }, [onConfirm]);
+
+  return (
+    <Sheet visible={visible} onClose={onCancel} title={`Close all (${positions?.length || 0})`}>
+      <View style={sheetStyles.wrap}>
+        <View style={closeStyles.plBox}>
+          <Text style={closeStyles.plLab}>Total live P&L</Text>
+          <Text style={[closeStyles.plBig, { color: positive ? vantage.up : vantage.down }]}>
+            {`${positive ? '+' : ''}${total.toFixed(2)} USD`}
+          </Text>
+        </View>
+
+        <Text style={sheetStyles.hint}>
+          This closes all {positions?.length || 0} open position(s) at the current market price.
+        </Text>
+
+        <PillButton
+          label={closing ? 'Closing…' : `Close all ${positions?.length || 0} positions`}
+          variant="sell"
+          size="lg"
+          loading={closing}
+          disabled={closing || !(positions?.length > 0)}
+          onPress={confirm}
+          style={{ marginTop: space.lg }}
+        />
+        <Pressable onPress={onCancel} disabled={closing} style={closeStyles.cancel} accessibilityRole="button">
+          <Text style={closeStyles.cancelTxt}>Cancel</Text>
+        </Pressable>
+      </View>
+    </Sheet>
+  );
+}
+
+const closeStyles = StyleSheet.create({
+  plBox: {
+    alignItems: 'center',
+    backgroundColor: vantage.bgRaised,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: vantage.border,
+    paddingVertical: space.lg,
+    marginBottom: space.md,
+  },
+  plLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  plBig: { fontFamily, fontSize: sizes.hero, fontWeight: weights.heavy, marginTop: 4 },
+  plSub: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, marginTop: 4 },
+  cancel: { alignItems: 'center', paddingVertical: space.md, marginTop: space.xs },
+  cancelTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
+});
 
 function SlTpSheet({ position, onClose, onSaved }) {
   const [sl, setSl] = useState('');
@@ -181,13 +370,13 @@ function PositionRow({ position, onClose, onSetSlTp }) {
       <View style={styles.cardRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.sym}>{position.symbol}</Text>
-          <Text style={[styles.side, { color: side === 'buy' ? '#FFFFFF' : vantage.down, fontWeight: weights.bold }]}>
+          <Text style={[styles.side, { color: side === 'buy' ? vantage.up : vantage.down, fontWeight: weights.bold }]}>
             {side.toUpperCase()} {lots} @ {open ? open.toFixed(5) : '—'}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={styles.plLabel}>P&L</Text>
-          <Text style={[styles.pl, { color: plPositive ? '#FFFFFF' : vantage.down }]}>
+          <Text style={[styles.pl, { color: plPositive ? vantage.up : vantage.down }]}>
             {pl != null ? `${plPositive ? '+' : ''}${Number(pl).toFixed(2)}` : '—'} USD
           </Text>
         </View>
@@ -282,9 +471,61 @@ function OrderRow({ order, onCancel }) {
   );
 }
 
+// Account snapshot above the positions/history tabs — balance, equity, margin.
+function AccountSummaryCard({ account, summary, openCount, closedCount }) {
+  const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const fmt2 = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const ccy = account?.currency || 'USD';
+  const balance = num(summary?.balance) ?? num(account?.balance);
+  const equity = num(summary?.equity) ?? balance;
+  const usedMargin = num(summary?.margin) ?? num(summary?.used_margin) ?? num(summary?.margin_used);
+  const freeMargin = num(summary?.free_margin) ?? (equity != null && usedMargin != null ? equity - usedMargin : equity);
+  const marginLevel = num(summary?.margin_level);
+  const label = account ? `${account.is_demo ? 'Demo' : 'Live'} ${account.account_number || account.id || ''}`.trim() : 'No account';
+  return (
+    <Card style={styles.summary}>
+      <View style={styles.sumTop}>
+        <Text style={styles.sumAcct} numberOfLines={1}>{label}</Text>
+        <Text style={styles.sumCounts}>{openCount} open · {closedCount} closed</Text>
+      </View>
+      <View style={styles.sumGrid}>
+        <SumCell label="Balance" value={`${fmt2(balance)} ${ccy}`} />
+        <SumCell label="Equity" value={`${fmt2(equity)} ${ccy}`} />
+        <SumCell label="Used Margin" value={fmt2(usedMargin)} />
+        <SumCell label="Free Margin" value={fmt2(freeMargin)} />
+        {marginLevel != null ? <SumCell label="Margin Level" value={`${fmt2(marginLevel)}%`} /> : null}
+      </View>
+    </Card>
+  );
+}
+
+function SumCell({ label, value }) {
+  return (
+    <View style={styles.sumCell}>
+      <Text style={styles.sumLab}>{label}</Text>
+      <Text style={styles.sumVal}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.sm },
+  summary: { marginBottom: space.sm },
+  sumTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.sm, gap: space.sm },
+  sumAcct: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.heavy, flexShrink: 1 },
+  sumCounts: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  sumGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.sm },
+  sumCell: { width: '33%' },
+  sumLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro },
+  sumVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold, marginTop: 2 },
   headerRow: { paddingBottom: space.sm },
+  closeAllRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: space.sm },
+  closeAllBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: space.xs,
+    paddingVertical: space.xs, paddingHorizontal: space.md,
+    borderRadius: radius.pill, borderWidth: 1, borderColor: vantage.down,
+  },
+  closeAllTxt: { color: vantage.down, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, textAlign: 'center', padding: space.lg },
   card: { marginBottom: space.sm },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },

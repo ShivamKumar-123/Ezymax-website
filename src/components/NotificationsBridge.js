@@ -8,7 +8,10 @@ import { configureAndroidChannel, ensureNotificationPermission, registerForPushT
 import { navigate } from '../navigation/navigationRef';
 
 const SEEN_KEY = 'notif_seen_ids';
-const POLL_MS = 30000;
+// Poll the in-app feed every 10s while the app is foregrounded so tray alerts
+// arrive promptly (was 30s — felt laggy). We also poll immediately whenever the
+// app returns to the foreground (AppState 'active' listener below).
+const POLL_MS = 10000;
 
 // Map a notification's action_url / type to an in-app destination (mirrors
 // the routing on NotificationsScreen).

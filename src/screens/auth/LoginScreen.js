@@ -208,6 +208,11 @@ export default function LoginScreen({ navigation }) {
                 ? <ActivityIndicator color="#FFFFFF" />
                 : <Text style={styles.loginText}>Log In</Text>}
             </Pressable>
+
+            <Pressable onPress={() => navigation.navigate('Signup')} hitSlop={8} style={styles.signupRow}>
+              <Text style={[styles.signupMuted, { color: C.textMuted }]}>Don't have an account? </Text>
+              <Text style={styles.signupLink}>Sign up</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -238,6 +243,10 @@ const styles = StyleSheet.create({
 
   forgot: { alignSelf: 'flex-end', marginTop: space.md },
   forgotText: { color: THEME, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+
+  signupRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: space.xl },
+  signupMuted: { fontFamily, fontSize: sizes.body },
+  signupLink: { color: THEME, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
 
   loginBtn: {
     marginTop: space.xxl,

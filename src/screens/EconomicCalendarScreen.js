@@ -29,7 +29,7 @@ import ScreenHeader from '../components/ui/ScreenHeader';
 // trader app uses. Free, live, and filterable inside the widget itself, so we
 // don't need our own day/impact chips on top.
 export default function EconomicCalendarScreen({ navigation }) {
-  const isDark = true;
+  const isDark = vantage.isDark !== false;
   const { t } = useI18n();
   const [reloadKey, setReloadKey] = useState(0);
   const [errored, setErrored] = useState(false);

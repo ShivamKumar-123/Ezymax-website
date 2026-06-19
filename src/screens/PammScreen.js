@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
-  Modal, TextInput, Alert, ActivityIndicator,
+  Modal, TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { vantage } from '../theme/vantageTheme';
@@ -37,9 +37,11 @@ const TABS = [
 export default function PammScreen({ navigation }) {
   const isDark = true;
   const { t } = useI18n();
-  const { masters, allocations, summary, loading, refreshing, refresh, invest, withdrawAllocation } = usePamm();
+  const { masters, allocations, summary, accounts, loading, refreshing, refresh, invest, withdrawAllocation } = usePamm();
+  const liveAccounts = (accounts || []).filter((a) => !(a.is_demo || a.isDemo));
   const [tab, setTab] = useState('allocations');
   const [investModal, setInvestModal] = useState(null);
+  const [investAccountId, setInvestAccountId] = useState(null);
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,7 +50,7 @@ export default function PammScreen({ navigation }) {
     if (!num || num <= 0) { Alert.alert(t('common.error'), 'Enter a valid amount'); return; }
     setSubmitting(true);
     try {
-      await invest(investModal.id, num);
+      await invest(investModal.id, num);   // funds from main wallet; MAM account auto-created
       Alert.alert(t('common.success'), 'Investment successful');
       setInvestModal(null); setAmount('');
     } catch (e) { Alert.alert(t('common.error'), e.message); }
@@ -187,6 +189,15 @@ export default function PammScreen({ navigation }) {
                 {investModal.manager_name} · Min ${investModal.min_investment || 100}
               </Text>
             )}
+
+            {/* Funds come from your main wallet; a dedicated MAM account is
+                created automatically — no account needs to be selected. */}
+            <View style={[s.walletNote, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
+                Funds are taken from your main wallet. A new MAM account is created automatically — you can view the master’s trades from it.
+              </Text>
+            </View>
+
             <Text style={[s.inputLabel, { color: colors.textMuted }]}>{t('pamm.investAmount')}</Text>
             <TextInput
               style={[s.input, { backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.border }]}
@@ -232,6 +243,8 @@ const s = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700' },
   modalSub: { fontSize: 13, marginBottom: 20 },
   inputLabel: { fontSize: 12, fontWeight: '500', marginBottom: 6, textTransform: 'uppercase' },
+  acctChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, minWidth: 110 },
+  walletNote: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 18, marginTop: 4 },
   input: { borderRadius: 12, borderWidth: 1, padding: 14, fontSize: 16, fontWeight: '600', marginBottom: 20 },
   confirmBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
 });

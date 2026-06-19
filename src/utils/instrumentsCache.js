@@ -11,8 +11,30 @@ export async function getInstruments() {
 
   inflight = (async () => {
     try {
-      const res = await ApiService.getInstruments();
-      const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+      const [insRes, priceRes] = await Promise.allSettled([
+        ApiService.getInstruments(),
+        ApiService.getAllPrices(),
+      ]);
+      const res = insRes.status === 'fulfilled' ? insRes.value : null;
+      const full = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+
+      // Web parity: the website only lists instruments that have a live price
+      // tick (InstrumentsTable filters `prices[symbol] != null`). Mirror that so
+      // the app never shows symbols the website hides (dead/unquoted feeds).
+      const priceVal = priceRes.status === 'fulfilled' ? priceRes.value : null;
+      const priceArr = Array.isArray(priceVal) ? priceVal : (Array.isArray(priceVal?.items) ? priceVal.items : []);
+      const priced = new Set(
+        priceArr
+          .map((p) => String(p?.symbol || p?.ticker || '').toUpperCase())
+          .filter(Boolean)
+      );
+
+      // Only apply the filter when we actually got a non-empty price set —
+      // otherwise a failed/empty prices call would wipe the whole list.
+      const list = priced.size > 0
+        ? full.filter((i) => priced.has(String(i?.symbol || '').toUpperCase()))
+        : full;
+
       cache = { ts: Date.now(), list };
       return list;
     } catch (_) {

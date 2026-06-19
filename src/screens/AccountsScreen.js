@@ -13,9 +13,12 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
 import { useTheme } from '../context/ThemeContext';
+import { useAccount } from '../context/AccountContext';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 import { authedFetch } from '../utils/authedFetch';
 import { isKycApproved, showKycGate, fetchKycStatus } from '../utils/kycGate';
 
@@ -30,6 +33,7 @@ function isActiveStatus(a) {
 
 const AccountsScreen = ({ navigation, route }) => {
   const { colors } = useTheme();
+  const { selectAccount } = useAccount();
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -617,6 +621,13 @@ const AccountsScreen = ({ navigation, route }) => {
     navigation.navigate('TradeTab', { screen: 'Trade', params: { selectedAccountId: aid } });
   };
 
+  // Copy/MAM account → open its portfolio (the master's mirrored open positions
+  // + trade history live on this account).
+  const viewMasterTrades = (account) => {
+    selectAccount(account);
+    navigation.navigate('HomeTab', { screen: 'Portfolio' });
+  };
+
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.bgPrimary }]}>
@@ -644,6 +655,7 @@ const AccountsScreen = ({ navigation, route }) => {
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {/* New Account button — full width dashed (matches web) */}
@@ -659,13 +671,13 @@ const AccountsScreen = ({ navigation, route }) => {
             borderRadius: 14,
             borderWidth: 2,
             borderStyle: 'dashed',
-            borderColor: colors.success,
+            borderColor: colors.accent,
             backgroundColor: 'transparent',
             marginBottom: 16,
           }}
         >
-          <Ionicons name="add" size={20} color={colors.success} />
-          <Text style={{ color: colors.success, fontSize: 15, fontWeight: '700' }}>New Account</Text>
+          <Ionicons name="add" size={20} color={colors.accent} />
+          <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '700' }}>New Account</Text>
         </TouchableOpacity>
 
         {mainTradingAccounts.length === 0 ? (
@@ -679,7 +691,7 @@ const AccountsScreen = ({ navigation, route }) => {
             const aid = account.id || account._id;
             const isExpanded = expandedAccountId === aid;
             const isDemo = isDemoAccount(account);
-            const dotColor = isDemo ? colors.warning : colors.success;
+            const dotColor = isDemo ? colors.warning : colors.accent;
             const customLabel = accountLabels[aid];
             const defaultLabel = isDemo ? 'Demo Account' : 'Live Account';
             const balance = Number(account.balance || 0);
@@ -692,6 +704,12 @@ const AccountsScreen = ({ navigation, route }) => {
               : `1:${account.leverage || 100}`;
             const acctType = account.account_group?.name || account.accountTypeId?.name || account.accountType || 'Standard';
             const acctNum = account.account_number || account.accountId || '';
+            // PAMM / MAM / Copy tag so each account type is identifiable.
+            const ctype = String(account.copy_type || '').toLowerCase();
+            const typeTag = ctype === 'pamm' ? 'PAMM'
+              : (ctype === 'mam' || ctype === 'mamm') ? 'MAM'
+              : (ctype === 'signal_provider' || ctype === 'signal') ? 'Copy'
+              : (account.is_copy_trading ? 'Copy' : null);
             const numPrefix = isDemo ? 'D' : 'L';
 
             return (
@@ -699,124 +717,103 @@ const AccountsScreen = ({ navigation, route }) => {
                 key={String(aid)}
                 style={{
                   backgroundColor: colors.bgCard,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   borderWidth: 1,
                   borderColor: colors.border,
                   marginBottom: 14,
+                  overflow: 'hidden',
                 }}
               >
                 {/* Collapsed header — always visible, tap to expand */}
                 <Pressable
                   onPress={() => {
-                    console.log('[AccountsScreen] Toggle expand for', aid);
                     setExpandedAccountId(isExpanded ? null : aid);
                   }}
                   android_ripple={{ color: 'rgba(255,255,255,0.05)' }}
-                  style={({ pressed }) => ({ padding: 16, opacity: pressed ? 0.95 : 1 })}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.96 : 1 })}
                 >
-                  {/* Title row: dot + label + chevron */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: dotColor, marginRight: 10 }} />
-                    <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '700', flex: 1 }}>
-                      {customLabel || defaultLabel}
-                    </Text>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={20}
-                      color={colors.textMuted}
-                    />
-                  </View>
-
-                  {/* Account number + add label */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-                    <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600' }}>
-                      #{numPrefix}#{acctNum}
-                    </Text>
-                    {editingLabelId === aid ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 10 }}>
-                        <TextInput
-                          autoFocus
-                          value={labelDraft}
-                          onChangeText={setLabelDraft}
-                          placeholder="Account label"
-                          placeholderTextColor={colors.textMuted}
-                          style={{
-                            flex: 1,
-                            borderWidth: 1,
-                            borderColor: colors.accent,
-                            borderRadius: 6,
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            color: colors.textPrimary,
-                            fontSize: 12,
-                          }}
-                        />
-                        <TouchableOpacity
-                          onPress={() => saveLabel(aid)}
-                          style={{ marginLeft: 6, padding: 4 }}
-                        >
-                          <Ionicons name="checkmark" size={18} color={colors.success} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => { setEditingLabelId(null); setLabelDraft(''); }}
-                          style={{ padding: 4 }}
-                        >
-                          <Ionicons name="close" size={18} color={colors.error} />
-                        </TouchableOpacity>
+                  {/* Tinted gradient header (account-type colour) */}
+                  <LinearGradient
+                    colors={[dotColor + '2E', dotColor + '0D', 'transparent']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 }}
+                  >
+                    {/* Avatar + label + number + tag + chevron */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: dotColor + '26', borderWidth: 1, borderColor: dotColor + '55', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Ionicons name={isDemo ? 'flask-outline' : 'wallet-outline'} size={21} color={dotColor} />
                       </View>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e?.stopPropagation?.();
-                          setEditingLabelId(aid);
-                          setLabelDraft(customLabel || '');
-                        }}
-                        style={{ marginLeft: 10 }}
-                      >
-                        <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>
-                          {customLabel ? 'Edit label' : '+ Add label'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Stats grid: Balance | Equity */}
-                  <View style={{ flexDirection: 'row', marginBottom: 14 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Balance</Text>
-                      <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: '800' }}>
-                        ${balance.toFixed(2)}
-                      </Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text numberOfLines={1} style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '800', flexShrink: 1 }}>
+                            {customLabel || defaultLabel}
+                          </Text>
+                          {typeTag ? (
+                            <View style={{ backgroundColor: colors.accent + '22', borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>{typeTag}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', marginTop: 2 }}>#{numPrefix}#{acctNum}</Text>
+                      </View>
+                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Equity</Text>
-                      <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: '800' }}>
-                        ${equity.toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
 
-                  {/* Stats grid: P&L | Leverage */}
-                  <View style={{ flexDirection: 'row' }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>P&L</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons
-                          name={pnl >= 0 ? 'trending-up' : 'trending-down'}
-                          size={14}
-                          color={pnl >= 0 ? colors.success : colors.error}
-                        />
-                        <Text style={{ color: pnl >= 0 ? colors.success : colors.error, fontSize: 14, fontWeight: '700' }}>
-                          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                    {/* Balance + inline label edit */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16 }}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' }}>Balance</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color: colors.textPrimary, fontSize: 27, fontWeight: '900', marginTop: 2, letterSpacing: -0.5 }}>
+                          ${balance.toFixed(2)}
                         </Text>
                       </View>
-                      <Text style={{ color: pnl >= 0 ? colors.success : colors.error, fontSize: 11, marginTop: 2 }}>
-                        ({pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
+                      {editingLabelId === aid ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+                          <TextInput
+                            autoFocus
+                            value={labelDraft}
+                            onChangeText={setLabelDraft}
+                            placeholder="Label"
+                            placeholderTextColor={colors.textMuted}
+                            style={{ width: 84, borderWidth: 1, borderColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, color: colors.textPrimary, fontSize: 12 }}
+                          />
+                          <TouchableOpacity onPress={() => saveLabel(aid)} style={{ marginLeft: 6, padding: 4 }}>
+                            <Ionicons name="checkmark" size={18} color={colors.accent} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => { setEditingLabelId(null); setLabelDraft(''); }} style={{ padding: 4 }}>
+                            <Ionicons name="close" size={18} color={colors.error} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={(e) => { e?.stopPropagation?.(); setEditingLabelId(aid); setLabelDraft(customLabel || ''); }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingLeft: 8 }}
+                        >
+                          <Ionicons name="pencil-outline" size={13} color={colors.accent} />
+                          <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>{customLabel ? 'Edit' : 'Label'}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </LinearGradient>
+
+                  {/* Divider stats: Equity | P&L | Leverage */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600' }}>Equity</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '800', marginTop: 3 }}>${equity.toFixed(2)}</Text>
+                    </View>
+                    <View style={{ width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border, marginHorizontal: 12 }} />
+                    <View style={{ flex: 1.35, minWidth: 0 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600' }}>P&L</Text>
+                      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color: pnl >= 0 ? colors.success : colors.error, fontSize: 14, fontWeight: '800', marginTop: 3 }}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} ({pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
                       </Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Leverage</Text>
-                      <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>{lev}</Text>
+                    <View style={{ width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border, marginHorizontal: 12 }} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600' }}>Leverage</Text>
+                      <Text numberOfLines={1} style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '800', marginTop: 3 }}>{lev}</Text>
                     </View>
                   </View>
                 </Pressable>
@@ -867,16 +864,33 @@ const AccountsScreen = ({ navigation, route }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 8,
-                        backgroundColor: colors.success,
+                        backgroundColor: colors.accent,
                         borderRadius: 12,
                         paddingVertical: 14,
                         marginTop: 18,
                         opacity: pressed ? 0.85 : 1,
                       })}
                     >
-                      <Ionicons name="open-outline" size={18} color="#000" />
-                      <Text style={{ color: '#000', fontSize: 15, fontWeight: '800' }}>Trade</Text>
+                      <Ionicons name="open-outline" size={18} color="#fff" />
+                      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Trade</Text>
                     </Pressable>
+
+                    {/* Copy / MAM / PAMM account → view the master's mirrored trades */}
+                    {typeTag ? (
+                      <Pressable
+                        onPress={() => viewMasterTrades(account)}
+                        android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
+                        hitSlop={8}
+                        style={({ pressed }) => ({
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          backgroundColor: colors.accent + '1A', borderWidth: 1, borderColor: colors.accent,
+                          borderRadius: 12, paddingVertical: 13, marginTop: 10, opacity: pressed ? 0.8 : 1,
+                        })}
+                      >
+                        <Ionicons name="stats-chart-outline" size={17} color={colors.accent} />
+                        <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '800' }}>View master trades</Text>
+                      </Pressable>
+                    ) : null}
 
                     {/* Fund movement row */}
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
@@ -1257,7 +1271,7 @@ const AccountsScreen = ({ navigation, route }) => {
                         {g.swap_free ? (
                           <View>
                             <Text style={{ color: colors.textMuted, fontSize: 10 }}>Swap</Text>
-                            <Text style={{ color: colors.success, fontSize: 12, fontWeight: '700', marginTop: 2 }}>Free</Text>
+                            <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700', marginTop: 2 }}>Free</Text>
                           </View>
                         ) : null}
                       </View>
@@ -1406,13 +1420,13 @@ const styles = StyleSheet.create({
     borderColor: '#333333',
   },
   primaryCard: {
-    borderColor: '#1a73e8',
+    borderColor: '#F26A1F',
     borderWidth: 2,
   },
   primaryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1434,7 +1448,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1a73e820',
+    backgroundColor: '#F26A1F20',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1486,7 +1500,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 12,
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     borderRadius: 10,
   },
   depositBtnText: {
@@ -1518,7 +1532,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   setPrimaryBtnText: {
-    color: '#1a73e8',
+    color: '#F26A1F',
     fontSize: 14,
   },
   tradeBtn: {
@@ -1527,7 +1541,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     borderRadius: 10,
   },
   tradeBtnText: {
@@ -1556,7 +1570,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
   },
   tabText: {
     color: '#888',
@@ -1600,7 +1614,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   walletBalanceValue: {
-    color: '#1a73e8',
+    color: '#F26A1F',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1622,7 +1636,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1a73e820',
+    backgroundColor: '#F26A1F20',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1650,7 +1664,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   buyBtnSmall: {
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1745,7 +1759,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1a73e820',
+    backgroundColor: '#F26A1F20',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1788,7 +1802,7 @@ const styles = StyleSheet.create({
   },
   createAccountBtn: {
     flex: 1,
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1830,7 +1844,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   transferValueGold: {
-    color: '#1a73e8',
+    color: '#F26A1F',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1848,7 +1862,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   transferSubmitBtn: {
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1860,7 +1874,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   withdrawSubmitBtn: {
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1884,8 +1898,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   accountSelectCardActive: {
-    backgroundColor: '#1a73e8',
-    borderColor: '#1a73e8',
+    backgroundColor: '#F26A1F',
+    borderColor: '#F26A1F',
   },
   accountSelectId: {
     fontSize: 14,

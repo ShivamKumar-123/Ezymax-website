@@ -8,7 +8,7 @@ const Stack = createNativeStackNavigator();
 
 export default function TradeStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' }, animation: 'slide_from_right', animationDuration: 250 }}>
       <Stack.Screen name="Trade" component={TradeScreen} />
       <Stack.Screen name="StrategyDetail" component={StrategyDetailScreen} />
       <Stack.Screen name="BecomeMaster" component={BecomeMasterScreen} />

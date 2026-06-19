@@ -57,7 +57,8 @@ export default function MarketsExplore({
   }, [pricesBySymbol, moversDirection]);
 
   const essentials = useMemo(() => {
-    return bySegment(instruments, segment).slice(0, 20);
+    // Show every instrument in the segment (same set the website shows) — no cap.
+    return bySegment(instruments, segment);
   }, [instruments, segment]);
 
   return (

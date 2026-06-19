@@ -30,6 +30,7 @@ import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import * as Updates from 'expo-updates';
 import { API_URL, API_BASE_URL, WS_URL } from '../config';
+import { toTradingViewSymbol } from '../lib/tradingViewSymbols';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
 import socketService from '../services/socketService';
@@ -5679,19 +5680,10 @@ const ChartTab = ({ route }) => {
   const isForex = currentInstrument?.category === 'Forex';
   const decimals = isForex ? 5 : 2;
 
-  const getSymbolForTradingView = (symbol) => {
-    const symbolMap = {
-      'EURUSD': 'OANDA:EURUSD', 'GBPUSD': 'OANDA:GBPUSD', 'USDJPY': 'OANDA:USDJPY',
-      'USDCHF': 'OANDA:USDCHF', 'AUDUSD': 'OANDA:AUDUSD', 'NZDUSD': 'OANDA:NZDUSD',
-      'USDCAD': 'OANDA:USDCAD', 'EURGBP': 'OANDA:EURGBP', 'EURJPY': 'OANDA:EURJPY',
-      'GBPJPY': 'OANDA:GBPJPY', 'XAUUSD': 'OANDA:XAUUSD', 'XAGUSD': 'OANDA:XAGUSD',
-      'BTCUSD': 'COINBASE:BTCUSD', 'ETHUSD': 'COINBASE:ETHUSD', 'LTCUSD': 'COINBASE:LTCUSD',
-      'XRPUSD': 'BITSTAMP:XRPUSD', 'BNBUSD': 'BINANCE:BNBUSDT', 'SOLUSD': 'COINBASE:SOLUSD',
-      'ADAUSD': 'COINBASE:ADAUSD', 'DOGEUSD': 'BINANCE:DOGEUSDT', 'DOTUSD': 'COINBASE:DOTUSD',
-      'MATICUSD': 'COINBASE:MATICUSD', 'AVAXUSD': 'COINBASE:AVAXUSD', 'LINKUSD': 'COINBASE:LINKUSD',
-    };
-    return symbolMap[symbol] || `OANDA:${symbol}`;
-  };
+  // Use the exact same symbol map as the website (../lib/tradingViewSymbols) so
+  // the app charts the identical TradingView feed per symbol and every backend
+  // instrument resolves the same way it does on the web terminal.
+  const getSymbolForTradingView = (symbol) => toTradingViewSymbol(symbol);
 
   const openOrderPanel = (side) => {
     setOrderSide(side);

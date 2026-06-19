@@ -33,6 +33,9 @@ const LOTTIE = LIGHT_THEME
       FundsTab:   require('../../assets/funds.json'),
     };
 
+// Root screen of each tab's stack — used to pop back to root on active re-tap.
+const TAB_ROOT = { HomeTab: 'Home', MarketsTab: 'Markets', TradeTab: 'Trade', FundsTab: 'Funds' };
+
 const LOTTIE_SIZE = { width: 28, height: 28 };
 
 // Plays the animation ONCE when its tab becomes active (i.e. on tap). Otherwise
@@ -92,7 +95,18 @@ function VantageTabBar({ state, navigation }) {
     <BottomNavPill
       tabs={tabs}
       activeKey={activeKey}
-      onChange={(k) => navigation.navigate(k)}
+      onChange={(k) => {
+        // Reset the tab's stack to its root when:
+        //  • re-tapping the already-active tab (e.g. Home while the profile
+        //    drawer is open returns Home), OR
+        //  • opening Markets — it should ALWAYS show the instruments list, even
+        //    if an instrument-detail chart was left open before switching away.
+        if (k === activeKey || k === 'MarketsTab') {
+          navigation.navigate(k, { screen: TAB_ROOT[k] });
+        } else {
+          navigation.navigate(k);
+        }
+      }}
     />
   );
 }

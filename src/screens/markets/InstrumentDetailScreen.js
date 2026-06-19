@@ -14,9 +14,15 @@ import {
 } from '../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import SymbolPicker from '../trade/SymbolPicker';
+import AccountSwitcher from '../trade/AccountSwitcher';
+import { useAccount } from '../../context/AccountContext';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import * as SecureStore from 'expo-secure-store';
 import ApiService from '../../services/ApiService';
 import webSocketService from '../../services/WebSocketService';
+import { CHART_URL, API_URL } from '../../config';
+import { toTradingViewSymbol } from '../../lib/tradingViewSymbols';
+import { handleTradeError } from '../../utils/tradeErrors';
 import { getInstruments } from '../../utils/instrumentsCache';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../../utils/watchlistStorage';
 
@@ -37,28 +43,14 @@ const TABS = [
 ];
 
 // Best-effort TradingView symbol mapping for the embedded widget.
-function toTvSymbol(sym) {
-  const s = String(sym || '').toUpperCase();
-  const MAP = {
-    XAUUSD:   'OANDA:XAUUSD',
-    XAGUSD:   'OANDA:XAGUSD',
-    BTCUSD:   'BINANCE:BTCUSDT',
-    ETHUSD:   'BINANCE:ETHUSDT',
-    EURUSD:   'FX:EURUSD',
-    GBPUSD:   'FX:GBPUSD',
-    USDJPY:   'FX:USDJPY',
-    AUDUSD:   'FX:AUDUSD',
-    NZDUSD:   'FX:NZDUSD',
-    USDCAD:   'FX:USDCAD',
-    USDCHF:   'FX:USDCHF',
-    NAS100:   'NASDAQ:NDX',
-    SPX500:   'TVC:SPX',
-    DJ30:     'DJ:DJI',
-    NIKKEI225:'TVC:NI225',
-    HK50:     'HKEX:HSI',
-  };
-  return MAP[s] || `FX:${s}`;
-}
+// Broker-symbol → backend chart-symbol overrides for the self-hosted charting
+// library datafeed (e.g. NASDAQ 100 is served as the broker's NDX feed).
+const CHART_SYMBOL_ALIAS = {
+  NAS100: 'NDX',
+};
+
+// Chart symbol mapping lives in ../../lib/tradingViewSymbols (toTradingViewSymbol),
+// ported 1:1 from the website so the app charts the exact same feed per symbol.
 
 export default function InstrumentDetailScreen() {
   const nav = useNavigation();
@@ -75,8 +67,11 @@ export default function InstrumentDetailScreen() {
   const [bars1W, setBars1W] = useState([]);
   const [bars1M, setBars1M] = useState([]);
   const [pinned, setPinned] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  const [activeAccount, setActiveAccount] = useState(null);
+  // Global account selection — synced with Home & Trade.
+  const { accounts, selectedAccount: activeAccount, selectAccount } = useAccount();
+  const [acctSheet, setAcctSheet] = useState(false);
+  const [myPositions, setMyPositions] = useState([]);
+  const [authToken, setAuthToken] = useState('');
   const [side, setSide] = useState('sell');
   const [lots, setLots] = useState(0.01);
   const [submitting, setSubmitting] = useState(false);
@@ -99,10 +94,9 @@ export default function InstrumentDetailScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [list, watchlist, accs] = await Promise.allSettled([
+      const [list, watchlist] = await Promise.allSettled([
         getInstruments(),
         getWatchlist(),
-        ApiService.getAccounts(),
       ]);
       if (cancelled) return;
       if (list.status === 'fulfilled') {
@@ -110,11 +104,6 @@ export default function InstrumentDetailScreen() {
         setInstrument(found || null);
       }
       if (watchlist.status === 'fulfilled') setPinned((watchlist.value || []).includes(symbol));
-      if (accs.status === 'fulfilled') {
-        const arr = Array.isArray(accs.value) ? accs.value : (Array.isArray(accs.value?.items) ? accs.value.items : []);
-        setAccounts(arr);
-        if (!activeAccount && arr.length) setActiveAccount(arr.find((a) => a.is_active) || arr[0]);
-      }
     })();
     return () => { cancelled = true; };
   }, [symbol]);
@@ -221,6 +210,20 @@ export default function InstrumentDetailScreen() {
     }
   }, [pinned, symbol]);
 
+  // Open positions for THIS symbol on the selected account (shown in Orders tab).
+  useEffect(() => {
+    const id = activeAccount?.id || activeAccount?._id;
+    if (!id || activeAccount?.is_active === false) { setMyPositions([]); return; }
+    let cancelled = false;
+    ApiService.getPositions(id, 'open')
+      .then((res) => {
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+        if (!cancelled) setMyPositions(list.filter((p) => String(p.symbol || '').toUpperCase() === symbol));
+      })
+      .catch(() => { if (!cancelled) setMyPositions([]); });
+    return () => { cancelled = true; };
+  }, [activeAccount, symbol]);
+
   const placeOrder = useCallback(async () => {
     if (!activeAccount || !(lots > 0)) return;
     setSubmitting(true);
@@ -234,15 +237,38 @@ export default function InstrumentDetailScreen() {
       });
       showToast({ kind: 'success', message: `${side.toUpperCase()} ${lots} ${symbol} placed` });
     } catch (e) {
-      showToast({ kind: 'error', message: e?.message || 'Order failed' });
+      handleTradeError(e?.message, 'Order failed');
     } finally {
       setSubmitting(false);
     }
   }, [activeAccount, lots, side, symbol]);
 
-  const tvSym = toTvSymbol(symbol);
+  const tvSym = toTradingViewSymbol(symbol);
   const interval = (TIMEFRAMES.find((x) => x.key === tf) || TIMEFRAMES[1]).tv;
-  const chartHtml = useMemo(() => buildTvHtml(tvSym, interval), [tvSym, interval]);
+  const chartHtml = useMemo(() => buildTvHtml(tvSym, interval, vantage.isDark), [tvSym, interval]);
+
+  // Auth token for the self-hosted charting-library datafeed (bars endpoint).
+  useEffect(() => {
+    let m = true;
+    SecureStore.getItemAsync('token').then((t) => { if (m) setAuthToken(t || ''); }).catch(() => {});
+    return () => { m = false; };
+  }, []);
+
+  // When a self-hosted charting library is configured, use it (real charts for
+  // all backend-tracked symbols). Otherwise fall back to the TradingView widget.
+  const chartSource = useMemo(() => {
+    if (CHART_URL) {
+      const q = new URLSearchParams({
+        symbol: CHART_SYMBOL_ALIAS[symbol] || symbol,
+        interval,
+        theme: vantage.isDark ? 'dark' : 'light',
+        api: API_URL,
+        token: authToken || '',
+      });
+      return { uri: `${CHART_URL}?${q.toString()}` };
+    }
+    return { html: chartHtml, baseUrl: 'https://www.tradingview.com' };
+  }, [symbol, interval, authToken, chartHtml]);
 
   return (
     <Screen edges={['top']}>
@@ -304,7 +330,7 @@ export default function InstrumentDetailScreen() {
 
             <View style={styles.chartWrap}>
               <WebView
-                source={{ html: chartHtml, baseUrl: 'https://www.tradingview.com' }}
+                source={chartSource}
                 style={styles.chart}
                 javaScriptEnabled
                 domStorageEnabled
@@ -317,8 +343,32 @@ export default function InstrumentDetailScreen() {
           </>
         ) : tab === 'orders' ? (
           <View style={{ padding: space.lg }}>
-            <Text style={styles.empty}>Open the Trade tab to manage orders for this symbol.</Text>
-            <PillButton label="Go to Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol } })} style={{ marginTop: space.md }} />
+            {myPositions.length > 0 ? (
+              <>
+                <Text style={styles.ordTitle}>Your {symbol} positions</Text>
+                {myPositions.map((p) => {
+                  const pside = String(p.side || '').toLowerCase();
+                  const pl = p.profit ?? p.profit_loss ?? p.pnl ?? null;
+                  const plPos = pl == null ? true : Number(pl) >= 0;
+                  return (
+                    <View key={p.id || p._id} style={styles.ordRow}>
+                      <Text style={[styles.ordSide, { color: pside === 'buy' ? vantage.up : vantage.down }]}>
+                        {pside.toUpperCase()} {p.volume ?? p.lots ?? '—'} @ {Number(p.open_price ?? 0).toFixed(5)}
+                      </Text>
+                      <Text style={[styles.ordPl, { color: plPos ? vantage.up : vantage.down }]}>
+                        {pl != null ? `${plPos ? '+' : ''}${Number(pl).toFixed(2)}` : '—'}
+                      </Text>
+                    </View>
+                  );
+                })}
+                <PillButton label="Manage in Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol, tradeView: 'cfds' } })} style={{ marginTop: space.md }} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.empty}>No open {symbol} positions on this account.</Text>
+                <PillButton label="Go to Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol, tradeView: 'cfds' } })} style={{ marginTop: space.md }} />
+              </>
+            )}
           </View>
         ) : tab === 'analysis' ? (
           <View style={{ padding: space.lg }}>
@@ -343,6 +393,13 @@ export default function InstrumentDetailScreen() {
         }]}
         onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
       >
+        <Pressable onPress={() => setAcctSheet(true)} style={styles.acctRow} accessibilityRole="button" accessibilityLabel="Switch account">
+          <Ionicons name="wallet-outline" size={14} color={vantage.textSecondary} />
+          <Text style={styles.acctTxt} numberOfLines={1}>
+            {activeAccount ? `${activeAccount.is_demo ? 'Demo' : 'Live'} ${activeAccount.account_number || activeAccount.id || ''}` : 'Select account'}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color={vantage.textMuted} />
+        </Pressable>
         <View style={styles.lotsBar}>
           <Text style={styles.lotsLabel}>Lots</Text>
           <LotsField value={lots} onChange={setLots} />
@@ -370,6 +427,14 @@ export default function InstrumentDetailScreen() {
           style={{ marginTop: space.xs, minHeight: 42, paddingVertical: space.sm }}
         />
       </View>
+
+      <AccountSwitcher
+        visible={acctSheet}
+        onClose={() => setAcctSheet(false)}
+        accounts={accounts}
+        selectedId={activeAccount?.id || activeAccount?._id}
+        onSelect={selectAccount}
+      />
     </Screen>
   );
 }
@@ -490,19 +555,20 @@ function fmt(v) {
   return n.toFixed(5);
 }
 
-function buildTvHtml(tvSymbol, interval) {
+function buildTvHtml(tvSymbol, interval, isDark = true) {
   // TradingView Advanced Chart widget via iframe-style embed.
+  const bg = isDark ? '#000000' : '#FFFFFF';
   const cfg = {
     autosize: true,
     symbol: tvSymbol,
     interval,
     timezone: 'Etc/UTC',
-    theme: 'dark',
+    theme: isDark ? 'dark' : 'light',
     style: '1',
     locale: 'en',
     enable_publishing: false,
-    backgroundColor: '#000000',
-    gridColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: bg,
+    gridColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
     hide_top_toolbar: false,
     hide_legend: false,
     save_image: false,
@@ -512,7 +578,7 @@ function buildTvHtml(tvSymbol, interval) {
   };
   return `<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;width:100%;background:#000;overflow:hidden}#tv-container{height:100%;width:100%}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;width:100%;background:${bg};overflow:hidden}#tv-container{height:100%;width:100%}</style>
 </head><body>
 <div id="tv-container"></div>
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -556,8 +622,11 @@ const styles = StyleSheet.create({
   tfTxt: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
   tfMore: { marginLeft: 'auto' },
 
-  chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden' },
-  chart: { flex: 1, backgroundColor: '#000' },
+  chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: vantage.bg, borderRadius: radius.md, overflow: 'hidden' },
+  chart: { flex: 1, backgroundColor: vantage.bg },
+
+  acctRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start', backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 6, marginBottom: space.xs, maxWidth: '70%' },
+  acctTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, flexShrink: 1 },
 
   periodRow: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border, marginTop: space.md },
   periodCell: { flex: 1, alignItems: 'center', paddingVertical: space.md, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: vantage.border },
@@ -572,6 +641,10 @@ const styles = StyleSheet.create({
   rangeMarker: { position: 'absolute', top: -10, marginLeft: -6, alignItems: 'center' },
 
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, textAlign: 'center', padding: space.lg },
+  ordTitle: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: space.sm },
+  ordRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: vantage.border },
+  ordSide: { fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+  ordPl: { fontFamily, fontSize: sizes.body, fontWeight: weights.heavy },
 
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.sm },
   infoBorder: { borderBottomColor: vantage.border, borderBottomWidth: StyleSheet.hairlineWidth },

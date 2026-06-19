@@ -10,6 +10,7 @@ import webSocketService from '../services/WebSocketService';
 import { useHiddenBalance } from '../utils/hiddenBalance';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 
+import { useAccount } from '../context/AccountContext';
 import HomeHeader from './home/HomeHeader';
 import QuickActionsGrid from './home/QuickActionsGrid';
 import StrategyCarousel from './home/StrategyCarousel';
@@ -34,8 +35,8 @@ export default function HomeScreen() {
   const [banners, setBanners] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pricesBySymbol, setPricesBySymbol] = useState({});
-  const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(null);
+  // Global account selection — synced across Home / Trade / instrument detail.
+  const { accounts, selectedAccount, selectAccount, refreshAccounts } = useAccount();
   const [accountSummary, setAccountSummary] = useState(null);
   const [accountSheet, setAccountSheet] = useState(false);
 
@@ -70,13 +71,9 @@ export default function HomeScreen() {
         const unread = list.filter((n) => !n?.is_read && !n?.read).length;
         setUnreadNotifications(unread);
       }).catch(() => setUnreadNotifications(0)),
-      ApiService.getAccounts().then((res) => {
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        setAccounts(list);
-        setSelectedAccount((cur) => cur || list.find((a) => a.is_active) || list[0] || null);
-      }).catch(() => {}),
+      refreshAccounts(),
     ]);
-  }, []);
+  }, [refreshAccounts]);
 
   // Fetch live equity/PnL for the selected account.
   useEffect(() => {
@@ -184,6 +181,8 @@ export default function HomeScreen() {
               subColor="#FFFFFF"
             />
           </View>
+          {/* SwissCresta logo — top-right. */}
+          <Image source={require('../../assets/swisscresta-homebar-white.png')} style={styles.cardLogo} resizeMode="contain" />
           {/* Cardholder name — bottom-left. */}
           <Text style={styles.cardName} numberOfLines={1}>{cardName}</Text>
           {/* Card chip — bottom-right. */}
@@ -205,7 +204,7 @@ export default function HomeScreen() {
         onClose={() => setAccountSheet(false)}
         accounts={accounts}
         selectedId={selectedAccount?.id || selectedAccount?._id}
-        onSelect={setSelectedAccount}
+        onSelect={selectAccount}
         onAddAccount={() => nav.navigate('Accounts', { action: 'open' })}
       />
     </Screen>
@@ -246,6 +245,14 @@ const styles = StyleSheet.create({
     bottom: space.xxl,
     width: 84,
     height: 56,
+  },
+  // SwissCresta logo — top-right of the card.
+  cardLogo: {
+    position: 'absolute',
+    top: space.lg,
+    right: space.xl,
+    width: 120,
+    height: 28,
   },
   // Balance overlay pinned to the top-left of the card, with room from the edges.
   cardOverlay: {

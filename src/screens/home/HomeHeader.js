@@ -7,14 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { IconButton } from '../../components/vantage';
 import SymbolPicker from '../trade/SymbolPicker';
+import { parseAvatar, renderAvatar } from '../../utils/avatarRender';
 import { vantage, space, sizes, weights, fontFamily } from '../../theme/vantageTheme';
-
-const AVATAR_ANIM = require('../../../assets/avatar f04024.json');
 
 export default function HomeHeader({ unreadNotifications = 0, accountLabel, onPickAccount, onAddAccount }) {
   const nav = useNavigation();
   const { user } = useContext(AuthContext) || {};
   const [searchOpen, setSearchOpen] = useState(false);
+  const av = parseAvatar(user?.avatar);   // reflects the avatar chosen in Profile
 
   return (
     <View style={styles.row}>
@@ -26,7 +26,7 @@ export default function HomeHeader({ unreadNotifications = 0, accountLabel, onPi
       >
         <View style={styles.avatarWrap}>
           <View style={[styles.avatar, styles.avatarFallback]}>
-            <LottieView source={AVATAR_ANIM} autoPlay loop style={styles.avatarAnim} />
+            {renderAvatar(av, 36)}
           </View>
         </View>
       </Pressable>

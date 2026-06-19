@@ -266,6 +266,11 @@ class ApiService {
     return this.request(`/social/providers/${providerId}`);
   }
 
+  // Copier's view of the master's open positions + trade history (since copying).
+  async getProviderActivity(providerId) {
+    return this.request(`/social/providers/${encodeURIComponent(providerId)}/activity`);
+  }
+
   // Start copying a master. Backend takes master_id + amount (+ optional
   // account_id) as QUERY params, not a JSON body.
   async copyMaster(masterId, amount, accountId) {
@@ -554,7 +559,9 @@ class ApiService {
 
   // Instruments APIs
   async getInstruments() {
-    return this.request('/instruments');
+    // Trailing slash to match the website's call exactly (the route is GET
+    // /instruments/) — avoids a 307 redirect that can drop auth / alter results.
+    return this.request('/instruments/');
   }
 
   async getAllPrices() {

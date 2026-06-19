@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 
 import { AuthContext } from '../context/AuthContext';
+import { AccountProvider } from '../context/AccountContext';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import AppLoader from '../components/vantage/AppLoader';
@@ -38,10 +39,10 @@ export default function RootNavigator() {
       {!ready ? (
         <AppLoader />
       ) : auth?.user ? (
-        <>
+        <AccountProvider>
           <MainTabs />
           <NotificationsBridge />
-        </>
+        </AccountProvider>
       ) : (
         <AuthStack />
       )}
