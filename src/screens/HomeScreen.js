@@ -249,10 +249,10 @@ const styles = StyleSheet.create({
   // SwissCresta logo — top-right of the card.
   cardLogo: {
     position: 'absolute',
-    top: space.md,
-    right: space.md,
-    width: 158,
-    height: 40,
+    top: space.sm,
+    right: space.sm,
+    width: 60,
+    height: 60,
   },
   // Balance overlay pinned to the top-left of the card, with room from the edges.
   cardOverlay: {

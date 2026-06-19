@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +60,7 @@ export default function InstrumentDetailScreen() {
   const [symbol, setSymbol] = useState(initialSymbol);
   const [tab, setTab] = useState('chart');
   const [tf, setTf] = useState('1m');
+  const [chartFull, setChartFull] = useState(false);   // fullscreen chart toggle
   const [instrument, setInstrument] = useState(null);
   const [tick, setTick] = useState(null);
   const [bars1D, setBars1D] = useState([]);
@@ -330,7 +331,37 @@ export default function InstrumentDetailScreen() {
                 originWhitelist={['*']}
                 onError={() => {}}
               />
+              <Pressable onPress={() => setChartFull(true)} style={styles.fsBtn} hitSlop={8} accessibilityLabel="Fullscreen chart">
+                <Ionicons name="expand-outline" size={18} color={vantage.textPrimary} />
+              </Pressable>
             </View>
+
+            <Modal
+              visible={chartFull}
+              animationType="slide"
+              onRequestClose={() => setChartFull(false)}
+              supportedOrientations={['portrait', 'landscape']}
+            >
+              <View style={styles.fsContainer}>
+                <WebView
+                  source={chartSource}
+                  style={{ flex: 1, backgroundColor: vantage.bg }}
+                  javaScriptEnabled
+                  domStorageEnabled
+                  allowsInlineMediaPlayback
+                  originWhitelist={['*']}
+                  onError={() => {}}
+                />
+                <Pressable
+                  onPress={() => setChartFull(false)}
+                  style={[styles.fsClose, { top: insets.top + 10 }]}
+                  hitSlop={12}
+                  accessibilityLabel="Exit fullscreen"
+                >
+                  <Ionicons name="close" size={22} color="#fff" />
+                </Pressable>
+              </View>
+            </Modal>
           </>
         ) : tab === 'orders' ? (
           <View style={{ padding: space.lg }}>
@@ -611,6 +642,18 @@ const styles = StyleSheet.create({
 
   chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: vantage.bg, borderRadius: radius.md, overflow: 'hidden' },
   chart: { flex: 1, backgroundColor: vantage.bg },
+  fsBtn: {
+    position: 'absolute', top: 8, right: 8,
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: vantage.bgElevated, borderWidth: 1, borderColor: vantage.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fsContainer: { flex: 1, backgroundColor: vantage.bg },
+  fsClose: {
+    position: 'absolute', right: 14,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',
+  },
 
   acctRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start', backgroundColor: vantage.bgRaised, borderWidth: 1, borderColor: vantage.border, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 6, marginBottom: space.xs, maxWidth: '70%' },
   acctTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, flexShrink: 1 },
