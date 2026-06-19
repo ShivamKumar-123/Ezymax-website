@@ -88,7 +88,7 @@ export default function StrategyCarousel({ strategies = [], onSeeAll }) {
 
   const data = strategies.length > 0 ? strategies : (__DEV__ ? SAMPLE_MASTERS : []);
 
-  const seeAll = onSeeAll || (() => nav.navigate('TradeTab', { screen: 'Trade' }));
+  const seeAll = onSeeAll || (() => nav.navigate('TradeTab', { screen: 'Trade', params: { tradeView: 'copy' } }));
 
   return (
     <View style={styles.wrap}>

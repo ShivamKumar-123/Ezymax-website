@@ -161,9 +161,9 @@ export default function HomeScreen() {
         {/* Card section — card.png as background only; balance text kept on top. */}
         <Pressable
           style={styles.cardWrap}
-          onPress={() => nav.navigate('TradeTab')}
+          onPress={() => nav.navigate('FundsTab', { screen: 'Funds' })}
           accessibilityRole="button"
-          accessibilityLabel="Open trade"
+          accessibilityLabel="Open funds"
         >
           {/* Slight zoom crops only the black padding/rounded corners so the wave
               pattern fills (fits) the whole card. Lower scale = more wave shown. */}
@@ -191,7 +191,7 @@ export default function HomeScreen() {
 
         <QuickActionsGrid />
 
-        <StrategyCarousel strategies={strategies} onSeeAll={() => nav.navigate('TradeTab')} />
+        <StrategyCarousel strategies={strategies} onSeeAll={() => nav.navigate('TradeTab', { screen: 'Trade', params: { tradeView: 'copy' } })} />
 
         <WatchlistSection
           pricesBySymbol={pricesBySymbol}
@@ -249,10 +249,10 @@ const styles = StyleSheet.create({
   // SwissCresta logo — top-right of the card.
   cardLogo: {
     position: 'absolute',
-    top: space.lg,
-    right: space.xl,
-    width: 120,
-    height: 28,
+    top: space.md,
+    right: space.md,
+    width: 158,
+    height: 40,
   },
   // Balance overlay pinned to the top-left of the card, with room from the edges.
   cardOverlay: {

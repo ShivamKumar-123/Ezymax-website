@@ -17,7 +17,14 @@ export default function SegmentedTabs({ value, onChange, options }) {
           >
             <Text style={[
               styles.label,
-              { color: active ? vantage.textPrimary : vantage.textMuted, fontWeight: active ? weights.heavy : weights.medium }
+              {
+                // Light theme: force black for the active segment (and a darker
+                // grey for inactive) so the tabs read clearly on a white bg.
+                color: active
+                  ? (vantage.isDark ? vantage.textPrimary : '#000000')
+                  : (vantage.isDark ? vantage.textMuted : '#475569'),
+                fontWeight: active ? weights.heavy : weights.medium,
+              },
             ]}>
               {o.label}
             </Text>

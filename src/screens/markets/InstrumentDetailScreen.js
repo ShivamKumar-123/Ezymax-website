@@ -38,7 +38,6 @@ const TIMEFRAMES = [
 const TABS = [
   { key: 'chart',    label: 'Chart' },
   { key: 'orders',   label: 'Orders' },
-  { key: 'analysis', label: 'Analysis' },
   { key: 'info',     label: 'Info' },
 ];
 
@@ -320,14 +319,6 @@ export default function InstrumentDetailScreen() {
               </View>
             </View>
 
-            <View style={styles.tfRow}>
-              {TIMEFRAMES.map((x) => (
-                <Pressable key={x.key} onPress={() => setTf(x.key)} style={styles.tfCell} accessibilityRole="button">
-                  <Text style={[styles.tfTxt, tf === x.key && { color: vantage.textPrimary, fontWeight: weights.heavy }]}>{x.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-
             <View style={styles.chartWrap}>
               <WebView
                 source={chartSource}
@@ -369,10 +360,6 @@ export default function InstrumentDetailScreen() {
                 <PillButton label="Go to Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol, tradeView: 'cfds' } })} style={{ marginTop: space.md }} />
               </>
             )}
-          </View>
-        ) : tab === 'analysis' ? (
-          <View style={{ padding: space.lg }}>
-            <Text style={styles.empty}>Analysis articles coming soon.</Text>
           </View>
         ) : (
           <View style={{ padding: space.lg }}>
