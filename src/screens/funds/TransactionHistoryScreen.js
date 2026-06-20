@@ -15,7 +15,6 @@ const FILTER_OPTIONS = [
   { value: 'deposit',     label: 'Deposits' },
   { value: 'withdraw',    label: 'Withdrawals' },
   { value: 'transfer',    label: 'Transfers' },
-  { value: 'swap',        label: 'Swaps' },
 ];
 
 export default function TransactionHistoryScreen() {

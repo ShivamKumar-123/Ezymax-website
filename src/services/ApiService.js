@@ -524,6 +524,22 @@ class ApiService {
     });
   }
 
+  // Main wallet → a live trading account.
+  async transferMainToTrading(toAccountId, amount) {
+    return this.request('/wallet/transfer-main-to-trading', {
+      method: 'POST',
+      body: JSON.stringify({ to_account_id: toAccountId, amount }),
+    });
+  }
+
+  // A live trading account → main wallet.
+  async transferTradingToMain(fromAccountId, amount) {
+    return this.request('/wallet/transfer-trading-to-main', {
+      method: 'POST',
+      body: JSON.stringify({ from_account_id: fromAccountId, amount }),
+    });
+  }
+
   // KYC API. No trailing slash — `/submit/` 307-redirects and React Native
   // drops the multipart body across the redirect ("Network request failed").
   async submitKyc(formData) {
