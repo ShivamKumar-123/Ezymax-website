@@ -74,19 +74,10 @@ function mapItem(s) {
 
 // Dev-only placeholders so the carousel can be previewed before `/social/masters`
 // returns data. Never shown in production builds (__DEV__ === false).
-const SAMPLE_MASTERS = [
-  { _id: 'sample-1', displayName: 'Master Hong',   stats: { winRate: 78.4, activeFollowers: 1240, totalProfitGenerated: 182000 } },
-  { _id: 'sample-2', displayName: 'MY CFD Master', stats: { winRate: 71.2, activeFollowers: 880,  totalProfitGenerated: 124000 } },
-  { _id: 'sample-3', displayName: 'TradeDino',     stats: { winRate: 66.9, activeFollowers: 540,  totalProfitGenerated: 61000 } },
-  { _id: 'sample-4', displayName: 'Alpha Forex',   stats: { winRate: 63.5, activeFollowers: 1020, totalProfitGenerated: 98000 } },
-  { _id: 'sample-5', displayName: 'SteadyGains',   stats: { winRate: 59.1, activeFollowers: 310,  totalProfitGenerated: 36500 } },
-  { _id: 'sample-6', displayName: 'NightHawk FX',  stats: { winRate: 54.0, activeFollowers: 150,  totalProfitGenerated: 8800 } },
-];
-
 export default function StrategyCarousel({ strategies = [], onSeeAll }) {
   const nav = useNavigation();
 
-  const data = strategies.length > 0 ? strategies : (__DEV__ ? SAMPLE_MASTERS : []);
+  const data = Array.isArray(strategies) ? strategies : [];
 
   const seeAll = onSeeAll || (() => nav.navigate('TradeTab', { screen: 'Trade', params: { tradeView: 'copy' } }));
 

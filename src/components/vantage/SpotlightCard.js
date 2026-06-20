@@ -35,10 +35,18 @@ export default function SpotlightCard({ title = 'Spotlight', items, brandLabel =
               {it.subtitle ? <Text style={styles.sub}>{it.subtitle}</Text> : null}
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.price}>{Number(it.price).toLocaleString('en-US', { maximumFractionDigits: 2 })}</Text>
-              <Text style={[styles.pct, { color: it.changePct >= 0 ? vantage.up : vantage.down }]}>
-                {`${it.changePct >= 0 ? '+' : ''}${it.changePct.toFixed(2)}%`}
-              </Text>
+              {(() => {
+                const hasPrice = it.price != null && Number.isFinite(Number(it.price));
+                const hasPct = it.changePct != null && Number.isFinite(Number(it.changePct));
+                return (
+                  <>
+                    <Text style={styles.price}>{hasPrice ? Number(it.price).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}</Text>
+                    <Text style={[styles.pct, { color: hasPct ? (it.changePct >= 0 ? vantage.up : vantage.down) : vantage.textMuted }]}>
+                      {hasPct ? `${it.changePct >= 0 ? '+' : ''}${Number(it.changePct).toFixed(2)}%` : '—'}
+                    </Text>
+                  </>
+                );
+              })()}
             </View>
           </View>
         ))}

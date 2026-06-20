@@ -936,14 +936,7 @@ const toastStyles = StyleSheet.create({
 
 const useToast = () => React.useContext(ToastContext);
 
-// Default instruments - fallback only, will be replaced by API data
-const defaultInstruments = [
-  // Minimal fallback - actual instruments fetched from backend API
-  { symbol: 'EURUSD', name: 'EUR/USD', bid: 0, ask: 0, spread: 0, category: 'Forex', starred: true },
-  { symbol: 'GBPUSD', name: 'GBP/USD', bid: 0, ask: 0, spread: 0, category: 'Forex', starred: true },
-  { symbol: 'XAUUSD', name: 'Gold', bid: 0, ask: 0, spread: 0, category: 'Metals', starred: true },
-  { symbol: 'BTCUSD', name: 'Bitcoin', bid: 0, ask: 0, spread: 0, category: 'Crypto', starred: true },
-];
+// Instruments are loaded from the backend API only — no mock fallback.
 
 // Shared context for trading data
 const TradingContext = React.createContext();
@@ -983,7 +976,7 @@ const TradingProvider = ({ children, navigation, route }) => {
   const prevOpenCountRef = useRef(0);   // detect when an open trade closes (SL/TP)
   const [pendingOrders, setPendingOrders] = useState([]);
   const [tradeHistory, setTradeHistory] = useState([]);
-  const [instruments, setInstruments] = useState(defaultInstruments);
+  const [instruments, setInstruments] = useState([]);   // API-loaded only, no mock fallback
   const [livePrices, setLivePrices] = useState({});
   const [adminSpreads, setAdminSpreads] = useState({});
   const [loading, setLoading] = useState(true);
@@ -2775,7 +2768,7 @@ const HomeTab = ({ navigation }) => {
                       </View>
                       <View style={{ alignItems: 'flex-end', gap: 6 }}>
                         <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, fontVariant: ['tabular-nums'] }}>
-                          {inst.ask ? Number(inst.ask).toFixed(decimals) : '…'}
+                          {inst.ask ? Number(inst.ask).toFixed(decimals) : '-'}
                         </Text>
                         <View
                           style={{

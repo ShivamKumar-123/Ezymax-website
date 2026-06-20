@@ -42,8 +42,8 @@ export default function MarketsExplore({
       return {
         symbol: sym,
         subtitle: i?.display_name || i?.name || sym,
-        price: p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : 0),
-        changePct: p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : 0),
+        price: p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : null),
+        changePct: p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null),
       };
     });
   }, [pricesBySymbol, instruments]);
