@@ -100,22 +100,22 @@ export default function ProfileMenuScreen() {
     // don't gate on Updates.isEnabled, which can read false and wrongly show
     // the "disabled" message even in a proper build.
     if (__DEV__) {
-      showToast({ kind: 'info', message: 'Dev mode me updates disabled — installed build me chalega' });
+      showToast({ kind: 'info', message: 'Updates are disabled in dev mode — works in the installed build.' });
       return;
     }
     setChecking(true);
     try {
       const res = await Updates.checkForUpdateAsync();
       if (res.isAvailable) {
-        showToast({ kind: 'info', message: 'Naya update mil gaya — download ho raha…' });
+        showToast({ kind: 'info', message: 'Update found — downloading…' });
         await Updates.fetchUpdateAsync();
-        showToast({ kind: 'success', message: 'Update ready — app restart ho raha…' });
+        showToast({ kind: 'success', message: 'Update ready — restarting…' });
         setTimeout(() => { Updates.reloadAsync().catch(() => {}); }, 900);
       } else {
-        showToast({ kind: 'success', message: 'Aap latest version par ho ✓' });
+        showToast({ kind: 'success', message: 'You’re on the latest version ✓' });
       }
     } catch (e) {
-      showToast({ kind: 'error', message: `Update check fail: ${e?.message || 'updates is build me enabled nahi'}` });
+      showToast({ kind: 'error', message: `Update check failed: ${e?.message || 'updates not enabled in this build'}` });
     } finally {
       setChecking(false);
     }
