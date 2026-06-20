@@ -113,7 +113,7 @@ export default function RiskCalculatorScreen({ navigation }) {
       <ScreenHeader title={t('riskCalc.title')} subtitle={t('riskCalc.subtitle')} onBack={() => navigation.goBack()} />
       <TabBar tabs={tabs} activeTab={activeTab} onTabPress={setActiveTab} scrollable />
 
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         {/* Instrument selector — tap to change */}
         <TouchableOpacity
           activeOpacity={0.7}

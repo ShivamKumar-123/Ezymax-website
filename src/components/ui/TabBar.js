@@ -32,7 +32,7 @@ export default function TabBar({ tabs, activeTab, onTabPress, scrollable = false
 
   if (scrollable) {
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollBar} contentContainerStyle={styles.container}>
         {content}
       </ScrollView>
     );
@@ -44,6 +44,9 @@ export default function TabBar({ tabs, activeTab, onTabPress, scrollable = false
 const styles = StyleSheet.create({
   // alignItems:center stops the tabs from stretching to the row's full height
   // inside a horizontal ScrollView (which made the selected tab balloon).
+  // flexGrow:0 keeps the horizontal tab strip at its content height — it must
+  // not expand to fill leftover vertical space (which pushed the tabs down).
+  scrollBar: { flexGrow: 0, flexShrink: 0 },
   container: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
   tab: { height: 40, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   tabText: { fontSize: 13, fontWeight: '600' },
