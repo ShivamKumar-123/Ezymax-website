@@ -95,8 +95,12 @@ export default function ProfileMenuScreen() {
   const [checking, setChecking] = useState(false);
   const checkForUpdate = useCallback(async () => {
     if (checking) return;
-    if (__DEV__ || !Updates.isEnabled) {
-      showToast({ kind: 'info', message: 'Updates dev build me disabled hote hain — production build me chalega' });
+    // Only block in a true JS-dev session (Expo Go / dev-client metro). In a
+    // real release build (preview/production) we always attempt the check —
+    // don't gate on Updates.isEnabled, which can read false and wrongly show
+    // the "disabled" message even in a proper build.
+    if (__DEV__) {
+      showToast({ kind: 'info', message: 'Dev mode me updates disabled — installed build me chalega' });
       return;
     }
     setChecking(true);
@@ -111,7 +115,7 @@ export default function ProfileMenuScreen() {
         showToast({ kind: 'success', message: 'Aap latest version par ho ✓' });
       }
     } catch (e) {
-      showToast({ kind: 'error', message: `Update check fail: ${e?.message || 'error'}` });
+      showToast({ kind: 'error', message: `Update check fail: ${e?.message || 'updates is build me enabled nahi'}` });
     } finally {
       setChecking(false);
     }
