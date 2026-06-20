@@ -16,7 +16,7 @@ function money(n) {
 const TYPES = [
   { key: 'signal_provider', label: 'Signal',  desc: 'Let others copy your trades, sized to each follower’s equity.' },
   { key: 'pamm',            label: 'PAMM',     desc: 'Manage a pooled fund — investors allocate a $ amount, sized to the pool.' },
-  { key: 'mam',             label: 'MAM',      desc: 'Pooled fund with a per-investor volume-scaling multiplier.' },
+  // MAM removed — the website only surfaces Copy Trading + PAMM.
 ];
 
 // Backend keeps only two master records per user: 'pamm' and 'signal_provider'
@@ -165,7 +165,7 @@ export default function BecomeMasterScreen() {
               ))}
             </Card>
             <Text style={styles.hint}>
-              {elig?.all_passed ? 'You meet the criteria.' : 'PAMM/MAM require all criteria. Signal provider may be approved sooner.'}
+              {elig?.all_passed ? 'You meet the criteria.' : 'PAMM requires all criteria. Signal provider may be approved sooner.'}
             </Text>
 
             <PillButton

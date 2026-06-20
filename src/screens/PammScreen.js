@@ -190,11 +190,10 @@ export default function PammScreen({ navigation }) {
               </Text>
             )}
 
-            {/* Funds come from your main wallet; a dedicated MAM account is
-                created automatically — no account needs to be selected. */}
+            {/* Funds come from the main wallet — no account needs to be selected. */}
             <View style={[s.walletNote, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
               <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
-                Funds are taken from your main wallet. A new MAM account is created automatically — you can view the master’s trades from it.
+                Funds are taken from your main wallet and invested with the selected manager — no account needs to be picked.
               </Text>
             </View>
 

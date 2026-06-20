@@ -2150,7 +2150,7 @@ const HomeTab = ({ navigation }) => {
     const n = String(a?.account_number || '');
     if (a?.is_demo) return 'Demo Account';
     if (n.startsWith('PM')) return 'PAMM Pool Account';
-    if (n.startsWith('MM')) return 'MAM Pool Account';
+    if (n.startsWith('MM')) return 'Pool Account';
     if (n.startsWith('CT')) return 'Copy Trade Pool Account';
     if (n.startsWith('CF')) return 'Copy Trade Account';
     if (n.startsWith('IF')) return 'Investment Account';
@@ -6466,7 +6466,7 @@ const MoreTab = ({ navigation }) => {
   const menuItems = [
     { icon: 'book-outline', label: 'Orders', screen: 'OrderBook', isTab: false, color: colors.primary },
     { icon: 'wallet-outline', label: 'Wallet', screen: 'Wallet', isTab: false, color: colors.primary },
-    { icon: 'bar-chart-outline', label: 'PAMM / MAM', screen: 'Pamm', isTab: false, color: '#06b6d4' },
+    { icon: 'bar-chart-outline', label: 'PAMM', screen: 'Pamm', isTab: false, color: '#06b6d4' },
     { icon: 'calculator-outline', label: 'Risk Calculator', screen: 'RiskCalculator', isTab: false, color: '#f59e0b' },
     { icon: 'calendar-outline', label: 'Economic Calendar', screen: 'EconomicCalendar', isTab: false, color: '#ef4444' },
     { icon: 'school-outline', label: 'Academy', screen: 'Academy', isTab: false, color: '#2196f3' },

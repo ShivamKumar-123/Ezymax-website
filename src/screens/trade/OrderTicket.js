@@ -201,7 +201,7 @@ export default function OrderTicket({ accountId, account, accountSummary, symbol
 
       {/* Info */}
       <View style={styles.info}>
-        <InfoRow label="Margin/Fees" value={margin != null ? `${fmt(margin)} / ${fmt(0)} USD` : '—'} />
+        <InfoRow label="Required Margin" value={margin != null ? `${fmt(margin)} USD` : '—'} />
         <InfoRow label="Free Margin" value={freeMargin != null ? `${fmt(freeMargin)} USD` : '—'} />
         <InfoRow label="Margin Level After Trading" value={marginLevel != null ? `${fmt(marginLevel)}%` : '—'} />
         <InfoRow label="Leverage" value={`1:${leverage}`} />

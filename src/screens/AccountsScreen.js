@@ -706,10 +706,10 @@ const AccountsScreen = ({ navigation, route }) => {
             const acctNum = account.account_number || account.accountId || '';
             // PAMM / MAM / Copy tag so each account type is identifiable.
             const ctype = String(account.copy_type || '').toLowerCase();
+            // MAM is folded into Copy — the app only surfaces PAMM + Copy Trading.
             const typeTag = ctype === 'pamm' ? 'PAMM'
-              : (ctype === 'mam' || ctype === 'mamm') ? 'MAM'
-              : (ctype === 'signal_provider' || ctype === 'signal') ? 'Copy'
-              : (account.is_copy_trading ? 'Copy' : null);
+              : (account.is_copy_trading || ['mam', 'mamm', 'signal_provider', 'signal'].includes(ctype)) ? 'Copy'
+              : null;
             const numPrefix = isDemo ? 'D' : 'L';
 
             return (

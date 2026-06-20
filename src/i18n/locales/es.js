@@ -8,7 +8,7 @@ export default {
     error: 'Error', success: 'Éxito', warning: 'Advertencia',
   },
   pamm: {
-    title: 'PAMM / MAM', subtitle: 'Invierta con los mejores gestores de fondos',
+    title: 'PAMM', subtitle: 'Invierta con los mejores gestores de fondos',
     myAllocations: 'Mis Asignaciones', availableMasters: 'Maestros Disponibles',
     totalInvested: 'Total Invertido', currentValue: 'Valor Actual', totalPnl: 'G/P Total',
     investNow: 'Invertir Ahora', withdraw: 'Retirar', minInvestment: 'Inversión Mínima',

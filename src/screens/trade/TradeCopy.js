@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { AuthContext } from '../../context/AuthContext';
-import { Card, SegmentedTabs, CategoryTabs, SymbolIcon } from '../../components/vantage';
+import { Card, CategoryTabs, SymbolIcon } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 import ApiService from '../../services/ApiService';
 
@@ -20,7 +20,6 @@ const SORT_OPTIONS = [
 
 export default function TradeCopy() {
   const nav = useNavigation();
-  const [tab, setTab] = useState('discover');
   const [sort, setSort] = useState('most_copied');
   const [providers, setProviders] = useState([]);
   const [copiedIds, setCopiedIds] = useState(new Set());
@@ -88,55 +87,36 @@ export default function TradeCopy() {
         </View>
       </Card>
 
-      <View style={{ paddingHorizontal: space.lg }}>
-        <SegmentedTabs
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'discover',  label: 'Discover' },
-            { value: 'community', label: 'Community' },
-          ]}
-        />
-      </View>
-
-      {tab === 'discover' ? (
-        <>
-          {top1 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Best Overall Strategies</Text>
-              <StrategyDeck
-                items={providers.slice(0, 10)}
-                isFollowing={isFollowing}
-                isSelf={isSelf}
-                onOpen={(p) => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
-              />
-            </View>
-          ) : null}
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Leaderboards</Text>
-            <CategoryTabs value={sort} onChange={setSort} options={SORT_OPTIONS} />
-            {loading ? (
-              <Text style={styles.empty}>Loading…</Text>
-            ) : rest.length === 0 ? (
-              <Text style={styles.empty}>No strategies yet.</Text>
-            ) : rest.map((p) => (
-              <Pressable
-                key={p.id || p.provider_id || p.name}
-                onPress={() => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
-                android_ripple={{ color: vantage.bgPressed }}
-                style={styles.row}
-              >
-                <StrategyMiniRow item={p} following={isFollowing(p)} />
-              </Pressable>
-            ))}
-          </View>
-        </>
-      ) : (
+      {top1 ? (
         <View style={styles.section}>
-          <Text style={styles.empty}>Community feed coming soon.</Text>
+          <Text style={styles.sectionTitle}>Best Overall Strategies</Text>
+          <StrategyDeck
+            items={providers.slice(0, 10)}
+            isFollowing={isFollowing}
+            isSelf={isSelf}
+            onOpen={(p) => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
+          />
         </View>
-      )}
+      ) : null}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Leaderboards</Text>
+        <CategoryTabs value={sort} onChange={setSort} options={SORT_OPTIONS} />
+        {loading ? (
+          <Text style={styles.empty}>Loading…</Text>
+        ) : rest.length === 0 ? (
+          <Text style={styles.empty}>No strategies yet.</Text>
+        ) : rest.map((p) => (
+          <Pressable
+            key={p.id || p.provider_id || p.name}
+            onPress={() => nav.navigate('StrategyDetail', { providerId: p.id || p.provider_id })}
+            android_ripple={{ color: vantage.bgPressed }}
+            style={styles.row}
+          >
+            <StrategyMiniRow item={p} following={isFollowing(p)} />
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }

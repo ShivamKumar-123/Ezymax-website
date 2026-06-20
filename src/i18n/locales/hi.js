@@ -25,7 +25,7 @@ export default {
     warning: 'चेतावनी',
   },
   pamm: {
-    title: 'PAMM / MAM',
+    title: 'PAMM',
     subtitle: 'शीर्ष प्रदर्शन करने वाले फंड मैनेजरों के साथ निवेश करें',
     myAllocations: 'मेरे आवंटन',
     availableMasters: 'उपलब्ध मास्टर्स',

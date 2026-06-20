@@ -151,8 +151,7 @@ export default function StrategyDetailScreen() {
 
         <Card style={{ marginTop: space.lg }}>
           <Row label="Strategy ID" value={String(provider.id || provider.provider_id || '—')} />
-          <Row label="Category" value={provider.category || '—'} />
-          <Row label="Allocations" value={provider.allocation_count != null ? String(provider.allocation_count) : '—'} last />
+          <Row label="Investors" value={(provider.active_investors ?? provider.followers_count) != null ? String(provider.active_investors ?? provider.followers_count) : '—'} last />
         </Card>
 
         {isSelf ? (

@@ -28,7 +28,7 @@ export default {
 
   // PAMM
   pamm: {
-    title: 'PAMM / MAM',
+    title: 'PAMM',
     subtitle: 'Invest with top-performing fund managers',
     myAllocations: 'My Allocations',
     availableMasters: 'Available Masters',

@@ -23,16 +23,16 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const TABS = [
   { id: 'leaderboard', label: 'Leaderboard' },
   { id: 'my-copies', label: 'My Subscriptions' },
-  { id: 'mamm', label: 'MAM / PAMM' },
+  { id: 'mamm', label: 'PAMM' },
   { id: 'investments', label: 'My Investments' },
-  { id: 'provider', label: 'Become MAM Master' },
+  { id: 'provider', label: 'Become a Master' },
   { id: 'dashboard', label: 'My Dashboard' },
 ];
 
 const PROVIDER_TYPES = [
   { value: 'signal_provider', label: 'Signal Provider' },
   { value: 'pamm', label: 'PAMM' },
-  { value: 'mamm', label: 'MAMM' },
+  // MAM/MAMM removed — only Copy Trading + PAMM are offered.
 ];
 
 const SORTS = [
@@ -79,7 +79,7 @@ export default function SocialScreen({ navigation }) {
   const [copiesLoading, setCopiesLoading] = useState(false);
   const [stoppingId, setStoppingId] = useState(null);
 
-  /* MAM/PAMM */
+  /* PAMM */
   const [managed, setManaged] = useState([]);
   const [mammLoading, setMammLoading] = useState(false);
   const [investTarget, setInvestTarget] = useState(null);
@@ -514,7 +514,7 @@ export default function SocialScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backHit}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>MAM Trading</Text>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Copy Trading</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -533,7 +533,7 @@ export default function SocialScreen({ navigation }) {
             },
           ]}
         >
-          <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>MAM Trading — Follow Global Elite Traders</Text>
+          <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>Copy Trading — Follow Global Elite Traders</Text>
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             Follow top performers and replicate their strategies automatically. For pooled accounts, use the PAMM tab.
           </Text>
@@ -729,7 +729,7 @@ export default function SocialScreen({ navigation }) {
               ) : managed.length === 0 ? (
                 <View style={styles.emptyBox}>
                   <Ionicons name="pie-chart-outline" size={48} color={colors.textMuted} />
-                  <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No MAM/PAMM programs</Text>
+                  <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No PAMM programs</Text>
                 </View>
               ) : (
                 managed.map((a) => (
@@ -778,7 +778,7 @@ export default function SocialScreen({ navigation }) {
                   <Ionicons name="briefcase-outline" size={48} color={colors.textMuted} />
                   <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No PAMM allocations yet</Text>
                   <TouchableOpacity onPress={() => setTab('mamm')} style={{ marginTop: 12 }}>
-                    <Text style={{ color: accent, fontWeight: '600' }}>Browse MAM/PAMM →</Text>
+                    <Text style={{ color: accent, fontWeight: '600' }}>Browse PAMM →</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -998,9 +998,9 @@ export default function SocialScreen({ navigation }) {
               ) : !dash ? (
                 <View style={styles.emptyBox}>
                   <Ionicons name="stats-chart-outline" size={48} color={colors.textMuted} />
-                  <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{dashError || 'You are not an approved MAM master. Apply in the "Become MAM Master" tab.'}</Text>
+                  <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{dashError || 'You are not an approved master. Apply in the "Become a Master" tab.'}</Text>
                   <TouchableOpacity onPress={() => setTab('provider')} style={{ marginTop: 12 }}>
-                    <Text style={{ color: accent, fontWeight: '600' }}>Become MAM Master →</Text>
+                    <Text style={{ color: accent, fontWeight: '600' }}>Become a Master →</Text>
                   </TouchableOpacity>
                 </View>
               ) : (

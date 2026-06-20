@@ -10,17 +10,16 @@ import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/
 // the admin named it PAMM/MAM) refines the label.
 function acctTag(a) {
   // Precise type from the backend (follower allocation / master record).
+  // MAM is folded into Copy — the app only surfaces PAMM + Copy Trading.
   const t = String(a?.copy_type || '').toLowerCase();
   if (t === 'pamm') return 'PAMM';
-  if (t === 'mam' || t === 'mamm') return 'MAM';
-  if (t === 'signal_provider' || t === 'signal') return 'Copy';
+  if (['mam', 'mamm', 'signal_provider', 'signal'].includes(t)) return 'Copy';
   // Fallback to the generic flag + group name (older backend).
   if (!a?.is_copy_trading) return null;
   const g = String(
     a.account_group?.name || a.account_group?.display_name || a.account_group?.group_name || ''
   ).toLowerCase();
   if (g.includes('pamm')) return 'PAMM';
-  if (g.includes('mam')) return 'MAM';
   return 'Copy';
 }
 
