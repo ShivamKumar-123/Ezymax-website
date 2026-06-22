@@ -9,6 +9,7 @@
  * the relevant RMS page. A shared team queue — read state is global.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -57,6 +58,12 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const prevUnread = useRef<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // The dropdown is portaled to <body> so the topbar's stacking/overflow
+  // context can't paint page content over it (the old inline panel showed
+  // dashboard cards bleeding through). Positioned from the bell rect.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
   const pollUnread = useCallback(async () => {
     try {
@@ -89,10 +96,12 @@ export default function NotificationBell() {
     return () => clearInterval(t);
   }, [pollUnread]);
 
-  // Close on outside click.
+  // Close on outside click (ignore both the trigger and the portaled panel).
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -100,8 +109,12 @@ export default function NotificationBell() {
 
   const toggle = () => {
     const next = !open;
+    if (next) {
+      const r = triggerRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) });
+      void loadFeed();
+    }
     setOpen(next);
-    if (next) void loadFeed();
   };
 
   const openItem = async (n: Notif) => {
@@ -128,6 +141,7 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={wrapRef}>
       <button
+        ref={triggerRef}
         onClick={toggle}
         className="relative flex items-center justify-center w-9 h-9 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-fast"
         title="Risk alerts"
@@ -140,9 +154,19 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 mt-2 w-96 max-h-[70vh] overflow-hidden flex flex-col bg-bg-secondary border border-border-primary rounded-lg shadow-xl z-50">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border-primary">
+      {open && pos && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={panelRef}
+          className="fixed flex flex-col bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            top: pos.top,
+            right: pos.right,
+            width: 'min(384px, calc(100vw - 16px))',
+            maxHeight: '70vh',
+            zIndex: 2147483646,
+          }}
+        >
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border-primary bg-bg-secondary shrink-0">
             <span className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
               <AlertTriangle size={13} className="text-sell" /> Risk alerts
               {unread > 0 && <span className="text-text-tertiary font-normal">({unread} unread)</span>}
@@ -170,17 +194,18 @@ export default function NotificationBell() {
               >
                 <span className={cn('mt-0.5 shrink-0', sevColor(n.severity))}>{catIcon(n.category)}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />}
-                    <span className="text-xs font-medium text-text-primary truncate">{n.title}</span>
+                  <span className="flex items-start gap-1.5">
+                    {!n.is_read && <span className="w-1.5 h-1.5 mt-1 rounded-full bg-accent shrink-0" />}
+                    <span className="text-xs font-medium text-text-primary break-words">{n.title}</span>
                   </span>
-                  {n.body && <span className="block text-[11px] text-text-tertiary mt-0.5 line-clamp-2">{n.body}</span>}
+                  {n.body && <span className="block text-[11px] text-text-tertiary mt-0.5 line-clamp-2 break-all">{n.body}</span>}
                   <span className="block text-[10px] text-text-tertiary mt-1">{timeAgo(n.created_at)}</span>
                 </span>
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
