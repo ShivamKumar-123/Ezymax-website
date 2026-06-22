@@ -88,6 +88,7 @@ async def summary(db: AsyncSession, window_min: int, min_users: int, lookback_ho
         FROM positions p
         JOIN trading_accounts ta ON ta.id = p.account_id
         WHERE lower(cast(p.status AS text)) = 'open'
+          AND ta.is_demo = false
         """
     )
     try:
@@ -221,6 +222,7 @@ async def coordinated_clusters(
         JOIN instruments i ON i.id = p.instrument_id
         JOIN users u ON u.id = ta.user_id
         WHERE p.created_at > now() - make_interval(hours => :lookback)
+          AND ta.is_demo = false
         GROUP BY i.symbol, lower(cast(p.side AS text)), bucket
         HAVING count(DISTINCT ta.user_id) >= :min_users
         ORDER BY user_count DESC, bucket DESC

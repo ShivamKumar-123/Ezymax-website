@@ -249,6 +249,7 @@ class RmsEngine:
             JOIN instruments i ON i.id = p.instrument_id
             JOIN users u ON u.id = ta.user_id
             WHERE p.created_at > now() - make_interval(hours => {COORD_LOOKBACK_HOURS})
+              AND ta.is_demo = false
             GROUP BY i.symbol, lower(cast(p.side AS text)), bucket
             HAVING count(DISTINCT ta.user_id) >= {COORD_MIN_USERS}
             ORDER BY user_count DESC
