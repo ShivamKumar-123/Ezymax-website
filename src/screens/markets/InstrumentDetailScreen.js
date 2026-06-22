@@ -58,6 +58,8 @@ export default function InstrumentDetailScreen() {
   const initialSymbol = String(route.params?.symbol || 'XAUUSD').toUpperCase();
 
   const [symbol, setSymbol] = useState(initialSymbol);
+  // Remember the last instrument viewed → the Trade tab defaults to it.
+  useEffect(() => { if (symbol) SecureStore.setItemAsync('lastSymbol', symbol).catch(() => {}); }, [symbol]);
   const [tab, setTab] = useState('chart');
   const [tf, setTf] = useState('1m');
   const [chartFull, setChartFull] = useState(false);   // fullscreen chart toggle

@@ -36,18 +36,6 @@ export default function BuySellSplit({
           <PriceTicker value={ask} format={formatPrice} fontSize={sizes.h3} fontWeight={weights.heavy} fontFamily={fontFamily} upColor="#FFFFFF" downColor="#FFFFFF" neutralColor="#FFFFFF" style={{ marginTop: 1 }} />
         </Pressable>
       </View>
-      <View style={styles.changeRow}>
-        <View style={styles.changeBar}>
-          <View style={[styles.changeSeg, styles.segLeft, { backgroundColor: vantage.buyBtn }]} />
-          <View style={[styles.changeSeg, styles.segRight, { backgroundColor: vantage.sellBtn }]} />
-        </View>
-        <View style={styles.changeMarker}>
-          <Text style={[styles.changeArrow, { color: (changePoints ?? 0) >= 0 ? vantage.buyBtn : vantage.sellBtn }]}>
-            {(changePoints ?? 0) >= 0 ? '▲' : '▼'}
-          </Text>
-          <Text style={styles.changeNum}>{changePoints != null ? Math.abs(changePoints) : 0}</Text>
-        </View>
-      </View>
     </View>
   );
 }

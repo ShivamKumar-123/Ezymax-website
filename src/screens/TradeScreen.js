@@ -6,6 +6,7 @@ import { Screen, SegmentedTabs } from '../components/vantage';
 import { vantage, space } from '../theme/vantageTheme';
 import ApiService from '../services/ApiService';
 import webSocketService from '../services/WebSocketService';
+import * as SecureStore from 'expo-secure-store';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../components/vantage/BottomNavPill';
 
 import { useAccount } from '../context/AccountContext';
@@ -35,6 +36,20 @@ export default function TradeScreen() {
   useEffect(() => {
     if (route.params?.symbol) setSymbol(String(route.params.symbol).toUpperCase());
   }, [route.params?.symbol]);
+
+  // Remember the active symbol so re-entering Trade restores it.
+  useEffect(() => { if (symbol) SecureStore.setItemAsync('lastSymbol', symbol).catch(() => {}); }, [symbol]);
+
+  // On entering the Trade tab, default to the last instrument the user opened
+  // (in Markets or here) — unless this navigation passed an explicit symbol.
+  useFocusEffect(useCallback(() => {
+    if (route.params?.symbol) return;
+    let cancelled = false;
+    SecureStore.getItemAsync('lastSymbol').then((s) => {
+      if (!cancelled && s) setSymbol(String(s).toUpperCase());
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [route.params?.symbol]));
 
   // Honor an explicit sub-tab request (e.g. "Go to Trade" from a symbol always
   // lands on CFDs, even if the Trade tab was last left on Copy).
