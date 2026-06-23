@@ -157,7 +157,6 @@ export default function InstrumentDetailScreen() {
   const ask = tick?.ask != null ? Number(tick.ask) : null;
   const change = tick?.change != null ? Number(tick.change) : null;
   const changePct = tick?.change_pct != null ? Number(tick.change_pct) : null;
-  const positive = (changePct ?? 0) >= 0;
   const spread = bid != null && ask != null ? Math.round((ask - bid) * 100000) : null;
 
   const ohlc = useMemo(() => {
@@ -186,6 +185,15 @@ export default function InstrumentDetailScreen() {
   const pct1D = changePct ?? pctFor(bars1D);
   const pct1W = pctFor(bars1W);
   const pct1M = pctFor(bars1M);
+  // 1-day absolute change — tick's field, else derived from the day's bars
+  // (first vs last close) so the header shows real movement, not a static "—".
+  const dayChangeAbs = change ?? (bars1D.length ? (() => {
+    const s = [...bars1D].sort((a, b) => (a.time || 0) - (b.time || 0));
+    const f = Number(s[0]?.close ?? s[0]?.c);
+    const l = Number(s[s.length - 1]?.close ?? s[s.length - 1]?.c);
+    return Number.isFinite(f) && Number.isFinite(l) ? l - f : null;
+  })() : null);
+  const positive = (pct1D ?? 0) >= 0;
 
   // 1h Low/High range
   const range1h = useMemo(() => {
@@ -307,10 +315,10 @@ export default function InstrumentDetailScreen() {
             <View style={styles.heroRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.heroPrice}>{bid != null ? bid.toLocaleString('en-US', { maximumFractionDigits: 5 }) : '—'}</Text>
-                <Text style={[styles.heroChange, { color: positive ? vantage.up : vantage.down }]}>
-                  {change != null ? `${positive ? '+' : '−'}${Math.abs(change).toFixed(2)}` : '—'}
+                <Text style={[styles.heroChange, { color: pct1D == null ? vantage.textMuted : positive ? vantage.up : vantage.down }]}>
+                  {dayChangeAbs != null ? `${positive ? '+' : '−'}${Math.abs(dayChangeAbs).toFixed(2)}` : '—'}
                   {' '}
-                  {changePct != null ? `(${positive ? '+' : '−'}${Math.abs(changePct).toFixed(2)}%)` : ''}
+                  {pct1D != null ? `(${positive ? '+' : '−'}${Math.abs(pct1D).toFixed(2)}%) 1D` : ''}
                 </Text>
                 <Text style={styles.heroTime}>{new Date().toLocaleString('en-GB', { hour12: false })}</Text>
               </View>
