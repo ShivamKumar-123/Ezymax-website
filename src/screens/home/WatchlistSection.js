@@ -72,7 +72,7 @@ export default function WatchlistSection({ pricesBySymbol = {}, onSeeAll }) {
             price={price}
             changePct={changePct}
             sparkData={sparks[sym] || []}
-            onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol: sym } })}
+            onPress={() => nav.navigate('MarketsTab', { screen: 'InstrumentDetail', params: { symbol: sym } })}
             card
             upColor="#FBAA45"
           />
