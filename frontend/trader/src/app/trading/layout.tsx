@@ -52,6 +52,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     setPendingOrders,
     setInstruments,
     refreshPositions,
+    refreshPendingOrders,
     refreshAccount,
   } = useTradingStore();
   const accounts = useTradingStore((s) => s.accounts);
@@ -153,6 +154,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       const beforeIds = new Set(before.map((p) => p.id));
 
       await refreshPositions();
+      await refreshPendingOrders();
       await refreshAccount();
 
       const after = useTradingStore.getState().positions;
@@ -180,7 +182,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       clearInterval(positionPoll);
       clearInterval(pricePoll);
     };
-  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshAccount]);
+  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshPendingOrders, refreshAccount]);
 
   /* Picker vs terminal: active account + positions. */
   useEffect(() => {

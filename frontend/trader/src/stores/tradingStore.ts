@@ -117,8 +117,10 @@ interface TradingState {
   removeFromWatchlist: (s: string) => void;
   setInstruments: (i: InstrumentInfo[]) => void;
   removePosition: (id: string) => void;
+  removePendingOrder: (id: string) => void;
   removeAccount: (id: string) => void;
   refreshPositions: () => Promise<void>;
+  refreshPendingOrders: () => Promise<void>;
   refreshAccount: () => Promise<void>;
   placeOrder: (data: {
     account_id: string;
@@ -177,6 +179,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   setInstruments: (i) => set({ instruments: i }),
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
   removePosition: (id) => set((s) => ({ positions: s.positions.filter((p) => p.id !== id) })),
+  removePendingOrder: (id) => set((s) => ({ pendingOrders: s.pendingOrders.filter((o) => o.id !== id) })),
 
   removeAccount: (id) =>
     set((s) => ({
@@ -241,6 +244,33 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       });
 
       set({ positions: merged });
+    } catch {}
+  },
+
+  // Refresh the pending-order list for the active account. Kept separate so
+  // both the poll loop and the cancel handler can drop a pending order the
+  // moment it's cancelled or triggered (filled) — without a page refresh.
+  refreshPendingOrders: async () => {
+    const account = get().activeAccount;
+    if (!account) return;
+    try {
+      const orders = await api.get<any[]>(`/orders/`, { account_id: account.id, status: 'pending' });
+      const list = Array.isArray(orders) ? orders : [];
+      set({
+        pendingOrders: list.map((o: any) => ({
+          id: String(o.id),
+          account_id: String(o.account_id),
+          symbol: String(o.symbol || o.instrument?.symbol || ''),
+          order_type: String(o.order_type),
+          side: o.side as 'buy' | 'sell',
+          status: String(o.status),
+          lots: Number(o.lots) || 0,
+          price: Number(o.price) || 0,
+          stop_loss: o.stop_loss != null ? Number(o.stop_loss) : undefined,
+          take_profit: o.take_profit != null ? Number(o.take_profit) : undefined,
+          created_at: String(o.created_at ?? ''),
+        })),
+      });
     } catch {}
   },
 

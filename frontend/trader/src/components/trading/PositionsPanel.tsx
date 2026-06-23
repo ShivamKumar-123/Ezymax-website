@@ -322,7 +322,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     activeAccount,
     accounts,
     removePosition,
+    removePendingOrder,
     refreshPositions,
+    refreshPendingOrders,
     refreshAccount,
     instruments,
   } = useTradingStore();
@@ -1376,12 +1378,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <button
                               type="button"
                               onClick={async () => {
+                                removePendingOrder(order.id); // instant UI removal
                                 try {
                                   await api.delete(`/orders/${order.id}`);
                                   toast.success('Order cancelled');
-                                  refreshPositions();
                                 } catch (e: unknown) {
                                   toast.error(e instanceof Error ? e.message : 'Failed');
+                                } finally {
+                                  void refreshPendingOrders(); // reconcile with server
                                 }
                               }}
                               className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25"
@@ -1440,12 +1444,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <button
                                 type="button"
                                 onClick={async () => {
+                                  removePendingOrder(order.id); // instant UI removal
                                   try {
                                     await api.delete(`/orders/${order.id}`);
                                     toast.success('Order cancelled');
-                                    refreshPositions();
                                   } catch (e: unknown) {
                                     toast.error(e instanceof Error ? e.message : 'Failed');
+                                  } finally {
+                                    void refreshPendingOrders(); // reconcile with server
                                   }
                                 }}
                                 className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
