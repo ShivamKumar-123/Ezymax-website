@@ -996,6 +996,58 @@ class ClusterUser(BaseModel):
     email: Optional[str] = None
 
 
+class CrmDashboard(BaseModel):
+    total_traders: int = 0
+    active_accounts: int = 0
+    total_deposits: float = 0
+    total_withdrawals: float = 0
+    lots_traded: float = 0
+    todays_revenue: float = 0
+    monthly_revenue: float = 0
+
+
+class CrmLeadRow(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    country: Optional[str] = None
+    source: Optional[str] = None
+    assigned_rm: Optional[str] = None
+    status: Optional[str] = None
+    kyc_status: Optional[str] = None
+    created_at: Optional[datetime] = None
+    has_account: bool = False
+
+
+class CrmCustomerRow(BaseModel):
+    # Lead/identity (repeated per account — flat shape for CRM import)
+    user_id: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    country: Optional[str] = None
+    source: Optional[str] = None
+    assigned_rm: Optional[str] = None
+    # Customer
+    broker: str = "FXArtha"
+    account_number: Optional[str] = None
+    account_type: Optional[str] = None
+    currency: Optional[str] = None
+    balance: float = 0
+    equity: float = 0
+    total_deposit: float = 0
+    total_withdrawal: float = 0
+    lots_traded: float = 0
+    current_pnl: float = 0       # open positions (last-known)
+    realized_pnl: float = 0      # closed trades
+    # Revenue
+    gross_brokerage: float = 0
+    ib_commission: float = 0
+    net_revenue: float = 0
+    account_opened_at: Optional[datetime] = None
+
+
 class AdminNotificationOut(BaseModel):
     id: str
     category: str

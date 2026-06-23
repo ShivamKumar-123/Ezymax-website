@@ -95,6 +95,16 @@ class Settings(BaseSettings):
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
     CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
+    # ── CRM integration API (read-only, X-API-Key) ──────────────────────
+    # Static key a third-party CRM sends in the X-API-Key header to pull
+    # leads / customers / revenue / dashboard data from /api/v1/crm/*.
+    # Empty → the CRM endpoints return 503 (disabled). Set a strong value
+    # in production (e.g. `openssl rand -hex 32`).
+    CRM_API_KEY: str = ""
+    # Optional comma-separated IP/host allowlist for the CRM endpoints.
+    # Empty → any IP (rely on the key). Set to the CRM server's egress IP(s).
+    CRM_API_IP_ALLOWLIST: str = ""
+
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
     # a position, FXArtha pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel

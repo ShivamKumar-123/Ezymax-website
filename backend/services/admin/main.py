@@ -21,7 +21,7 @@ from routes import (
     admin_audit_logs,
     insurance as insurance_admin, play_zone as play_zone_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk,
-    admin_notifications, pricing_rules,
+    admin_notifications, pricing_rules, crm,
 )
 
 app_settings = get_settings()
@@ -293,6 +293,9 @@ app.include_router(rms.router, prefix=prefix)
 app.include_router(trade_risk.router, prefix=prefix)
 app.include_router(admin_notifications.router, prefix=prefix)
 app.include_router(pricing_rules.router, prefix=prefix)
+# CRM integration API — distinct prefix (NOT the admin prefix); auth is the
+# static X-API-Key, not admin JWT. GET-only, so AdminReadOnlyMiddleware passes.
+app.include_router(crm.router, prefix="/api/v1")
 
 
 @app.get("/health")
