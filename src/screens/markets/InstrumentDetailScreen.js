@@ -58,6 +58,13 @@ export default function InstrumentDetailScreen() {
   const initialSymbol = String(route.params?.symbol || 'XAUUSD').toUpperCase();
 
   const [symbol, setSymbol] = useState(initialSymbol);
+  // Re-sync when navigated here again with a different symbol — the screen may
+  // already be in the stack (e.g. opened from the home watchlist), so without
+  // this it would keep showing the first instrument.
+  useEffect(() => {
+    const s = route.params?.symbol;
+    if (s) setSymbol(String(s).toUpperCase());
+  }, [route.params?.symbol]);
   // Remember the last instrument viewed → the Trade tab defaults to it.
   useEffect(() => { if (symbol) SecureStore.setItemAsync('lastSymbol', symbol).catch(() => {}); }, [symbol]);
   const [tab, setTab] = useState('chart');
@@ -353,15 +360,19 @@ export default function InstrumentDetailScreen() {
               supportedOrientations={['portrait', 'landscape']}
             >
               <View style={styles.fsContainer}>
-                <WebView
-                  source={chartSource}
-                  style={{ flex: 1, backgroundColor: vantage.bg }}
-                  javaScriptEnabled
-                  domStorageEnabled
-                  allowsInlineMediaPlayback
-                  originWhitelist={['*']}
-                  onError={() => {}}
-                />
+                {/* Safe-area padding so the chart's top toolbar isn't hidden
+                    behind the device status bar / notch. */}
+                <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+                  <WebView
+                    source={chartSource}
+                    style={{ flex: 1, backgroundColor: vantage.bg }}
+                    javaScriptEnabled
+                    domStorageEnabled
+                    allowsInlineMediaPlayback
+                    originWhitelist={['*']}
+                    onError={() => {}}
+                  />
+                </View>
                 <Pressable
                   onPress={() => setChartFull(false)}
                   style={[styles.fsClose, { top: insets.top + 10 }]}
