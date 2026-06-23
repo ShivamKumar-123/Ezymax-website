@@ -297,6 +297,7 @@ export default function InstrumentDetailScreen() {
         onPin={togglePin}
         onAlert={() => showToast({ kind: 'info', message: 'Alerts coming soon' })}
         onShare={() => showToast({ kind: 'info', message: 'Share coming soon' })}
+        onFullscreen={() => setChartFull(true)}
       />
 
       <SymbolPicker
@@ -348,9 +349,6 @@ export default function InstrumentDetailScreen() {
                 originWhitelist={['*']}
                 onError={() => {}}
               />
-              <Pressable onPress={() => setChartFull(true)} style={styles.fsBtn} hitSlop={8} accessibilityLabel="Fullscreen chart">
-                <Ionicons name="expand-outline" size={18} color={vantage.textPrimary} />
-              </Pressable>
             </View>
 
             <Modal
@@ -505,7 +503,7 @@ function LotsField({ value, onChange }) {
   );
 }
 
-function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare }) {
+function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare, onFullscreen }) {
   return (
     <View style={styles.header}>
       <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={onBack} />
@@ -520,6 +518,9 @@ function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare
         <Ionicons name="chevron-down" size={16} color={vantage.textPrimary} />
       </Pressable>
       <View style={{ flex: 1 }} />
+      <Pressable onPress={onFullscreen} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fullscreen chart" style={styles.hdrIcon}>
+        <Ionicons name="expand-outline" size={21} color={vantage.textPrimary} />
+      </Pressable>
       <Pressable onPress={onPin} hitSlop={8} accessibilityRole="button" accessibilityLabel={pinned ? 'Unpin' : 'Pin to watchlist'} style={styles.hdrIcon}>
         <Ionicons name={pinned ? 'star' : 'star-outline'} size={22} color={pinned ? vantage.accent : vantage.textPrimary} />
       </Pressable>
