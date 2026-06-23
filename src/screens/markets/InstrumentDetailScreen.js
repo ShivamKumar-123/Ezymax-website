@@ -664,7 +664,9 @@ const styles = StyleSheet.create({
   chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: vantage.bg, borderRadius: radius.md, overflow: 'hidden' },
   chart: { flex: 1, backgroundColor: vantage.bg },
   fsBtn: {
-    position: 'absolute', top: 8, right: 8,
+    // Bottom-right: clear of TradingView's top-anchored toolbar + indicator
+    // dialog close (X) (top-right) and the TradingView logo (bottom-left).
+    position: 'absolute', bottom: 10, right: 10,
     width: 34, height: 34, borderRadius: 17,
     backgroundColor: vantage.bgElevated, borderWidth: 1, borderColor: vantage.border,
     alignItems: 'center', justifyContent: 'center',
