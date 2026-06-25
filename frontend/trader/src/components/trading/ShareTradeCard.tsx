@@ -107,10 +107,15 @@ export default function ShareTradeCard({
         {/* Header logo */}
         <div className="flex justify-center pt-2 pb-3">
           <div className="inline-flex items-center gap-1.5">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L3 6V12C3 17.5 6.8 22.3 12 23C17.2 22.3 21 17.5 21 12V6L12 2Z" stroke="white" strokeWidth="1.6" fill="none" />
-              <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {/* Real FXArtha emblem (same asset as the app topbar). Same-origin
+                public image so html-to-image inlines it into the captured PNG. */}
+            <img
+              src="/images/fxartha-logo.png"
+              alt="FXArtha"
+              width={22}
+              height={22}
+              className="w-[22px] h-[22px] object-contain"
+            />
             <span className="text-white text-[10px] font-bold tracking-[0.25em]">FXARTHA</span>
           </div>
         </div>
