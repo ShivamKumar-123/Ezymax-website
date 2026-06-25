@@ -41,8 +41,14 @@ function formatTime(d: string) {
 export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [actionType, setActionType] = useState('');
-  const [userIdFilter, setUserIdFilter] = useState('');
+  // User filter is now a name/email autocomplete. `userIdApplied` is the
+  // resolved user id sent to the API; the rest drive the search UI.
   const [userIdApplied, setUserIdApplied] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [userOptions, setUserOptions] = useState<{ id: string; email: string; name: string }[]>([]);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; label: string } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -84,9 +90,45 @@ export default function AuditLogsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const applyUserFilter = (e: React.FormEvent) => {
-    e.preventDefault();
-    setUserIdApplied(userIdFilter.trim());
+  // Autocomplete: search users by name / email while typing (debounced).
+  useEffect(() => {
+    if (selectedUser) return; // already picked one
+    const term = userSearch.trim();
+    if (term.length < 2) { setUserOptions([]); return; }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await adminApi.get<{ items?: Array<Record<string, unknown>> }>('/users', { search: term, per_page: '8' });
+        if (cancelled) return;
+        setUserOptions((res.items || []).map((u) => ({
+          id: String(u.id),
+          email: String(u.email || ''),
+          name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+        })));
+        setSearchOpen(true);
+      } catch {
+        if (!cancelled) setUserOptions([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [userSearch, selectedUser]);
+
+  const pickUser = (u: { id: string; email: string; name: string }) => {
+    setSelectedUser({ id: u.id, label: u.name ? `${u.name} · ${u.email}` : u.email });
+    setUserIdApplied(u.id);
+    setUserSearch('');
+    setUserOptions([]);
+    setSearchOpen(false);
+  };
+
+  const clearUser = () => {
+    setSelectedUser(null);
+    setUserIdApplied('');
+    setUserSearch('');
+    setUserOptions([]);
   };
 
   return (
@@ -141,24 +183,42 @@ export default function AuditLogsPage() {
               className="text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md text-text-primary"
             />
           </div>
-          <form onSubmit={applyUserFilter} className="flex items-end gap-2">
-            <div>
-              <span className="text-xxs text-text-tertiary block mb-1">User ID</span>
+          <div className="relative">
+            <span className="text-xxs text-text-tertiary block mb-1">User</span>
+            {selectedUser ? (
+              <div className="flex items-center gap-1.5 text-xs py-1.5 px-2 w-64 bg-bg-input border border-accent/40 rounded-md text-text-primary">
+                <span className="truncate flex-1" title={selectedUser.label}>{selectedUser.label}</span>
+                <button type="button" onClick={clearUser} className="text-text-tertiary hover:text-sell shrink-0" aria-label="Clear user">✕</button>
+              </div>
+            ) : (
               <input
                 type="text"
-                value={userIdFilter}
-                onChange={(e) => setUserIdFilter(e.target.value)}
-                placeholder="UUID…"
-                className="text-xs py-1.5 px-2 w-56 bg-bg-input border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary font-mono"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                onFocus={() => userOptions.length && setSearchOpen(true)}
+                onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                placeholder="Search name or email…"
+                className="text-xs py-1.5 px-2 w-64 bg-bg-input border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary"
               />
-            </div>
-            <button
-              type="submit"
-              className="px-2.5 py-1.5 text-xs font-medium bg-bg-hover border border-border-primary rounded-md text-text-secondary hover:text-text-primary transition-fast"
-            >
-              Apply
-            </button>
-          </form>
+            )}
+            {searchOpen && !selectedUser && (userOptions.length > 0 || searching) && (
+              <div className="absolute z-30 mt-1 w-64 max-h-64 overflow-y-auto bg-bg-secondary border border-border-primary rounded-md shadow-xl">
+                {searching && userOptions.length === 0 ? (
+                  <div className="px-3 py-2 text-xxs text-text-tertiary">Searching…</div>
+                ) : userOptions.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); pickUser(u); }}
+                    className="w-full text-left px-3 py-2 hover:bg-bg-hover transition-fast border-b border-border-primary/50 last:border-0"
+                  >
+                    <div className="text-xs text-text-primary truncate">{u.email}</div>
+                    {u.name && <div className="text-[10px] text-text-tertiary truncate">{u.name}</div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
