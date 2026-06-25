@@ -162,25 +162,26 @@ export default function SpinWheel({
           }}
         >
           {prizes.map((p, i) => {
-            // Polar placement: anchor at wheel centre, rotate by the slice's
-            // mid-angle, push outward by ~70% of the radius, then counter-
-            // rotate the text so it always reads horizontally. `top/left:50%`
-            // + `translate(-50%,-50%)` keeps the rotation pivot on the exact
-            // centre regardless of label width.
+            // Each label sits on a radius-tall vertical strip pinned to the
+            // wheel centre (origin-bottom) and rotated to the slice's mid-
+            // angle, so the text lands near the rim of its slice. Using a
+            // half-height strip (= the radius) makes this scale with the
+            // wheel size — the old `translateY(-38%)` was a % of the tiny
+            // label element, so labels collapsed onto the centre hub and
+            // were invisible (the "empty wheel"). The span counter-rotates
+            // so the text always reads horizontally.
             const rot = i * sliceAngle + sliceAngle / 2;
             const isLight = (i % 2) === 0;
             return (
               <div
                 key={p.id}
                 aria-hidden
-                className="absolute left-1/2 top-1/2 pointer-events-none"
-                style={{
-                  transform: `translate(-50%, -50%) rotate(${rot}deg) translateY(-38%)`,
-                }}
+                className="absolute left-1/2 top-0 h-1/2 origin-bottom pointer-events-none"
+                style={{ transform: `translateX(-50%) rotate(${rot}deg)` }}
               >
                 <span
                   className={
-                    'inline-block text-[11px] sm:text-xs font-extrabold whitespace-nowrap drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)] ' +
+                    'inline-block mt-3 text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)] ' +
                     (isLight ? 'text-bg-base' : 'text-[#f5e6b8]')
                   }
                   style={{ transform: `rotate(${-rot}deg)` }}
