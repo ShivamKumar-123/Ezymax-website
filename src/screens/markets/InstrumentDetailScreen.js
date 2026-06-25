@@ -10,6 +10,7 @@ import {
   BuySellSplit,
   IconButton,
   PillButton,
+  PriceTicker,
   showToast,
 } from '../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
@@ -322,7 +323,16 @@ export default function InstrumentDetailScreen() {
           <>
             <View style={styles.heroRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.heroPrice}>{bid != null ? bid.toLocaleString('en-US', { maximumFractionDigits: 5 }) : '—'}</Text>
+                <PriceTicker
+                  value={bid}
+                  format={(v) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 5 })}
+                  fontSize={sizes.hero}
+                  fontWeight={weights.heavy}
+                  fontFamily={fontFamily}
+                  upColor={vantage.up}
+                  downColor={vantage.down}
+                  neutralColor={vantage.textPrimary}
+                />
                 <Text style={[styles.heroChange, { color: pct1D == null ? vantage.textMuted : positive ? vantage.up : vantage.down }]}>
                   {dayChangeAbs != null ? `${positive ? '+' : '−'}${Math.abs(dayChangeAbs).toFixed(2)}` : '—'}
                   {' '}

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import SymbolIcon from './SymbolIcon';
 import Sparkline from './Sparkline';
+import PriceTicker from './PriceTicker';
 import { vantage, space, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 function InstrumentRow({
@@ -43,24 +44,6 @@ function InstrumentRow({
   const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
 
-  // Live price flash: briefly tint the price up/down green/red when it ticks.
-  const prevPrice = useRef(price);
-  const flash = useRef(new Animated.Value(0)).current;
-  const flashDir = useRef(1);
-  useEffect(() => {
-    if (price != null && prevPrice.current != null && price !== prevPrice.current) {
-      flashDir.current = price > prevPrice.current ? 1 : -1;
-      flash.setValue(1);
-      Animated.timing(flash, { toValue: 0, duration: 650, useNativeDriver: false }).start();
-    }
-    prevPrice.current = price;
-  }, [price, flash]);
-
-  const priceColor = flash.interpolate({
-    inputRange: [0, 1],
-    outputRange: [vantage.textPrimary, flashDir.current >= 0 ? upColor : vantage.down],
-  });
-
   return (
     <Animated.View
       style={{
@@ -88,7 +71,16 @@ function InstrumentRow({
           <Sparkline data={sparkData || []} color={sparkColor} width={64} height={28} />
         </View>
         <View style={styles.right}>
-          <Animated.Text style={[styles.price, { color: priceColor }]}>{formatPrice(price)}</Animated.Text>
+          <PriceTicker
+            value={price}
+            format={formatPrice}
+            fontSize={16}
+            fontWeight={weights.bold}
+            fontFamily={fontFamily}
+            upColor={upColor}
+            downColor={vantage.down}
+            neutralColor={vantage.textPrimary}
+          />
           <Text style={[styles.pct, { color: hasChange ? (positive ? upColor : vantage.down) : vantage.textMuted }]}>
             {hasChange ? `${positive ? '+' : ''}${effChange.toFixed(2)}%` : '—'}
           </Text>
