@@ -270,6 +270,9 @@ async def trade_history(
 ) -> dict:
     accounts = await _get_user_accounts(user_id, db)
     account_ids = [a.id for a in accounts]
+    # account_id -> account_number map so the trader can see (and the UI can
+    # group/filter) which trading account each closed trade belongs to.
+    acct_num = {a.id: a.account_number for a in accounts}
     if account_id:
         if account_id not in account_ids:
             raise HTTPException(status_code=404, detail="Account not found")
@@ -371,6 +374,11 @@ async def trade_history(
             "take_profit": tp_val,
             "swap": float(t.swap), "commission": float(t.commission),
             "pnl": float(t.profit),
+            # Net P/L after broker charges (gross price P/L − commission − swap).
+            # gross = pnl; charges = commission + swap.
+            "net_pnl": float(t.profit) - float(t.commission or 0) - float(t.swap or 0),
+            "account_id": str(t.account_id) if t.account_id else None,
+            "account_number": acct_num.get(t.account_id),
             # User-facing view hides the 'admin' close-reason. Admins
             # closing a trade on a user's behalf still write
             # close_reason='admin' to the DB (audit trail intact, the

@@ -677,7 +677,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     ];
     for (const t of historyTrades) {
       const d = getDigits(t.symbol);
-      const comm = t.commission || 0;
+      const charges = (t.commission || 0) + (t.swap || 0);
       const gross = t.pnl || 0;
       rows.push([
         t.symbol,
@@ -685,7 +685,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         t.lots,
         t.open_price.toFixed(d),
         t.close_price.toFixed(d),
-        gross - comm,
+        gross - charges,
         closeReasonBadge(t.close_reason, t.close_price, d).label,
         t.close_time,
       ]);
@@ -1491,7 +1491,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       historyTrades.map((trade) => {
                         const d = getDigits(trade.symbol);
                         const pnl = trade.pnl || 0;
-                        const charges = trade.commission || 0;
+                        const charges = (trade.commission || 0) + (trade.swap || 0);
                         const net = pnl - charges;
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         return (
@@ -1564,7 +1564,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       {historyTrades.map((trade) => {
                         const d = getDigits(trade.symbol);
                         const pnl = trade.pnl || 0;
-                        const charges = trade.commission || 0;
+                        const charges = (trade.commission || 0) + (trade.swap || 0);
                         const net = pnl - charges;
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         return (

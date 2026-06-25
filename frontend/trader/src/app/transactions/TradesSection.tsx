@@ -69,7 +69,10 @@ interface ClosedTrade {
   take_profit?: number | null;
   swap: number;
   commission: number;
-  pnl: number;
+  pnl: number;            // gross price P/L
+  net_pnl?: number;       // gross − commission − swap (after broker charges)
+  account_id?: string;
+  account_number?: string;
   close_reason: string;
   trade_type?: string;
   opened_at: string | null;
@@ -247,7 +250,12 @@ export default function TradesSection() {
   const paged = currentList.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const openPnl = openPositions.reduce((acc, p) => acc + calcLivePnl(p), 0);
-  const closedPnl = closedTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+  // Closed P/L summary is NET of broker charges (commission + swap) so it
+  // matches what actually hit the account balance.
+  const closedPnl = closedTrades.reduce((acc, t) => {
+    const net = t.net_pnl != null ? t.net_pnl : (Number(t.pnl || 0) - Number(t.commission || 0) - Number(t.swap || 0));
+    return acc + net;
+  }, 0);
 
   return (
     <div className="space-y-5">
@@ -377,6 +385,10 @@ export default function TradesSection() {
                   {paged.map((row) => {
                     const r: any = row;
                     const pnl = tab === 'open' ? calcLivePnl(r) : Number(r.pnl || 0);
+                    const charges = Number(r.commission || 0) + Number(r.swap || 0);
+                    const netPnl = tab === 'closed'
+                      ? (r.net_pnl != null ? Number(r.net_pnl) : Number(r.pnl || 0) - charges)
+                      : pnl;
                     const isBuy = String(r.side).toLowerCase() === 'buy';
                     const acctNum = accountNumber(r.account_id);
                     const isMamFollower =
@@ -420,8 +432,21 @@ export default function TradesSection() {
                           </>
                         )}
                         {tab !== 'pending' && (
-                          <td className={clsx('px-3 py-3 text-right font-mono font-bold', pnl >= 0 ? 'text-buy' : 'text-sell')}>
-                            {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
+                          <td className="px-3 py-3 text-right font-mono">
+                            {tab === 'closed' ? (
+                              <>
+                                <div className={clsx('font-bold', netPnl >= 0 ? 'text-buy' : 'text-sell')}>
+                                  {netPnl >= 0 ? '+' : ''}${fmt2(netPnl)}
+                                </div>
+                                <div className="text-[9px] text-text-tertiary leading-tight mt-0.5 whitespace-nowrap">
+                                  gross {pnl >= 0 ? '+' : ''}${fmt2(pnl)} · chg −${fmt2(charges)}
+                                </div>
+                              </>
+                            ) : (
+                              <span className={clsx('font-bold', pnl >= 0 ? 'text-buy' : 'text-sell')}>
+                                {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
+                              </span>
+                            )}
                           </td>
                         )}
                         {tab === 'closed' && (() => {
@@ -482,7 +507,11 @@ export default function TradesSection() {
             <div className="md:hidden space-y-2 px-3 py-3">
               {paged.map((row) => {
                 const r: any = row;
-                const pnl = Number(r.pnl || 0);
+                const pnl = tab === 'open' ? calcLivePnl(r) : Number(r.pnl || 0);
+                const charges = Number(r.commission || 0) + Number(r.swap || 0);
+                const netPnl = tab === 'closed'
+                  ? (r.net_pnl != null ? Number(r.net_pnl) : Number(r.pnl || 0) - charges)
+                  : pnl;
                 const isBuy = String(r.side).toLowerCase() === 'buy';
                 const dateStr = tab === 'closed' ? r.close_time : tab === 'pending' ? r.created_at : r.opened_at;
                 const acctNum = accountNumber(r.account_id);
@@ -509,9 +538,16 @@ export default function TradesSection() {
                         })()}
                       </div>
                       {tab !== 'pending' && (
-                        <span className={clsx('text-sm font-bold font-mono tabular-nums', pnl >= 0 ? 'text-buy' : 'text-sell')}>
-                          {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
-                        </span>
+                        <div className="text-right">
+                          <span className={clsx('text-sm font-bold font-mono tabular-nums', (tab === 'closed' ? netPnl : pnl) >= 0 ? 'text-buy' : 'text-sell')}>
+                            {(tab === 'closed' ? netPnl : pnl) >= 0 ? '+' : ''}${fmt2(tab === 'closed' ? netPnl : pnl)}
+                          </span>
+                          {tab === 'closed' && (
+                            <div className="text-[9px] text-text-tertiary leading-tight">
+                              gross {pnl >= 0 ? '+' : ''}${fmt2(pnl)} · chg −${fmt2(charges)}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -680,16 +716,29 @@ function TradeDetailBody({ kind, data, accountNumber }: { kind: TradeTab; data: 
     });
   }
   if (kind !== 'pending') {
+    const charges = Number(data.commission || 0) + Number(data.swap || 0);
+    const net = data.net_pnl != null ? Number(data.net_pnl) : (pnl - charges);
     items.push({
-      label: 'P/L',
+      label: kind === 'closed' ? 'Gross P/L' : 'P/L',
       value: (
-        <span className={clsx('font-mono font-bold text-base', pnl >= 0 ? 'text-buy' : 'text-sell')}>
+        <span className={clsx('font-mono font-bold', pnl >= 0 ? 'text-buy' : 'text-sell')}>
           {pnl >= 0 ? '+' : ''}${fmt2(pnl)}
         </span>
       ),
     });
-    items.push({ label: 'Swap', value: <span className="font-mono text-text-secondary">${fmt2(data.swap || 0)}</span> });
-    items.push({ label: 'Commission', value: <span className="font-mono text-text-secondary">${fmt2(data.commission || 0)}</span> });
+    items.push({ label: 'Commission', value: <span className="font-mono text-text-secondary">−${fmt2(data.commission || 0)}</span> });
+    items.push({ label: 'Swap', value: <span className="font-mono text-text-secondary">−${fmt2(data.swap || 0)}</span> });
+    if (kind === 'closed') {
+      items.push({ label: 'Charges (Brokerage)', value: <span className="font-mono text-text-secondary">−${fmt2(charges)}</span> });
+      items.push({
+        label: 'Net P/L (after charges)',
+        value: (
+          <span className={clsx('font-mono font-bold text-base', net >= 0 ? 'text-buy' : 'text-sell')}>
+            {net >= 0 ? '+' : ''}${fmt2(net)}
+          </span>
+        ),
+      });
+    }
   }
   if (data.stop_loss) {
     items.push({ label: 'Stop Loss', value: <span className="font-mono text-sell">{fmt5(data.stop_loss)}</span> });
