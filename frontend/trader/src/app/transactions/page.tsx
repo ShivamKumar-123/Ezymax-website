@@ -60,6 +60,11 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  // Per-account filter: 'all' or a trading-account id. Lets the user see
+  // each trading account's transactions separately (account-type shown in
+  // the label). Wallet-level rows (no account_id) appear only under "All".
+  const [accounts, setAccounts] = useState<{ id: string; number: string; type: string }[]>([]);
+  const [accountFilter, setAccountFilter] = useState<string>('all');
   const loadGen = useRef(0);
 
   const fetchData = useCallback(async (opts: { isRefresh?: boolean; silent?: boolean } = {}) => {
@@ -122,6 +127,32 @@ export default function TransactionsPage() {
     void fetchData();
   }, [fetchData]);
 
+  // Load the user's trading accounts once (for the per-account filter +
+  // showing which account each transaction belongs to).
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get<unknown>('/accounts');
+        const items = (Array.isArray(res) ? res : (res as { items?: unknown[] })?.items ?? []) as Record<string, unknown>[];
+        setAccounts(items.map((a) => {
+          const grp = a.account_group as { name?: string } | undefined;
+          return {
+            id: String(a.id),
+            number: String(a.account_number ?? ''),
+            type: String(grp?.name ?? a.account_type ?? a.group_name ?? ''),
+          };
+        }));
+      } catch { /* dropdown just won't list accounts */ }
+    })();
+  }, []);
+
+  const accountLabel = (id?: string | null) => {
+    if (!id) return 'Main wallet';
+    const a = accounts.find((x) => x.id === id);
+    if (!a) return 'Trading account';
+    return a.type ? `${a.number} · ${a.type}` : a.number;
+  };
+
   // Silent background poll so trade closes (realized P&L), incoming
   // deposits, and admin adjustments appear without a manual refresh.
   // 6s cadence matches the trade-history live refresh.
@@ -137,6 +168,7 @@ export default function TransactionsPage() {
 
   const filteredTx = transactions.filter((tx) => {
     if (!transactionMatchesTypeFilter(tx, typeFilter)) return false;
+    if (accountFilter !== 'all' && (tx.account_id ?? '') !== accountFilter) return false;
     if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
     if (dateFrom) {
       const from = new Date(dateFrom);
@@ -162,6 +194,7 @@ export default function TransactionsPage() {
     setDateTo('');
     setTypeFilter('all');
     setStatusFilter('all');
+    setAccountFilter('all');
     setPage(1);
   };
 
@@ -416,6 +449,30 @@ export default function TransactionsPage() {
                   {s === 'all' ? 'All status' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}
+              {/* Per-account filter — see each trading account separately */}
+              {accounts.length > 0 && (
+                <>
+                  <div className="w-px h-5 bg-white/8 mx-1" />
+                  <select
+                    value={accountFilter}
+                    onChange={(e) => { setAccountFilter(e.target.value); setPage(1); }}
+                    title="Filter by trading account"
+                    className={clsx(
+                      'px-2.5 py-1 rounded-full border bg-bg-secondary text-[11px] font-semibold outline-none focus:border-accent/30 max-w-[170px]',
+                      accountFilter !== 'all'
+                        ? 'border-accent/30 text-accent'
+                        : 'border-border-primary text-text-tertiary',
+                    )}
+                  >
+                    <option value="all">All accounts</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.number}{a.type ? ` · ${a.type}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
               <div className="w-px h-5 bg-white/8 mx-1" />
               <div className="flex items-center gap-1 sm:gap-1.5 w-full sm:w-auto mt-1.5 sm:mt-0">
                 <input
@@ -434,7 +491,7 @@ export default function TransactionsPage() {
                   placeholder="To"
                 />
               </div>
-              {(dateFrom || dateTo || typeFilter !== 'all' || statusFilter !== 'all') && (
+              {(dateFrom || dateTo || typeFilter !== 'all' || statusFilter !== 'all' || accountFilter !== 'all') && (
                 <button
                   type="button"
                   onClick={resetFilters}
@@ -528,14 +585,19 @@ export default function TransactionsPage() {
                             </p>
                           </div>
                         </div>
-                        <p className="text-[10px] text-text-tertiary mt-1">
-                          {new Date(tx.created_at).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                        <p className="text-[10px] text-text-tertiary mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span>
+                            {new Date(tx.created_at).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-bg-tertiary/40 border border-border-primary/50 text-text-secondary font-medium">
+                            {accountLabel(tx.account_id)}
+                          </span>
                         </p>
                       </div>
                     </div>
