@@ -160,6 +160,22 @@ export default function InstrumentDetailScreen() {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [symbol]);
 
+  // Live price via polling (every 1.5s while focused) so the header price/PnL
+  // move in real time even when the WebSocket isn't delivering.
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    const tickOnce = async () => {
+      try {
+        const res = await ApiService.getAllPrices();
+        const arr = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+        const t = arr.find((x) => String(x.symbol || x.ticker || '').toUpperCase() === symbol);
+        if (!cancelled && t) setTick(t);
+      } catch (_) {}
+    };
+    const id = setInterval(tickOnce, 500);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [symbol]));
+
   // Derived
   const bid = tick?.bid != null ? Number(tick.bid) : null;
   const ask = tick?.ask != null ? Number(tick.ask) : null;

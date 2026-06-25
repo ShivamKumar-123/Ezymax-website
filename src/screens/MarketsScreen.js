@@ -76,6 +76,25 @@ export default function MarketsScreen() {
     return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, []);
 
+  // Live prices via polling (every 2s while focused) — reliable real-time
+  // movement even when the price WebSocket isn't delivering.
+  const refreshPrices = useCallback(async () => {
+    try {
+      const res = await ApiService.getAllPrices();
+      const arr = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+      const map = {};
+      for (const p of arr) {
+        const sym = String(p.symbol || p.ticker || '').toUpperCase();
+        if (sym) map[sym] = p;
+      }
+      setPricesBySymbol(map);
+    } catch (_) {}
+  }, []);
+  useFocusEffect(useCallback(() => {
+    const id = setInterval(refreshPrices, 500);
+    return () => clearInterval(id);
+  }, [refreshPrices]));
+
   useEffect(() => {
     let cancelled = false;
     const visibleSet = new Set();

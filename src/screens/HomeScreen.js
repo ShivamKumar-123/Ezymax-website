@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { ScrollView, RefreshControl, View, StyleSheet, Pressable, Text, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { AuthContext } from '../context/AuthContext';
 import { Screen, BalanceBlock } from '../components/vantage';
@@ -112,6 +112,25 @@ export default function HomeScreen() {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, []);
+
+  // Live prices via polling (every 2s while focused) — reliable real-time
+  // movement for the watchlist even if the price WebSocket isn't delivering.
+  const refreshPrices = useCallback(async () => {
+    try {
+      const res = await ApiService.getAllPrices();
+      const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+      const map = {};
+      for (const p of list) {
+        const sym = String(p.symbol || p.ticker || '').toUpperCase();
+        if (sym) map[sym] = p;
+      }
+      setPricesBySymbol(map);
+    } catch (_) {}
+  }, []);
+  useFocusEffect(useCallback(() => {
+    const id = setInterval(refreshPrices, 500);
+    return () => clearInterval(id);
+  }, [refreshPrices]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
