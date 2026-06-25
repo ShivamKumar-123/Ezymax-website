@@ -48,11 +48,11 @@ export default function BiometricLockScreen({ onUnlock, onLogout, label = 'Biome
           <Ionicons name={isFace ? 'scan-outline' : 'finger-print'} size={44} color={vantage.accent} />
         </View>
         <Text style={styles.title}>App Locked</Text>
-        <Text style={styles.sub}>Unlock with {label} to continue</Text>
+        <Text style={styles.sub}>Unlock with biometrics to continue</Text>
 
         <Pressable onPress={tryUnlock} style={styles.unlockBtn} disabled={busy} accessibilityRole="button" accessibilityLabel="Unlock">
           <Ionicons name={isFace ? 'scan' : 'finger-print'} size={18} color="#fff" />
-          <Text style={styles.unlockTxt}>{busy ? 'Authenticating…' : `Unlock with ${label}`}</Text>
+          <Text style={styles.unlockTxt}>{busy ? 'Authenticating…' : 'Unlock with biometrics'}</Text>
         </Pressable>
 
         {onLogout ? (

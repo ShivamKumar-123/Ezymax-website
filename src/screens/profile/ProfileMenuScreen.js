@@ -74,7 +74,7 @@ export default function ProfileMenuScreen() {
       if (!ok) { showToast({ kind: 'error', message: 'Authentication failed' }); return; }
       await setBiometricEnabledFlag(true);
       setBioEnabled(true);
-      showToast({ kind: 'success', message: `App Lock enabled with ${bioSupport.label}` });
+      showToast({ kind: 'success', message: 'App Lock enabled with biometrics' });
     } else {
       const ok = await authenticate('Confirm to disable App Lock');
       if (!ok) { showToast({ kind: 'error', message: 'Authentication failed' }); return; }
@@ -270,7 +270,7 @@ export default function ProfileMenuScreen() {
               <View>
                 <Text style={styles.appearanceTxt}>App Lock</Text>
                 <Text style={styles.securitySub}>
-                  {bioSupport.available ? `Unlock with ${bioSupport.label}` : 'Set up biometrics in device settings'}
+                  {bioSupport.available ? 'Unlock with biometrics' : 'Set up biometrics in device settings'}
                 </Text>
               </View>
             </View>
