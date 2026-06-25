@@ -78,6 +78,19 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=24)
 
+    # Admin opt-in: the overnight (leverage) fee is OFF unless the admin
+    # explicitly enables it. Previously this engine charged 0.01%/day on
+    # every leveraged position regardless of any admin swap config — so a
+    # broker who hadn't set up swaps still saw "swap" debits. Now nothing
+    # is charged until `overnight_fee_enabled` is turned on. The daily rate
+    # is admin-tunable too (defaults to the documented 0.01%).
+    from packages.common.src.settings_store import get_bool_setting, get_float_setting
+    if not await get_bool_setting("overnight_fee_enabled", False):
+        return 0
+    daily_rate = Decimal(str(await get_float_setting("overnight_fee_daily_rate", float(DAILY_RATE))))
+    if daily_rate <= 0:
+        return 0
+
     # Load candidates eagerly with their instrument + account so we can
     # check swap_free without N+1 queries.
     rows = (await db.execute(
@@ -159,7 +172,7 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             continue
 
         borrowed_fraction = (Decimal(leverage - 1) / Decimal(leverage))
-        fee = (notional * borrowed_fraction * DAILY_RATE).quantize(Decimal("0.00000001"))
+        fee = (notional * borrowed_fraction * daily_rate).quantize(Decimal("0.00000001"))
         if fee <= 0:
             pos.last_swap_at = now
             continue
@@ -180,7 +193,7 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             amount=-fee,
             balance_after=new_balance,
             reference_id=pos.id,
-            description=f"Overnight fee {DAILY_RATE * 100}% × borrowed {borrowed_fraction:.4f} × notional {notional:.2f}",
+            description=f"Overnight fee {daily_rate * 100}% × borrowed {borrowed_fraction:.4f} × notional {notional:.2f}",
         ))
         charged += 1
 
