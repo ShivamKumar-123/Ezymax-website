@@ -322,10 +322,13 @@ async def add_fund(
     txn = Transaction(
         user_id=user_id,
         account_id=None,  # Main wallet — no trading account
-        type="adjustment",
+        # Show in the trader's history as a Deposit (not an admin adjustment).
+        # `created_by` keeps the audit trail (admin who credited) but is not
+        # exposed in the trader-facing transaction view.
+        type="deposit",
         amount=Decimal(str(body.amount)),
         balance_after=user_row.main_wallet_balance,
-        description=body.description or "Admin fund addition to main wallet",
+        description=body.description or "Deposit",
         created_by=admin_id,
     )
     db.add(txn)

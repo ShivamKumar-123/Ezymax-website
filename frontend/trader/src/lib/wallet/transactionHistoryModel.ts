@@ -85,6 +85,10 @@ export function mapLedgerToTransaction(row: WalletLedgerItem): Transaction {
   else if (raw === 'profit') uiType = 'profit';
   else if (raw === 'loss') uiType = 'loss';
   else if (raw === 'credit') uiType = 'credit';
+  // Admin-credited funds are booked as ledger 'deposit'/'withdrawal' so the
+  // trader sees them as a normal Deposit/Withdrawal, not an admin adjustment.
+  else if (raw === 'deposit') uiType = 'deposit';
+  else if (raw === 'withdrawal') uiType = 'withdrawal';
   else if (raw === 'adjustment') uiType = 'adjustment';
   const amt = Number(row.amount) || 0;
   return {
