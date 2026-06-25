@@ -296,6 +296,24 @@ export default function UserDetailPage() {
     ? d.gross_loss
     : (trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null);
 
+  // Trade-History tab: true net (profit − commission − swap) over loaded rows,
+  // plus a per-account breakdown so admin sees "this account X, that account Y".
+  const tradesNet = trades.reduce(
+    (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
+  );
+  const tradesByAccount = (() => {
+    const m = new Map<string, { account: string; count: number; gross: number; net: number }>();
+    for (const t of trades) {
+      const key = t.account_number || '—';
+      const e = m.get(key) || { account: key, count: 0, gross: 0, net: 0 };
+      e.count += 1;
+      e.gross += Number(t.profit) || 0;
+      e.net += (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0);
+      m.set(key, e);
+    }
+    return Array.from(m.values()).sort((a, b) => b.net - a.net);
+  })();
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Back + Header */}
@@ -437,17 +455,47 @@ export default function UserDetailPage() {
               <StatCard label="Total Closed Trades" value={trades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
               <StatCard label="Gross Profit" value={`$${fmt(trades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingUp} color="text-emerald-400" />
               <StatCard label="Gross Loss" value={`$${fmt(trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingDown} color="text-rose-400" />
-              <StatCard label="Net P&L" value={`${trades.reduce((s, t) => s + t.profit, 0) >= 0 ? '+' : ''}$${fmt(trades.reduce((s, t) => s + t.profit, 0))}`} icon={trades.reduce((s, t) => s + t.profit, 0) >= 0 ? TrendingUp : TrendingDown} color={trades.reduce((s, t) => s + t.profit, 0) >= 0 ? 'text-success' : 'text-danger'} />
+              <StatCard label="Net P&L" value={`${tradesNet >= 0 ? '+' : ''}$${fmt(tradesNet)}`} icon={tradesNet >= 0 ? TrendingUp : TrendingDown} color={tradesNet >= 0 ? 'text-success' : 'text-danger'} />
             </div>
           )}
+
+          {/* Per-account breakdown — each trading account's closed-trade
+              count, gross P&L and net P&L (after commission + swap). */}
+          {tradesByAccount.length > 1 && (
+            <div className="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
+              <div className="px-3 py-2 border-b border-border-primary text-xs font-semibold text-text-primary">By account</div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border-primary text-left text-text-tertiary uppercase tracking-wider">
+                    <th className="px-3 py-2 font-semibold">Account</th>
+                    <th className="px-3 py-2 font-semibold text-right">Trades</th>
+                    <th className="px-3 py-2 font-semibold text-right">Gross P&L</th>
+                    <th className="px-3 py-2 font-semibold text-right">Net P&L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tradesByAccount.map((a) => (
+                    <tr key={a.account} className="border-b border-border-primary/50">
+                      <td className="px-3 py-2 font-mono text-text-primary">{a.account}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-text-secondary">{a.count}</td>
+                      <td className={cn('px-3 py-2 text-right font-mono tabular-nums', a.gross >= 0 ? 'text-success' : 'text-danger')}>{a.gross >= 0 ? '+' : ''}${fmt(a.gross)}</td>
+                      <td className={cn('px-3 py-2 text-right font-mono tabular-nums font-semibold', a.net >= 0 ? 'text-success' : 'text-danger')}>{a.net >= 0 ? '+' : ''}${fmt(a.net)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <TableSection
             loading={tradesLoading}
             empty={trades.length === 0}
             emptyText="No closed trades"
-            headers={['Closed', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason']}
-            rightAlign={[3, 4, 5, 6, 7, 8]}
+            headers={['Closed', 'Account', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason']}
+            rightAlign={[4, 5, 6, 7, 8, 9]}
             rows={trades.map((t) => [
               <span className="text-text-tertiary text-xxs font-mono">{formatDate(t.closed_at)}</span>,
+              <span className="font-mono text-xxs text-text-secondary">{t.account_number || '—'}</span>,
               <span className="font-medium text-text-primary">{t.instrument_symbol || '—'}</span>,
               <span className={cn('font-bold', t.side?.toLowerCase() === 'buy' ? 'text-buy' : 'text-sell')}>{t.side?.toUpperCase()}</span>,
               <span className="font-mono tabular-nums">{t.lots}</span>,
