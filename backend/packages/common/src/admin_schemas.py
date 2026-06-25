@@ -126,6 +126,9 @@ class UserDetailOut(BaseModel):
     total_withdrawal: float = 0
     total_trades: int = 0
     open_positions: int = 0
+    gross_profit: float = 0      # sum of winning closed trades
+    gross_loss: float = 0        # sum of losing closed trades (negative)
+    net_pnl: float = 0           # total realised P&L − commission − swap
 
 
 class PaginatedResponse(BaseModel):

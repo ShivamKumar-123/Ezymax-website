@@ -282,12 +282,19 @@ export default function UserDetailPage() {
   const { user, accounts, total_deposit, total_withdrawal, total_trades, open_positions } = data;
   const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email.split('@')[0];
 
-  // Net P&L derived from trade-history sum (loaded on demand). When
-  // Trade History tab hasn't been visited yet, show "—" rather than 0
-  // so admin doesn't read a stale 0 as "zero P&L".
-  const netPnl = trades.length > 0 ? trades.reduce((s, t) => s + (Number(t.profit) || 0), 0) : null;
-  const grossProfit = trades.length > 0 ? trades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0) : null;
-  const grossLoss = trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null;
+  // P&L now comes from the backend (computed server-side over closed trades)
+  // so the Overview shows real numbers immediately. Falls back to the
+  // lazy-loaded trade rows if the backend fields are absent (older API).
+  const d = data as typeof data & { gross_profit?: number; gross_loss?: number; net_pnl?: number };
+  const netPnl = d.net_pnl != null
+    ? d.net_pnl
+    : (trades.length > 0 ? trades.reduce((s, t) => s + (Number(t.profit) || 0), 0) : null);
+  const grossProfit = d.gross_profit != null
+    ? d.gross_profit
+    : (trades.length > 0 ? trades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0) : null);
+  const grossLoss = d.gross_loss != null
+    ? d.gross_loss
+    : (trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null);
 
   return (
     <div className="p-4 sm:p-6 space-y-6">

@@ -8,7 +8,7 @@ from decimal import Decimal
 import jwt
 import redis.asyncio as aioredis
 from fastapi import HTTPException
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Presence keys are written by the gateway (which uses Redis db 0). Admin-api
@@ -240,7 +240,10 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
     wd_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(
             Withdrawal.user_id == user_id,
-            Withdrawal.status.in_(["approved", "completed"]),
+            # A completed payout is 'paid' (admin Mark-Paid); 'approved' is the
+            # frozen/pending-payout state. Both count as money out. ('completed'
+            # kept for any legacy rows.)
+            Withdrawal.status.in_(["approved", "completed", "paid"]),
         )
     )
     total_withdrawal = float(wd_q.scalar() or 0)
@@ -248,6 +251,9 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
     account_ids = [a.id for a in accounts]
     total_trades = 0
     open_positions = 0
+    gross_profit = 0.0
+    gross_loss = 0.0
+    net_pnl = 0.0
     if account_ids:
         trades_q = await db.execute(
             select(func.count(Order.id)).where(Order.account_id.in_(account_ids))
@@ -262,6 +268,25 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
         )
         open_positions = pos_q.scalar() or 0
 
+        # Realised P&L from closed trades. Computed server-side so the
+        # Overview shows real numbers immediately (previously the cards read
+        # "—" until the Trade History tab lazy-loaded the rows). Net P&L is
+        # after broker charges (commission + swap), matching the trader view.
+        agg = (await db.execute(
+            select(
+                func.coalesce(func.sum(case((TradeHistory.profit > 0, TradeHistory.profit), else_=0)), 0),
+                func.coalesce(func.sum(case((TradeHistory.profit < 0, TradeHistory.profit), else_=0)), 0),
+                func.coalesce(func.sum(TradeHistory.profit), 0),
+                func.coalesce(func.sum(TradeHistory.commission), 0),
+                func.coalesce(func.sum(TradeHistory.swap), 0),
+            ).where(TradeHistory.account_id.in_(account_ids))
+        )).first()
+        if agg:
+            gp, gl, total_profit, total_comm, total_swap = [float(x or 0) for x in agg]
+            gross_profit = gp
+            gross_loss = gl
+            net_pnl = total_profit - total_comm - total_swap
+
     return UserDetailOut(
         user=UserOut(**_user_to_out(user)),
         accounts=[TradingAccountOut(**_account_to_out(a)) for a in accounts],
@@ -269,6 +294,9 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
         total_withdrawal=total_withdrawal,
         total_trades=total_trades,
         open_positions=open_positions,
+        gross_profit=gross_profit,
+        gross_loss=gross_loss,
+        net_pnl=net_pnl,
     )
 
 
