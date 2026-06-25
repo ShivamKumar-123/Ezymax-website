@@ -364,7 +364,11 @@ async def trade_history(
         trade_type = "copy_trade" if copy_trade else "self_trade"
         sl_val, tp_val = pos_sltp.get(t.position_id, (None, None))
         items.append({
-            "id": str(t.id), "symbol": t.instrument.symbol if t.instrument else None,
+            "id": str(t.id),
+            # Underlying position id — lets the trader share a CLOSED trade
+            # (the share endpoint resolves the position, which survives close).
+            "position_id": str(t.position_id) if t.position_id else None,
+            "symbol": t.instrument.symbol if t.instrument else None,
             "side": side_val, "lots": float(t.lots),
             "open_price": float(t.open_price), "close_price": float(t.close_price),
             # SL/TP that were configured on the underlying Position at

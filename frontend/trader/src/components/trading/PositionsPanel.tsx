@@ -31,6 +31,7 @@ import MarginRing from '@/components/trading/MarginRing';
 
 interface ClosedTrade {
   id: string;
+  position_id?: string | null;
   symbol: string;
   side: string;
   lots: number;
@@ -356,6 +357,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
+  const [shareClosed, setShareClosed] = useState<ClosedTrade | null>(null);
   /** position_id → policy summary. Populated by a side-fetch every time
    *  the open positions list changes; lets us render a 🛡 badge on
    *  insured rows + a tooltip with the tier + cover cap details. */
@@ -1530,8 +1532,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 </span>
                               </div>
                             </div>
-                            <div className="text-[10px] text-text-tertiary pt-1 border-t border-border-glass/40">
-                              {new Date(trade.close_time).toLocaleString()}
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-border-glass/40">
+                              <span className="text-[10px] text-text-tertiary">{new Date(trade.close_time).toLocaleString()}</span>
+                              <button
+                                type="button"
+                                onClick={() => setShareClosed(trade)}
+                                aria-label="Share trade"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold text-accent bg-accent/10 active:bg-accent/20"
+                              >
+                                <Share2 className="w-3.5 h-3.5" /> Share
+                              </button>
                             </div>
                           </div>
                         );
@@ -1608,7 +1618,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               </span>
                             </td>
                             <td className={clsx(td, 'text-[10px] text-text-tertiary')}>
-                              {new Date(trade.close_time).toLocaleString()}
+                              <div className="flex items-center justify-between gap-2">
+                                <span>{new Date(trade.close_time).toLocaleString()}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShareClosed(trade)}
+                                  title="Share trade"
+                                  className="p-1 rounded text-text-tertiary hover:text-accent transition-colors shrink-0"
+                                  aria-label="Share trade"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1982,6 +2003,25 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         onClose={() => setSharePosition(null)}
         position={sharePosition}
         leverage={Number(activeAccount?.leverage) || 100}
+      />
+      {/* Share a CLOSED trade from history — same card, status='closed'.
+          profit=gross pnl + commission=(commission+swap) → card shows NET. */}
+      <ShareTradeModal
+        open={!!shareClosed}
+        onClose={() => setShareClosed(null)}
+        status="closed"
+        leverage={Number(activeAccount?.leverage) || 100}
+        position={shareClosed ? {
+          id: String(shareClosed.position_id || ''),
+          symbol: shareClosed.symbol,
+          side: shareClosed.side,
+          lots: shareClosed.lots,
+          open_price: shareClosed.open_price,
+          current_price: shareClosed.close_price,
+          profit: shareClosed.pnl,
+          commission: (shareClosed.commission || 0) + (shareClosed.swap || 0),
+          created_at: shareClosed.close_time ?? null,
+        } : null}
       />
     </div>
   );

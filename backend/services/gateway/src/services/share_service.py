@@ -147,6 +147,13 @@ async def get_public_share(code: str, db: AsyncSession) -> dict:
         if base_ccy == "USD" and current_price:
             gross_pnl = gross_pnl / current_price
 
+    # For a CLOSED trade, show P/L NET of broker charges (commission + swap),
+    # matching the trade-history view. Live/active shares stay gross (charges
+    # aren't realised yet).
+    if pos_status == "closed":
+        charges = float(position.commission or 0) + float(position.swap or 0)
+        gross_pnl = gross_pnl - charges
+
     # Margin snapshot: lots * contract_size * open_price / leverage
     leverage = int(account.leverage or 100)
     margin = (lots * contract_size * open_price) / leverage if leverage > 0 else 0

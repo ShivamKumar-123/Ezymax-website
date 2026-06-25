@@ -28,9 +28,11 @@ interface ShareTradeModalProps {
   position: Position | null;
   leverage?: number;
   pipSize?: number;
+  /** 'active' (live running trade) or 'closed' (from trade history). */
+  status?: 'active' | 'closed';
 }
 
-export default function ShareTradeModal({ open, onClose, position, leverage = 100, pipSize = 0.0001 }: ShareTradeModalProps) {
+export default function ShareTradeModal({ open, onClose, position, leverage = 100, pipSize = 0.0001, status = 'active' }: ShareTradeModalProps) {
   const [description, setDescription] = useState('');
   const [linkDescription, setLinkDescription] = useState('');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('pnl');
@@ -112,7 +114,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
                 openedAt={position.created_at ?? null}
                 displayMode={displayMode}
                 pipSize={pipSize}
-                status="active"
+                status={status}
                 shortUrl={shareUrl ?? 'fxartha.com/s/xxxxxx'}
               />
             </div>
