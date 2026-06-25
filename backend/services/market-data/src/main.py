@@ -15,7 +15,7 @@ from packages.common.src.redis_client import (
 )
 from packages.common.src.kafka_client import close_producer
 
-from .feed_handler import FeedSimulator, INSTRUMENTS
+from .feed_handler import FeedSimulator, NullFeed, INSTRUMENTS
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
 from .corecen_lp_feed import CorecenLPFeed
@@ -58,16 +58,20 @@ class MarketDataService:
             self.feed = InfowayFeed(raw_key, INSTRUMENTS)
             self._infoway_watchdog_armed = True
             logger.info("Price feed: Infoway WebSocket (depth)")
-        else:
+        elif getattr(settings, "ALLOW_SIMULATED_FEED", False):
+            # DEV ONLY — explicit opt-in. Never enable in production.
             self.feed = FeedSimulator(tick_rate_multiplier=1.0)
-            if raw_key:
-                logger.warning(
-                    "INFOWAY_API_KEY unset or looks like a placeholder — using simulated feed + Binance crypto"
-                )
-            else:
-                logger.warning(
-                    "INFOWAY_API_KEY not set — using simulated forex/indices + Binance crypto"
-                )
+            logger.warning(
+                "ALLOW_SIMULATED_FEED=true — using SIMULATED feed + Binance crypto. "
+                "DEV ONLY; this fabricates prices and must NOT be used in production."
+            )
+        else:
+            # No real feed and simulation not allowed → refuse to fabricate prices.
+            self.feed = NullFeed()
+            logger.error(
+                "No real price feed (Infoway/Corecen) configured and ALLOW_SIMULATED_FEED is off — "
+                "NOT publishing simulated prices. Prices freeze at their last real value."
+            )
         self.aggregator = BarAggregator()
         self.store = TickStore()
         self.spread_cache = StreamSpreadCache()
@@ -212,9 +216,20 @@ class MarketDataService:
             return
         if not isinstance(self.feed, InfowayFeed):
             return
+        if not getattr(settings, "ALLOW_SIMULATED_FEED", False):
+            # Production: NEVER fabricate prices. Leave the Infoway feed
+            # running — it keeps reconnecting on its own — so quotes resume
+            # automatically once the key/network/symbols are fixed. Prices
+            # stay frozen at their last real value until then.
+            logger.error(
+                "Infoway: no ticks in 55s — check INFOWAY_API_KEY (expired?), plan, outbound WSS, "
+                "and symbol codes. NOT switching to simulated prices (production). The Infoway feed "
+                "keeps retrying; prices stay frozen at their last real value until live ticks resume."
+            )
+            return
+        # DEV ONLY — explicit opt-in to fabricated prices.
         logger.error(
-            "Infoway: no ticks in 55s — check INFOWAY_API_KEY, outbound HTTPS/WSS, and symbol codes. "
-            "Falling back to simulated feed so quotes appear."
+            "Infoway: no ticks in 55s — ALLOW_SIMULATED_FEED=true, switching to simulated feed (DEV)."
         )
         try:
             await self.feed.stop()

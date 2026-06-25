@@ -84,6 +84,12 @@ class Settings(BaseSettings):
     # Market data provider (Infoway.io) — fallback when Corecen LP not configured
     INFOWAY_API_KEY: str = ""
     INFOWAY_API_URL: str = "https://api.infoway.io"
+    # Allow the SIMULATED (fake GBM) price feed. Production MUST keep this
+    # false — if no real feed (Infoway/Corecen) is available or the key
+    # expires, market-data refuses to publish fabricated prices and instead
+    # freezes at the last real value (Infoway keeps retrying). Set true only
+    # for local dev where a real feed key isn't available.
+    ALLOW_SIMULATED_FEED: bool = False
 
     # Corecen LP (primary market data source). When CORECEN_LP_ENABLED=true the
     # market-data service stops running its own Infoway / simulator feed and

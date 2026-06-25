@@ -139,6 +139,35 @@ TRADING_SECONDS_PER_YEAR = 252 * 24 * 3600
 MEAN_REVERSION_SPEED = 0.01
 
 
+class NullFeed:
+    """No-op feed — publishes NOTHING.
+
+    Used in production when no real price feed (Infoway / Corecen) is
+    available or its key has expired and ALLOW_SIMULATED_FEED is off. The
+    platform then shows the last *real* price frozen (via the stale-quote
+    refresher) instead of fabricated/simulated movement. Honest > fake.
+    """
+
+    def __init__(self):
+        self._running = False
+
+    async def start(self):
+        self._running = True
+        logger.error(
+            "NO REAL PRICE FEED — running NullFeed (no ticks published). "
+            "Set INFOWAY_API_KEY / CORECEN_LP, or ALLOW_SIMULATED_FEED=true for dev. "
+            "Prices stay frozen at their last real value; nothing is fabricated."
+        )
+        while self._running:
+            await asyncio.sleep(60)
+
+    async def stop(self):
+        self._running = False
+
+    async def get_tick(self) -> Optional[dict]:
+        return None
+
+
 class FeedSimulator:
     """Realistic market data feed simulator.
 
