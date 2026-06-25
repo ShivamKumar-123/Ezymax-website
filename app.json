@@ -70,6 +70,12 @@
       "expo-updates",
       "expo-secure-store",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow SwissCresta to use Face ID to unlock the app."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#F26A1F"

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder, Image, Modal } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder, Image, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import * as Updates from 'expo-updates';
@@ -16,6 +16,12 @@ import { Screen, Card, MenuRow, PillButton, showToast } from '../../components/v
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { fetchKycStatus, isKycApproved, kycStatusLabel } from '../../utils/kycGate';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
+import {
+  getBiometricSupport,
+  isBiometricEnabled,
+  setBiometricEnabledFlag,
+  authenticate,
+} from '../../utils/biometricLock';
 import ApiService from '../../services/ApiService';
 import { LOTTIE_AVATARS, ICON_AVATARS, parseAvatar, renderAvatar } from '../../utils/avatarRender';
 
@@ -37,6 +43,46 @@ export default function ProfileMenuScreen() {
   }, []));
 
   const kycApproved = isKycApproved(kycStatus);
+
+  // ── App Lock (biometrics) ──────────────────────────────────────────────────
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioSupport, setBioSupport] = useState({ available: false, hasHardware: false, label: 'Biometrics' });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sup = await getBiometricSupport();
+      const on = await isBiometricEnabled();
+      if (cancelled) return;
+      setBioSupport(sup);
+      setBioEnabled(on);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggleBiometric = useCallback(async (next) => {
+    if (next) {
+      if (!bioSupport.available) {
+        showToast({
+          kind: 'warn',
+          message: bioSupport.hasHardware
+            ? 'No fingerprint/face enrolled — set it up in device settings first.'
+            : 'This device has no biometric sensor.',
+        });
+        return;
+      }
+      const ok = await authenticate('Confirm to enable App Lock');
+      if (!ok) { showToast({ kind: 'error', message: 'Authentication failed' }); return; }
+      await setBiometricEnabledFlag(true);
+      setBioEnabled(true);
+      showToast({ kind: 'success', message: `App Lock enabled with ${bioSupport.label}` });
+    } else {
+      const ok = await authenticate('Confirm to disable App Lock');
+      if (!ok) { showToast({ kind: 'error', message: 'Authentication failed' }); return; }
+      await setBiometricEnabledFlag(false);
+      setBioEnabled(false);
+      showToast({ kind: 'info', message: 'App Lock disabled' });
+    }
+  }, [bioSupport]);
 
   // Profile avatar — user can set a photo or pick a preset; defaults to the
   // existing animation.
@@ -217,6 +263,26 @@ export default function ProfileMenuScreen() {
           </View>
         </Section>
 
+        <Section title="SECURITY">
+          <View style={styles.appearanceRow}>
+            <View style={styles.appearanceLabel}>
+              <Ionicons name={bioSupport.label === 'Face ID' ? 'scan-outline' : 'finger-print'} size={18} color={vantage.accent} />
+              <View>
+                <Text style={styles.appearanceTxt}>App Lock</Text>
+                <Text style={styles.securitySub}>
+                  {bioSupport.available ? `Unlock with ${bioSupport.label}` : 'Set up biometrics in device settings'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={bioEnabled}
+              onValueChange={toggleBiometric}
+              trackColor={{ false: vantage.bgRaised, true: vantage.accent }}
+              thumbColor="#fff"
+            />
+          </View>
+        </Section>
+
         <Section title="HELP">
           <MenuRow icon={<Ionicons name="chatbubble-outline" size={18} color={vantage.textPrimary} />} label="Support" onPress={() => nav.navigate('Support')} />
           <MenuRow icon={<Ionicons name="notifications-outline" size={18} color={vantage.textPrimary} />} label="Notifications" onPress={() => nav.navigate('Notifications')} />
@@ -331,6 +397,7 @@ const styles = StyleSheet.create({
   },
   appearanceLabel: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   appearanceTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
+  securitySub: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro, marginTop: 1 },
   segment: {
     flexDirection: 'row', backgroundColor: vantage.bgRaised,
     borderRadius: radius.pill, padding: 3, gap: 2,
