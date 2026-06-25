@@ -330,6 +330,11 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     instruments,
   } = useTradingStore();
   const [activeTab, setActiveTab] = useState<TabId>('open');
+  // Terminal tab bar can overflow (e.g. "Closed Positions" sits past the
+  // edge). Track whether there's more to the right so we can show a
+  // persistent "scroll for more" arrow instead of hiding it off-screen.
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabs, setCanScrollTabs] = useState(false);
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [closeModal, setCloseModal] = useState<CloseModal>(null);
@@ -702,6 +707,26 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     { id: 'history', label: 'History', count: historyTrades.length },
   ];
 
+  // Detect right-overflow of the terminal tab bar so the "more →" arrow is
+  // shown only when there's actually a hidden tab (Closed Positions).
+  useEffect(() => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+    const check = () => setCanScrollTabs(el.scrollWidth - el.scrollLeft - el.clientWidth > 4);
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    ro?.observe(el);
+    window.addEventListener('resize', check);
+    return () => {
+      el.removeEventListener('scroll', check);
+      ro?.disconnect();
+      window.removeEventListener('resize', check);
+    };
+  }, [tabs.length, isTerminal, positions.length, pendingOrders.length, historyTrades.length]);
+
+  const scrollTabsRight = () => tabsScrollRef.current?.scrollBy({ left: 180, behavior: 'smooth' });
+
   const exportCurrentCsv = () => {
     if (activeTab === 'open') exportOpenCsv();
     else if (activeTab === 'pending') exportPendingCsv();
@@ -786,29 +811,41 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         >
           {isTerminal ? (
             <div className="flex shrink-0 items-end justify-between gap-2 sm:gap-4 min-w-0 px-2 sm:px-3 py-2 border-b border-border-primary">
-              <div className="flex items-end gap-0 sm:gap-1 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
-                {tabs.map((tab) => (
+              <div className="relative flex items-end min-w-0">
+                <div ref={tabsScrollRef} className="flex items-end gap-0 sm:gap-1 min-w-0 overflow-x-auto scrollbar-none no-scrollbar pr-6">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={clsx(
+                        'shrink-0 px-2 sm:px-2.5 pb-1 text-left transition-colors border-b-2 -mb-px',
+                        activeTab === tab.id
+                          ? 'text-text-primary border-accent font-semibold text-xs sm:text-sm'
+                          : 'text-text-tertiary border-transparent font-medium text-xs sm:text-sm hover:text-text-secondary',
+                      )}
+                    >
+                      <span className="whitespace-nowrap">
+                        {tabTitle(tab.id)}
+                        <span className="tabular-nums opacity-75 font-normal"> ({tab.count})</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {/* Persistent "scroll for more" affordance — visible only when a
+                    tab (e.g. Closed Positions) sits past the right edge. Clicking
+                    scrolls the tab strip into view. */}
+                {canScrollTabs && (
                   <button
-                    key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={clsx(
-                      'shrink-0 px-2 sm:px-2.5 pb-1 text-left transition-colors border-b-2 -mb-px',
-                      activeTab === tab.id
-                        ? 'text-text-primary border-accent font-semibold text-xs sm:text-sm'
-                        : 'text-text-tertiary border-transparent font-medium text-xs sm:text-sm hover:text-text-secondary',
-                    )}
+                    onClick={scrollTabsRight}
+                    aria-label="More tabs — Closed Positions"
+                    title="More — Closed Positions"
+                    className="absolute right-0 top-0 bottom-0 flex items-center pl-7 pr-0.5 bg-gradient-to-l from-bg-base via-bg-base to-transparent"
                   >
-                    <span className="whitespace-nowrap">
-                      {tabTitle(tab.id)}
-                      <span className="tabular-nums opacity-75 font-normal"> ({tab.count})</span>
-                    </span>
+                    <ChevronRight className="w-4 h-4 text-accent animate-pulse" />
                   </button>
-                ))}
-                <ChevronRight
-                  className="w-4 h-4 text-text-tertiary shrink-0 mb-0.5 ml-0.5 opacity-80"
-                  aria-hidden
-                />
+                )}
               </div>
               <div className="flex items-end gap-3 sm:gap-4 md:gap-5 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
                 {activeAccount ? (
