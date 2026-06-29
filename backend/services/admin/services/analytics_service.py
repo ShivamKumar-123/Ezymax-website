@@ -444,6 +444,18 @@ async def platform_pnl_detail(db: AsyncSession) -> dict:
     }
 
 
+def _period_start(period: str | None):
+    """Resolve a period keyword to its UTC start instant. Returns None
+    for 'all'/unknown so the caller skips the closed_at filter."""
+    if period == "today":
+        return _start_of_today()
+    if period == "week":
+        return _start_of_week()
+    if period == "month":
+        return _start_of_month()
+    return None
+
+
 async def list_user_pnl_breakdown(
     db: AsyncSession,
     page: int = 1,
@@ -451,23 +463,36 @@ async def list_user_pnl_breakdown(
     search: str | None = None,
     sort_by: str = "net_pnl",
     sort_dir: str = "desc",
+    period: str | None = None,
 ) -> dict:
     """Per-user trade P&L breakdown for the analytics page. Groups every
     closed trade in TradeHistory by the user that owns the trading
-    account, summing gross profit / gross loss / net P&L plus a few
-    summary stats (trades count, win count, win rate, last closed date).
+    account, summing gross profit / gross loss / net P&L plus broker
+    fees (commission + swap) and a few summary stats (trades count,
+    win count, win rate, last closed date).
+
+    `period` ('today' | 'week' | 'month' | 'all'/None) filters the
+    trades by `TradeHistory.closed_at` — so clicking the Today /
+    This Week / This Month card on the analytics page lists exactly
+    the users who closed a trade in that window, with their realized
+    profit / loss + the spread-equivalent fees (commission + swap)
+    the broker booked from them.
 
     Unlike the top-10 list under `/analytics/exposure`, this is
     paginated and includes BOTH winners AND losers so admin can find
     any user — search by email / name does substring matching, sort
     flips by net P&L / trades / last activity.
     """
+    since = _period_start(period)
+
     base = (
         select(
             TradingAccount.user_id.label("user_id"),
             func.sum(TradeHistory.profit).label("net_pnl"),
             func.sum(case((TradeHistory.profit > 0, TradeHistory.profit), else_=0)).label("gross_profit"),
             func.sum(case((TradeHistory.profit < 0, TradeHistory.profit), else_=0)).label("gross_loss"),
+            func.coalesce(func.sum(TradeHistory.commission), 0).label("commission"),
+            func.coalesce(func.sum(TradeHistory.swap), 0).label("swap"),
             func.count(TradeHistory.id).label("trades_count"),
             func.sum(case((TradeHistory.profit > 0, 1), else_=0)).label("wins"),
             func.max(TradeHistory.closed_at).label("last_closed_at"),
@@ -476,6 +501,9 @@ async def list_user_pnl_breakdown(
         .where(TradingAccount.is_demo == False)
         .group_by(TradingAccount.user_id)
     )
+
+    if since is not None:
+        base = base.where(TradeHistory.closed_at >= since)
 
     if search:
         like = f"%{search}%"
@@ -516,6 +544,8 @@ async def list_user_pnl_breakdown(
         net = float(r.net_pnl or 0)
         gp = float(r.gross_profit or 0)
         gl = float(r.gross_loss or 0)
+        commission = abs(float(r.commission or 0))
+        swap = abs(float(r.swap or 0))
         tc = int(r.trades_count or 0)
         wins = int(r.wins or 0)
         items.append({
@@ -528,6 +558,13 @@ async def list_user_pnl_breakdown(
             "net_pnl": net,
             "gross_profit": gp,
             "gross_loss": gl,
+            "commission": commission,
+            "swap": swap,
+            # What the broker booked from this user's trades in the
+            # window: brokerage commission + overnight swap. (Spread is
+            # baked into the fill price, not stored per-trade, so it is
+            # not separable here.)
+            "broker_fees": commission + swap,
             "avg_per_trade": (net / tc) if tc > 0 else 0,
             "trades_count": tc,
             "wins": wins,
@@ -535,10 +572,40 @@ async def list_user_pnl_breakdown(
             "last_closed_at": r.last_closed_at.isoformat() if r.last_closed_at else None,
         })
 
+    # Period-wide totals across ALL matching users (not just this page) —
+    # lets the frontend show a header summary for the active filter.
+    totals_q = await db.execute(
+        select(
+            func.coalesce(func.sum(TradeHistory.profit), 0),
+            func.coalesce(func.sum(TradeHistory.commission), 0),
+            func.coalesce(func.sum(TradeHistory.swap), 0),
+            func.count(TradeHistory.id),
+            func.count(func.distinct(TradingAccount.user_id)),
+        )
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(
+            TradingAccount.is_demo == False,
+            *([TradeHistory.closed_at >= since] if since is not None else []),
+        )
+    )
+    t = totals_q.one()
+    user_net = float(t[0] or 0)
+    totals = {
+        "user_net_pnl": user_net,
+        "platform_pnl": -user_net,  # B-book mirror: user profit = broker loss
+        "commission": abs(float(t[1] or 0)),
+        "swap": abs(float(t[2] or 0)),
+        "broker_fees": abs(float(t[1] or 0)) + abs(float(t[2] or 0)),
+        "trades_count": int(t[3] or 0),
+        "users_count": int(t[4] or 0),
+    }
+
     return {
         "items": items,
         "total": total,
         "page": page,
         "per_page": per_page,
         "pages": (total + per_page - 1) // per_page if total else 0,
+        "period": period or "all",
+        "totals": totals,
     }
