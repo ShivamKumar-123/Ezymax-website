@@ -1,17 +1,30 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { STATUS, ACTIONS, EVENTS, type CallBackProps } from 'react-joyride';
 
-// Mock next/navigation + the api client BEFORE importing the hook.
-const { pushMock, postMock } = vi.hoisted(() => ({
-  pushMock: vi.fn(),
-  postMock: vi.fn(() => Promise.resolve({})),
-}));
+// Mock next/navigation, the api client, and driver.js BEFORE importing the hook.
+const { pushMock, postMock, driverMock, fakeDriver } = vi.hoisted(() => {
+  const fake = {
+    drive: vi.fn(),
+    destroy: vi.fn(),
+    moveNext: vi.fn(),
+    movePrevious: vi.fn(),
+    getActiveIndex: vi.fn(() => 0),
+    isLastStep: vi.fn(() => false),
+    refresh: vi.fn(),
+  };
+  return {
+    pushMock: vi.fn(),
+    postMock: vi.fn(() => Promise.resolve({})),
+    driverMock: vi.fn(() => fake),
+    fakeDriver: fake,
+  };
+});
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
   usePathname: () => '/dashboard',
 }));
 vi.mock('@/lib/api/client', () => ({ default: { post: postMock } }));
+vi.mock('driver.js', () => ({ driver: driverMock }));
 
 import { useTourState, startTour } from './useTourState';
 import { useAuthStore } from '@/stores/authStore';
@@ -25,73 +38,64 @@ const baseUser: any = {
 const setUser = (over: Record<string, unknown>) =>
   useAuthStore.setState({ user: { ...baseUser, ...over }, isAuthenticated: true });
 
-// Minimal CallBackProps for the fields handleCallback reads.
-const cb = (over: Partial<CallBackProps>): CallBackProps =>
-  ({ status: STATUS.RUNNING, action: ACTIONS.NEXT, index: 0, type: EVENTS.STEP_AFTER, ...over } as CallBackProps);
+/** The config object passed to the most recent driver() call. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const lastConfig = (): any => driverMock.mock.calls[driverMock.mock.calls.length - 1][0];
 
 beforeEach(() => {
   postMock.mockClear();
   pushMock.mockClear();
+  driverMock.mockClear();
+  fakeDriver.drive.mockClear();
   useAuthStore.setState({ user: null, isAuthenticated: false });
 });
 
 describe('useTourState — first-login detection', () => {
-  it('auto-starts when tour_completed is false and the onboarding gate is clear', async () => {
+  it('auto-starts (builds + drives) when tour_completed is false and the gate is clear', async () => {
     setUser({ tour_completed: false, onboarding_complete: true });
-    const { result } = renderHook(() => useTourState());
-    expect(result.current.run).toBe(false); // deferred a tick first
-    await waitFor(() => expect(result.current.run).toBe(true));
-    expect(result.current.stepIndex).toBe(0);
+    renderHook(() => useTourState());
+    await waitFor(() => expect(driverMock).toHaveBeenCalled());
+    expect(fakeDriver.drive).toHaveBeenCalled();
   });
 
   it('does NOT auto-start when the tour is already completed', async () => {
     setUser({ tour_completed: true, onboarding_complete: true });
-    const { result } = renderHook(() => useTourState());
-    await new Promise((r) => setTimeout(r, 500));
-    expect(result.current.run).toBe(false);
+    renderHook(() => useTourState());
+    await new Promise((r) => setTimeout(r, 700));
+    expect(driverMock).not.toHaveBeenCalled();
   });
 
   it('does NOT auto-start while the KYC/email onboarding gate is still active', async () => {
     setUser({ tour_completed: false, onboarding_complete: false });
-    const { result } = renderHook(() => useTourState());
-    await new Promise((r) => setTimeout(r, 500));
-    expect(result.current.run).toBe(false);
+    renderHook(() => useTourState());
+    await new Promise((r) => setTimeout(r, 700));
+    expect(driverMock).not.toHaveBeenCalled();
   });
 });
 
-describe('useTourState — complete / skip flows', () => {
-  it('marks complete on FINISHED (calls the API + flips the local flag)', async () => {
+describe('useTourState — complete / skip', () => {
+  it('marks complete when the tour ends (Finish or Skip both route through onDestroyed)', async () => {
     setUser({ tour_completed: false, onboarding_complete: true });
-    const { result } = renderHook(() => useTourState());
-    await waitFor(() => expect(result.current.run).toBe(true));
+    renderHook(() => useTourState());
+    await waitFor(() => expect(driverMock).toHaveBeenCalled());
 
-    act(() => result.current.handleCallback(cb({ status: STATUS.FINISHED })));
+    await act(async () => {
+      lastConfig().onDestroyed();
+    });
 
     await waitFor(() => expect(postMock).toHaveBeenCalledWith('/profile/onboarding/complete', {}));
     expect(useAuthStore.getState().user?.tour_completed).toBe(true);
-    expect(result.current.run).toBe(false);
-  });
-
-  it('marks complete on SKIPPED', async () => {
-    setUser({ tour_completed: false, onboarding_complete: true });
-    const { result } = renderHook(() => useTourState());
-    await waitFor(() => expect(result.current.run).toBe(true));
-
-    act(() => result.current.handleCallback(cb({ status: STATUS.SKIPPED })));
-
-    await waitFor(() => expect(postMock).toHaveBeenCalledWith('/profile/onboarding/complete', {}));
   });
 });
 
 describe('useTourState — manual replay', () => {
-  it('startTour() resets the backend flag and re-runs from step 0', async () => {
+  it('startTour() resets the backend flag and re-runs the driver', async () => {
     setUser({ tour_completed: true, onboarding_complete: true }); // already done
-    const { result } = renderHook(() => useTourState());
+    renderHook(() => useTourState());
 
     act(() => { startTour(); });
 
     await waitFor(() => expect(postMock).toHaveBeenCalledWith('/profile/onboarding/reset', {}));
-    await waitFor(() => expect(result.current.run).toBe(true));
-    expect(result.current.stepIndex).toBe(0);
+    await waitFor(() => expect(driverMock).toHaveBeenCalled());
   });
 });

@@ -3,157 +3,158 @@
  * later). Each step is tagged with the `page` it belongs to so the controlled
  * tour can navigate between the dashboard and the trading terminal.
  *
- * To translate: swap the `title`/`content` strings for t('key') calls — the
- * structure stays the same.
+ * Shape maps onto a driver.js step: `element` is a CSS selector (omit for a
+ * centered, modal-style step), `title`/`description` fill the popover, and
+ * `side`/`align` hint the popover placement.
+ *
+ * To translate: swap the `title`/`description` strings for t('key') calls.
  */
-import type { Step } from 'react-joyride';
 import { TOUR_TARGETS, sel } from './tourTargets';
 
 export type TourPage = 'dashboard' | 'terminal';
+type Side = 'top' | 'right' | 'bottom' | 'left';
+type Align = 'start' | 'center' | 'end';
 
-export interface TourStep extends Step {
+export interface TourStep {
   /** Which route this step lives on. Drives multi-page navigation. */
   page: TourPage;
+  /** CSS selector of the spotlight target; omit for a centered modal. */
+  element?: string;
+  title: string;
+  description: string;
+  side?: Side;
+  align?: Align;
 }
-
-const center: Pick<Step, 'placement' | 'disableBeacon'> = {
-  placement: 'center',
-  disableBeacon: true,
-};
 
 export const TOUR_STEPS: TourStep[] = [
   // ── Phase 1 — Dashboard ──
   {
     page: 'dashboard',
-    target: 'body',
-    ...center,
     title: 'Welcome to FXArtha 👋',
-    content:
+    description:
       "Let's take a quick 60-second tour of the essentials. Click Next to begin — you can Skip anytime.",
   },
   {
     page: 'dashboard',
-    target: sel(TOUR_TARGETS.DASHBOARD_BALANCE),
+    element: sel(TOUR_TARGETS.DASHBOARD_BALANCE),
     title: 'Your balance',
-    content: 'Your wallet balance at a glance.',
-    disableBeacon: true,
-    placement: 'bottom',
+    description: 'Your wallet balance at a glance.',
+    side: 'bottom',
+    align: 'start',
   },
   {
     page: 'dashboard',
-    target: sel(TOUR_TARGETS.DASHBOARD_DEPOSIT),
+    element: sel(TOUR_TARGETS.DASHBOARD_DEPOSIT),
     title: 'Add funds',
-    content: 'Add funds here to start trading.',
-    disableBeacon: true,
-    placement: 'bottom',
+    description: 'Add funds here to start trading.',
+    side: 'bottom',
+    align: 'start',
   },
   {
     page: 'dashboard',
-    target: sel(TOUR_TARGETS.TOPBAR_PROFILE),
+    element: sel(TOUR_TARGETS.TOPBAR_PROFILE),
     title: 'Profile & settings',
-    content: 'Your profile, KYC and settings live here.',
-    disableBeacon: true,
-    placement: 'bottom',
+    description: 'Your profile, KYC and settings live here.',
+    side: 'bottom',
+    align: 'end',
   },
   {
     page: 'dashboard',
-    target: sel(TOUR_TARGETS.SIDEBAR_HELP),
+    element: sel(TOUR_TARGETS.SIDEBAR_HELP),
     title: 'Need help?',
-    content: 'Reach our 24/7 support team anytime from here.',
-    disableBeacon: true,
-    placement: 'right',
+    description: 'Reach our 24/7 support team anytime from here.',
+    side: 'right',
+    align: 'start',
   },
   {
     page: 'dashboard',
-    target: sel(TOUR_TARGETS.DASHBOARD_TRADE_NOW),
+    element: sel(TOUR_TARGETS.DASHBOARD_TRADE_NOW),
     title: 'Open the terminal',
-    content: "Let's head to the trading terminal — click Next.",
-    disableBeacon: true,
-    placement: 'bottom',
+    description: "Let's head to the trading terminal — click Next.",
+    side: 'bottom',
+    align: 'start',
   },
 
   // ── Phase 2 — Trading terminal ──
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.INSTRUMENTS_TICKER),
+    element: sel(TOUR_TARGETS.INSTRUMENTS_TICKER),
     title: 'Top instruments',
-    content: 'Your top instruments — click any to switch the active symbol.',
-    disableBeacon: true,
-    placement: 'bottom',
+    description: 'Your top instruments — click any to switch the active symbol.',
+    side: 'bottom',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.ORDER_MARKETS_BUTTON),
+    element: sel(TOUR_TARGETS.ORDER_MARKETS_BUTTON),
     title: 'All markets',
-    content:
+    description:
       'Browse 100+ instruments — Forex, Gold, Indices, Crypto. Click any to load it on the chart.',
-    disableBeacon: true,
-    placement: 'left',
+    side: 'left',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.CHART_MAIN),
+    element: sel(TOUR_TARGETS.CHART_MAIN),
     title: 'Live chart',
-    content: 'Live price chart. Change the timeframe from the toolbar above.',
-    disableBeacon: true,
-    placement: 'top',
+    description: 'Live price chart. Change the timeframe from the toolbar above.',
+    side: 'top',
+    align: 'center',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.ORDER_BUY_SELL),
+    element: sel(TOUR_TARGETS.ORDER_BUY_SELL),
     title: 'Buy & Sell',
-    content:
+    description:
       'Trade instantly — Buy = go long (you profit when price rises), Sell = go short (you profit when price falls).',
-    disableBeacon: true,
-    placement: 'left',
+    side: 'left',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.ORDER_VOLUME),
+    element: sel(TOUR_TARGETS.ORDER_VOLUME),
     title: 'Trade size',
-    content: 'Set your trade size (lots) before you Buy or Sell.',
-    disableBeacon: true,
-    placement: 'left',
+    description: 'Set your trade size (lots) before you Buy or Sell.',
+    side: 'left',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.ORDER_SL_TP),
+    element: sel(TOUR_TARGETS.ORDER_SL_TP),
     title: 'Stop Loss / Take Profit',
-    content:
+    description:
       'Set a Stop Loss and Take Profit to manage risk automatically — recommended on every trade.',
-    disableBeacon: true,
-    placement: 'left',
+    side: 'left',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.POSITIONS_OPEN_TAB),
+    element: sel(TOUR_TARGETS.POSITIONS_OPEN_TAB),
     title: 'Open positions',
-    content: 'Your active trades appear here — click any to modify or close it.',
-    disableBeacon: true,
-    placement: 'top',
+    description: 'Your active trades appear here — click any to modify or close it.',
+    side: 'top',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.POSITIONS_PENDING_TAB),
+    element: sel(TOUR_TARGETS.POSITIONS_PENDING_TAB),
     title: 'Pending orders',
-    content: 'Limit and stop orders waiting to trigger show up here.',
-    disableBeacon: true,
-    placement: 'top',
+    description: 'Limit and stop orders waiting to trigger show up here.',
+    side: 'top',
+    align: 'start',
   },
   {
     page: 'terminal',
-    target: sel(TOUR_TARGETS.POSITIONS_BALANCE),
+    element: sel(TOUR_TARGETS.POSITIONS_BALANCE),
     title: 'Account summary',
-    content: 'Your live balance, equity, margin and free margin.',
-    disableBeacon: true,
-    placement: 'top',
+    description: 'Your live balance, equity, margin and free margin.',
+    side: 'top',
+    align: 'end',
   },
   {
     page: 'terminal',
-    target: 'body',
-    ...center,
     title: "You're all set! 🎉",
-    content:
+    description:
       'Happy trading. You can replay this tour anytime from Profile → Take a Tour.',
   },
 ];
