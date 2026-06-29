@@ -28,6 +28,7 @@ import {
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import ShareTradeModal from '@/components/trading/ShareTradeModal';
 import MarginRing from '@/components/trading/MarginRing';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 interface ClosedTrade {
   id: string;
@@ -817,6 +818,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     <button
                       key={tab.id}
                       type="button"
+                      data-tour={
+                        tab.id === 'open'
+                          ? TOUR_TARGETS.POSITIONS_OPEN_TAB
+                          : tab.id === 'pending'
+                            ? TOUR_TARGETS.POSITIONS_PENDING_TAB
+                            : undefined
+                      }
                       onClick={() => setActiveTab(tab.id)}
                       className={clsx(
                         'shrink-0 px-2 sm:px-2.5 pb-1 text-left transition-colors border-b-2 -mb-px',
@@ -847,7 +855,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   </button>
                 )}
               </div>
-              <div className="flex items-end gap-3 sm:gap-4 md:gap-5 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
+              <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-end gap-3 sm:gap-4 md:gap-5 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
                 {activeAccount ? (
                   <>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">

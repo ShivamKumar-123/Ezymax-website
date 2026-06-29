@@ -434,3 +434,18 @@ async def get_kyc_file(user_id: UUID, document_id: UUID, db: AsyncSession) -> Pa
         raise HTTPException(status_code=404, detail="File not found on server")
 
     return stored
+
+
+async def set_tour_completed(user_id: UUID, value: bool, db: AsyncSession) -> dict:
+    """Set the first-time product-tour (react-joyride) completion flag for the
+    *current* user only. Used by the onboarding tour: marked true on Finish or
+    Skip, and reset to false for a manual replay. Distinct from the KYC/email
+    `onboarding_complete` flow."""
+    user = (await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.tour_completed = bool(value)
+    await db.commit()
+    return {"tour_completed": bool(value)}

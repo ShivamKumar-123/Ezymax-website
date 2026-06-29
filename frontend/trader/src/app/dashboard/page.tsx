@@ -21,6 +21,7 @@ import {
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 import { formatCurrency as fmtUsd, formatNumber as fmtNum } from '@/lib/formatters';
 
 interface AccountRow {
@@ -225,6 +226,7 @@ function BrokerHome() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Balance — purple */}
         <div
+          data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
           className="rounded-2xl p-4 border"
           style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}
         >
@@ -329,6 +331,7 @@ function BrokerHome() {
         {/* Trade Now — blue gradient */}
         <button
           type="button"
+          data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW}
           onClick={() => {
             if (accounts.length === 0) {
               router.push('/trading/open-account');
@@ -368,6 +371,7 @@ function BrokerHome() {
         {/* Add Funds — amber gradient */}
         <button
           type="button"
+          data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT}
           onClick={() => router.push('/wallet')}
           className="group rounded-2xl p-5 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-300/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-amber-900/30"
         >

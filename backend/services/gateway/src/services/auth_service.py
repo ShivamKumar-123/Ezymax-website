@@ -1131,6 +1131,7 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
     return {
         "id": user.id,
         "email": user.email,
+        "tour_completed": bool(getattr(user, "tour_completed", False)),
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,

@@ -15,6 +15,7 @@ import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
 import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
 import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
@@ -412,6 +413,7 @@ export default function OrderPanel() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                data-tour={TOUR_TARGETS.ORDER_MARKETS_BUTTON}
                 onClick={() => {
                   setSymbolPickerOpen(false);
                   toggleTerminalMarkets();
@@ -513,7 +515,7 @@ export default function OrderPanel() {
           </div>
 
           {/* Sell / Buy buttons */}
-          <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1.5' : 'gap-2')}>
+          <div data-tour={TOUR_TARGETS.ORDER_BUY_SELL} className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1.5' : 'gap-2')}>
              <button
                 type="button"
                 onClick={() => setSide('sell')}
@@ -554,7 +556,7 @@ export default function OrderPanel() {
           )}
 
           {/* SL / TP toggles */}
-          <div className={clsx('flex items-center', isTradingTerminal ? 'gap-3 pt-1' : 'gap-5 pt-2')}>
+          <div data-tour={TOUR_TARGETS.ORDER_SL_TP} className={clsx('flex items-center', isTradingTerminal ? 'gap-3 pt-1' : 'gap-5 pt-2')}>
             <label className="flex items-center gap-2 cursor-pointer">
               <div
                 onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
@@ -603,7 +605,7 @@ export default function OrderPanel() {
           </label>
 
           {/* Volume */}
-          <div className={isTradingTerminal ? 'pt-1' : 'pt-2'}>
+          <div data-tour={TOUR_TARGETS.ORDER_VOLUME} className={isTradingTerminal ? 'pt-1' : 'pt-2'}>
             <div className={clsx('flex items-center justify-between', isTradingTerminal ? 'mb-1' : 'mb-1.5')}>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">Volume</span>
               <div className="flex gap-0.5">

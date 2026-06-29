@@ -9,6 +9,7 @@ import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
 import NotificationListener from '@/components/NotificationListener';
 import ProfileCompleteGate from '@/components/profile/ProfileCompleteGate';
 import OnboardingGate from '@/components/auth/OnboardingGate';
+import OnboardingTourLazy from '@/components/Onboarding/OnboardingTourLazy';
 import TopLoader from '@/components/TopLoader';
 
 export const metadata: Metadata = {
@@ -55,6 +56,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 the wallet/email gate kicks in. Both are non-dismissible. */}
             <ProfileCompleteGate />
             <OnboardingGate />
+            {/* First-time product tour (react-joyride). Renders after the
+                onboarding gates so it only runs once dashboard access is
+                unlocked. Lazy/ssr:false → not in the main bundle. */}
+            <OnboardingTourLazy />
             {children}
             <Suspense fallback={null}>
               <MobileBottomNav />

@@ -48,6 +48,10 @@ class User(Base):
     # for fast lookup at reward-application time). Gated by
     # system_settings.vip_pass_enabled until token economics land.
     is_vip = Column(Boolean, default=False, server_default="false")
+    # tour_completed: Tracks the first-time UI walkthrough (react-joyride tour).
+    # Intentionally separate from onboarding_complete (KYC/profile/email flow)
+    # so each can evolve independently. Don't merge them.
+    tour_completed = Column(Boolean, default=False, server_default="false", nullable=False)
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(255))
     language = Column(String(10), default="en")

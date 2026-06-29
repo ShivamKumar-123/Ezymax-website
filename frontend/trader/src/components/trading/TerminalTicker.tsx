@@ -10,6 +10,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 const SYMBOLS = ['EURUSD', 'GBPUSD', 'XAUUSD', 'USDJPY', 'BTCUSD', 'USOIL'] as const;
 const SPARK_POINTS = 30;
@@ -106,7 +107,7 @@ function TerminalTickerInner() {
 
   return (
     <div className="w-full border-b border-border-primary bg-bg-base">
-      <div className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-1.5">
+      <div data-tour={TOUR_TARGETS.INSTRUMENTS_TICKER} className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-1.5">
         {tiles.map(({ sym, meta, mid, pct, positive, buf }) => {
           const isSelected = selectedSymbol === sym;
           return (

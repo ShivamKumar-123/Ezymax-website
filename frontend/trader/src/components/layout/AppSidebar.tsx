@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useShellStore } from '@/stores/shellStore';
 import { cn } from '@/lib/utils';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
+import { startTour } from '@/components/Onboarding/useTourState';
 import {
   Home,
   LayoutGrid,
@@ -234,7 +236,7 @@ export default function AppSidebar() {
             <span>Terms & Conditions</span>
           </Link>
 
-          <div className="rounded-xl p-3.5 border border-border-primary bg-card-nested">
+          <div data-tour={TOUR_TARGETS.SIDEBAR_HELP} className="rounded-xl p-3.5 border border-border-primary bg-card-nested">
             <div className="flex items-center gap-1.5 mb-1">
               <HelpCircle size={14} className="text-accent shrink-0" />
               <span className="text-xs font-semibold text-text-primary">Need Help?</span>
@@ -248,6 +250,14 @@ export default function AppSidebar() {
               <Headphones size={12} className="text-accent/80" />
               <span>Get Support</span>
             </Link>
+            <button
+              type="button"
+              onClick={() => startTour()}
+              className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-border-primary/60 text-xs text-text-secondary hover:text-text-primary hover:border-accent/35 hover:bg-accent/5 transition-colors"
+            >
+              <Sparkles size={12} className="text-accent/80" />
+              <span>Take a Tour</span>
+            </button>
           </div>
 
         </div>
