@@ -39,6 +39,9 @@ interface User {
   email_verified?: boolean;
   is_wallet_placeholder?: boolean;
   onboarding_complete?: boolean;
+  /** First-time product tour (react-joyride). Separate from
+   * onboarding_complete (KYC/profile/email gate). */
+  tour_completed?: boolean;
 }
 
 export interface WalletNonceResponse {

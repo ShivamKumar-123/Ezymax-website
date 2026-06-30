@@ -23,6 +23,7 @@ import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 import TerminalTicker from '@/components/trading/TerminalTicker';
 import TradingViewTechnicalAnalysis from '@/components/charts/TradingViewTechnicalAnalysis';
+import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
@@ -646,7 +647,7 @@ export default function TradingTerminalPage() {
                 </button>
               </div>
             ) : null}
-            <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
+            <div data-tour={TOUR_TARGETS.CHART_MAIN} className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
               <TradingViewChart />
               {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
                   already expanded since the header's "Normal view" button

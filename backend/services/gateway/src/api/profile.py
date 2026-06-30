@@ -441,3 +441,37 @@ async def migrate_to_wallet_account(
 
     await db.commit()
     return await auth_service.get_me(user_id, db)
+
+
+# ── First-time product tour (react-joyride) ──────────────────────────────
+# The current user's tour flag only — never another user's (scoped by the
+# authenticated user_id). Rate-limited to blunt abusive reset loops.
+
+@router.post("/onboarding/complete")
+async def complete_onboarding_tour(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark the product tour as completed (called on Finish or Skip)."""
+    user_id = current_user["user_id"]
+    auth_service.rate_limit_http(request, "tour_flag", 10, 60.0, subject=f"user:{user_id}")
+    from packages.common.src.cache import cache_invalidate
+    res = await profile_service.set_tour_completed(user_id, True, db)
+    await cache_invalidate("auth_me", str(user_id))
+    return res
+
+
+@router.post("/onboarding/reset")
+async def reset_onboarding_tour(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset the tour so the user can replay it (manual 'Take a Tour')."""
+    user_id = current_user["user_id"]
+    auth_service.rate_limit_http(request, "tour_flag", 10, 60.0, subject=f"user:{user_id}")
+    from packages.common.src.cache import cache_invalidate
+    res = await profile_service.set_tour_completed(user_id, False, db)
+    await cache_invalidate("auth_me", str(user_id))
+    return res

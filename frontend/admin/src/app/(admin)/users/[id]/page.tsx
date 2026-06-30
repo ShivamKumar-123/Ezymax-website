@@ -186,6 +186,8 @@ export default function UserDetailPage() {
   const [posLoading, setPosLoading] = useState(false);
   const [trades, setTrades] = useState<TradeHistoryRow[]>([]);
   const [tradesLoading, setTradesLoading] = useState(false);
+  // Trade-History account filter: 'all' or a specific account_number.
+  const [tradeAcctFilter, setTradeAcctFilter] = useState<string>('all');
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [txLoading, setTxLoading] = useState(false);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
@@ -296,11 +298,8 @@ export default function UserDetailPage() {
     ? d.gross_loss
     : (trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null);
 
-  // Trade-History tab: true net (profit − commission − swap) over loaded rows,
-  // plus a per-account breakdown so admin sees "this account X, that account Y".
-  const tradesNet = trades.reduce(
-    (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
-  );
+  // Trade-History tab: per-account breakdown so admin sees "this account X,
+  // that account Y" (net = profit − commission − swap).
   const tradesByAccount = (() => {
     const m = new Map<string, { account: string; count: number; gross: number; net: number }>();
     for (const t of trades) {
@@ -313,6 +312,14 @@ export default function UserDetailPage() {
     }
     return Array.from(m.values()).sort((a, b) => b.net - a.net);
   })();
+
+  // Trade rows scoped to the selected account (+ its net after charges).
+  const filteredTrades = tradeAcctFilter === 'all'
+    ? trades
+    : trades.filter((t) => (t.account_number || '—') === tradeAcctFilter);
+  const filteredNet = filteredTrades.reduce(
+    (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
+  );
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -449,19 +456,37 @@ export default function UserDetailPage() {
       {/* ─── TRADE HISTORY TAB ─── */}
       {activeTab === 'trades' && (
         <>
-          {/* P&L summary across all closed trades */}
-          {trades.length > 0 && (
+          {/* Account filter — scope the trade history to a single account */}
+          {trades.length > 0 && tradesByAccount.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-tertiary">Account</span>
+              <select
+                value={tradeAcctFilter}
+                onChange={(e) => setTradeAcctFilter(e.target.value)}
+                aria-label="Filter trade history by account"
+                className="text-xs py-1.5 pl-2.5 pr-7 rounded-md bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer"
+              >
+                <option value="all">All accounts</option>
+                {tradesByAccount.map((a) => (
+                  <option key={a.account} value={a.account}>{a.account} ({a.count})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* P&L summary (scoped to the selected account) */}
+          {filteredTrades.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Total Closed Trades" value={trades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
-              <StatCard label="Gross Profit" value={`$${fmt(trades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingUp} color="text-emerald-400" />
-              <StatCard label="Gross Loss" value={`$${fmt(trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingDown} color="text-rose-400" />
-              <StatCard label="Net P&L" value={`${tradesNet >= 0 ? '+' : ''}$${fmt(tradesNet)}`} icon={tradesNet >= 0 ? TrendingUp : TrendingDown} color={tradesNet >= 0 ? 'text-success' : 'text-danger'} />
+              <StatCard label="Total Closed Trades" value={filteredTrades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
+              <StatCard label="Gross Profit" value={`$${fmt(filteredTrades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingUp} color="text-emerald-400" />
+              <StatCard label="Gross Loss" value={`$${fmt(filteredTrades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingDown} color="text-rose-400" />
+              <StatCard label="Net P&L" value={`${filteredNet >= 0 ? '+' : ''}$${fmt(filteredNet)}`} icon={filteredNet >= 0 ? TrendingUp : TrendingDown} color={filteredNet >= 0 ? 'text-success' : 'text-danger'} />
             </div>
           )}
 
           {/* Per-account breakdown — each trading account's closed-trade
               count, gross P&L and net P&L (after commission + swap). */}
-          {tradesByAccount.length > 1 && (
+          {tradesByAccount.length > 1 && tradeAcctFilter === 'all' && (
             <div className="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
               <div className="px-3 py-2 border-b border-border-primary text-xs font-semibold text-text-primary">By account</div>
               <table className="w-full text-xs">
@@ -489,11 +514,11 @@ export default function UserDetailPage() {
 
           <TableSection
             loading={tradesLoading}
-            empty={trades.length === 0}
+            empty={filteredTrades.length === 0}
             emptyText="No closed trades"
             headers={['Closed', 'Account', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason']}
             rightAlign={[4, 5, 6, 7, 8, 9]}
-            rows={trades.map((t) => [
+            rows={filteredTrades.map((t) => [
               <span className="text-text-tertiary text-xxs font-mono">{formatDate(t.closed_at)}</span>,
               <span className="font-mono text-xxs text-text-secondary">{t.account_number || '—'}</span>,
               <span className="font-medium text-text-primary">{t.instrument_symbol || '—'}</span>,

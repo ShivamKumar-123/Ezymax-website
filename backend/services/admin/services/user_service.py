@@ -83,6 +83,34 @@ def _account_to_out(a: TradingAccount) -> dict:
     }
 
 
+async def search_users_lite(q: str, limit: int, db: AsyncSession) -> dict:
+    """Fast type-ahead user search for autocompletes: id / email / name only,
+    no balance/equity aggregation (unlike `list_users`), so it stays quick on
+    every keystroke. Same non-admin, non-demo scope as the users list."""
+    term = f"%{q.strip()}%"
+    rows = (await db.execute(
+        select(User.id, User.email, User.first_name, User.last_name)
+        .where(
+            User.role.notin_(["admin", "super_admin"]),
+            User.is_demo == False,
+            or_(
+                User.email.ilike(term),
+                User.first_name.ilike(term),
+                User.last_name.ilike(term),
+                User.phone.ilike(term),
+            ),
+        )
+        .order_by(User.created_at.desc())
+        .limit(limit)
+    )).all()
+    return {
+        "items": [
+            {"id": str(r[0]), "email": r[1] or "", "name": " ".join(p for p in (r[2], r[3]) if p)}
+            for r in rows
+        ]
+    }
+
+
 async def list_users(
     page: int, per_page: int, search: str | None,
     status_filter: str | None, kyc_filter: str | None,
@@ -229,13 +257,29 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
     )
     accounts = accounts_q.scalars().all()
 
+    # Total deposits = real gateway deposits (deposits table) + admin-funded
+    # deposits. Admin Add-Fund books a Transaction(type='deposit') with NO
+    # linked deposit row (reference_id IS NULL), so it's invisible to the
+    # deposits table — count it here too, otherwise an admin-funded user shows
+    # $0 deposits despite having a funded balance. Gateway deposits also create
+    # a Transaction(type='deposit') but with reference_id=deposit.id, so the
+    # `reference_id IS NULL` filter avoids double-counting them.
     dep_q = await db.execute(
         select(func.coalesce(func.sum(Deposit.amount), 0)).where(
             Deposit.user_id == user_id,
             Deposit.status.in_(["approved", "auto_approved"]),
         )
     )
-    total_deposit = float(dep_q.scalar() or 0)
+    dep_gateway = float(dep_q.scalar() or 0)
+
+    admin_dep_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.user_id == user_id,
+            Transaction.type == "deposit",
+            Transaction.reference_id.is_(None),
+        )
+    )
+    total_deposit = dep_gateway + float(admin_dep_q.scalar() or 0)
 
     wd_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(

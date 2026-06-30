@@ -580,7 +580,19 @@ async def place_order(
 
 
 async def list_orders(account_id: UUID, user_id: UUID, status: str | None, db: AsyncSession) -> list[dict]:
-    await validate_account(account_id, user_id, db)
+    # Read-only listing: ownership check only. Do NOT require the account to be
+    # active — viewing orders of an inactive/archived account is fine (matches
+    # list_positions). validate_account's is_active gate is for write paths
+    # (placing orders); using it here 403'd every inactive account the trader UI
+    # polled, spamming the console.
+    owns = (await db.execute(
+        select(TradingAccount.id).where(
+            TradingAccount.id == account_id,
+            TradingAccount.user_id == user_id,
+        )
+    )).scalar_one_or_none()
+    if owns is None:
+        raise HTTPException(status_code=404, detail="Account not found")
 
     query = select(Order).where(Order.account_id == account_id)
     if status:

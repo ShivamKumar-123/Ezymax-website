@@ -60,3 +60,23 @@ async def user_pnl_breakdown(
         db=db, page=page, per_page=per_page, search=search,
         sort_by=sort_by, sort_dir=sort_dir, period=period,
     )
+
+
+@router.get("/user-revenue")
+async def user_revenue_breakdown(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=200),
+    search: str | None = Query(None),
+    sort: str = Query("net_revenue"),
+    order: str = Query("desc"),
+    admin: User = Depends(require_permission("analytics.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-user business breakdown — one row per non-demo user with their
+    deposits, withdrawals, net deposit, lots, realized P&L, trade count,
+    gross brokerage, IB commission and net revenue (brokerage − IB). Powers
+    the "Revenue by user" drill-down on the Analytics page; each row links to
+    /admin/users/[id]. Sortable by any money column, searchable by email/name."""
+    return await analytics_service.user_revenue_breakdown(
+        db=db, page=page, per_page=per_page, search=search, sort=sort, order=order,
+    )

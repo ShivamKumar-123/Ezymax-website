@@ -1,8 +1,12 @@
 """Admin Analytics Service — dashboard stats, exposure, profitable users."""
+import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, text
+from sqlalchemy.exc import ProgrammingError, DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+_log = logging.getLogger("admin.analytics")
 
 from packages.common.src.models import (
     User, Position, Transaction, Deposit, Withdrawal,
@@ -76,7 +80,15 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
             Deposit.status.in_(["approved", "auto_approved"])
         )
     )
-    total_deposits = float(dep_q.scalar() or 0)
+    # Include admin Add-Fund deposits (Transaction type='deposit' with no linked
+    # deposit row) so an all-admin-funded platform doesn't read $0 deposits.
+    admin_dep_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "deposit",
+            Transaction.reference_id.is_(None),
+        )
+    )
+    total_deposits = float(dep_q.scalar() or 0) + float(admin_dep_q.scalar() or 0)
 
     wd_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(
@@ -85,11 +97,19 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
     )
     total_withdrawals = float(wd_q.scalar() or 0)
 
+    # Live-only: exclude demo accounts from the open/closed trade counts so the
+    # dashboard reflects real trading, not practice accounts.
     open_pos_q = await db.execute(
-        select(func.count(Position.id)).where(Position.status == PositionStatus.OPEN.value)
+        select(func.count(Position.id))
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(Position.status == PositionStatus.OPEN.value, TradingAccount.is_demo == False)
     )
 
-    closed_trades_q = await db.execute(select(func.count(TradeHistory.id)))
+    closed_trades_q = await db.execute(
+        select(func.count(TradeHistory.id))
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
 
     # Admin commission earned from all sources (PAMM performance fee, copy-trade, etc.)
     admin_comm_all_q = await db.execute(
@@ -224,7 +244,8 @@ async def get_exposure(db: AsyncSession) -> dict:
                 case((Position.side == OrderSide.SELL.value, 1), else_=0)
             ).label("sell_count"),
         )
-        .where(Position.status == PositionStatus.OPEN.value)
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(Position.status == PositionStatus.OPEN.value, TradingAccount.is_demo == False)
         .group_by(Position.instrument_id)
     )
     rows = result.all()
@@ -609,3 +630,121 @@ async def list_user_pnl_breakdown(
         "period": period or "all",
         "totals": totals,
     }
+
+
+# Whitelisted sort columns for the per-user revenue breakdown (prevents SQL
+# injection via the `sort` query param — only these aliases are allowed).
+_USER_REVENUE_SORTS = {
+    "net_revenue", "gross_brokerage", "ib_commission", "total_deposit",
+    "total_withdrawal", "net_deposit", "lots_traded", "realized_pnl",
+    "trades_count", "name",
+}
+
+
+async def user_revenue_breakdown(
+    db: AsyncSession, page: int, per_page: int, search: str | None,
+    sort: str | None, order: str | None,
+) -> dict:
+    """Per-user (one row per non-demo user) business breakdown: deposits,
+    withdrawals, net deposit, lots, realized P&L, trade count, gross brokerage,
+    IB commission and net revenue (brokerage − IB). Deposits/withdrawals are
+    per-user; trade/position/IB figures are summed across the user's live
+    (non-demo) trading accounts. Mirrors crm_service.list_customers but rolled
+    up to the user."""
+    like = f"%{search.strip()}%" if search and search.strip() else None
+    sort_col = sort if sort in _USER_REVENUE_SORTS else "net_revenue"
+    sort_dir = "ASC" if (order or "").lower() == "asc" else "DESC"
+    params = {"search": like, "limit": per_page, "offset": (page - 1) * per_page}
+
+    search_clause = """
+        (CAST(:search AS text) IS NULL
+         OR u.email ILIKE CAST(:search AS text)
+         OR trim(coalesce(u.first_name,'') || ' ' || coalesce(u.last_name,'')) ILIKE CAST(:search AS text))
+    """
+    where = f"u.role NOT IN ('admin','super_admin') AND u.is_demo = false AND {search_clause}"
+
+    count_sql = text(f"SELECT count(*) FROM users u WHERE {where}")
+    rows_sql = text(f"""
+        SELECT
+            u.id AS user_id, u.email,
+            trim(coalesce(u.first_name,'') || ' ' || coalesce(u.last_name,'')) AS name,
+            COALESCE(dep.total, 0) + COALESCE(adep.total, 0) AS total_deposit,
+            COALESCE(wd.total, 0) AS total_withdrawal,
+            (COALESCE(dep.total, 0) + COALESCE(adep.total, 0)) - COALESCE(wd.total, 0) AS net_deposit,
+            COALESCE(acc.lots, 0) AS lots_traded,
+            COALESCE(acc.realized, 0) AS realized_pnl,
+            COALESCE(acc.trades, 0) AS trades_count,
+            COALESCE(acc.gross, 0) AS gross_brokerage,
+            COALESCE(ibc.amount, 0) AS ib_commission,
+            COALESCE(acc.gross, 0) - COALESCE(ibc.amount, 0) AS net_revenue
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, sum(amount) AS total FROM deposits
+            WHERE status IN ('approved','auto_approved') GROUP BY user_id
+        ) dep ON dep.user_id = u.id
+        LEFT JOIN (
+            -- Admin Add-Fund deposits (Transaction type='deposit' with no linked
+            -- deposit row) — invisible to the deposits table.
+            SELECT user_id, sum(amount) AS total FROM transactions
+            WHERE type = 'deposit' AND reference_id IS NULL GROUP BY user_id
+        ) adep ON adep.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, sum(amount) AS total FROM withdrawals
+            WHERE status IN ('approved','completed') GROUP BY user_id
+        ) wd ON wd.user_id = u.id
+        LEFT JOIN (
+            SELECT ta.user_id AS user_id,
+                   sum(COALESCE(th.lots,0) + COALESCE(op.lots,0)) AS lots,
+                   sum(COALESCE(th.profit,0)) AS realized,
+                   sum(COALESCE(th.trades,0)) AS trades,
+                   sum(COALESCE(op.comm,0) + COALESCE(th.comm,0)) AS gross
+            FROM trading_accounts ta
+            LEFT JOIN (
+                SELECT account_id, sum(lots) AS lots, sum(profit) AS profit,
+                       sum(commission) AS comm, count(*) AS trades
+                FROM trade_history GROUP BY account_id
+            ) th ON th.account_id = ta.id
+            LEFT JOIN (
+                SELECT account_id, sum(lots) AS lots, sum(commission) AS comm
+                FROM positions WHERE lower(cast(status AS text)) = 'open' GROUP BY account_id
+            ) op ON op.account_id = ta.id
+            WHERE ta.is_demo = false
+            GROUP BY ta.user_id
+        ) acc ON acc.user_id = u.id
+        LEFT JOIN (
+            SELECT ta.user_id AS user_id, sum(ic.amount) AS amount
+            FROM ib_commissions ic
+            JOIN orders o ON o.id = ic.source_trade_id
+            JOIN trading_accounts ta ON ta.id = o.account_id
+            WHERE ta.is_demo = false
+            GROUP BY ta.user_id
+        ) ibc ON ibc.user_id = u.id
+        WHERE {where}
+        ORDER BY {sort_col} {sort_dir} NULLS LAST
+        LIMIT :limit OFFSET :offset
+    """)
+    try:
+        total = (await db.execute(count_sql, params)).scalar() or 0
+        rows = (await db.execute(rows_sql, params)).all()
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback()
+        _log.warning("user_revenue_breakdown failed: %s", exc)
+        return {"items": [], "total": 0, "page": page, "per_page": per_page}
+
+    items = []
+    for r in (row._mapping for row in rows):
+        items.append({
+            "user_id": str(r["user_id"]),
+            "name": (r["name"] or "").strip() or None,
+            "email": r["email"],
+            "total_deposit": float(r["total_deposit"] or 0),
+            "total_withdrawal": float(r["total_withdrawal"] or 0),
+            "net_deposit": float(r["net_deposit"] or 0),
+            "lots_traded": float(r["lots_traded"] or 0),
+            "realized_pnl": float(r["realized_pnl"] or 0),
+            "trades_count": int(r["trades_count"] or 0),
+            "gross_brokerage": float(r["gross_brokerage"] or 0),
+            "ib_commission": float(r["ib_commission"] or 0),
+            "net_revenue": float(r["net_revenue"] or 0),
+        })
+    return {"items": items, "total": int(total), "page": page, "per_page": per_page}

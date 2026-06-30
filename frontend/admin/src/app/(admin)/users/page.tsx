@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
   CreditCard,
   DollarSign,
   Download,
@@ -511,7 +512,21 @@ export default function UsersPage() {
               <tbody>
                 {!loading && sorted.map(u => (
                   <tr key={u.id} className="border-b border-border-primary/40 transition-fast hover:bg-bg-hover/60 group/row">
-                    <td className="px-3 py-3 text-text-tertiary font-mono tabular-nums whitespace-nowrap" title={u.id}>{u.id.slice(0, 8)}…</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard?.writeText(u.id);
+                          toast.success('User ID copied');
+                        }}
+                        title={`${u.id} — click to copy`}
+                        className="group/id inline-flex items-center gap-1 text-text-tertiary font-mono tabular-nums hover:text-text-secondary transition-fast"
+                      >
+                        <span>{u.id.slice(0, 8)}…</span>
+                        <Copy size={11} className="opacity-0 group-hover/id:opacity-100 transition-opacity shrink-0" />
+                      </button>
+                    </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <Link href={`/users/${u.id}`} className="inline-flex items-center gap-2 hover:text-buy transition-fast">
                         <div className="relative shrink-0">

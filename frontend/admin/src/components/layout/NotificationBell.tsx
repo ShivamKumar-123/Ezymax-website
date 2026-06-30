@@ -178,7 +178,7 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {loading && items.length === 0 ? (
               <div className="px-3 py-10 text-center text-text-tertiary text-xs"><Loader2 className="inline animate-spin mr-1.5" size={14} />Loading…</div>
             ) : items.length === 0 ? (

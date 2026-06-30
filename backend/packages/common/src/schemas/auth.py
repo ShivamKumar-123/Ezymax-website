@@ -127,6 +127,9 @@ class UserResponse(BaseModel):
     email_verified: bool = False
     is_wallet_placeholder: bool = False
     onboarding_complete: bool = False
+    # First-time UI walkthrough (react-joyride product tour). Separate from
+    # onboarding_complete so the two flows evolve independently.
+    tour_completed: bool = False
     # Whether the account has each non-wallet sign-in method available —
     # used by the FE to disable the "unlink wallet" button when wallet is
     # the user's only credential.
