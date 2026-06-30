@@ -143,6 +143,8 @@ export default function TradesSection() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<null | { kind: TradeTab; data: OpenPosition | PendingOrder | ClosedTrade }>(null);
   const [page, setPage] = useState(1);
+  // Account filter: 'all' or a specific account id (trades carry account_id).
+  const [accountFilter, setAccountFilter] = useState<string>('all');
   const [closingId, setClosingId] = useState<string | null>(null);
   const pageSize = 15;
   const loadGen = useRef(0);
@@ -239,20 +241,27 @@ export default function TradesSection() {
 
   useEffect(() => {
     setPage(1);
-  }, [tab]);
+  }, [tab, accountFilter]);
 
   const accountNumber = (id: string) => accounts.find((a) => a.id === id)?.account_number || '—';
 
+  // Apply the account filter to each list (and to the summary cards + counts),
+  // so the view can be scoped to a single trading account.
+  const matchAcct = (aid?: string) => accountFilter === 'all' || aid === accountFilter;
+  const fOpen = openPositions.filter((p) => matchAcct(p.account_id));
+  const fPending = pendingOrders.filter((o) => matchAcct(o.account_id));
+  const fClosed = closedTrades.filter((t) => matchAcct(t.account_id));
+
   const currentList =
-    tab === 'open' ? openPositions : tab === 'pending' ? pendingOrders : closedTrades;
+    tab === 'open' ? fOpen : tab === 'pending' ? fPending : fClosed;
   const totalPages = Math.max(1, Math.ceil(currentList.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const paged = currentList.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const openPnl = openPositions.reduce((acc, p) => acc + calcLivePnl(p), 0);
+  const openPnl = fOpen.reduce((acc, p) => acc + calcLivePnl(p), 0);
   // Closed P/L summary is NET of broker charges (commission + swap) so it
   // matches what actually hit the account balance.
-  const closedPnl = closedTrades.reduce((acc, t) => {
+  const closedPnl = fClosed.reduce((acc, t) => {
     const net = t.net_pnl != null ? t.net_pnl : (Number(t.pnl || 0) - Number(t.commission || 0) - Number(t.swap || 0));
     return acc + net;
   }, 0);
@@ -261,8 +270,8 @@ export default function TradesSection() {
     <div className="space-y-5">
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        <SummaryCard label="Open Positions" value={String(openPositions.length)} icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />} color="blue" />
-        <SummaryCard label="Pending Orders" value={String(pendingOrders.length)} icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />} color="amber" />
+        <SummaryCard label="Open Positions" value={String(fOpen.length)} icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />} color="blue" />
+        <SummaryCard label="Pending Orders" value={String(fPending.length)} icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />} color="amber" />
         <SummaryCard
           label="Floating P/L"
           value={`${openPnl >= 0 ? '+' : ''}$${fmt2(openPnl)}`}
@@ -284,14 +293,31 @@ export default function TradesSection() {
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
       >
         <div className="px-4 sm:px-6 pt-5 pb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-text-primary">Trades</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-text-primary">Trades</h2>
+            {accounts.length > 1 && (
+              <select
+                value={accountFilter}
+                onChange={(e) => setAccountFilter(e.target.value)}
+                aria-label="Filter by account"
+                className="text-xs py-1.5 pl-2.5 pr-7 rounded-lg bg-card border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer"
+              >
+                <option value="all">All accounts</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.account_number || a.id.slice(0, 8)}{a.currency ? ` · ${a.currency}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
-                  ['open', 'Open', openPositions.length],
-                  ['pending', 'Pending', pendingOrders.length],
-                  ['closed', 'Closed', closedTrades.length],
+                  ['open', 'Open', fOpen.length],
+                  ['pending', 'Pending', fPending.length],
+                  ['closed', 'Closed', fClosed.length],
                 ] as const
               ).map(([k, label, count]) => (
                 <button
