@@ -257,13 +257,29 @@ async def get_user_detail(user_id: uuid.UUID, db: AsyncSession):
     )
     accounts = accounts_q.scalars().all()
 
+    # Total deposits = real gateway deposits (deposits table) + admin-funded
+    # deposits. Admin Add-Fund books a Transaction(type='deposit') with NO
+    # linked deposit row (reference_id IS NULL), so it's invisible to the
+    # deposits table — count it here too, otherwise an admin-funded user shows
+    # $0 deposits despite having a funded balance. Gateway deposits also create
+    # a Transaction(type='deposit') but with reference_id=deposit.id, so the
+    # `reference_id IS NULL` filter avoids double-counting them.
     dep_q = await db.execute(
         select(func.coalesce(func.sum(Deposit.amount), 0)).where(
             Deposit.user_id == user_id,
             Deposit.status.in_(["approved", "auto_approved"]),
         )
     )
-    total_deposit = float(dep_q.scalar() or 0)
+    dep_gateway = float(dep_q.scalar() or 0)
+
+    admin_dep_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.user_id == user_id,
+            Transaction.type == "deposit",
+            Transaction.reference_id.is_(None),
+        )
+    )
+    total_deposit = dep_gateway + float(admin_dep_q.scalar() or 0)
 
     wd_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(

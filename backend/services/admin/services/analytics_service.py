@@ -80,7 +80,15 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
             Deposit.status.in_(["approved", "auto_approved"])
         )
     )
-    total_deposits = float(dep_q.scalar() or 0)
+    # Include admin Add-Fund deposits (Transaction type='deposit' with no linked
+    # deposit row) so an all-admin-funded platform doesn't read $0 deposits.
+    admin_dep_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "deposit",
+            Transaction.reference_id.is_(None),
+        )
+    )
+    total_deposits = float(dep_q.scalar() or 0) + float(admin_dep_q.scalar() or 0)
 
     wd_q = await db.execute(
         select(func.coalesce(func.sum(Withdrawal.amount), 0)).where(
@@ -593,9 +601,9 @@ async def user_revenue_breakdown(
         SELECT
             u.id AS user_id, u.email,
             trim(coalesce(u.first_name,'') || ' ' || coalesce(u.last_name,'')) AS name,
-            COALESCE(dep.total, 0) AS total_deposit,
+            COALESCE(dep.total, 0) + COALESCE(adep.total, 0) AS total_deposit,
             COALESCE(wd.total, 0) AS total_withdrawal,
-            COALESCE(dep.total, 0) - COALESCE(wd.total, 0) AS net_deposit,
+            (COALESCE(dep.total, 0) + COALESCE(adep.total, 0)) - COALESCE(wd.total, 0) AS net_deposit,
             COALESCE(acc.lots, 0) AS lots_traded,
             COALESCE(acc.realized, 0) AS realized_pnl,
             COALESCE(acc.trades, 0) AS trades_count,
@@ -607,6 +615,12 @@ async def user_revenue_breakdown(
             SELECT user_id, sum(amount) AS total FROM deposits
             WHERE status IN ('approved','auto_approved') GROUP BY user_id
         ) dep ON dep.user_id = u.id
+        LEFT JOIN (
+            -- Admin Add-Fund deposits (Transaction type='deposit' with no linked
+            -- deposit row) — invisible to the deposits table.
+            SELECT user_id, sum(amount) AS total FROM transactions
+            WHERE type = 'deposit' AND reference_id IS NULL GROUP BY user_id
+        ) adep ON adep.user_id = u.id
         LEFT JOIN (
             SELECT user_id, sum(amount) AS total FROM withdrawals
             WHERE status IN ('approved','completed') GROUP BY user_id
