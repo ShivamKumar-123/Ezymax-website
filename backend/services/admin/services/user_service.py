@@ -83,6 +83,34 @@ def _account_to_out(a: TradingAccount) -> dict:
     }
 
 
+async def search_users_lite(q: str, limit: int, db: AsyncSession) -> dict:
+    """Fast type-ahead user search for autocompletes: id / email / name only,
+    no balance/equity aggregation (unlike `list_users`), so it stays quick on
+    every keystroke. Same non-admin, non-demo scope as the users list."""
+    term = f"%{q.strip()}%"
+    rows = (await db.execute(
+        select(User.id, User.email, User.first_name, User.last_name)
+        .where(
+            User.role.notin_(["admin", "super_admin"]),
+            User.is_demo == False,
+            or_(
+                User.email.ilike(term),
+                User.first_name.ilike(term),
+                User.last_name.ilike(term),
+                User.phone.ilike(term),
+            ),
+        )
+        .order_by(User.created_at.desc())
+        .limit(limit)
+    )).all()
+    return {
+        "items": [
+            {"id": str(r[0]), "email": r[1] or "", "name": " ".join(p for p in (r[2], r[3]) if p)}
+            for r in rows
+        ]
+    }
+
+
 async def list_users(
     page: int, per_page: int, search: str | None,
     status_filter: str | None, kyc_filter: str | None,

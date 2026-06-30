@@ -29,6 +29,19 @@ async def list_users(
     )
 
 
+@router.get("/search")
+async def search_users(
+    q: str = Query(..., min_length=1, max_length=120),
+    limit: int = Query(10, ge=1, le=20),
+    admin: User = Depends(require_permission("users.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lightweight type-ahead user search (id/email/name only) for the admin
+    autocompletes — fast enough to run on every keystroke. Registered before
+    `/{user_id}` so 'search' isn't captured as a user id."""
+    return await user_service.search_users_lite(q=q, limit=limit, db=db)
+
+
 @router.get("/{user_id}")
 async def get_user_detail(
     user_id: uuid.UUID,

@@ -91,22 +91,29 @@ export default function AuditLogsPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Autocomplete: search users by name / email while typing (debounced).
+  // Uses the lightweight /users/search endpoint (id/email/name only — no
+  // balance aggregation) so it stays fast on every keystroke. Opens + clears
+  // synchronously so the dropdown always reflects the latest keystroke and
+  // never gets stuck on "Searching…".
   useEffect(() => {
     if (selectedUser) return; // already picked one
     const term = userSearch.trim();
-    if (term.length < 2) { setUserOptions([]); return; }
+    if (term.length < 2) { setUserOptions([]); setSearchOpen(false); setSearching(false); return; }
     let cancelled = false;
+    setUserOptions([]);   // drop stale results
     setSearching(true);
+    setSearchOpen(true);  // show the dropdown immediately
     const t = setTimeout(async () => {
       try {
-        const res = await adminApi.get<{ items?: Array<Record<string, unknown>> }>('/users', { search: term, per_page: '8' });
+        const res = await adminApi.get<{ items?: Array<{ id: string; email: string; name: string }> }>(
+          '/users/search', { q: term, limit: '10' },
+        );
         if (cancelled) return;
         setUserOptions((res.items || []).map((u) => ({
           id: String(u.id),
-          email: String(u.email || ''),
-          name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+          email: u.email || '',
+          name: u.name || '',
         })));
-        setSearchOpen(true);
       } catch {
         if (!cancelled) setUserOptions([]);
       } finally {
@@ -195,16 +202,20 @@ export default function AuditLogsPage() {
                 type="text"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                onFocus={() => userOptions.length && setSearchOpen(true)}
+                onFocus={() => userSearch.trim().length >= 2 && setSearchOpen(true)}
                 onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
                 placeholder="Search name or email…"
                 className="text-xs py-1.5 px-2 w-64 bg-bg-input border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary"
               />
             )}
-            {searchOpen && !selectedUser && (userOptions.length > 0 || searching) && (
+            {searchOpen && !selectedUser && userSearch.trim().length >= 2 && (
               <div className="absolute z-30 mt-1 w-64 max-h-64 overflow-y-auto bg-bg-secondary border border-border-primary rounded-md shadow-xl">
-                {searching && userOptions.length === 0 ? (
-                  <div className="px-3 py-2 text-xxs text-text-tertiary">Searching…</div>
+                {searching ? (
+                  <div className="px-3 py-2 text-xxs text-text-tertiary flex items-center gap-1.5">
+                    <Loader2 className="animate-spin" size={12} /> Searching…
+                  </div>
+                ) : userOptions.length === 0 ? (
+                  <div className="px-3 py-2 text-xxs text-text-tertiary">No matching users</div>
                 ) : userOptions.map((u) => (
                   <button
                     key={u.id}
