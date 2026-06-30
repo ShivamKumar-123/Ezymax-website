@@ -9,6 +9,7 @@
  * WalletConnect-based wallets (Trust Mobile, Rainbow, etc.) won't connect.
  */
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { http } from 'wagmi';
 import { arbitrum, bsc, mainnet, polygon } from 'wagmi/chains';
 
 const PROJECT_ID = (process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '').trim();
@@ -26,6 +27,17 @@ export function getWagmiConfig() {
     // the provider so it won't actually try to talk to Reown without one.
     projectId: PROJECT_ID || '00000000000000000000000000000000',
     chains: [mainnet, bsc, polygon, arbitrum],
+    // Explicit CORS-enabled RPCs. Without this, viem falls back to its default
+    // public endpoints (e.g. eth.merkle.io) which DON'T send CORS headers, so
+    // every on-chain read from the browser failed with a CORS error and spammed
+    // the console on the wallet page. publicnode.com endpoints are CORS-friendly;
+    // override per chain via NEXT_PUBLIC_*_RPC_URL if a dedicated provider is set.
+    transports: {
+      [mainnet.id]: http(process.env.NEXT_PUBLIC_ETH_RPC_URL?.trim() || 'https://ethereum-rpc.publicnode.com'),
+      [bsc.id]: http(process.env.NEXT_PUBLIC_BSC_RPC_URL?.trim() || 'https://bsc-rpc.publicnode.com'),
+      [polygon.id]: http(process.env.NEXT_PUBLIC_POLYGON_RPC_URL?.trim() || 'https://polygon-bor-rpc.publicnode.com'),
+      [arbitrum.id]: http(process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL?.trim() || 'https://arbitrum-one-rpc.publicnode.com'),
+    },
     ssr: true,
   });
   return _config;
