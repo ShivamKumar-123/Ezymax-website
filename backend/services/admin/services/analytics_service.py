@@ -85,11 +85,19 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
     )
     total_withdrawals = float(wd_q.scalar() or 0)
 
+    # Live-only: exclude demo accounts from the open/closed trade counts so the
+    # dashboard reflects real trading, not practice accounts.
     open_pos_q = await db.execute(
-        select(func.count(Position.id)).where(Position.status == PositionStatus.OPEN.value)
+        select(func.count(Position.id))
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(Position.status == PositionStatus.OPEN.value, TradingAccount.is_demo == False)
     )
 
-    closed_trades_q = await db.execute(select(func.count(TradeHistory.id)))
+    closed_trades_q = await db.execute(
+        select(func.count(TradeHistory.id))
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
 
     # Admin commission earned from all sources (PAMM performance fee, copy-trade, etc.)
     admin_comm_all_q = await db.execute(
@@ -224,7 +232,8 @@ async def get_exposure(db: AsyncSession) -> dict:
                 case((Position.side == OrderSide.SELL.value, 1), else_=0)
             ).label("sell_count"),
         )
-        .where(Position.status == PositionStatus.OPEN.value)
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(Position.status == PositionStatus.OPEN.value, TradingAccount.is_demo == False)
         .group_by(Position.instrument_id)
     )
     rows = result.all()
