@@ -489,6 +489,10 @@ export default function AnalyticsPage() {
             </div>
           )}
         </div>
+
+        {/* Per-user business breakdown — deposits, brokerage, commission, net
+            revenue per user (drill-down for "who brought how much"). */}
+        <UserRevenueTable />
       </div>
     </>
   );
@@ -522,5 +526,159 @@ function SortHeader({
         {active ? (dir === 'desc' ? '↓' : '↑') : <ArrowUpDown size={10} className="opacity-50" />}
       </button>
     </th>
+  );
+}
+
+
+interface RevenueRow {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+  total_deposit: number;
+  total_withdrawal: number;
+  net_deposit: number;
+  lots_traded: number;
+  realized_pnl: number;
+  trades_count: number;
+  gross_brokerage: number;
+  ib_commission: number;
+  net_revenue: number;
+}
+
+/** Per-user business breakdown drill-down (deposits / brokerage / commission /
+ *  net revenue). Self-contained: own fetch + search + sort + pagination. */
+function UserRevenueTable() {
+  const router = useRouter();
+  const [rows, setRows] = useState<RevenueRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [sort, setSort] = useState('net_revenue');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [loading, setLoading] = useState(false);
+  const perPage = 25;
+
+  const fetchRows = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.get<{ items: RevenueRow[]; total: number }>('/analytics/user-revenue', {
+        page: String(page), per_page: String(perPage), sort, order,
+        ...(search ? { search } : {}),
+      });
+      setRows(res.items || []);
+      setTotal(res.total || 0);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to load user revenue');
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, sort, order, search]);
+
+  useEffect(() => { fetchRows(); }, [fetchRows]);
+
+  // Debounce the search box.
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput.trim()); setPage(1); }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const toggleSort = (f: string) => {
+    if (sort === f) setOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    else { setSort(f); setOrder('desc'); }
+    setPage(1);
+  };
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  const money = (n: number, signed = false) => `${signed && n >= 0 ? '+' : ''}$${fmt(n)}`;
+
+  const Th = ({ label, field }: { label: string; field: string }) => (
+    <th className="px-3 py-2.5 text-xxs font-medium text-text-tertiary uppercase select-none text-right">
+      <button
+        type="button"
+        onClick={() => toggleSort(field)}
+        className={cn('inline-flex items-center gap-1 ml-auto hover:text-text-primary transition-fast', sort === field && 'text-buy')}
+      >
+        {label}
+        {sort === field ? (order === 'desc' ? '↓' : '↑') : <ArrowUpDown size={10} className="opacity-50" />}
+      </button>
+    </th>
+  );
+
+  return (
+    <div className="bg-bg-secondary border border-border-primary rounded-md">
+      <div className="px-4 py-3 border-b border-border-primary flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-text-primary">Revenue by user</h3>
+          <p className="text-xxs text-text-tertiary">Per-user deposits, brokerage, IB commission and net revenue — click a row for the full ledger</p>
+        </div>
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search name or email…"
+            className="text-xs py-1.5 pl-8 pr-2 w-60 bg-bg-input border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50"
+          />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border-primary">
+              <th className="px-3 py-2.5 text-left text-xxs font-medium text-text-tertiary uppercase">User</th>
+              <Th label="Deposits" field="total_deposit" />
+              <Th label="Withdrawals" field="total_withdrawal" />
+              <Th label="Net Dep" field="net_deposit" />
+              <Th label="Brokerage" field="gross_brokerage" />
+              <Th label="IB Comm" field="ib_commission" />
+              <Th label="Net Revenue" field="net_revenue" />
+              <Th label="Lots" field="lots_traded" />
+              <Th label="Realized P&L" field="realized_pnl" />
+              <Th label="Trades" field="trades_count" />
+            </tr>
+          </thead>
+          <tbody>
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan={10} className="px-4 py-10 text-center text-text-tertiary"><Loader2 size={16} className="inline animate-spin mr-2" />Loading…</td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan={10} className="px-4 py-10 text-center text-text-tertiary">No users</td></tr>
+            ) : rows.map((r) => (
+              <tr
+                key={r.user_id}
+                onClick={() => router.push(`/users/${r.user_id}`)}
+                className="border-b border-border-primary/50 hover:bg-bg-hover/50 cursor-pointer transition-fast"
+              >
+                <td className="px-3 py-2.5">
+                  <div className="text-text-primary font-medium truncate max-w-[180px]">{r.name || r.email || '—'}</div>
+                  {r.name && <div className="text-xxs text-text-tertiary truncate max-w-[180px]">{r.email}</div>}
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-success">${fmt(r.total_deposit)}</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-danger">${fmt(r.total_withdrawal)}</td>
+                <td className={cn('px-3 py-2.5 text-right font-mono tabular-nums', r.net_deposit >= 0 ? 'text-text-primary' : 'text-danger')}>{money(r.net_deposit, true)}</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">${fmt(r.gross_brokerage)}</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-warning">${fmt(r.ib_commission)}</td>
+                <td className={cn('px-3 py-2.5 text-right font-mono tabular-nums font-semibold', r.net_revenue >= 0 ? 'text-success' : 'text-danger')}>{money(r.net_revenue, true)}</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary">{fmt(r.lots_traded)}</td>
+                <td className={cn('px-3 py-2.5 text-right font-mono tabular-nums', r.realized_pnl >= 0 ? 'text-success' : 'text-danger')}>{money(r.realized_pnl, true)}</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary">{r.trades_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {pages > 1 && (
+        <div className="px-4 py-3 border-t border-border-primary flex items-center justify-between">
+          <p className="text-xxs text-text-tertiary">{total} user{total === 1 ? '' : 's'} · Page {page} of {pages}</p>
+          <div className="flex items-center gap-1">
+            <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"><ChevronLeft size={14} /></button>
+            <span className="px-2 text-xs text-text-secondary font-mono tabular-nums">{page} / {pages}</span>
+            <button type="button" disabled={page >= pages || loading} onClick={() => setPage((p) => p + 1)} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"><ChevronRight size={14} /></button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
