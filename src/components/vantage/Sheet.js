@@ -1,10 +1,31 @@
 import React from 'react';
-import { Modal, View, Pressable, StyleSheet, Text } from 'react-native';
+import { Modal, View, Pressable, StyleSheet, Text, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 export default function Sheet({ visible, onClose, title, children, height }) {
+  // Lift the bottom-anchored sheet above the on-screen keyboard so inputs
+  // (e.g. the Set SL / TP fields) stay visible while typing. We track the
+  // keyboard height and translate the sheet up by that amount rather than
+  // relying on KeyboardAvoidingView, which is unreliable inside a
+  // statusBarTranslucent Modal on Android.
+  const [kbHeight, setKbHeight] = React.useState(0);
+  React.useEffect(() => {
+    if (!visible) {
+      setKbHeight(0);
+      return undefined;
+    }
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => setKbHeight(e?.endCoordinates?.height ?? 0));
+    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -14,7 +35,10 @@ export default function Sheet({ visible, onClose, title, children, height }) {
       statusBarTranslucent
     >
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <SafeAreaView edges={['bottom']} style={[styles.sheet, height ? { height } : null]}>
+      <SafeAreaView
+        edges={kbHeight > 0 ? [] : ['bottom']}
+        style={[styles.sheet, height ? { height } : null, kbHeight > 0 ? { marginBottom: kbHeight } : null]}
+      >
         <View style={styles.handle} />
         {title ? (
           <View style={styles.titleRow}>

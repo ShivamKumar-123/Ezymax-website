@@ -41,6 +41,19 @@ export async function getBiometricSupport() {
   }
 }
 
+// Cancel any in-flight native biometric prompt. On Android a prompt left
+// dangling from an interrupted attempt (e.g. the app was backgrounded mid-
+// authentication) can block the next authenticateAsync from showing, leaving
+// the UI stuck on "Authenticating…". Calling this first clears that state.
+// No-op on platforms/versions where it isn't available.
+export async function cancelAuthenticate() {
+  try {
+    if (typeof LocalAuthentication.cancelAuthenticate === 'function') {
+      await LocalAuthentication.cancelAuthenticate();
+    }
+  } catch (_) {}
+}
+
 // Prompt the user. Falls back to the device passcode/PIN if biometrics fail or
 // aren't enrolled. Returns true on success.
 export async function authenticate(promptMessage = 'Unlock SwissCresta') {

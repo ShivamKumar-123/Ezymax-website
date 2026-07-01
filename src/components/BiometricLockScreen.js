@@ -2,40 +2,67 @@
 // biometrics on mount and when the app returns to the foreground; the user can
 // re-trigger with the Unlock button, or log out if they can't authenticate.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, AppState } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, AppState, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authenticate } from '../utils/biometricLock';
+import { authenticate, cancelAuthenticate } from '../utils/biometricLock';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../theme/vantageTheme';
+
+// Android needs the activity to be fully resumed & focused before the native
+// BiometricPrompt can attach; prompting too early on resume silently fails and
+// the UI hangs on "Authenticating…". A short delay after the app becomes
+// active reliably lets the window settle first.
+const RESUME_PROMPT_DELAY = Platform.OS === 'android' ? 450 : 150;
 
 export default function BiometricLockScreen({ onUnlock, onLogout, label = 'Biometrics' }) {
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
+  const inFlightRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
 
   const tryUnlock = useCallback(async () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setBusy(true);
-    const ok = await authenticate('Unlock SwissCresta');
-    busyRef.current = false;
-    setBusy(false);
-    if (ok) onUnlock?.();
+    try {
+      // Clear any stale/interrupted prompt from a previous attempt so the new
+      // one can actually show (otherwise it stays stuck on "Authenticating…").
+      await cancelAuthenticate();
+      const ok = await authenticate('Unlock SwissCresta');
+      if (ok) onUnlock?.();
+    } catch (_) {
+      // swallow — user can retry via the Unlock button
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
+    }
   }, [onUnlock]);
 
-  // Auto-prompt once on mount.
+  // Auto-prompt once on mount (slightly delayed on Android so the lock overlay
+  // and activity are ready before the system prompt appears).
   useEffect(() => {
-    tryUnlock();
+    const t = setTimeout(() => { tryUnlock(); }, RESUME_PROMPT_DELAY);
+    return () => clearTimeout(t);
   }, [tryUnlock]);
 
-  // Re-prompt when the app comes back to the foreground (e.g. user dismissed the
-  // system sheet, switched away, then returned).
+  // Re-prompt only on a real background/inactive -> active transition (e.g. the
+  // user switched away and came back). Guarding on the previous state avoids
+  // duplicate prompts, and the delay ensures the prompt reliably attaches.
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') tryUnlock();
+    let timer;
+    const sub = AppState.addEventListener('change', (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      if (next === 'active' && prev !== 'active') {
+        clearTimeout(timer);
+        timer = setTimeout(() => { tryUnlock(); }, RESUME_PROMPT_DELAY);
+      }
     });
-    return () => sub.remove();
+    return () => {
+      clearTimeout(timer);
+      sub.remove();
+    };
   }, [tryUnlock]);
 
   const isFace = label === 'Face ID';
