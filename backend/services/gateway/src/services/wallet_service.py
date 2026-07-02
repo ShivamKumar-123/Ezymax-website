@@ -1700,6 +1700,10 @@ async def list_transactions(user_id: UUID, account_id: UUID | None, db: AsyncSes
                 "currency": "USD",
                 "description": (t.description or "").strip(),
                 "account_id": str(t.account_id) if t.account_id else None,
+                # Running balance of this account (or main wallet if
+                # account_id is null) immediately after this ledger entry —
+                # lets the UI show "balance at that time".
+                "balance_after": float(t.balance_after) if t.balance_after is not None else None,
             }
             for t in txns
         ]

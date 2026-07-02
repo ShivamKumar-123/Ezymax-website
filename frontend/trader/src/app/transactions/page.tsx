@@ -22,6 +22,9 @@ import {
   History,
   DollarSign,
   Hourglass,
+  ChevronDown,
+  Wallet,
+  Hash,
 } from 'lucide-react';
 import {
   type Transaction,
@@ -42,6 +45,25 @@ interface WalletSummaryResponse {
   currency?: string;
 }
 
+function DetailField({
+  label,
+  value,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold uppercase tracking-widest text-text-tertiary">{label}</p>
+      <p className={clsx('text-xs font-semibold text-text-primary mt-0.5 truncate', valueClass)}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function TransactionsPage() {
   const [mainTab, setMainTab] = useState<'transactions' | 'trades'>('transactions');
   const [currency, setCurrency] = useState('USD');
@@ -60,6 +82,8 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  // Which transaction row is expanded to show its full detail panel.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   // Per-account filter: 'all' or a trading-account id. Lets the user see
   // each trading account's transactions separately (account-type shown in
   // the label). Wallet-level rows (no account_id) appear only under "All".
@@ -116,7 +140,13 @@ export default function TransactionsPage() {
         setTransactions([]);
       }
     } finally {
-      if (id === loadGen.current && !silent) {
+      // Clear the initial/refresh spinner whenever a NON-silent load settles.
+      // Gate only on !silent — NOT on the loadGen id. Otherwise a 6s silent
+      // background poll that bumps loadGen mid-load leaves the spinner stuck
+      // forever (visible in dev, where the first compile makes the initial
+      // load slow enough to lose that race). The id guard still protects
+      // setTransactions above from stale overwrites.
+      if (!silent) {
         setLoading(false);
         setRefreshing(false);
       }
@@ -400,6 +430,7 @@ export default function TransactionsPage() {
                     ['deposit', 'Deposits'],
                     ['withdrawal', 'Withdrawals'],
                     ['transfer', 'Transfers'],
+                    ['trading', 'P&L'],
                     ['commission', 'IB Commissions'],
                   ] as const
                 ).map(([t, label]) => (
@@ -531,75 +562,189 @@ export default function TransactionsPage() {
                     (tx.type === 'loss' || tx.type === 'correction') && 'bg-sell/15 text-sell',
                     tx.type === 'adjustment' && 'bg-bg-tertiary/40 text-text-secondary',
                   );
+                  const after = typeof tx.balance_after === 'number' ? tx.balance_after : undefined;
+                  // Ledger stores the balance AFTER the entry; the balance
+                  // before it is simply after − (signed amount of this entry).
+                  const before = after !== undefined ? after - signed : undefined;
+                  const isExpanded = expandedId === tx.id;
+                  // Pull structured trade info out of the description, e.g.
+                  // "Close XAUUSD buy 0.0100 lots @ 2651.06".
+                  const tm = tx.description?.match(
+                    /([A-Z0-9]{3,})\s+(buy|sell)\s+([\d.]+)\s+lots?\s*@\s*([\d.]+)/i,
+                  );
+                  const trade = tm
+                    ? { symbol: tm[1], side: tm[2].toLowerCase(), lots: tm[3], price: tm[4] }
+                    : null;
                   return (
                     <div
                       key={tx.id}
-                      className="rounded-xl p-2.5 sm:p-3 md:p-4 flex items-center gap-2 sm:gap-3 transition-all hover:bg-bg-hover border border-border-primary/50"
+                      className={clsx(
+                        'rounded-xl border transition-all overflow-hidden',
+                        isExpanded ? 'border-accent/40 bg-bg-hover/40' : 'border-border-primary/50',
+                      )}
                     >
-                      <div className={iconWrap}>
-                        {tx.type === 'deposit' ? (
-                          <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                        ) : tx.type === 'withdrawal' ? (
-                          <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                        ) : tx.type === 'transfer' ? (
-                          <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                        ) : tx.type === 'profit' || tx.type === 'credit' || tx.type === 'bonus' ? (
-                          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
-                        ) : tx.type === 'loss' || tx.type === 'correction' ? (
-                          <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                        ) : (
-                          <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="text-text-primary font-semibold text-xs sm:text-sm truncate">
-                              {transactionTitle(tx)}{' '}
-                              <span className="text-text-tertiary font-normal text-[10px] sm:text-xs hidden sm:inline">· {tx.method}</span>
-                            </h3>
-                            {tx.description ? (
-                              <p className="text-[11px] text-text-tertiary mt-0.5 line-clamp-2">{tx.description}</p>
-                            ) : null}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p
-                              className={clsx(
-                                'text-xs sm:text-sm font-bold font-mono tabular-nums',
-                                isIn ? 'text-buy' : 'text-sell',
-                              )}
-                            >
-                              {isIn ? '+' : '-'}
-                              {fmt(Math.abs(signed))}
-                            </p>
-                            <p
-                              className={clsx(
-                                'text-[9px] font-bold uppercase tracking-wide mt-1 inline-block px-1.5 py-0.5 rounded border',
-                                tx.status === 'completed' && 'bg-buy/15 text-buy border-buy/30',
-                                tx.status === 'pending' && 'bg-warning/15 text-warning border-warning/30',
-                                tx.status === 'failed' && 'bg-sell/15 text-sell border-sell/30',
-                                tx.status === 'cancelled' && 'bg-bg-tertiary/50 text-text-tertiary border-border-primary',
-                              )}
-                            >
-                              {tx.status}
-                            </p>
-                          </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId((cur) => (cur === tx.id ? null : tx.id))}
+                        aria-expanded={isExpanded}
+                        className="w-full text-left p-2.5 sm:p-3 md:p-4 flex items-center gap-2 sm:gap-3 hover:bg-bg-hover transition-all"
+                      >
+                        <div className={iconWrap}>
+                          {tx.type === 'deposit' ? (
+                            <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : tx.type === 'withdrawal' ? (
+                            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : tx.type === 'transfer' ? (
+                            <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : tx.type === 'profit' || tx.type === 'credit' || tx.type === 'bonus' ? (
+                            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : tx.type === 'loss' || tx.type === 'correction' ? (
+                            <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : (
+                            <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                          )}
                         </div>
-                        <p className="text-[10px] text-text-tertiary mt-1 flex items-center gap-1.5 flex-wrap">
-                          <span>
-                            {new Date(tx.created_at).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-bg-tertiary/40 border border-border-primary/50 text-text-secondary font-medium">
-                            {accountLabel(tx.account_id)}
-                          </span>
-                        </p>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="text-text-primary font-semibold text-xs sm:text-sm truncate">
+                                {transactionTitle(tx)}{' '}
+                                <span className="text-text-tertiary font-normal text-[10px] sm:text-xs hidden sm:inline">· {tx.method}</span>
+                              </h3>
+                              {tx.description ? (
+                                <p className="text-[11px] text-text-tertiary mt-0.5 line-clamp-2">{tx.description}</p>
+                              ) : null}
+                            </div>
+                            <div className="text-right shrink-0 flex items-start gap-1.5">
+                              <div>
+                                <p
+                                  className={clsx(
+                                    'text-xs sm:text-sm font-bold font-mono tabular-nums',
+                                    isIn ? 'text-buy' : 'text-sell',
+                                  )}
+                                >
+                                  {isIn ? '+' : '-'}
+                                  {fmt(Math.abs(signed))}
+                                </p>
+                                <p
+                                  className={clsx(
+                                    'text-[9px] font-bold uppercase tracking-wide mt-1 inline-block px-1.5 py-0.5 rounded border',
+                                    tx.status === 'completed' && 'bg-buy/15 text-buy border-buy/30',
+                                    tx.status === 'pending' && 'bg-warning/15 text-warning border-warning/30',
+                                    tx.status === 'failed' && 'bg-sell/15 text-sell border-sell/30',
+                                    tx.status === 'cancelled' && 'bg-bg-tertiary/50 text-text-tertiary border-border-primary',
+                                  )}
+                                >
+                                  {tx.status}
+                                </p>
+                              </div>
+                              <ChevronDown
+                                className={clsx(
+                                  'w-4 h-4 text-text-tertiary mt-0.5 transition-transform shrink-0',
+                                  isExpanded && 'rotate-180 text-accent',
+                                )}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-text-tertiary mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span>
+                              {new Date(tx.created_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-bg-tertiary/40 border border-border-primary/50 text-text-secondary font-medium">
+                              {accountLabel(tx.account_id)}
+                            </span>
+                            {after !== undefined && (
+                              <span
+                                className="px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent font-medium font-mono tabular-nums"
+                                title="Balance right after this transaction"
+                              >
+                                Bal: {fmt(after)}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* Expanded detail panel */}
+                      {isExpanded && (
+                        <div className="px-3 sm:px-5 pb-4 pt-1 border-t border-border-primary/50 bg-bg-secondary/30">
+                          {/* Balance flow — before → after */}
+                          {after !== undefined && before !== undefined && (
+                            <div className="mt-3 rounded-xl border border-border-primary/60 bg-bg-card/60 p-3">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary mb-2 flex items-center gap-1.5">
+                                <Wallet className="w-3.5 h-3.5" />
+                                {tx.account_id ? 'Account balance' : 'Main wallet balance'}
+                              </p>
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="text-center">
+                                  <p className="text-[9px] uppercase tracking-wide text-text-tertiary">Before</p>
+                                  <p className="text-sm font-bold font-mono tabular-nums text-text-secondary">{fmt(before)}</p>
+                                </div>
+                                <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                                  <div className="h-px flex-1 bg-border-primary" />
+                                  <span
+                                    className={clsx(
+                                      'text-[11px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded shrink-0',
+                                      isIn ? 'text-buy bg-buy/10' : 'text-sell bg-sell/10',
+                                    )}
+                                  >
+                                    {isIn ? '+' : '−'}{fmt(Math.abs(signed))}
+                                  </span>
+                                  <div className="h-px flex-1 bg-border-primary" />
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[9px] uppercase tracking-wide text-text-tertiary">After</p>
+                                  <p className="text-sm font-bold font-mono tabular-nums text-text-primary">{fmt(after)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Detail grid */}
+                          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+                            <DetailField label="Type" value={transactionTitle(tx)} />
+                            <DetailField label="Method" value={tx.method || '—'} />
+                            <DetailField label="Account" value={accountLabel(tx.account_id)} />
+                            {trade && (
+                              <>
+                                <DetailField label="Instrument" value={trade.symbol} />
+                                <DetailField
+                                  label="Side"
+                                  value={trade.side.toUpperCase()}
+                                  valueClass={trade.side === 'buy' ? 'text-buy' : 'text-sell'}
+                                />
+                                <DetailField label="Lots" value={trade.lots} />
+                                <DetailField label="Price" value={trade.price} />
+                              </>
+                            )}
+                            <DetailField
+                              label={tx.type === 'loss' ? 'Realized loss' : tx.type === 'profit' ? 'Realized profit' : 'Amount'}
+                              value={`${isIn ? '+' : '−'}${fmt(Math.abs(signed))}`}
+                              valueClass={isIn ? 'text-buy' : 'text-sell'}
+                            />
+                            <DetailField
+                              label="Date & time"
+                              value={new Date(tx.created_at).toLocaleString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                              })}
+                            />
+                            <DetailField label="Status" value={tx.status} />
+                          </div>
+
+                          {/* Reference id */}
+                          <p className="mt-3 text-[10px] text-text-tertiary flex items-center gap-1 font-mono break-all">
+                            <Hash className="w-3 h-3 shrink-0" />
+                            {tx.id}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })

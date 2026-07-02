@@ -6,10 +6,12 @@ import toast from 'react-hot-toast';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatNumber, formatDateTime } from '@/lib/formatters';
+import { exportTablePdf } from '@/lib/pdf';
 import {
   ArrowLeft, ArrowDownCircle, ArrowUpCircle, CreditCard, DollarSign,
   Loader2, Mail, MapPin, Phone, Shield, UserRound, Wallet, Activity,
   TrendingUp, TrendingDown, History as HistoryIcon, Receipt,
+  ChevronDown, ArrowLeftRight, Hash, Download, Percent,
 } from 'lucide-react';
 
 // Per-user comprehensive ledger view. The page is tabbed so the load
@@ -18,7 +20,7 @@ import {
 // Deposits, and Withdrawals without leaving the user context. Backend
 // endpoints honour `?user_id=` for everything we render here.
 
-type TabId = 'overview' | 'positions' | 'trades' | 'transactions' | 'deposits' | 'withdrawals' | 'copy-fees';
+type TabId = 'overview' | 'positions' | 'trades' | 'transactions' | 'deposits' | 'withdrawals' | 'commission' | 'copy-fees';
 
 interface UserDetail {
   user: {
@@ -160,6 +162,65 @@ function typeColor(t: string) {
   return 'bg-text-tertiary/15 text-text-tertiary';
 }
 
+// Shared filter helpers reused by the Open Positions / Deposits /
+// Withdrawals tabs (account, status, date-range filtering client-side).
+function statusMatches(raw: string, f: string): boolean {
+  if (f === 'all') return true;
+  const s = (raw || '').toLowerCase();
+  if (f === 'completed') return ['approved', 'auto_approved', 'completed', 'paid'].includes(s);
+  if (f === 'pending') return ['pending', 'submitted'].includes(s);
+  if (f === 'failed') return ['rejected', 'failed', 'cancelled', 'canceled'].includes(s);
+  return true;
+}
+
+function dateInRange(created_at: string | null, from: string, to: string): boolean {
+  if (from && created_at) { const f = new Date(from); f.setHours(0, 0, 0, 0); if (new Date(created_at) < f) return false; }
+  if (to && created_at) { const t = new Date(to); t.setHours(23, 59, 59, 999); if (new Date(created_at) > t) return false; }
+  return true;
+}
+
+function FilterChip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all',
+        active ? 'bg-accent/15 text-accent border-accent/30' : 'text-text-tertiary border-border-primary hover:text-text-primary')}>
+      {label}
+    </button>
+  );
+}
+
+function DateRangeInputs({ from, to, setFrom, setTo }: { from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
+  return (
+    <>
+      <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date"
+        className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
+      <span className="text-text-tertiary text-xs">–</span>
+      <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date"
+        className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
+    </>
+  );
+}
+
+const FIN_STATUS_FILTERS = [
+  { id: 'all', label: 'All status' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'failed', label: 'Failed' },
+];
+
+// Per-section header with a PDF download icon (used on every ledger tab).
+function SectionToolbar({ title, onDownload }: { title: string; onDownload: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-sm font-bold text-text-primary">{title}</h3>
+      <button type="button" onClick={onDownload} title="Download PDF"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-border-primary text-text-secondary hover:text-accent hover:border-accent/40 transition-all">
+        <Download className="w-3.5 h-3.5" /> PDF
+      </button>
+    </div>
+  );
+}
+
 const TABS: { id: TabId; label: string; icon: typeof UserRound }[] = [
   { id: 'overview', label: 'Overview', icon: UserRound },
   { id: 'positions', label: 'Open Positions', icon: Activity },
@@ -167,6 +228,7 @@ const TABS: { id: TabId; label: string; icon: typeof UserRound }[] = [
   { id: 'transactions', label: 'Transactions', icon: Receipt },
   { id: 'deposits', label: 'Deposits', icon: ArrowDownCircle },
   { id: 'withdrawals', label: 'Withdrawals', icon: ArrowUpCircle },
+  { id: 'commission', label: 'Commission', icon: Percent },
   { id: 'copy-fees', label: 'Copy Fees', icon: Receipt },
 ];
 
@@ -194,6 +256,17 @@ export default function UserDetailPage() {
   const [depLoading, setDepLoading] = useState(false);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [wdLoading, setWdLoading] = useState(false);
+  // Open Positions filters
+  const [posAcctFilter, setPosAcctFilter] = useState('all');
+  const [posSideFilter, setPosSideFilter] = useState('all'); // all | buy | sell
+  // Deposits filters
+  const [depStatus, setDepStatus] = useState('all');
+  const [depFrom, setDepFrom] = useState('');
+  const [depTo, setDepTo] = useState('');
+  // Withdrawals filters
+  const [wdStatus, setWdStatus] = useState('all');
+  const [wdFrom, setWdFrom] = useState('');
+  const [wdTo, setWdTo] = useState('');
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -256,7 +329,7 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (activeTab === 'positions') void fetchPositions();
-    else if (activeTab === 'trades') void fetchTrades();
+    else if (activeTab === 'trades' || activeTab === 'commission') void fetchTrades();
     else if (activeTab === 'transactions') void fetchTransactions();
     else if (activeTab === 'deposits') void fetchDeposits();
     else if (activeTab === 'withdrawals') void fetchWithdrawals();
@@ -320,6 +393,64 @@ export default function UserDetailPage() {
   const filteredNet = filteredTrades.reduce(
     (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
   );
+
+  // Open Positions — account + side filters. Populate the account dropdown
+  // from the user's FULL account list (data.accounts), not just accounts
+  // that currently hold an open position, so every account is selectable.
+  const posAccounts = accounts.map((a) => a.account_number).filter(Boolean);
+  const filteredPositions = positions.filter((p) =>
+    (posAcctFilter === 'all' || (p.account_number || '') === posAcctFilter) &&
+    (posSideFilter === 'all' || (p.side || '').toLowerCase() === posSideFilter));
+  // Deposits / Withdrawals — status + date filters (these are user-level,
+  // no per-account attribution, so no account filter here).
+  const filteredDeposits = deposits.filter((d) => statusMatches(d.status, depStatus) && dateInRange(d.created_at, depFrom, depTo));
+  const filteredWithdrawals = withdrawals.filter((w) => statusMatches(w.status, wdStatus) && dateInRange(w.created_at, wdFrom, wdTo));
+
+  // Commission tab — broker-fee totals over the user's closed trades.
+  // (Spread is baked into the fill price and not stored per-trade, so only
+  // commission + swap are separable here.)
+  const totalCommission = trades.reduce((s, t) => s + (Number(t.commission) || 0), 0);
+  const totalSwap = trades.reduce((s, t) => s + (Number(t.swap) || 0), 0);
+  const totalFees = totalCommission + totalSwap;
+
+  // ── PDF export per section (branded, centered logo watermark) ──
+  const pdfName = (section: string) =>
+    `${(data?.user?.email || 'user').split('@')[0]}-${section}.pdf`;
+
+  async function downloadPdf(tab: TabId) {
+    if (!data) return;
+    const base = { userName: name, userEmail: data.user.email };
+    try {
+      if (tab === 'positions') {
+        await exportTablePdf({ ...base, title: 'Open Positions',
+          columns: ['Symbol', 'Side', 'Lots', 'Open', 'Current', 'SL', 'TP', 'P&L', 'Account', 'Opened'],
+          rows: filteredPositions.map((p) => [p.instrument_symbol || '—', p.side?.toUpperCase() || '', p.lots, p.open_price, p.close_price ?? '—', p.stop_loss ?? '—', p.take_profit ?? '—', `${p.profit >= 0 ? '+' : ''}$${fmt(p.profit)}`, p.account_number || '—', formatDate(p.created_at)]),
+          filename: pdfName('open-positions') });
+      } else if (tab === 'trades') {
+        await exportTablePdf({ ...base, title: 'Trade History',
+          columns: ['Closed', 'Account', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'Commission', 'Swap', 'P&L', 'Reason'],
+          rows: filteredTrades.map((t) => [formatDate(t.closed_at), t.account_number || '—', t.instrument_symbol || '—', t.side?.toUpperCase() || '', t.lots, t.open_price, t.close_price, `$${fmt(t.commission)}`, `$${fmt(t.swap)}`, `${t.profit >= 0 ? '+' : ''}$${fmt(t.profit)}`, t.close_reason || 'manual']),
+          filename: pdfName('trade-history') });
+      } else if (tab === 'commission') {
+        await exportTablePdf({ ...base, title: 'Commission & Fees',
+          columns: ['Closed', 'Account', 'Symbol', 'Lots', 'Commission', 'Swap', 'Total Fee'],
+          rows: trades.map((t) => [formatDate(t.closed_at), t.account_number || '—', t.instrument_symbol || '—', t.lots, `$${fmt(t.commission)}`, `$${fmt(t.swap)}`, `$${fmt((Number(t.commission) || 0) + (Number(t.swap) || 0))}`]),
+          filename: pdfName('commission') });
+      } else if (tab === 'deposits') {
+        await exportTablePdf({ ...base, title: 'Deposits',
+          columns: ['Method', 'Amount', 'Status', 'Reference', 'Date'],
+          rows: filteredDeposits.map((d) => [(d.method || '—').replace(/_/g, ' '), `$${fmt(d.amount)}`, d.status, d.transaction_id || '—', formatDate(d.created_at)]),
+          filename: pdfName('deposits') });
+      } else if (tab === 'withdrawals') {
+        await exportTablePdf({ ...base, title: 'Withdrawals',
+          columns: ['Method', 'Amount', 'Status', 'Wallet', 'Network', 'TX Hash', 'Date'],
+          rows: filteredWithdrawals.map((w) => [(w.method || '—').replace(/_/g, ' '), `$${fmt(w.amount)}`, w.status, w.crypto_address || '—', w.wallet_chain_snapshot || '—', w.crypto_tx_hash || '—', formatDate(w.created_at)]),
+          filename: pdfName('withdrawals') });
+      }
+    } catch {
+      toast.error('PDF export failed');
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -432,30 +563,53 @@ export default function UserDetailPage() {
 
       {/* ─── OPEN POSITIONS TAB ─── */}
       {activeTab === 'positions' && (
-        <TableSection
-          loading={posLoading}
-          empty={positions.length === 0}
-          emptyText="No open positions"
-          headers={['Symbol', 'Side', 'Lots', 'Open', 'Current', 'SL', 'TP', 'P&L', 'Account', 'Opened']}
-          rightAlign={[2, 3, 4, 5, 6, 7]}
-          rows={positions.map((p) => [
-            <span className="font-medium text-text-primary">{p.instrument_symbol || '—'}</span>,
-            <span className={cn('font-bold', p.side?.toLowerCase() === 'buy' ? 'text-buy' : 'text-sell')}>{p.side?.toUpperCase()}</span>,
-            <span className="font-mono tabular-nums">{p.lots}</span>,
-            <span className="font-mono tabular-nums text-text-secondary">{p.open_price}</span>,
-            <span className="font-mono tabular-nums">{p.close_price ?? '—'}</span>,
-            <span className={cn('font-mono tabular-nums', p.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{p.stop_loss ?? '—'}</span>,
-            <span className={cn('font-mono tabular-nums', p.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{p.take_profit ?? '—'}</span>,
-            <span className={cn('font-mono tabular-nums font-semibold', p.profit >= 0 ? 'text-success' : 'text-danger')}>{p.profit >= 0 ? '+' : ''}${fmt(p.profit)}</span>,
-            <span className="text-text-tertiary font-mono text-xxs">{p.account_number || '—'}</span>,
-            <span className="text-text-tertiary text-xxs">{formatDate(p.created_at)}</span>,
-          ])}
-        />
+        <>
+          <SectionToolbar title="Open Positions" onDownload={() => downloadPdf('positions')} />
+          {positions.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <FilterChip active={posSideFilter === 'all'} onClick={() => setPosSideFilter('all')} label="All sides" />
+              <FilterChip active={posSideFilter === 'buy'} onClick={() => setPosSideFilter('buy')} label="Buy" />
+              <FilterChip active={posSideFilter === 'sell'} onClick={() => setPosSideFilter('sell')} label="Sell" />
+              {posAccounts.length > 0 && (
+                <select value={posAcctFilter} onChange={(e) => setPosAcctFilter(e.target.value)} aria-label="Filter by account"
+                  className="text-xs py-1.5 pl-2.5 pr-7 rounded-lg bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer">
+                  <option value="all">All accounts</option>
+                  {posAccounts.map((a) => <option key={a} value={a}>{a}</option>)}
+                </select>
+              )}
+              {(posSideFilter !== 'all' || posAcctFilter !== 'all') && (
+                <button type="button" onClick={() => { setPosSideFilter('all'); setPosAcctFilter('all'); }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-danger/30 text-danger hover:bg-danger/10">Clear</button>
+              )}
+              <span className="text-xxs text-text-tertiary ml-auto">{filteredPositions.length} of {positions.length}</span>
+            </div>
+          )}
+          <TableSection
+            loading={posLoading}
+            empty={filteredPositions.length === 0}
+            emptyText={positions.length === 0 ? 'No open positions' : 'No positions match your filters'}
+            headers={['Symbol', 'Side', 'Lots', 'Open', 'Current', 'SL', 'TP', 'P&L', 'Account', 'Opened']}
+            rightAlign={[2, 3, 4, 5, 6, 7]}
+            rows={filteredPositions.map((p) => [
+              <span className="font-medium text-text-primary">{p.instrument_symbol || '—'}</span>,
+              <span className={cn('font-bold', p.side?.toLowerCase() === 'buy' ? 'text-buy' : 'text-sell')}>{p.side?.toUpperCase()}</span>,
+              <span className="font-mono tabular-nums">{p.lots}</span>,
+              <span className="font-mono tabular-nums text-text-secondary">{p.open_price}</span>,
+              <span className="font-mono tabular-nums">{p.close_price ?? '—'}</span>,
+              <span className={cn('font-mono tabular-nums', p.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{p.stop_loss ?? '—'}</span>,
+              <span className={cn('font-mono tabular-nums', p.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{p.take_profit ?? '—'}</span>,
+              <span className={cn('font-mono tabular-nums font-semibold', p.profit >= 0 ? 'text-success' : 'text-danger')}>{p.profit >= 0 ? '+' : ''}${fmt(p.profit)}</span>,
+              <span className="text-text-tertiary font-mono text-xxs">{p.account_number || '—'}</span>,
+              <span className="text-text-tertiary text-xxs">{formatDate(p.created_at)}</span>,
+            ])}
+          />
+        </>
       )}
 
       {/* ─── TRADE HISTORY TAB ─── */}
       {activeTab === 'trades' && (
         <>
+          <SectionToolbar title="Trade History" onDownload={() => downloadPdf('trades')} />
           {/* Account filter — scope the trade history to a single account */}
           {trades.length > 0 && tradesByAccount.length > 1 && (
             <div className="flex items-center gap-2">
@@ -537,64 +691,355 @@ export default function UserDetailPage() {
 
       {/* ─── TRANSACTIONS TAB ─── */}
       {activeTab === 'transactions' && (
-        <TableSection
+        <UserTransactionsTab
+          transactions={transactions}
           loading={txLoading}
-          empty={transactions.length === 0}
-          emptyText="No transactions"
-          headers={['Type', 'Amount', 'Balance After', 'Description', 'Account', 'Admin', 'Date']}
-          rightAlign={[1, 2]}
-          rows={transactions.map((t) => [
-            <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', typeColor(t.type))}>{t.type?.replace(/_/g, ' ')}</span>,
-            <span className={cn('font-mono tabular-nums font-semibold', t.amount >= 0 ? 'text-success' : 'text-danger')}>{t.amount >= 0 ? '+' : ''}${fmt(t.amount)}</span>,
-            <span className="font-mono tabular-nums text-text-primary">{t.balance_after != null ? `$${fmt(t.balance_after)}` : '—'}</span>,
-            <span className="text-text-secondary text-xxs">{t.description || '—'}</span>,
-            <span className="text-text-tertiary font-mono text-xxs">{t.account_number || '—'}</span>,
-            <span className="text-text-tertiary text-xxs">{t.admin_email || 'System'}</span>,
-            <span className="text-text-tertiary text-xxs font-mono">{formatDate(t.created_at)}</span>,
-          ])}
+          accounts={accounts.map((a) => a.account_number).filter(Boolean)}
+          userName={name}
+          userEmail={data.user.email}
         />
       )}
 
       {/* ─── DEPOSITS TAB ─── */}
       {activeTab === 'deposits' && (
-        <TableSection
-          loading={depLoading}
-          empty={deposits.length === 0}
-          emptyText="No deposits"
-          headers={['Method', 'Amount', 'Status', 'Reference', 'Crypto Address', 'Date']}
-          rightAlign={[1]}
-          rows={deposits.map((d) => [
-            <span className="text-text-primary capitalize">{(d.method || '—').replace(/_/g, ' ')}</span>,
-            <span className="font-mono tabular-nums text-success font-semibold">+${fmt(d.amount)}</span>,
-            <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', statusColor(d.status))}>{d.status?.replace(/_/g, ' ')}</span>,
-            <span className="text-text-tertiary text-xxs font-mono break-all">{d.transaction_id || '—'}</span>,
-            <span className="text-text-tertiary text-xxs font-mono break-all">{d.crypto_address || '—'}</span>,
-            <span className="text-text-tertiary text-xxs font-mono">{formatDate(d.created_at)}</span>,
-          ])}
-        />
+        <>
+          <SectionToolbar title="Deposits" onDownload={() => downloadPdf('deposits')} />
+          {deposits.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {FIN_STATUS_FILTERS.map((s) => (
+                <FilterChip key={s.id} active={depStatus === s.id} onClick={() => setDepStatus(s.id)} label={s.label} />
+              ))}
+              <DateRangeInputs from={depFrom} to={depTo} setFrom={setDepFrom} setTo={setDepTo} />
+              {(depStatus !== 'all' || depFrom || depTo) && (
+                <button type="button" onClick={() => { setDepStatus('all'); setDepFrom(''); setDepTo(''); }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-danger/30 text-danger hover:bg-danger/10">Clear</button>
+              )}
+              <span className="text-xxs text-text-tertiary ml-auto">{filteredDeposits.length} of {deposits.length}</span>
+            </div>
+          )}
+          <TableSection
+            loading={depLoading}
+            empty={filteredDeposits.length === 0}
+            emptyText={deposits.length === 0 ? 'No deposits' : 'No deposits match your filters'}
+            headers={['Method', 'Amount', 'Status', 'Reference', 'Crypto Address', 'Date']}
+            rightAlign={[1]}
+            rows={filteredDeposits.map((d) => [
+              <span className="text-text-primary capitalize">{(d.method || '—').replace(/_/g, ' ')}</span>,
+              <span className="font-mono tabular-nums text-success font-semibold">+${fmt(d.amount)}</span>,
+              <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', statusColor(d.status))}>{d.status?.replace(/_/g, ' ')}</span>,
+              <span className="text-text-tertiary text-xxs font-mono break-all">{d.transaction_id || '—'}</span>,
+              <span className="text-text-tertiary text-xxs font-mono break-all">{d.crypto_address || '—'}</span>,
+              <span className="text-text-tertiary text-xxs font-mono">{formatDate(d.created_at)}</span>,
+            ])}
+          />
+        </>
       )}
 
       {/* ─── WITHDRAWALS TAB ─── */}
       {activeTab === 'withdrawals' && (
-        <TableSection
-          loading={wdLoading}
-          empty={withdrawals.length === 0}
-          emptyText="No withdrawals"
-          headers={['Method', 'Amount', 'Status', 'Wallet Address', 'Network', 'TX Hash', 'Date']}
-          rightAlign={[1]}
-          rows={withdrawals.map((w) => [
-            <span className="text-text-primary capitalize">{(w.method || '—').replace(/_/g, ' ')}</span>,
-            <span className="font-mono tabular-nums text-danger font-semibold">-${fmt(w.amount)}</span>,
-            <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', statusColor(w.status))}>{w.status}</span>,
-            <span className="text-text-tertiary text-xxs font-mono break-all">{w.crypto_address || '—'}</span>,
-            <span className="text-text-tertiary text-xxs uppercase">{w.wallet_chain_snapshot || '—'}</span>,
-            <span className="text-text-tertiary text-xxs font-mono break-all">{w.crypto_tx_hash || '—'}</span>,
-            <span className="text-text-tertiary text-xxs font-mono">{formatDate(w.created_at)}</span>,
-          ])}
-        />
+        <>
+          <SectionToolbar title="Withdrawals" onDownload={() => downloadPdf('withdrawals')} />
+          {withdrawals.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {FIN_STATUS_FILTERS.map((s) => (
+                <FilterChip key={s.id} active={wdStatus === s.id} onClick={() => setWdStatus(s.id)} label={s.label} />
+              ))}
+              <DateRangeInputs from={wdFrom} to={wdTo} setFrom={setWdFrom} setTo={setWdTo} />
+              {(wdStatus !== 'all' || wdFrom || wdTo) && (
+                <button type="button" onClick={() => { setWdStatus('all'); setWdFrom(''); setWdTo(''); }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-danger/30 text-danger hover:bg-danger/10">Clear</button>
+              )}
+              <span className="text-xxs text-text-tertiary ml-auto">{filteredWithdrawals.length} of {withdrawals.length}</span>
+            </div>
+          )}
+          <TableSection
+            loading={wdLoading}
+            empty={filteredWithdrawals.length === 0}
+            emptyText={withdrawals.length === 0 ? 'No withdrawals' : 'No withdrawals match your filters'}
+            headers={['Method', 'Amount', 'Status', 'Wallet Address', 'Network', 'TX Hash', 'Date']}
+            rightAlign={[1]}
+            rows={filteredWithdrawals.map((w) => [
+              <span className="text-text-primary capitalize">{(w.method || '—').replace(/_/g, ' ')}</span>,
+              <span className="font-mono tabular-nums text-danger font-semibold">-${fmt(w.amount)}</span>,
+              <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', statusColor(w.status))}>{w.status}</span>,
+              <span className="text-text-tertiary text-xxs font-mono break-all">{w.crypto_address || '—'}</span>,
+              <span className="text-text-tertiary text-xxs uppercase">{w.wallet_chain_snapshot || '—'}</span>,
+              <span className="text-text-tertiary text-xxs font-mono break-all">{w.crypto_tx_hash || '—'}</span>,
+              <span className="text-text-tertiary text-xxs font-mono">{formatDate(w.created_at)}</span>,
+            ])}
+          />
+        </>
+      )}
+
+      {/* ─── COMMISSION TAB ─── */}
+      {activeTab === 'commission' && (
+        <>
+          <SectionToolbar title="Commission & Fees" onDownload={() => downloadPdf('commission')} />
+          {trades.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Closed Trades" value={trades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
+              <StatCard label="Total Commission" value={`$${fmt(totalCommission)}`} icon={Percent} color="text-warning" />
+              <StatCard label="Total Swap" value={`$${fmt(totalSwap)}`} icon={DollarSign} color="text-accent" />
+              <StatCard label="Total Fees" value={`$${fmt(totalFees)}`} icon={DollarSign} color="text-text-primary" hint="commission + swap" />
+            </div>
+          )}
+          <p className="text-xxs text-text-tertiary">
+            Spread is embedded in the fill price and not booked as a separate line, so only commission + swap are itemised per trade.
+          </p>
+          <TableSection
+            loading={tradesLoading}
+            empty={trades.length === 0}
+            emptyText="No closed trades"
+            headers={['Closed', 'Account', 'Symbol', 'Lots', 'Commission', 'Swap', 'Total Fee']}
+            rightAlign={[3, 4, 5, 6]}
+            rows={trades.map((t) => [
+              <span className="text-text-tertiary text-xxs font-mono">{formatDate(t.closed_at)}</span>,
+              <span className="font-mono text-xxs text-text-secondary">{t.account_number || '—'}</span>,
+              <span className="font-medium text-text-primary">{t.instrument_symbol || '—'}</span>,
+              <span className="font-mono tabular-nums">{t.lots}</span>,
+              <span className="font-mono tabular-nums text-warning">${fmt(t.commission)}</span>,
+              <span className="font-mono tabular-nums text-text-secondary">${fmt(t.swap)}</span>,
+              <span className="font-mono tabular-nums font-semibold text-text-primary">${fmt((Number(t.commission) || 0) + (Number(t.swap) || 0))}</span>,
+            ])}
+          />
+        </>
       )}
 
       {activeTab === 'copy-fees' && <CopyFeesPaidSection userId={userId} />}
+    </div>
+  );
+}
+
+// ─── Per-user Transactions tab — full ledger with filters + drill-down ──
+//
+// Mirrors the trader-side Transaction History UX: type filters (incl. a
+// P&L filter for realized profit/loss), per-account + date filters, a
+// summary strip, and expandable rows that reveal the account/main-wallet
+// balance BEFORE → AFTER the entry, parsed trade detail, and the ledger id.
+const TX_TYPE_FILTERS: { id: string; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'deposit', label: 'Deposits' },
+  { id: 'withdrawal', label: 'Withdrawals' },
+  { id: 'transfer', label: 'Transfers' },
+  { id: 'trading', label: 'P&L' },
+  { id: 'commission', label: 'IB Commissions' },
+  { id: 'adjustment', label: 'Adjustments' },
+];
+
+function txTitle(type: string): string {
+  const x = (type || '').toLowerCase();
+  if (x === 'deposit') return 'Deposit';
+  if (x === 'withdrawal') return 'Withdrawal';
+  if (x === 'transfer') return 'Transfer';
+  if (x === 'profit') return 'Realized profit';
+  if (x === 'loss') return 'Realized loss';
+  if (x === 'bonus' || x === 'bonus_release') return 'Bonus';
+  if (x === 'credit') return 'Credit';
+  if (x === 'correction') return 'Correction';
+  if (x === 'adjustment') return 'Adjustment';
+  if (x.includes('commission')) return 'IB commission';
+  return type ? type.replace(/_/g, ' ') : 'Transaction';
+}
+
+function txMatchesType(type: string, f: string): boolean {
+  const x = (type || '').toLowerCase();
+  if (f === 'all') return true;
+  if (f === 'deposit') return x === 'deposit';
+  if (f === 'withdrawal') return x === 'withdrawal';
+  if (f === 'transfer') return x === 'transfer';
+  if (f === 'trading') return x === 'profit' || x === 'loss';
+  if (f === 'commission') return x.includes('commission') || x === 'credit';
+  if (f === 'adjustment') return ['adjustment', 'correction', 'bonus', 'bonus_release', 'admin_commission'].includes(x);
+  return true;
+}
+
+function TxIcon({ type }: { type: string }) {
+  const x = (type || '').toLowerCase();
+  if (x === 'deposit') return <ArrowDownCircle className="w-4 h-4" />;
+  if (x === 'withdrawal') return <ArrowUpCircle className="w-4 h-4" />;
+  if (x === 'transfer') return <ArrowLeftRight className="w-4 h-4" />;
+  if (x === 'profit') return <TrendingUp className="w-4 h-4" />;
+  if (x === 'loss') return <TrendingDown className="w-4 h-4" />;
+  return <DollarSign className="w-4 h-4" />;
+}
+
+function TxDetailField({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xxs font-bold uppercase tracking-wider text-text-tertiary">{label}</p>
+      <p className={cn('text-xs font-semibold text-text-primary mt-0.5 truncate', valueClass)}>{value}</p>
+    </div>
+  );
+}
+
+function UserTransactionsTab({ transactions, loading, accounts, userName, userEmail }: { transactions: TxRow[]; loading: boolean; accounts: string[]; userName: string; userEmail?: string }) {
+  const MAIN = '__main__';
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [acctFilter, setAcctFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // The dropdown lists the user's FULL account set (passed from the parent),
+  // plus a Main-wallet bucket for wallet-level entries (account_id = null).
+
+  const filtered = transactions.filter((t) => {
+    if (!txMatchesType(t.type, typeFilter)) return false;
+    if (acctFilter === MAIN && t.account_number) return false;
+    if (acctFilter !== 'all' && acctFilter !== MAIN && (t.account_number || '') !== acctFilter) return false;
+    if (dateFrom && t.created_at) { const f = new Date(dateFrom); f.setHours(0, 0, 0, 0); if (new Date(t.created_at) < f) return false; }
+    if (dateTo && t.created_at) { const to = new Date(dateTo); to.setHours(23, 59, 59, 999); if (new Date(t.created_at) > to) return false; }
+    return true;
+  });
+
+  const totalIn = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const net = totalIn - totalOut;
+  const hasFilters = typeFilter !== 'all' || acctFilter !== 'all' || !!dateFrom || !!dateTo;
+
+  async function handleDownload() {
+    try {
+      await exportTablePdf({
+        title: 'Transactions',
+        userName,
+        userEmail,
+        columns: ['Type', 'Amount', 'Balance After', 'Account', 'Description', 'Date'],
+        rows: filtered.map((t) => [
+          txTitle(t.type),
+          `${t.amount >= 0 ? '+' : '-'}$${fmt(Math.abs(t.amount))}`,
+          t.balance_after != null ? `$${fmt(t.balance_after)}` : '—',
+          t.account_number || 'Main wallet',
+          t.description || '',
+          formatDate(t.created_at),
+        ]),
+        filename: `${(userEmail || 'user').split('@')[0]}-transactions.pdf`,
+      });
+    } catch {
+      toast.error('PDF export failed');
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      <SectionToolbar title="Transactions" onDownload={handleDownload} />
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TX_TYPE_FILTERS.map((f) => (
+          <button key={f.id} type="button" onClick={() => setTypeFilter(f.id)}
+            className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all',
+              typeFilter === f.id ? 'bg-accent/15 text-accent border-accent/30' : 'text-text-tertiary border-border-primary hover:text-text-primary')}>
+            {f.label}
+          </button>
+        ))}
+        <select value={acctFilter} onChange={(e) => setAcctFilter(e.target.value)} aria-label="Filter by account"
+          className="text-xs py-1.5 pl-2.5 pr-7 rounded-lg bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer">
+          <option value="all">All accounts</option>
+          <option value={MAIN}>Main wallet</option>
+          {accounts.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
+        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+          className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
+        <span className="text-text-tertiary text-xs">–</span>
+        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+          className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
+        {hasFilters && (
+          <button type="button" onClick={() => { setTypeFilter('all'); setAcctFilter('all'); setDateFrom(''); setDateTo(''); }}
+            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-danger/30 text-danger hover:bg-danger/10">Clear</button>
+        )}
+      </div>
+
+      {/* Summary */}
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Transactions" value={filtered.length.toString()} icon={Receipt} color="text-text-primary" />
+          <StatCard label="Total In" value={`+$${fmt(totalIn)}`} icon={TrendingUp} color="text-success" />
+          <StatCard label="Total Out" value={`-$${fmt(totalOut)}`} icon={TrendingDown} color="text-danger" />
+          <StatCard label="Net" value={`${net >= 0 ? '+' : '-'}$${fmt(Math.abs(net))}`} icon={net >= 0 ? TrendingUp : TrendingDown} color={net >= 0 ? 'text-success' : 'text-danger'} />
+        </div>
+      )}
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div className="py-16 text-center text-text-tertiary text-sm">
+          {transactions.length === 0 ? 'No transactions' : 'No transactions match your filters'}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {filtered.map((t) => {
+            const after = t.balance_after;
+            const before = after != null ? after - t.amount : null;
+            const isExpanded = expandedId === t.id;
+            const isIn = t.amount >= 0;
+            const tm = (t.description || '').match(/([A-Z0-9]{3,})\s+(buy|sell)\s+([\d.]+)\s+lots?\s*@\s*([\d.]+)/i);
+            const trade = tm ? { symbol: tm[1], side: tm[2].toLowerCase(), lots: tm[3], price: tm[4] } : null;
+            return (
+              <div key={t.id} className={cn('rounded-lg border overflow-hidden transition-all', isExpanded ? 'border-accent/40 bg-bg-hover/40' : 'border-border-primary')}>
+                <button type="button" onClick={() => setExpandedId((cur) => (cur === t.id ? null : t.id))}
+                  className="w-full text-left p-3 flex items-center gap-3 hover:bg-bg-hover/40 transition-all">
+                  <div className={cn('w-9 h-9 rounded-full flex items-center justify-center shrink-0', typeColor(t.type))}>
+                    <TxIcon type={t.type} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-text-primary capitalize truncate">{txTitle(t.type)}</p>
+                        {t.description && <p className="text-xxs text-text-tertiary mt-0.5 truncate">{t.description}</p>}
+                      </div>
+                      <div className="flex items-start gap-2 shrink-0">
+                        <span className={cn('text-sm font-bold font-mono tabular-nums', isIn ? 'text-success' : 'text-danger')}>{isIn ? '+' : '-'}${fmt(Math.abs(t.amount))}</span>
+                        <ChevronDown className={cn('w-4 h-4 text-text-tertiary mt-0.5 transition-transform', isExpanded && 'rotate-180 text-accent')} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1 text-xxs text-text-tertiary">
+                      <span className="font-mono">{formatDate(t.created_at)}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-bg-secondary border border-border-primary font-mono">{t.account_number || 'Main wallet'}</span>
+                      {after != null && <span className="px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent font-mono">Bal: ${fmt(after)}</span>}
+                    </div>
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-1 border-t border-border-primary bg-bg-secondary/30">
+                    {after != null && before != null && (
+                      <div className="mt-3 rounded-lg border border-border-primary bg-bg-input/40 p-3">
+                        <p className="text-xxs font-bold uppercase tracking-wider text-text-tertiary mb-2 flex items-center gap-1.5">
+                          <Wallet className="w-3.5 h-3.5" />{t.account_number ? 'Account balance' : 'Main wallet balance'}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="text-center"><p className="text-xxs uppercase text-text-tertiary">Before</p><p className="text-sm font-bold font-mono tabular-nums text-text-secondary">${fmt(before)}</p></div>
+                          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                            <div className="h-px flex-1 bg-border-primary" />
+                            <span className={cn('text-xs font-bold font-mono tabular-nums px-1.5 py-0.5 rounded shrink-0', isIn ? 'text-success bg-success/10' : 'text-danger bg-danger/10')}>{isIn ? '+' : '-'}${fmt(Math.abs(t.amount))}</span>
+                            <div className="h-px flex-1 bg-border-primary" />
+                          </div>
+                          <div className="text-center"><p className="text-xxs uppercase text-text-tertiary">After</p><p className="text-sm font-bold font-mono tabular-nums text-text-primary">${fmt(after)}</p></div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+                      <TxDetailField label="Type" value={txTitle(t.type)} />
+                      <TxDetailField label="Account" value={t.account_number || 'Main wallet'} />
+                      <TxDetailField label={t.amount < 0 ? 'Debit' : 'Credit'} value={`${isIn ? '+' : '-'}$${fmt(Math.abs(t.amount))}`} valueClass={isIn ? 'text-success' : 'text-danger'} />
+                      {trade && <>
+                        <TxDetailField label="Instrument" value={trade.symbol} />
+                        <TxDetailField label="Side" value={trade.side.toUpperCase()} valueClass={trade.side === 'buy' ? 'text-buy' : 'text-sell'} />
+                        <TxDetailField label="Lots" value={trade.lots} />
+                        <TxDetailField label="Price" value={trade.price} />
+                      </>}
+                      <TxDetailField label="Date & time" value={formatDate(t.created_at)} />
+                      <TxDetailField label="By" value={t.admin_email || 'System'} />
+                    </div>
+                    <p className="mt-3 text-xxs text-text-tertiary flex items-center gap-1 font-mono break-all"><Hash className="w-3 h-3 shrink-0" />{t.id}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

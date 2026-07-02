@@ -23,6 +23,8 @@ export interface Transaction {
   tx_hash?: string;
   description?: string;
   account_id?: string | null;
+  /** Running balance of the account/main-wallet right after this entry. */
+  balance_after?: number | null;
 }
 
 export interface WalletLedgerItem {
@@ -35,6 +37,7 @@ export interface WalletLedgerItem {
   currency: string;
   description?: string;
   account_id?: string | null;
+  balance_after?: number | null;
 }
 
 export interface WalletListItem {
@@ -102,6 +105,10 @@ export function mapLedgerToTransaction(row: WalletLedgerItem): Transaction {
     created_at: row.created_at || new Date(0).toISOString(),
     description: row.description?.trim() || undefined,
     account_id: row.account_id ?? undefined,
+    balance_after:
+      row.balance_after === null || row.balance_after === undefined
+        ? undefined
+        : Number(row.balance_after),
   };
 }
 
