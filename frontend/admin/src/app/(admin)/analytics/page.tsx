@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -38,11 +38,24 @@ interface UserPnlRow {
   net_pnl: number;
   gross_profit: number;
   gross_loss: number;
+  commission: number;
+  swap: number;
+  broker_fees: number;
   avg_per_trade: number;
   trades_count: number;
   wins: number;
   win_rate: number;
   last_closed_at: string | null;
+}
+
+interface UserPnlTotals {
+  user_net_pnl: number;
+  platform_pnl: number;
+  commission: number;
+  swap: number;
+  broker_fees: number;
+  trades_count: number;
+  users_count: number;
 }
 
 interface UserPnlPage {
@@ -51,9 +64,20 @@ interface UserPnlPage {
   page: number;
   per_page: number;
   pages: number;
+  period: PeriodKey;
+  totals: UserPnlTotals;
 }
 
 type SortField = 'net_pnl' | 'gross_profit' | 'gross_loss' | 'trades_count' | 'last_closed_at';
+
+type PeriodKey = 'today' | 'week' | 'month' | 'all';
+
+const PERIOD_LABEL: Record<PeriodKey, string> = {
+  today: 'Today',
+  week: 'This Week',
+  month: 'This Month',
+  all: 'All Time',
+};
 
 function fmt(n: number) { return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -73,10 +97,20 @@ function StatBox({ label, value, color, icon: Icon }: { label: string; value: st
   );
 }
 
-function RevenueCard({ title, stats }: { title: string; stats: RevenueStats }) {
+function RevenueCard({ title, stats, active, onClick }: { title: string; stats: RevenueStats; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-bg-secondary border border-border-primary rounded-md p-4">
-      <h3 className="text-xxs text-text-tertiary uppercase tracking-wide font-medium mb-2">{title}</h3>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'text-left w-full bg-bg-secondary border rounded-md p-4 transition-fast hover:border-buy/60 cursor-pointer',
+        active ? 'border-buy ring-1 ring-buy/40' : 'border-border-primary',
+      )}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xxs text-text-tertiary uppercase tracking-wide font-medium">{title}</h3>
+        {active && <span className="text-xxs text-buy font-medium">● filtering</span>}
+      </div>
       <p className="text-xl font-semibold text-text-primary font-mono tabular-nums mb-3">${fmt(stats.total_revenue)}</p>
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div><p className="text-xxs text-text-tertiary">Commission</p><p className="text-text-primary font-mono">${fmt(stats.commission_revenue)}</p></div>
@@ -84,7 +118,8 @@ function RevenueCard({ title, stats }: { title: string; stats: RevenueStats }) {
         <div><p className="text-xxs text-text-tertiary">Spread</p><p className="text-text-primary font-mono">${fmt(stats.spread_revenue)}</p></div>
         <div><p className="text-xxs text-text-tertiary">Net P&L</p><p className={cn('font-mono font-medium', stats.net_pnl >= 0 ? 'text-success' : 'text-danger')}>{stats.net_pnl >= 0 ? '+' : ''}${fmt(stats.net_pnl)}</p></div>
       </div>
-    </div>
+      <p className="text-xxs text-buy/80 mt-2">Click → {title} ke users ↓</p>
+    </button>
   );
 }
 
@@ -113,6 +148,18 @@ export default function AnalyticsPage() {
   const [pnlSortBy, setPnlSortBy] = useState<SortField>('net_pnl');
   const [pnlSortDir, setPnlSortDir] = useState<'asc' | 'desc'>('desc');
   const [pnlLoading, setPnlLoading] = useState(false);
+  // Active period filter for the per-user breakdown, driven by clicking
+  // the Today / This Week / This Month / All Time cards above.
+  const [period, setPeriod] = useState<PeriodKey>('all');
+  const [pnlTotals, setPnlTotals] = useState<UserPnlTotals | null>(null);
+  const breakdownRef = useRef<HTMLDivElement>(null);
+
+  const selectPeriod = (p: PeriodKey) => {
+    setPeriod(p);
+    setPnlPage(1);
+    // Jump the admin straight to the filtered list.
+    setTimeout(() => breakdownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -139,18 +186,21 @@ export default function AnalyticsPage() {
         per_page: '50',
         sort_by: pnlSortBy,
         sort_dir: pnlSortDir,
+        period,
         ...(pnlSearch ? { search: pnlSearch } : {}),
       });
       setPnlRows(res.items || []);
       setPnlTotal(res.total || 0);
       setPnlPages(res.pages || 1);
+      setPnlTotals(res.totals || null);
     } catch (e: any) {
       toast.error(e.message || 'Failed to load per-user P&L');
       setPnlRows([]);
+      setPnlTotals(null);
     } finally {
       setPnlLoading(false);
     }
-  }, [pnlPage, pnlSortBy, pnlSortDir, pnlSearch]);
+  }, [pnlPage, pnlSortBy, pnlSortDir, pnlSearch, period]);
 
   // Toggle a column's sort direction: clicking the active column flips
   // dir, clicking a different column resets to desc.
@@ -183,10 +233,10 @@ export default function AnalyticsPage() {
         {/* Revenue Cards */}
         {data && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <RevenueCard title="Today" stats={data.today} />
-            <RevenueCard title="This Week" stats={data.this_week} />
-            <RevenueCard title="This Month" stats={data.this_month} />
-            <RevenueCard title="All Time" stats={data.all_time} />
+            <RevenueCard title="Today" stats={data.today} active={period === 'today'} onClick={() => selectPeriod('today')} />
+            <RevenueCard title="This Week" stats={data.this_week} active={period === 'week'} onClick={() => selectPeriod('week')} />
+            <RevenueCard title="This Month" stats={data.this_month} active={period === 'month'} onClick={() => selectPeriod('month')} />
+            <RevenueCard title="All Time" stats={data.all_time} active={period === 'all'} onClick={() => selectPeriod('all')} />
           </div>
         )}
 
@@ -317,15 +367,48 @@ export default function AnalyticsPage() {
         </div>
 
         {/* ─── PER-USER P&L BREAKDOWN ─── */}
-        <div className="bg-bg-secondary border border-border-primary rounded-md">
+        <div ref={breakdownRef} className="bg-bg-secondary border border-border-primary rounded-md scroll-mt-4">
           <div className="px-4 py-3 border-b border-border-primary flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h2 className="text-sm font-medium text-text-primary">Per-User P&amp;L Breakdown</h2>
+              <h2 className="text-sm font-medium text-text-primary">
+                Per-User P&amp;L Breakdown
+                <span className="ml-2 text-xxs font-normal text-buy">· {PERIOD_LABEL[period]}</span>
+              </h2>
               <p className="text-xxs text-text-tertiary mt-0.5">
-                Every user with at least one closed trade. Click a row to open the full ledger
-                (deposits / withdrawals / transactions / trade history).
+                {period === 'all'
+                  ? 'Every user with at least one closed trade. Click a row to open the full ledger.'
+                  : `Users who closed a trade ${PERIOD_LABEL[period].toLowerCase()} — profit, loss & broker fees. Click a row for the full ledger.`}
               </p>
             </div>
+            {/* Period segmented control — same source of truth as the cards above */}
+            <div className="flex items-center gap-1 bg-bg-tertiary/40 border border-border-primary rounded-md p-0.5 self-start">
+              {(['today', 'week', 'month', 'all'] as PeriodKey[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => selectPeriod(p)}
+                  className={cn(
+                    'px-2.5 py-1 text-xxs font-medium rounded transition-fast',
+                    period === p ? 'bg-buy text-white' : 'text-text-secondary hover:text-text-primary',
+                  )}
+                >
+                  {PERIOD_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Period totals summary — across all matching users, not just this page */}
+          {pnlTotals && (
+            <div className="px-4 py-3 border-b border-border-primary grid grid-cols-2 md:grid-cols-5 gap-3 bg-bg-tertiary/20">
+              <div><p className="text-xxs text-text-tertiary uppercase">Users</p><p className="text-sm font-mono text-text-primary">{pnlTotals.users_count}</p></div>
+              <div><p className="text-xxs text-text-tertiary uppercase">Trades</p><p className="text-sm font-mono text-text-primary">{pnlTotals.trades_count}</p></div>
+              <div><p className="text-xxs text-text-tertiary uppercase">Users' Net P&L</p><p className={cn('text-sm font-mono', pnlTotals.user_net_pnl >= 0 ? 'text-success' : 'text-danger')}>{pnlTotals.user_net_pnl >= 0 ? '+' : ''}${fmt(pnlTotals.user_net_pnl)}</p></div>
+              <div><p className="text-xxs text-text-tertiary uppercase">Platform P&L</p><p className={cn('text-sm font-mono', pnlTotals.platform_pnl >= 0 ? 'text-success' : 'text-danger')}>{pnlTotals.platform_pnl >= 0 ? '+' : ''}${fmt(pnlTotals.platform_pnl)}</p></div>
+              <div><p className="text-xxs text-text-tertiary uppercase">Broker Fees (Comm+Swap)</p><p className="text-sm font-mono text-success">${fmt(pnlTotals.broker_fees)}</p></div>
+            </div>
+          )}
+          <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-end">
             <form
               onSubmit={(e) => { e.preventDefault(); setPnlSearch(pnlSearchInput.trim()); setPnlPage(1); }}
               className="flex items-center gap-2"
@@ -363,6 +446,8 @@ export default function AnalyticsPage() {
                   <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Win Rate</th>
                   <SortHeader label="Gross Profit" field="gross_profit" active={pnlSortBy === 'gross_profit'} dir={pnlSortDir} onClick={toggleSort} align="right" />
                   <SortHeader label="Gross Loss" field="gross_loss" active={pnlSortBy === 'gross_loss'} dir={pnlSortDir} onClick={toggleSort} align="right" />
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Commission</th>
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Swap</th>
                   <SortHeader label="Net P&L" field="net_pnl" active={pnlSortBy === 'net_pnl'} dir={pnlSortDir} onClick={toggleSort} align="right" />
                   <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Avg / Trade</th>
                   <SortHeader label="Last Trade" field="last_closed_at" active={pnlSortBy === 'last_closed_at'} dir={pnlSortDir} onClick={toggleSort} align="left" />
@@ -371,9 +456,9 @@ export default function AnalyticsPage() {
               </thead>
               <tbody>
                 {pnlLoading ? (
-                  <tr><td colSpan={9} className="py-12 text-center"><Loader2 size={18} className="inline-block animate-spin text-text-tertiary" /></td></tr>
+                  <tr><td colSpan={11} className="py-12 text-center"><Loader2 size={18} className="inline-block animate-spin text-text-tertiary" /></td></tr>
                 ) : pnlRows.length === 0 ? (
-                  <tr><td colSpan={9} className="py-12 text-center text-xs text-text-tertiary">No users found</td></tr>
+                  <tr><td colSpan={11} className="py-12 text-center text-xs text-text-tertiary">No users found</td></tr>
                 ) : (
                   pnlRows.map((u) => (
                     <tr
@@ -389,6 +474,8 @@ export default function AnalyticsPage() {
                       <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums', u.win_rate >= 50 ? 'text-success' : 'text-text-secondary')}>{u.win_rate.toFixed(1)}%</td>
                       <td className="px-4 py-2 text-xs text-emerald-400 text-right font-mono tabular-nums">${fmt(u.gross_profit)}</td>
                       <td className="px-4 py-2 text-xs text-rose-400 text-right font-mono tabular-nums">${fmt(u.gross_loss)}</td>
+                      <td className="px-4 py-2 text-xs text-text-secondary text-right font-mono tabular-nums">${fmt(u.commission)}</td>
+                      <td className="px-4 py-2 text-xs text-text-secondary text-right font-mono tabular-nums">${fmt(u.swap)}</td>
                       <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums font-semibold', u.net_pnl >= 0 ? 'text-success' : 'text-danger')}>
                         {u.net_pnl >= 0 ? '+' : ''}${fmt(u.net_pnl)}
                       </td>
@@ -448,6 +535,14 @@ export default function AnalyticsPage() {
                     <div>
                       <p className="text-text-tertiary uppercase">Gross -</p>
                       <p className="text-rose-400 font-mono">${fmt(u.gross_loss)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Commission</p>
+                      <p className="text-text-secondary font-mono">${fmt(u.commission)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Swap</p>
+                      <p className="text-text-secondary font-mono">${fmt(u.swap)}</p>
                     </div>
                     <div>
                       <p className="text-text-tertiary uppercase">Last</p>
