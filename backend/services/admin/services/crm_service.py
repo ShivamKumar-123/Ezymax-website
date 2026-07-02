@@ -13,6 +13,12 @@ Notes:
   (ib_commissions.source_trade_id -> orders.account_id). IB rows with no
   trade (e.g. deposit-based) aren't account-attributed.
 - current_pnl uses stored positions.profit (last-known; fresh at close).
+- Contribution fields for the CRM's ContributionEntry: `brokerage` = gross
+  brokerage (per account); `trading_loss` = the account's net realized loss
+  (positive, 0 if profitable — B-book platform revenue). `insurance`
+  (fees − claims) and `staking` (rewards accrued) are user-level, so — like
+  deposits/withdrawals — they're summed per USER and repeated on each of the
+  user's account rows.
 - Demo accounts are excluded everywhere (live-only), matching admin views.
 """
 import logging
@@ -157,7 +163,9 @@ async def list_customers(
             COALESCE(op.pnl, 0) AS current_pnl,
             COALESCE(th.profit, 0) AS realized_pnl,
             COALESCE(op.comm, 0) + COALESCE(th.comm, 0) AS gross_brokerage,
-            COALESCE(ibc.amount, 0) AS ib_commission
+            COALESCE(ibc.amount, 0) AS ib_commission,
+            COALESCE(insf.fees, 0) - COALESCE(insc.claims, 0) AS insurance,
+            COALESCE(stk.rewards, 0) AS staking
         FROM trading_accounts ta
         JOIN users u ON u.id = ta.user_id
         LEFT JOIN account_groups ag ON ag.id = ta.account_group_id
@@ -182,6 +190,18 @@ async def list_customers(
             FROM ib_commissions ic JOIN orders o ON o.id = ic.source_trade_id
             GROUP BY o.account_id
         ) ibc ON ibc.account_id = ta.id
+        LEFT JOIN (
+            SELECT user_id, sum(fee) AS fees FROM insurance_policies GROUP BY user_id
+        ) insf ON insf.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, sum(claim_amount) AS claims FROM insurance_claims GROUP BY user_id
+        ) insc ON insc.user_id = u.id
+        LEFT JOIN (
+            SELECT sp.user_id, sum(sra.reward_amount) AS rewards
+            FROM staking_reward_accruals sra
+            JOIN staking_positions sp ON sp.id = sra.position_id
+            GROUP BY sp.user_id
+        ) stk ON stk.user_id = u.id
         WHERE ta.is_demo = false AND {search_clause}
         ORDER BY ta.created_at DESC NULLS LAST
         LIMIT :limit OFFSET :offset
@@ -198,6 +218,9 @@ async def list_customers(
     for r in (row._mapping for row in rows):
         gross = float(r["gross_brokerage"] or 0)
         ibc = float(r["ib_commission"] or 0)
+        realized = float(r["realized_pnl"] or 0)
+        # B-book: the customer's net realized loss is platform revenue.
+        trading_loss = -realized if realized < 0 else 0.0
         items.append(CrmCustomerRow(
             user_id=str(r["user_id"]),
             name=(r["name"] or "").strip() or None,
@@ -214,10 +237,15 @@ async def list_customers(
             total_withdrawal=float(r["total_withdrawal"] or 0),
             lots_traded=float(r["lots_traded"] or 0),
             current_pnl=float(r["current_pnl"] or 0),
-            realized_pnl=float(r["realized_pnl"] or 0),
+            realized_pnl=realized,
             gross_brokerage=gross,
             ib_commission=ibc,
             net_revenue=gross - ibc,
+            # Contribution breakdown for the CRM's ContributionEntry.
+            brokerage=gross,
+            insurance=float(r["insurance"] or 0),
+            staking=float(r["staking"] or 0),
+            trading_loss=trading_loss,
             account_opened_at=r["account_opened_at"],
         ).model_dump())
     return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)

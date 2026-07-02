@@ -1048,6 +1048,19 @@ class CrmCustomerRow(BaseModel):
     gross_brokerage: float = 0
     ib_commission: float = 0
     net_revenue: float = 0
+    # Contribution breakdown (feeds the CRM's ContributionEntry). Each is the
+    # customer's contribution to a platform revenue line, per the notes below.
+    #   brokerage    = gross_brokerage (commission + swap), per account
+    #   insurance    = insurance fees collected − claims paid, per USER (repeated
+    #                  on each of the user's account rows; can be negative)
+    #   staking      = staking rewards accrued to the user (platform cost/payout),
+    #                  positive, per USER (repeated on each account row)
+    #   trading_loss = customer's net realized loss (positive; 0 if profitable) —
+    #                  in the B-book that is platform revenue, per account
+    brokerage: float = 0
+    insurance: float = 0
+    staking: float = 0
+    trading_loss: float = 0
     account_opened_at: Optional[datetime] = None
 
 
