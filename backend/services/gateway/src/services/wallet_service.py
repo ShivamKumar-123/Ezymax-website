@@ -4,7 +4,7 @@ import uuid as uuid_lib
 from pathlib import Path
 from decimal import Decimal
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select
@@ -1670,6 +1670,21 @@ def _ledger_entry_method(txn_type: str | None) -> str:
     return t.replace("_", " ").title() if t else "Ledger"
 
 
+# Money-movement transaction types (deposits — incl. admin "Add Fund" — plus
+# withdrawals, internal transfers and admin credits/adjustments). These are
+# low-volume and must NEVER be crowded out of the trader's history by the
+# potentially huge number of per-trade profit/loss/fee rows. They are fetched
+# uncapped; only the high-volume trading/fee rows keep the 500-row cap.
+_MONEY_MOVEMENT_TYPES = [
+    "deposit", "withdrawal", "transfer", "bonus", "bonus_release",
+    "credit", "adjustment", "correction",
+]
+
+# Timezone-aware epoch used as a safe sort fallback if created_at is ever NULL
+# (created_at is defaulted on insert, so this is defensive only).
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
 async def list_transactions(user_id: UUID, account_id: UUID | None, db: AsyncSession) -> dict:
     if account_id:
         acct = await db.execute(
@@ -1680,13 +1695,31 @@ async def list_transactions(user_id: UUID, account_id: UUID | None, db: AsyncSes
         )
         if not acct.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Account not found")
-        query = select(Transaction).where(Transaction.account_id == account_id)
+        base = Transaction.account_id == account_id
     else:
-        query = select(Transaction).where(Transaction.user_id == user_id)
+        base = Transaction.user_id == user_id
 
-    query = query.order_by(Transaction.created_at.desc()).limit(500)
-    result = await db.execute(query)
-    txns = result.scalars().all()
+    # Money movements: uncapped so an active trader's deposits (including
+    # admin Add-Fund) always appear regardless of how many trades they have.
+    money_res = await db.execute(
+        select(Transaction)
+        .where(base, Transaction.type.in_(_MONEY_MOVEMENT_TYPES))
+        .order_by(Transaction.created_at.desc())
+    )
+    # Trading / fee rows (profit, loss, swap, commission, …): keep the cap so
+    # a very heavy history doesn't return an unbounded payload.
+    trade_res = await db.execute(
+        select(Transaction)
+        .where(base, Transaction.type.notin_(_MONEY_MOVEMENT_TYPES))
+        .order_by(Transaction.created_at.desc())
+        .limit(500)
+    )
+
+    txns = sorted(
+        [*money_res.scalars().all(), *trade_res.scalars().all()],
+        key=lambda t: t.created_at or _EPOCH,
+        reverse=True,
+    )
 
     return {
         "items": [
