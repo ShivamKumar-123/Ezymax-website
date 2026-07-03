@@ -50,6 +50,48 @@ _cors_methods = [m.strip() for m in settings.CORS_ALLOW_METHODS.split(",") if m.
 _cors_headers = [h.strip() for h in settings.CORS_ALLOW_HEADERS.split(",") if h.strip()]
 
 
+async def _backfill_admin_deposit_labels():
+    """Relabel historical admin fund-additions so they show under the trader's
+    "Deposits" tab instead of vanishing.
+
+    Admin "Add Fund" credits the main wallet with a ledger Transaction only
+    (no `deposits` row), so the trader history surfaces them purely by
+    Transaction.type. Before commit ba8280b that type was 'adjustment', which
+    the frontend maps to a generic adjustment — invisible under the Deposits
+    filter. New credits already book type='deposit'; this heals the old rows.
+
+    Predicate is deliberately tight so it can only match admin main-wallet
+    fund additions: every other 'adjustment' writer books a NEGATIVE amount
+    (deductions), and non-admin ledger rows have no created_by. So
+    `type='adjustment' AND account_id IS NULL AND amount > 0 AND created_by
+    IS NOT NULL` uniquely identifies a pre-fix admin deposit. Idempotent —
+    once relabeled the rows are 'deposit' and no longer match."""
+    from sqlalchemy import text
+    sql = text(
+        """
+        UPDATE transactions
+        SET type = 'deposit'
+        WHERE type = 'adjustment'
+          AND account_id IS NULL
+          AND created_by IS NOT NULL
+          AND amount > 0
+        """
+    )
+    try:
+        async with AsyncSessionLocal() as session:
+            res = await session.execute(sql)
+            await session.commit()
+            relabeled = res.rowcount or 0
+            if relabeled > 0:
+                logger.info(
+                    "admin-deposit backfill: relabeled %d historical "
+                    "'adjustment' credit(s) to 'deposit'",
+                    relabeled,
+                )
+    except Exception as e:
+        logger.warning("admin-deposit label backfill skipped: %s", e)
+
+
 async def _backfill_close_reasons():
     """Relabel historical trade_history rows where close_price matches the
     position's SL/TP level — those were previously written as 'manual' but
@@ -156,6 +198,7 @@ async def _trade_history_healer_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
+    await _backfill_admin_deposit_labels()
     # Run the self-heal once at startup (catches drift accumulated while
     # gateway was down), then kick off the periodic loop.
     await _heal_missing_trade_history()
