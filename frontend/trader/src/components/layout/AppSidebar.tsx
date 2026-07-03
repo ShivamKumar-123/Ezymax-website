@@ -34,7 +34,7 @@ import {
   Coins,
 } from 'lucide-react';
 
-type LeafItem = { label: string; href: string; icon: any };
+type LeafItem = { label: string; href: string; icon: any; newTab?: boolean };
 type GroupItem = { label: string; icon: any; key: string; children: LeafItem[] };
 type NavEntry = LeafItem | GroupItem;
 
@@ -59,7 +59,7 @@ const NAV_ITEMS: NavEntry[] = [
   { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
   { label: 'Copy Trading', href: '/social', icon: Copy },
-  { label: 'Affiliates', href: '/business', icon: Users },
+  { label: 'Affiliates', href: '/business/dashboard', icon: Users, newTab: true },
   { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
@@ -200,6 +200,8 @@ export default function AppSidebar() {
                 key={entry.href}
                 href={entry.href}
                 prefetch={false}
+                target={entry.newTab ? '_blank' : undefined}
+                rel={entry.newTab ? 'noopener noreferrer' : undefined}
                 onClick={() => {
                   if (window.innerWidth < 1024) setSidebarOpen(false);
                 }}

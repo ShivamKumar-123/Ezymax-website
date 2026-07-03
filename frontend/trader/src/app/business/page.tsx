@@ -343,15 +343,19 @@ function IBTab() {
 
     <div className="space-y-4">
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
 
         {[
 
-          { label: 'Total Earned', value: `$${fmt(dashboard?.total_earned || 0)}`, color: 'text-success' },
+          { label: 'Total Commission', value: `$${fmt(dashboard?.total_commission || 0)}`, color: 'text-success' },
 
           { label: 'Pending Payout', value: `$${fmt(dashboard?.pending_payout || 0)}`, color: 'text-warning' },
 
           { label: 'Referrals', value: String(dashboard?.total_referrals || 0), color: 'text-accent' },
+
+          { label: 'No Trade Yet', value: String(dashboard?.registered_no_trade || 0), color: 'text-text-secondary' },
+
+          { label: 'Sub-IBs', value: String(dashboard?.sub_ib_count || 0), color: 'text-accent' },
 
           { label: 'Level', value: `L${dashboard?.level || 1}`, color: 'text-text-primary' },
 
@@ -403,7 +407,7 @@ function IBTab() {
 
             <thead><tr className="border-b border-border-primary text-xxs text-text-tertiary">
 
-              <th className="px-4 py-2 text-left">User</th><th className="px-4 py-2 text-left">Joined</th><th className="px-4 py-2 text-right">Balance</th>
+              <th className="px-4 py-2 text-left">User</th><th className="px-4 py-2 text-left">Joined</th><th className="px-4 py-2 text-center">Activity</th><th className="px-4 py-2 text-right">Balance</th>
 
             </tr></thead>
 
@@ -416,6 +420,20 @@ function IBTab() {
                   <td className="px-4 py-2"><p className="text-text-primary">{r.referred_user?.name}</p><p className="text-xxs text-text-tertiary">{r.referred_user?.email}</p></td>
 
                   <td className="px-4 py-2 text-text-tertiary">{r.referred_user?.joined_at ? fmtDate(r.referred_user.joined_at) : '—'}</td>
+
+                  <td className="px-4 py-2 text-center">
+
+                    {r.has_traded ? (
+
+                      <span className="px-1.5 py-0.5 rounded text-xxs font-medium bg-success/15 text-success">Traded{r.trades_count ? ` · ${r.trades_count}` : ''}</span>
+
+                    ) : (
+
+                      <span className="px-1.5 py-0.5 rounded text-xxs font-medium bg-text-tertiary/15 text-text-tertiary">No trade yet</span>
+
+                    )}
+
+                  </td>
 
                   <td className="px-4 py-2 text-right font-mono text-text-primary">${fmt(r.total_deposit || 0)}</td>
 
@@ -432,6 +450,46 @@ function IBTab() {
       )}
 
 
+
+      {dashboard?.sub_ibs?.length > 0 && (
+
+        <div className="rounded-xl border border-border-primary bg-card noise-texture overflow-hidden">
+
+          <div className="px-4 py-3 border-b border-border-primary"><h3 className="text-xs font-semibold text-text-primary">Your Sub-IBs</h3><p className="text-xxs text-text-tertiary mt-0.5">Referrals who became IBs themselves</p></div>
+
+          <table className="w-full text-xs">
+
+            <thead><tr className="border-b border-border-primary text-xxs text-text-tertiary">
+
+              <th className="px-4 py-2 text-left">Name</th><th className="px-4 py-2 text-left">Code</th><th className="px-4 py-2 text-center">Level</th><th className="px-4 py-2 text-right">Earned</th>
+
+            </tr></thead>
+
+            <tbody>
+
+              {dashboard.sub_ibs.map((s: any) => (
+
+                <tr key={s.referral_code} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
+
+                  <td className="px-4 py-2"><p className="text-text-primary">{s.name}</p><p className="text-xxs text-text-tertiary">{s.email}</p></td>
+
+                  <td className="px-4 py-2 font-mono text-accent">{s.referral_code}</td>
+
+                  <td className="px-4 py-2 text-center text-text-secondary">L{s.level}</td>
+
+                  <td className="px-4 py-2 text-right font-mono text-success">${fmt(s.total_earned || 0)}</td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      )}
 
       {commissions.length > 0 && (
 

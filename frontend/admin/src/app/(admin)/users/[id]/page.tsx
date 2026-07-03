@@ -822,7 +822,6 @@ const TX_TYPE_FILTERS: { id: string; label: string }[] = [
   { id: 'withdrawal', label: 'Withdrawals' },
   { id: 'transfer', label: 'Transfers' },
   { id: 'trading', label: 'P&L' },
-  { id: 'commission', label: 'IB Commissions' },
   { id: 'adjustment', label: 'Adjustments' },
 ];
 

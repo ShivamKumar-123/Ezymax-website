@@ -431,7 +431,6 @@ export default function TransactionsPage() {
                     ['withdrawal', 'Withdrawals'],
                     ['transfer', 'Transfers'],
                     ['trading', 'P&L'],
-                    ['commission', 'IB Commissions'],
                   ] as const
                 ).map(([t, label]) => (
                   <button

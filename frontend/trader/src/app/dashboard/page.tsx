@@ -4,8 +4,8 @@
  * Broker home — replaces the old open-positions / quick-actions dashboard.
  * Layout follows the Elev8-style brief: account balance card with action
  * buttons, popular deposit methods, top daily movers, status program /
- * rewards, invite-friends banner, deposit bonus, and the existing admin-
- * configurable banner carousel.
+ * rewards, invite-friends banner, and the existing admin-configurable
+ * banner carousel.
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
-  TrendingUp, TrendingDown, ArrowRight, Gift,
+  TrendingUp, TrendingDown, ArrowRight,
   ShieldCheck, BadgeCheck, ExternalLink, Loader2,
   Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
 } from 'lucide-react';
@@ -394,10 +394,7 @@ function BrokerHome() {
       />
       <TopMoversCard movers={movers} />
       <StatusProgramCard />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <InviteFriendsCard />
-        <BonusCard />
-      </div>
+      <InviteFriendsCard />
       {banners.length > 0 && <BannerStrip banners={banners} />}
     </div>
   );
@@ -595,37 +592,6 @@ function StatusProgramCard() {
             </Link>
           </div>
         </div>
-        <div
-          className="md:w-[420px] rounded-xl p-4 flex items-center gap-4"
-          style={{
-            background: 'linear-gradient(135deg, rgba(214,169,61,0.12) 0%, rgba(155,125,58,0.06) 100%)',
-            border: '1px solid rgba(214,169,61,0.32)',
-          }}
-        >
-          <Gift size={28} className="text-[#d6a93d] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-text-primary leading-tight">Welcome cashback</p>
-            <p className="text-xs text-text-secondary leading-tight mt-0.5">
-              Activate the welcome program to earn cashback on your first 10 closed trades.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-bold rounded-md"
-              style={{ background: '#d6a93d', color: '#1a1408' }}
-            >
-              Activate
-            </Link>
-            <button
-              type="button"
-              className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors hover:bg-bg-hover"
-              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
-            >
-              Decline
-            </button>
-          </div>
-        </div>
       </div>
     </Card>
   );
@@ -651,34 +617,6 @@ function InviteFriendsCard() {
             className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#d6a93d] hover:underline"
           >
             Learn details <ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function BonusCard() {
-  return (
-    <Card>
-      <div className="flex items-center gap-4">
-        <div
-          className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(214,169,61,0.14)', border: '1px solid rgba(214,169,61,0.32)' }}
-        >
-          <Gift size={26} className="text-[#d6a93d]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-text-primary">50% deposit bonus</h3>
-          <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-            Top up your account and we&apos;ll add 50% extra trading credit. No expiry, fully tradeable.
-          </p>
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-bold rounded-md"
-            style={{ background: '#d6a93d', color: '#1a1408' }}
-          >
-            Get bonus <ArrowRight size={12} />
           </Link>
         </div>
       </div>

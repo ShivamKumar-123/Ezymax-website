@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     IBProfile, IBApplication, IBCommission, IBCommissionPlan,
-    Referral, User, TradingAccount,
+    Referral, User, TradingAccount, Position,
 )
 
 
@@ -150,6 +150,43 @@ async def ib_dashboard(user_id: UUID, db: AsyncSession) -> dict:
     )
     pending = pending_comm.scalar()
 
+    # Sub-IBs — referred users who themselves became IBs (direct children in
+    # the MLM tree). This surfaces "if my referral became an IB, show their
+    # name under my sub-IBs" right on the dashboard.
+    sub_ib_rows = await db.execute(
+        select(IBProfile, User.first_name, User.last_name, User.email)
+        .join(User, IBProfile.user_id == User.id)
+        .where(IBProfile.parent_ib_id == profile.id)
+        .order_by(IBProfile.created_at.desc())
+    )
+    sub_ibs = [
+        {
+            "name": f"{fn or ''} {ln or ''}".strip() or em,
+            "email": em,
+            "referral_code": p.referral_code,
+            "level": p.level,
+            "total_earned": float(p.total_earned or 0),
+        }
+        for p, fn, ln, em in sub_ib_rows.all()
+    ]
+
+    # Split referred users into "traded at least once" vs "registered but
+    # never placed a trade" (any position ever, open or closed).
+    referred_ids_q = await db.execute(
+        select(Referral.referred_id).where(Referral.ib_profile_id == profile.id)
+    )
+    referred_ids = [r[0] for r in referred_ids_q.all()]
+    traded = 0
+    if referred_ids:
+        traded_q = await db.execute(
+            select(func.count(func.distinct(TradingAccount.user_id)))
+            .select_from(Position)
+            .join(TradingAccount, Position.account_id == TradingAccount.id)
+            .where(TradingAccount.user_id.in_(referred_ids))
+        )
+        traded = traded_q.scalar() or 0
+    registered_no_trade = max(0, len(referred_ids) - traded)
+
     base_url = _get_frontend_url()
 
     return {
@@ -161,6 +198,10 @@ async def ib_dashboard(user_id: UUID, db: AsyncSession) -> dict:
         "pending_payout": float(profile.pending_payout),
         "total_earned": float(profile.total_earned),
         "is_active": profile.is_active,
+        "traded_count": traded,
+        "registered_no_trade": registered_no_trade,
+        "sub_ib_count": len(sub_ibs),
+        "sub_ibs": sub_ibs,
     }
 
 
@@ -194,6 +235,15 @@ async def ib_referrals(user_id: UUID, page: int, per_page: int, db: AsyncSession
             .where(TradingAccount.user_id == ref.referred_id)
         )
         acct_count, total_deposit = deposit_result.one()
+        # How many trades (positions ever) this referred user has placed —
+        # 0 means they registered but never traded.
+        trades_result = await db.execute(
+            select(func.count())
+            .select_from(Position)
+            .join(TradingAccount, Position.account_id == TradingAccount.id)
+            .where(TradingAccount.user_id == ref.referred_id)
+        )
+        trades_count = trades_result.scalar() or 0
         items.append({
             "id": str(ref.id),
             "referred_user": {
@@ -203,6 +253,8 @@ async def ib_referrals(user_id: UUID, page: int, per_page: int, db: AsyncSession
             },
             "accounts_count": acct_count,
             "total_deposit": float(total_deposit),
+            "trades_count": trades_count,
+            "has_traded": trades_count > 0,
             "utm_source": ref.utm_source,
             "utm_medium": ref.utm_medium,
             "utm_campaign": ref.utm_campaign,
