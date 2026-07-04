@@ -21,6 +21,55 @@ from packages.common.src.admin_schemas import (
     IBCommissionPlanOut, IBCommissionPlanIn,
 )
 from dependencies import write_audit_log
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+async def _send_ib_portal_credentials(user, login_id: str, password: str, referral_code: str) -> None:
+    """Deliver freshly-generated IB portal credentials.
+
+    Always logs them (dev has no SMTP, so this is how they're retrieved
+    locally + the admin sees them in the approval response). Also emails them
+    when SMTP is configured. Never raises — credential delivery must not block
+    or fail the approval itself."""
+    email = getattr(user, "email", None) if user else None
+    logger.info(
+        "IB PORTAL CREDENTIALS for %s — login_id=%s password=%s (referral_code=%s)",
+        email or "<unknown>", login_id, password, referral_code,
+    )
+    if not email:
+        return
+    try:
+        import os
+        from packages.common.src.smtp_mail import send_email, smtp_configured, fire_and_forget
+        from packages.common.src.config import get_settings
+        if not smtp_configured():
+            return
+        # The IB portal is a standalone app on its own domain/port; the login
+        # page lives at <IB_PORTAL_URL>/login. Configure IB_PORTAL_URL per env
+        # (e.g. https://ib.fxartha.com); falls back to the local dev port.
+        ib_base = (os.environ.get("IB_PORTAL_URL") or "http://localhost:3002").rstrip("/")
+        portal_url = f"{ib_base}/login"
+        first = getattr(user, "first_name", None) or "Partner"
+        subject = "Your FXArtha IB Partner Portal access"
+        html = (
+            f"<p>Hi {first},</p>"
+            "<p>Your Introducing Broker application has been <b>approved</b>. "
+            "Use the credentials below to sign in to your IB Partner Portal:</p>"
+            f"<p><b>Login ID:</b> {login_id}<br/><b>Password:</b> {password}</p>"
+            f'<p><a href="{portal_url}">Open the IB Partner Portal</a></p>'
+            f"<p>Your referral code is <b>{referral_code}</b>.</p>"
+            "<p>Please change your password after first login and keep it safe.</p>"
+        )
+        text = (
+            f"Hi {first},\n\nYour IB application is approved.\n"
+            f"Login ID: {login_id}\nPassword: {password}\n"
+            f"Portal: {portal_url}\nReferral code: {referral_code}\n"
+        )
+        fire_and_forget(send_email(email, subject, html, text=text))
+    except Exception as e:  # pragma: no cover - best effort
+        logger.warning("IB portal credential email failed: %s", e)
 
 
 async def list_ib_applications(
@@ -77,6 +126,13 @@ async def approve_ib_application(
 
     referral_code = "IB" + "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
 
+    # Standalone IB partner-portal credentials — a login ID + one-time
+    # password for the separate IB portal login page. Password stored
+    # bcrypt-hashed; plaintext is emailed + returned once (and logged in dev).
+    from packages.common.src.auth import hash_password
+    portal_login_id = "IB" + "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+    portal_password = secrets.token_urlsafe(9)
+
     default_plan_q = await db.execute(
         select(IBCommissionPlan).where(IBCommissionPlan.is_default == True)
     )
@@ -101,6 +157,8 @@ async def approve_ib_application(
     profile = IBProfile(
         user_id=app.user_id,
         referral_code=referral_code,
+        portal_login_id=portal_login_id,
+        portal_password_hash=hash_password(portal_password),
         level=parent_level + 1,
         parent_ib_id=parent_ib_id,
         commission_plan_id=default_plan.id if default_plan else None,
@@ -113,7 +171,19 @@ async def approve_ib_application(
         ip_address=ip_address,
     )
     await db.commit()
-    return {"message": "IB application approved", "referral_code": referral_code}
+
+    # Deliver the IB portal credentials (email when SMTP is set; always logged).
+    await _send_ib_portal_credentials(
+        user=user, login_id=portal_login_id, password=portal_password,
+        referral_code=referral_code,
+    )
+
+    return {
+        "message": "IB application approved",
+        "referral_code": referral_code,
+        "portal_login_id": portal_login_id,
+        "portal_password": portal_password,
+    }
 
 
 async def reject_ib_application(

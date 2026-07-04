@@ -218,8 +218,16 @@ export default function IBPage() {
         if (customPerLot) body.custom_per_lot = parseFloat(customPerLot);
         if (customPerTrade) body.custom_per_trade = parseFloat(customPerTrade);
       }
-      await adminApi.post(`/business/ib/applications/${approveModal.id}/approve`, body);
+      const res: any = await adminApi.post(`/business/ib/applications/${approveModal.id}/approve`, body);
       toast.success('Application approved');
+      // Surface the freshly-generated IB portal credentials so the admin can
+      // relay them (they're also emailed to the user + logged server-side).
+      if (res?.portal_login_id) {
+        toast.success(
+          `IB portal login — ID: ${res.portal_login_id} · Password: ${res.portal_password} (also emailed to the user)`,
+          { duration: 20000 },
+        );
+      }
       setApproveModal(null);
       setCommissionPlan('default');
       setCustomPerLot('');

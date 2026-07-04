@@ -1,33 +1,44 @@
 'use client';
 
 /**
- * Standalone Affiliate / IB dashboard — opens in its own tab from the
- * "Affiliates" sidebar item. Deliberately NOT wrapped in DashboardShell:
- * no trader sidebar, its own slim header, full-width polished layout so an
- * approved IB gets a focused partner-portal view of commissions, referrals
- * (incl. who registered but never traded), and their sub-IBs.
+ * IB Partner Portal dashboard (standalone app, port :3002). Reached only after
+ * signing in on /login with the separate IB credentials. Keeps its own session
+ * in sessionStorage (Bearer token) and every data call goes out with it.
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '@/stores/authStore';
-import api from '@/lib/api/client';
 import {
   DollarSign, TrendingUp, Clock, Users, UserPlus, Network as NetworkIcon,
-  Award, Copy as CopyIcon, ArrowLeft, CheckCircle2, Hourglass,
+  Award, Copy as CopyIcon, LogOut, CheckCircle2,
 } from 'lucide-react';
+
+const IB_TOKEN_KEY = 'ib_portal_token';
+const IB_NAME_KEY = 'ib_portal_name';
+
+const ibToken = () => (typeof window !== 'undefined' ? sessionStorage.getItem(IB_TOKEN_KEY) : null);
+
+async function ibGet<T = any>(path: string): Promise<T> {
+  const t = ibToken();
+  const res = await fetch(`/api/v1${path}`, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') sessionStorage.removeItem(IB_TOKEN_KEY);
+    throw new Error('unauthorized');
+  }
+  if (!res.ok) throw new Error(`Request failed (${res.status})`);
+  return res.json();
+}
 
 function fmt(n: number) {
   return (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtDate(d: string) { try { return new Date(d).toLocaleDateString(); } catch { return d; } }
 
-function Header() {
-  const user = useAuthStore((s) => s.user);
-  const name = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || '';
-  const initials = (name || 'U').split(' ').map((s) => s[0]).slice(0, 2).join('').toUpperCase();
+function Header({ onLogout }: { onLogout: () => void }) {
+  const name = typeof window !== 'undefined' ? sessionStorage.getItem(IB_NAME_KEY) || '' : '';
+  const initials = (name || 'IB').split(' ').map((s) => s[0]).slice(0, 2).join('').toUpperCase();
   return (
     <header className="sticky top-0 z-30 border-b border-border-primary bg-bg-base/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-3">
@@ -39,12 +50,6 @@ function Header() {
           <span className="hidden sm:inline text-sm font-semibold text-text-secondary truncate">IB Dashboard</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary px-3 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-          >
-            <ArrowLeft size={14} /> <span className="hidden sm:inline">Trading App</span>
-          </Link>
           {name && (
             <div className="flex items-center gap-2">
               <div className="grid h-8 w-8 place-items-center rounded-full border border-accent/40 bg-accent/10 text-[11px] font-bold text-accent">
@@ -53,16 +58,23 @@ function Header() {
               <span className="hidden md:inline text-sm font-semibold text-text-primary max-w-[160px] truncate">{name}</span>
             </div>
           )}
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary px-3 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+          >
+            <LogOut size={14} /> <span className="hidden sm:inline">Log out</span>
+          </button>
         </div>
       </div>
     </header>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   return (
     <div className="min-h-[100dvh] bg-bg-base text-text-primary">
-      <Header />
+      <Header onLogout={onLogout} />
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">{children}</main>
     </div>
   );
@@ -116,88 +128,56 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
   );
 }
 
-export default function AffiliateDashboardPage() {
-  const [status, setStatus] = useState<any>(null);
+export default function DashboardPage() {
+  const router = useRouter();
   const [dashboard, setDashboard] = useState<any>(null);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
 
-  const loadStatus = async () => {
-    const s = await api.get<any>('/business/status');
-    setStatus(s);
-    if (s.is_ib) {
-      const [d, r, c] = await Promise.all([
-        api.get<any>('/business/ib/dashboard'),
-        api.get<any>('/business/ib/referrals'),
-        api.get<any>('/business/ib/commissions'),
-      ]);
-      setDashboard(d);
-      setReferrals(r.items || []);
-      setCommissions(c.items || []);
+  const logout = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(IB_TOKEN_KEY);
+      sessionStorage.removeItem(IB_NAME_KEY);
     }
-  };
+    router.replace('/login');
+  }, [router]);
 
   useEffect(() => {
+    if (!ibToken()) { router.replace('/login'); return; }
     (async () => {
-      try { await loadStatus(); } catch { /* not authed / not ready */ } finally { setLoading(false); }
+      try {
+        const [d, r, c] = await Promise.all([
+          ibGet<any>('/business/ib/dashboard'),
+          ibGet<any>('/business/ib/referrals'),
+          ibGet<any>('/business/ib/commissions'),
+        ]);
+        setDashboard(d);
+        setReferrals(r.items || []);
+        setCommissions(c.items || []);
+      } catch (e: any) {
+        if (e?.message === 'unauthorized') { router.replace('/login'); return; }
+        toast.error('Could not load your IB dashboard.');
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, []);
+  }, [router]);
 
-  const handleApply = async () => {
-    setApplying(true);
-    try {
-      await api.post('/business/apply', {});
-      toast.success('IB application submitted!');
-      await loadStatus();
-    } catch (e: any) { toast.error(e?.message || 'Failed'); } finally { setApplying(false); }
-  };
+  if (loading) return <Shell onLogout={logout}><Spinner /></Shell>;
 
-  if (loading) return <Shell><Spinner /></Shell>;
-
-  // ── Pending application ──────────────────────────────────────────────
-  if (!status?.is_ib && status?.application_status === 'pending') {
+  if (!dashboard) {
     return (
-      <Shell>
+      <Shell onLogout={logout}>
         <div className="mx-auto max-w-lg rounded-2xl border border-border-primary bg-card p-8 noise-texture text-center">
-          <Hourglass className="mx-auto mb-3 text-warning" size={32} />
-          <h3 className="text-base font-bold text-text-primary">Application under review</h3>
-          <p className="mt-1 text-xs text-text-tertiary">Your IB application is being reviewed by our team. You&apos;ll get access to the full dashboard once approved.</p>
+          <h3 className="text-base font-bold text-text-primary">Dashboard unavailable</h3>
+          <p className="mt-1 text-xs text-text-tertiary">We couldn&apos;t load your IB data. Please sign in again.</p>
+          <button type="button" onClick={logout} className="mx-auto mt-4 block rounded-xl border-2 border-accent bg-accent px-6 py-2.5 text-sm font-bold text-black">Back to login</button>
         </div>
       </Shell>
     );
   }
 
-  // ── Not an IB yet — apply CTA ────────────────────────────────────────
-  if (!status?.is_ib) {
-    return (
-      <Shell>
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border-primary bg-card p-8 sm:p-12 noise-texture text-center">
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-accent/30 bg-accent/10">
-            <Users size={26} className="text-accent" />
-          </div>
-          <h3 className="text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-secondary">
-            Invite traders, earn lifetime commission on their activity, and grow your own sub-IB network. Apply once — your dashboard unlocks after approval.
-          </p>
-          <button
-            type="button"
-            onClick={handleApply}
-            disabled={applying}
-            className={clsx(
-              'mx-auto mt-6 block w-full max-w-xs rounded-xl border-2 border-accent px-6 py-3.5 text-sm font-bold transition-all',
-              applying ? 'cursor-not-allowed opacity-50' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(214,169,61,0.35)]',
-            )}
-          >
-            {applying ? 'Submitting…' : 'Apply Now'}
-          </button>
-        </div>
-      </Shell>
-    );
-  }
-
-  // ── Approved IB — full dashboard ─────────────────────────────────────
   const cards = [
     { label: 'Total Commission', value: `$${fmt(dashboard?.total_commission || 0)}`, color: 'text-success' },
     { label: 'Total Earned', value: `$${fmt(dashboard?.total_earned || 0)}`, color: 'text-success' },
@@ -208,7 +188,7 @@ export default function AffiliateDashboardPage() {
   ];
 
   return (
-    <Shell>
+    <Shell onLogout={logout}>
       {/* Hero — referral identity */}
       <section className="relative mb-6 overflow-hidden rounded-2xl border border-accent/30 bg-card p-5 sm:p-7 noise-texture">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.14] via-transparent to-accent/[0.04]" aria-hidden />

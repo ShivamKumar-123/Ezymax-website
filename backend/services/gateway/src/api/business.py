@@ -9,6 +9,22 @@ from ..services import business_service
 router = APIRouter()
 
 
+@router.post("/ib-portal/login")
+async def ib_portal_login(
+    payload: dict = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public — sign in to the standalone IB partner portal with the
+    login ID + password issued (and emailed) on approval. No existing session
+    required; returns an access token the IB portal uses as a Bearer header."""
+    payload = payload or {}
+    return await business_service.ib_portal_login(
+        login_id=payload.get("login_id"),
+        password=payload.get("password"),
+        db=db,
+    )
+
+
 @router.get("/status")
 async def ib_status(
     current_user: dict = Depends(get_current_user),

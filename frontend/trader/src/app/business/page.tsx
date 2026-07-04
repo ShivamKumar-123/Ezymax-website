@@ -34,6 +34,10 @@ const TABS: { id: TabId; label: string }[] = [
 
 
 
+// Standalone IB partner-portal (separate app on its own port). Approved IBs
+// sign in there with the credentials emailed on approval.
+const IB_PORTAL_URL = process.env.NEXT_PUBLIC_IB_PORTAL_URL || 'http://localhost:3002';
+
 function fmt(n: number) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function fmtDate(d: string) { try { return new Date(d).toLocaleDateString(); } catch { return d; } }
@@ -291,7 +295,23 @@ function IBTab() {
 
         <h3 className="text-sm font-semibold text-text-primary">Application Pending</h3>
 
-        <p className="text-xxs text-text-tertiary mt-1">Your IB application is under review by the admin team.</p>
+        <p className="text-xxs text-text-tertiary mt-1">Your IB application is under review by the admin team. Once approved, your IB Portal login ID and password are emailed to you.</p>
+
+        <a
+
+          href={IB_PORTAL_URL}
+
+          target="_blank"
+
+          rel="noopener noreferrer"
+
+          className="inline-flex items-center justify-center gap-1.5 mt-4 px-6 py-2.5 rounded-xl text-xs font-bold border-2 border-border-primary text-text-primary hover:border-accent hover:text-accent transition-all"
+
+        >
+
+          Login to IB Portal ↗
+
+        </a>
 
       </div>
 
@@ -308,6 +328,8 @@ function IBTab() {
       <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5 max-w-2xl mx-auto">
 
         <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
+
+        <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Apply once — after admin approval you&apos;ll get your IB Portal login ID and password by email.</p>
 
         <button
 
@@ -331,6 +353,28 @@ function IBTab() {
 
         </button>
 
+        <div className="pt-1">
+
+          <p className="text-xxs text-text-tertiary mb-2">Already an approved IB?</p>
+
+          <a
+
+            href={IB_PORTAL_URL}
+
+            target="_blank"
+
+            rel="noopener noreferrer"
+
+            className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3 rounded-xl text-sm font-bold border-2 border-border-primary text-text-primary hover:border-accent hover:text-accent transition-all"
+
+          >
+
+            Login to IB Portal ↗
+
+          </a>
+
+        </div>
+
       </div>
 
     );
@@ -342,6 +386,28 @@ function IBTab() {
   return (
 
     <div className="space-y-4">
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+
+        <p className="text-xs text-text-secondary">You&apos;re an approved IB. Open your full partner portal in a new tab.</p>
+
+        <a
+
+          href={IB_PORTAL_URL}
+
+          target="_blank"
+
+          rel="noopener noreferrer"
+
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 border-accent text-accent hover:bg-accent hover:text-black transition-all"
+
+        >
+
+          Login to IB Portal ↗
+
+        </a>
+
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
 

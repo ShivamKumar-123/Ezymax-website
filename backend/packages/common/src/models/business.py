@@ -17,6 +17,10 @@ class IBProfile(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True)
     referral_code = Column(String(20), unique=True, nullable=False)
+    # Standalone IB partner-portal login (separate from the trader account).
+    # Generated + emailed on admin approval; password stored bcrypt-hashed.
+    portal_login_id = Column(String(30), unique=True)
+    portal_password_hash = Column(String(255))
     parent_ib_id = Column(UUID(as_uuid=True), ForeignKey("ib_profiles.id"))
     level = Column(Integer, default=1)
     commission_plan_id = Column(UUID(as_uuid=True))

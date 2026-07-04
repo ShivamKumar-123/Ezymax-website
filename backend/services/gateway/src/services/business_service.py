@@ -25,6 +25,36 @@ def _get_frontend_url() -> str:
     return origins[0] if origins else "http://localhost:3000"
 
 
+async def ib_portal_login(login_id: str | None, password: str | None, db: AsyncSession) -> dict:
+    """Authenticate against the standalone IB partner-portal credentials
+    (separate login ID + password issued on approval). On success returns a
+    normal user access token for the underlying account so the IB dashboard
+    APIs work with a Bearer header — the portal keeps its own session,
+    independent of the trader app's cookie."""
+    from packages.common.src.auth import verify_password, create_access_token
+
+    lid = (login_id or "").strip()
+    pwd = password or ""
+    if not lid or not pwd:
+        raise HTTPException(status_code=400, detail="Login ID and password are required")
+
+    result = await db.execute(
+        select(IBProfile).where(
+            IBProfile.portal_login_id == lid,
+            IBProfile.is_active == True,
+        )
+    )
+    profile = result.scalar_one_or_none()
+    if not profile or not profile.portal_password_hash or not verify_password(pwd, profile.portal_password_hash):
+        raise HTTPException(status_code=401, detail="Invalid IB login ID or password")
+
+    user_q = await db.execute(select(User).where(User.id == profile.user_id))
+    user = user_q.scalar_one_or_none()
+    token, _ = create_access_token(str(profile.user_id), "user")
+    name = f"{(user.first_name if user else '') or ''} {(user.last_name if user else '') or ''}".strip()
+    return {"access_token": token, "referral_code": profile.referral_code, "name": name}
+
+
 async def ib_status(user_id: UUID, db: AsyncSession) -> dict:
     profile_result = await db.execute(
         select(IBProfile).where(IBProfile.user_id == user_id)
