@@ -21,8 +21,11 @@ LOG="/var/log/fxartha-backup.log"
 # are diagnosable.
 LINE="0 3 * * * set -a; source $COMPOSE_DIR/.env; set +a; $SCRIPT >> $LOG 2>&1"
 
-# Strip any prior fxartha line, then append the new one.
-( crontab -l 2>/dev/null | grep -v -F "$SCRIPT"; echo "$LINE" ) | crontab -
+# Strip any prior fxartha line, then append the new one. The `|| true` keeps a
+# fresh server (no existing crontab → `crontab -l` exits non-zero) from tripping
+# `set -e -o pipefail` and aborting mid-subshell, which would leave the crontab
+# empty and the job uninstalled.
+( crontab -l 2>/dev/null | grep -v -F "$SCRIPT" || true; echo "$LINE" ) | crontab -
 
 # Ensure the log file exists and is writable so the first run doesn't
 # silently fail before we get a chance to tail it.
