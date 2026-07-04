@@ -1764,11 +1764,18 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
     )
     total_withdrawn = float(wd_glob.scalar() or 0)
 
+    # Admin credits to the main wallet never create a `deposits` row — they're
+    # Transactions. Historically type='adjustment', now type='deposit' (both
+    # forms counted here so the card is correct pre- and post-backfill 0057).
+    # Real gateway deposits ALSO mirror into a type='deposit' txn but carry a
+    # reference_id, so `reference_id IS NULL` isolates admin credits and avoids
+    # double-counting the gateway deposits already summed above.
     adj_main_in = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
             Transaction.user_id == user_id,
             Transaction.account_id.is_(None),
-            Transaction.type.in_(["adjustment", "credit"]),
+            Transaction.type.in_(["deposit", "adjustment", "credit"]),
+            Transaction.reference_id.is_(None),
             Transaction.amount > 0,
         )
     )
