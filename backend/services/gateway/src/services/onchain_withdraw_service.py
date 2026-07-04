@@ -78,12 +78,12 @@ async def create_onchain_withdrawal(
 ) -> dict:
     """Open a USDT withdrawal request.
 
-    Destination is server-locked to the user's linked SIWE wallet — the
-    client-supplied `destination_address` argument is logged (for audit)
-    but never used as the actual payout target. Debits
-    main_wallet_balance atomically so the same funds can't be requested
-    twice while one withdrawal is pending. Admin reviews + sends
-    on-chain manually.
+    The user-supplied `destination_address` is used as the payout target
+    (format-validated per network). Debits the balance atomically so the
+    same funds can't be requested twice while a withdrawal is pending.
+    Admin reviews + sends the payout on-chain manually before any funds
+    move. (The SIWE linked-wallet lock is deferred to the future automated
+    payout flow.)
     """
     from packages.common.src.settings_store import get_bool_setting
     if await get_bool_setting("maintenance_mode", False):
@@ -112,46 +112,13 @@ async def create_onchain_withdrawal(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Lock destination to the user's linked SIWE wallet. EVM-chain
-    # withdrawals (eth/bsc) reuse the linked EVM address; TRC-20 needs
-    # an explicit TRON address linked separately (not supported yet —
-    # users on TRC-20 must use the manual UPI/bank flow instead).
-    linked_addr = (user.wallet_address or "").strip()
-    if not linked_addr:
-        raise HTTPException(
-            status_code=428,
-            detail=(
-                "Link a wallet before requesting an on-chain withdrawal. "
-                "Go to Profile → Linked Wallet to sign in with the address "
-                "you want payouts sent to."
-            ),
-        )
-    if net in {"eth", "bsc"}:
-        # Linked address is always lowercased EVM (see users model).
-        destination = _validate_destination(net, linked_addr)
-    else:
-        # TRON / non-EVM chains aren't covered by the EVM SIWE link yet.
-        # Refuse rather than fall back to user-supplied input.
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "On-chain withdrawals on this network require a wallet "
-                "linked for that chain. Currently only EVM (eth/bsc) is "
-                "supported — use the manual bank/UPI withdrawal flow for "
-                "other chains."
-            ),
-        )
-
-    # Audit signal if the client tried to direct funds elsewhere. Helps
-    # spot account-takeover attempts on the admin side without changing
-    # the actual payout target.
-    client_supplied = (destination_address or "").strip().lower()
-    if client_supplied and client_supplied != destination.lower():
-        logger.warning(
-            "onchain withdraw: client tried to override destination "
-            "user=%s linked=%s client_supplied=%s",
-            user.id, destination, client_supplied,
-        )
+    # Manual on-chain withdrawal: the user supplies the destination address
+    # and the admin reviews + sends the payout by hand (status stays
+    # 'pending' until then, so a wrong address is caught before any funds
+    # move). The SIWE linked-wallet lock is intentionally deferred here — it
+    # will be re-introduced with the automated payout flow. The address is
+    # format-validated per network (eth/bsc EVM, tron base58).
+    destination = _validate_destination(net, destination_address or "")
 
     # Resolve debit source — honor explicit user choice if provided,
     # else auto-route (wallet-bound when present, else main_wallet).
