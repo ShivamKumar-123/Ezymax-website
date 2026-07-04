@@ -1,7 +1,8 @@
 """Wallet API — Deposits, Withdrawals, Transactions."""
+from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -240,6 +241,39 @@ async def create_withdrawal(
         status_code=201, db=db,
     )
     return result
+
+
+@router.post("/withdraw/manual", status_code=201)
+async def create_manual_withdrawal(
+    request: Request,
+    amount: Decimal = Form(...),
+    upi_id: str = Form(""),
+    payout_notes: str = Form(""),
+    source: str | None = Form(None),
+    file: UploadFile | None = File(None),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manual UPI / QR-code payout — NO linked crypto wallet required.
+
+    The user provides a UPI ID and/or uploads a payout QR image; the request
+    is queued as a 'pending' Withdrawal that the admin pays out manually.
+    Per-user rate-limited to 5 per 10 minutes. `source` (main_wallet vs a
+    wallet-bound account) is accepted for parity with the crypto flow; the
+    service auto-resolves the debit source."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(
+        request, "withdraw_manual_create", 5, 600.0,
+        subject=f"user:{current_user['user_id']}",
+    )
+    return await wallet_service.create_manual_withdrawal(
+        user_id=current_user["user_id"],
+        amount=amount,
+        upi_id=upi_id,
+        payout_notes=payout_notes,
+        file=file,
+        db=db,
+    )
 
 
 # ─── Decentralized USDT withdraw flow (mirror of /deposit/onchain) ─────────

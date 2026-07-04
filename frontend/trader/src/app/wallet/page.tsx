@@ -514,7 +514,7 @@ function WalletPageContent() {
       if (manualWithdrawQrFile) fd.append('file', manualWithdrawQrFile);
       if (wallet?.wallet_account) fd.append('source', fundTargetPreference);
       const token = api.getToken();
-      const res = await fetch('/api/v1/wallet/withdraw/manual/', {
+      const res = await fetch('/api/v1/wallet/withdraw/manual', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
@@ -1318,6 +1318,23 @@ function WalletPageContent() {
                     )}
                   </p>
 
+                  {/* Payout method toggle — crypto USDT vs manual UPI / QR */}
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border border-border-primary bg-bg-secondary">
+                    {([['crypto', 'Crypto (USDT)'], ['bank', 'UPI / QR']] as const).map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setWithdrawUiSection(k)}
+                        className={clsx(
+                          'py-2 rounded-lg text-sm font-semibold transition-colors',
+                          withdrawUiSection === k ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary',
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
                   {withdrawUiSection === 'crypto' ? (
                     (() => {
                       const activeOpt = WITHDRAW_NETWORK_OPTIONS.find((o) => o.network === withdrawNetwork)
@@ -1449,7 +1466,96 @@ function WalletPageContent() {
                         </>
                       );
                     })()
-                  ) : null}
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-xs text-text-secondary">Amount (USD)</label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setWithdrawAmount(String(Math.max(0, wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)))
+                            }
+                            className="text-xs font-bold text-[#d6a93d] hover:underline"
+                          >
+                            Max
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary font-bold">$</span>
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 font-mono font-bold text-lg"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-secondary">Your UPI ID</label>
+                        <input
+                          type="text"
+                          value={manualWithdrawUpi}
+                          onChange={(e) => setManualWithdrawUpi(e.target.value)}
+                          placeholder="yourname@bank"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-secondary">Or upload payment QR <span className="text-text-tertiary">(optional)</span></label>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,application/pdf"
+                          onChange={(e) => setManualWithdrawQrFile(e.target.files?.[0] ?? null)}
+                          className="block w-full text-xs text-text-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-2 file:font-semibold file:text-black hover:file:brightness-110"
+                        />
+                        {manualWithdrawQrFile && (
+                          <p className="text-[11px] text-text-tertiary">Selected: {manualWithdrawQrFile.name}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-text-secondary">Notes <span className="text-text-tertiary">(optional)</span></label>
+                        <input
+                          type="text"
+                          value={manualWithdrawNotes}
+                          onChange={(e) => setManualWithdrawNotes(e.target.value)}
+                          placeholder="Any note for the finance team"
+                          className="w-full px-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 text-sm"
+                        />
+                      </div>
+
+                      <p className="text-[11px] text-text-tertiary leading-relaxed">
+                        Provide a UPI ID and/or upload a QR code. Your request goes to admin for manual payout — processing up to 24 hours. No linked wallet needed.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => void submitWithdraw()}
+                        disabled={
+                          demoFundingBlocked ||
+                          withdrawSubmitting ||
+                          !withdrawAmount ||
+                          (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
+                        }
+                        className={clsx(
+                          'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
+                          demoFundingBlocked || withdrawSubmitting || !withdrawAmount || (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
+                            ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
+                            : 'bg-accent text-white hover:brightness-110 shadow-neon-green-lg',
+                        )}
+                      >
+                        {withdrawSubmitting
+                          ? 'Submitting…'
+                          : `Request payout${withdrawAmount ? ` — ${fmt(parseFloat(withdrawAmount || '0'))}` : ''}`}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
