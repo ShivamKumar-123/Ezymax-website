@@ -5,14 +5,14 @@ user; they log in to a standalone IB portal with them.
 
 Idempotent (ADD COLUMN IF NOT EXISTS).
 
-Revision ID: 0057
-Revises: 0056
+Revision ID: 0058
+Revises: 0057
 """
 from alembic import op
 
 
-revision = "0057"
-down_revision = "0056"
+revision = "0058"
+down_revision = "0057"
 branch_labels = None
 depends_on = None
 
