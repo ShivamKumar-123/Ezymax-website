@@ -67,13 +67,21 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 encrypt_inplace "$DUMP"
 
 # ─── 2. Uploads (KYC + manual deposit screenshots) ─────────────────────
+# The compose file bind-mounts ./backend/uploads → so the real path is
+# $COMPOSE_DIR/backend/uploads. Older layouts kept ./uploads at the root;
+# support both. Tarball preserves the relative path so restore extracts it
+# back to the correct location (-C "$COMPOSE_DIR").
 UPLOADS="$DEST/uploads-$STAMP.tar.gz"
-if [[ -d "$COMPOSE_DIR/uploads" ]]; then
-  log "archiving uploads → $UPLOADS"
+if [[ -d "$COMPOSE_DIR/backend/uploads" ]]; then
+  log "archiving uploads → $UPLOADS (backend/uploads)"
+  tar czf "$UPLOADS" -C "$COMPOSE_DIR" backend/uploads
+  encrypt_inplace "$UPLOADS"
+elif [[ -d "$COMPOSE_DIR/uploads" ]]; then
+  log "archiving uploads → $UPLOADS (uploads)"
   tar czf "$UPLOADS" -C "$COMPOSE_DIR" uploads
   encrypt_inplace "$UPLOADS"
 else
-  log "no uploads/ directory — skipping"
+  log "no uploads directory found (checked backend/uploads and uploads) — skipping"
 fi
 
 # ─── 3. TimescaleDB (separate DB, separate dump) ──────────────────────

@@ -68,11 +68,30 @@ for i in $(seq 1 30); do
 done
 
 TMP_PG=$(mktemp --suffix=.sql.gz)
+# Pre-init so the EXIT trap doesn't hit `set -u` when TS/uploads aren't given.
+TMP_TS=""
+TMP_UP=""
 trap 'rm -f "$TMP_PG" "$TMP_TS" "$TMP_UP"' EXIT
 decrypt_to "$DUMP" "$TMP_PG"
+
+# A fresh postgres (entrypoint + init-db.sql) pre-creates the role/db/schema.
+# A full pg_dumpall then collides with that (CREATE ROLE/DATABASE/tables) and —
+# worse — the pre-existing FK constraints get enforced mid-COPY, producing
+# "violates foreign key constraint" errors and a partial restore. Drop the
+# target DB first so the dump rebuilds it cleanly in dependency order
+# (schema → data → constraints). Roles are cluster-global; the dump's
+# "role already exists" is harmless, so ON_ERROR_STOP is omitted for this
+# full-cluster load.
+PGDB="${POSTGRES_DB:-fxartha}"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+  psql -U "${POSTGRES_USER:-fxartha}" -d postgres -c \
+  "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$PGDB' AND pid<>pg_backend_pid();" >/dev/null 2>&1 || true
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+  psql -U "${POSTGRES_USER:-fxartha}" -d postgres -c "DROP DATABASE IF EXISTS $PGDB;"
+
 echo "[restore] piping (decrypted) $DUMP → psql"
 gunzip -c "$TMP_PG" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T postgres psql -U "${POSTGRES_USER:-fxartha}" -d postgres -v ON_ERROR_STOP=1
+  exec -T postgres psql -U "${POSTGRES_USER:-fxartha}" -d postgres
 
 # ─── TimescaleDB (optional) ───────────────────────────────────────────
 if [[ -n "$TS_DUMP" ]]; then
