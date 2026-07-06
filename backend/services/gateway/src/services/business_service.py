@@ -806,23 +806,39 @@ async def ib_place_order_on_behalf(
     return result
 
 
-async def ib_impersonate_referred(ib_user_id: UUID, target_user_id: UUID, db: AsyncSession) -> dict:
+async def ib_impersonate_referred(
+    ib_user_id: UUID, target_user_id: UUID, db: AsyncSession,
+    account_id: UUID | None = None,
+) -> dict:
     """Mint a single-use, 60s redemption code that logs the IB into the REAL
     trader terminal AS one of their referred users. Mirrors the admin
     `login_as_user` flow (Redis db-0 `impersonation:{code}` → JWT), but scoped
     so an IB can only impersonate users they actually referred. The trader app
-    opens `/auth/impersonate?code=...&redirect=/trading/terminal` and redeems it
-    into HttpOnly cookies on the trader domain — so trades land on the
-    follower's own account, in the exact same terminal a user gets."""
+    opens `/auth/impersonate?code=...&redirect=<terminal>` and redeems it into
+    HttpOnly cookies on the trader domain — so trades land on the follower's own
+    account, in the exact same terminal a user gets. When `account_id` is given
+    the terminal opens straight on that account (else it lands on /trading)."""
     import os
     import secrets
     import jwt
     import redis.asyncio as aioredis
     from datetime import datetime, timedelta
+    from urllib.parse import quote
     from packages.common.src.config import get_settings
 
     profile = await _require_ib_profile(ib_user_id, db)
     user = await _require_referred_user(profile.id, target_user_id, db)  # 403 if not this IB's
+
+    # If an account is named, it must belong to this referred user (so the
+    # terminal deep-link is valid and can't point at someone else's account).
+    if account_id is not None:
+        acct = (await db.execute(
+            select(TradingAccount).where(
+                TradingAccount.id == account_id, TradingAccount.user_id == target_user_id,
+            )
+        )).scalar_one_or_none()
+        if not acct:
+            raise HTTPException(status_code=404, detail="Account not found for this user")
 
     s = get_settings()
     expire = datetime.utcnow() + timedelta(hours=2)
@@ -861,10 +877,17 @@ async def ib_impersonate_referred(ib_user_id: UUID, target_user_id: UUID, db: As
     })
 
     base = _get_frontend_url().rstrip("/")
+    # Deep-link to the terminal on the chosen account. The whole terminal path
+    # (incl. its own ?account=&view= query) is percent-encoded so it survives
+    # as a single `redirect` value on the impersonate URL.
+    if account_id is not None:
+        terminal_path = f"/trading/terminal?account={account_id}&view=chart"
+    else:
+        terminal_path = "/trading/terminal"
     return {
         "code": code,
         "expires_in": 60,
-        "redirect_url": f"{base}/auth/impersonate?code={code}&redirect=/trading/terminal",
+        "redirect_url": f"{base}/auth/impersonate?code={code}&redirect={quote(terminal_path, safe='')}",
     }
 
 

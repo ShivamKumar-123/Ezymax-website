@@ -50,7 +50,7 @@ export default function TradeListPage() {
     setOpening(accountId);
     const tab = window.open('', '_blank');
     try {
-      const res = await ibPost<{ redirect_url: string }>(`/business/ib/users/${userId}/impersonate`);
+      const res = await ibPost<{ redirect_url: string }>(`/business/ib/users/${userId}/impersonate?account_id=${accountId}`);
       if (tab) tab.location.href = res.redirect_url;
       else window.location.href = res.redirect_url;
     } catch (e: any) {

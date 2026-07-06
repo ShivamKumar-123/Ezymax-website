@@ -22,7 +22,10 @@ export default function UserDetail({ userId }: { userId: string }) {
     setOpening(true);
     const tab = window.open('', '_blank');
     try {
-      const res = await ibPost<{ redirect_url: string }>(`/business/ib/users/${userId}/impersonate`);
+      const acc = data?.accounts?.[0]?.id;
+      const res = await ibPost<{ redirect_url: string }>(
+        `/business/ib/users/${userId}/impersonate${acc ? `?account_id=${acc}` : ''}`,
+      );
       if (tab) tab.location.href = res.redirect_url;
       else window.location.href = res.redirect_url;
     } catch (e: any) {

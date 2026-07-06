@@ -184,13 +184,16 @@ async def ib_user_positions(
 @router.post("/ib/users/{user_id}/impersonate")
 async def ib_impersonate_referred(
     user_id: UUID,
+    account_id: UUID | None = Query(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get a one-time link that opens the REAL trader terminal as this
-    referred user (scoped: only the IB's own referrals)."""
+    referred user (scoped: only the IB's own referrals). When account_id is
+    given the terminal opens straight on that account."""
     return await business_service.ib_impersonate_referred(
-        ib_user_id=current_user["user_id"], target_user_id=user_id, db=db,
+        ib_user_id=current_user["user_id"], target_user_id=user_id,
+        account_id=account_id, db=db,
     )
 
 
