@@ -37,7 +37,7 @@ export default function IBPortalLoginPage() {
       }
       sessionStorage.setItem('ib_portal_token', json.access_token);
       sessionStorage.setItem('ib_portal_name', json.name || '');
-      router.replace('/dashboard');
+      router.replace('/overview');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
