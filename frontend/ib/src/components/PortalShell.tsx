@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
 import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 import { ibName, clearSession } from '@/lib/api';
 
 export default function PortalShell({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             <Menu size={16} />
           </button>
           <div className="flex flex-1 items-center justify-end gap-3">
+            <ThemeToggle />
             {name && (
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-full border border-accent/40 bg-accent/10 text-[11px] font-bold text-accent">
