@@ -82,3 +82,17 @@ services:
     environment:
       ADMIN_API_PROXY_TARGET: http://admin-api:8001
     restart: always
+
+  # IB partner portal — nginx (ib.fxartha.com) → 127.0.0.1:3014
+  ib-frontend:
+    build:
+      context: ./frontend/ib
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-production}
+    ports:
+      - "127.0.0.1:3014:3000"
+    environment:
+      INTERNAL_API_URL: http://gateway:8000/api/v1
+      TRADER_API_PROXY_TARGET: http://gateway:8000
+    restart: always

@@ -226,6 +226,22 @@ services:
       - gateway
       - admin-api
 
+  # IB partner portal — standalone Next.js app (host 3002 → container 3000).
+  # /api/v1/* is proxied to the gateway by src/app/api/v1/[...path]/route.ts.
+  ib-frontend:
+    build:
+      context: ./frontend/ib
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-docker}
+    ports:
+      - "3002:3000"
+    environment:
+      INTERNAL_API_URL: http://gateway:8000/api/v1
+      TRADER_API_PROXY_TARGET: http://gateway:8000
+    depends_on:
+      - gateway
+
   # One-off migration runner — NOT started automatically.
   # Run with: docker compose --profile migrate up migrate
   migrate:
