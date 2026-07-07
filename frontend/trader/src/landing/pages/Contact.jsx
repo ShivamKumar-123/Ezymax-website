@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Mail, Phone, MapPin, Send, MessageCircle, X } from 'lucide-react'
+import { Mail, MapPin, Send, MessageCircle, X } from 'lucide-react'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
@@ -62,18 +62,6 @@ const Contact = () => {
       title: 'Email Us',
       content: 'support@fxartha.com',
       link: 'mailto:support@fxartha.com'
-    },
-    {
-      icon: Phone,
-      title: 'Call Us',
-      content: '+44 20 1234 5678',
-      link: 'tel:+442012345678'
-    },
-    {
-      icon: MapPin,
-      title: 'Visit Us',
-      content: '123 Financial District, London, UK',
-      link: '#'
     }
   ]
 
@@ -92,7 +80,7 @@ const Contact = () => {
 
       <section className="section-padding bg-primary-secondary">
         <div className="container-custom">
-          <ScrollRevealGroup className="grid md:grid-cols-3 gap-8 mb-16">
+          <ScrollRevealGroup className="grid md:grid-cols-1 max-w-sm mx-auto gap-8 mb-16">
             {contactInfo.map((info, index) => (
               <ScrollRevealItem key={index}>
                 <Card className="text-center p-8">
@@ -176,15 +164,7 @@ const Contact = () => {
                 <h2 className="text-3xl font-bold text-white mb-6">Our Office</h2>
                 <Card className="p-8 mb-6">
                   <h3 className="text-xl font-semibold text-white mb-4">FXArtha Ltd</h3>
-                  <p className="text-text-secondary mb-4">
-                    123 Financial District<br />
-                    London, EC2N 2DL<br />
-                    United Kingdom
-                  </p>
                   <div className="space-y-2">
-                    <p className="text-text-secondary">
-                      <span className="text-white font-semibold">Phone:</span> +44 20 1234 5678
-                    </p>
                     <p className="text-text-secondary">
                       <span className="text-white font-semibold">Email:</span> support@fxartha.com
                     </p>
