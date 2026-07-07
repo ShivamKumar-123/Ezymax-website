@@ -7,7 +7,6 @@
   Coins,
   ArrowUpFromLine,
 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const steps = [
@@ -56,13 +55,23 @@ export default function FxHowItWorks() {
       style={{ background: 'var(--fx-bg-elev)' }}
     >
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="How It Works"
-          title="From Wallet to Trade â€” A Seamless Flow"
-          highlight="Seamless Flow"
-          subtitle="From the moment you connect a wallet to the moment a profit lands back in it â€” here is what actually happens."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">How It Works</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                From Wallet to Trade â€” A <span className="gradient-text">Seamless Flow</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              From the moment you connect a wallet to the moment a profit lands back in it â€” here is what actually happens.
+            </p>
+          </ScrollReveal>
+        </div>
+
         {/* â”€â”€ Horizontal step rail (scrolls on mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[260px] md:auto-cols-auto md:grid-cols-7 gap-4 md:gap-3 min-w-max md:min-w-0">
@@ -127,7 +136,6 @@ export default function FxHowItWorks() {
             &ldquo;Structured flow. No manual control. Fully system-driven.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

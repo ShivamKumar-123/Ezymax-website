@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Target, DollarSign, TrendingUp, Shield, Award, BarChart2, Check, ArrowRight } from 'lucide-react'
+import { Target, DollarSign, TrendingUp, Shield, Award, BarChart2 } from 'lucide-react'
 import Button from '../components/Button'
+import SectionHeader from '../components/SectionHeader'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const challenges = [
@@ -48,58 +49,78 @@ const rules = [
   { icon: Award, title: 'No Time Limit (Funded)', desc: 'Once funded, there is no time limit. Trade at your own pace.' },
 ]
 
+const steps = [
+  { step: '1', title: 'Pass the Challenge', desc: 'Meet the profit target while staying within risk limits.' },
+  { step: '2', title: 'Get Funded', desc: 'Receive a funded account with real capital to trade.' },
+  { step: '3', title: 'Earn Profits', desc: 'Keep up to 90% of every dollar you make. Withdraw anytime.' },
+]
+
 const PropTrading = () => {
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Prop Trading Program
-            </h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              Prove your skills, get funded, and trade with our capital. Keep up to 90% of the profits — zero personal risk.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/accounts/standard"><Button variant="primary">Start Challenge</Button></Link>
-              <Link to="/accounts/demo"><Button variant="ghost">Learn More</Button></Link>
-            </div>
-          </ScrollReveal>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="badge mb-6">Prop Trading Program</span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">
+                  Prop Trading Program
+                </h1>
+                <p className="text-lg md:text-xl max-w-xl mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                  Prove your skills, get funded, and trade with our capital. Keep up to 90% of the profits — zero personal risk.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link to="/accounts/standard"><Button variant="primary" icon>Start Challenge</Button></Link>
+                  <Link to="/accounts/demo"><Button variant="ghost">Learn More</Button></Link>
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Prop Trading</span>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">Choose Your Challenge</h2>
-            <p className="text-text-secondary text-center max-w-2xl mx-auto mb-12">Select a challenge size that matches your trading experience.</p>
-          </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* ── Challenge tiers ──────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <SectionHeader
+            badge="Choose Your Challenge"
+            title="Choose Your Challenge"
+            highlight="Challenge"
+            subtitle="Select a challenge size that matches your trading experience."
+          />
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 md:mt-16">
             {challenges.map((c) => (
               <ScrollRevealItem key={c.name}>
-                <div className={`rounded-lg p-6 h-full flex flex-col ${c.highlight ? 'bg-primary-accent/[0.06] border border-primary-accent/30' : 'glass-card'}`}>
+                <div className={`${c.highlight ? 'fx-card-gold' : 'fx-card'} h-full p-7 md:p-8 flex flex-col`}>
                   {c.highlight && (
                     <div className="text-center mb-4">
-                      <span className="bg-primary-accent text-white text-xs font-bold px-3 py-1 rounded uppercase">Most Popular</span>
+                      <span className="badge">Most Popular</span>
                     </div>
                   )}
                   <h3 className="text-xl font-bold text-white mb-1">{c.name}</h3>
-                  <div className="text-3xl font-bold gradient-text mb-4">{c.capital}</div>
+                  <div className="text-3xl font-bold gradient-text mb-6">{c.capital}</div>
 
-                  <div className="space-y-2 mb-6 flex-1">
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Profit Target</span><span className="text-white">{c.target}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Max Drawdown</span><span className="text-white">{c.maxLoss}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Daily Loss Limit</span><span className="text-white">{c.dailyLoss}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Duration</span><span className="text-white">{c.duration}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-text-secondary">Profit Split</span><span className="text-white font-semibold">{c.split}</span></div>
+                  <div className="space-y-3 mb-6 flex-1">
+                    <div className="flex justify-between text-sm"><span style={{ color: 'var(--fx-text-2)' }}>Profit Target</span><span className="text-white">{c.target}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: 'var(--fx-text-2)' }}>Max Drawdown</span><span className="text-white">{c.maxLoss}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: 'var(--fx-text-2)' }}>Daily Loss Limit</span><span className="text-white">{c.dailyLoss}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: 'var(--fx-text-2)' }}>Duration</span><span className="text-white">{c.duration}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: 'var(--fx-text-2)' }}>Profit Split</span><span className="text-white font-semibold">{c.split}</span></div>
                   </div>
 
-                  <div className="text-center mb-4">
+                  <div className="text-center mb-5">
                     <span className="text-2xl font-bold text-white">{c.fee}</span>
-                    <span className="text-text-secondary text-sm ml-1">one-time</span>
+                    <span className="text-sm ml-1" style={{ color: 'var(--fx-text-2)' }}>one-time</span>
                   </div>
-                  <Link to="/accounts/standard" className={`block text-center py-2.5 rounded-lg text-sm font-medium transition-all ${c.highlight ? 'bg-white text-primary-accent hover:bg-white/90' : 'border border-primary-accent/30 text-primary-accent hover:bg-primary-accent/10'}`}>
-                    Start Challenge
+                  <Link to="/accounts/standard" className="mt-auto">
+                    <Button variant={c.highlight ? 'primary' : 'ghost'} icon className="w-full justify-center">Start Challenge</Button>
                   </Link>
                 </div>
               </ScrollRevealItem>
@@ -108,20 +129,19 @@ const PropTrading = () => {
         </div>
       </section>
 
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">Challenge Rules</h2>
-          </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* ── Challenge rules ──────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <SectionHeader badge="The Rules" title="Challenge Rules" highlight="Rules" />
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12 md:mt-16">
             {rules.map((r, i) => (
               <ScrollRevealItem key={i}>
-                <div className="glass-card p-6 h-full">
-                  <div className="feature-icon bg-primary-purple/10 text-primary-purple mb-4">
-                    <r.icon size={20} />
+                <div className="fx-card h-full p-7 md:p-8">
+                  <div className="feature-icon mb-6" style={{ width: 56, height: 56 }}>
+                    <r.icon size={22} />
                   </div>
                   <h3 className="text-white font-semibold text-lg mb-2">{r.title}</h3>
-                  <p className="text-text-secondary text-sm leading-relaxed">{r.desc}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>{r.desc}</p>
                 </div>
               </ScrollRevealItem>
             ))}
@@ -129,26 +149,56 @@ const PropTrading = () => {
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom text-center">
+      {/* ── How it works ─────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">The Process</span>
+                <h2 className="fx-headline text-3xl md:text-4xl mt-5 mb-8">How It Works</h2>
+                <ScrollRevealGroup className="space-y-6">
+                  {steps.map((s) => (
+                    <ScrollRevealItem key={s.step}>
+                      <div className="flex items-start gap-5">
+                        <div className="feature-icon flex-shrink-0" style={{ width: 56, height: 56 }}>
+                          <span className="text-lg font-bold">{s.step}</span>
+                        </div>
+                        <div>
+                          <h3 className="text-white font-semibold text-lg mb-2">{s.title}</h3>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>{s.desc}</p>
+                        </div>
+                      </div>
+                    </ScrollRevealItem>
+                  ))}
+                </ScrollRevealGroup>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Funded Trader</span>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How It Works</h2>
+            <div className="fx-section-frame text-center">
+              <div className="fx-glow-gold" />
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mb-6">Prop Trading Program</h2>
+              <p className="text-lg md:text-xl mb-9 max-w-2xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
+                Prove your skills, get funded, and trade with our capital. Keep up to 90% of the profits — zero personal risk.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/accounts/standard"><Button variant="primary" icon>Start Challenge</Button></Link>
+                <Link to="/accounts/demo"><Button variant="ghost">Learn More</Button></Link>
+              </div>
+            </div>
           </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-4xl mx-auto">
-            {[
-              { step: '1', title: 'Pass the Challenge', desc: 'Meet the profit target while staying within risk limits.' },
-              { step: '2', title: 'Get Funded', desc: 'Receive a funded account with real capital to trade.' },
-              { step: '3', title: 'Earn Profits', desc: 'Keep up to 90% of every dollar you make. Withdraw anytime.' },
-            ].map((s) => (
-              <ScrollRevealItem key={s.step}>
-                <div className="glass-card p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary-accent/10 text-primary-accent font-bold text-lg flex items-center justify-center mx-auto mb-4">{s.step}</div>
-                  <h3 className="text-white font-semibold text-lg mb-2">{s.title}</h3>
-                  <p className="text-text-secondary text-sm">{s.desc}</p>
-                </div>
-              </ScrollRevealItem>
-            ))}
-          </ScrollRevealGroup>
         </div>
       </section>
     </div>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Check, Crown } from 'lucide-react'
 import Button from '../components/Button'
-import Card from '../components/Card'
+import SectionHeader from '../components/SectionHeader'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const ProAccount = () => {
@@ -16,113 +16,148 @@ const ProAccount = () => {
     'Exclusive trading signals'
   ]
 
+  const stats = [
+    { label: 'Min Deposit', value: '$5,000' },
+    { label: 'Spreads From', value: '0.0 pips' },
+    { label: 'Leverage', value: '1:200' },
+    { label: 'Commission', value: '$3.5/lot' }
+  ]
+
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <div className="inline-flex items-center gap-2 bg-primary-accent/10 text-primary-accent px-3 py-1.5 rounded mb-6 font-medium text-sm">
-              <Crown className="w-5 h-5" />
-              For Experienced & Professional Traders
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Pro Account</h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              Experience professional-grade trading with raw spreads, priority support, and exclusive benefits designed for serious traders.
-            </p>
-            <Link to="/accounts/demo">
-              <Button variant="primary" icon>Open Pro Account</Button>
-            </Link>
-          </ScrollReveal>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="badge mb-6">
+                  <Crown className="w-3.5 h-3.5" />
+                  For Experienced &amp; Professional Traders
+                </span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">Pro Account</h1>
+                <p className="text-lg md:text-xl max-w-xl mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                  Experience professional-grade trading with raw spreads, priority support, and exclusive benefits designed for serious traders.
+                </p>
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Pro Account</Button>
+                </Link>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Account Preview</span>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollRevealGroup className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            <ScrollRevealItem>
-              <Card className="text-center border-t-4 border-primary-accent">
-                <div className="text-sm text-text-secondary mb-2">Min Deposit</div>
-                <div className="text-3xl font-bold gradient-text">$5,000</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center border-t-4 border-primary-accent">
-                <div className="text-sm text-text-secondary mb-2">Spreads From</div>
-                <div className="text-3xl font-bold gradient-text">0.0 pips</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center border-t-4 border-primary-accent">
-                <div className="text-sm text-text-secondary mb-2">Leverage</div>
-                <div className="text-3xl font-bold gradient-text">1:200</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center border-t-4 border-primary-accent">
-                <div className="text-sm text-text-secondary mb-2">Commission</div>
-                <div className="text-3xl font-bold gradient-text">$3.5/lot</div>
-              </Card>
-            </ScrollRevealItem>
-          </ScrollRevealGroup>
-
+      {/* ── Stat strip ───────────────────────────────────────── */}
+      <section className="fx-section" style={{ paddingTop: 0, background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <div className="max-w-4xl mx-auto mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center">
-                Premium Features
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <Check className="w-6 h-6 text-primary-accent flex-shrink-0" />
-                    <span className="text-text-secondary text-lg">{feature}</span>
+            <div className="fx-section-frame fx-section-frame-tight p-0 overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+                {stats.map((stat, index) => (
+                  <div key={index} className="fx-stats-cell">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.22em] mb-3" style={{ color: 'var(--fx-text-3)' }}>
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
+                    <div className="text-3xl md:text-4xl font-bold gradient-text mb-1">{stat.value}</div>
+                    <div className="text-sm" style={{ color: 'var(--fx-text-2)' }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
             </div>
           </ScrollReveal>
+        </div>
+      </section>
 
-          <ScrollRevealGroup className="grid md:grid-cols-3 gap-6">
+      {/* ── Premium features ─────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Premium Features</span>
+                <h2 className="fx-headline text-3xl md:text-4xl mt-5 mb-8">Premium Features</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <Check className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
+                      <span style={{ color: 'var(--fx-text-2)' }}>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.1}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Platform Visual</span>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pro perks (bento) ────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <ScrollRevealItem>
-              <Card>
-                <Crown className="w-12 h-12 text-primary-accent mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-3">Dedicated Manager</h3>
-                <p className="text-text-secondary">
+              <div className="fx-card-gold h-full p-7 md:p-8">
+                <div className="feature-icon mb-6" style={{ width: 56, height: 56 }}>
+                  <Crown className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Dedicated Manager</h3>
+                <p style={{ color: 'var(--fx-text-2)' }}>
                   Get a personal account manager who understands your trading needs and provides tailored support.
                 </p>
-              </Card>
+              </div>
             </ScrollRevealItem>
             <ScrollRevealItem>
-              <Card>
-                <div className="text-4xl mb-4">🖥️</div>
-                <h3 className="text-xl font-semibold text-white mb-3">Free VPS Hosting</h3>
-                <p className="text-text-secondary">
+              <div className="fx-card h-full p-7 md:p-8">
+                <div className="feature-icon text-2xl mb-6" style={{ width: 56, height: 56 }}>
+                  <span>🖥️</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Free VPS Hosting</h3>
+                <p style={{ color: 'var(--fx-text-2)' }}>
                   Run your Expert Advisors 24/7 with our complimentary VPS hosting service.
                 </p>
-              </Card>
+              </div>
             </ScrollRevealItem>
             <ScrollRevealItem>
-              <Card>
-                <div className="text-4xl mb-4">⚡</div>
-                <h3 className="text-xl font-semibold text-white mb-3">Raw Spreads</h3>
-                <p className="text-text-secondary">
+              <div className="fx-card h-full p-7 md:p-8">
+                <div className="feature-icon text-2xl mb-6" style={{ width: 56, height: 56 }}>
+                  <span>⚡</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Raw Spreads</h3>
+                <p style={{ color: 'var(--fx-text-2)' }}>
                   Access institutional-grade pricing with spreads from 0.0 pips on major pairs.
                 </p>
-              </Card>
+              </div>
             </ScrollRevealItem>
           </ScrollRevealGroup>
         </div>
       </section>
 
-      <section className="section-padding bg-gradient-hero">
-        <div className="container-custom text-center">
+      {/* ── Final CTA ────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-4xl font-bold text-white mb-6">Elevate Your Trading</h2>
-            <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Join the elite. Open a Pro Account and experience professional-grade trading.
-            </p>
-            <Link to="/accounts/demo">
-              <Button variant="primary">Open Pro Account</Button>
-            </Link>
+            <div className="fx-section-frame text-center">
+              <div className="fx-glow-gold" />
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mb-6">Elevate Your Trading</h2>
+              <p className="text-lg md:text-xl mb-9 max-w-2xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
+                Join the elite. Open a Pro Account and experience professional-grade trading.
+              </p>
+              <div className="flex justify-center">
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Pro Account</Button>
+                </Link>
+              </div>
+            </div>
           </ScrollReveal>
         </div>
       </section>

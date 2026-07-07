@@ -1,5 +1,4 @@
-﻿import { Coins, Gauge, CheckCircle2, Sparkles } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Coins, Gauge, CheckCircle2, Sparkles } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const fundedFeatures = [
@@ -18,117 +17,90 @@ export default function FxTradingModes() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Trading Modes"
-          title="Flexible Trading Built Around Your Strategy"
-          highlight="Your Strategy"
-          subtitle="Two ways to trade. Same platform, same fair rules â€” pick whichever matches how much risk you're willing to carry today."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* â”€â”€ Fully Funded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
           <ScrollReveal variant="fadeUp">
-            <div
-              className="relative h-full rounded-2xl overflow-hidden p-8 md:p-9"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(74,222,128,0.10) 0%, rgba(74,222,128,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(74,222,128,0.30)',
-              }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{
-                      background: 'rgba(74,222,128,0.18)',
-                      border: '1px solid rgba(74,222,128,0.4)',
-                    }}
-                  >
-                    <Coins size={22} style={{ color: '#4ade80' }} />
-                  </div>
-                  <h3 className="text-2xl md:text-[26px] font-bold text-white">
-                    Fully Funded Trading
-                  </h3>
+            <div>
+              <span className="fx-eyebrow mb-5">Trading Modes</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Flexible Trading Built Around <span className="gradient-text">Your Strategy</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Two ways to trade. Same platform, same fair rules — pick whichever matches how much risk you're willing to carry today.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold tile + dark tile + image tile ─────── */}
+        <div className="fx-bento grid-cols-1 md:grid-cols-3 mt-10 md:mt-14 items-stretch">
+          {/* Fully Funded — solid gold accent tile */}
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div className="relative z-[1] flex items-center justify-between mb-6">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                >
+                  <Coins size={22} style={{ color: '#1c1608' }} />
                 </div>
                 <span
                   className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
-                  style={{
-                    background: 'rgba(74,222,128,0.15)',
-                    color: '#4ade80',
-                    border: '1px solid rgba(74,222,128,0.35)',
-                  }}
+                  style={{ background: 'rgba(28,22,8,0.14)', color: '#1c1608', border: '1px solid rgba(28,22,8,0.2)' }}
                 >
                   Safer Approach
                 </span>
               </div>
-
-              <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <h3 className="relative z-[1] text-2xl md:text-[26px] font-bold mb-3" style={{ color: '#1c1608' }}>
+                Fully Funded Trading
+              </h3>
+              <p className="relative z-[1] text-base mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
                 Trade using your available capital without leverage.
               </p>
-
-              <ul className="space-y-3">
+              <ul className="relative z-[1] space-y-3 mt-auto">
                 {fundedFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: '#4ade80' }} />
-                    <span className="text-sm md:text-[15px] text-white">{f}</span>
+                    <CheckCircle2 size={18} style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{f}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </ScrollReveal>
 
-          {/* â”€â”€ Leveraged â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-          <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div
-              className="relative h-full rounded-2xl overflow-hidden p-8 md:p-9"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(96,165,250,0.10) 0%, rgba(96,165,250,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(96,165,250,0.30)',
-              }}
-            >
+          {/* Leveraged — dark tile with gold accent bar */}
+          <ScrollReveal variant="fadeUp" delay={0.08}>
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{
-                      background: 'rgba(96,165,250,0.18)',
-                      border: '1px solid rgba(96,165,250,0.4)',
-                    }}
-                  >
-                    <Gauge size={22} style={{ color: '#60a5fa' }} />
-                  </div>
-                  <h3 className="text-2xl md:text-[26px] font-bold text-white">
-                    Leveraged Trading
-                  </h3>
+                <div className="feature-icon" style={{ width: 48, height: 48 }}>
+                  <Gauge size={22} />
                 </div>
                 <span
                   className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5"
-                  style={{
-                    background: 'rgba(96,165,250,0.15)',
-                    color: '#60a5fa',
-                    border: '1px solid rgba(96,165,250,0.35)',
-                  }}
+                  style={{ background: 'rgba(214,169,61,0.12)', color: 'var(--fx-gold-light)', border: '1px solid rgba(214,169,61,0.32)' }}
                 >
                   <Sparkles size={11} />
                   Advanced Mode
                 </span>
               </div>
-
+              <span className="fx-accent-bar mb-4" />
+              <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3">
+                Leveraged Trading
+              </h3>
               <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 Access larger positions using leverage based on your preference.
               </p>
-
               <ul className="space-y-3">
                 {leveragedFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: '#60a5fa' }} />
+                    <CheckCircle2 size={18} style={{ color: 'var(--fx-gold-light)' }} />
                     <span className="text-sm md:text-[15px] text-white">{f}</span>
                   </li>
                 ))}
               </ul>
-
               <p
                 className="mt-6 pt-5 text-xs italic"
                 style={{ borderTop: '1px solid var(--fx-line)', color: 'var(--fx-text-3)' }}
@@ -137,7 +109,13 @@ export default function FxTradingModes() {
               </p>
             </div>
           </ScrollReveal>
-        </div>
+
+          {/* Image tile — empty space reserved for a real visual */}
+          <ScrollReveal variant="fadeUp" delay={0.16}>
+            <div className="fx-tile-media h-full min-h-[300px]">
+              <span className="fx-tile-media-label">Image</span>
+            </div>
+          </ScrollReveal>
         </div>
       </div>
     </section>

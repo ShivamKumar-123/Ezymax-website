@@ -695,6 +695,188 @@
 
 canvas { display: block; }
 
+/* ============================================================
+   Reference BENTO system — bold agency-style tiles.
+   Modeled directly on the reference decks: asymmetric bento
+   grids, one solid-gold accent block per grid, image tiles
+   with the title overlaid at the bottom + a short gold accent
+   bar, and big-number "growth" cards with a faux chart curve.
+   All gold — same brand palette as the rest of the system.
+   ============================================================ */
+
+/* Bento grid: pair with Tailwind grid-cols-* / row spans in markup */
+.landing-root .fx-bento {
+  display: grid;
+  gap: 1.25rem;
+}
+@media (min-width: 768px) { .landing-root .fx-bento { gap: 1.5rem; } }
+
+/* ── Base tile ─────────────────────────────────────────────── */
+.landing-root .fx-tile {
+  position: relative;
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  transition: transform .4s cubic-bezier(.2,.7,.2,1),
+              border-color .4s ease, box-shadow .4s ease;
+}
+.landing-root .fx-tile:hover {
+  transform: translateY(-4px);
+  border-color: rgba(214, 169, 61, 0.30);
+  box-shadow: 0 34px 70px -34px rgba(0,0,0,.85),
+              0 0 0 1px rgba(214,169,61,0.08) inset;
+}
+
+/* ── Solid gold accent tile (the reference's single color block) */
+.landing-root .fx-tile-gold {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(155deg, #f2d477 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #1c1608;
+  box-shadow: 0 26px 60px -30px rgba(214,169,61,0.55);
+  transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease;
+}
+.landing-root .fx-tile-gold:hover { transform: translateY(-4px); }
+.landing-root .fx-tile-gold::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,0.35), rgba(255,255,255,0) 55%);
+}
+
+/* ── Short gold accent bar placed above a card title ───────── */
+.landing-root .fx-accent-bar {
+  display: block;
+  width: 46px; height: 3px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold));
+  box-shadow: 0 0 14px rgba(214,169,61,0.55);
+}
+.landing-root .fx-tile-gold .fx-accent-bar {
+  background: #1c1608; box-shadow: none;
+}
+
+/* ── Media / image tile: image fills, title overlaid bottom ── */
+.landing-root .fx-tile-media {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(120% 90% at 50% 20%, rgba(214,169,61,0.14), rgba(214,169,61,0) 60%),
+    linear-gradient(180deg, rgba(30,32,37,1) 0%, rgba(15,16,19,1) 100%);
+  min-height: 260px;
+  transition: transform .4s cubic-bezier(.2,.7,.2,1),
+              border-color .4s ease, box-shadow .4s ease;
+}
+.landing-root .fx-tile-media:hover {
+  transform: translateY(-4px);
+  border-color: rgba(214, 169, 61, 0.30);
+  box-shadow: 0 34px 70px -34px rgba(0,0,0,.85);
+}
+/* corner brackets: signals "real image lands here" */
+.landing-root .fx-tile-media::before,
+.landing-root .fx-tile-media::after {
+  content: '';
+  position: absolute; width: 20px; height: 20px;
+  border-color: rgba(214,169,61,0.45); border-style: solid; border-width: 0;
+  pointer-events: none; z-index: 3;
+}
+.landing-root .fx-tile-media::before {
+  top: 14px; left: 14px;
+  border-top-width: 1.5px; border-left-width: 1.5px; border-top-left-radius: 6px;
+}
+.landing-root .fx-tile-media::after {
+  bottom: 14px; right: 14px;
+  border-bottom-width: 1.5px; border-right-width: 1.5px; border-bottom-right-radius: 6px;
+}
+/* dark scrim so overlaid text stays legible */
+.landing-root .fx-tile-media-scrim {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(8,9,11,0) 40%, rgba(8,9,11,0.55) 70%, rgba(8,9,11,0.94) 100%);
+}
+/* centred dim "IMAGE" watermark label */
+.landing-root .fx-tile-media-label {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(214,169,61,0.5);
+  font-size: .62rem; font-weight: 700; letter-spacing: .28em; text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* ── Big-number "growth" tile with faux chart curve ────────── */
+.landing-root .fx-stat-chart {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(214, 169, 61, 0.22);
+  background:
+    radial-gradient(120% 80% at 20% 0%, rgba(214,169,61,0.16), rgba(214,169,61,0) 55%),
+    linear-gradient(180deg, rgba(24,22,16,1) 0%, rgba(13,12,10,1) 100%);
+  min-height: 220px;
+  transition: transform .4s cubic-bezier(.2,.7,.2,1),
+              border-color .4s ease, box-shadow .4s ease;
+}
+.landing-root .fx-stat-chart:hover {
+  transform: translateY(-4px);
+  border-color: rgba(214, 169, 61, 0.42);
+  box-shadow: 0 30px 60px -30px rgba(214,169,61,0.32);
+}
+/* jagged gold mountain silhouette (like the reference growth cards) */
+.landing-root .fx-chart-curve {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 72%;
+  z-index: 0; pointer-events: none; opacity: .6;
+  background: linear-gradient(180deg, rgba(236,198,87,0.9) 0%, rgba(214,169,61,0.15) 100%);
+  clip-path: polygon(0 100%, 0 66%, 10% 72%, 22% 44%, 34% 60%, 46% 30%,
+                     58% 52%, 70% 32%, 82% 54%, 92% 38%, 100% 50%, 100% 100%);
+}
+
+/* ── Play button (media / video placeholder) ───────────────── */
+.landing-root .fx-play-btn {
+  width: 64px; height: 64px; border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold));
+  color: #1a1408;
+  box-shadow: 0 14px 44px rgba(214,169,61,0.5), 0 0 0 8px rgba(214,169,61,0.10);
+  transition: transform .2s ease, filter .2s ease;
+}
+.landing-root .fx-play-btn:hover { transform: scale(1.06); filter: brightness(1.05); }
+
+/* ── Marquee strip (repeating-label ticker row) ────────────── */
+.landing-root .fx-marquee-strip {
+  position: relative;
+  overflow: hidden;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--fx-line);
+  border-bottom: 1px solid var(--fx-line);
+  background: var(--fx-bg-elev);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.landing-root .fx-marquee-strip .fx-marquee-item {
+  display: inline-flex; align-items: center; gap: 1rem;
+  font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--fx-text-2);
+  text-transform: uppercase;
+}
+.landing-root .fx-marquee-strip .fx-marquee-dot {
+  width: 6px; height: 6px; border-radius: 9999px; background: var(--fx-gold);
+  box-shadow: 0 0 10px rgba(214,169,61,0.7);
+  display: inline-block;
+}
+
+/* ── Two-column section intro (reference "How I Approach") ─── */
+.landing-root .fx-split-intro {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem 3rem;
+  align-items: end;
+}
+@media (min-width: 900px) {
+  .landing-root .fx-split-intro { grid-template-columns: 1.1fr 1fr; }
+}
+
 /* ── Reduced motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .fx-fade-up,

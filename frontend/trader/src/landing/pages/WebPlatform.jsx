@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Check, Globe, Zap, BarChart3, Bell } from 'lucide-react'
 import Button from '../components/Button'
-import FeatureCard from '../components/FeatureCard'
+import SectionHeader from '../components/SectionHeader'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const WebPlatform = () => {
@@ -43,91 +43,115 @@ const WebPlatform = () => {
 
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              FXArtha Web Platform — Trade Instantly, Anywhere
-            </h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              No download required. Launch the platform from any browser and start trading in seconds.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="primary" icon>Launch Platform</Button>
-              <Link to="/accounts/demo">
-                <Button variant="ghost">Try Demo Account</Button>
-              </Link>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
-              Everything You Need in One Platform
-            </h2>
-          </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <ScrollRevealItem key={index}>
-                <FeatureCard {...feature} />
-              </ScrollRevealItem>
-            ))}
-          </ScrollRevealGroup>
-        </div>
-      </section>
-
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <ScrollReveal variant="fadeLeft">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                  Professional Trading, Simplified
-                </h2>
-                <p className="text-text-secondary text-lg mb-8">
-                  Our web platform combines powerful features with an intuitive interface. Whether you're a beginner or experienced trader, you'll find everything you need to succeed.
+                <span className="fx-eyebrow mb-6">Platform</span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">
+                  FXArtha Web Platform — Trade Instantly, Anywhere
+                </h1>
+                <p className="text-lg md:text-xl max-w-xl mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                  No download required. Launch the platform from any browser and start trading in seconds.
                 </p>
-                <div className="space-y-3">
-                  {highlights.map((highlight, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Check className="w-6 h-6 text-primary-accent flex-shrink-0 mt-1" />
-                      <span className="text-text-secondary">{highlight}</span>
-                    </div>
-                  ))}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button variant="primary" icon>Launch Platform</Button>
+                  <Link to="/accounts/demo">
+                    <Button variant="ghost">Try Demo Account</Button>
+                  </Link>
                 </div>
               </div>
             </ScrollReveal>
-            <ScrollReveal variant="fadeRight" delay={0.2}>
-              <div className="glass-card overflow-hidden">
-                <div className="aspect-video rounded-t-lg overflow-hidden">
-                  <img src="/images/image2.png" alt="FXArtha Web Platform" className="w-full h-full object-cover" />
-                </div>
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold text-white mb-4">Access Anywhere</h3>
-                  <p className="text-text-secondary mb-6">
-                    Trade from your desktop, laptop, tablet, or smartphone. Your account syncs seamlessly across all devices.
-                  </p>
-                  <Button variant="primary" className="w-full" icon>Launch Web Platform</Button>
-                </div>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Platform Preview</span>
               </div>
             </ScrollReveal>
           </div>
         </div>
       </section>
 
-      <section className="section-padding bg-gradient-hero">
-        <div className="container-custom text-center">
+      {/* ── Features ─────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <SectionHeader title="Everything You Need in One Platform" highlight="One Platform" />
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 md:mt-16">
+            {features.map((feature, index) => {
+              const Icon = feature.icon
+              const isAccent = index === 0
+              return (
+                <ScrollRevealItem key={index}>
+                  <div className={`${isAccent ? 'fx-card-gold' : 'fx-card'} h-full p-7 md:p-8`}>
+                    <div className="feature-icon mb-6" style={{ width: 56, height: 56 }}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+                    <p style={{ color: 'var(--fx-text-2)' }}>{feature.description}</p>
+                  </div>
+                </ScrollRevealItem>
+              )
+            })}
+          </ScrollRevealGroup>
+        </div>
+      </section>
+
+      {/* ── Professional Trading / Overview ──────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Overview</span>
+                <h2 className="fx-headline text-3xl md:text-4xl mt-5 mb-6">
+                  Professional Trading, Simplified
+                </h2>
+                <p className="text-lg mb-8" style={{ color: 'var(--fx-text-2)' }}>
+                  Our web platform combines powerful features with an intuitive interface. Whether you're a beginner or experienced trader, you'll find everything you need to succeed.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {highlights.map((highlight, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <Check className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--fx-gold-light)' }} />
+                      <span style={{ color: 'var(--fx-text-2)' }}>{highlight}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.15}>
+              <div className="fx-card p-7 md:p-8">
+                <div className="fx-image-slot fx-image-slot-16x9 mb-8">
+                  <span className="fx-image-slot-label">Platform Visual</span>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Access Anywhere</h3>
+                <p className="mb-6" style={{ color: 'var(--fx-text-2)' }}>
+                  Trade from your desktop, laptop, tablet, or smartphone. Your account syncs seamlessly across all devices.
+                </p>
+                <Button variant="primary" className="w-full" icon>Launch Web Platform</Button>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-4xl font-bold text-white mb-6">Start Trading in Seconds</h2>
-            <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              No downloads, no installations. Just open your browser and start trading.
-            </p>
-            <Link to="/accounts/demo">
-              <Button variant="primary">Open Account Now</Button>
-            </Link>
+            <div className="fx-section-frame text-center">
+              <div className="fx-glow-gold" />
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mb-6">Start Trading in Seconds</h2>
+              <p className="text-lg md:text-xl mb-9 max-w-2xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
+                No downloads, no installations. Just open your browser and start trading.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/accounts/demo">
+                  <Button variant="primary">Open Account Now</Button>
+                </Link>
+              </div>
+            </div>
           </ScrollReveal>
         </div>
       </section>

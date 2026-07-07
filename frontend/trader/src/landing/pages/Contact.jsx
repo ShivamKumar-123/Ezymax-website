@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Mail, MapPin, Send, MessageCircle, X } from 'lucide-react'
+import { Mail, MapPin, Send, X } from 'lucide-react'
 import Button from '../components/Button'
-import Card from '../components/Card'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const Contact = () => {
@@ -65,117 +64,142 @@ const Contact = () => {
     }
   ]
 
+  const inputClass = 'w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors focus:outline-none'
+  const inputStyle = {
+    background: 'var(--fx-bg-elev-2)',
+    border: '1px solid var(--fx-line-strong)',
+    color: 'var(--fx-text)'
+  }
+
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container text-center">
           <ScrollReveal variant="fadeUp">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Get in Touch</h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto">
+            <span className="fx-eyebrow mb-6">Contact</span>
+            <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">Get in Touch</h1>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
               Have a question? Our team is here to help. Reach out to us anytime.
             </p>
           </ScrollReveal>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
+      {/* ── Contact info + form ──────────────────────────────── */}
+      <section className="fx-section" style={{ paddingTop: 0, background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <ScrollRevealGroup className="grid md:grid-cols-1 max-w-sm mx-auto gap-8 mb-16">
             {contactInfo.map((info, index) => (
               <ScrollRevealItem key={index}>
-                <Card className="text-center p-8">
-                  <info.icon className="w-12 h-12 text-primary-accent mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">{info.title}</h3>
-                  <a href={info.link} className="text-text-secondary hover:text-primary-accent transition-colors">
+                <div className="fx-card p-6 text-center">
+                  <div className="feature-icon mx-auto mb-4">
+                    <info.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--fx-text)' }}>{info.title}</h3>
+                  <a
+                    href={info.link}
+                    className="transition-colors hover:text-[var(--fx-gold-light)]"
+                    style={{ color: 'var(--fx-text-2)' }}
+                  >
                     {info.content}
                   </a>
-                </Card>
+                </div>
               </ScrollRevealItem>
             ))}
           </ScrollRevealGroup>
 
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            {/* ── Message form ─────────────────────────────── */}
             <ScrollReveal variant="fadeLeft">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-6">Send Us a Message</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-text-secondary mb-2">Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-accent transition-colors"
-                      placeholder="Your name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-text-secondary mb-2">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-accent transition-colors"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-text-secondary mb-2">Subject</label>
-                    <select
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-accent transition-colors"
-                    >
-                      <option value="">Select a subject</option>
-                      <option value="general">General Inquiry</option>
-                      <option value="account">Account Support</option>
-                      <option value="technical">Technical Issue</option>
-                      <option value="partnership">Partnership</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-text-secondary mb-2">Message</label>
-                    <textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      rows="6"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-accent transition-colors resize-none"
-                      placeholder="How can we help you?"
-                    ></textarea>
-                  </div>
-                  <Button type="submit" variant="primary" noPopup className="w-full flex items-center justify-center gap-2">
-                    <Send className="w-5 h-5" />
-                    Send Message
-                  </Button>
-                </form>
+                <h2 className="fx-headline text-3xl md:text-4xl mb-6">Send Us a Message</h2>
+                <div className="fx-section-frame">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm mb-2" style={{ color: 'var(--fx-text-2)' }}>Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className={`${inputClass} focus:border-[var(--fx-gold-light)]`}
+                        style={inputStyle}
+                        placeholder="Your name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2" style={{ color: 'var(--fx-text-2)' }}>Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className={`${inputClass} focus:border-[var(--fx-gold-light)]`}
+                        style={inputStyle}
+                        placeholder="your@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2" style={{ color: 'var(--fx-text-2)' }}>Subject</label>
+                      <select
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleChange}
+                        required
+                        className={`${inputClass} focus:border-[var(--fx-gold-light)]`}
+                        style={inputStyle}
+                      >
+                        <option value="">Select a subject</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="account">Account Support</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="partnership">Partnership</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2" style={{ color: 'var(--fx-text-2)' }}>Message</label>
+                      <textarea
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        required
+                        rows="6"
+                        className={`${inputClass} focus:border-[var(--fx-gold-light)] resize-none`}
+                        style={inputStyle}
+                        placeholder="How can we help you?"
+                      ></textarea>
+                    </div>
+                    <Button type="submit" variant="primary" noPopup className="w-full flex items-center justify-center gap-2">
+                      <Send className="w-5 h-5" />
+                      Send Message
+                    </Button>
+                  </form>
+                </div>
               </div>
             </ScrollReveal>
 
+            {/* ── Office + map ─────────────────────────────── */}
             <ScrollReveal variant="fadeRight" delay={0.2}>
               <div>
-                <h2 className="text-3xl font-bold text-white mb-6">Our Office</h2>
-                <Card className="p-8 mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">FXArtha Ltd</h3>
+                <h2 className="fx-headline text-3xl md:text-4xl mb-6">Our Office</h2>
+                <div className="fx-card p-6 mb-6">
+                  <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--fx-text)' }}>FXArtha Ltd</h3>
                   <div className="space-y-2">
-                    <p className="text-text-secondary">
-                      <span className="text-white font-semibold">Email:</span> support@fxartha.com
+                    <p style={{ color: 'var(--fx-text-2)' }}>
+                      <span className="font-semibold" style={{ color: 'var(--fx-text)' }}>Email:</span> support@fxartha.com
                     </p>
-                    <p className="text-text-secondary">
-                      <span className="text-white font-semibold">Hours:</span> Mon-Fri, 9:00 AM - 6:00 PM GMT
+                    <p style={{ color: 'var(--fx-text-2)' }}>
+                      <span className="font-semibold" style={{ color: 'var(--fx-text)' }}>Hours:</span> Mon-Fri, 9:00 AM - 6:00 PM GMT
                     </p>
                   </div>
-                </Card>
+                </div>
 
-                <div className="glass-card p-8 aspect-video bg-gradient-primary/10 flex items-center justify-center">
-                  <MapPin className="w-24 h-24 text-primary-accent" />
+                <div className="fx-image-slot fx-image-slot-16x9 flex items-center justify-center">
+                  <MapPin className="w-24 h-24" style={{ color: 'var(--fx-gold-light)' }} />
+                  <span className="fx-image-slot-label">Map</span>
                 </div>
               </div>
             </ScrollReveal>
@@ -185,30 +209,31 @@ const Contact = () => {
 
       {isChatOpen && (
         <div className="fixed bottom-6 right-6 z-[100] w-[calc(100vw-3rem)] sm:w-96 animate-fade-in">
-          <div className="glass-card overflow-hidden flex flex-col h-[500px] shadow-2xl">
-            <div className="bg-gradient-primary p-4 flex items-center justify-between">
+          <div className="fx-card overflow-hidden flex flex-col h-[500px] shadow-2xl">
+            <div className="p-4 flex items-center justify-between" style={{ background: 'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%)' }}>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-white">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold" style={{ color: '#1a1408' }}>
                     S
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
                 </div>
                 <div>
-                  <div className="font-semibold text-white">Sarah — Support</div>
-                  <div className="text-xs text-white/80">Online • Typically replies instantly</div>
+                  <div className="font-semibold" style={{ color: '#1a1408' }}>Sarah — Support</div>
+                  <div className="text-xs" style={{ color: 'rgba(26,20,8,0.75)' }}>Online • Typically replies instantly</div>
                 </div>
               </div>
               <button
                 onClick={() => setIsChatOpen(false)}
-                className="text-white/80 hover:text-white transition-colors"
+                className="transition-colors"
+                style={{ color: 'rgba(26,20,8,0.75)' }}
                 aria-label="Close chat"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-primary-bg/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: 'var(--fx-bg)' }}>
               {messages.map((msg, i) => (
                 <div
                   key={i}
@@ -216,10 +241,13 @@ const Contact = () => {
                 >
                   <div
                     className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm ${
-                      msg.from === 'user'
-                        ? 'bg-primary-accent text-white rounded-br-sm'
-                        : 'bg-white/10 text-white rounded-bl-sm'
+                      msg.from === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'
                     }`}
+                    style={
+                      msg.from === 'user'
+                        ? { background: 'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%)', color: '#1a1408' }
+                        : { background: 'var(--fx-bg-elev-2)', color: 'var(--fx-text)' }
+                    }
                   >
                     {msg.text}
                   </div>
@@ -230,21 +258,24 @@ const Contact = () => {
 
             <form
               onSubmit={handleSendChat}
-              className="p-3 border-t border-white/10 bg-primary-secondary flex items-center gap-2"
+              className="p-3 flex items-center gap-2"
+              style={{ borderTop: '1px solid var(--fx-line)', background: 'var(--fx-bg-elev)' }}
             >
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white placeholder:text-text-secondary focus:outline-none focus:border-primary-accent transition-colors text-sm"
+                className="flex-1 rounded-full px-4 py-2 text-sm outline-none transition-colors focus:outline-none focus:border-[var(--fx-gold-light)]"
+                style={{ background: 'var(--fx-bg-elev-2)', border: '1px solid var(--fx-line-strong)', color: 'var(--fx-text)' }}
               />
               <button
                 type="submit"
-                className="w-10 h-10 bg-primary-accent hover:bg-primary-accent/80 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:-translate-y-px flex-shrink-0"
+                style={{ background: 'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%)' }}
                 aria-label="Send"
               >
-                <Send className="w-4 h-4 text-white" />
+                <Send className="w-4 h-4" style={{ color: '#1a1408' }} />
               </button>
             </form>
           </div>
