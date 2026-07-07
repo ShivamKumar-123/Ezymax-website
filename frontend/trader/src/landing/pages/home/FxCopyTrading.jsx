@@ -1,6 +1,5 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ArrowRight, Copy, Star, Users } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const traders = [
@@ -14,81 +13,85 @@ export default function FxCopyTrading() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Copy Trading"
-          title="Access Experience Without Guesswork"
-          highlight="Without Guesswork"
-          subtitle="Pick a trader whose track record you actually trust. Their trades mirror into your account automatically, at your size, pause whenever you want."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* â”€â”€ Left content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Copy Trading</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Access Experience <span className="gradient-text">Without Guesswork</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Pick a trader whose track record you actually trust. Their trades mirror into your account automatically, at your size, pause whenever you want.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold tile + dark table tile ────────────── */}
+        <div className="fx-bento grid-cols-1 lg:grid-cols-12 mt-10 md:mt-14 items-stretch">
+          {/* Follow proven strategies — solid gold accent tile */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <div className="feature-icon mb-5">
-                <Copy size={20} />
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div className="relative z-[1] mb-5">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                >
+                  <Copy size={20} style={{ color: '#1c1608' }} />
+                </div>
               </div>
-              <h3 className="text-2xl md:text-[28px] font-bold text-white mb-4 leading-tight">
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <h3 className="relative z-[1] text-2xl md:text-[28px] font-bold mb-4 leading-tight" style={{ color: '#1c1608' }}>
                 Follow proven strategies, automatically
               </h3>
-              <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
+              <p className="relative z-[1] text-base mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
                 Select traders based on performance and replicate their strategies automatically.
               </p>
 
-              <div className="grid grid-cols-2 gap-3 mb-7">
+              <div className="relative z-[1] grid grid-cols-2 gap-3 mb-7">
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: 'rgba(214,169,61,0.06)',
-                    border: '1px solid rgba(214,169,61,0.22)',
+                    background: 'rgba(28,22,8,0.10)',
+                    border: '1px solid rgba(28,22,8,0.2)',
                   }}
                 >
-                  <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+                  <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'rgba(28,22,8,0.6)' }}>
                     For Users
                   </div>
-                  <div className="text-sm text-white font-medium leading-snug">
+                  <div className="text-sm font-medium leading-snug" style={{ color: '#1c1608' }}>
                     Follow structured strategies, reduce decision complexity.
                   </div>
                 </div>
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: 'rgba(214,169,61,0.06)',
-                    border: '1px solid rgba(214,169,61,0.22)',
+                    background: 'rgba(28,22,8,0.10)',
+                    border: '1px solid rgba(28,22,8,0.2)',
                   }}
                 >
-                  <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+                  <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'rgba(28,22,8,0.6)' }}>
                     For Traders
                   </div>
-                  <div className="text-sm text-white font-medium leading-snug">
+                  <div className="text-sm font-medium leading-snug" style={{ color: '#1c1608' }}>
                     Share strategies, earn based on performance.
                   </div>
                 </div>
               </div>
 
-              <Link to="/social" className="fx-btn-primary">
+              <Link to="/social" className="fx-btn-primary relative z-[1] mt-auto">
                 Explore Copy Trading
                 <ArrowRight size={16} />
               </Link>
             </div>
           </ScrollReveal>
 
-          {/* â”€â”€ Right traders table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* Traders leaderboard — dark tile (semantic data colors kept) */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-7">
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
+            <div className="fx-tile h-full overflow-hidden">
               <div
                 className="grid grid-cols-12 px-5 md:px-6 py-4 text-[11px] font-bold uppercase tracking-[0.18em]"
                 style={{
@@ -183,7 +186,6 @@ export default function FxCopyTrading() {
             &ldquo;Strategy over speculation.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

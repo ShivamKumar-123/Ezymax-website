@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { Users, BarChart2, Settings, ShieldCheck, ArrowLeft } from 'lucide-react'
-import Card from '../components/Card'
 import Button from '../components/Button'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
@@ -34,36 +33,53 @@ const adminCards = [
 const SuperAdmin = () => {
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition-colors mb-8"
+            className="inline-flex items-center gap-2 mb-8 transition-colors hover:text-white"
+            style={{ color: 'var(--fx-text-2)' }}
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
 
-          <ScrollReveal variant="fadeUp">
-            <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Super Admin Panel
-              </h1>
-              <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-                Manage and monitor all FXArtha operations from one central dashboard.
-              </p>
-            </div>
-          </ScrollReveal>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Super Admin Panel</span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">
+                  Super Admin Panel
+                </h1>
+                <p className="text-lg md:text-xl max-w-xl" style={{ color: 'var(--fx-text-2)' }}>
+                  Manage and monitor all FXArtha operations from one central dashboard.
+                </p>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Admin Console</span>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
 
+      {/* ── Admin tools ──────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
           <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {adminCards.map((card, i) => (
               <ScrollRevealItem key={i}>
-                <Card className="p-8 hover:-translate-y-1 transition-all duration-300">
-                  <card.icon className="w-12 h-12 text-primary-accent mb-4" />
+                <div className="fx-card p-7 md:p-8 h-full">
+                  <div className="feature-icon mb-5">
+                    <card.icon className="w-6 h-6" />
+                  </div>
                   <h3 className="text-xl font-semibold text-white mb-3">{card.title}</h3>
-                  <p className="text-text-secondary mb-6">{card.description}</p>
+                  <p className="mb-6" style={{ color: 'var(--fx-text-2)' }}>{card.description}</p>
                   <Button variant="primary">{card.cta}</Button>
-                </Card>
+                </div>
               </ScrollRevealItem>
             ))}
           </ScrollRevealGroup>

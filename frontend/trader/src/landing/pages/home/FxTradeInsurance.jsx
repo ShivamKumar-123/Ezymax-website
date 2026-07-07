@@ -1,6 +1,5 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ShieldCheck, ArrowRight, CheckCircle2, Info } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const benefits = [
@@ -10,79 +9,76 @@ const benefits = [
 ]
 
 const tiers = [
-  { name: 'Minimal',  cover: '15%', cap: '$250',  accent: 'rgba(148,163,184,0.6)' },
-  { name: 'Standard', cover: '30%', cap: '$750',  accent: 'rgba(96,165,250,0.7)' },
-  { name: 'Advanced', cover: '50%', cap: '$2,000', accent: 'rgba(167,139,250,0.7)' },
-  { name: 'Max',      cover: '75%', cap: '$5,000', accent: 'rgba(236,198,87,0.85)' },
+  { name: 'Minimal',  cover: '15%', cap: '$250' },
+  { name: 'Standard', cover: '30%', cap: '$750' },
+  { name: 'Advanced', cover: '50%', cap: '$2,000' },
+  { name: 'Max',      cover: '75%', cap: '$5,000' },
 ]
 
 export default function FxTradeInsurance() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Trade Insurance"
-          title="Add an Extra Layer of Protection"
-          highlight="Protection"
-          subtitle="Before you place a trade you can flip on a cushion that absorbs part of the loss if it goes wrong."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10 items-stretch">
-          {/* â”€â”€ Left content (40%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Trade Insurance</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Add an Extra Layer of <span className="gradient-text">Protection</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Before you place a trade you can flip on a cushion that absorbs part of the loss if it goes wrong.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold tile + 2x2 stat-chart grid ────────── */}
+        <div className="fx-bento grid-cols-1 lg:grid-cols-5 mt-12 md:mt-16 items-stretch">
+          {/* ── Gold accent block ─────────────────────────────── */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-2">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background: 'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <div className="feature-icon mb-5">
-                <ShieldCheck size={20} />
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div
+                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+              >
+                <ShieldCheck size={20} style={{ color: '#1c1608' }} />
               </div>
-              <h3 className="text-2xl md:text-[28px] font-bold text-white mb-4 leading-tight">
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <h3 className="relative z-[1] text-2xl md:text-[28px] font-bold mb-4 leading-tight" style={{ color: '#1c1608' }}>
                 Activate before placing a trade
               </h3>
-              <p className="text-sm md:text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
+              <p className="relative z-[1] text-sm md:text-base mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
                 Reduce downside risk by enabling protection on eligible trades. Based on
-                defined trading rules â€” no hedging required.
+                defined trading rules — no hedging required.
               </p>
 
-              <ul className="space-y-3 mb-7">
+              <ul className="relative z-[1] space-y-3 mb-7">
                 {benefits.map((b) => (
                   <li key={b} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm text-white">{b}</span>
+                    <CheckCircle2 size={18} style={{ color: '#1c1608' }} />
+                    <span className="text-sm font-medium" style={{ color: '#1c1608' }}>{b}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link to="/insurance" className="fx-btn-primary">
+              <Link to="/insurance" className="fx-btn-primary relative z-[1] mt-auto">
                 Explore Trade Protection
                 <ArrowRight size={16} />
               </Link>
             </div>
           </ScrollReveal>
 
-          {/* â”€â”€ Right tier grid (60%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ── Right: 2x2 stat-chart tier grid ───────────────── */}
           <div className="lg:col-span-3 grid grid-cols-2 gap-4 md:gap-5">
             {tiers.map((tier, i) => (
               <ScrollReveal key={tier.name} variant="fadeUp" delay={i * 0.06}>
-                <div
-                  className="relative h-full rounded-2xl p-5 md:p-6 overflow-hidden"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg) 100%)',
-                    border: `1px solid ${tier.accent}`,
-                  }}
-                >
-                  <div
-                    className="absolute -top-px left-[18%] right-[18%] h-px"
-                    style={{
-                      background: `linear-gradient(90deg, transparent, ${tier.accent}, transparent)`,
-                    }}
-                  />
-                  <div className="flex items-center justify-between mb-5">
+                <div className="fx-stat-chart h-full p-5 md:p-6 flex flex-col">
+                  <div className="fx-chart-curve" />
+                  <div className="relative z-[1] flex items-center justify-between mb-5">
                     <span
                       className="text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: 'var(--fx-text-3)' }}
@@ -91,25 +87,25 @@ export default function FxTradeInsurance() {
                     </span>
                     <span
                       className="text-[11px] font-bold uppercase tracking-[0.22em]"
-                      style={{ color: tier.accent }}
+                      style={{ color: 'var(--fx-gold-light)' }}
                     >
                       {tier.name}
                     </span>
                   </div>
 
-                  <div className="mb-4">
+                  <div className="relative z-[1] mb-4">
                     <div
                       className="text-[11px] uppercase tracking-wider mb-1"
                       style={{ color: 'var(--fx-text-3)' }}
                     >
                       Loss Cover
                     </div>
-                    <div className="text-3xl md:text-4xl font-bold gradient-text">
+                    <div className="text-4xl font-bold gradient-text">
                       {tier.cover}
                     </div>
                   </div>
                   <div
-                    className="pt-3 flex justify-between items-center"
+                    className="relative z-[1] mt-auto pt-3 flex justify-between items-center"
                     style={{ borderTop: '1px solid var(--fx-line)' }}
                   >
                     <span className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
@@ -128,7 +124,7 @@ export default function FxTradeInsurance() {
             className="mt-8 text-center text-xs md:text-sm inline-flex items-center gap-2 justify-center w-full"
             style={{ color: 'var(--fx-text-3)' }}
           >
-            <Info size={14} /> Applicable on eligible trades Â· No hedging Â· Trade conditions apply
+            <Info size={14} /> Applicable on eligible trades · No hedging · Trade conditions apply
           </p>
         </ScrollReveal>
 
@@ -140,7 +136,6 @@ export default function FxTradeInsurance() {
             &ldquo;Trade with awareness. Not uncertainty.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

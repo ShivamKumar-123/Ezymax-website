@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import Button from '../components/Button'
-import Card from '../components/Card'
+import SectionHeader from '../components/SectionHeader'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const StandardAccount = () => {
@@ -16,6 +16,13 @@ const StandardAccount = () => {
     'Mobile trading apps'
   ]
 
+  const stats = [
+    { label: 'Min Deposit', value: '$100' },
+    { label: 'Spreads From', value: '1.2 pips' },
+    { label: 'Leverage', value: '1:500' },
+    { label: 'Commission', value: 'None' }
+  ]
+
   const comparison = [
     { feature: 'Minimum Deposit', standard: '$100', pro: '$5,000', demo: '$0' },
     { feature: 'Spreads From', standard: '1.2 pips', pro: '0.0 pips', demo: 'Live spreads' },
@@ -27,62 +34,44 @@ const StandardAccount = () => {
 
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <div className="inline-block bg-primary-accent/20 text-primary-accent px-4 py-2 rounded-full mb-6 font-semibold">
-              For Beginners & Retail Traders
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">Standard Account</h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              Start your trading journey with our beginner-friendly Standard Account. Low minimum deposit, competitive spreads, and no commission.
-            </p>
-            <Link to="/accounts/demo">
-              <Button variant="primary" icon>Open Standard Account</Button>
-            </Link>
-          </ScrollReveal>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="badge mb-6">For Beginners &amp; Retail Traders</span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">Standard Account</h1>
+                <p className="text-lg md:text-xl max-w-xl mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                  Start your trading journey with our beginner-friendly Standard Account. Low minimum deposit, competitive spreads, and no commission.
+                </p>
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Standard Account</Button>
+                </Link>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Account Preview</span>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollRevealGroup className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            <ScrollRevealItem>
-              <Card className="text-center">
-                <div className="text-sm text-text-secondary mb-2">Min Deposit</div>
-                <div className="text-3xl font-bold gradient-text">$100</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center">
-                <div className="text-sm text-text-secondary mb-2">Spreads From</div>
-                <div className="text-3xl font-bold gradient-text">1.2 pips</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center">
-                <div className="text-sm text-text-secondary mb-2">Leverage</div>
-                <div className="text-3xl font-bold gradient-text">1:500</div>
-              </Card>
-            </ScrollRevealItem>
-            <ScrollRevealItem>
-              <Card className="text-center">
-                <div className="text-sm text-text-secondary mb-2">Commission</div>
-                <div className="text-3xl font-bold gradient-text">None</div>
-              </Card>
-            </ScrollRevealItem>
-          </ScrollRevealGroup>
-
+      {/* ── Stat strip ───────────────────────────────────────── */}
+      <section className="fx-section" style={{ paddingTop: 0, background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center">
-                Account Features
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <Check className="w-6 h-6 text-primary-accent flex-shrink-0" />
-                    <span className="text-text-secondary text-lg">{feature}</span>
+            <div className="fx-section-frame fx-section-frame-tight p-0 overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+                {stats.map((stat, index) => (
+                  <div key={index} className="fx-stats-cell">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.22em] mb-3" style={{ color: 'var(--fx-text-3)' }}>
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
+                    <div className="text-3xl md:text-4xl font-bold gradient-text mb-1">{stat.value}</div>
+                    <div className="text-sm" style={{ color: 'var(--fx-text-2)' }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -91,54 +80,84 @@ const StandardAccount = () => {
         </div>
       </section>
 
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">
-              Compare Account Types
-            </h2>
-          </ScrollReveal>
-          <ScrollReveal variant="fadeUp" delay={0.2}>
-            <div className="glass-card p-8 overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-4 text-white font-semibold">Feature</th>
-                    <th className="text-center py-4 text-white font-semibold">Standard</th>
-                    <th className="text-center py-4 text-white font-semibold">Pro</th>
-                    <th className="text-center py-4 text-white font-semibold">Demo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparison.map((row, index) => (
-                    <tr key={index} className="border-b border-white/5">
-                      <td className="py-4 text-text-secondary">{row.feature}</td>
-                      <td className="py-4 text-center text-white font-semibold">{row.standard}</td>
-                      <td className="py-4 text-center text-text-secondary">{row.pro}</td>
-                      <td className="py-4 text-center text-text-secondary">{row.demo}</td>
-                    </tr>
+      {/* ── Features ─────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Account Features</span>
+                <h2 className="fx-headline text-3xl md:text-4xl mt-5 mb-8">Everything you need to start</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <Check className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
+                      <span style={{ color: 'var(--fx-text-2)' }}>{feature}</span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.1}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Platform Visual</span>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Comparison table ─────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <SectionHeader badge="Compare" title="Compare Account Types" highlight="Account Types" />
+          <ScrollReveal variant="fadeUp" delay={0.2}>
+            <div className="fx-section-frame mt-12 md:mt-16">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[620px]">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--fx-line-strong)' }}>
+                      <th className="text-left py-4 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--fx-text-3)' }}>Feature</th>
+                      <th className="text-center py-4 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--fx-gold-light)' }}>Standard</th>
+                      <th className="text-center py-4 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--fx-text-3)' }}>Pro</th>
+                      <th className="text-center py-4 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--fx-text-3)' }}>Demo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparison.map((row, index) => (
+                      <tr key={index} style={{ borderBottom: '1px solid var(--fx-line)' }}>
+                        <td className="py-4" style={{ color: 'var(--fx-text-2)' }}>{row.feature}</td>
+                        <td className="py-4 text-center font-semibold text-white">{row.standard}</td>
+                        <td className="py-4 text-center" style={{ color: 'var(--fx-text-2)' }}>{row.pro}</td>
+                        <td className="py-4 text-center" style={{ color: 'var(--fx-text-2)' }}>{row.demo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      <section className="section-padding bg-gradient-hero">
-        <div className="container-custom text-center">
+      {/* ── Final CTA ────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-4xl font-bold text-white mb-6">Ready to Start Trading?</h2>
-            <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Open your Standard Account today with just $100 and start trading global markets.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/accounts/demo">
-                <Button variant="primary">Open Standard Account</Button>
-              </Link>
-              <Link to="/accounts/demo">
-                <Button variant="ghost">Try Demo First</Button>
-              </Link>
+            <div className="fx-section-frame text-center">
+              <div className="fx-glow-gold" />
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mb-6">Ready to Start Trading?</h2>
+              <p className="text-lg md:text-xl mb-9 max-w-2xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
+                Open your Standard Account today with just $100 and start trading global markets.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Standard Account</Button>
+                </Link>
+                <Link to="/accounts/demo">
+                  <Button variant="ghost">Try Demo First</Button>
+                </Link>
+              </div>
             </div>
           </ScrollReveal>
         </div>

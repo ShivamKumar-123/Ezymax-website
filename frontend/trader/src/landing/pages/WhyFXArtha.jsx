@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Shield, Lock, Zap, Award, Users, TrendingUp } from 'lucide-react'
 import Button from '../components/Button'
-import Card from '../components/Card'
+import SectionHeader from '../components/SectionHeader'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
 const WhyFXArtha = () => {
@@ -61,106 +61,133 @@ const WhyFXArtha = () => {
 
   return (
     <div className="min-h-screen pt-20">
-      <section className="section-padding hero-banner">
-        <div className="container-custom text-center">
-          <ScrollReveal variant="fadeUp">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Why Thousands Choose FXArtha
-            </h1>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto">
-              Discover what makes FXArtha the preferred choice for traders worldwide.
-            </p>
-          </ScrollReveal>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Why FXArtha</span>
+                <h1 className="fx-headline text-4xl md:text-5xl lg:text-6xl mt-5 mb-6">
+                  Why Thousands Choose FXArtha
+                </h1>
+                <p className="text-lg md:text-xl max-w-xl mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                  Discover what makes FXArtha the preferred choice for traders worldwide.
+                </p>
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Account Now</Button>
+                </Link>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Why FXArtha</span>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
-              Our Six Pillars of Excellence
-            </h2>
-          </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* ── Six Pillars ──────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <SectionHeader badge="Our Pillars" title="Our Six Pillars of Excellence" highlight="Six Pillars" />
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12 md:mt-16">
             {pillars.map((pillar, index) => (
               <ScrollRevealItem key={index}>
-                <Card className="p-8">
-                  <pillar.icon className="w-12 h-12 text-primary-accent mb-4" />
+                <div className="fx-card p-7 md:p-8 h-full">
+                  <div className="feature-icon mb-5">
+                    <pillar.icon className="w-6 h-6" />
+                  </div>
                   <h3 className="text-xl font-semibold text-white mb-3">{pillar.title}</h3>
-                  <p className="text-text-secondary">{pillar.description}</p>
-                </Card>
+                  <p style={{ color: 'var(--fx-text-2)' }}>{pillar.description}</p>
+                </div>
               </ScrollRevealItem>
             ))}
           </ScrollRevealGroup>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-bg">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">
-              What Our Traders Say
-            </h2>
-            <p className="text-text-secondary text-center mb-12 max-w-2xl mx-auto">
-              Don't just take our word for it. Here's what our clients have to say about their experience with FXArtha.
-            </p>
-          </ScrollReveal>
-          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* ── Testimonials ─────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
+          <SectionHeader
+            badge="Testimonials"
+            title="What Our Traders Say"
+            highlight="Traders Say"
+            subtitle="Don't just take our word for it. Here's what our clients have to say about their experience with FXArtha."
+          />
+          <ScrollRevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 md:mt-16">
             {testimonials.map((testimonial, index) => (
               <ScrollRevealItem key={index}>
-                <Card className="p-8">
+                <div className="fx-card p-7 md:p-8 h-full">
                   <div className="flex gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <span key={i} className="text-yellow-400 text-xl">⭐</span>
+                      <span key={i} className="text-xl">⭐</span>
                     ))}
                   </div>
-                  <p className="text-text-secondary mb-6 italic">"{testimonial.text}"</p>
+                  <p className="mb-6 italic" style={{ color: 'var(--fx-text-2)' }}>"{testimonial.text}"</p>
                   <div>
                     <div className="text-white font-semibold">{testimonial.name}</div>
-                    <div className="text-text-secondary text-sm">{testimonial.role}</div>
+                    <div className="text-sm" style={{ color: 'var(--fx-text-2)' }}>{testimonial.role}</div>
                   </div>
-                </Card>
+                </div>
               </ScrollRevealItem>
             ))}
           </ScrollRevealGroup>
         </div>
       </section>
 
-      <section className="section-padding bg-primary-secondary">
-        <div className="container-custom">
-          <ScrollReveal variant="fadeUp">
-            <div className="glass-card p-12 text-center max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Regulatory Compliance
-              </h2>
-              <p className="text-text-secondary text-lg mb-8">
-                FXArtha Ltd is authorized and regulated by the Financial Conduct Authority (FCA) in the UK (License No. 123456) and the Cyprus Securities and Exchange Commission (CySEC) (License No. 789/12).
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="glass-card p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">FCA Regulated</h3>
-                  <p className="text-text-secondary">United Kingdom</p>
-                </div>
-                <div className="glass-card p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">CySEC Licensed</h3>
-                  <p className="text-text-secondary">European Union</p>
+      {/* ── Regulatory Compliance ────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
+        <div className="fx-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow mb-6">Compliance</span>
+                <h2 className="fx-headline text-3xl md:text-4xl mt-5 mb-6">
+                  Regulatory Compliance
+                </h2>
+                <p className="text-lg mb-8" style={{ color: 'var(--fx-text-2)' }}>
+                  FXArtha Ltd is authorized and regulated by the Financial Conduct Authority (FCA) in the UK (License No. 123456) and the Cyprus Securities and Exchange Commission (CySEC) (License No. 789/12).
+                </p>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="fx-card-gold p-6">
+                    <h3 className="text-xl font-semibold text-white mb-2">FCA Regulated</h3>
+                    <p style={{ color: 'var(--fx-text-2)' }}>United Kingdom</p>
+                  </div>
+                  <div className="fx-card-gold p-6">
+                    <h3 className="text-xl font-semibold text-white mb-2">CySEC Licensed</h3>
+                    <p style={{ color: 'var(--fx-text-2)' }}>European Union</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </ScrollReveal>
+            </ScrollReveal>
+            <ScrollReveal variant="fadeUp" delay={0.1}>
+              <div className="fx-image-slot fx-image-slot-4x3">
+                <span className="fx-image-slot-label">Regulatory Compliance</span>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      <section className="section-padding bg-gradient-hero">
-        <div className="container-custom text-center">
+      {/* ── Final CTA ────────────────────────────────────────── */}
+      <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
+        <div className="fx-container">
           <ScrollReveal variant="fadeUp">
-            <h2 className="text-4xl font-bold text-white mb-6">Experience the FXArtha Difference</h2>
-            <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-              Join over 500,000 traders who trust us with their trading journey.
-            </p>
-            <Link to="/accounts/demo">
-              <Button variant="primary">Open Account Now</Button>
-            </Link>
+            <div className="fx-section-frame text-center">
+              <div className="fx-glow-gold" />
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mb-6">Experience the FXArtha Difference</h2>
+              <p className="text-lg md:text-xl mb-9 max-w-2xl mx-auto" style={{ color: 'var(--fx-text-2)' }}>
+                Join over 500,000 traders who trust us with their trading journey.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/accounts/demo">
+                  <Button variant="primary" icon>Open Account Now</Button>
+                </Link>
+              </div>
+            </div>
           </ScrollReveal>
         </div>
       </section>
