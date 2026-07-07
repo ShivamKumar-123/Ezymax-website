@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Mail, Phone, MapPin, Send, X } from 'lucide-react'
+import { Mail, MapPin, Send, X } from 'lucide-react'
 import Button from '../components/Button'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
 
@@ -61,18 +61,6 @@ const Contact = () => {
       title: 'Email Us',
       content: 'support@fxartha.com',
       link: 'mailto:support@fxartha.com'
-    },
-    {
-      icon: Phone,
-      title: 'Call Us',
-      content: '+44 20 1234 5678',
-      link: 'tel:+442012345678'
-    },
-    {
-      icon: MapPin,
-      title: 'Visit Us',
-      content: '123 Financial District, London, UK',
-      link: '#'
     }
   ]
 
@@ -101,7 +89,7 @@ const Contact = () => {
       {/* ── Contact info + form ──────────────────────────────── */}
       <section className="fx-section" style={{ paddingTop: 0, background: 'var(--fx-bg)' }}>
         <div className="fx-container">
-          <ScrollRevealGroup className="grid md:grid-cols-3 gap-8 mb-16">
+          <ScrollRevealGroup className="grid md:grid-cols-1 max-w-sm mx-auto gap-8 mb-16">
             {contactInfo.map((info, index) => (
               <ScrollRevealItem key={index}>
                 <div className="fx-card p-6 text-center">
@@ -199,15 +187,7 @@ const Contact = () => {
                 <h2 className="fx-headline text-3xl md:text-4xl mb-6">Our Office</h2>
                 <div className="fx-card p-6 mb-6">
                   <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--fx-text)' }}>FXArtha Ltd</h3>
-                  <p className="mb-4" style={{ color: 'var(--fx-text-2)' }}>
-                    123 Financial District<br />
-                    London, EC2N 2DL<br />
-                    United Kingdom
-                  </p>
                   <div className="space-y-2">
-                    <p style={{ color: 'var(--fx-text-2)' }}>
-                      <span className="font-semibold" style={{ color: 'var(--fx-text)' }}>Phone:</span> +44 20 1234 5678
-                    </p>
                     <p style={{ color: 'var(--fx-text-2)' }}>
                       <span className="font-semibold" style={{ color: 'var(--fx-text)' }}>Email:</span> support@fxartha.com
                     </p>

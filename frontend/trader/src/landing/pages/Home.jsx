@@ -109,7 +109,7 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-2">
               <Lock className="w-6 h-6 text-primary-accent" />
-              <span className="font-semibold">Regulated by FCA & CySEC</span>
+              <span className="font-semibold">Regulated by CySEC</span>
             </div>
             <div className="flex items-center gap-2">
               <Globe className="w-6 h-6 text-primary-accent" />

@@ -134,13 +134,9 @@ const WhyFXArtha = () => {
                 Regulatory Compliance
               </h2>
               <p className="text-text-secondary text-lg mb-8">
-                FXArtha Ltd is authorized and regulated by the Financial Conduct Authority (FCA) in the UK (License No. 123456) and the Cyprus Securities and Exchange Commission (CySEC) (License No. 789/12).
+                FXArtha Ltd is authorized and regulated by the Cyprus Securities and Exchange Commission (CySEC) (License No. 789/12).
               </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="glass-card p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">FCA Regulated</h3>
-                  <p className="text-text-secondary">United Kingdom</p>
-                </div>
+              <div className="grid md:grid-cols-1 max-w-sm mx-auto gap-6">
                 <div className="glass-card p-6">
                   <h3 className="text-xl font-semibold text-white mb-2">CySEC Licensed</h3>
                   <p className="text-text-secondary">European Union</p>
