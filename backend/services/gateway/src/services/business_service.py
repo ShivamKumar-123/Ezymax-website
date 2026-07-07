@@ -785,9 +785,11 @@ async def _ib_audit(db: AsyncSession, ib_user_id: UUID, action: str, ip: str | N
 
 async def ib_place_order_on_behalf(
     ib_user_id: UUID, req, request: Request, ip_address: str | None, db: AsyncSession,
+    reason: str | None = None,
 ) -> dict:
     """IB places an order on a referred user's account. Reuses the trading
-    engine verbatim with the OWNER's user_id after verifying the referral."""
+    engine verbatim with the OWNER's user_id after verifying the referral.
+    `reason` (audit only) records why the IB opened the trade."""
     profile = await _require_ib_profile(ib_user_id, db)
     account = await _require_referred_account(profile.id, req.account_id, db)
     owner_id = account.user_id
@@ -801,6 +803,7 @@ async def ib_place_order_on_behalf(
         "symbol": getattr(req, "symbol", None),
         "side": getattr(req, "side", None),
         "lots": str(getattr(req, "lots", "")),
+        "reason": (reason or "")[:500],
         "position_id": result.get("position_id") if isinstance(result, dict) else None,
     })
     return result

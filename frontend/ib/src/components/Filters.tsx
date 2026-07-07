@@ -37,29 +37,32 @@ export default function Filters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // NOTE: globals.css sets `input,select,textarea { width:100% }`, so every
+  // control needs an explicit width class (a class beats the element selector)
+  // to stay compact and sit inline instead of stretching full-width.
   const inputCls =
     'rounded-lg border border-border-primary bg-bg-secondary px-3 py-2 text-xs text-text-primary outline-none focus:border-accent/50';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {showSearch && (
-        <div className="relative">
+        <div className="relative w-full sm:w-60">
           <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name / email"
-            className={`${inputCls} pl-7`}
+            className={`${inputCls} w-full pl-7`}
           />
         </div>
       )}
       {showDates && (
-        <>
+        <div className="flex items-center gap-2">
           <input
             type="date"
             value={value.date_from || ''}
             onChange={(e) => onChange({ ...value, date_from: e.target.value })}
-            className={inputCls}
+            className={`${inputCls} w-[9.5rem] shrink-0`}
             aria-label="From date"
           />
           <span className="text-xs text-text-tertiary">–</span>
@@ -67,16 +70,16 @@ export default function Filters({
             type="date"
             value={value.date_to || ''}
             onChange={(e) => onChange({ ...value, date_to: e.target.value })}
-            className={inputCls}
+            className={`${inputCls} w-[9.5rem] shrink-0`}
             aria-label="To date"
           />
-        </>
+        </div>
       )}
       {showStatus && (
         <select
           value={value.status || ''}
           onChange={(e) => onChange({ ...value, status: e.target.value })}
-          className={inputCls}
+          className={`${inputCls} w-auto`}
         >
           <option value="">All status</option>
           <option value="pending">Pending</option>
@@ -88,7 +91,7 @@ export default function Filters({
         <select
           value={value.traded || 'all'}
           onChange={(e) => onChange({ ...value, traded: e.target.value })}
-          className={inputCls}
+          className={`${inputCls} w-auto`}
         >
           <option value="all">All users</option>
           <option value="true">Traded</option>

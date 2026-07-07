@@ -102,7 +102,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         {data.accounts.length === 0 ? (
           <p className="px-5 py-8 text-center text-xs text-text-tertiary">No accounts.</p>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full min-w-[600px] text-xs">
             <thead>
               <tr className="border-b border-border-primary text-[10px] uppercase tracking-wide text-text-tertiary">
                 <th className="px-4 py-2.5 text-left">Account</th>
@@ -136,7 +136,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         {data.open_positions.length === 0 ? (
           <p className="px-5 py-8 text-center text-xs text-text-tertiary">No open positions.</p>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full min-w-[600px] text-xs">
             <thead>
               <tr className="border-b border-border-primary text-[10px] uppercase tracking-wide text-text-tertiary">
                 <th className="px-4 py-2.5 text-left">Symbol</th>

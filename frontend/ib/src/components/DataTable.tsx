@@ -34,7 +34,8 @@ export default function DataTable<T extends { id?: string | number }>({
     a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left';
 
   return (
-    <table className="w-full text-xs">
+    <div className="-mx-1 overflow-x-auto sm:mx-0">
+    <table className="w-full min-w-[560px] text-xs">
       <thead>
         <tr className="border-b border-border-primary text-[10px] uppercase tracking-wide text-text-tertiary">
           {columns.map((c) => (
@@ -63,5 +64,6 @@ export default function DataTable<T extends { id?: string | number }>({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

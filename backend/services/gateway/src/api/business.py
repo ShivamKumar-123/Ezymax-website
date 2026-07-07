@@ -201,13 +201,14 @@ async def ib_impersonate_referred(
 async def ib_place_order(
     req: PlaceOrderRequest,
     request: Request,
+    reason: str | None = Query(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """IB places an order on a referred user's account (scoped + audited)."""
     return await business_service.ib_place_order_on_behalf(
         ib_user_id=current_user["user_id"], req=req, request=request,
-        ip_address=client_ip_for_inet(request), db=db,
+        ip_address=client_ip_for_inet(request), db=db, reason=reason,
     )
 
 
