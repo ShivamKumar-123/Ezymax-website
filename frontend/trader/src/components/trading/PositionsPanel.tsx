@@ -179,7 +179,9 @@ function TerminalPositionStaticCard({
   onCloseFull: () => void;
   onPartialClose: () => void;
 }) {
-  const pnl = pos.profit || 0;
+  // NET P&L (profit − commission + swap; swap stored negative) so the card
+  // matches the position rows and the mobile app.
+  const pnl = (pos.profit || 0) - (pos.commission || 0) + (pos.swap || 0);
   const cur = pos.current_price;
   const priceDown = cur != null && (pos.side === 'buy' ? cur < pos.open_price : cur > pos.open_price);
 
@@ -328,7 +330,17 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
 
+  // GROSS floating P&L — used for Equity / Free Margin only. Commission was
+  // already deducted from balance at open, and swap when charged, so equity
+  // MUST use gross (adding net here would double-count the fees).
   const totalPnl = positions.reduce((s, p) => s + (p.profit || 0), 0);
+  // NET floating P&L (profit − commission + swap; swap is stored negative for
+  // charges) — this is the figure shown to the trader and kept in sync with
+  // the mobile app's per-position P&L.
+  const netTotalPnl = positions.reduce(
+    (s, p) => s + (p.profit || 0) - (p.commission || 0) + (p.swap || 0),
+    0,
+  );
 
   const profitPositions = positions.filter((p) => (p.profit || 0) > 0);
   const lossPositions = positions.filter((p) => (p.profit || 0) < 0);
@@ -714,8 +726,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         },
         {
           label: 'Floating PL',
-          value: totalPnl,
-          color: totalPnl >= 0 ? 'text-buy' : 'text-sell',
+          value: netTotalPnl,
+          color: netTotalPnl >= 0 ? 'text-buy' : 'text-sell',
           signed: true as const,
         },
       ]
@@ -820,10 +832,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       <span
                         className={clsx(
                           'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
+                          netTotalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
                         )}
                       >
-                        {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+                        {netTotalPnl >= 0 ? '+' : ''}${netTotalPnl.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
@@ -1040,7 +1052,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       const d = getDigits(pos.symbol);
                       const pnl = pos.profit || 0;
                       const charges = pos.commission || 0;
-                      const net = pnl - charges;
+                      const net = pnl - charges + (pos.swap || 0);
                       return (
                         <div key={pos.id} className="rounded-xl border border-border-glass bg-bg-secondary/40 p-3 space-y-2">
                           <div className="flex items-center justify-between">
@@ -1131,7 +1143,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const d = getDigits(pos.symbol);
                         const pnl = pos.profit || 0;
                         const charges = pos.commission || 0;
-                        const net = pnl - charges;
+                        const net = pnl - charges + (pos.swap || 0);
                         return (
                           <tr key={pos.id} className={tbodyRowClass}>
                             <td className={td}>{accountLabel(pos.account_id)}</td>
@@ -1466,7 +1478,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const d = getDigits(trade.symbol);
                         const pnl = trade.pnl || 0;
                         const charges = trade.commission || 0;
-                        const net = pnl - charges;
+                        const net = pnl - charges + (trade.swap || 0);
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         // Re-use the same Position shape that ShareTradeModal
                         // expects so a closed trade can be shared from this
@@ -1569,7 +1581,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const d = getDigits(trade.symbol);
                         const pnl = trade.pnl || 0;
                         const charges = trade.commission || 0;
-                        const net = pnl - charges;
+                        const net = pnl - charges + (trade.swap || 0);
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
                         return (
                           <tr key={trade.id} className={tbodyRowClass}>
@@ -1815,7 +1827,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     const pos = positions.find((p) => p.id === closeModal.id);
                     const pnl = pos?.profit ?? 0;
                     const charges = pos?.commission ?? 0;
-                    const net = pnl - charges;
+                    const net = pnl - charges + (pos?.swap ?? 0);
                     return (
                       <div className="flex justify-between text-[11px] font-medium pt-1.5 mt-1.5 border-t border-border-primary/50">
                         <span className="text-text-tertiary">P&amp;L</span>
@@ -1924,7 +1936,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     }
                     const partPnl = (pos.profit ?? 0) * frac;
                     const partCharges = (pos.commission ?? 0) * frac;
-                    const net = partPnl - partCharges;
+                    const net = partPnl - partCharges + (pos.swap ?? 0) * frac;
                     const pct = Math.round(frac * 100);
                     // Will the broker actually close less than the full lot?
                     const willClose = Number.isFinite(closeLotsNum) && closeLotsNum > 0

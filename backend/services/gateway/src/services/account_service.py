@@ -25,6 +25,7 @@ from packages.common.src.models import (
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
+from packages.common.src.trading_service import calc_position_pnl
 
 
 # ─── Per-user leverage cap (Trading_Mechanism.docx risk control) ──────
@@ -369,6 +370,12 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
         select(TradingAccount)
         .options(selectinload(TradingAccount.account_group))
         .where(*where)
+        # Stable, deterministic ordering. Without an explicit ORDER BY,
+        # Postgres returns rows in physical/heap order, which shifts as
+        # rows are updated — so the trader's 2 s account-list poll made the
+        # cards "float"/reshuffle every few seconds. Order by creation time
+        # (oldest first) with id as a tiebreaker so the order never changes.
+        .order_by(TradingAccount.created_at.asc(), TradingAccount.id.asc())
     )
     accounts = result.scalars().unique().all()
 
@@ -421,10 +428,17 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                     sv = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
                     cp = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
                     cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
-                    if sv == "buy":
-                        unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
-                    else:
-                        unrealized_pnl += (pos.open_price - cp) * pos.lots * cs
+                    # Use the canonical P&L helper so the quote-currency → account
+                    # conversion (e.g. USDJPY P&L is in JPY, gold/USD already in USD)
+                    # matches the positions endpoint and the trader/mobile clients.
+                    # Previously this inline math skipped the conversion, so the
+                    # Accounts-page equity for JPY / USD-base pairs disagreed with
+                    # the terminal and the app.
+                    unrealized_pnl += calc_position_pnl(
+                        pos.side, pos.open_price, cp, pos.lots, cs,
+                        instrument=pos.instrument,
+                        account_currency=a.currency or "USD",
+                    )
             except Exception:
                 pass
 

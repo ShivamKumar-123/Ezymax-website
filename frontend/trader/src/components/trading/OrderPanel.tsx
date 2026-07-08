@@ -864,19 +864,21 @@ export default function OrderPanel() {
         {isTradingTerminal ? (
           <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
             <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
+              {/* Market orders show the required Margin here (the standalone
+                  "Mrgn $.." line below was removed); pending orders keep the
+                  Trigger price since that's the essential value to confirm. */}
               <span className="text-[10px] text-text-tertiary">
-                {orderTab === 'pending' ? 'Trigger' : 'Exec. Price'}
+                {orderTab === 'pending' ? 'Trigger' : 'Margin'}
               </span>
               <span className="text-xs font-mono font-semibold text-text-primary">
                 {orderTab === 'pending'
                   ? (Number.isFinite(parseFloat(triggerPrice)) && parseFloat(triggerPrice) > 0
                       ? parseFloat(triggerPrice).toFixed(digits)
                       : '—')
-                  : (execPrice > 0 ? execPrice.toFixed(digits) : '—')}
+                  : `$${marginRequired.toFixed(2)}`}
               </span>
             </div>
             <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
-              <span className="truncate">Mrgn ${marginRequired.toFixed(2)}</span>
               <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#6366F1]' : 'text-[#ef5350]')}>
                 Free ${freeMargin.toFixed(2)}
               </span>

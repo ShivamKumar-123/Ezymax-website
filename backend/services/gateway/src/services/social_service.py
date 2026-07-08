@@ -225,55 +225,49 @@ async def provider_activity(provider_id: UUID, user_id: UUID, db: AsyncSession) 
         return {"is_copying": False, "open_positions": [], "history": [], "since": None}
 
     since = alloc.created_at
-    acct_id = master.account_id
-    if not acct_id:
-        return {"is_copying": True, "open_positions": [], "history": [], "since": since.isoformat() if since else None}
 
-    side_v = lambda s: s.value if hasattr(s, "value") else str(s)  # noqa: E731
+    # Return the follower's OWN copy trades (their mirrored positions + closed
+    # history), NOT the master's raw trades. This delegates to the exact same
+    # investor-facing data the website's copy-trades view uses, so the P&L
+    # VALUES and the open/close TIMESTAMPS match across web and mobile.
+    #
+    # Previously this read the master's account directly and returned the
+    # master's profit with the master's timestamps — which disagreed with the
+    # website in both value (master lots vs your lots) and timing (the master's
+    # open/close times vs your copy's), the mismatch the user reported.
+    trades = await copy_allocation_trades(alloc.id, user_id, db)
 
-    pos_q = (
-        select(Position, Instrument.symbol)
-        .join(Instrument, Instrument.id == Position.instrument_id)
-        .where(Position.account_id == acct_id, Position.status == PositionStatus.OPEN)
-    )
-    if since:
-        pos_q = pos_q.where(Position.created_at >= since)
-    pos_rows = (await db.execute(pos_q.order_by(Position.created_at.desc()))).all()
+    def _investor_pnl(t: dict) -> float:
+        # pamm rows carry the investor's `your_share`; signal/mam carry `pnl`.
+        share = t.get("your_share")
+        return float(share if share is not None else (t.get("pnl") or 0))
+
     open_positions = [
         {
-            "id": str(p.id),
-            "symbol": sym,
-            "side": side_v(p.side),
-            "lots": float(p.lots),
-            "open_price": float(p.open_price),
-            "profit": float(p.profit or 0),
-            "opened_at": p.created_at.isoformat() if p.created_at else None,
+            "id": t["id"],
+            "symbol": t["symbol"],
+            "side": t["side"],
+            "lots": t["lots"],
+            "open_price": t["open_price"],
+            "profit": _investor_pnl(t),
+            "opened_at": t.get("opened_at"),
         }
-        for p, sym in pos_rows
+        for t in trades.get("open_trades", [])
     ]
-
-    th_q = (
-        select(TradeHistory, Instrument.symbol)
-        .join(Instrument, Instrument.id == TradeHistory.instrument_id)
-        .where(TradeHistory.account_id == acct_id)
-    )
-    if since:
-        th_q = th_q.where(TradeHistory.closed_at >= since)
-    th_rows = (await db.execute(th_q.order_by(TradeHistory.closed_at.desc()).limit(100))).all()
     history = [
         {
-            "id": str(t.id),
-            "symbol": sym,
-            "side": side_v(t.side),
-            "lots": float(t.lots),
-            "open_price": float(t.open_price),
-            "close_price": float(t.close_price) if t.close_price is not None else None,
-            "profit": float(t.profit or 0),
-            "commission": float(getattr(t, "commission", 0) or 0),
-            "swap": float(getattr(t, "swap", 0) or 0),
-            "closed_at": t.closed_at.isoformat() if t.closed_at else None,
+            "id": t["id"],
+            "symbol": t["symbol"],
+            "side": t["side"],
+            "lots": t["lots"],
+            "open_price": t["open_price"],
+            "close_price": t.get("close_price"),
+            "profit": _investor_pnl(t),
+            "commission": float(t.get("commission", 0) or 0),
+            "swap": float(t.get("swap", 0) or 0),
+            "closed_at": t.get("closed_at"),
         }
-        for t, sym in th_rows
+        for t in trades.get("closed_trades", [])
     ]
 
     return {
