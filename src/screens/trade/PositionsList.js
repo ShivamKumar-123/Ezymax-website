@@ -147,11 +147,17 @@ export default function PositionsList({ positions = [], orders = [], history = [
   );
 }
 
-// Helper — pull a position's live P&L regardless of which field the API used.
+// Helper — pull a position's live NET P&L regardless of which field the API
+// used. Net = profit − commission + swap so it matches the website terminal
+// exactly. The API returns swap negative for a charge, so adding it subtracts
+// the fee; commission is a positive cost.
 function plOf(p) {
   if (!p) return null;
   const v = p.profit ?? p.profit_loss ?? p.pl ?? p.pnl ?? null;
-  return v == null ? null : Number(v);
+  if (v == null) return null;
+  const commission = Number(p.commission ?? 0) || 0;
+  const swap = Number(p.swap ?? 0) || 0;
+  return Number(v) - commission + swap;
 }
 
 // Themed close-confirm sheet with a big, live-updating P&L. Because the parent
@@ -357,13 +363,16 @@ function SlTpSheet({ position, onClose, onSaved }) {
 
 function PositionRow({ position, onClose, onSetSlTp }) {
   const side = String(position.side || '').toLowerCase();
-  const pl = position.profit ?? position.profit_loss ?? position.pl ?? position.pnl ?? null;
+  const commission = position.commission ?? 0;
+  const swap = position.swap ?? 0;
+  // NET P&L (profit − commission + swap; swap is negative for a charge) to
+  // match the website terminal. Fees are also shown on their own rows below.
+  const grossPl = position.profit ?? position.profit_loss ?? position.pl ?? position.pnl ?? null;
+  const pl = grossPl == null ? null : Number(grossPl) - (Number(commission) || 0) + (Number(swap) || 0);
   const plPositive = pl == null ? true : Number(pl) >= 0;
   const lots = position.volume ?? position.lots ?? position.quantity ?? '—';
   const open = Number(position.open_price ?? position.openPrice ?? 0);
   const current = position.current_price ?? position.currentPrice ?? null;
-  const commission = position.commission ?? 0;
-  const swap = position.swap ?? 0;
 
   return (
     <Card style={styles.card}>
@@ -418,7 +427,11 @@ function PositionRow({ position, onClose, onSetSlTp }) {
 
 function HistoryRow({ trade }) {
   const side = String(trade.side || '').toLowerCase();
-  const pnl = trade.pnl ?? trade.profit ?? trade.realized_pnl ?? null;
+  // NET realized P&L (profit − commission + swap) to match the website.
+  const grossPnl = trade.pnl ?? trade.profit ?? trade.realized_pnl ?? null;
+  const pnl = grossPnl == null
+    ? null
+    : Number(grossPnl) - (Number(trade.commission ?? 0) || 0) + (Number(trade.swap ?? 0) || 0);
   const pnlPositive = pnl == null ? true : Number(pnl) >= 0;
   const lots = trade.lots ?? trade.volume ?? trade.quantity ?? '—';
   const open = Number(trade.open_price ?? 0);
