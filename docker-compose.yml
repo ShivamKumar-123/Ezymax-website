@@ -201,6 +201,8 @@ services:
         # Same value as the backend's GOOGLE_CLIENT_ID. When empty,
         # GoogleAuthButton returns null and the button silently disappears.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        # URL of the standalone IB partner portal (baked into the "Open IB Portal" link)
+        NEXT_PUBLIC_IB_PORTAL_URL: ${NEXT_PUBLIC_IB_PORTAL_URL:-http://localhost:3002}
     ports:
       # Host 3010 if 3000 is already taken (local Next/other apps)
       - "3010:3000"
@@ -225,6 +227,22 @@ services:
     depends_on:
       - gateway
       - admin-api
+
+  # IB partner portal — standalone Next.js app (host 3002 → container 3000).
+  # /api/v1/* is proxied to the gateway by src/app/api/v1/[...path]/route.ts.
+  ib-frontend:
+    build:
+      context: ./frontend/ib
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-docker}
+    ports:
+      - "3002:3000"
+    environment:
+      INTERNAL_API_URL: http://gateway:8000/api/v1
+      TRADER_API_PROXY_TARGET: http://gateway:8000
+    depends_on:
+      - gateway
 
   # One-off migration runner — NOT started automatically.
   # Run with: docker compose --profile migrate up migrate

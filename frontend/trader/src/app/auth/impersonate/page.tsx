@@ -51,7 +51,11 @@ function ImpersonateInner() {
         }
 
         // 3) Hard redirect so the auth store rehydrates from scratch.
-        window.location.replace('/accounts');
+        //    A `redirect` param (same-origin path only) lets the caller land
+        //    straight on e.g. the trading terminal; defaults to /accounts.
+        const raw = searchParams.get('redirect');
+        const dest = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/accounts';
+        window.location.replace(dest);
       } catch {
         setError('Could not start impersonation session. The link may be expired or invalid.');
       }
