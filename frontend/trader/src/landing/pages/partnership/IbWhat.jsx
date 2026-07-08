@@ -37,7 +37,7 @@ export default function IbWhat() {
           subtitle="If you already work with traders, this is the boring-but-honest version of an affiliate program."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT â€” copy */}
+          {/* LEFT — copy */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -64,7 +64,7 @@ export default function IbWhat() {
             </div>
           </ScrollReveal>
 
-          {/* RIGHT â€” IB â†’ Traders â†’ Activity â†’ Rewards flow */}
+          {/* RIGHT — IB → Traders → Activity → Rewards flow */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-6 md:p-7 relative overflow-hidden"

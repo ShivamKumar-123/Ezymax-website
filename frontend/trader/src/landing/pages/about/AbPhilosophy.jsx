@@ -83,7 +83,7 @@ export default function AbPhilosophy() {
             >
               <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
               <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                &ldquo;The future of trading is not just faster â€” it is smarter.&rdquo;
+                &ldquo;The future of trading is not just faster — it is smarter.&rdquo;
               </p>
             </div>
           </ScrollReveal>

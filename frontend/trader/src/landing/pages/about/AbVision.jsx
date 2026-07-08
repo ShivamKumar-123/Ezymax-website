@@ -87,7 +87,7 @@ export default function AbVision() {
               </div>
 
               <p className="mt-7 text-base text-white">
-                â€¦into one connected experience.
+                …into one connected experience.
               </p>
             </div>
           </ScrollReveal>
@@ -103,7 +103,7 @@ export default function AbVision() {
             >
               <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
               <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                &ldquo;Technology should increase transparency â€” not complexity.&rdquo;
+                &ldquo;Technology should increase transparency — not complexity.&rdquo;
               </p>
             </div>
           </ScrollReveal>

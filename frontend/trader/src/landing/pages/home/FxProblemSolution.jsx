@@ -1,156 +1,114 @@
-﻿import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
-const problems = [
-  'You deposit funds â†’ platform controls them',
-  'Withdrawals depend on approvals',
-  'Execution is not fully transparent',
-  'You rely on centralized systems',
-]
+const problemText =
+  'You deposit funds and the platform controls them. Withdrawals wait on approvals, and execution is never fully transparent.'
 
-const solutions = [
-  'Funds interact with a smart contract layer',
-  'No platform custody of user funds',
-  'Trades execute via system-defined logic',
-  'Profits & losses settle automatically',
-]
+const solutionText =
+  'Funds interact with a smart-contract layer — no platform custody. Trades run on system-defined logic and P&L settles automatically.'
+
+/* One Venn circle. `problem` = dark disc, `solution` = warm gold glass disc.
+   Text is pinned to the outer half of each disc so the central overlap stays clear. */
+function Circle({ variant, title, text }) {
+  const isProblem = variant === 'problem'
+  return (
+    <div
+      className="fx-venn-circle relative rounded-full w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[460px] lg:h-[460px]"
+      style={
+        isProblem
+          ? {
+              background:
+                'radial-gradient(125% 125% at 30% 22%, #24262e 0%, #0c0d11 55%, #060709 100%)',
+              border: '1px solid rgba(214,169,61,0.18)',
+              boxShadow:
+                '0 44px 100px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)',
+            }
+          : {
+              background:
+                'radial-gradient(120% 120% at 60% 28%, #fbeaa8 0%, #ecc657 45%, #b6842a 100%)',
+              border: '1px solid rgba(255,255,255,0.22)',
+              boxShadow:
+                '0 44px 110px -30px rgba(214,169,61,0.6), inset 0 2px 10px rgba(255,255,255,0.5)',
+            }
+      }
+    >
+      <div className={`flex h-full items-center ${isProblem ? '' : 'justify-end'}`}>
+        <div className={`w-[66%] ${isProblem ? 'pl-[12%]' : 'pr-[12%]'}`}>
+          <h3
+            className="text-xl md:text-2xl lg:text-3xl font-semibold mb-3"
+            style={{ color: isProblem ? '#ffffff' : '#14100a' }}
+          >
+            {title}
+          </h3>
+          <p
+            className="text-[13px] leading-snug md:text-[15px] md:leading-relaxed"
+            style={{ color: isProblem ? 'rgba(255,255,255,0.72)' : 'rgba(20,16,10,0.74)' }}
+          >
+            {text}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function FxProblemSolution() {
   return (
-    <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
-      <div className="fx-container">
-        {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+    <section className="fx-section relative overflow-hidden" style={{ background: 'var(--fx-bg)', paddingTop: '3.5rem' }}>
+      <div className="fx-container relative">
+        {/* ── Header: big title left, "What is it?" right ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           <ScrollReveal variant="fadeUp">
-            <div>
-              <span className="fx-eyebrow mb-5">Problem vs Solution</span>
-              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
-                Why Most Trading Platforms Still Require <span className="gradient-text">Blind Trust</span>
-              </h2>
-            </div>
+            <h2 className="fx-headline text-5xl sm:text-6xl lg:text-7xl leading-[1.02]">
+              Problem &amp;
+              <br />
+              <span className="fx-gold-text">Solution</span>
+            </h2>
           </ScrollReveal>
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
-              In a custodial setup, the platform holds the money and approves the withdrawals. We don't think that should be the default anymore.
-            </p>
+            <div className="lg:pt-3 lg:max-w-md lg:ml-auto">
+              <h3 className="text-lg font-bold mb-3" style={{ color: 'var(--fx-text)' }}>
+                What is it?
+              </h3>
+              <p className="text-base leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                Most trading platforms still hold your funds and gatekeep withdrawals — progress is
+                opaque and control sits with someone else. FX Artha replaces that custodial model
+                with a smart-contract layer where custody stays with you and trades settle
+                automatically.
+              </p>
+            </div>
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: red problem tile vs. gold solution tile, VS between ── */}
-        <div className="relative fx-bento grid-cols-1 md:grid-cols-2 mt-10 md:mt-14 items-stretch">
-          {/* Problem — red tile (the one allowed non-gold accent) */}
-          <ScrollReveal variant="fadeUp">
+        {/* ── Overlapping Venn circles ── */}
+        <div className="relative mt-10 md:mt-14 flex flex-col items-center lg:flex-row lg:items-start lg:justify-center lg:pb-24">
+          {/* soft ambient glow behind the circles (kept inside this container so the
+              `.fx-section > *` position:relative rule can't override its absolute) */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div
-              className="fx-tile h-full p-7 md:p-8 flex flex-col"
+              className="w-[720px] h-[520px] max-w-none"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(220,38,38,0.10) 0%, rgba(220,38,38,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(220,38,38,0.30)',
+                  'radial-gradient(closest-side, rgba(214,169,61,0.14), rgba(214,169,61,0) 72%)',
+                filter: 'blur(20px)',
               }}
-            >
-              <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{
-                    background: 'rgba(220,38,38,0.18)',
-                    border: '1px solid rgba(220,38,38,0.35)',
-                  }}
-                >
-                  <AlertTriangle size={20} style={{ color: '#f87171' }} />
-                </div>
-                <div>
-                  <div
-                    className="text-[11px] font-bold uppercase tracking-[0.22em]"
-                    style={{ color: '#f87171' }}
-                  >
-                    The Problem
-                  </div>
-                </div>
-              </div>
-
-              <span
-                className="fx-accent-bar mb-4"
-                style={{ background: 'linear-gradient(90deg, #f87171, #dc2626)', boxShadow: '0 0 14px rgba(220,38,38,0.5)' }}
-              />
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-5">
-                Centralized Custody
-              </h3>
-
-              <ul className="space-y-3.5 mt-auto">
-                {problems.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <XCircle size={18} className="mt-0.5 shrink-0" style={{ color: '#f87171' }} />
-                    <span className="text-sm md:text-base" style={{ color: 'var(--fx-text-2)' }}>
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* Solution — solid gold accent tile */}
-          <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <div className="relative z-[1] flex items-center gap-3 mb-5">
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                >
-                  <ShieldCheck size={20} style={{ color: '#1c1608' }} />
-                </div>
-                <div>
-                  <div
-                    className="text-[11px] font-bold uppercase tracking-[0.22em]"
-                    style={{ color: '#1c1608' }}
-                  >
-                    The FX Artha Approach
-                  </div>
-                </div>
-              </div>
-
-              <span className="fx-accent-bar mb-4 relative z-[1]" />
-              <h3 className="relative z-[1] text-xl md:text-2xl font-bold mb-5" style={{ color: '#1c1608' }}>
-                Smart-Contract Execution
-              </h3>
-
-              <ul className="relative z-[1] space-y-3.5 mt-auto">
-                {solutions.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2
-                      size={18}
-                      className="mt-0.5 shrink-0"
-                      style={{ color: '#1c1608' }}
-                    />
-                    <span className="text-sm md:text-base" style={{ color: 'rgba(28,22,8,0.78)' }}>
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* ── VS Badge (desktop only, centered between cards) ── */}
-          <div className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-extrabold tracking-wider"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold) 70%, var(--fx-gold-dark))',
-                color: '#1a1408',
-                boxShadow:
-                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(214,169,61,0.45), 0 16px 40px -12px rgba(214,169,61,0.45)',
-              }}
-            >
-              VS
-            </div>
+            />
           </div>
+
+          <ScrollReveal variant="fadeUp" className="relative z-[1] hover:z-[30] shrink-0">
+            <Circle variant="problem" title="Problem" text={problemText} />
+          </ScrollReveal>
+          <ScrollReveal
+            variant="fadeUp"
+            delay={0.12}
+            className="relative z-[2] hover:z-[30] shrink-0 -mt-14 sm:-mt-20 lg:mt-24 lg:-ml-28"
+          >
+            <Circle variant="solution" title="Solution" text={solutionText} />
+          </ScrollReveal>
         </div>
 
-        <ScrollReveal variant="fadeUp" delay={0.25}>
+        <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-4 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Control stays with you. Execution stays with the system.&rdquo;

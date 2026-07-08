@@ -18,7 +18,7 @@ export default function AbFutureVision() {
           badge="Future Vision"
           title="Building Beyond Traditional Trading"
           highlight="Beyond Traditional Trading"
-          subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure â€” toward a global trading system that scales."
+          subtitle="The work doesn't stop at v1. The roadmap keeps pushing on protocol innovation, ecosystem reach, and decentralized infrastructure — toward a global trading system that scales."
         />
         <ScrollReveal variant="fadeUp">
           <div
@@ -61,9 +61,9 @@ export default function AbFutureVision() {
               >
                 <Quote size={24} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
                 <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                  â€œWe are not just building a platform.
+                  “We are not just building a platform.
                   <br />
-                  We are building infrastructure for the future of trading.â€
+                  We are building infrastructure for the future of trading.”
                 </p>
               </div>
             </div>

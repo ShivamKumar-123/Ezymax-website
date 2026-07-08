@@ -11,10 +11,10 @@ export default function TxLeverage() {
           badge="Leverage Rule"
           title="Leverage, Made Practical"
           highlight="Practical"
-          subtitle="Leverage lets you control a larger position with less capital. The catch most platforms hide â€” you only owe the fee when you actually hold the position overnight."
+          subtitle="Leverage lets you control a larger position with less capital. The catch most platforms hide — you only owe the fee when you actually hold the position overnight."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
-          {/* LEFT â€” Explanation + example */}
+          {/* LEFT — Explanation + example */}
           <ScrollReveal variant="fadeUp">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -28,7 +28,7 @@ export default function TxLeverage() {
                 <Scale size={20} />
               </div>
               <h3 className="text-2xl md:text-[28px] font-bold text-white mb-4 leading-tight">
-                Control more with less â€” pay only when it matters.
+                Control more with less — pay only when it matters.
               </h3>
               <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 A simple example shows how the math works:
@@ -67,20 +67,20 @@ export default function TxLeverage() {
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={18} style={{ color: '#4ade80' }} />
                   <span className="text-sm md:text-[15px] text-white">
-                    Close trade <b>same day</b> â†’ <span style={{ color: '#4ade80' }}>No leverage fee</span>
+                    Close trade <b>same day</b> → <span style={{ color: '#4ade80' }}>No leverage fee</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <XCircle size={18} style={{ color: '#f87171' }} />
                   <span className="text-sm md:text-[15px] text-white">
-                    Hold <b>overnight</b> â†’ <span style={{ color: '#f87171' }}>Leverage fee applies</span>
+                    Hold <b>overnight</b> → <span style={{ color: '#f87171' }}>Leverage fee applies</span>
                   </span>
                 </div>
               </div>
             </div>
           </ScrollReveal>
 
-          {/* RIGHT â€” Timeline visual */}
+          {/* RIGHT — Timeline visual */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <div
               className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
@@ -106,7 +106,7 @@ export default function TxLeverage() {
                   showLine
                 />
 
-                {/* Branch row â€” Day vs Night */}
+                {/* Branch row — Day vs Night */}
                 <div className="grid grid-cols-2 gap-4 my-1 ml-[44px] pl-3"
                      style={{ borderLeft: '2px dashed rgba(214,169,61,0.35)' }}>
                   {/* Day branch */}

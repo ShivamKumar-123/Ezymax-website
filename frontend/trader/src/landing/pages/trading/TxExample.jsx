@@ -33,7 +33,7 @@ export default function TxExample() {
           badge="Trade Example"
           title="How a Trade Works"
           highlight="a Trade Works"
-          subtitle="Walk through a real scenario. Change the numbers â€” every cost shows up before you'd ever click execute."
+          subtitle="Walk through a real scenario. Change the numbers — every cost shows up before you'd ever click execute."
         />
         <ScrollReveal variant="fadeUp">
           <div
@@ -221,7 +221,7 @@ export default function TxExample() {
                   iconColor={overnight ? '#f87171' : '#4ade80'}
                   label="Leverage Fee"
                   value={overnight ? `$${fmt(leverageFee)}` : '$0.00'}
-                  sub={overnight ? 'Overnight rate applied' : 'Intraday â€” none'}
+                  sub={overnight ? 'Overnight rate applied' : 'Intraday — none'}
                   highlight={overnight}
                 />
                 <Row

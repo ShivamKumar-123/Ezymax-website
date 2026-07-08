@@ -7,7 +7,7 @@ const items = [
     icon: Gauge,
     accent: '#60a5fa',
     title: 'Adjustable Leverage',
-    desc: 'Tune leverage to match the trade â€” never one-size-fits-all.',
+    desc: 'Tune leverage to match the trade — never one-size-fits-all.',
   },
   {
     icon: ShieldCheck,
@@ -38,7 +38,7 @@ export default function TxRiskControl() {
           badge="Risk Control"
           title="Built-In Risk Management"
           highlight="Risk Management"
-          subtitle="The unglamorous part of trading â€” knowing what you're walking into. These are the controls that catch most surprises before you click Buy."
+          subtitle="The unglamorous part of trading — knowing what you're walking into. These are the controls that catch most surprises before you click Buy."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {items.map((it, i) => {

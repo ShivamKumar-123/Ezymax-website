@@ -19,7 +19,7 @@ export default function InHow() {
           badge="How It Works"
           title="Simple and Continuous Protection"
           highlight="Continuous Protection"
-          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade â€” coverage kicks in automatically on eligible losses."
+          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade — coverage kicks in automatically on eligible losses."
         />
         <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
           <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">

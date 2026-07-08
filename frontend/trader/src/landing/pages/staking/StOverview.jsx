@@ -24,10 +24,10 @@ export default function StOverview() {
           badge="Overview"
           title="What is Staking in FX Artha?"
           highlight="Staking in FX Artha?"
-          subtitle="You are not depositing â€” you are participating."
+          subtitle="You are not depositing — you are participating."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT â€” copy + mechanics */}
+          {/* LEFT — copy + mechanics */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -42,7 +42,7 @@ export default function StOverview() {
               </div>
               <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: 'var(--fx-text-2)' }}>
                 Staking in FX Artha means providing liquidity to the protocol through a smart
-                contract. Your funds are <span style={{ color: 'var(--fx-gold-light)' }}>not held by a broker</span> â€”
+                contract. Your funds are <span style={{ color: 'var(--fx-gold-light)' }}>not held by a broker</span> —
                 they remain in a decentralized structure where they contribute to the trading
                 ecosystem.
               </p>
@@ -68,7 +68,7 @@ export default function StOverview() {
             </div>
           </ScrollReveal>
 
-          {/* RIGHT â€” User â†’ Contract â†’ Rewards diagram */}
+          {/* RIGHT — User → Contract → Rewards diagram */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"

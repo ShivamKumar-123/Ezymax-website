@@ -13,7 +13,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 const steps = [
   { icon: Wallet,           title: 'Connect Wallet',          desc: 'Securely connect your wallet to access the platform.' },
   { icon: UserCheck,        title: 'Access Dashboard (CRM)',  desc: 'Manage your profile, settings, and activity.' },
-  { icon: LayoutDashboard,  title: 'Create Trading Account',  desc: 'Choose your platform â€” FX Artha App or MT5.' },
+  { icon: LayoutDashboard,  title: 'Create Trading Account',  desc: 'Choose your platform — FX Artha App or MT5.' },
   { icon: ArrowDownToLine,  title: 'Allocate Funds to Contract', desc: 'Funds are allocated to a secure smart contract layer.' },
   { icon: Activity,         title: 'Execute Trades',          desc: 'Trade normally using your selected trading account.' },
   { icon: Coins,            title: 'Automatic P&L Settlement', desc: 'Profits are credited automatically. Losses are deducted automatically.' },
@@ -27,7 +27,7 @@ export default function PrFlow() {
         <div className="fx-section-frame">
         <SectionHeader
           badge="Step-by-Step Flow"
-          title="From Wallet to Trade â€” Step by Step"
+          title="From Wallet to Trade — Step by Step"
           highlight="Step by Step"
           subtitle="Every step is system-driven. No manual control involved."
         />

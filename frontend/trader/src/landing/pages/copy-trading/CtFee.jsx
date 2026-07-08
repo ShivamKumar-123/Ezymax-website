@@ -16,13 +16,13 @@ export default function CtFee() {
           badge="Platform Fee"
           title="Platform Fee Structure"
           highlight="Fee Structure"
-          subtitle="We get paid the same way Master Traders do â€” only when followers actually make money. No subscription, no surcharge on followers."
+          subtitle="We get paid the same way Master Traders do — only when followers actually make money. No subscription, no surcharge on followers."
         />
         <ScrollReveal variant="fadeUp">
           <div
             className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-stretch"
           >
-            {/* Visual split â€” Master share & Platform cut */}
+            {/* Visual split — Master share & Platform cut */}
             <div
               className="relative rounded-2xl p-7 md:p-8 overflow-hidden"
               style={{
@@ -91,7 +91,7 @@ export default function CtFee() {
                     icon={Crown}
                     color="#ecc657"
                     label="Master share (illustrative 20%)"
-                    value="$20 â†’ $15 net"
+                    value="$20 → $15 net"
                     note="After platform cut"
                     highlight
                   />

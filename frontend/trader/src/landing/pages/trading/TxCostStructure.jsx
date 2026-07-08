@@ -24,7 +24,7 @@ const costs = [
     accent: '#a78bfa',
     title: 'Market Spread',
     sub: 'Execution',
-    desc: 'Natural part of market pricing â€” never artificially inflated. Tightens as you progress.',
+    desc: 'Natural part of market pricing — never artificially inflated. Tightens as you progress.',
     when: 'Market-driven',
   },
 ]
@@ -32,7 +32,7 @@ const costs = [
 const guarantees = [
   { icon: Ban,    title: 'No Swap Charges',     sub: "We don't charge swap." },
   { icon: EyeOff, title: 'No Hidden Fees',      sub: 'Zero hidden costs.' },
-  { icon: Moon,   title: 'No Overnight Penalty',sub: 'Only the fair leverage fee â€” nothing extra.' },
+  { icon: Moon,   title: 'No Overnight Penalty',sub: 'Only the fair leverage fee — nothing extra.' },
 ]
 
 export default function TxCostStructure() {

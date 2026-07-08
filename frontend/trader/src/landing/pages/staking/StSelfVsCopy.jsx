@@ -19,7 +19,7 @@ export default function StSelfVsCopy() {
           badge="Self vs Copy"
           title="Use Your Capital Your Way"
           highlight="Your Way"
-          subtitle="Active or passive â€” your choice."
+          subtitle="Active or passive — your choice."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Self */}

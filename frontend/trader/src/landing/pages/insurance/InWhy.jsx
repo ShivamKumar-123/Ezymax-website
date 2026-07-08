@@ -17,7 +17,7 @@ export default function InWhy() {
           badge="Why Trade Insurance"
           title="A Smarter Way to Manage Downside Risk"
           highlight="Downside Risk"
-          subtitle="Markets move against everyone sooner or later. Trade Insurance gives back a slice of those losses â€” based on the coverage level you chose when you activated the plan."
+          subtitle="Markets move against everyone sooner or later. Trade Insurance gives back a slice of those losses — based on the coverage level you chose when you activated the plan."
         />
         <div className="mt-12 md:mt-16 max-w-3xl mx-auto">
           <ScrollReveal variant="fadeUp">
@@ -33,7 +33,7 @@ export default function InWhy() {
                 <ShieldCheck size={20} />
               </div>
               <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                Trade Insurance covers a portion of your losses â€” based on your selected{' '}
+                Trade Insurance covers a portion of your losses — based on your selected{' '}
                 <span style={{ color: 'var(--fx-gold-light)' }}>coverage level</span> and the active
                 plan duration. It is a structured layer of protection across your trading activity,
                 not a per-trade refund.

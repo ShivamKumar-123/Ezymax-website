@@ -51,7 +51,7 @@ export default function FxGamification() {
           </ScrollReveal>
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
-              Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up â€” your account terms get better while you're doing things you'd do anyway.
+              Every action you take on FX Artha quietly adds up. Trade, complete tasks, show up — your account terms get better while you're doing things you'd do anyway.
             </p>
           </ScrollReveal>
         </div>
@@ -169,10 +169,14 @@ export default function FxGamification() {
             </div>
           </ScrollReveal>
 
-          {/* Image tile — empty space reserved for a real visual */}
+          {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.28}>
-            <div className="fx-tile-media h-full min-h-[280px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] overflow-hidden">
+              <img
+                src="/images/hero_card2.png"
+                alt="Gamified rewards"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

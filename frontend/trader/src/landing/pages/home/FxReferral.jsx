@@ -24,24 +24,37 @@ export default function FxReferral() {
           </ScrollReveal>
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
-              Bring people you actually believe in. The program rewards real participation â€” no tiered pyramids, no MLM-style fine print, no fluff.
+              Bring people you actually believe in. The program rewards real participation — no tiered pyramids, no MLM-style fine print, no fluff.
             </p>
           </ScrollReveal>
         </div>
 
         {/* ── Bento: gold partner card + image tile ─────────── */}
         <div className="fx-bento grid-cols-1 md:grid-cols-2 mt-10 md:mt-14 items-stretch">
-          {/* Partner card — solid gold accent tile */}
+          {/* Partner card — refined solid gold tile */}
           <ScrollReveal variant="fadeUp">
-            <div className="fx-tile-gold h-full p-8 md:p-10 flex flex-col">
+            <div className="fx-tile-gold h-full p-8 md:p-10 flex flex-col overflow-hidden">
+              {/* faint decorative watermark for depth */}
+              <Handshake
+                aria-hidden
+                size={230}
+                className="pointer-events-none absolute -bottom-8 -right-6 opacity-[0.06]"
+                style={{ color: '#1c1608' }}
+              />
+
+              {/* dark glossy icon badge */}
               <div
-                className="relative z-[1] w-14 h-14 rounded-xl flex items-center justify-center mb-6"
-                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                className="relative z-[1] w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
+                style={{
+                  background: 'linear-gradient(180deg, #2a2210 0%, #16110a 100%)',
+                  border: '1px solid rgba(28,22,8,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 12px 26px -12px rgba(0,0,0,0.55)',
+                }}
               >
-                <Handshake size={24} style={{ color: '#1c1608' }} />
+                <Handshake size={24} style={{ color: 'var(--fx-gold-light)' }} />
               </div>
-              <span className="fx-accent-bar mb-4 relative z-[1]" />
-              <p className="relative z-[1] text-base md:text-lg mb-7" style={{ color: 'rgba(28,22,8,0.82)' }}>
+
+              <p className="relative z-[1] text-lg md:text-xl font-semibold leading-snug mb-8" style={{ color: '#1c1608' }}>
                 Invite others and participate in platform growth through structured programs.
               </p>
 
@@ -49,33 +62,55 @@ export default function FxReferral() {
                 {items.map((it) => (
                   <li
                     key={it}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                    className="rounded-2xl p-4"
                     style={{
-                      background: 'rgba(28,22,8,0.10)',
-                      border: '1px solid rgba(28,22,8,0.2)',
+                      background: 'linear-gradient(180deg, rgba(28,22,8,0.14) 0%, rgba(28,22,8,0.03) 100%)',
+                      border: '1px solid rgba(28,22,8,0.16)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
                     }}
                   >
-                    <CheckCircle2 size={18} className="shrink-0" style={{ color: '#1c1608' }} />
-                    <span className="text-sm font-semibold leading-snug" style={{ color: '#1c1608' }}>{it}</span>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center mb-3"
+                      style={{
+                        background: 'linear-gradient(180deg, #2a2210, #16110a)',
+                        boxShadow: '0 4px 10px -4px rgba(0,0,0,0.5)',
+                      }}
+                    >
+                      <CheckCircle2 size={16} style={{ color: 'var(--fx-gold-light)' }} />
+                    </div>
+                    <span className="block text-sm font-bold leading-snug" style={{ color: '#1c1608' }}>{it}</span>
                   </li>
                 ))}
               </ul>
 
-              <p className="relative z-[1] text-xs md:text-sm mb-7 italic" style={{ color: 'rgba(28,22,8,0.72)' }}>
+              <p className="relative z-[1] text-xs md:text-sm mb-7 italic" style={{ color: 'rgba(28,22,8,0.7)' }}>
                 Advanced features available through partner onboarding.
               </p>
 
-              <Link to="/business" className="fx-btn-primary relative z-[1] mt-auto self-start">
+              <Link
+                to="/business"
+                className="relative z-[1] mt-auto self-start inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold transition-transform hover:-translate-y-0.5"
+                style={{
+                  background: 'linear-gradient(180deg, #2a2210 0%, #14100a 100%)',
+                  color: 'var(--fx-gold-light)',
+                  border: '1px solid rgba(28,22,8,0.5)',
+                  boxShadow: '0 14px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.10)',
+                }}
+              >
                 Become a Partner
                 <ArrowRight size={16} />
               </Link>
             </div>
           </ScrollReveal>
 
-          {/* Image tile — empty space reserved for a real visual */}
+          {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-media h-full min-h-[280px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] overflow-hidden">
+              <img
+                src="/images/hero_card4.png"
+                alt="Grow with the FX Artha referral program"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

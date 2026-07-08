@@ -85,7 +85,7 @@ export default function InDuration() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Coverage stays active for the selected duration â€” not per trade.&rdquo;
+            &ldquo;Coverage stays active for the selected duration — not per trade.&rdquo;
           </p>
         </ScrollReveal>
         </div>

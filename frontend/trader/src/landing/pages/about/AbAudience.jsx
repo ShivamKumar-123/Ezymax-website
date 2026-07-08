@@ -21,7 +21,7 @@ export default function AbAudience() {
           badge="Who FX Artha Is For"
           title="Built for Modern Digital Traders"
           highlight="Digital Traders"
-          subtitle="Whether you've been trading for years, are just starting out, or you're a community leader building an audience â€” FX Artha is built to feel right at home."
+          subtitle="Whether you've been trading for years, are just starting out, or you're a community leader building an audience — FX Artha is built to feel right at home."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {personas.map((p, i) => {

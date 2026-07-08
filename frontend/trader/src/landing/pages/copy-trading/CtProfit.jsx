@@ -17,7 +17,7 @@ export default function CtProfit() {
           badge="Profit Sharing"
           title="Performance-Based Earnings"
           highlight="Performance-Based"
-          subtitle="Master Traders take a slice of the profit they generate for followers â€” and only when there's actual profit to take a slice of."
+          subtitle="Master Traders take a slice of the profit they generate for followers — and only when there's actual profit to take a slice of."
         />
         {/* Flow diagram */}
         <ScrollReveal variant="fadeUp">

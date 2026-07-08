@@ -39,7 +39,7 @@ export default function StBonus() {
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />
 
             <div className="relative p-8 md:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              {/* Left â€” mechanism flow */}
+              {/* Left — mechanism flow */}
               <div className="lg:col-span-7">
                 <span className="badge mb-5" style={{ display: 'inline-flex' }}>
                   <Sparkles size={11} style={{ color: 'var(--fx-gold)' }} />
@@ -68,7 +68,7 @@ export default function StBonus() {
                 </div>
               </div>
 
-              {/* Right â€” bonus illustration */}
+              {/* Right — bonus illustration */}
               <div className="lg:col-span-5">
                 <div
                   className="rounded-2xl p-6 md:p-7"
@@ -139,7 +139,7 @@ export default function StBonus() {
                   Important Rule
                 </div>
                 <div className="text-sm md:text-[15px] text-white">
-                  If trading bonus is activated, funds are locked for the selected duration â€”{' '}
+                  If trading bonus is activated, funds are locked for the selected duration —{' '}
                   <span style={{ color: '#f87171' }}>withdrawal is restricted</span> during the lock period.
                 </div>
               </div>

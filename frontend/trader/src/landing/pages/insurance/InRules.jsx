@@ -54,7 +54,7 @@ export default function InRules() {
           badge="Rules & Conditions"
           title="Clear Usage Rules"
           highlight="Usage Rules"
-          subtitle="The conditions in plain language. Read it once â€” it's the same set of rules that keeps the system fair for everyone."
+          subtitle="The conditions in plain language. Read it once — it's the same set of rules that keeps the system fair for everyone."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
           {groups.map((g, i) => {

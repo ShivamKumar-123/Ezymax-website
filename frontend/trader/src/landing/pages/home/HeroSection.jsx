@@ -32,17 +32,17 @@ export default function HeroSection() {
       />
 
       <div className="fx-container relative z-10 pt-28 md:pt-32 lg:pt-36 pb-10 md:pb-14">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center lg:min-h-[560px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-end lg:min-h-[460px]">
           {/* ── Left: copy ────────────────────────────────────────── */}
           <div className="lg:col-span-7 xl:col-span-7">
-            <h1 className="fx-headline text-[44px] sm:text-[56px] md:text-[64px] lg:text-[72px] xl:text-[82px] fx-fade-up">
+            <h1 className="fx-headline text-[30px] sm:text-[38px] md:text-[44px] lg:text-[52px] xl:text-[58px] fx-fade-up">
               Trade Globally
               <br />
               <span className="fx-gold-text">Prosper Limitlessly</span>
             </h1>
 
             <p
-              className="mt-5 md:mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d1"
+              className="mt-4 md:mt-5 max-w-xl text-sm md:text-base leading-relaxed fx-fade-up fx-fade-up-d1"
               style={{ color: 'var(--fx-text-2)' }}
             >
               Experience next-level trading with ARTHA FX where technology

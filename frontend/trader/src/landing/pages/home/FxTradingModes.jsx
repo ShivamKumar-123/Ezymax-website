@@ -1,4 +1,4 @@
-import { Coins, Gauge, CheckCircle2, Sparkles } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const fundedFeatures = [
@@ -39,20 +39,6 @@ export default function FxTradingModes() {
           {/* Fully Funded — solid gold accent tile */}
           <ScrollReveal variant="fadeUp">
             <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <div className="relative z-[1] flex items-center justify-between mb-6">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                >
-                  <Coins size={22} style={{ color: '#1c1608' }} />
-                </div>
-                <span
-                  className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
-                  style={{ background: 'rgba(28,22,8,0.14)', color: '#1c1608', border: '1px solid rgba(28,22,8,0.2)' }}
-                >
-                  Safer Approach
-                </span>
-              </div>
               <span className="fx-accent-bar mb-4 relative z-[1]" />
               <h3 className="relative z-[1] text-2xl md:text-[26px] font-bold mb-3" style={{ color: '#1c1608' }}>
                 Fully Funded Trading
@@ -74,18 +60,6 @@ export default function FxTradingModes() {
           {/* Leveraged — dark tile with gold accent bar */}
           <ScrollReveal variant="fadeUp" delay={0.08}>
             <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
-              <div className="flex items-center justify-between mb-6">
-                <div className="feature-icon" style={{ width: 48, height: 48 }}>
-                  <Gauge size={22} />
-                </div>
-                <span
-                  className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5"
-                  style={{ background: 'rgba(214,169,61,0.12)', color: 'var(--fx-gold-light)', border: '1px solid rgba(214,169,61,0.32)' }}
-                >
-                  <Sparkles size={11} />
-                  Advanced Mode
-                </span>
-              </div>
               <span className="fx-accent-bar mb-4" />
               <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3">
                 Leveraged Trading
@@ -110,10 +84,14 @@ export default function FxTradingModes() {
             </div>
           </ScrollReveal>
 
-          {/* Image tile — empty space reserved for a real visual */}
+          {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.16}>
-            <div className="fx-tile-media h-full min-h-[300px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[300px] overflow-hidden">
+              <img
+                src="/images/hero_card1.png"
+                alt="Flexible trading"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

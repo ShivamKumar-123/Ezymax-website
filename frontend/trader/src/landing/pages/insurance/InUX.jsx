@@ -26,10 +26,10 @@ export default function InUX() {
           badge="User Experience"
           title="Simple and Transparent Experience"
           highlight="Transparent Experience"
-          subtitle="The plan lives right inside your trading dashboard â€” switch durations, change coverage, watch your pool draw down, all without leaving the chart."
+          subtitle="The plan lives right inside your trading dashboard — switch durations, change coverage, watch your pool draw down, all without leaving the chart."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT â€” features */}
+          {/* LEFT — features */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8"
@@ -61,7 +61,7 @@ export default function InUX() {
             </div>
           </ScrollReveal>
 
-          {/* RIGHT â€” UI mock */}
+          {/* RIGHT — UI mock */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-7">
             <div
               className="h-full rounded-2xl overflow-hidden"

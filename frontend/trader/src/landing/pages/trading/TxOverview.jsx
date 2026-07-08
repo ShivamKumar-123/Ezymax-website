@@ -14,7 +14,7 @@ const cards = [
   {
     icon: Eye,
     title: 'Transparent Pricing',
-    desc: 'Every cost is visible before you execute â€” no hidden layers, no surprises.',
+    desc: 'Every cost is visible before you execute — no hidden layers, no surprises.',
     accent: '#ecc657',
   },
   {

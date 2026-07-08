@@ -555,30 +555,54 @@
   .glass-card:hover::before { left: 0; right: 0; opacity: 1; }
   .glass-card:hover::after  { opacity: 1; }
 
-  .feature-icon {
+  /* Glossy gold icon badge — shared site-wide. `.feature-icon` is the icon
+     holder used across 40+ sections; `.fx-icon-badge` is the same glossy look
+     for the How It Works 3D icons. Dark-gold glass disc with a top sheen,
+     inner highlights, a gold rim and a soft ambient glow. */
+  .feature-icon,
+  .fx-icon-badge {
     position: relative;
+    isolation: isolate;
     width: 3rem; height: 3rem;
-    border-radius: 0.875rem;
+    border-radius: 9999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background:
-      radial-gradient(120% 90% at 0% 0%, rgba(214,169,61,0.22), rgba(214,169,61,0.06) 60%),
-      rgba(214,169,61,0.08);
     color: var(--fx-gold-light);
-    border: 1px solid rgba(214,169,61,0.28);
+    background:
+      radial-gradient(78% 58% at 50% 22%, rgba(255,255,255,0.32), rgba(255,255,255,0) 55%),
+      linear-gradient(180deg, rgba(78,64,33,0.72) 0%, rgba(20,18,14,0.94) 80%);
+    border: 1px solid rgba(214,169,61,0.5);
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.06) inset,
-      0 8px 24px -10px rgba(214,169,61,0.30);
+      inset 0 1.5px 1px rgba(255,255,255,0.35),
+      inset 0 -7px 14px rgba(0,0,0,0.5),
+      0 10px 22px -10px rgba(0,0,0,0.7),
+      0 0 24px -6px rgba(214,169,61,0.5);
   }
-  .feature-icon::after {
+  /* specular sheen arc across the top — the "glossy" bit */
+  .feature-icon::after,
+  .fx-icon-badge::after {
     content: '';
     position: absolute;
-    inset: 1px;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent 40%);
+    left: 15%; right: 15%; top: 8%; height: 38%;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0));
+    filter: blur(1px);
     pointer-events: none;
+    z-index: 0;
   }
+  .feature-icon > *,
+  .fx-icon-badge > * { position: relative; z-index: 1; }
+  /* Glossy gold treatment on the line icons that sit inside the badge —
+     paints the lucide strokes with the shared gold gradient and adds depth +
+     a soft gold glow so they read as dimensional gold site-wide. */
+  .feature-icon > svg {
+    stroke: url(#fxIconGold);
+    filter:
+      drop-shadow(0 1px 1px rgba(0,0,0,0.55))
+      drop-shadow(0 0 3px rgba(236,198,87,0.4));
+  }
+  .feature-icon > svg [fill]:not([fill="none"]) { fill: url(#fxIconGold); }
 
   .badge {
     display: inline-flex;
@@ -722,7 +746,7 @@ canvas { display: block; }
               border-color .4s ease, box-shadow .4s ease;
 }
 .landing-root .fx-tile:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(1.035);
   border-color: rgba(214, 169, 61, 0.30);
   box-shadow: 0 34px 70px -34px rgba(0,0,0,.85),
               0 0 0 1px rgba(214,169,61,0.08) inset;
@@ -739,7 +763,7 @@ canvas { display: block; }
   box-shadow: 0 26px 60px -30px rgba(214,169,61,0.55);
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease;
 }
-.landing-root .fx-tile-gold:hover { transform: translateY(-4px); }
+.landing-root .fx-tile-gold:hover { transform: translateY(-4px) scale(1.035); }
 .landing-root .fx-tile-gold::after {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
@@ -771,7 +795,7 @@ canvas { display: block; }
               border-color .4s ease, box-shadow .4s ease;
 }
 .landing-root .fx-tile-media:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(1.035);
   border-color: rgba(214, 169, 61, 0.30);
   box-shadow: 0 34px 70px -34px rgba(0,0,0,.85);
 }
@@ -877,10 +901,82 @@ canvas { display: block; }
   .landing-root .fx-split-intro { grid-template-columns: 1.1fr 1fr; }
 }
 
+/* ============================================================
+   Puzzle-step infographic (How It Works) — interlocking glass
+   panels connected by alternating top/bottom "necks", each with a
+   gold glow hugging the bottom edge. Gold twin of the reference deck.
+   ============================================================ */
+.landing-root .fx-puzzle-piece {
+  position: relative;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(120% 70% at 50% 120%, rgba(214,169,61,0.30), rgba(214,169,61,0) 62%),
+    linear-gradient(180deg, rgba(24,26,31,0.72) 0%, rgba(13,14,17,0.92) 100%);
+  border: 1px solid rgba(214,169,61,0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 22px 50px -26px rgba(0,0,0,0.85);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
+}
+/* gold glow that hugs the bottom edge, like the reference's blue glow */
+.landing-root .fx-puzzle-piece::after {
+  content: '';
+  position: absolute; left: 8%; right: 8%; bottom: 0; height: 46%;
+  border-radius: 1.25rem;
+  background: radial-gradient(72% 100% at 50% 100%, rgba(236,198,87,0.5), rgba(214,169,61,0) 72%);
+  filter: blur(9px);
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-root .fx-puzzle-piece > * { position: relative; z-index: 1; }
+.landing-root .fx-puzzle-piece:hover {
+  transform: translateY(-5px);
+  border-color: rgba(236,198,87,0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 30px 62px -24px rgba(0,0,0,0.9),
+    0 18px 48px -18px rgba(214,169,61,0.5);
+}
+
+/* connector "neck" that bridges two pieces (overlaps their edges) */
+.landing-root .fx-puzzle-neck {
+  position: absolute;
+  left: -12px; right: -12px;
+  height: 24px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(24,26,31,0.96), rgba(13,14,17,0.96));
+  border: 1px solid rgba(214,169,61,0.35);
+  box-shadow: 0 0 22px -6px rgba(214,169,61,0.55);
+  z-index: 2;
+}
+.landing-root .fx-puzzle-neck-top    { top: 22%; }
+.landing-root .fx-puzzle-neck-bottom { bottom: 22%; }
+
+/* little gold divider under the icon */
+.landing-root .fx-puzzle-divider {
+  display: block;
+  width: 34px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, rgba(236,198,87,0.95), rgba(214,169,61,0.35));
+  box-shadow: 0 0 10px rgba(214,169,61,0.55);
+}
+
+/* ── Venn circles (Problem vs Solution) — zoom-in on hover ──── */
+.landing-root .fx-venn-circle {
+  transition: transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .5s ease;
+  will-change: transform;
+}
+.landing-root .fx-venn-circle:hover {
+  transform: scale(1.08);
+}
+
 /* ── Reduced motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .fx-fade-up,
   .fx-mandala-spin {
     animation: none !important;
   }
+  .landing-root .fx-venn-circle { transition: none; }
+  .landing-root .fx-venn-circle:hover { transform: none; }
 }

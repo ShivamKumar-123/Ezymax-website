@@ -4,7 +4,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
 const faq = [
-  { q: 'Do I need experience to use this?', a: 'No. Itâ€™s designed for both beginners and experienced users.' },
+  { q: 'Do I need experience to use this?', a: 'No. It’s designed for both beginners and experienced users.' },
   { q: 'Do I lose control of my funds?',    a: 'No. You stay in full control and can stop anytime.' },
   { q: 'Is profit guaranteed?',             a: 'No. All trading involves risk.' },
 ]
@@ -18,7 +18,7 @@ export default function CtWhat() {
           badge="Definition"
           title="What is Copy Trading?"
           highlight="Copy Trading?"
-          subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose â€” no need to figure out your own setups."
+          subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose — no need to figure out your own setups."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* Text */}
@@ -43,7 +43,7 @@ export default function CtWhat() {
             </div>
           </ScrollReveal>
 
-          {/* Illustration â€” trader â†’ mirror â†’ follower */}
+          {/* Illustration — trader → mirror → follower */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
             <div
               className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
@@ -124,7 +124,7 @@ export default function CtWhat() {
             className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Follow real performance â€” not predictions.&rdquo;
+            &ldquo;Follow real performance — not predictions.&rdquo;
           </p>
         </ScrollReveal>
 

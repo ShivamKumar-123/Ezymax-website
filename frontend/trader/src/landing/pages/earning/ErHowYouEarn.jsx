@@ -45,7 +45,7 @@ export default function ErHowYouEarn() {
           badge="How You Earn"
           title="Multiple Ways to Earn Rewards"
           highlight="Multiple Ways"
-          subtitle="You earn rewards not just by trading â€” but by participating in the ecosystem."
+          subtitle="You earn rewards not just by trading — but by participating in the ecosystem."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {sources.map((s, i) => {
@@ -74,7 +74,7 @@ export default function ErHowYouEarn() {
             className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
             style={{ color: 'var(--fx-text-2)' }}
           >
-            &ldquo;Your activity drives your rewards â€” not just outcomes.&rdquo;
+            &ldquo;Your activity drives your rewards — not just outcomes.&rdquo;
           </p>
         </ScrollReveal>
 

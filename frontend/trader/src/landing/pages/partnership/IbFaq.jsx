@@ -7,7 +7,7 @@ const faq = [
   { q: 'Is there a minimum requirement?',          a: 'Requirements depend on partnership category and region.' },
   { q: 'Can institutions apply?',                  a: 'Yes.' },
   { q: 'Is the program global?',                   a: 'Yes, subject to regional compliance.' },
-  { q: 'How do payouts work?',                     a: 'Payouts are processed through the platformâ€™s settlement infrastructure.' },
+  { q: 'How do payouts work?',                     a: 'Payouts are processed through the platform’s settlement infrastructure.' },
   { q: 'Can I brand myself as FX Artha partner?',  a: 'Approved partners may receive branding support.' },
 ]
 

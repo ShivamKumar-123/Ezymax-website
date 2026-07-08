@@ -25,7 +25,7 @@ export default function TxXP() {
           badge="XP Progression"
           title="Your Activity Unlocks Better Conditions"
           highlight="Better Conditions"
-          subtitle="Forget 'Gold tier' upgrades and locked-up benefits. We replaced account tiers with XP â€” every trade you place quietly improves your conditions."
+          subtitle="Forget 'Gold tier' upgrades and locked-up benefits. We replaced account tiers with XP — every trade you place quietly improves your conditions."
         />
         <ScrollReveal variant="fadeUp">
           <div
@@ -36,7 +36,7 @@ export default function TxXP() {
             }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              {/* LEFT â€” text + benefits */}
+              {/* LEFT — text + benefits */}
               <div className="lg:col-span-4">
                 <div className="feature-icon mb-4">
                   <Zap size={20} />
@@ -45,7 +45,7 @@ export default function TxXP() {
                   The more you trade, the better your conditions.
                 </h3>
                 <p className="text-sm md:text-base mb-5" style={{ color: 'var(--fx-text-2)' }}>
-                  XP isn&apos;t a badge â€” it directly shapes your live trading conditions across all three cost components.
+                  XP isn&apos;t a badge — it directly shapes your live trading conditions across all three cost components.
                 </p>
                 <ul className="space-y-3">
                   {improvements.map((i) => (
@@ -60,7 +60,7 @@ export default function TxXP() {
                 </ul>
               </div>
 
-              {/* RIGHT â€” Horizontal level bar */}
+              {/* RIGHT — Horizontal level bar */}
               <div className="lg:col-span-8">
                 <div className="relative">
                   {/* Glow background line */}

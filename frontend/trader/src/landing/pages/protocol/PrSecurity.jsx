@@ -11,7 +11,7 @@ const cards = [
   {
     icon: Cog,
     title: 'Automated Execution',
-    desc: 'Trades execute based on predefined system logic â€” not human approvals.',
+    desc: 'Trades execute based on predefined system logic — not human approvals.',
   },
   {
     icon: Eye,

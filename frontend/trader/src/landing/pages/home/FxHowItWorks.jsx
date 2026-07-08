@@ -1,47 +1,40 @@
-﻿import {
-  Wallet,
-  UserCheck,
-  LayoutDashboard,
-  ArrowDownToLine,
-  Activity,
-  Coins,
-  ArrowUpFromLine,
-} from 'lucide-react'
+﻿import { Fragment } from 'react'
+import Icon3D from '@/landing/components/Icons3d'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const steps = [
   {
-    icon: Wallet,
+    icon: 'wallet',
     title: 'Connect Your Wallet',
     desc: 'Securely connect your wallet to begin.',
   },
   {
-    icon: UserCheck,
+    icon: 'profile',
     title: 'Complete Your Profile',
     desc: 'Access your dashboard, manage settings, and prepare your account.',
   },
   {
-    icon: LayoutDashboard,
+    icon: 'dashboard',
     title: 'Create Trading Account',
     desc: 'Use FX Artha App or connect external environment (e.g., MT5).',
   },
   {
-    icon: ArrowDownToLine,
+    icon: 'allocate',
     title: 'Allocate Funds',
-    desc: 'Move funds into the trading contract â€” not to a broker.',
+    desc: 'Move funds into the trading contract — not to a broker.',
   },
   {
-    icon: Activity,
+    icon: 'trading',
     title: 'Start Trading',
     desc: 'Execute trades using your selected trading account.',
   },
   {
-    icon: Coins,
+    icon: 'coins',
     title: 'Automatic P&L',
     desc: 'Profits credited and losses adjusted automatically.',
   },
   {
-    icon: ArrowUpFromLine,
+    icon: 'withdraw',
     title: 'Withdraw Anytime',
     desc: 'Direct settlement back to your wallet without delays.',
   },
@@ -61,68 +54,51 @@ export default function FxHowItWorks() {
             <div>
               <span className="fx-eyebrow mb-5">How It Works</span>
               <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
-                From Wallet to Trade â€” A <span className="gradient-text">Seamless Flow</span>
+                From Wallet to Trade — A <span className="gradient-text">Seamless Flow</span>
               </h2>
             </div>
           </ScrollReveal>
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
-              From the moment you connect a wallet to the moment a profit lands back in it â€” here is what actually happens.
+              From the moment you connect a wallet to the moment a profit lands back in it — here is what actually happens.
             </p>
           </ScrollReveal>
         </div>
 
-        {/* â”€â”€ Horizontal step rail (scrolls on mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
-          <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[260px] md:auto-cols-auto md:grid-cols-7 gap-4 md:gap-3 min-w-max md:min-w-0">
-            {/* Connecting line (desktop only) */}
-            <div
-              className="hidden md:block absolute top-[42px] left-[7%] right-[7%] h-px pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
-              }}
-            />
-
+        {/* ── Interlocking puzzle-step chain (scrolls on smaller screens) ── */}
+        <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto xl:overflow-visible">
+          <div className="flex items-stretch min-w-max xl:min-w-0 py-2">
             {steps.map((step, i) => {
-              const Icon = step.icon
+              const isLast = i === steps.length - 1
               return (
-                <ScrollReveal key={step.title} variant="fadeUp" delay={i * 0.05}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div
-                      className="relative w-[84px] h-[84px] rounded-2xl flex items-center justify-center mb-4 group"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, var(--fx-bg) 0%, var(--fx-bg-elev-2) 100%)',
-                        border: '1px solid rgba(214,169,61,0.28)',
-                        boxShadow:
-                          '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px -16px rgba(214,169,61,0.32)',
-                      }}
-                    >
-                      <Icon size={28} style={{ color: 'var(--fx-gold-light)' }} />
-                      <span
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                          color: '#1a1408',
-                          boxShadow: '0 6px 16px -6px rgba(214,169,61,0.55)',
-                        }}
-                      >
-                        {i + 1}
-                      </span>
+                <Fragment key={step.title}>
+                  <ScrollReveal
+                    variant="fadeUp"
+                    delay={i * 0.05}
+                    className="basis-[190px] shrink-0 xl:basis-0 xl:grow xl:min-w-0"
+                  >
+                    <div className="fx-puzzle-piece h-full px-4 py-7 md:py-8 flex flex-col items-center text-center">
+                      <div className="fx-icon-badge mb-4" style={{ width: 60, height: 60 }}>
+                        <Icon3D name={step.icon} size={40} />
+                      </div>
+                      <span className="fx-puzzle-divider mb-3.5" />
+                      <h3 className="text-[12px] md:text-[13px] font-bold uppercase tracking-[0.14em] text-white leading-snug mb-2.5">
+                        {step.title}
+                      </h3>
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                        {step.desc}
+                      </p>
                     </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white leading-tight mb-1.5 px-1">
-                      {step.title}
-                    </h3>
-                    <p
-                      className="text-xs md:text-[13px] leading-relaxed px-1"
-                      style={{ color: 'var(--fx-text-2)' }}
-                    >
-                      {step.desc}
-                    </p>
-                  </div>
-                </ScrollReveal>
+                  </ScrollReveal>
+
+                  {!isLast && (
+                    <div className="relative z-[3] w-5 md:w-4 shrink-0" aria-hidden="true">
+                      <span
+                        className={`fx-puzzle-neck ${i % 2 === 0 ? 'fx-puzzle-neck-top' : 'fx-puzzle-neck-bottom'}`}
+                      />
+                    </div>
+                  )}
+                </Fragment>
               )
             })}
           </div>

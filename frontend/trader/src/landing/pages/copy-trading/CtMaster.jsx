@@ -22,7 +22,7 @@ const applyCriteria = [
 const qualifyCriteria = [
   { icon: CalendarClock, label: 'Minimum 1 month active trading' },
   { icon: Activity,      label: 'Must be profitable during the period' },
-  { icon: Banknote,      label: 'Minimum trading volume â€” $100,000+' },
+  { icon: Banknote,      label: 'Minimum trading volume — $100,000+' },
   { icon: BadgeCheck,    label: 'Minimum 100+ trades executed' },
 ]
 
@@ -36,7 +36,7 @@ const faq = [
     a: 'To ensure followers copy only reliable and consistent traders.',
   },
   {
-    q: 'Can I apply if Iâ€™m new to FX Artha?',
+    q: 'Can I apply if I’m new to FX Artha?',
     a: 'Yes, via verified external performance.',
   },
   {
