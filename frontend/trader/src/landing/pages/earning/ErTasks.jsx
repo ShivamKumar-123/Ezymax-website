@@ -1,5 +1,4 @@
-﻿import { LogIn, Activity, Compass, MousePointerClick, CheckCircle2 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { LogIn, Activity, Compass, MousePointerClick, CheckCircle2 } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -19,22 +18,26 @@ export default function ErTasks() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Daily Tasks"
-          title="Stay Active. Get Rewarded."
-          highlight="Get Rewarded"
-          subtitle="Complete simple tasks daily to boost your rewards."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Daily Tasks</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Stay Active. <span className="gradient-text">Get Rewarded.</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Complete simple tasks daily to boost your rewards.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Clean checklist tile with gold checks ─────────── */}
         <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 max-w-3xl mx-auto rounded-2xl overflow-hidden"
-            style={{
-              background:
-                'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-              border: '1px solid var(--fx-line-strong)',
-            }}
-          >
+          <div className="fx-tile mt-12 md:mt-16 max-w-3xl mx-auto overflow-hidden">
             <div
               className="px-5 md:px-6 py-4 flex items-center gap-3"
               style={{
@@ -42,6 +45,7 @@ export default function ErTasks() {
                 borderBottom: '1px solid var(--fx-line)',
               }}
             >
+              <span className="fx-accent-bar" />
               <span className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-gold-light)' }}>
                 Today&apos;s Checklist
               </span>
@@ -56,14 +60,8 @@ export default function ErTasks() {
                     borderBottom: i === tasks.length - 1 ? 'none' : '1px solid var(--fx-line)',
                   }}
                 >
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{
-                      background: 'rgba(214,169,61,0.08)',
-                      border: '1px solid rgba(214,169,61,0.28)',
-                    }}
-                  >
-                    <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
+                  <div className="feature-icon shrink-0" style={{ width: 40, height: 40 }}>
+                    <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm md:text-base font-bold text-white mb-0.5">{title}</div>
@@ -71,7 +69,7 @@ export default function ErTasks() {
                       {desc}
                     </div>
                   </div>
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-text-3)' }} />
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
                 </li>
               ))}
             </ul>
@@ -92,7 +90,6 @@ export default function ErTasks() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

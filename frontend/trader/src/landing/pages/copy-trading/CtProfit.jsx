@@ -1,5 +1,4 @@
-﻿import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Users, TrendingUp, ArrowRight, Coins, Crown } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
@@ -12,30 +11,31 @@ export default function CtProfit() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Profit Sharing"
-          title="Performance-Based Earnings"
-          highlight="Performance-Based"
-          subtitle="Master Traders take a slice of the profit they generate for followers — and only when there's actual profit to take a slice of."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Profit Sharing</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                <span className="gradient-text">Performance-Based</span> Earnings
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Master Traders take a slice of the profit they generate for followers — and only when there's actual profit to take a slice of.
+            </p>
+          </ScrollReveal>
+        </div>
+
         {/* Flow diagram */}
         <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 relative rounded-2xl p-7 md:p-10 overflow-hidden"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
-              border: '1px solid rgba(214,169,61,0.22)',
-            }}
-          >
-            <div className="absolute inset-0 fx-grid-bg" />
+          <div className="fx-tile mt-12 md:mt-16 p-7 md:p-10">
+            <span className="fx-accent-bar mb-6" />
             <div className="relative flex flex-col md:flex-row items-stretch gap-4 md:gap-3">
               <div className="flex-1">
                 <FlowCard
                   icon={Users}
-                  iconColor="#a78bfa"
-                  ring="rgba(167,139,250,0.35)"
                   label="Follower"
                   title="Earns profit"
                   sub="$1,000 P&L"
@@ -45,8 +45,6 @@ export default function CtProfit() {
               <div className="flex-1">
                 <FlowCard
                   icon={TrendingUp}
-                  iconColor="#4ade80"
-                  ring="rgba(74,222,128,0.35)"
                   label="Profit Pool"
                   title="Split applies"
                   sub="Only on profit"
@@ -57,8 +55,6 @@ export default function CtProfit() {
               <div className="flex-1">
                 <FlowCard
                   icon={Crown}
-                  iconColor="#ecc657"
-                  ring="rgba(214,169,61,0.45)"
                   label="Master Trader"
                   title="Earns share"
                   sub="% of follower profit"
@@ -67,13 +63,13 @@ export default function CtProfit() {
             </div>
 
             <div
-              className="relative mt-7 rounded-xl p-4 text-center"
+              className="mt-7 rounded-xl p-4 text-center"
               style={{
-                background: 'rgba(74,222,128,0.06)',
-                border: '1px solid rgba(74,222,128,0.30)',
+                background: 'rgba(214,169,61,0.06)',
+                border: '1px solid rgba(214,169,61,0.30)',
               }}
             >
-              <div className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: '#4ade80' }}>
+              <div className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--fx-gold-light)' }}>
                 <Coins size={14} />
                 Loss outcomes never trigger a profit share
               </div>
@@ -95,32 +91,35 @@ export default function CtProfit() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
 }
 
-function FlowCard({ icon: Icon, iconColor, ring, label, title, sub, highlight = false }) {
+function FlowCard({ icon: Icon, label, title, sub, highlight = false }) {
+  if (highlight) {
+    return (
+      <div className="fx-tile-gold h-full p-5 text-center flex flex-col items-center">
+        <div
+          className="relative z-[1] w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3"
+          style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+        >
+          <Icon size={20} style={{ color: '#1c1608' }} />
+        </div>
+        <div className="relative z-[1] text-[10px] uppercase tracking-wider mb-1" style={{ color: 'rgba(28,22,8,0.7)' }}>
+          {label}
+        </div>
+        <div className="relative z-[1] text-sm md:text-base font-bold mb-1" style={{ color: '#1c1608' }}>{title}</div>
+        <div className="relative z-[1] text-xs" style={{ color: 'rgba(28,22,8,0.78)' }}>
+          {sub}
+        </div>
+      </div>
+    )
+  }
   return (
-    <div
-      className="h-full rounded-2xl p-5 text-center"
-      style={{
-        background: highlight
-          ? `linear-gradient(180deg, ${iconColor}1a, ${iconColor}05)`
-          : 'var(--fx-bg-elev)',
-        border: `1px solid ${ring}`,
-        boxShadow: highlight ? `0 16px 40px -16px ${iconColor}55` : 'none',
-      }}
-    >
-      <div
-        className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3"
-        style={{
-          background: `${iconColor}1f`,
-          border: `1px solid ${iconColor}55`,
-        }}
-      >
-        <Icon size={20} style={{ color: iconColor }} />
+    <div className="fx-tile h-full p-5 text-center flex flex-col items-center">
+      <div className="feature-icon mb-3" style={{ width: 48, height: 48 }}>
+        <Icon size={20} />
       </div>
       <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
         {label}

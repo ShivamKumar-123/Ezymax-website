@@ -1,5 +1,4 @@
-﻿import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { XCircle, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const broker = [
@@ -22,15 +21,25 @@ export default function PrCompare() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="What Makes Us Different"
-          title="Traditional Broker vs FX Artha"
-          highlight="vs FX Artha"
-          subtitle="The short answer: in one model the broker holds your money. In the other, a smart contract does."
-        />
-        <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-          {/* Traditional Broker */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">What Makes Us Different</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Traditional Broker <span className="gradient-text">vs FX Artha</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              The short answer: in one model the broker holds your money. In the other, a smart contract does.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        <div className="relative mt-10 md:mt-14 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-stretch">
+          {/* Traditional Broker — intentional red "problem" card */}
           <ScrollReveal variant="fadeUp">
             <div
               className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
@@ -72,35 +81,30 @@ export default function PrCompare() {
             </div>
           </ScrollReveal>
 
-          {/* FX Artha Protocol */}
+          {/* FX Artha Protocol — solid gold accent tile */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div
-              className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(214,169,61,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(214,169,61,0.35)',
-              }}
-            >
-              <div className="flex items-center gap-3 mb-5">
-                <div className="feature-icon" style={{ width: 44, height: 44 }}>
-                  <ShieldCheck size={20} />
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div className="relative z-[1] flex items-center gap-3 mb-5">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                >
+                  <ShieldCheck size={20} style={{ color: '#1c1608' }} />
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-gold-light)' }}>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'rgba(28,22,8,0.78)' }}>
                     FX Artha Protocol
                   </div>
-                  <div className="text-lg md:text-xl font-bold text-white">
+                  <div className="text-lg md:text-xl font-bold" style={{ color: '#1c1608' }}>
                     Smart-Contract Layer
                   </div>
                 </div>
               </div>
-              <ul className="space-y-3.5">
+              <ul className="relative z-[1] space-y-3.5">
                 {protocol.map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm md:text-base" style={{ color: 'var(--fx-text-2)' }}>
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-base" style={{ color: 'rgba(28,22,8,0.82)' }}>
                       {item}
                     </span>
                   </li>
@@ -134,7 +138,6 @@ export default function PrCompare() {
             &ldquo;We don&apos;t hold your money. The system manages execution.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

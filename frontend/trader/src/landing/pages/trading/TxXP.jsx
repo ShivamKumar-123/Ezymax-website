@@ -1,5 +1,4 @@
-﻿import { Zap, ArrowDownRight } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Zap, ArrowDownRight } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const improvements = [
@@ -20,27 +19,32 @@ export default function TxXP() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="XP Progression"
-          title="Your Activity Unlocks Better Conditions"
-          highlight="Better Conditions"
-          subtitle="Forget 'Gold tier' upgrades and locked-up benefits. We replaced account tiers with XP — every trade you place quietly improves your conditions."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">XP Progression</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Your Activity Unlocks <span className="gradient-text">Better Conditions</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Forget 'Gold tier' upgrades and locked-up benefits. We replaced account tiers with XP — every trade you place quietly improves your conditions.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 rounded-2xl p-6 md:p-8 lg:p-10"
-            style={{
-              background: 'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-              border: '1px solid var(--fx-line-strong)',
-            }}
-          >
+          <div className="fx-tile mt-12 md:mt-16 p-6 md:p-8 lg:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
               {/* LEFT — text + benefits */}
               <div className="lg:col-span-4">
-                <div className="feature-icon mb-4">
+                <div className="feature-icon mb-4" style={{ width: 48, height: 48 }}>
                   <Zap size={20} />
                 </div>
+                <span className="fx-accent-bar mb-4" />
                 <h3 className="text-xl md:text-2xl font-bold text-white leading-tight mb-3">
                   The more you trade, the better your conditions.
                 </h3>
@@ -50,7 +54,7 @@ export default function TxXP() {
                 <ul className="space-y-3">
                   {improvements.map((i) => (
                     <li key={i.title} className="flex items-start gap-3">
-                      <ArrowDownRight size={16} style={{ color: '#4ade80', marginTop: 3 }} />
+                      <ArrowDownRight size={16} style={{ color: 'var(--fx-gold-light)', marginTop: 3 }} />
                       <div>
                         <div className="text-sm font-bold text-white">{i.title}</div>
                         <div className="text-xs" style={{ color: 'var(--fx-text-3)' }}>{i.desc}</div>
@@ -139,7 +143,6 @@ export default function TxXP() {
             &ldquo;The more you trade, the more efficient your trading becomes.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

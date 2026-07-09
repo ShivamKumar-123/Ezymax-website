@@ -1,49 +1,37 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, HelpCircle } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 export default function CtFaqList({ items, title = 'FAQ' }) {
   const [open, setOpen] = useState(null)
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-        border: '1px solid var(--fx-line-strong)',
-      }}
-    >
-      <div
-        className="flex items-center gap-2 px-5 md:px-6 py-3.5"
-        style={{
-          background: 'rgba(214,169,61,0.05)',
-          borderBottom: '1px solid var(--fx-line)',
-        }}
-      >
-        <HelpCircle size={14} style={{ color: 'var(--fx-gold-light)' }} />
-        <span
-          className="text-[11px] font-bold uppercase tracking-[0.22em]"
-          style={{ color: 'var(--fx-gold-light)' }}
-        >
-          {title}
-        </span>
+    <div className="fx-tile overflow-hidden">
+      {/* ── Two-column intro header ────────────────────────── */}
+      <div className="fx-split-intro px-5 md:px-8 pt-6 md:pt-8">
+        <div>
+          <span className="fx-eyebrow mb-4">{title}</span>
+          <h2 className="fx-headline text-2xl md:text-3xl mt-4">
+            Common <span className="gradient-text">Questions</span>
+          </h2>
+        </div>
       </div>
-      <ul>
+
+      <ul className="mt-6 md:mt-8">
         {items.map((it, i) => {
           const isOpen = open === i
           return (
             <li
               key={it.q}
               style={{
-                borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--fx-line)',
+                borderTop: '1px solid var(--fx-line)',
               }}
             >
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-5 md:px-6 py-4 text-left transition-colors"
+                className="w-full flex items-center justify-between gap-4 px-5 md:px-8 py-4 text-left transition-colors"
                 style={{
                   background: isOpen ? 'rgba(214,169,61,0.04)' : 'transparent',
                 }}
@@ -69,7 +57,7 @@ export default function CtFaqList({ items, title = 'FAQ' }) {
                 }}
               >
                 <div
-                  className="px-5 md:px-6 text-sm leading-relaxed"
+                  className="px-5 md:px-8 text-sm leading-relaxed"
                   style={{ color: 'var(--fx-text-2)' }}
                 >
                   {it.a}
