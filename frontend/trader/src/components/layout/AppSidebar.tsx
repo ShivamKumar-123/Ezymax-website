@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useShellStore } from '@/stores/shellStore';
 import { cn } from '@/lib/utils';
-import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
-import { startTour } from '@/components/Onboarding/useTourState';
 import {
   Home,
   LayoutGrid,
@@ -20,9 +18,6 @@ import {
   ShieldCheck,
   Settings,
   X,
-  FileText,
-  HelpCircle,
-  Headphones,
   Receipt,
   Calculator,
   Gift,
@@ -37,35 +32,64 @@ import {
 type LeafItem = { label: string; href: string; icon: any; newTab?: boolean };
 type GroupItem = { label: string; icon: any; key: string; children: LeafItem[] };
 type NavEntry = LeafItem | GroupItem;
+type NavSection = { label: string; items: NavEntry[] };
 
-const NAV_ITEMS: NavEntry[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: Home },
-  { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
-  { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
-  { label: 'Transactions', href: '/transactions', icon: History },
-  { label: 'Portfolio', href: '/portfolio', icon: Receipt },
+const SECTIONS: NavSection[] = [
   {
-    label: 'Earn',
-    icon: Gift,
-    key: 'earn',
-    children: [
-      { label: 'Tasks', href: '/earn/tasks', icon: CheckSquare },
-      { label: 'Leaderboard', href: '/earn/leaderboard', icon: Trophy },
-      { label: 'Play Zone', href: '/earn/play-zone', icon: Sparkles },
-      { label: 'Rewards Store', href: '/earn/store', icon: ShoppingBag },
-      { label: 'Staking', href: '/earn/staking', icon: Coins },
+    label: 'Main',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: Home },
+      { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
+      { label: 'Portfolio', href: '/portfolio', icon: Receipt },
     ],
   },
-  { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
-  { label: 'PAMM', href: '/pamm', icon: TrendingUp },
-  { label: 'Copy Trading', href: '/social', icon: Copy },
-  { label: 'Affiliates', href: '/business', icon: Users },
-  { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
-  { label: 'Economic News', href: '/news', icon: Newspaper },
-  { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
-  { label: 'KYC', href: '/kyc', icon: ShieldCheck },
-  { label: 'Settings', href: '/profile', icon: Settings },
+  {
+    label: 'Money',
+    items: [
+      { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
+      { label: 'Transactions', href: '/transactions', icon: History },
+    ],
+  },
+  {
+    label: 'Trading',
+    items: [
+      { label: 'Copy Trading', href: '/social', icon: Copy },
+      { label: 'PAMM', href: '/pamm', icon: TrendingUp },
+      { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
+    ],
+  },
+  {
+    label: 'Grow',
+    items: [
+      {
+        label: 'Earn',
+        icon: Gift,
+        key: 'earn',
+        children: [
+          { label: 'Tasks', href: '/earn/tasks', icon: CheckSquare },
+          { label: 'Leaderboard', href: '/earn/leaderboard', icon: Trophy },
+          { label: 'Play Zone', href: '/earn/play-zone', icon: Sparkles },
+          { label: 'Rewards Store', href: '/earn/store', icon: ShoppingBag },
+          { label: 'Staking', href: '/earn/staking', icon: Coins },
+        ],
+      },
+      { label: 'Affiliates', href: '/business', icon: Users },
+      { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
+      { label: 'Economic News', href: '/news', icon: Newspaper },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
+      { label: 'KYC', href: '/kyc', icon: ShieldCheck },
+      { label: 'Settings', href: '/profile', icon: Settings },
+    ],
+  },
 ];
+
+// Flat list of all entries — used by the auto-expand logic below.
+const ALL_ITEMS: NavEntry[] = SECTIONS.flatMap((s) => s.items);
 
 function isGroup(e: NavEntry): e is GroupItem {
   return (e as GroupItem).children !== undefined;
@@ -79,7 +103,7 @@ export default function AppSidebar() {
   // the user collapse/expand manually after that.
   const initiallyOpenGroups = useMemo(() => {
     const open = new Set<string>();
-    for (const e of NAV_ITEMS) {
+    for (const e of ALL_ITEMS) {
       if (isGroup(e) && e.children.some((c) => pathname.startsWith(c.href))) {
         open.add(e.key);
       }
@@ -131,7 +155,12 @@ export default function AppSidebar() {
         </div>
 
         <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-2 px-2 sidebar-scroll">
-          {NAV_ITEMS.map((entry) => {
+          {SECTIONS.map((section) => (
+            <div key={section.label} className="mb-1.5">
+              <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-text-tertiary select-none">
+                {section.label}
+              </div>
+              {section.items.map((entry) => {
             if (isGroup(entry)) {
               const expanded = openGroups.has(entry.key);
               const groupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`));
@@ -225,44 +254,11 @@ export default function AppSidebar() {
                 <span className="truncate">{entry.label}</span>
               </Link>
             );
-          })}
+              })}
+            </div>
+          ))}
         </nav>
 
-        <div className="px-3 pb-4 pt-2 space-y-2.5 border-t border-border-primary bg-bg-base">
-          <Link
-            href="/terms"
-            prefetch={false}
-            className="flex items-center gap-2 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2.5 text-xs text-text-secondary hover:text-text-primary hover:border-border-accent transition-colors"
-          >
-            <FileText size={14} className="text-accent shrink-0 opacity-90" />
-            <span>Terms & Conditions</span>
-          </Link>
-
-          <div data-tour={TOUR_TARGETS.SIDEBAR_HELP} className="rounded-xl p-3.5 border border-border-primary bg-card-nested">
-            <div className="flex items-center gap-1.5 mb-1">
-              <HelpCircle size={14} className="text-accent shrink-0" />
-              <span className="text-xs font-semibold text-text-primary">Need Help?</span>
-            </div>
-            <p className="text-[10px] text-text-tertiary mb-3 leading-relaxed">Contact our 24/7 support team</p>
-            <Link
-              href="/support"
-              prefetch={false}
-              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-border-primary text-xs text-text-secondary hover:text-text-primary hover:border-accent/35 hover:bg-accent/5 transition-colors"
-            >
-              <Headphones size={12} className="text-accent/80" />
-              <span>Get Support</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => startTour()}
-              className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-border-primary/60 text-xs text-text-secondary hover:text-text-primary hover:border-accent/35 hover:bg-accent/5 transition-colors"
-            >
-              <Sparkles size={12} className="text-accent/80" />
-              <span>Take a Tour</span>
-            </button>
-          </div>
-
-        </div>
       </aside>
     </>
   );

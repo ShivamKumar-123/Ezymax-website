@@ -15,7 +15,7 @@ import { clsx } from 'clsx';
 import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight,
-  ShieldCheck, BadgeCheck, ExternalLink, Loader2,
+  ShieldCheck, BadgeCheck, ExternalLink,
   Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -204,19 +204,21 @@ function BrokerHome() {
   const totalEquity = realAccounts.reduce((s, a) => s + (Number(a.equity) || 0), 0);
   const todaysPnl = totalEquity - totalBalance;
   const todaysPnlPct = totalBalance > 0 ? (todaysPnl / totalBalance) * 100 : 0;
-  const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
+  // Only greet by a real given name — never a raw email/username like "setup".
+  const rawFirst = (user?.first_name || '').trim();
+  const firstName = rawFirst ? rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1) : '';
   const level = rewardsState?.level ?? 1;
   const levelLabel = rewardsState?.level_label || 'New Trader';
   const dgcCoins = rewardsState?.artha_coins ?? 0;
 
   return (
-    <div className="space-y-5 pb-8 max-w-[1200px] mx-auto w-full">
+    <div className="space-y-5 pb-8 max-w-6xl mx-auto w-full">
       {/* ── Greeting header (DAG mockup) ── */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
-          Welcome back, {firstName}! <span className="text-2xl">👋</span>
+          Welcome back{firstName ? `, ${firstName}` : ''} <span className="text-2xl">👋</span>
         </h1>
-        <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level Up.</p>
+        <p className="text-sm text-zinc-400 mt-1">Trade. Earn. Level up.</p>
       </div>
 
       {/* ── 4 stat cards (DAG aesthetic). Surfaces + foreground colors
@@ -224,103 +226,72 @@ function BrokerHome() {
               globals.css) so the cards work in both dark and light
               mode without per-component `dark:` overrides. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Balance — purple */}
+        {/* Total Balance */}
         <div
           data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}
+          className="rounded-xl p-5 bg-zinc-900/50 border border-white/5"
         >
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}
-            >
-              <WalletIcon size={20} style={{ color: 'var(--card-purple-icon)' }} />
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+              <WalletIcon size={18} className="text-blue-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>Total Balance</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-purple-text-strong)' }}>{fmtUsd(totalBalance)}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-purple-text-faint)' }}>Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">Total Balance</p>
+              <p className="text-xl font-semibold mt-1 tabular-nums truncate text-white">{fmtUsd(totalBalance)}</p>
+              <p className="text-[11px] mt-0.5 text-zinc-400">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
             </div>
           </div>
         </div>
 
-        {/* Today's P/L — green when up, red when down */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{
-            background: todaysPnl >= 0 ? 'var(--card-green-bg)' : 'var(--card-red-bg)',
-            borderColor: todaysPnl >= 0 ? 'var(--card-green-border)' : 'var(--card-red-border)',
-          }}
-        >
+        {/* Open P/L — semantic green / red */}
+        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{
-                background: todaysPnl >= 0 ? 'var(--card-green-icon-bg)' : 'var(--card-red-icon-bg)',
-                borderColor: todaysPnl >= 0 ? 'var(--card-green-icon-border)' : 'var(--card-red-icon-border)',
-              }}
-            >
+            <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', todaysPnl >= 0 ? 'bg-green-500/10' : 'bg-red-500/10')}>
               {todaysPnl >= 0
-                ? <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
-                : <TrendingDown size={20} style={{ color: 'var(--card-red-icon)' }} />}
+                ? <TrendingUp size={18} className="text-green-400" />
+                : <TrendingDown size={18} className="text-red-400" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-muted)' : 'var(--card-red-text-muted)' }}>Open P/L</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: todaysPnl >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
+              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">Open P/L</p>
+              <p className={clsx('text-xl font-semibold mt-1 tabular-nums truncate', todaysPnl >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-faint)' : 'var(--card-red-text-faint)' }}>
+              <p className="text-[11px] mt-0.5 text-zinc-400">
                 {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
               </p>
             </div>
           </div>
         </div>
 
-        {/* My Level — blue */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
-        >
+        {/* My Level */}
+        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 relative"
-              style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
-            >
-              <Shield size={20} style={{ color: 'var(--card-blue-icon)' }} />
-              <span
-                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-bold"
-                style={{ background: 'var(--card-blue-icon)', borderColor: 'var(--card-blue-icon-border)', color: '#ffffff' }}
-              >
+            <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0 relative">
+              <Shield size={18} className="text-violet-400" />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-violet-500 text-white ring-2 ring-zinc-900">
                 {level}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>My Level</p>
-              <p className="text-lg font-bold mt-1 truncate" style={{ color: 'var(--card-blue-text-strong)' }}>Level {level}</p>
-              <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--card-blue-text-faint)' }}>{levelLabel}</p>
+              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">My Level</p>
+              <p className="text-xl font-semibold mt-1 truncate text-white">Level {level}</p>
+              <p className="text-[11px] mt-0.5 truncate text-zinc-400">{levelLabel}</p>
             </div>
           </div>
         </div>
 
-        {/* DGC Coins — amber */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}
-        >
+        {/* DGC Coins */}
+        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}
-            >
-              <Coins size={20} style={{ color: 'var(--card-amber-icon)' }} />
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Coins size={18} className="text-amber-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>DGC Coins</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-amber-text-strong)' }}>
+              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">DGC Coins</p>
+              <p className="text-xl font-semibold mt-1 tabular-nums truncate text-white">
                 {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-amber-text-faint)' }}>Reward balance</p>
+              <p className="text-[11px] mt-0.5 text-zinc-400">Reward balance</p>
             </div>
           </div>
         </div>
@@ -340,32 +311,32 @@ function BrokerHome() {
             const id = activeId || accounts[0].id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
+          className="group rounded-xl p-5 bg-amber-500 hover:bg-amber-400 transition-all flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <BarChart3 size={22} className="text-white" />
+          <div className="w-11 h-11 rounded-lg bg-black/10 flex items-center justify-center shrink-0">
+            <BarChart3 size={20} className="text-black" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Trade Now</p>
-            <p className="text-xs text-blue-100/80 mt-0.5">Start Trading</p>
+            <p className="text-base font-bold text-black truncate">Trade Now</p>
+            <p className="text-xs text-black/70 mt-0.5">Start trading</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-black/60 group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
 
         {/* Copy Trading — green gradient */}
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 border border-emerald-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-emerald-900/30"
+          className="group rounded-xl p-5 bg-zinc-900 border border-white/10 hover:border-white/20 transition-all flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <Users size={22} className="text-white" />
+          <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+            <Users size={20} className="text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Copy Trading</p>
-            <p className="text-xs text-emerald-100/80 mt-0.5">Copy Top Traders</p>
+            <p className="text-base font-semibold text-white truncate">Copy Trading</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Copy top traders</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-zinc-500 group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
 
         {/* Add Funds — amber gradient */}
@@ -373,16 +344,16 @@ function BrokerHome() {
           type="button"
           data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT}
           onClick={() => router.push('/wallet')}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-300/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-amber-900/30"
+          className="group rounded-xl p-5 bg-zinc-900 border border-white/10 hover:border-white/20 transition-all flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <WalletIcon size={22} className="text-white" />
+          <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+            <WalletIcon size={20} className="text-zinc-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Add Funds</p>
-            <p className="text-xs text-amber-100/80 mt-0.5">Deposit Now</p>
+            <p className="text-base font-semibold text-white truncate">Add Funds</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Deposit now</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-zinc-500 group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
       </div>
 
@@ -393,7 +364,7 @@ function BrokerHome() {
         loading={loading}
       />
       <TopMoversCard movers={movers} />
-      <StatusProgramCard />
+      <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
       <InviteFriendsCard />
       {banners.length > 0 && <BannerStrip banners={banners} />}
     </div>
@@ -473,8 +444,8 @@ function AccountBalanceCard({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/wallet"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
-            style={{ background: '#d6a93d', color: '#1a1408' }}
+            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
           >
             <ArrowDownToLine size={14} /> Deposit
           </Link>
@@ -508,25 +479,29 @@ function AccountBalanceCard({
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         <Stat label="Balance" value={fmtUsd(a?.balance ?? 0)} highlight />
-        <Stat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} />
         <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
-        <Stat label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
-        <Stat label="Server" value="—" />
+        <Stat
+          label="Free margin"
+          value={fmtUsd(a?.free_margin ?? 0)}
+          tone={(a?.free_margin ?? 0) < 0 ? 'neg' : undefined}
+        />
+        {a && <Stat label="Leverage" value={`1:${a.leverage}`} />}
         <Stat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: 'pos' | 'neg' }) {
+  const color = tone === 'neg' ? '#f87171' : tone === 'pos' ? '#4ade80' : highlight ? '#ffffff' : 'var(--text-primary)';
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">{label}</p>
+      <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-zinc-400">{label}</p>
       <p
-        className={clsx('mt-1 font-bold tabular-nums', highlight ? 'text-xl md:text-2xl' : 'text-base md:text-lg')}
-        style={{ color: highlight ? '#d6a93d' : 'var(--text-primary)' }}
+        className={clsx('mt-1 font-semibold tabular-nums', highlight ? 'text-2xl md:text-3xl' : 'text-base md:text-lg')}
+        style={{ color }}
       >
         {value}
       </p>
@@ -537,62 +512,110 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
 function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; price: number }[] }) {
   return (
     <Card title="Top daily movers">
-      <ul className="divide-y divide-border-primary">
-        {movers.length === 0 && (
-          <li className="py-8 text-center text-sm text-text-tertiary flex items-center justify-center gap-2">
-            <Loader2 size={14} className="animate-spin" /> Loading…
-          </li>
-        )}
-        {movers.map((m) => {
-          const up = m.pct >= 0;
-          const Icon = up ? TrendingUp : TrendingDown;
-          return (
-            <li key={m.symbol} className="py-3 flex items-center gap-3">
-              <span className="text-sm font-semibold text-text-primary flex-1">{m.symbol}</span>
-              <span className="text-sm font-mono tabular-nums text-text-secondary">
-                {Number.isFinite(m.price) && m.price > 0 ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
-              </span>
-              <span
-                className="inline-flex items-center gap-1 text-xs font-bold tabular-nums"
-                style={{ color: up ? '#22c55e' : '#ef4444' }}
-              >
-                <Icon size={12} />
-                {Number.isFinite(m.pct) ? `${up ? '+' : ''}${m.pct.toFixed(2)}%` : '—'}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {movers.length === 0 ? (
+        <div className="divide-y divide-border-primary">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="py-3 flex items-center gap-3 animate-pulse">
+              <div className="h-3.5 w-20 rounded bg-zinc-800" />
+              <div className="ml-auto h-3.5 w-16 rounded bg-zinc-800" />
+              <div className="h-6 w-16 rounded-md bg-zinc-800" />
+            </div>
+          ))}
+          <p className="pt-3 text-xs text-zinc-400 text-center">Market data loading…</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-border-primary">
+          {movers.map((m) => {
+            const up = m.pct >= 0;
+            const hasPct = Number.isFinite(m.pct);
+            const hasPrice = Number.isFinite(m.price) && m.price > 0;
+            return (
+              <li key={m.symbol} className="py-3 flex items-center gap-3">
+                <span className="text-sm font-semibold text-white flex-1">{m.symbol}</span>
+                <span className="text-sm font-mono tabular-nums text-zinc-400">
+                  {hasPrice ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
+                </span>
+                {hasPct && (
+                  <span
+                    className={clsx(
+                      'inline-flex items-center gap-1 text-xs font-bold tabular-nums px-2 py-1 rounded-md',
+                      up ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10',
+                    )}
+                  >
+                    {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {up ? '+' : ''}{m.pct.toFixed(2)}%
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </Card>
   );
 }
 
-function StatusProgramCard() {
+function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; xpNext: number }) {
+  const [tab, setTab] = useState<'challenges' | 'rewards'>('challenges');
+  const pct = xpNext > 0 ? Math.min(100, Math.round((xp / xpNext) * 100)) : 0;
   return (
     <Card>
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base font-bold text-text-primary mb-2 flex items-center gap-2">
-            <BadgeCheck size={18} className="text-[#d6a93d]" /> Status program
-          </h2>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors"
-              style={{ background: 'rgba(214,169,61,0.14)', color: '#d6a93d', border: '1px solid rgba(214,169,61,0.35)' }}
-            >
-              Challenges
-            </Link>
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:bg-bg-hover"
-              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
-            >
-              My rewards
-            </Link>
-          </div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+          <BadgeCheck size={18} className="text-[#d6a93d]" /> Status program
+        </h2>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTab('challenges')}
+            className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
+              tab === 'challenges' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white')}
+          >
+            Challenges
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('rewards')}
+            className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
+              tab === 'rewards' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white')}
+          >
+            My rewards
+          </button>
         </div>
       </div>
+
+      {/* XP progress toward the next level */}
+      <div className="flex items-center justify-between text-xs mb-2">
+        <span className="text-zinc-400">Level {level} → Level {level + 1}</span>
+        <span className="text-zinc-400 tabular-nums">{xp} / {xpNext} XP</span>
+      </div>
+      <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+        <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${pct}%` }} />
+      </div>
+
+      {tab === 'challenges' ? (
+        <div className="mt-4 rounded-xl border border-white/5 bg-zinc-900/50 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+            <BarChart3 size={18} className="text-blue-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">Complete your first trade</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Open and close any position to earn your first reward.</p>
+          </div>
+          <span className="text-xs font-bold text-amber-400 shrink-0">+50 XP</span>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-white/5 bg-zinc-900/50 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Coins size={18} className="text-amber-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">Reward balance</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Redeem your DGC coins in the rewards store.</p>
+          </div>
+          <Link href="/rewards" className="text-xs font-semibold text-zinc-300 hover:text-white shrink-0">Open →</Link>
+        </div>
+      )}
     </Card>
   );
 }

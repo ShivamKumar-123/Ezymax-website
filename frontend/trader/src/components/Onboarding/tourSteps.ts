@@ -60,14 +60,6 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     page: 'dashboard',
-    element: sel(TOUR_TARGETS.SIDEBAR_HELP),
-    title: 'Need help?',
-    description: 'Reach our 24/7 support team anytime from here.',
-    side: 'right',
-    align: 'start',
-  },
-  {
-    page: 'dashboard',
     element: sel(TOUR_TARGETS.DASHBOARD_TRADE_NOW),
     title: 'Open the terminal',
     description: "Let's head to the trading terminal — click Next.",
