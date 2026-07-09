@@ -1,4 +1,4 @@
-﻿import {
+import {
   Sliders,
   Activity,
   Clock3,
@@ -6,7 +6,6 @@
   CheckCircle2,
   ShieldCheck,
 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const features = [
@@ -21,40 +20,44 @@ export default function InUX() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="User Experience"
-          title="Simple and Transparent Experience"
-          highlight="Transparent Experience"
-          subtitle="The plan lives right inside your trading dashboard — switch durations, change coverage, watch your pool draw down, all without leaving the chart."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">User Experience</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Simple and Transparent <span className="gradient-text">Experience</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              The plan lives right inside your trading dashboard — switch durations, change coverage, watch your pool draw down, all without leaving the chart.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT — features */}
+          {/* LEFT — features (gold accent tile) */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-5">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <p className="relative z-[1] text-base mb-6" style={{ color: '#1c1608' }}>
                 Inside the trading dashboard, you can manage and monitor your active plan in
                 real time.
               </p>
-              <ul className="space-y-3">
+              <ul className="relative z-[1] space-y-3">
                 {features.map(({ icon: Icon, label }) => (
                   <li
                     key={label}
                     className="flex items-center gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(214,169,61,0.05)',
-                      border: '1px solid rgba(214,169,61,0.22)',
+                      background: 'rgba(28,22,8,0.08)',
+                      border: '1px solid rgba(28,22,8,0.2)',
                     }}
                   >
-                    <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm md:text-[15px] text-white">{label}</span>
+                    <Icon size={16} style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{label}</span>
                   </li>
                 ))}
               </ul>
@@ -63,15 +66,7 @@ export default function InUX() {
 
           {/* RIGHT — UI mock */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-7">
-            <div
-              className="h-full rounded-2xl overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-                border: '1px solid rgba(214,169,61,0.30)',
-                boxShadow: '0 30px 70px -30px rgba(214,169,61,0.30)',
-              }}
-            >
+            <div className="fx-tile h-full">
               {/* Mock header */}
               <div
                 className="flex items-center justify-between px-5 md:px-6 py-3.5"
@@ -89,9 +84,9 @@ export default function InUX() {
                 <span
                   className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider"
                   style={{
-                    background: 'rgba(74,222,128,0.18)',
-                    color: '#4ade80',
-                    border: '1px solid rgba(74,222,128,0.45)',
+                    background: 'rgba(214,169,61,0.18)',
+                    color: 'var(--fx-gold-light)',
+                    border: '1px solid rgba(214,169,61,0.45)',
                   }}
                 >
                   ACTIVE
@@ -185,15 +180,15 @@ export default function InUX() {
                 <div
                   className="rounded-xl px-4 py-3 flex items-center justify-between"
                   style={{
-                    background: 'rgba(96,165,250,0.08)',
-                    border: '1px solid rgba(96,165,250,0.30)',
+                    background: 'rgba(214,169,61,0.08)',
+                    border: '1px solid rgba(214,169,61,0.30)',
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Clock3 size={15} style={{ color: '#60a5fa' }} />
+                    <Clock3 size={15} style={{ color: 'var(--fx-gold-light)' }} />
                     <span className="text-sm font-semibold text-white">Plan Expiry</span>
                   </div>
-                  <span className="text-sm font-bold" style={{ color: '#60a5fa' }}>
+                  <span className="text-sm font-bold" style={{ color: 'var(--fx-gold-light)' }}>
                     4d 12h 36m
                   </span>
                 </div>
@@ -210,7 +205,6 @@ export default function InUX() {
             &ldquo;Full visibility. No guesswork.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
