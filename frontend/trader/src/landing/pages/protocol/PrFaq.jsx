@@ -1,4 +1,3 @@
-﻿import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -15,19 +14,28 @@ export default function PrFaq() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Trust Questions"
-          title="Frequently Asked Questions"
-          highlight="Frequently Asked"
-          subtitle="The questions about trust, control, and how the system actually behaves."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Trust Questions</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                <span className="gradient-text">Frequently Asked</span> Questions
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              The questions about trust, control, and how the system actually behaves.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <ScrollReveal variant="fadeUp">
-          <div className="mt-12 md:mt-14 max-w-3xl mx-auto">
+          <div className="mt-10 md:mt-14 max-w-3xl mx-auto">
             <CtFaqList items={faq} title="Protocol FAQ" />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

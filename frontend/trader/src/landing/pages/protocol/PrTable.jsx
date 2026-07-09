@@ -1,4 +1,3 @@
-﻿import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const rows = [
@@ -13,23 +12,25 @@ export default function PrTable() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Side by Side"
-          title="FX Artha vs Traditional Brokers"
-          highlight="vs Traditional Brokers"
-          subtitle="The five differences that matter most, laid out plainly."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Side by Side</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                FX Artha <span className="gradient-text">vs Traditional Brokers</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              The five differences that matter most, laid out plainly.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 max-w-5xl mx-auto rounded-2xl overflow-hidden"
-            style={{
-              background:
-                'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-              border: '1px solid rgba(214,169,61,0.32)',
-              boxShadow: '0 30px 70px -30px rgba(214,169,61,0.30)',
-            }}
-          >
+          <div className="fx-tile mt-10 md:mt-14 max-w-5xl mx-auto overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[460px]">
                 <thead>
@@ -78,7 +79,6 @@ export default function PrTable() {
             </div>
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

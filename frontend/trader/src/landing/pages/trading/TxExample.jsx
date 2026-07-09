@@ -1,8 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo } from 'react'
 import { Calculator, Sun, Moon, Receipt, Gauge, Activity, TrendingUp } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const BROKERAGE_RATE = 0.0008
@@ -28,23 +27,25 @@ export default function TxExample() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Trade Example"
-          title="How a Trade Works"
-          highlight="a Trade Works"
-          subtitle="Walk through a real scenario. Change the numbers — every cost shows up before you'd ever click execute."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Trade Example</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                How <span className="gradient-text">a Trade Works</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Walk through a real scenario. Change the numbers — every cost shows up before you'd ever click execute.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 max-w-4xl mx-auto rounded-2xl overflow-hidden"
-            style={{
-              background:
-                'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-              border: '1px solid rgba(214,169,61,0.32)',
-              boxShadow: '0 30px 70px -30px rgba(214,169,61,0.30)',
-            }}
-          >
+          <div className="fx-tile mt-12 md:mt-16 max-w-4xl mx-auto">
             {/* Header */}
             <div
               className="flex items-center justify-between px-6 md:px-7 py-4"
@@ -169,12 +170,12 @@ export default function TxExample() {
                       className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
                       style={{
                         background: !overnight
-                          ? 'rgba(74,222,128,0.12)'
+                          ? 'rgba(214,169,61,0.12)'
                           : 'rgba(255,255,255,0.03)',
                         border: !overnight
-                          ? '1px solid rgba(74,222,128,0.45)'
+                          ? '1px solid rgba(214,169,61,0.45)'
                           : '1px solid var(--fx-line-strong)',
-                        color: !overnight ? '#4ade80' : 'var(--fx-text-2)',
+                        color: !overnight ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                       }}
                     >
                       <Sun size={15} />
@@ -218,7 +219,7 @@ export default function TxExample() {
                 />
                 <Row
                   icon={Gauge}
-                  iconColor={overnight ? '#f87171' : '#4ade80'}
+                  iconColor={overnight ? '#f87171' : '#ecc657'}
                   label="Leverage Fee"
                   value={overnight ? `$${fmt(leverageFee)}` : '$0.00'}
                   sub={overnight ? 'Overnight rate applied' : 'Intraday — none'}
@@ -226,7 +227,7 @@ export default function TxExample() {
                 />
                 <Row
                   icon={Activity}
-                  iconColor="#a78bfa"
+                  iconColor="#ecc657"
                   label="Spread"
                   value="Market"
                   sub="Tightens with XP"
@@ -270,8 +271,6 @@ export default function TxExample() {
             &ldquo;All costs are known before execution.&rdquo;
           </p>
         </ScrollReveal>
-
-        </div>
       </div>
     </section>
   )

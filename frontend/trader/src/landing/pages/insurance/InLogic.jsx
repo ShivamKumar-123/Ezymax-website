@@ -1,34 +1,35 @@
-﻿import { ShieldCheck, TrendingDown, MinusCircle, Coins } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { ShieldCheck, TrendingDown, MinusCircle, Coins } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 export default function InLogic() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Coverage Logic"
-          title="How Coverage Works"
-          highlight="Coverage Works"
-          subtitle="Every plan comes with a pool of coverage for its duration. Losses draw down the pool — once it's empty, the plan stops covering until you activate a new one."
-        />
-        <ScrollReveal variant="fadeUp">
-          <div
-            className="mt-12 md:mt-16 relative rounded-2xl p-7 md:p-10 overflow-hidden"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(214,169,61,0.08) 0%, var(--fx-bg-elev-2) 60%)',
-              border: '1px solid rgba(214,169,61,0.30)',
-            }}
-          >
-            <div className="absolute inset-0 fx-grid-bg" />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Coverage Logic</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                How Coverage <span className="gradient-text">Works</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Every plan comes with a pool of coverage for its duration. Losses draw down the pool — once it's empty, the plan stops covering until you activate a new one.
+            </p>
+          </ScrollReveal>
+        </div>
 
+        <ScrollReveal variant="fadeUp">
+          <div className="fx-tile mt-12 md:mt-16 p-7 md:p-10">
+            <span className="fx-accent-bar mb-6" />
             <div className="relative flex flex-col md:flex-row items-stretch gap-4 md:gap-3">
               <div className="flex-1">
                 <Node
                   icon={ShieldCheck}
-                  color="#ecc657"
+                  color="var(--fx-gold-light)"
                   label="Coverage Pool"
                   title="$3,000 / period"
                   sub="Plan capacity"
@@ -50,7 +51,7 @@ export default function InLogic() {
               <div className="flex-1">
                 <Node
                   icon={MinusCircle}
-                  color="#a78bfa"
+                  color="var(--fx-gold-light)"
                   label="Deduction"
                   title="–$300 covered"
                   sub="Coverage % of loss"
@@ -62,7 +63,7 @@ export default function InLogic() {
               <div className="flex-1">
                 <Node
                   icon={Coins}
-                  color="#4ade80"
+                  color="var(--fx-gold-light)"
                   label="Remaining Balance"
                   title="$2,700 left"
                   sub="Pool after coverage"
@@ -106,7 +107,6 @@ export default function InLogic() {
             &ldquo;Coverage applies across your activity — not individually per trade.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
@@ -118,10 +118,10 @@ function Node({ icon: Icon, color, label, title, sub, step, highlight = false })
       className="rounded-2xl p-5 text-center relative"
       style={{
         background: highlight
-          ? `linear-gradient(180deg, ${color}1a, ${color}05)`
+          ? 'linear-gradient(180deg, rgba(214,169,61,0.14), rgba(214,169,61,0.03))'
           : 'var(--fx-bg-elev)',
         border: `1px solid ${color}55`,
-        boxShadow: highlight ? `0 16px 40px -16px ${color}55` : 'none',
+        boxShadow: highlight ? '0 16px 40px -16px rgba(214,169,61,0.45)' : 'none',
       }}
     >
       <span
