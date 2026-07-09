@@ -1,30 +1,25 @@
-﻿import { StopCircle, Sliders, Activity, ShieldCheck } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { StopCircle, Sliders, Activity, ShieldCheck } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
 const features = [
   {
     icon: StopCircle,
-    accent: '#f87171',
     title: 'Stop Copying Anytime',
     desc: 'Pause or fully exit the copy relationship instantly — no waiting period.',
   },
   {
     icon: Sliders,
-    accent: '#ecc657',
     title: 'Adjust Allocation',
     desc: 'Increase or decrease how much capital follows a Master Trader on demand.',
   },
   {
     icon: Activity,
-    accent: '#4ade80',
     title: 'Real-time Performance',
     desc: 'Live view of P&L per Master Trader you copy, with full trade history.',
   },
   {
     icon: ShieldCheck,
-    accent: '#a78bfa',
     title: 'Risk Management Tools',
     desc: 'Set caps, exposure limits, and protective rules per copy relationship.',
   },
@@ -39,30 +34,56 @@ export default function CtControl() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Control & Risk"
-          title="Full Control. Transparent Risk."
-          highlight="Transparent Risk"
-          subtitle="Copy trading shouldn't mean handing over your account. Pause, change allocations, or pull out completely whenever you want — no waiting period, no calls."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Control &amp; Risk</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Full Control. <span className="gradient-text">Transparent Risk.</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Copy trading shouldn't mean handing over your account. Pause, change allocations, or pull out completely whenever you want — no waiting period, no calls.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: feature tiles (one gold accent) ────────── */}
+        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-12 md:mt-16 items-stretch">
           {features.map((f, i) => {
             const Icon = f.icon
+            const isGold = i === 1
             return (
               <ScrollReveal key={f.title} variant="fadeUp" delay={i * 0.05}>
-                <div className="glass-card h-full p-6">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                    style={{ background: `${f.accent}1f`, border: `1px solid ${f.accent}55` }}
-                  >
-                    <Icon size={20} style={{ color: f.accent }} />
+                {isGold ? (
+                  <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+                    <div
+                      className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                    >
+                      <Icon size={20} style={{ color: '#1c1608' }} />
+                    </div>
+                    <span className="fx-accent-bar mb-4 relative z-[1]" />
+                    <h3 className="relative z-[1] text-base md:text-lg font-bold mb-2" style={{ color: '#1c1608' }}>{f.title}</h3>
+                    <p className="relative z-[1] text-sm leading-relaxed" style={{ color: 'rgba(28,22,8,0.78)' }}>
+                      {f.desc}
+                    </p>
                   </div>
-                  <h3 className="text-base md:text-lg font-bold text-white mb-2">{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
-                    {f.desc}
-                  </p>
-                </div>
+                ) : (
+                  <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+                    <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
+                      <Icon size={20} />
+                    </div>
+                    <span className="fx-accent-bar mb-4" />
+                    <h3 className="text-base md:text-lg font-bold text-white mb-2">{f.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                      {f.desc}
+                    </p>
+                  </div>
+                )}
               </ScrollReveal>
             )
           })}
@@ -82,7 +103,6 @@ export default function CtControl() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

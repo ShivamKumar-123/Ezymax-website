@@ -1,5 +1,4 @@
-﻿import { Calendar, Sliders, Power, Activity, ShieldCheck } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Calendar, Sliders, Power, Activity, ShieldCheck } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const steps = [
@@ -14,64 +13,103 @@ export default function InHow() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="How It Works"
-          title="Simple and Continuous Protection"
-          highlight="Continuous Protection"
-          subtitle="Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade — coverage kicks in automatically on eligible losses."
-        />
-        <div className="mt-12 md:mt-16">
-          <div className="relative grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-3">
-            <div
-              className="hidden md:block absolute top-[42px] left-[8%] right-[8%] h-px pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
-              }}
-            />
-            {steps.map((s, i) => {
-              const Icon = s.icon
-              return (
-                <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div
-                      className="relative w-[84px] h-[84px] rounded-2xl flex items-center justify-center mb-4"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, var(--fx-bg) 0%, var(--fx-bg-elev-2) 100%)',
-                        border: '1px solid rgba(214,169,61,0.28)',
-                        boxShadow:
-                          '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px -16px rgba(214,169,61,0.32)',
-                      }}
-                    >
-                      <Icon size={26} style={{ color: 'var(--fx-gold-light)' }} />
-                      <span
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                          color: '#1a1408',
-                          boxShadow: '0 6px 16px -6px rgba(214,169,61,0.55)',
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                    </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5 px-1">
-                      {s.title}
-                    </h3>
-                    <p
-                      className="text-xs md:text-[13px] leading-relaxed px-1"
-                      style={{ color: 'var(--fx-text-2)' }}
-                    >
-                      {s.desc}
-                    </p>
-                  </div>
-                </ScrollReveal>
-              )
-            })}
-          </div>
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">How It Works</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Simple and Continuous <span className="gradient-text">Protection</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Five quick steps and you're protected. Pick a duration and coverage, switch on the plan, then go trade — coverage kicks in automatically on eligible losses.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: numbered timeline + gold summary + image ── */}
+        <div className="fx-bento grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-10 md:mt-14 items-stretch">
+          {/* Numbered vertical timeline */}
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile h-full p-6 sm:p-7 md:p-8 flex flex-col">
+              <span className="fx-accent-bar mb-4" />
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-7">
+                Five steps to continuous protection
+              </h3>
+
+              <div className="relative">
+                {/* vertical gradient rail running through the numbered nodes */}
+                <span
+                  aria-hidden
+                  className="absolute left-[23px] top-[24px] bottom-[24px] w-[3px] rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
+                    boxShadow: '0 0 16px rgba(214,169,61,0.4)',
+                  }}
+                />
+                <ul className="relative space-y-6 md:space-y-7">
+                  {steps.map((s, i) => (
+                    <li key={s.title} className="relative flex items-start gap-5">
+                      <div className="fx-icon-badge shrink-0" style={{ width: 48, height: 48 }}>
+                        <span className="text-base font-bold" style={{ color: 'var(--fx-gold-light)' }}>
+                          {i + 1}
+                        </span>
+                      </div>
+                      <div className="pt-1.5">
+                        <div className="text-base md:text-lg font-bold text-white leading-snug mb-1">
+                          {s.title}
+                        </div>
+                        <div className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                          {s.desc}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* Gold summary tile */}
+          <ScrollReveal variant="fadeUp" delay={0.08}>
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div
+                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+              >
+                <ShieldCheck size={20} style={{ color: '#1c1608' }} />
+              </div>
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <h3 className="relative z-[1] text-2xl md:text-[28px] font-bold mb-4 leading-tight" style={{ color: '#1c1608' }}>
+                Pick a duration and coverage, switch it on, then trade.
+              </h3>
+              <p className="relative z-[1] text-base mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
+                Coverage kicks in automatically on eligible losses during the active period — no
+                extra steps once the plan is live.
+              </p>
+              <div
+                className="relative z-[1] mt-auto rounded-xl p-4 text-xs md:text-sm italic"
+                style={{
+                  background: 'rgba(28,22,8,0.08)',
+                  border: '1px solid rgba(28,22,8,0.2)',
+                  color: 'rgba(28,22,8,0.82)',
+                }}
+              >
+                One plan. Continuous protection within defined limits.
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* Image tile */}
+          <ScrollReveal variant="fadeUp" delay={0.16}>
+            <div className="fx-tile-media h-full min-h-[280px] md:col-span-2 lg:col-span-1">
+              <span className="fx-tile-media-label">Image</span>
+            </div>
+          </ScrollReveal>
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
@@ -82,7 +120,6 @@ export default function InHow() {
             &ldquo;One plan. Continuous protection within defined limits.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

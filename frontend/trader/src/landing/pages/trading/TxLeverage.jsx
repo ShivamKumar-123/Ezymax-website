@@ -1,32 +1,35 @@
-﻿import { Scale, Clock, Moon, CheckCircle2, XCircle, Sun } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Scale, Clock, Moon, CheckCircle2, XCircle, Sun } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 export default function TxLeverage() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Leverage Rule"
-          title="Leverage, Made Practical"
-          highlight="Practical"
-          subtitle="Leverage lets you control a larger position with less capital. The catch most platforms hide — you only owe the fee when you actually hold the position overnight."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Leverage Rule</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Leverage, Made <span className="gradient-text">Practical</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Leverage lets you control a larger position with less capital. The catch most platforms hide — you only owe the fee when you actually hold the position overnight.
+            </p>
+          </ScrollReveal>
+        </div>
+
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
           {/* LEFT — Explanation + example */}
           <ScrollReveal variant="fadeUp">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <div className="feature-icon mb-5">
+            <div className="fx-tile h-full p-7 md:p-8">
+              <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
                 <Scale size={20} />
               </div>
+              <span className="fx-accent-bar mb-4" />
               <h3 className="text-2xl md:text-[28px] font-bold text-white mb-4 leading-tight">
                 Control more with less — pay only when it matters.
               </h3>
@@ -34,40 +37,35 @@ export default function TxLeverage() {
                 A simple example shows how the math works:
               </p>
 
-              <div
-                className="rounded-xl p-5 mb-6"
-                style={{
-                  background: 'rgba(214,169,61,0.05)',
-                  border: '1px solid rgba(214,169,61,0.22)',
-                }}
-              >
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
-                      Your Capital
-                    </div>
-                    <div className="text-xl md:text-2xl font-bold text-white">$100</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="fx-stat-chart p-5 flex flex-col">
+                  <div className="fx-chart-curve" />
+                  <div className="relative z-[1] text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+                    Your Capital
                   </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
-                      Leverage
-                    </div>
-                    <div className="text-xl md:text-2xl font-bold gradient-text">10Ã—</div>
+                  <div className="relative z-[1] text-3xl md:text-4xl font-bold gradient-text">$100</div>
+                </div>
+                <div className="fx-stat-chart p-5 flex flex-col">
+                  <div className="fx-chart-curve" />
+                  <div className="relative z-[1] text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+                    Leverage
                   </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
-                      Position
-                    </div>
-                    <div className="text-xl md:text-2xl font-bold text-white">$1,000</div>
+                  <div className="relative z-[1] text-3xl md:text-4xl font-bold gradient-text">10Ã—</div>
+                </div>
+                <div className="fx-stat-chart p-5 flex flex-col">
+                  <div className="fx-chart-curve" />
+                  <div className="relative z-[1] text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+                    Position
                   </div>
+                  <div className="relative z-[1] text-3xl md:text-4xl font-bold gradient-text">$1,000</div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 size={18} style={{ color: '#4ade80' }} />
+                  <CheckCircle2 size={18} style={{ color: 'var(--fx-gold-light)' }} />
                   <span className="text-sm md:text-[15px] text-white">
-                    Close trade <b>same day</b> → <span style={{ color: '#4ade80' }}>No leverage fee</span>
+                    Close trade <b>same day</b> → <span style={{ color: 'var(--fx-gold-light)' }}>No leverage fee</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -82,14 +80,7 @@ export default function TxLeverage() {
 
           {/* RIGHT — Timeline visual */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div
-              className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
-                border: '1px solid rgba(214,169,61,0.22)',
-              }}
-            >
+            <div className="fx-tile relative h-full p-7 md:p-8 overflow-hidden">
               <div className="absolute inset-0 fx-grid-bg" />
               <div className="relative">
                 <div className="text-[11px] font-bold uppercase tracking-[0.22em] mb-6" style={{ color: 'var(--fx-gold-light)' }}>
@@ -113,18 +104,18 @@ export default function TxLeverage() {
                   <div
                     className="rounded-xl p-4"
                     style={{
-                      background: 'rgba(74,222,128,0.08)',
-                      border: '1px solid rgba(74,222,128,0.35)',
+                      background: 'rgba(214,169,61,0.08)',
+                      border: '1px solid rgba(214,169,61,0.35)',
                     }}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Sun size={14} style={{ color: '#4ade80' }} />
-                      <span className="text-[11px] uppercase tracking-wider font-bold" style={{ color: '#4ade80' }}>
+                      <Sun size={14} style={{ color: 'var(--fx-gold-light)' }} />
+                      <span className="text-[11px] uppercase tracking-wider font-bold" style={{ color: 'var(--fx-gold-light)' }}>
                         Same Day
                       </span>
                     </div>
                     <div className="text-sm font-bold text-white mb-1">Close before end of day</div>
-                    <div className="text-xs" style={{ color: '#4ade80' }}>
+                    <div className="text-xs" style={{ color: 'var(--fx-gold-light)' }}>
                       No leverage fee
                     </div>
                   </div>
@@ -162,7 +153,6 @@ export default function TxLeverage() {
             &ldquo;You only pay for leverage when you actually use it over time.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

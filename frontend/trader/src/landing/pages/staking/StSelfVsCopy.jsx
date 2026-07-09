@@ -1,5 +1,4 @@
-﻿import { Activity, Copy, CheckCircle2 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Activity, Copy, CheckCircle2 } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -14,67 +13,60 @@ export default function StSelfVsCopy() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Self vs Copy"
-          title="Use Your Capital Your Way"
-          highlight="Your Way"
-          subtitle="Active or passive — your choice."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* Self */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
           <ScrollReveal variant="fadeUp">
-            <div
-              className="relative h-full rounded-2xl p-8 md:p-9"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(74,222,128,0.10) 0%, rgba(74,222,128,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(74,222,128,0.30)',
-              }}
-            >
-              <div className="flex items-center gap-3 mb-5">
+            <div>
+              <span className="fx-eyebrow mb-5">Self vs Copy</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Use Your Capital <span className="gradient-text">Your Way</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Active or passive — your choice.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+          {/* Self — solid gold accent tile */}
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile-gold h-full p-8 md:p-9 flex flex-col">
+              <div className="flex items-center gap-3 mb-5 relative z-[1]">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(74,222,128,0.18)', border: '1px solid rgba(74,222,128,0.4)' }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
                 >
-                  <Activity size={22} style={{ color: '#4ade80' }} />
+                  <Activity size={22} style={{ color: '#1c1608' }} />
                 </div>
-                <h3 className="text-2xl md:text-[26px] font-bold text-white">Self Trading</h3>
+                <h3 className="text-2xl md:text-[26px] font-bold" style={{ color: '#1c1608' }}>Self Trading</h3>
               </div>
-              <ul className="space-y-3">
+              <ul className="space-y-3 relative z-[1]">
                 {self.map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: '#4ade80' }} />
-                    <span className="text-sm md:text-[15px] text-white">{f}</span>
+                    <CheckCircle2 size={18} style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{f}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </ScrollReveal>
 
-          {/* Copy */}
+          {/* Copy — dark tile with gold accents */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div
-              className="relative h-full rounded-2xl p-8 md:p-9"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(96,165,250,0.10) 0%, rgba(96,165,250,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(96,165,250,0.30)',
-              }}
-            >
+            <div className="fx-tile h-full p-8 md:p-9 flex flex-col">
               <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(96,165,250,0.18)', border: '1px solid rgba(96,165,250,0.4)' }}
-                >
-                  <Copy size={22} style={{ color: '#60a5fa' }} />
+                <div className="feature-icon shrink-0" style={{ width: 48, height: 48 }}>
+                  <Copy size={20} />
                 </div>
                 <h3 className="text-2xl md:text-[26px] font-bold text-white">Copy Trading</h3>
               </div>
               <ul className="space-y-3">
                 {copy.map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: '#60a5fa' }} />
+                    <CheckCircle2 size={18} style={{ color: 'var(--fx-gold-light)' }} />
                     <span className="text-sm md:text-[15px] text-white">{f}</span>
                   </li>
                 ))}
@@ -84,11 +76,10 @@ export default function StSelfVsCopy() {
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.25}>
-          <div className="mt-8 max-w-3xl mx-auto">
+          <div className="fx-tile p-6 md:p-8 mt-8 max-w-3xl mx-auto">
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

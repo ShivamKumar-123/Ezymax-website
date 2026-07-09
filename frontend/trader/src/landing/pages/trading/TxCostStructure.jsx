@@ -1,19 +1,17 @@
-﻿import { Receipt, Gauge, Activity, Ban, EyeOff, Moon } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Receipt, Gauge, Activity, Ban, EyeOff, Moon } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const costs = [
   {
     icon: Receipt,
-    accent: '#ecc657',
     title: 'Brokerage',
     sub: 'Trading Fee',
     desc: 'Applied when a trade is executed.',
     when: 'Per trade',
+    gold: true,
   },
   {
     icon: Gauge,
-    accent: '#60a5fa',
     title: 'Leverage Fee',
     sub: 'Time-based',
     desc: 'Applies only if leverage is used AND the position is held overnight.',
@@ -21,7 +19,6 @@ const costs = [
   },
   {
     icon: Activity,
-    accent: '#a78bfa',
     title: 'Market Spread',
     sub: 'Execution',
     desc: 'Natural part of market pricing — never artificially inflated. Tightens as you progress.',
@@ -39,46 +36,72 @@ export default function TxCostStructure() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Cost Structure"
-          title="Clear and Structured Trading Costs"
-          highlight="Trading Costs"
-          subtitle="We've boiled trading costs down to three pieces. No layered fees, no surprise line items at the end of the month."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Cost Structure</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Clear and Structured <span className="gradient-text">Trading Costs</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              We've boiled trading costs down to three pieces. No layered fees, no surprise line items at the end of the month.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: three cost tiles (one gold) ────────────── */}
+        <div className="fx-bento grid-cols-1 md:grid-cols-3 mt-12 md:mt-16 items-stretch">
           {costs.map((c, i) => {
             const Icon = c.icon
+            if (c.gold) {
+              return (
+                <ScrollReveal key={c.title} variant="fadeUp" delay={i * 0.06}>
+                  <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+                    <div className="relative z-[1] flex items-center justify-between mb-5">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                      >
+                        <Icon size={20} style={{ color: '#1c1608' }} />
+                      </div>
+                      <span
+                        className="text-[10px] font-bold uppercase tracking-[0.22em]"
+                        style={{ color: '#1c1608' }}
+                      >
+                        {c.when}
+                      </span>
+                    </div>
+                    <span className="fx-accent-bar mb-4 relative z-[1]" />
+                    <div className="relative z-[1] text-[11px] uppercase tracking-wider mb-1" style={{ color: 'rgba(28,22,8,0.7)' }}>
+                      {c.sub}
+                    </div>
+                    <h3 className="relative z-[1] text-xl md:text-2xl font-bold mb-3" style={{ color: '#1c1608' }}>{c.title}</h3>
+                    <p className="relative z-[1] text-sm md:text-[15px]" style={{ color: 'rgba(28,22,8,0.78)' }}>
+                      {c.desc}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              )
+            }
             return (
               <ScrollReveal key={c.title} variant="fadeUp" delay={i * 0.06}>
-                <div
-                  className="relative h-full rounded-2xl p-6 md:p-7 overflow-hidden"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg) 100%)',
-                    border: `1px solid ${c.accent}40`,
-                  }}
-                >
-                  <div
-                    className="absolute -top-px left-[18%] right-[18%] h-px"
-                    style={{
-                      background: `linear-gradient(90deg, transparent, ${c.accent}cc, transparent)`,
-                    }}
-                  />
+                <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
                   <div className="flex items-center justify-between mb-5">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ background: `${c.accent}1f`, border: `1px solid ${c.accent}55` }}
-                    >
-                      <Icon size={20} style={{ color: c.accent }} />
+                    <div className="feature-icon" style={{ width: 48, height: 48 }}>
+                      <Icon size={20} />
                     </div>
                     <span
                       className="text-[10px] font-bold uppercase tracking-[0.22em]"
-                      style={{ color: c.accent }}
+                      style={{ color: 'var(--fx-gold-light)' }}
                     >
                       {c.when}
                     </span>
                   </div>
+                  <span className="fx-accent-bar mb-4" />
                   <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
                     {c.sub}
                   </div>
@@ -98,20 +121,10 @@ export default function TxCostStructure() {
             {guarantees.map(({ icon: Icon, title, sub }) => (
               <div
                 key={title}
-                className="rounded-xl p-4 flex items-center gap-3"
-                style={{
-                  background: 'rgba(74,222,128,0.04)',
-                  border: '1px solid rgba(74,222,128,0.22)',
-                }}
+                className="fx-tile p-4 flex items-center gap-3"
               >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{
-                    background: 'rgba(74,222,128,0.12)',
-                    border: '1px solid rgba(74,222,128,0.35)',
-                  }}
-                >
-                  <Icon size={18} style={{ color: '#4ade80' }} />
+                <div className="feature-icon shrink-0" style={{ width: 40, height: 40 }}>
+                  <Icon size={18} />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-white leading-tight">{title}</div>
@@ -132,7 +145,6 @@ export default function TxCostStructure() {
             &ldquo;No hidden layers. Just transparent trading economics.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

@@ -1,5 +1,4 @@
-﻿import { FileSignature, ShieldCheck, Share2, Activity, Coins } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { FileSignature, ShieldCheck, Share2, Activity, Coins } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -8,7 +7,7 @@ const steps = [
   { icon: ShieldCheck,   title: 'Get Approved',          desc: 'Receive your partner dashboard and referral infrastructure.' },
   { icon: Share2,        title: 'Introduce Traders',     desc: 'Share your partner link or onboarding system.' },
   { icon: Activity,      title: 'Users Start Trading',   desc: 'Traders join the FX Artha ecosystem.' },
-  { icon: Coins,         title: 'Earn Rewards',          desc: 'Earn based on trading activity generated through your network.' },
+  { icon: Coins,         title: 'Earn Rewards',          desc: 'Earn based on trading activity generated through your network.', highlight: true },
 ]
 
 const faq = [
@@ -20,64 +19,85 @@ export default function IbHow() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="How It Works"
-          title="How the FX Artha IB Program Works"
-          highlight="IB Program Works"
-          subtitle="Five steps from filling out the application to your first commission."
-        />
-        <div className="mt-12 md:mt-16">
-          <div className="relative grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-3">
-            <div
-              className="hidden md:block absolute top-[42px] left-[8%] right-[8%] h-px pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
-              }}
-            />
-            {steps.map((s, i) => {
-              const Icon = s.icon
-              return (
-                <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div
-                      className="relative w-[84px] h-[84px] rounded-2xl flex items-center justify-center mb-4"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, var(--fx-bg) 0%, var(--fx-bg-elev-2) 100%)',
-                        border: '1px solid rgba(214,169,61,0.28)',
-                        boxShadow:
-                          '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px -16px rgba(214,169,61,0.32)',
-                      }}
-                    >
-                      <Icon size={26} style={{ color: 'var(--fx-gold-light)' }} />
-                      <span
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                          color: '#1a1408',
-                          boxShadow: '0 6px 16px -6px rgba(214,169,61,0.55)',
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                    </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5">
-                      {s.title}
-                    </h3>
-                    <p
-                      className="text-xs md:text-[13px] leading-relaxed px-1"
-                      style={{ color: 'var(--fx-text-2)' }}
-                    >
-                      {s.desc}
-                    </p>
-                  </div>
-                </ScrollReveal>
-              )
-            })}
-          </div>
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">How It Works</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                How the FX Artha <span className="gradient-text">IB Program Works</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Five steps from filling out the application to your first commission.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Numbered vertical timeline ────────────────────── */}
+        <div className="mt-10 md:mt-14">
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile p-6 sm:p-7 md:p-8 max-w-3xl mx-auto">
+              <span className="fx-accent-bar mb-4" />
+              <div className="relative">
+                {/* vertical gradient rail running through the numbered nodes */}
+                <span
+                  aria-hidden
+                  className="absolute left-[23px] top-[24px] bottom-[24px] w-[3px] rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
+                    boxShadow: '0 0 16px rgba(214,169,61,0.4)',
+                  }}
+                />
+                <ul className="relative space-y-6 md:space-y-7">
+                  {steps.map((s, i) => {
+                    const Icon = s.icon
+                    return (
+                      <li key={s.title} className="relative flex items-start gap-5">
+                        {s.highlight ? (
+                          <div
+                            className="shrink-0 flex items-center justify-center rounded-full text-base font-extrabold"
+                            style={{
+                              width: 48,
+                              height: 48,
+                              background:
+                                'linear-gradient(180deg, #fbeaa8 0%, #ecc657 55%, #b6842a 100%)',
+                              color: '#1c1608',
+                              border: '1px solid rgba(255,255,255,0.3)',
+                              boxShadow:
+                                '0 0 0 5px rgba(214,169,61,0.14), 0 14px 30px -10px rgba(214,169,61,0.6)',
+                            }}
+                          >
+                            {i + 1}
+                          </div>
+                        ) : (
+                          <div className="fx-icon-badge shrink-0" style={{ width: 48, height: 48 }}>
+                            <span className="text-base font-bold" style={{ color: 'var(--fx-gold-light)' }}>
+                              {i + 1}
+                            </span>
+                          </div>
+                        )}
+                        <div className="pt-0.5">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
+                            <h3 className="text-base md:text-lg font-bold text-white leading-snug">
+                              {s.title}
+                            </h3>
+                          </div>
+                          <p className="text-sm md:text-[15px] leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                            {s.desc}
+                          </p>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            </div>
+          </ScrollReveal>
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
@@ -85,7 +105,6 @@ export default function IbHow() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

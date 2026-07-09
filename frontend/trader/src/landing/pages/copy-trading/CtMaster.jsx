@@ -1,15 +1,13 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   BadgeCheck,
   Crown,
-  CheckCircle2,
   ArrowRight,
   FileCheck2,
   Activity,
   Banknote,
   CalendarClock,
 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
@@ -49,38 +47,44 @@ export default function CtMaster() {
   return (
     <section id="master" className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Master Trader System"
-          title="Become a Master Trader"
-          highlight="Master Trader"
-          subtitle="Two paths in. We're strict about who gets in because the people copying these traders deserve to know the track record is real."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* Apply with verified P&L */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
           <ScrollReveal variant="fadeUp">
-            <div
-              className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(214,169,61,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(214,169,61,0.35)',
-              }}
-            >
-              <div className="flex items-center justify-between mb-5">
+            <div>
+              <span className="fx-eyebrow mb-5">Master Trader System</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Become a <span className="gradient-text">Master Trader</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Two paths in. We're strict about who gets in because the people copying these traders deserve to know the track record is real.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold path tile + dark path tile ────────── */}
+        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+          {/* Apply with verified P&L — solid gold accent tile */}
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div className="relative z-[1] flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="feature-icon" style={{ width: 44, height: 44 }}>
-                    <Crown size={20} />
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                  >
+                    <Crown size={20} style={{ color: '#1c1608' }} />
                   </div>
                   <div>
                     <div
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
-                      style={{ color: 'var(--fx-gold-light)' }}
+                      style={{ color: 'rgba(28,22,8,0.7)' }}
                     >
                       Path 1 Â· For Professionals
                     </div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white">
+                    <h3 className="text-xl md:text-2xl font-bold" style={{ color: '#1c1608' }}>
                       Apply with Verified P&amp;L
                     </h3>
                   </div>
@@ -88,63 +92,59 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(214,169,61,0.15)',
-                    color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(214,169,61,0.35)',
+                    background: 'rgba(28,22,8,0.14)',
+                    color: '#1c1608',
+                    border: '1px solid rgba(28,22,8,0.28)',
                   }}
                 >
                   Verification
                 </span>
               </div>
 
-              <ul className="space-y-3 mb-7">
+              <ul className="relative z-[1] space-y-3 mb-7">
                 {applyCriteria.map(({ icon: Icon, label }) => (
                   <li
                     key={label}
                     className="flex items-start gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid var(--fx-line-strong)',
+                      background: 'rgba(28,22,8,0.08)',
+                      border: '1px solid rgba(28,22,8,0.18)',
                     }}
                   >
-                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm text-white">{label}</span>
+                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: '#1c1608' }} />
+                    <span className="text-sm font-medium" style={{ color: '#1c1608' }}>{label}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link to="/auth/register" className="fx-btn-primary">
+              <Link
+                to="/auth/register"
+                className="relative z-[1] mt-auto self-start inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold transition-transform hover:-translate-y-0.5"
+                style={{
+                  background: 'linear-gradient(180deg, #2a2210 0%, #14100a 100%)',
+                  color: 'var(--fx-gold-light)',
+                  border: '1px solid rgba(28,22,8,0.5)',
+                  boxShadow: '0 14px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.10)',
+                }}
+              >
                 Apply as Master Trader
                 <ArrowRight size={16} />
               </Link>
             </div>
           </ScrollReveal>
 
-          {/* Qualify via FX Artha */}
+          {/* Qualify via FX Artha — dark tile with gold accents */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div
-              className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(167,139,250,0.10) 0%, rgba(167,139,250,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(167,139,250,0.35)',
-              }}
-            >
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center"
-                    style={{
-                      background: 'rgba(167,139,250,0.18)',
-                      border: '1px solid rgba(167,139,250,0.45)',
-                    }}
-                  >
-                    <BadgeCheck size={20} style={{ color: '#a78bfa' }} />
+                  <div className="feature-icon shrink-0" style={{ width: 44, height: 44 }}>
+                    <BadgeCheck size={20} />
                   </div>
                   <div>
                     <div
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
-                      style={{ color: '#a78bfa' }}
+                      style={{ color: 'var(--fx-gold-light)' }}
                     >
                       Path 2 Â· For Platform Users
                     </div>
@@ -156,9 +156,9 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(167,139,250,0.15)',
-                    color: '#a78bfa',
-                    border: '1px solid rgba(167,139,250,0.35)',
+                    background: 'rgba(214,169,61,0.15)',
+                    color: 'var(--fx-gold-light)',
+                    border: '1px solid rgba(214,169,61,0.35)',
                   }}
                 >
                   Performance
@@ -168,9 +168,9 @@ export default function CtMaster() {
               <div
                 className="mb-4 px-4 py-2.5 rounded-xl text-xs font-semibold inline-flex items-center gap-2"
                 style={{
-                  background: 'rgba(167,139,250,0.08)',
-                  border: '1px solid rgba(167,139,250,0.32)',
-                  color: '#a78bfa',
+                  background: 'rgba(214,169,61,0.08)',
+                  border: '1px solid rgba(214,169,61,0.32)',
+                  color: 'var(--fx-gold-light)',
                 }}
               >
                 You must meet all of the following
@@ -186,13 +186,13 @@ export default function CtMaster() {
                       border: '1px solid var(--fx-line-strong)',
                     }}
                   >
-                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: '#a78bfa' }} />
+                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
                     <span className="text-sm text-white">{label}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link to="/auth/register" className="fx-btn-ghost">
+              <Link to="/auth/register" className="fx-btn-ghost mt-auto self-start">
                 Start Trading to Qualify
                 <ArrowRight size={16} />
               </Link>
@@ -214,7 +214,6 @@ export default function CtMaster() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

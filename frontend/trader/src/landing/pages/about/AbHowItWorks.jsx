@@ -1,5 +1,4 @@
-﻿import { Wallet, Lock, LayoutDashboard, Activity, Cog } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Wallet, Lock, LayoutDashboard, Activity, Cog } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const steps = [
@@ -14,64 +13,76 @@ export default function AbHowItWorks() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="How It Works"
-          title="A Smarter Trading Flow"
-          highlight="Smarter Trading Flow"
-          subtitle="A normal broker bundles three things together: holding your money, running your trades, and settling them. We split those into separate parts so you can actually see what's happening at each step."
-        />
-        <div className="mt-12 md:mt-16">
-          <div className="relative grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-3">
-            <div
-              className="hidden md:block absolute top-[42px] left-[8%] right-[8%] h-px pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
-              }}
-            />
-            {steps.map((s, i) => {
-              const Icon = s.icon
-              return (
-                <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div
-                      className="relative w-[84px] h-[84px] rounded-2xl flex items-center justify-center mb-4"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, var(--fx-bg) 0%, var(--fx-bg-elev-2) 100%)',
-                        border: '1px solid rgba(214,169,61,0.28)',
-                        boxShadow:
-                          '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px -16px rgba(214,169,61,0.32)',
-                      }}
-                    >
-                      <Icon size={26} style={{ color: 'var(--fx-gold-light)' }} />
-                      <span
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                          color: '#1a1408',
-                          boxShadow: '0 6px 16px -6px rgba(214,169,61,0.55)',
-                        }}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">How It Works</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                A Smarter <span className="gradient-text">Trading Flow</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              A normal broker bundles three things together: holding your money, running your trades, and settling them. We split those into separate parts so you can actually see what's happening at each step.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Numbered step cards ───────────────────────────── */}
+        <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
+          {steps.map((s, i) => {
+            const Icon = s.icon
+            const isGold = i === 4
+            const num = String(i + 1).padStart(2, '0')
+            const isWide = i === 4
+            return (
+              <ScrollReveal
+                key={s.title}
+                variant="fadeUp"
+                delay={i * 0.05}
+                className={isWide ? 'sm:col-span-2 lg:col-span-1' : ''}
+              >
+                {isGold ? (
+                  <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+                    <div className="relative z-[1] flex items-center gap-4 mb-4">
+                      <span className="text-4xl font-extrabold leading-none" style={{ color: '#1c1608' }}>{num}</span>
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
                       >
-                        {i + 1}
-                      </span>
+                        <Icon size={20} style={{ color: '#1c1608' }} />
+                      </div>
                     </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5 px-1">
+                    <span className="fx-accent-bar mb-4 relative z-[1]" />
+                    <h3 className="relative z-[1] text-lg md:text-xl font-bold mb-2 leading-tight" style={{ color: '#1c1608' }}>
                       {s.title}
                     </h3>
-                    <p
-                      className="text-xs md:text-[13px] leading-relaxed px-1"
-                      style={{ color: 'var(--fx-text-2)' }}
-                    >
+                    <p className="relative z-[1] text-sm leading-relaxed" style={{ color: 'rgba(28,22,8,0.78)' }}>
                       {s.desc}
                     </p>
                   </div>
-                </ScrollReveal>
-              )
-            })}
-          </div>
+                ) : (
+                  <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+                    <div className="flex items-center gap-4 mb-4">
+                      <span className="text-4xl font-extrabold leading-none gradient-text">{num}</span>
+                      <div className="feature-icon" style={{ width: 48, height: 48 }}>
+                        <Icon size={20} />
+                      </div>
+                    </div>
+                    <span className="fx-accent-bar mb-4" />
+                    <h3 className="text-lg md:text-xl font-bold text-white mb-2 leading-tight">
+                      {s.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                      {s.desc}
+                    </p>
+                  </div>
+                )}
+              </ScrollReveal>
+            )
+          })}
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
@@ -82,7 +93,6 @@ export default function AbHowItWorks() {
             &ldquo;Built around transparency, automation, and user control.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Activity,
   Copy,
   ShieldCheck,
@@ -8,34 +8,43 @@
   Handshake,
   Lock,
 } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 /* 8 modules arranged around the FX Artha hub.
    Desktop: 3x3 grid (hub centered).
    Mobile:  2-col grid (hub spans full width). */
 const modules = [
-  { icon: Activity,    title: 'Trading',           desc: 'Spot, leveraged, and demo modes.', accent: '#ecc657' },
-  { icon: Copy,        title: 'Copy Trading',      desc: 'Mirror verified strategies.',      accent: '#a78bfa' },
-  { icon: ShieldCheck, title: 'Trade Insurance',   desc: 'Optional pre-trade protection.',   accent: '#4ade80' },
-  { icon: Gem,         title: 'Staking',           desc: 'Activate idle assets.',            accent: '#60a5fa' },
-  { icon: Coins,       title: 'Reward Economy',    desc: 'Activity-based rewards.',          accent: '#ecc657' },
-  { icon: Zap,         title: 'XP Progression',    desc: 'Better conditions over time.',     accent: '#a78bfa' },
-  { icon: Handshake,   title: 'Partner Ecosystem', desc: 'IB program & growth network.',     accent: '#4ade80' },
-  { icon: Lock,        title: 'Smart Contracts',   desc: 'Protocol-based settlement.',       accent: '#60a5fa' },
+  { icon: Activity,    title: 'Trading',           desc: 'Spot, leveraged, and demo modes.' },
+  { icon: Copy,        title: 'Copy Trading',      desc: 'Mirror verified strategies.' },
+  { icon: ShieldCheck, title: 'Trade Insurance',   desc: 'Optional pre-trade protection.' },
+  { icon: Gem,         title: 'Staking',           desc: 'Activate idle assets.' },
+  { icon: Coins,       title: 'Reward Economy',    desc: 'Activity-based rewards.' },
+  { icon: Zap,         title: 'XP Progression',    desc: 'Better conditions over time.' },
+  { icon: Handshake,   title: 'Partner Ecosystem', desc: 'IB program & growth network.' },
+  { icon: Lock,        title: 'Smart Contracts',   desc: 'Protocol-based settlement.' },
 ]
 
 export default function AbEcosystem() {
   return (
     <section id="ecosystem" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="The FX Artha Ecosystem"
-          title="One Ecosystem. Multiple Opportunities."
-          highlight="Multiple Opportunities"
-          subtitle="Trading sits at the centre, surrounded by other ways to put your account to work — copying, staking, rewards, partner programs. All of it connected, all of it in one place."
-        />
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">The FX Artha Ecosystem</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                One Ecosystem. <span className="gradient-text">Multiple Opportunities.</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Trading sits at the centre, surrounded by other ways to put your account to work — copying, staking, rewards, partner programs. All of it connected, all of it in one place.
+            </p>
+          </ScrollReveal>
+        </div>
+
         {/* Mobile-first layout: 2-col grid with hub on top. */}
         <div className="mt-12 md:mt-16 md:hidden grid grid-cols-2 gap-3">
           <div className="col-span-2">
@@ -49,7 +58,7 @@ export default function AbEcosystem() {
         {/* Desktop ecosystem wheel — 3x3 grid w/ hub centered */}
         <div className="hidden md:block mt-12 md:mt-16">
           <div className="relative max-w-5xl mx-auto">
-            <div className="relative grid grid-cols-3 gap-5 lg:gap-7">
+            <div className="relative grid grid-cols-3 gap-5 lg:gap-7 items-stretch">
               <ScrollReveal variant="fadeUp" delay={0.0}>
                 <ModuleCard {...modules[0]} />
               </ScrollReveal>
@@ -91,7 +100,6 @@ export default function AbEcosystem() {
             &ldquo;Every feature is designed to strengthen the ecosystem experience.&rdquo;
           </p>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
@@ -99,55 +107,35 @@ export default function AbEcosystem() {
 
 function HubCard() {
   return (
-    <div
-      className="h-full rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center"
-      style={{
-        background:
-          'radial-gradient(70% 80% at 50% 30%, rgba(214,169,61,0.30), rgba(214,169,61,0.04) 70%), var(--fx-bg)',
-        border: '1px solid rgba(214,169,61,0.55)',
-        boxShadow:
-          '0 0 0 1px rgba(214,169,61,0.08) inset, 0 30px 70px -30px rgba(214,169,61,0.55)',
-        minHeight: 170,
-      }}
-    >
+    <div className="fx-tile-gold h-full p-6 md:p-8 flex flex-col items-center justify-center text-center" style={{ minHeight: 170 }}>
       <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+        className="relative z-[1] w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
         style={{
-          background:
-            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-          color: '#1a1408',
-          boxShadow: '0 12px 30px -10px rgba(214,169,61,0.55)',
+          background: 'linear-gradient(180deg, #2a2210 0%, #16110a 100%)',
+          border: '1px solid rgba(28,22,8,0.5)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 12px 26px -12px rgba(0,0,0,0.55)',
         }}
       >
-        <span className="text-xl font-extrabold">FX</span>
+        <span className="text-xl font-extrabold" style={{ color: 'var(--fx-gold-light)' }}>FX</span>
       </div>
-      <div className="text-[11px] uppercase tracking-[0.22em] mb-1" style={{ color: 'var(--fx-gold-light)' }}>
+      <div className="relative z-[1] text-[11px] uppercase tracking-[0.22em] mb-1" style={{ color: 'rgba(28,22,8,0.78)' }}>
         Core Hub
       </div>
-      <div className="text-base md:text-lg font-extrabold text-white">FX Artha</div>
-      <div className="text-xs mt-1" style={{ color: 'var(--fx-text-3)' }}>
+      <div className="relative z-[1] text-base md:text-lg font-extrabold" style={{ color: '#1c1608' }}>FX Artha</div>
+      <div className="relative z-[1] text-xs mt-1" style={{ color: 'rgba(28,22,8,0.7)' }}>
         Connected ecosystem
       </div>
     </div>
   )
 }
 
-function ModuleCard({ icon: Icon, title, desc, accent }) {
+function ModuleCard({ icon: Icon, title, desc }) {
   return (
-    <div
-      className="h-full rounded-2xl p-5 md:p-6 transition-transform duration-300"
-      style={{
-        background:
-          'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-        border: `1px solid ${accent}40`,
-      }}
-    >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center mb-3"
-        style={{ background: `${accent}1f`, border: `1px solid ${accent}55` }}
-      >
-        <Icon size={18} style={{ color: accent }} />
+    <div className="fx-tile h-full p-5 md:p-6 flex flex-col">
+      <div className="feature-icon mb-3" style={{ width: 48, height: 48 }}>
+        <Icon size={20} />
       </div>
+      <span className="fx-accent-bar mb-4" />
       <div className="text-sm md:text-base font-bold text-white mb-1">{title}</div>
       <div className="text-xs md:text-[13px]" style={{ color: 'var(--fx-text-2)' }}>
         {desc}
