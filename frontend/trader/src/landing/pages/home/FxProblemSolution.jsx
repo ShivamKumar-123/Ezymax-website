@@ -12,7 +12,7 @@ function Circle({ variant, title, text }) {
   const isProblem = variant === 'problem'
   return (
     <div
-      className="fx-venn-circle relative rounded-full w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[460px] lg:h-[460px]"
+      className="fx-venn-circle relative rounded-full w-[270px] h-[270px] sm:w-[400px] sm:h-[400px] lg:w-[460px] lg:h-[460px]"
       style={
         isProblem
           ? {

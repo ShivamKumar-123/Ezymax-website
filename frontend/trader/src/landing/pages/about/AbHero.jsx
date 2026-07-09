@@ -35,7 +35,7 @@ export default function AbHero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* LEFT */}
           <div className="lg:col-span-7">
-            <h1 className="fx-headline text-[32px] sm:text-[42px] md:text-[50px] lg:text-[56px] xl:text-[62px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[26px] sm:text-[42px] md:text-[50px] lg:text-[56px] xl:text-[62px] fx-fade-up fx-fade-up-d1">
               Reimagining How Modern <br />
               <span className="fx-gold-text">Trading Works.</span>
             </h1>

@@ -1,5 +1,4 @@
-﻿import { Search, MousePointer2, Wallet, Repeat2, Eye } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Search, MousePointer2, Wallet, Repeat2, Eye } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
@@ -20,64 +19,70 @@ export default function CtHow() {
   return (
     <section id="explore" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="How To Copy"
-          title="How It Works"
-          highlight="It Works"
-          subtitle="Five quick steps from picking a trader to seeing the first mirrored trade in your account. No setup gymnastics."
-        />
-        <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
-          <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[240px] md:auto-cols-auto md:grid-cols-5 gap-4 md:gap-3 min-w-max md:min-w-0">
-            <div
-              className="hidden md:block absolute top-[42px] left-[8%] right-[8%] h-px pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(90deg, rgba(214,169,61,0.5) 0 6px, transparent 6px 14px)',
-              }}
-            />
-            {steps.map((s, i) => {
-              const Icon = s.icon
-              return (
-                <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div
-                      className="relative w-[84px] h-[84px] rounded-2xl flex items-center justify-center mb-4"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, var(--fx-bg) 0%, var(--fx-bg-elev-2) 100%)',
-                        border: '1px solid rgba(214,169,61,0.28)',
-                        boxShadow:
-                          '0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 32px -16px rgba(214,169,61,0.32)',
-                      }}
-                    >
-                      <Icon size={26} style={{ color: 'var(--fx-gold-light)' }} />
-                      <span
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
-                          color: '#1a1408',
-                          boxShadow: '0 6px 16px -6px rgba(214,169,61,0.55)',
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                    </div>
-                    <h3 className="text-sm md:text-[15px] font-bold text-white mb-1.5">
-                      {s.title}
-                    </h3>
-                    <p
-                      className="text-xs md:text-[13px] leading-relaxed px-1"
-                      style={{ color: 'var(--fx-text-2)' }}
-                    >
-                      {s.desc}
-                    </p>
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">How To Copy</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                How <span className="gradient-text">It Works</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Five quick steps from picking a trader to seeing the first mirrored trade in your account. No setup gymnastics.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: numbered step cards (middle = gold) ────── */}
+        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 mt-10 md:mt-14 items-stretch">
+          {steps.map((s, i) => {
+            const Icon = s.icon
+            const gold = i === 2
+            return (
+              <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
+                <div className={`${gold ? 'fx-tile-gold' : 'fx-tile'} h-full p-6 md:p-7 flex flex-col`}>
+                  <div
+                    className={`${gold ? 'relative z-[1] text-4xl md:text-5xl font-extrabold mb-4' : 'text-4xl md:text-5xl font-extrabold gradient-text mb-4'}`}
+                    style={gold ? { color: '#1c1608' } : undefined}
+                  >
+                    {String(i + 1).padStart(2, '0')}
                   </div>
-                </ScrollReveal>
-              )
-            })}
-          </div>
+                  {gold ? (
+                    <span className="fx-accent-bar mb-4 relative z-[1]" />
+                  ) : (
+                    <span className="fx-accent-bar mb-4" />
+                  )}
+                  {gold ? (
+                    <div
+                      className="relative z-[1] w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+                    >
+                      <Icon size={20} style={{ color: '#1c1608' }} />
+                    </div>
+                  ) : (
+                    <div className="feature-icon mb-4" style={{ width: 44, height: 44 }}>
+                      <Icon size={20} />
+                    </div>
+                  )}
+                  <h3
+                    className={`text-base md:text-[17px] font-bold mb-1.5 ${gold ? 'relative z-[1]' : 'text-white'}`}
+                    style={gold ? { color: '#1c1608' } : undefined}
+                  >
+                    {s.title}
+                  </h3>
+                  <p
+                    className={`text-sm leading-relaxed ${gold ? 'relative z-[1]' : ''}`}
+                    style={{ color: gold ? 'rgba(28,22,8,0.78)' : 'var(--fx-text-2)' }}
+                  >
+                    {s.desc}
+                  </p>
+                </div>
+              </ScrollReveal>
+            )
+          })}
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.18}>
@@ -94,7 +99,6 @@ export default function CtHow() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

@@ -138,6 +138,12 @@ const FeaturesSection = () => {
                 boxShadow: '0 20px 60px rgba(26, 86, 255, 0.18)',
                 borderColor: '#1A56FF',
               }}
+              whileTap={{
+                scale: 1.05,
+                y: -10,
+                boxShadow: '0 20px 60px rgba(26, 86, 255, 0.18)',
+                borderColor: '#1A56FF',
+              }}
               transition={{
                 type: 'spring',
                 stiffness: 300,

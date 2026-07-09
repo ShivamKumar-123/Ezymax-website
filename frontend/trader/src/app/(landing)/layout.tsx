@@ -5,6 +5,7 @@ import { PopupProvider } from '@/landing/components/PopupContext'
 import ScrollProgress from '@/landing/components/animations/ScrollProgress'
 import Navbar from '@/landing/components/Navbar'
 import Footer from '@/landing/components/Footer'
+import TapReveal from '@/landing/components/TapReveal'
 import '@/landing/landing.css'
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,8 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
     <PopupProvider>
       <ScrollProgress />
       <div className="landing-root min-h-screen bg-[#08090b] text-[#f5f5f5]">
+        {/* Touch devices: play card/tile hover animations on tap. No-ops on mouse. */}
+        <TapReveal />
         {/* Shared glossy-gold gradient — referenced by `.feature-icon > svg`
             (stroke: url(#fxIconGold)) so every badge icon across the site reads
             as dimensional gold, matching the How-It-Works 3D icons. */}

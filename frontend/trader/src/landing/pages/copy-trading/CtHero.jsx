@@ -33,7 +33,7 @@ export default function CtHero() {
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
         <div className="max-w-3xl">
-          <h1 className="fx-headline text-[36px] sm:text-[46px] md:text-[54px] lg:text-[60px] xl:text-[68px] fx-fade-up fx-fade-up-d1">
+          <h1 className="fx-headline text-[28px] sm:text-[46px] md:text-[54px] lg:text-[60px] xl:text-[68px] fx-fade-up fx-fade-up-d1">
             Copy Top Traders. <br />
             <span className="fx-gold-text">Trade Smarter.</span>
           </h1>

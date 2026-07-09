@@ -151,7 +151,12 @@ export default function MobileBottomNav() {
     pathname === '/' ||
     pathname?.startsWith('/company') ||
     pathname?.startsWith('/education') ||
-    ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
+    pathname?.startsWith('/staking') ||
+    pathname?.startsWith('/earning') ||
+    pathname?.startsWith('/protocol') ||
+    // NOTE: bare /insurance and /trading are authenticated app pages, so match
+    // only the landing marketing routes exactly here.
+    ['/insurance/overview', '/trading/overview', '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
     ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
     ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
   const isPublicPage =

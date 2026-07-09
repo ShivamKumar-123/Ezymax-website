@@ -46,7 +46,7 @@ export default function FxHero() {
               </span>
             </div>
 
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[28px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
               Trade Without Giving Your Money to{' '}
               <span className="fx-gold-text">Any Broker</span>
             </h1>

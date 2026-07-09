@@ -152,19 +152,25 @@ export default function Navbar() {
 
           {/* CTA + mobile toggle */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/auth/login"
-              className="hidden sm:inline-flex fx-btn-ghost text-sm py-2 px-4"
-            >
-              Login
-            </Link>
-            <Link
-              href="/auth/register"
-              className="hidden sm:inline-flex fx-btn-primary text-sm py-2 px-4"
-            >
-              Open Account
-              <ArrowRight size={14} />
-            </Link>
+            {/* Desktop-only CTAs. Wrapped in a plain div so Tailwind's `hidden`
+                actually hides them — putting `hidden` directly on the buttons
+                fails because `.fx-btn-*` sets `display:inline-flex`, which wins
+                over `.hidden` at equal specificity. */}
+            <div className="hidden lg:flex items-center gap-3">
+              <Link
+                href="/auth/login"
+                className="fx-btn-ghost text-sm py-2 px-4 whitespace-nowrap"
+              >
+                Login
+              </Link>
+              <Link
+                href="/auth/register"
+                className="fx-btn-primary text-sm py-2 px-4 whitespace-nowrap"
+              >
+                Open Account
+                <ArrowRight size={14} />
+              </Link>
+            </div>
 
             <button
               type="button"

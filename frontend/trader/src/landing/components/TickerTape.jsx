@@ -113,11 +113,11 @@ export default function TickerTape() {
     >
       {/* Edge fade masks so items disappear smoothly */}
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 w-20 z-10"
+        className="pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 md:w-20 z-10"
         style={{ background: 'linear-gradient(90deg, #0b0c0e, transparent)' }}
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 w-20 z-10"
+        className="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 md:w-20 z-10"
         style={{ background: 'linear-gradient(270deg, #0b0c0e, transparent)' }}
       />
 

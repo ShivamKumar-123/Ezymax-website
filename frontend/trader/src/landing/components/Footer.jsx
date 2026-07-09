@@ -48,7 +48,7 @@ export default function Footer() {
 
       <div className="fx-container py-14 md:py-20">
         {/* Top: brand + columns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10 lg:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-8 md:gap-8">
           {/* Brand block — spans more on mobile */}
           <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">

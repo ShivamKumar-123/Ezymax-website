@@ -111,7 +111,7 @@ const TradingPageTemplate = ({
               </div>
               <h3 className="fx-headline text-2xl md:text-3xl mb-8">Top Tradable Instruments</h3>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px]">
+                <table className="w-full min-w-[480px]">
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--fx-line-strong)' }}>
                       <th className="text-left py-4 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--fx-text-3)' }}>Symbol</th>

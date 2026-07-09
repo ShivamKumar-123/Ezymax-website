@@ -66,8 +66,8 @@ export default function FxHowItWorks() {
         </div>
 
         {/* ── Interlocking puzzle-step chain (scrolls on smaller screens) ── */}
-        <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto xl:overflow-visible">
-          <div className="flex items-stretch min-w-max xl:min-w-0 py-2">
+        <div className="mt-12 md:mt-16 xl:overflow-visible">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 xl:flex xl:items-stretch xl:gap-0 xl:min-w-0 py-2">
             {steps.map((step, i) => {
               const isLast = i === steps.length - 1
               return (
@@ -92,7 +92,7 @@ export default function FxHowItWorks() {
                   </ScrollReveal>
 
                   {!isLast && (
-                    <div className="relative z-[3] w-5 md:w-4 shrink-0" aria-hidden="true">
+                    <div className="relative z-[3] w-5 md:w-4 shrink-0 hidden xl:block" aria-hidden="true">
                       <span
                         className={`fx-puzzle-neck ${i % 2 === 0 ? 'fx-puzzle-neck-top' : 'fx-puzzle-neck-bottom'}`}
                       />

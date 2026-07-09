@@ -49,11 +49,11 @@ export default function FxFinalCTA() {
               </div>
 
               <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 lg:items-end lg:justify-end">
-                <Link to="/auth/register" className="fx-btn-primary justify-center">
+                <Link to="/auth/register" className="fx-btn-primary justify-center w-full sm:w-auto lg:w-full xl:w-auto">
                   Start Trading
                   <ArrowRight size={18} />
                 </Link>
-                <Link to="/auth/wallet" className="fx-btn-ghost justify-center">
+                <Link to="/auth/wallet" className="fx-btn-ghost justify-center w-full sm:w-auto lg:w-full xl:w-auto">
                   <Wallet size={16} />
                   Connect Wallet
                 </Link>

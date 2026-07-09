@@ -25,14 +25,14 @@ export default function PrFundsFlow() {
         />
         <ScrollReveal variant="fadeUp">
           <div
-            className="mt-12 md:mt-16 rounded-2xl p-6 md:p-10 overflow-x-auto"
+            className="mt-12 md:mt-16 rounded-2xl p-6 md:p-10 md:overflow-x-auto"
             style={{
               background:
                 'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
               border: '1px solid rgba(214,169,61,0.22)',
             }}
           >
-            <div className="flex items-center gap-3 md:gap-2 min-w-max md:min-w-0 justify-center md:justify-between">
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-2 md:min-w-0 justify-center md:justify-between">
               {stages.map((s, i) => {
                 const Icon = s.icon
                 const isLast = i === stages.length - 1
@@ -55,7 +55,7 @@ export default function PrFundsFlow() {
                       </span>
                     </div>
                     {!isLast && (
-                      <svg width="22" height="14" viewBox="0 0 22 14" fill="none" aria-hidden style={{ color: 'var(--fx-gold-light)' }}>
+                      <svg width="22" height="14" viewBox="0 0 22 14" fill="none" aria-hidden className="hidden md:block" style={{ color: 'var(--fx-gold-light)' }}>
                         <path
                           d="M0 7 L18 7 M14 3 L18 7 L14 11"
                           stroke="currentColor"

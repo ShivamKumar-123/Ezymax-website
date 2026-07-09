@@ -27,7 +27,7 @@ export default function PrHero() {
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           <div className="lg:col-span-7">
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[64px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[28px] sm:text-[52px] md:text-[60px] lg:text-[64px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
               Not a Broker. <br />
               <span className="fx-gold-text">A Trading Protocol.</span>
             </h1>

@@ -28,7 +28,7 @@ export default function ErHero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* LEFT */}
           <div className="lg:col-span-7">
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[28px] sm:text-[52px] md:text-[60px] lg:text-[68px] xl:text-[76px] fx-fade-up fx-fade-up-d1">
               Earn Beyond <br />
               <span className="fx-gold-text">Trading.</span>
             </h1>

@@ -1,5 +1,4 @@
-﻿import { Lock, Eye, Coins, Wallet, ArrowRight, Users } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Lock, Eye, Coins, Wallet, ArrowRight, Users } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -8,6 +7,12 @@ const mechanics = [
   { icon: Coins,  label: 'Used to support trading liquidity' },
   { icon: ArrowRight, label: 'Rewards are generated based on participation' },
   { icon: Eye,    label: 'Users retain visibility and control' },
+]
+
+const flow = [
+  { icon: Users, label: 'User', title: 'Allocates funds' },
+  { icon: Lock,  label: 'Smart Contract', title: 'Holds liquidity', highlight: true },
+  { icon: Coins, label: 'Rewards', title: 'Distributed by protocol' },
 ]
 
 const faq = [
@@ -19,72 +24,77 @@ export default function StOverview() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Overview"
-          title="What is Staking in FX Artha?"
-          highlight="Staking in FX Artha?"
-          subtitle="You are not depositing — you are participating."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* LEFT — copy + mechanics */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Overview</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                What is <span className="gradient-text">Staking in FX Artha?</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              You are not depositing — you are participating.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold copy+mechanics tile + dark flow tile ── */}
+        <div className="fx-bento grid-cols-1 lg:grid-cols-12 mt-10 md:mt-14 items-stretch">
+          {/* LEFT — copy + mechanics (solid gold accent tile) */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <div className="feature-icon mb-5">
-                <Lock size={20} />
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div
+                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+              >
+                <Lock size={20} style={{ color: '#1c1608' }} />
               </div>
-              <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: 'var(--fx-text-2)' }}>
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <p className="relative z-[1] text-base md:text-lg leading-relaxed mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
                 Staking in FX Artha means providing liquidity to the protocol through a smart
-                contract. Your funds are <span style={{ color: 'var(--fx-gold-light)' }}>not held by a broker</span> —
+                contract. Your funds are <span className="font-bold" style={{ color: '#1c1608' }}>not held by a broker</span> —
                 they remain in a decentralized structure where they contribute to the trading
                 ecosystem.
               </p>
 
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] mb-4" style={{ color: 'var(--fx-gold-light)' }}>
+              <div className="relative z-[1] text-[11px] font-bold uppercase tracking-[0.22em] mb-4" style={{ color: '#1c1608' }}>
                 Key Mechanics
               </div>
-              <ul className="space-y-3">
+              <ul className="relative z-[1] space-y-3 mt-auto">
                 {mechanics.map(({ icon: Icon, label }) => (
                   <li
                     key={label}
                     className="flex items-center gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(214,169,61,0.05)',
-                      border: '1px solid rgba(214,169,61,0.22)',
+                      background: 'rgba(28,22,8,0.08)',
+                      border: '1px solid rgba(28,22,8,0.16)',
                     }}
                   >
-                    <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm md:text-[15px] text-white">{label}</span>
+                    <Icon size={16} style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{label}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </ScrollReveal>
 
-          {/* RIGHT — User → Contract → Rewards diagram */}
+          {/* RIGHT — User → Contract → Rewards flow (dark tile) */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
-                border: '1px solid rgba(214,169,61,0.22)',
-              }}
-            >
-              <div className="absolute inset-0 fx-grid-bg" />
-              <div className="relative space-y-3">
-                <StepCard icon={Users} color="#a78bfa" label="User" title="Allocates funds" />
-                <Connector />
-                <StepCard icon={Lock} color="#ecc657" label="Smart Contract" title="Holds liquidity" highlight />
-                <Connector />
-                <StepCard icon={Coins} color="#4ade80" label="Rewards" title="Distributed by protocol" />
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+              <span className="fx-accent-bar mb-4" />
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-6">
+                User &rarr; Contract &rarr; Rewards
+              </h3>
+              <div className="space-y-3">
+                {flow.map((s, i) => (
+                  <div key={s.title}>
+                    <StepCard icon={s.icon} label={s.label} title={s.title} highlight={s.highlight} />
+                    {i < flow.length - 1 && <Connector />}
+                  </div>
+                ))}
               </div>
             </div>
           </ScrollReveal>
@@ -95,32 +105,25 @@ export default function StOverview() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )
 }
 
-function StepCard({ icon: Icon, color, label, title, highlight = false }) {
+function StepCard({ icon: Icon, label, title, highlight = false }) {
   return (
     <div
       className="flex items-center gap-3 rounded-xl px-4 py-3"
       style={{
         background: highlight
-          ? `linear-gradient(180deg, ${color}1a, ${color}05)`
+          ? 'linear-gradient(180deg, rgba(214,169,61,0.16), rgba(214,169,61,0.03))'
           : 'var(--fx-bg-elev)',
-        border: `1px solid ${color}55`,
-        boxShadow: highlight ? `0 16px 40px -16px ${color}55` : 'none',
+        border: '1px solid rgba(214,169,61,0.35)',
+        boxShadow: highlight ? '0 16px 40px -16px rgba(214,169,61,0.4)' : 'none',
       }}
     >
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{
-          background: `${color}1f`,
-          border: `1px solid ${color}55`,
-        }}
-      >
-        <Icon size={18} style={{ color }} />
+      <div className="feature-icon shrink-0" style={{ width: 40, height: 40 }}>
+        <Icon size={18} />
       </div>
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--fx-text-3)' }}>

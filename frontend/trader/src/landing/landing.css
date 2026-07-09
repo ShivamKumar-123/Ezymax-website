@@ -101,15 +101,18 @@
     opacity: 0;
     transition: opacity .35s ease;
   }
-  .fx-card:hover {
+  .fx-card:hover,
+  .fx-card.fx-tapped {
     transform: translateY(-3px);
     border-color: rgba(214,169,61,0.28);
     box-shadow:
       0 26px 55px -22px rgba(0,0,0,0.75),
       0 0 0 1px rgba(214,169,61,0.08) inset;
   }
-  .fx-card:hover::before { left: 0; right: 0; opacity: 1; }
-  .fx-card:hover::after  { opacity: 1; }
+  .fx-card:hover::before,
+  .fx-card.fx-tapped::before { left: 0; right: 0; opacity: 1; }
+  .fx-card:hover::after,
+  .fx-card.fx-tapped::after  { opacity: 1; }
 
   .fx-card-gold {
     background: linear-gradient(180deg, rgba(214,169,61,0.06) 0%, rgba(214,169,61,0) 60%), var(--fx-bg-elev);
@@ -545,15 +548,18 @@
     opacity: 0;
     transition: opacity .35s ease;
   }
-  .glass-card:hover {
+  .glass-card:hover,
+  .glass-card.fx-tapped {
     transform: translateY(-3px);
     border-color: rgba(214,169,61,0.28);
     box-shadow:
       0 26px 55px -22px rgba(0,0,0,0.75),
       0 0 0 1px rgba(214,169,61,0.08) inset;
   }
-  .glass-card:hover::before { left: 0; right: 0; opacity: 1; }
-  .glass-card:hover::after  { opacity: 1; }
+  .glass-card:hover::before,
+  .glass-card.fx-tapped::before { left: 0; right: 0; opacity: 1; }
+  .glass-card:hover::after,
+  .glass-card.fx-tapped::after  { opacity: 1; }
 
   /* Glossy gold icon badge — shared site-wide. `.feature-icon` is the icon
      holder used across 40+ sections; `.fx-icon-badge` is the same glossy look
@@ -745,7 +751,8 @@ canvas { display: block; }
   transition: transform .4s cubic-bezier(.2,.7,.2,1),
               border-color .4s ease, box-shadow .4s ease;
 }
-.landing-root .fx-tile:hover {
+.landing-root .fx-tile:hover,
+.landing-root .fx-tile.fx-tapped {
   transform: translateY(-4px) scale(1.035);
   border-color: rgba(214, 169, 61, 0.30);
   box-shadow: 0 34px 70px -34px rgba(0,0,0,.85),
@@ -763,7 +770,8 @@ canvas { display: block; }
   box-shadow: 0 26px 60px -30px rgba(214,169,61,0.55);
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease;
 }
-.landing-root .fx-tile-gold:hover { transform: translateY(-4px) scale(1.035); }
+.landing-root .fx-tile-gold:hover,
+.landing-root .fx-tile-gold.fx-tapped { transform: translateY(-4px) scale(1.035); }
 .landing-root .fx-tile-gold::after {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
@@ -794,7 +802,8 @@ canvas { display: block; }
   transition: transform .4s cubic-bezier(.2,.7,.2,1),
               border-color .4s ease, box-shadow .4s ease;
 }
-.landing-root .fx-tile-media:hover {
+.landing-root .fx-tile-media:hover,
+.landing-root .fx-tile-media.fx-tapped {
   transform: translateY(-4px) scale(1.035);
   border-color: rgba(214, 169, 61, 0.30);
   box-shadow: 0 34px 70px -34px rgba(0,0,0,.85);
@@ -842,7 +851,8 @@ canvas { display: block; }
   transition: transform .4s cubic-bezier(.2,.7,.2,1),
               border-color .4s ease, box-shadow .4s ease;
 }
-.landing-root .fx-stat-chart:hover {
+.landing-root .fx-stat-chart:hover,
+.landing-root .fx-stat-chart.fx-tapped {
   transform: translateY(-4px);
   border-color: rgba(214, 169, 61, 0.42);
   box-shadow: 0 30px 60px -30px rgba(214,169,61,0.32);
@@ -931,7 +941,8 @@ canvas { display: block; }
   z-index: 0;
 }
 .landing-root .fx-puzzle-piece > * { position: relative; z-index: 1; }
-.landing-root .fx-puzzle-piece:hover {
+.landing-root .fx-puzzle-piece:hover,
+.landing-root .fx-puzzle-piece.fx-tapped {
   transform: translateY(-5px);
   border-color: rgba(236,198,87,0.65);
   box-shadow:
@@ -967,7 +978,8 @@ canvas { display: block; }
   transition: transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .5s ease;
   will-change: transform;
 }
-.landing-root .fx-venn-circle:hover {
+.landing-root .fx-venn-circle:hover,
+.landing-root .fx-venn-circle.fx-tapped {
   transform: scale(1.08);
 }
 
@@ -978,5 +990,38 @@ canvas { display: block; }
     animation: none !important;
   }
   .landing-root .fx-venn-circle { transition: none; }
-  .landing-root .fx-venn-circle:hover { transform: none; }
+  .landing-root .fx-venn-circle:hover,
+  .landing-root .fx-venn-circle.fx-tapped { transform: none; }
+}
+
+/* ============================================================
+   MOBILE POLISH — applies at ≤ 767px ONLY. Desktop/tablet (≥768px)
+   is intentionally untouched. Goal: a calmer, more deliberate
+   vertical rhythm and right-sized display type so phones read as
+   a crafted product surface, not a scaled-down desktop page.
+   ============================================================ */
+@media (max-width: 767px) {
+  /* 1 ── Section rhythm: the ~80px desktop-scale gaps feel cavernous
+        on a phone; tighten to a purposeful 48px band. */
+  .landing-root .fx-section { padding-top: 3rem; padding-bottom: 3rem; }
+  .landing-root .fx-section-frame { padding: 1.5rem 1.25rem; border-radius: 1.25rem; }
+  .landing-root .fx-section-frame-tight { padding: 1.25rem 1.15rem; }
+
+  /* 2 ── Display type: shrink the oversized headings so they lead the
+        eye instead of swallowing the viewport. (SectionHeader h2 uses
+        text-3xl at this width and is left as-is.) */
+  .landing-root .text-7xl { font-size: 2.6rem !important;  line-height: 1.06 !important; }
+  .landing-root .text-6xl { font-size: 2.35rem !important; line-height: 1.08 !important; }
+  .landing-root .text-5xl { font-size: 2.1rem !important;  line-height: 1.1 !important; }
+
+  /* 3 ── Tighten the split two-column intro stack + slightly narrower
+        gutters so content breathes edge-to-edge like a native app. */
+  .landing-root .fx-split-intro { gap: 0.75rem 2rem; }
+  .landing-root .fx-container { padding-left: 1.25rem; padding-right: 1.25rem; }
+
+  /* 4 ── Softer, more consistent tile radius on small screens. */
+  .landing-root .fx-tile,
+  .landing-root .fx-tile-gold,
+  .landing-root .fx-tile-media,
+  .landing-root .fx-stat-chart { border-radius: 1.15rem; }
 }

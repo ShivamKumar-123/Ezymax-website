@@ -1,5 +1,4 @@
-﻿import { Copy, Users, ArrowRight, Activity } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Copy, Users, ArrowRight, Activity } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from './CtFaqList'
 
@@ -13,30 +12,38 @@ export default function CtWhat() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Definition"
-          title="What is Copy Trading?"
-          highlight="Copy Trading?"
-          subtitle="Mirroring an experienced trader's moves, position by position, at the size you choose — no need to figure out your own setups."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          {/* Text */}
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Definition</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                What is <span className="gradient-text">Copy Trading?</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              Mirroring an experienced trader's moves, position by position, at the size you choose — no need to figure out your own setups.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold explainer tile + illustration tile ── */}
+        <div className="fx-bento grid-cols-1 lg:grid-cols-12 mt-10 md:mt-14 items-stretch">
+          {/* Explainer — solid gold accent tile */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <div className="feature-icon mb-5">
-                <Copy size={20} />
+            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
+              <div
+                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
+              >
+                <Copy size={20} style={{ color: '#1c1608' }} />
               </div>
-              <p className="text-base md:text-lg leading-relaxed mb-5" style={{ color: 'var(--fx-text-2)' }}>
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <p className="relative z-[1] text-base md:text-lg leading-relaxed" style={{ color: '#1c1608' }}>
                 Copy trading allows you to automatically replicate the trades of experienced
-                traders (<span style={{ color: 'var(--fx-gold-light)' }}>Master Traders</span>).
+                traders (<span className="font-bold" style={{ color: '#1c1608' }}>Master Traders</span>).
                 When a Master Trader executes a trade, the same trade is mirrored in your account
                 based on your allocation.
               </p>
@@ -45,16 +52,8 @@ export default function CtWhat() {
 
           {/* Illustration — trader → mirror → follower */}
           <ScrollReveal variant="fadeUp" delay={0.1} className="lg:col-span-5">
-            <div
-              className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
-                border: '1px solid rgba(214,169,61,0.22)',
-              }}
-            >
-              <div className="absolute inset-0 fx-grid-bg" />
-              <div className="relative grid grid-cols-7 items-center gap-2">
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+              <div className="grid grid-cols-7 items-center gap-2">
                 {/* Master */}
                 <div className="col-span-3">
                   <div
@@ -81,21 +80,14 @@ export default function CtWhat() {
                   <div
                     className="rounded-xl p-4 text-center"
                     style={{
-                      background:
-                        'linear-gradient(180deg, rgba(167,139,250,0.10), rgba(167,139,250,0.02))',
-                      border: '1px solid rgba(167,139,250,0.30)',
+                      background: 'var(--fx-bg-elev)',
+                      border: '1px solid rgba(214,169,61,0.30)',
                     }}
                   >
-                    <div
-                      className="w-9 h-9 rounded-xl mx-auto flex items-center justify-center mb-2"
-                      style={{
-                        background: 'rgba(167,139,250,0.18)',
-                        border: '1px solid rgba(167,139,250,0.45)',
-                      }}
-                    >
-                      <Users size={16} style={{ color: '#a78bfa' }} />
+                    <div className="feature-icon mx-auto mb-2" style={{ width: 36, height: 36 }}>
+                      <Users size={16} />
                     </div>
-                    <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: '#a78bfa' }}>
+                    <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--fx-gold-light)' }}>
                       Followers
                     </div>
                     <div className="text-xs font-bold text-white">Mirrored auto</div>
@@ -133,7 +125,6 @@ export default function CtWhat() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

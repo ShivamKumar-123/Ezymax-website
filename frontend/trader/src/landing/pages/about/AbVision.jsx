@@ -1,5 +1,4 @@
-﻿import { CheckCircle2, Quote } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { CheckCircle2, Quote } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const items = [
@@ -16,69 +15,66 @@ export default function AbVision() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Our Vision"
-          title="Built for the Next Generation of Traders"
-          highlight="Next Generation"
-          subtitle="The trading software people use every day still runs on stuff designed for 2010. We thought it was time someone rebuilt it."
-        />
-        <div className="mt-12 md:mt-16 max-w-4xl mx-auto">
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
           <ScrollReveal variant="fadeUp">
-            <div
-              className="rounded-2xl p-7 md:p-9"
-              style={{
-                background:
-                  'linear-gradient(180deg, var(--fx-bg-elev-2) 0%, var(--fx-bg-elev) 100%)',
-                border: '1px solid var(--fx-line-strong)',
-              }}
-            >
-              <p className="text-base md:text-lg leading-relaxed mb-6" style={{ color: 'var(--fx-text-2)' }}>
+            <div>
+              <span className="fx-eyebrow mb-5">Our Vision</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Built for the <span className="gradient-text">Next Generation</span> of Traders
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              The trading software people use every day still runs on stuff designed for 2010. We thought it was time someone rebuilt it.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Bento: gold vision tile + dark bridge tile ──────── */}
+        <div className="fx-bento grid-cols-1 lg:grid-cols-2 mt-12 md:mt-16 items-stretch">
+          {/* Gold accent tile — the modern approach */}
+          <ScrollReveal variant="fadeUp">
+            <div className="fx-tile-gold h-full p-7 md:p-9 flex flex-col">
+              <span className="fx-accent-bar mb-4 relative z-[1]" />
+              <p className="relative z-[1] text-base md:text-lg leading-relaxed mb-6" style={{ color: '#1c1608' }}>
                 FX Artha was created to explore a more modern approach to trading:
               </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+              <ul className="relative z-[1] grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {items.map((it) => (
                   <li
                     key={it}
                     className="flex items-center gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(214,169,61,0.05)',
-                      border: '1px solid rgba(214,169,61,0.22)',
+                      background: 'rgba(28,22,8,0.10)',
+                      border: '1px solid rgba(28,22,8,0.20)',
                     }}
                   >
-                    <CheckCircle2 size={16} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm md:text-[15px] text-white">{it}</span>
+                    <CheckCircle2 size={16} style={{ color: '#1c1608' }} />
+                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{it}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+          </ScrollReveal>
 
+          {/* Dark tile — the bridge */}
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <div className="fx-tile h-full p-7 md:p-9 flex flex-col">
+              <span className="fx-accent-bar mb-4" />
               <div className="text-sm md:text-base mb-4" style={{ color: 'var(--fx-text-2)' }}>
                 Our mission is to bridge:
               </div>
               <div className="flex flex-wrap gap-2.5">
-                {bridges.map((b, i) => (
+                {bridges.map((b) => (
                   <span
                     key={b}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
                     style={{
-                      background:
-                        i === 1
-                          ? 'rgba(167,139,250,0.10)'
-                          : i === 2
-                            ? 'rgba(96,165,250,0.10)'
-                            : 'rgba(214,169,61,0.08)',
-                      color:
-                        i === 1
-                          ? '#a78bfa'
-                          : i === 2
-                            ? '#60a5fa'
-                            : 'var(--fx-gold-light)',
-                      border:
-                        i === 1
-                          ? '1px solid rgba(167,139,250,0.35)'
-                          : i === 2
-                            ? '1px solid rgba(96,165,250,0.35)'
-                            : '1px solid rgba(214,169,61,0.30)',
+                      background: 'rgba(214,169,61,0.08)',
+                      color: 'var(--fx-gold-light)',
+                      border: '1px solid rgba(214,169,61,0.30)',
                     }}
                   >
                     {b}
@@ -89,26 +85,17 @@ export default function AbVision() {
               <p className="mt-7 text-base text-white">
                 …into one connected experience.
               </p>
+
+              <div
+                className="mt-auto pt-7 md:pt-8 text-center"
+              >
+                <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
+                <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
+                  &ldquo;Technology should increase transparency — not complexity.&rdquo;
+                </p>
+              </div>
             </div>
           </ScrollReveal>
-
-          <ScrollReveal variant="fadeUp" delay={0.2}>
-            <div
-              className="mt-8 md:mt-10 rounded-2xl p-6 md:p-8 text-center"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.14), rgba(214,169,61,0.03))',
-                border: '1px solid rgba(214,169,61,0.40)',
-              }}
-            >
-              <Quote size={22} className="mx-auto mb-3" style={{ color: 'var(--fx-gold-light)' }} />
-              <p className="text-lg md:text-2xl font-bold leading-tight gradient-text">
-                &ldquo;Technology should increase transparency — not complexity.&rdquo;
-              </p>
-            </div>
-          </ScrollReveal>
-
-        </div>
         </div>
       </div>
     </section>

@@ -73,7 +73,7 @@ export default function FxTradeInsurance() {
           </ScrollReveal>
 
           {/* ── Right: 2x2 stat-chart tier grid ───────────────── */}
-          <div className="lg:col-span-3 grid grid-cols-2 gap-4 md:gap-5">
+          <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
             {tiers.map((tier, i) => (
               <ScrollReveal key={tier.name} variant="fadeUp" delay={i * 0.06}>
                 <div className="fx-stat-chart h-full p-5 md:p-6 flex flex-col">

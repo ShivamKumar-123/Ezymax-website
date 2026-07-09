@@ -28,7 +28,7 @@ export default function IbHero() {
         <div className="max-w-3xl">
           {/* LEFT */}
           <div>
-            <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[60px] lg:text-[66px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[28px] sm:text-[52px] md:text-[60px] lg:text-[66px] xl:text-[72px] fx-fade-up fx-fade-up-d1">
               Partner With FX Artha. <br />
               <span className="fx-gold-text">Build Your Trading Business.</span>
             </h1>

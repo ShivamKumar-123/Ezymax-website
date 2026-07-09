@@ -33,7 +33,7 @@ export default function FxReferral() {
         <div className="fx-bento grid-cols-1 md:grid-cols-2 mt-10 md:mt-14 items-stretch">
           {/* Partner card — refined solid gold tile */}
           <ScrollReveal variant="fadeUp">
-            <div className="fx-tile-gold h-full p-8 md:p-10 flex flex-col overflow-hidden">
+            <div className="fx-tile-gold h-full p-6 sm:p-8 md:p-10 flex flex-col overflow-hidden">
               {/* faint decorative watermark for depth */}
               <Handshake
                 aria-hidden

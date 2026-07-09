@@ -38,7 +38,7 @@ export default function FxStaking() {
         <div className="fx-bento grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-10 md:mt-14 items-stretch">
           {/* Step flow — modern vertical timeline */}
           <ScrollReveal variant="fadeUp">
-            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+            <div className="fx-tile h-full p-6 sm:p-7 md:p-8 flex flex-col">
               <span className="fx-accent-bar mb-4" />
               <h3 className="text-xl md:text-2xl font-bold text-white mb-7">
                 Stake &rarr; Earn &rarr; Trade with Utility

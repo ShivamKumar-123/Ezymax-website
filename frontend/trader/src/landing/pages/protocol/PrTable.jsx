@@ -31,23 +31,23 @@ export default function PrTable() {
             }}
           >
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px]">
+              <table className="w-full min-w-[460px]">
                 <thead>
                   <tr style={{ background: 'rgba(214,169,61,0.06)', borderBottom: '1px solid var(--fx-line)' }}>
                     <th
-                      className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
+                      className="text-left px-3 sm:px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: 'var(--fx-text-3)' }}
                     >
                       Feature
                     </th>
                     <th
-                      className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
+                      className="text-left px-3 sm:px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: 'var(--fx-gold-light)' }}
                     >
                       FX Artha
                     </th>
                     <th
-                      className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
+                      className="text-left px-3 sm:px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: '#f87171' }}
                     >
                       Traditional Broker
@@ -62,13 +62,13 @@ export default function PrTable() {
                         borderBottom: i === rows.length - 1 ? 'none' : '1px solid var(--fx-line)',
                       }}
                     >
-                      <td className="px-5 md:px-7 py-4 text-sm md:text-[15px] font-semibold text-white">
+                      <td className="px-3 sm:px-5 md:px-7 py-4 text-[13px] sm:text-sm md:text-[15px] font-semibold text-white">
                         {r.feature}
                       </td>
-                      <td className="px-5 md:px-7 py-4 text-sm md:text-[15px]" style={{ color: 'var(--fx-gold-light)' }}>
+                      <td className="px-3 sm:px-5 md:px-7 py-4 text-[13px] sm:text-sm md:text-[15px]" style={{ color: 'var(--fx-gold-light)' }}>
                         {r.fx}
                       </td>
-                      <td className="px-5 md:px-7 py-4 text-sm md:text-[15px]" style={{ color: 'var(--fx-text-2)' }}>
+                      <td className="px-3 sm:px-5 md:px-7 py-4 text-[13px] sm:text-sm md:text-[15px]" style={{ color: 'var(--fx-text-2)' }}>
                         {r.broker}
                       </td>
                     </tr>

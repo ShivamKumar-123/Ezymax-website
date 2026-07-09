@@ -1,5 +1,4 @@
-﻿import { Smartphone, Plane, Sparkles, Trophy } from 'lucide-react'
-import SectionHeader from '@/landing/components/SectionHeader'
+import { Smartphone, Plane, Sparkles, Trophy } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
@@ -18,37 +17,36 @@ export default function ErBigRewards() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        <div className="fx-section-frame">
-        <SectionHeader
-          badge="Big Rewards"
-          title="Unlock Premium Rewards"
-          highlight="Premium Rewards"
-          subtitle="High engagement and performance unlock access to larger rewards."
-        />
-        <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* ── Two-column intro ──────────────────────────────── */}
+        <div className="fx-split-intro">
+          <ScrollReveal variant="fadeUp">
+            <div>
+              <span className="fx-eyebrow mb-5">Big Rewards</span>
+              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+                Unlock <span className="gradient-text">Premium Rewards</span>
+              </h2>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+              High engagement and performance unlock access to larger rewards.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        {/* ── Big-reward stat-chart tiles ───────────────────── */}
+        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-10 md:mt-14 items-stretch">
           {examples.map((ex, i) => {
             const Icon = ex.icon
             return (
               <ScrollReveal key={ex.title} variant="fadeUp" delay={i * 0.05}>
-                <div
-                  className="relative h-full rounded-2xl p-6 overflow-hidden"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.02) 60%), var(--fx-bg-elev)',
-                    border: '1px solid rgba(214,169,61,0.35)',
-                  }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                    style={{
-                      background: 'rgba(214,169,61,0.18)',
-                      border: '1px solid rgba(214,169,61,0.45)',
-                    }}
-                  >
-                    <Icon size={20} style={{ color: 'var(--fx-gold-light)' }} />
+                <div className="fx-stat-chart h-full p-6 md:p-7 flex flex-col">
+                  <div className="fx-chart-curve" />
+                  <div className="relative z-[1] feature-icon mb-5" style={{ width: 48, height: 48 }}>
+                    <Icon size={20} />
                   </div>
-                  <h3 className="text-base md:text-lg font-bold text-white mb-2 leading-tight">{ex.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                  <h3 className="relative z-[1] text-lg md:text-xl font-bold text-white mb-2 leading-tight">{ex.title}</h3>
+                  <p className="relative z-[1] text-sm leading-relaxed mt-auto" style={{ color: 'var(--fx-text-2)' }}>
                     {ex.desc}
                   </p>
                 </div>
@@ -71,7 +69,6 @@ export default function ErBigRewards() {
             <CtFaqList items={faq} />
           </div>
         </ScrollReveal>
-        </div>
       </div>
     </section>
   )

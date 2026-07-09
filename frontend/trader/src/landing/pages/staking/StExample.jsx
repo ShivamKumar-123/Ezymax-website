@@ -45,8 +45,8 @@ export default function StExample() {
           highlight="in Practice"
           subtitle="Multiple earning layers — staking + trading."
         />
-        <div className="mt-12 md:mt-16 -mx-6 md:mx-0 px-6 md:px-0 overflow-x-auto md:overflow-visible">
-          <div className="relative grid grid-flow-col md:grid-flow-row auto-cols-[260px] md:auto-cols-auto md:grid-cols-4 gap-4 md:gap-3 min-w-max md:min-w-0">
+        <div className="mt-12 md:mt-16">
+          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-3">
             <div
               className="hidden md:block absolute top-[42px] left-[10%] right-[10%] h-px pointer-events-none"
               style={{

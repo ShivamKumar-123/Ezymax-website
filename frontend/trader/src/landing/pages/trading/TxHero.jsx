@@ -26,7 +26,7 @@ export default function TxHero() {
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-16 md:pb-20">
         <div className="max-w-3xl">
-          <h1 className="fx-headline text-[36px] sm:text-[44px] md:text-[52px] lg:text-[56px] xl:text-[64px] fx-fade-up fx-fade-up-d1">
+          <h1 className="fx-headline text-[28px] sm:text-[44px] md:text-[52px] lg:text-[56px] xl:text-[64px] fx-fade-up fx-fade-up-d1">
             Trade Smart. <br />
             <span className="fx-gold-text">Pay Less Over Time.</span>
           </h1>

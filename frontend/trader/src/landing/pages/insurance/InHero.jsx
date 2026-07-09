@@ -44,7 +44,7 @@ export default function InHero() {
                 Trade Insurance
               </span>
             </div>
-            <h1 className="fx-headline text-[32px] sm:text-[40px] md:text-[48px] lg:text-[52px] xl:text-[58px] fx-fade-up fx-fade-up-d1">
+            <h1 className="fx-headline text-[26px] sm:text-[40px] md:text-[48px] lg:text-[52px] xl:text-[58px] fx-fade-up fx-fade-up-d1">
               Trade With <br />
               <span className="fx-gold-text">Built-In Protection.</span>
             </h1>

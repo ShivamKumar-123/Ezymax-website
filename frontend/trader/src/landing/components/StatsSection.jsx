@@ -84,7 +84,7 @@ const StatsSection = () => {
 
           {/* Cards */}
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
             initial="hidden"
             animate={isInView ? 'visible' : 'hidden'}
             variants={containerVariants}
@@ -99,6 +99,10 @@ const StatsSection = () => {
                   boxShadow: '0 4px 24px rgba(26, 86, 255, 0.06)',
                 }}
                 whileHover={{
+                  borderColor: '#1A56FF',
+                  boxShadow: '0 8px 40px rgba(26, 86, 255, 0.15)',
+                }}
+                whileTap={{
                   borderColor: '#1A56FF',
                   boxShadow: '0 8px 40px rgba(26, 86, 255, 0.15)',
                 }}
