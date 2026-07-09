@@ -50,6 +50,28 @@ function Spinner() {
   );
 }
 
+// Once a user is an approved IB / sub-broker, the full dashboard lives in the
+// dedicated partner portal — the trader app just points them there.
+function IBPortalCTA({ subtitle }: { subtitle?: string }) {
+  return (
+    <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5 max-w-lg mx-auto">
+      <div className="text-3xl">🎉</div>
+      <h3 className="text-lg sm:text-xl font-bold text-text-primary">You&apos;re an approved partner</h3>
+      <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
+        {subtitle || 'Manage your referrals, commissions, network and client trading from your dedicated IB partner portal.'}
+      </p>
+      <a
+        href={IB_PORTAL_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold border-2 border-accent bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(214,169,61,0.35)] transition-all"
+      >
+        Login to IB Portal ↗
+      </a>
+    </div>
+  );
+}
+
 
 
 export default function BusinessPage() {
@@ -284,6 +306,9 @@ function IBTab() {
   if (loading) return <Spinner />;
 
 
+
+  // Approved IB → send them to the dedicated portal, no inline dashboard.
+  if (status?.is_ib) return <IBPortalCTA />;
 
   if (!status?.is_ib && status?.application_status === 'pending') {
 
@@ -677,6 +702,9 @@ function SubBrokerTab() {
 
 
 
+  // Approved partner → portal CTA instead of the inline sub-broker dashboard.
+  if (status?.is_ib) return <IBPortalCTA subtitle="Manage your clients and revenue share from your dedicated IB partner portal." />;
+
   if (status?.application_status === 'pending') {
 
     return (
@@ -872,6 +900,9 @@ function NetworkTab() {
 
 
   if (loading) return <Spinner />;
+
+  // Approved IB → network lives in the partner portal.
+  if (tree) return <IBPortalCTA subtitle="View your full MLM network and downline in your dedicated IB partner portal." />;
 
   if (!tree) return <div className="rounded-xl border border-dashed border-border-primary bg-bg-secondary/50 py-16 px-4 text-center text-sm text-text-secondary max-w-lg mx-auto">You need to be an approved IB to see your network.</div>;
 
