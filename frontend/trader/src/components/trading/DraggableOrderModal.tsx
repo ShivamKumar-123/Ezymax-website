@@ -20,8 +20,10 @@ const WIDTH = 348;
 export default function DraggableOrderModal({ onClose }: { onClose: () => void }) {
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     if (typeof window === 'undefined') return { x: 200, y: 96 };
-    // Default to the top-right, roughly where the old order column sat.
-    return { x: Math.max(12, window.innerWidth - WIDTH - 24), y: 96 };
+    // Open centered on screen; the user can drag it wherever after.
+    const x = Math.max(12, Math.round((window.innerWidth - WIDTH) / 2));
+    const y = Math.max(24, Math.round((window.innerHeight - 620) / 2));
+    return { x, y };
   });
   const drag = useRef<{ dx: number; dy: number } | null>(null);
 
@@ -64,7 +66,9 @@ export default function DraggableOrderModal({ onClose }: { onClose: () => void }
   return (
     <div
       className="fixed z-[120] flex flex-col overflow-hidden rounded-xl border border-border-primary bg-bg-base shadow-2xl"
-      style={{ left: pos.x, top: pos.y, width: WIDTH, height: 'min(620px, 85vh)' }}
+      // Height follows the order panel's content (no fixed height => no empty
+      // gap), capped so it never runs off a short viewport.
+      style={{ left: pos.x, top: pos.y, width: WIDTH, maxHeight: '88vh' }}
       role="dialog"
       aria-label="Order ticket"
     >
@@ -81,6 +85,9 @@ export default function DraggableOrderModal({ onClose }: { onClose: () => void }
         </span>
         <button
           type="button"
+          // Stop the drag bar's pointer-capture from swallowing this click —
+          // without this, pressing X started a drag and the close never fired.
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
           aria-label="Close order ticket"
           className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary"
@@ -89,8 +96,9 @@ export default function DraggableOrderModal({ onClose }: { onClose: () => void }
         </button>
       </div>
 
-      {/* The existing order panel fills the rest of the window. */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      {/* The order panel sizes the window to its content (scrolls only if it
+          would exceed the 88vh cap), so there's no empty gap below it. */}
+      <div className="min-h-0 overflow-y-auto">
         <OrderPanel />
       </div>
     </div>

@@ -695,8 +695,43 @@ export default function TradingTerminalPage() {
         ref={centerColumnRef}
         className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0 relative z-0"
       >
-        <TerminalTicker />
+        <TerminalTicker
+          rightSlot={
+            <>
+              {/* Markets — opens the instruments list (full-height panel on
+                  the right); chart + positions shrink to the left. Toggle. */}
+              <button
+                type="button"
+                onClick={onPanelsSelectMarkets}
+                className={clsx(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors whitespace-nowrap',
+                  terminalMarketsOpen
+                    ? 'bg-accent/15 border-accent/40 text-accent'
+                    : 'bg-bg-secondary border-border-primary text-text-secondary hover:border-accent/30 hover:text-text-primary',
+                )}
+                title="Browse instruments"
+              >
+                <List className="w-3.5 h-3.5" aria-hidden />
+                <span className="hidden sm:inline">Markets</span>
+              </button>
+              {/* Trade — pops the movable order window. */}
+              <button
+                type="button"
+                onClick={openOrderModal}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-accent border border-accent hover:bg-accent/90 transition-colors whitespace-nowrap"
+                title="Open the order ticket"
+              >
+                <CandlestickChart className="w-3.5 h-3.5" aria-hidden />
+                <span className="hidden sm:inline">Trade</span>
+              </button>
+            </>
+          }
+        />
         <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* LEFT: chart + positions stacked. When a right panel (Markets /
+              News / Calc) opens, this whole stack shrinks to the left and the
+              panel spans the full height on the right. */}
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           <div
             className={clsx(
               'flex flex-col overflow-hidden bg-bg-base min-w-0 min-h-0 isolate',
@@ -728,47 +763,37 @@ export default function TradingTerminalPage() {
                   collapses back. Positioned over the chart's top-right
                   corner where TradingView's iframe has empty space. */}
               {!chartExpanded && (
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
-                  {/* Markets — opens the instruments panel on the right;
-                      the chart shrinks to make room (toggle). */}
-                  <button
-                    type="button"
-                    onClick={onPanelsSelectMarkets}
-                    className={clsx(
-                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border backdrop-blur-sm shadow-sm transition-colors',
-                      terminalMarketsOpen
-                        ? 'bg-accent/15 border-accent/40 text-accent'
-                        : 'bg-bg-secondary/85 border-border-primary text-text-secondary hover:bg-bg-secondary hover:text-text-primary',
-                    )}
-                    title="Browse instruments"
-                  >
-                    <List className="w-3.5 h-3.5" aria-hidden />
-                    <span className="hidden sm:inline">Markets</span>
-                  </button>
-                  {/* Trade — pops the movable order window. */}
-                  <button
-                    type="button"
-                    onClick={openOrderModal}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-accent border border-accent shadow-sm hover:bg-accent/90 transition-colors"
-                    title="Open the order ticket"
-                  >
-                    <CandlestickChart className="w-3.5 h-3.5" aria-hidden />
-                    <span className="hidden sm:inline">Trade</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChartExpanded(true)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
-                    title="Expand chart to full screen"
-                    aria-label="Expand chart to full screen"
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" aria-hidden />
-                    <span className="hidden sm:inline">Full screen</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setChartExpanded(true)}
+                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
+                  title="Expand chart to full screen"
+                  aria-label="Expand chart to full screen"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
+                  <span className="hidden sm:inline">Full screen</span>
+                </button>
               )}
             </div>
           </div>
+
+          <PanelResizeHandle
+            axis="horizontal"
+            hitSize={TERMINAL_RESIZE.bottomHandleHitPx}
+            onDragStart={snapshotLayout}
+            onDrag={onBottomDrag}
+            className="z-[80]"
+          />
+
+          <div
+            className="shrink-0 overflow-hidden min-h-0 flex relative z-[1] border-t border-border-primary"
+            style={{ height: bpH }}
+          >
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+              <PositionsPanel variant="terminal" />
+            </div>
+          </div>
+          </div>{/* LEFT column (chart + positions) close */}
 
           {rightPanelOpen && (
             <>
@@ -836,23 +861,6 @@ export default function TradingTerminalPage() {
           </div>
             </>
           )}
-        </div>
-
-        <PanelResizeHandle
-          axis="horizontal"
-          hitSize={TERMINAL_RESIZE.bottomHandleHitPx}
-          onDragStart={snapshotLayout}
-          onDrag={onBottomDrag}
-          className="z-[80]"
-        />
-
-        <div
-          className="shrink-0 overflow-hidden min-h-0 flex relative z-[1] border-t border-border-primary"
-          style={{ height: bpH }}
-        >
-          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <PositionsPanel variant="terminal" />
-          </div>
         </div>
       </div>
 

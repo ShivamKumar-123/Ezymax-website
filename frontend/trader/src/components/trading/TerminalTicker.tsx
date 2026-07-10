@@ -7,7 +7,7 @@
 //
 // Click a tile to switch the active symbol (drives chart + order panel).
 
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
 
@@ -58,7 +58,7 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   );
 }
 
-function TerminalTickerInner() {
+function TerminalTickerInner({ rightSlot }: { rightSlot?: ReactNode }) {
   const prices = useTradingStore((s) => s.prices);
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
@@ -105,8 +105,8 @@ function TerminalTickerInner() {
   }, [prices, tick]);
 
   return (
-    <div className="w-full border-b border-border-primary bg-bg-base">
-      <div className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-1.5">
+    <div className="w-full border-b border-border-primary bg-bg-base flex items-center">
+      <div className="flex-1 min-w-0 flex overflow-x-auto no-scrollbar gap-2 px-2 py-1.5">
         {tiles.map(({ sym, meta, mid, pct, positive, buf }) => {
           const isSelected = selectedSymbol === sym;
           return (
@@ -149,6 +149,11 @@ function TerminalTickerInner() {
           );
         })}
       </div>
+      {rightSlot ? (
+        <div className="shrink-0 self-stretch flex items-center gap-1.5 px-2 border-l border-border-primary">
+          {rightSlot}
+        </div>
+      ) : null}
     </div>
   );
 }
