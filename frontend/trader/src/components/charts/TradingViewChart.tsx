@@ -1,88 +1,66 @@
 'use client';
 
-import { useMemo, memo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
-import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
 
 /**
- * Modern Advanced Chart embed iframe (`tradingview-widget.com/embed-widget/
- * advanced-chart/`) — same pattern as TradingViewNewsTimeline /
- * TradingViewEventsCalendar. Settings are encoded as a JSON fragment.
+ * Advanced chart — embeds the shared `/chart` page (TradingView Charting
+ * Library fed by OUR backend), the same page the mobile app's WebView loads.
  *
- * Why not the script-based `embed-widget-advanced-chart.js` pattern: it
- * breaks under React Strict Mode (double mount). On cleanup React removes
- * the host node while TradingView still touches `iframe.contentWindow` →
- * console error + blank chart. Direct iframe with `key={src}` sidesteps
- * the issue cleanly.
- *
- * Width/height MUST be numeric pixels. `'100%'` inside the JSON fragment
- * triggers `URIError: URI malformed` inside TradingView's bootstrap
- * (`%"` is not a valid percent-encoded sequence). CSS sizes the iframe.
+ * The iframe src is built ONCE with the initial symbol; subsequent symbol
+ * changes are sent via postMessage so the ~26 MB library isn't reloaded on
+ * every switch. The chart page listens for `{type:'setSymbol'}`.
  */
-const ADVANCED_CHART_EMBED = 'https://www.tradingview-widget.com/embed-widget/advanced-chart/';
-
-function buildWidgetEmbedUrl(
-  symbol: string,
-  theme: 'dark' | 'light',
-  interval: string,
-): string {
-  const tvSymbol = toTradingViewSymbol(symbol);
-  const settings: Record<string, string | number | boolean | unknown[]> = {
-    autosize: true,
-    width: 1400,
-    height: 900,
-    symbol: tvSymbol,
-    interval,
-    timezone: 'Etc/UTC',
-    theme,
-    style: '1',
-    locale: 'en',
-    // Drawing toolbar (left rail) — always visible. A toggle was tried
-    // but flipping this flag at runtime broke the iframe render on the
-    // free embed; the cost of the reload + the blank-state risk wasn't
-    // worth the cosmetic win.
-    hide_side_toolbar: false,
-    allow_symbol_change: true,
-    enable_publishing: false,
-    save_image: true,
-    details: true,
-    hotlist: true,
-    calendar: true,
-    studies: [],
-  };
-  const u = new URL(ADVANCED_CHART_EMBED);
-  u.searchParams.set('locale', 'en');
-  u.hash = JSON.stringify(settings);
-  return u.toString();
-}
-
 function TradingViewChartInner() {
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
-  // App is light-only. The uiStore theme was previously read here; pinning
-  // tvTheme keeps any stale persisted "dark" from leaking into the chart.
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const tvTheme: 'dark' | 'light' = 'light';
+  const theme: 'dark' | 'light' = 'light'; // app chart is light-only
   const interval = onTradingTerminal ? '5' : '15';
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Capture the first symbol so the src (and thus the heavy library load) is
+  // stable; later switches go through postMessage.
+  const initialSymbol = useRef(selectedSymbol ?? 'EURUSD').current;
+
   const src = useMemo(
-    () => buildWidgetEmbedUrl(selectedSymbol ?? 'EURUSD', tvTheme, interval),
-    [selectedSymbol, tvTheme, interval],
+    () => `/chart?symbol=${encodeURIComponent(initialSymbol)}&interval=${interval}&theme=${theme}`,
+    [initialSymbol, interval, theme],
   );
 
-  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
+  // Push symbol changes into the embedded chart. Retry a couple of times in
+  // case the chart is still booting when the symbol first changes.
+  useEffect(() => {
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const post = () => {
+      try {
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: 'setSymbol', symbol: sym },
+          window.location.origin,
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    post();
+    const t1 = setTimeout(post, 800);
+    const t2 = setTimeout(post, 2200);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [selectedSymbol]);
 
   return (
-    <div className={clsx('w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>
+    <div className={clsx('w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <iframe
-        key={src}
+        ref={iframeRef}
         title={`Chart ${selectedSymbol || 'EURUSD'}`}
         src={src}
-        className={clsx('h-full w-full min-h-[200px] border-0', surface)}
+        className="h-full w-full min-h-[200px] border-0 bg-bg-base"
         allow="clipboard-write; fullscreen"
-        referrerPolicy="no-referrer-when-downgrade"
       />
     </div>
   );

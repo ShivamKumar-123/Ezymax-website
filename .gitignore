@@ -92,3 +92,6 @@ swisscresta_web/
 # frontend/trader/public/downloads/swisscresta1.apk. Keep locally, don't track.
 # (Scoped to the root folder only so the served public/ APK stays tracked.)
 /apk/
+
+# TradingView Charting Library download (licensed — do NOT commit)
+charting_library-master/
