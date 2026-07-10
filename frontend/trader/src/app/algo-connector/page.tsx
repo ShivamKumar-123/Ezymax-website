@@ -78,8 +78,10 @@ export default function AlgoConnectorPage() {
     setLoading(true);
     try {
       const res = await api.get<{ items: AccountWithKey[] }>('/algo/accounts');
-      setAccounts(res.items || []);
-      if (!selectedAccId && res.items?.length) setSelectedAccId(res.items[0].account_id);
+      const items = res.items || [];
+      setAccounts(items);
+      const firstAcc = items[0];
+      if (!selectedAccId && firstAcc) setSelectedAccId(firstAcc.account_id);
     } catch (e: any) { toast.error(e.message || 'Failed to load'); }
     finally { setLoading(false); }
   }, []);
