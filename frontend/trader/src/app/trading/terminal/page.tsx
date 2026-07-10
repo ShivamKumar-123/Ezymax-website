@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Maximize2, Minimize2, Search, X } from 'lucide-react';
+import { CandlestickChart, List, Maximize2, Minimize2, Search, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -15,7 +15,7 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
 import Watchlist from '@/components/trading/Watchlist';
 import InstrumentsTable from '@/components/trading/InstrumentsTable';
-import OrderPanel from '@/components/trading/OrderPanel';
+import DraggableOrderModal from '@/components/trading/DraggableOrderModal';
 import RiskCalculator from '@/components/trading/RiskCalculator';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
@@ -65,6 +65,10 @@ export default function TradingTerminalPage() {
   const [bottomCollapsed, setBottomCollapsed] = useState(false);
   const [chartExpanded, setChartExpanded] = useState(false);
   const [terminalCalcOpen, setTerminalCalcOpen] = useState(false);
+  // The Buy/Sell order panel now lives in a movable floating window instead
+  // of a pinned right column, so the chart can be full-width.
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const openOrderModal = useCallback(() => setOrderModalOpen(true), []);
 
   const snapshotLayout = useCallback(() => {
     const s = useUIStore.getState();
@@ -213,8 +217,11 @@ export default function TradingTerminalPage() {
   }, [terminalMarketsOpen, terminalNewsOpen, chartExpanded, terminalCalcOpen, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectOrder = useCallback(() => {
+    // The order panel is a floating window now — the rail's "Order" button
+    // closes any side panel and pops the order window.
     resetAllPanels();
-  }, [resetAllPanels]);
+    openOrderModal();
+  }, [resetAllPanels, openOrderModal]);
 
   const onExpandFullChartFromRail = useCallback(() => {
     if (chartExpanded) {
@@ -660,6 +667,11 @@ export default function TradingTerminalPage() {
     );
   }
 
+  // The right column now hosts ONLY the Markets / News / Risk-Calculator
+  // panels. When none is open it collapses so the chart is full-width; the
+  // order panel is no longer here (it's the floating DraggableOrderModal).
+  const rightPanelOpen = terminalMarketsOpen || terminalNewsOpen || terminalCalcOpen;
+
   return (
     <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
       <TerminalLeftRail
@@ -716,20 +728,50 @@ export default function TradingTerminalPage() {
                   collapses back. Positioned over the chart's top-right
                   corner where TradingView's iframe has empty space. */}
               {!chartExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setChartExpanded(true)}
-                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
-                  title="Expand chart to full screen"
-                  aria-label="Expand chart to full screen"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
-                  <span className="hidden sm:inline">Full screen</span>
-                </button>
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                  {/* Markets — opens the instruments panel on the right;
+                      the chart shrinks to make room (toggle). */}
+                  <button
+                    type="button"
+                    onClick={onPanelsSelectMarkets}
+                    className={clsx(
+                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border backdrop-blur-sm shadow-sm transition-colors',
+                      terminalMarketsOpen
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-bg-secondary/85 border-border-primary text-text-secondary hover:bg-bg-secondary hover:text-text-primary',
+                    )}
+                    title="Browse instruments"
+                  >
+                    <List className="w-3.5 h-3.5" aria-hidden />
+                    <span className="hidden sm:inline">Markets</span>
+                  </button>
+                  {/* Trade — pops the movable order window. */}
+                  <button
+                    type="button"
+                    onClick={openOrderModal}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-accent border border-accent shadow-sm hover:bg-accent/90 transition-colors"
+                    title="Open the order ticket"
+                  >
+                    <CandlestickChart className="w-3.5 h-3.5" aria-hidden />
+                    <span className="hidden sm:inline">Trade</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartExpanded(true)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
+                    title="Expand chart to full screen"
+                    aria-label="Expand chart to full screen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" aria-hidden />
+                    <span className="hidden sm:inline">Full screen</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
+          {rightPanelOpen && (
+            <>
           <PanelResizeHandle
             axis="vertical"
             hitSize={TERMINAL_RESIZE.handleHitPx}
@@ -774,12 +816,15 @@ export default function TradingTerminalPage() {
                   <TradingViewNewsTimeline />
                 </div>
               </div>
-            ) : terminalMarketsOpen ? (
+            ) : (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <InstrumentsTable
                   onExitMarkets={() => {
+                    // Picking an instrument closes the markets panel and
+                    // pops the movable order window for that symbol.
                     setTerminalMarketsOpen(false);
                     setTerminalNewsOpen(false);
+                    openOrderModal();
                   }}
                   onViewNews={() => {
                     setTerminalMarketsOpen(false);
@@ -787,12 +832,10 @@ export default function TradingTerminalPage() {
                   }}
                 />
               </div>
-            ) : (
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <OrderPanel />
-              </div>
             )}
           </div>
+            </>
+          )}
         </div>
 
         <PanelResizeHandle
@@ -812,6 +855,9 @@ export default function TradingTerminalPage() {
           </div>
         </div>
       </div>
+
+      {/* Movable order window — replaces the old pinned right column. */}
+      {orderModalOpen && <DraggableOrderModal onClose={() => setOrderModalOpen(false)} />}
     </div>
   );
 }
