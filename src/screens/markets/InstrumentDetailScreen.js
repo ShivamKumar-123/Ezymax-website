@@ -550,9 +550,6 @@ function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare
       <Pressable onPress={onPin} hitSlop={8} accessibilityRole="button" accessibilityLabel={pinned ? 'Unpin' : 'Pin to watchlist'} style={styles.hdrIcon}>
         <Ionicons name={pinned ? 'star' : 'star-outline'} size={22} color={pinned ? vantage.accent : vantage.textPrimary} />
       </Pressable>
-      <Pressable onPress={onAlert} hitSlop={8} accessibilityRole="button" accessibilityLabel="Set alert" style={styles.hdrIcon}>
-        <Ionicons name="notifications-outline" size={22} color={vantage.textPrimary} />
-      </Pressable>
       <Pressable onPress={onShare} hitSlop={8} accessibilityRole="button" accessibilityLabel="Share" style={styles.hdrIcon}>
         <Ionicons name="share-outline" size={22} color={vantage.textPrimary} />
       </Pressable>

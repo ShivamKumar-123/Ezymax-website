@@ -25,11 +25,9 @@ const derivedWs = API_BASE_URL.startsWith('https')
 
 export const WS_URL = trimOrEmpty(ENV_WS_URL) || derivedWs;
 
-// Self-hosted TradingView Charting Library chart page. Set this to where you
-// deploy `charting_library-master/charting_library-master/chart.html` (the
-// folder must be served over HTTPS), e.g.
-//   https://api.swisscresta.com/charting/chart.html
-// When EMPTY, instrument charts fall back to the public TradingView widget
-// (which can't show broker-only symbols). When SET, all backend-tracked
-// symbols get a real chart via the bars datafeed.
-export const CHART_URL = '';
+// Self-hosted TradingView Charting Library chart page — the shared /chart
+// route on the trader web app (fed by our /instruments/{symbol}/bars endpoint
+// + /ws/prices). The WebView loads it with ?symbol=&interval=&theme=. Requires
+// the charting_library/ static files to be present on the trader deploy.
+// When EMPTY, instrument charts fall back to the public TradingView widget.
+export const CHART_URL = 'https://trade.swisscresta.com/chart';
