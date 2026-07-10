@@ -380,7 +380,7 @@ export default function MarketingNavbar({
           ) : (
             <>
               <Link
-                href="/auth/login"
+                href="/auth/portal"
                 className="inline-flex items-center justify-center whitespace-nowrap px-3.5 py-2 rounded-full border border-gray-900 text-[13px] font-semibold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
               >
                 {t('nav.login')}
@@ -521,7 +521,7 @@ export default function MarketingNavbar({
                 ) : (
                   <>
                     <Link
-                      href="/auth/login"
+                      href="/auth/portal"
                       onClick={() => setOpen(false)}
                       className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold"
                     >

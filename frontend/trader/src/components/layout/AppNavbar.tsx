@@ -51,6 +51,8 @@ type NavItem = {
   href: string;
   icon: LucideIcon;
   isNew?: boolean;
+  /** Anchor id for the first-login feature tour (data-tour="…"). */
+  tourKey?: string;
   /** When present, the item renders as a hover dropdown instead of a
    *  plain link (the `href` then points at the first/default child). */
   children?: readonly NavItem[];
@@ -58,19 +60,20 @@ type NavItem = {
 
 /** Primary horizontal nav items (visible on lg+). */
 const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
-  { label: 'Home', href: '/dashboard', icon: Home },
-  { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
-  { label: 'Funds', href: '/wallet', icon: Wallet },
+  { label: 'Home', href: '/dashboard', icon: Home, tourKey: 'home' },
+  { label: 'Accounts', href: '/accounts', icon: LayoutGrid, tourKey: 'accounts' },
+  { label: 'Funds', href: '/wallet', icon: Wallet, tourKey: 'funds' },
   {
     label: 'Social',
     href: '/social',
     icon: Copy,
+    tourKey: 'social',
     children: [
       { label: 'Copy Trading', href: '/social', icon: Copy },
       { label: 'PAMM', href: '/pamm', icon: TrendingUp },
     ],
   },
-  { label: 'Affiliates', href: '/business', icon: Users },
+  { label: 'Affiliates', href: '/business', icon: Users, tourKey: 'affiliates' },
 ];
 
 /** Secondary nav items (live under the "More" dropdown on lg+). */
@@ -183,6 +186,7 @@ export default function AppNavbar() {
                 <div key={item.label} className="relative group">
                   <button
                     type="button"
+                    data-tour={item.tourKey}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
                       groupActive ? 'bg-[#FCE6DD] text-[#E94E1B]' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
@@ -224,6 +228,7 @@ export default function AppNavbar() {
                 key={item.href}
                 href={item.href}
                 prefetch={false}
+                data-tour={item.tourKey}
                 className={cn(
                   'inline-flex items-center rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
                   active
@@ -318,6 +323,7 @@ export default function AppNavbar() {
               <Link
                 href="/wallet"
                 prefetch={false}
+                data-tour="deposit"
                 className="inline-flex items-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-[#222] transition-colors"
               >
                 Deposit
