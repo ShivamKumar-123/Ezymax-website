@@ -32,6 +32,7 @@ import {
   Menu,
   MoreHorizontal,
   Newspaper,
+  Plug,
   Receipt,
   ShieldCheck,
   Settings,
@@ -82,6 +83,7 @@ const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },
+  { label: 'Algo Connector', href: '/algo-connector', icon: Plug, isNew: true },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Terms', href: '/terms', icon: FileText },
 ];

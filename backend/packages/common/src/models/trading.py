@@ -156,3 +156,28 @@ class TradeHistory(Base):
     close_reason = Column(String(20), default="manual")
 
     instrument = relationship("Instrument", lazy="selectin")
+
+
+class AlgoApiKey(Base):
+    """Per-account API key/secret for external algo bots (Algo Connector).
+
+    A user generates a key pair in the web UI for one trading account and
+    pastes it into their bot. Auth compares `secret_hash` (SHA-256); the
+    plaintext `api_secret` is kept only so the dashboard can re-display it.
+    """
+    __tablename__ = "algo_api_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
+    api_key = Column(String(64), unique=True, nullable=False, index=True)
+    secret_hash = Column(String(128), nullable=False)
+    api_secret = Column(String(128), nullable=True)
+    label = Column(String(100), default="")
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    trades_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    user = relationship("User", lazy="selectin")
+    account = relationship("TradingAccount", lazy="selectin")

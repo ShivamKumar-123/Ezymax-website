@@ -33,6 +33,7 @@ export const ROUTES = {
   // ── Tools ──
   NEWS: '/news',
   RISK_CALCULATOR: '/risk-calculator',
+  ALGO_CONNECTOR: '/algo-connector',
 
   // ── Business ──
   BUSINESS: '/business',

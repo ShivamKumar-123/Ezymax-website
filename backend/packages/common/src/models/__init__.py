@@ -35,7 +35,7 @@ from .instruments import (
     InstrumentSegment, Instrument, InstrumentConfig, InstrumentConfigAudit,
 )
 from .trading import (
-    AccountGroup, TradingAccount, Order, Position, TradeHistory,
+    AccountGroup, TradingAccount, Order, Position, TradeHistory, AlgoApiKey,
 )
 from .wallet import (
     BankAccount, Deposit, Withdrawal, Transaction,
@@ -69,7 +69,7 @@ __all__ = [
     # instruments
     "InstrumentSegment", "Instrument", "InstrumentConfig", "InstrumentConfigAudit",
     # trading
-    "AccountGroup", "TradingAccount", "Order", "Position", "TradeHistory",
+    "AccountGroup", "TradingAccount", "Order", "Position", "TradeHistory", "AlgoApiKey",
     # wallet
     "BankAccount", "Deposit", "Withdrawal", "Transaction",
     "ChargeConfig", "SpreadConfig", "SwapConfig", "WebhookEvent",
