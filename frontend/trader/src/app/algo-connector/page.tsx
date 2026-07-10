@@ -56,7 +56,8 @@ function deriveWsUrl(origin: string): string {
       return `ws://${u.hostname}:8000/ws/algo/prices`;
     }
     const parts = u.hostname.split('.');
-    if (['trade', 'app', 'www'].includes(parts[0])) parts.shift();
+    const first = parts[0];
+    if (first && ['trade', 'app', 'www'].includes(first)) parts.shift();
     const proto = u.protocol === 'https:' ? 'wss' : 'ws';
     return `${proto}://api.${parts.join('.')}/ws/algo/prices`;
   } catch {
