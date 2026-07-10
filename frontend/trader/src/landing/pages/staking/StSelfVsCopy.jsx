@@ -14,7 +14,7 @@ export default function StSelfVsCopy() {
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
         {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+        <div className="fx-split-intro-center">
           <ScrollReveal variant="fadeUp">
             <div>
               <span className="fx-eyebrow mb-5">Self vs Copy</span>

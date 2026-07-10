@@ -5,6 +5,7 @@ import {
   TrendingUp,
   History,
   Eye,
+  CheckCircle,
 } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
@@ -44,52 +45,37 @@ export default function IbDashboard() {
           </ScrollReveal>
         </div>
 
-        {/* ── Dashboard image placeholder ───────────────────── */}
-        <ScrollReveal variant="fadeUp">
-          <div className="fx-tile-media h-full min-h-[280px] mt-10 md:mt-14">
-            <span className="fx-tile-media-label">Image</span>
-          </div>
-        </ScrollReveal>
-
-        {/* ── Bento: dark tiles + one gold accent tile ──────── */}
-        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mt-6 md:mt-8 items-stretch">
-          {widgets.map((w, i) => {
-            const Icon = w.icon
-            const isGold = i === 0
-            if (isGold) {
-              return (
-                <ScrollReveal key={w.title} variant="fadeUp" delay={i * 0.04}>
-                  <div className="fx-tile-gold h-full p-6 flex flex-col">
-                    <div
-                      className="relative z-[1] w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                    >
-                      <Icon size={18} style={{ color: '#1c1608' }} />
-                    </div>
-                    <span className="fx-accent-bar mb-4 relative z-[1]" />
-                    <h3 className="relative z-[1] text-base md:text-lg font-bold mb-2 leading-tight" style={{ color: '#1c1608' }}>{w.title}</h3>
-                    <p className="relative z-[1] text-sm leading-relaxed" style={{ color: 'rgba(28,22,8,0.78)' }}>
+        {/* ── Why choose: checklist + dashboard image ───────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mt-10 md:mt-14 items-stretch">
+          {/* LEFT — checklist */}
+          <ScrollReveal variant="fadeUp">
+            <ul className="space-y-5">
+              {widgets.map((w) => (
+                <li key={w.title} className="flex items-start gap-4">
+                  <CheckCircle
+                    size={22}
+                    className="shrink-0 mt-0.5"
+                    style={{ color: 'var(--fx-gold-light)' }}
+                  />
+                  <div>
+                    <h3 className="text-base md:text-lg font-bold text-white leading-snug">
+                      {w.title}
+                    </h3>
+                    <p className="text-sm md:text-[15px] leading-relaxed mt-1" style={{ color: 'var(--fx-text-2)' }}>
                       {w.desc}
                     </p>
                   </div>
-                </ScrollReveal>
-              )
-            }
-            return (
-              <ScrollReveal key={w.title} variant="fadeUp" delay={i * 0.04}>
-                <div className="fx-tile h-full p-6 flex flex-col">
-                  <div className="feature-icon mb-4" style={{ width: 44, height: 44 }}>
-                    <Icon size={18} />
-                  </div>
-                  <span className="fx-accent-bar mb-4" />
-                  <h3 className="text-base md:text-lg font-bold text-white mb-2 leading-tight">{w.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
-                    {w.desc}
-                  </p>
-                </div>
-              </ScrollReveal>
-            )
-          })}
+                </li>
+              ))}
+            </ul>
+          </ScrollReveal>
+
+          {/* RIGHT — dashboard image placeholder */}
+          <ScrollReveal variant="fadeUp" delay={0.1}>
+            <div className="fx-tile-media h-full min-h-[320px]">
+              <span className="fx-tile-media-label">Image</span>
+            </div>
+          </ScrollReveal>
         </div>
 
         <ScrollReveal variant="fadeUp" delay={0.25}>

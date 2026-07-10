@@ -29,35 +29,18 @@ export default function IbTrust() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: pillar tiles + one gold accent tile ────── */}
-        <div className="fx-bento grid-cols-2 md:grid-cols-4 mt-10 md:mt-14 items-stretch">
+        {/* ── Clean dark pillar cards ───────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mt-10 md:mt-14">
           {pillars.map((p, i) => {
             const Icon = p.icon
-            const isGold = i === 0
-            if (isGold) {
-              return (
-                <ScrollReveal key={p.label} variant="fadeUp" delay={i * 0.06}>
-                  <div className="fx-tile-gold h-full p-5 md:p-6 flex flex-col items-center text-center">
-                    <div
-                      className="relative z-[1] w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                    >
-                      <Icon size={18} style={{ color: '#1c1608' }} />
-                    </div>
-                    <div className="relative z-[1] text-sm md:text-[15px] font-bold leading-snug" style={{ color: '#1c1608' }}>
-                      {p.label}
-                    </div>
-                  </div>
-                </ScrollReveal>
-              )
-            }
             return (
               <ScrollReveal key={p.label} variant="fadeUp" delay={i * 0.06}>
-                <div className="fx-tile h-full p-5 md:p-6 flex flex-col items-center text-center">
-                  <div className="feature-icon mb-4" style={{ width: 44, height: 44 }}>
-                    <Icon size={18} />
+                <div className="fx-tile h-full p-6 md:p-7 flex flex-col">
+                  <div className="feature-icon mb-5" style={{ width: 46, height: 46 }}>
+                    <Icon size={19} />
                   </div>
-                  <div className="text-sm md:text-[15px] font-bold text-white leading-snug">
+                  <span className="fx-accent-bar mb-4" />
+                  <div className="text-base md:text-[17px] font-bold text-white leading-snug">
                     {p.label}
                   </div>
                 </div>

@@ -84,8 +84,12 @@ export default function TxModes() {
 
           {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.16}>
-            <div className="fx-tile-media h-full min-h-[280px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] overflow-hidden">
+              <img
+                src="/images/trading_card1.png"
+                alt="Flexible trading modes"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

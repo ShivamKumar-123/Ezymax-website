@@ -37,7 +37,7 @@ export default function InFaq() {
     <section className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
         {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+        <div className="fx-split-intro-center">
           <ScrollReveal variant="fadeUp">
             <div>
               <span className="fx-eyebrow mb-5">FAQ</span>
@@ -55,7 +55,7 @@ export default function InFaq() {
 
         <ScrollReveal variant="fadeUp">
           <div className="mt-12 md:mt-14 max-w-3xl mx-auto">
-            <CtFaqList items={faq} title="Insurance FAQ" />
+            <CtFaqList items={faq} title="Insurance FAQ" showHeader={false} />
           </div>
         </ScrollReveal>
       </div>

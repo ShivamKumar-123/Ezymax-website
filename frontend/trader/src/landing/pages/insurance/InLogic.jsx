@@ -6,7 +6,7 @@ export default function InLogic() {
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
         {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+        <div className="fx-split-intro-center">
           <ScrollReveal variant="fadeUp">
             <div>
               <span className="fx-eyebrow mb-5">Coverage Logic</span>

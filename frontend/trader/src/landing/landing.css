@@ -759,6 +759,29 @@ canvas { display: block; }
               0 0 0 1px rgba(214,169,61,0.08) inset;
 }
 
+/* Golden-gradient wash that fades in on hover / tap (opt-in per tile). Sits
+   behind the tile content so text stays readable. */
+.landing-root .fx-tile-hover-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(155deg, rgba(236,198,87,0.32) 0%, rgba(214,169,61,0.12) 42%, rgba(214,169,61,0) 72%),
+    radial-gradient(90% 70% at 50% 112%, rgba(236,198,87,0.20), rgba(214,169,61,0) 70%);
+  opacity: 0;
+  transition: opacity .45s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-root .fx-tile-hover-gold > * { position: relative; z-index: 1; }
+.landing-root .fx-tile-hover-gold:hover,
+.landing-root .fx-tile-hover-gold.fx-tapped {
+  border-color: rgba(214, 169, 61, 0.55);
+}
+.landing-root .fx-tile-hover-gold:hover::before,
+.landing-root .fx-tile-hover-gold.fx-tapped::before { opacity: 1; }
+
 /* ── Solid gold accent tile (the reference's single color block) */
 .landing-root .fx-tile-gold {
   position: relative;
@@ -910,6 +933,20 @@ canvas { display: block; }
 @media (min-width: 900px) {
   .landing-root .fx-split-intro { grid-template-columns: 1.1fr 1fr; }
 }
+
+/* Centered variant — reference-style section header: eyebrow, heading and
+   subtitle stacked and centered with generous breathing room. */
+.landing-root .fx-split-intro-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 46rem;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 1rem;
+}
+.landing-root .fx-split-intro-center .fx-eyebrow { justify-content: center; }
 
 /* ============================================================
    Puzzle-step infographic (How It Works) — interlocking glass

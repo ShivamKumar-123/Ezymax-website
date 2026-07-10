@@ -8,12 +8,12 @@ export default function InCTA() {
       <div className="fx-container py-20 md:py-28">
         <ScrollReveal variant="fadeUp">
           <div
-            className="relative rounded-3xl p-8 md:p-12 lg:p-14 overflow-hidden"
+            className="relative rounded-3xl p-10 md:p-14 lg:p-16 overflow-hidden"
             style={{
               background:
-                'linear-gradient(135deg, rgba(214,169,61,0.18) 0%, var(--fx-bg-elev-2) 60%), var(--fx-bg-elev)',
-              border: '1px solid rgba(214,169,61,0.35)',
-              boxShadow: '0 40px 80px -30px rgba(214,169,61,0.35)',
+                'radial-gradient(120% 130% at 50% 0%, rgba(214,169,61,0.12) 0%, rgba(214,169,61,0) 55%), var(--fx-bg-elev)',
+              border: '1px solid var(--fx-line-strong)',
+              boxShadow: '0 40px 90px -44px rgba(0,0,0,0.75)',
             }}
           >
             <div
@@ -25,25 +25,24 @@ export default function InCTA() {
             />
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />
 
-            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              <div className="lg:col-span-7">
-                <span className="badge mb-5" style={{ display: 'inline-flex' }}>
+            <div className="relative text-center max-w-2xl mx-auto">
+              <div className="flex justify-center">
+                <span className="badge mb-6" style={{ display: 'inline-flex' }}>
                   <span
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
                   />
                   Get Protected
                 </span>
-                <h2 className="text-3xl md:text-5xl lg:text-[56px] font-bold text-white leading-tight mb-4">
-                  Trade With Confidence <br />
-                  <span className="gradient-text">and Control.</span>
-                </h2>
-                <p className="text-base md:text-lg max-w-xl" style={{ color: 'var(--fx-text-2)' }}>
-                  Flexible protection designed to support your trading decisions.
-                </p>
               </div>
-
-              <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 lg:items-end lg:justify-end">
+              <h2 className="text-3xl md:text-5xl lg:text-[52px] font-bold leading-tight mb-4">
+                <span style={{ color: 'var(--fx-text)' }}>Trade With Confidence</span> <br />
+                <span className="gradient-text">and Control.</span>
+              </h2>
+              <p className="text-base md:text-lg max-w-xl mx-auto mb-9" style={{ color: 'var(--fx-text-2)' }}>
+                Flexible protection designed to support your trading decisions.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/auth/register" className="fx-btn-primary justify-center">
                   Activate Protection
                   <ArrowRight size={18} />

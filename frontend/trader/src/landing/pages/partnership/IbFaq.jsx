@@ -34,7 +34,7 @@ export default function IbFaq() {
         {/* ── Accordion (behaviour preserved) ───────────────── */}
         <ScrollReveal variant="fadeUp">
           <div className="mt-10 md:mt-14 max-w-3xl mx-auto">
-            <CtFaqList items={faq} title="Partnership FAQ" />
+            <CtFaqList items={faq} title="Partnership FAQ" showHeader={false} />
           </div>
         </ScrollReveal>
       </div>
