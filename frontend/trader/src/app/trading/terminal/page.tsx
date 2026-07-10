@@ -704,24 +704,25 @@ export default function TradingTerminalPage() {
                 type="button"
                 onClick={onPanelsSelectMarkets}
                 className={clsx(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors whitespace-nowrap',
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold border transition-colors whitespace-nowrap',
+                  // Always highlighted (accent-tinted); stronger when open.
                   terminalMarketsOpen
-                    ? 'bg-accent/15 border-accent/40 text-accent'
-                    : 'bg-bg-secondary border-border-primary text-text-secondary hover:border-accent/30 hover:text-text-primary',
+                    ? 'bg-accent/20 border-accent/60 text-accent'
+                    : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
                 )}
                 title="Browse instruments"
               >
-                <List className="w-3.5 h-3.5" aria-hidden />
+                <List className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">Markets</span>
               </button>
               {/* Trade — pops the movable order window. */}
               <button
                 type="button"
                 onClick={openOrderModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-accent border border-accent hover:bg-accent/90 transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold text-white bg-accent border border-accent hover:bg-accent/90 transition-colors whitespace-nowrap"
                 title="Open the order ticket"
               >
-                <CandlestickChart className="w-3.5 h-3.5" aria-hidden />
+                <CandlestickChart className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">Trade</span>
               </button>
             </>

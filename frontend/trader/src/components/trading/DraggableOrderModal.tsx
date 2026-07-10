@@ -15,24 +15,26 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GripHorizontal, X } from 'lucide-react';
 import OrderPanel from './OrderPanel';
 
-const WIDTH = 348;
+const WIDTH = 400;
 
 export default function DraggableOrderModal({ onClose }: { onClose: () => void }) {
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
-    if (typeof window === 'undefined') return { x: 200, y: 96 };
-    // Open centered on screen; the user can drag it wherever after.
-    const x = Math.max(12, Math.round((window.innerWidth - WIDTH) / 2));
-    const y = Math.max(24, Math.round((window.innerHeight - 620) / 2));
-    return { x, y };
-  });
+  const ref = useRef<HTMLDivElement>(null);
+  // null → not yet moved: render EXACTLY centered via a CSS transform (works
+  // regardless of the panel's content height). On first drag we switch to
+  // absolute px so it stays wherever the user leaves it.
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const drag = useRef<{ dx: number; dy: number } | null>(null);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      drag.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+      const rect = ref.current?.getBoundingClientRect();
+      const startX = pos?.x ?? rect?.left ?? 0;
+      const startY = pos?.y ?? rect?.top ?? 0;
+      drag.current = { dx: e.clientX - startX, dy: e.clientY - startY };
+      if (!pos && rect) setPos({ x: rect.left, y: rect.top });
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [pos.x, pos.y],
+    [pos],
   );
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -52,23 +54,32 @@ export default function DraggableOrderModal({ onClose }: { onClose: () => void }
     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
   }, []);
 
-  // Keep the window on screen if the viewport shrinks under it.
+  // Once moved, keep the window on screen if the viewport shrinks under it.
   useEffect(() => {
     const onResize = () =>
-      setPos((p) => ({
-        x: Math.max(80 - WIDTH, Math.min(p.x, window.innerWidth - 80)),
-        y: Math.max(8, Math.min(p.y, window.innerHeight - 48)),
-      }));
+      setPos((p) =>
+        p
+          ? {
+              x: Math.max(80 - WIDTH, Math.min(p.x, window.innerWidth - 80)),
+              y: Math.max(8, Math.min(p.y, window.innerHeight - 48)),
+            }
+          : p,
+      );
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  const style: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y, width: WIDTH, maxHeight: '90vh' }
+    : { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: WIDTH, maxHeight: '90vh' };
+
   return (
     <div
+      ref={ref}
       className="fixed z-[120] flex flex-col overflow-hidden rounded-xl border border-border-primary bg-bg-base shadow-2xl"
       // Height follows the order panel's content (no fixed height => no empty
       // gap), capped so it never runs off a short viewport.
-      style={{ left: pos.x, top: pos.y, width: WIDTH, maxHeight: '88vh' }}
+      style={style}
       role="dialog"
       aria-label="Order ticket"
     >

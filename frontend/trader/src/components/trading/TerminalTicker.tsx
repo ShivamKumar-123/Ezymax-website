@@ -150,7 +150,7 @@ function TerminalTickerInner({ rightSlot }: { rightSlot?: ReactNode }) {
         })}
       </div>
       {rightSlot ? (
-        <div className="shrink-0 self-stretch flex items-center gap-1.5 px-2 border-l border-border-primary">
+        <div className="shrink-0 flex items-center gap-2 px-2">
           {rightSlot}
         </div>
       ) : null}
