@@ -28,6 +28,7 @@ declare global {
 }
 
 const LIBRARY_SRC = '/charting_library/charting_library.standalone.js';
+const CHART_CONTAINER_ID = 'sc_tv_chart';
 
 function loadLibrary(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -106,7 +107,9 @@ export default function ChartPage() {
       widgetRef.current = new window.TradingView.widget({
         symbol,
         interval,
-        container: containerRef.current,
+        // Element ID (string), not the DOM node — this library version needs it.
+        container: CHART_CONTAINER_ID,
+        container_id: CHART_CONTAINER_ID,
         datafeed,
         library_path: '/charting_library/',
         locale: 'en',
@@ -160,6 +163,7 @@ export default function ChartPage() {
 
   return (
     <div
+      id={CHART_CONTAINER_ID}
       ref={containerRef}
       style={{ position: 'fixed', inset: 0, background: theme === 'light' ? '#ffffff' : '#0b0e11' }}
     />

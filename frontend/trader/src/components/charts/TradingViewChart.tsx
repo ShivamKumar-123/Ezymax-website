@@ -20,6 +20,8 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { createDatafeed, type DatafeedInstrument } from '@/lib/chart/datafeed';
 import { loadChartLibrary } from '@/lib/chart/loadChartLibrary';
 
+const CONTAINER_ID = 'sc_tv_terminal_chart';
+
 function TradingViewChartInner() {
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
@@ -68,7 +70,10 @@ function TradingViewChartInner() {
       widgetRef.current = new window.TradingView.widget({
         symbol: initialSymbol,
         interval,
-        container: containerRef.current,
+        // This library version wants the container's element ID (string), not
+        // the DOM node — passing the node silently fails to mount.
+        container: CONTAINER_ID,
+        container_id: CONTAINER_ID,
         datafeed,
         library_path: '/charting_library/',
         locale: 'en',
@@ -123,7 +128,7 @@ function TradingViewChartInner() {
 
   return (
     <div className={clsx('w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
-      <div ref={containerRef} className="h-full w-full min-h-[200px]" />
+      <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
     </div>
   );
 }
