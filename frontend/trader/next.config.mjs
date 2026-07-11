@@ -125,7 +125,12 @@ const nextConfig = {
       // 'unsafe-eval' needed for: Next.js client runtime in some configs.
       // Kept in sync with the enforced nginx CSP (deploy/nginx/swisscresta.conf).
       // *.razorpay.com covers checkout.js + the cdn.razorpay.com risk script.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://verify.walletconnect.com https://verify.walletconnect.org https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
+      // blob: required by the self-hosted TradingView Charting Library, which
+      // spins up Web Workers (and loads some code) from blob: URLs.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://verify.walletconnect.com https://verify.walletconnect.org https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
+      // Charting Library workers.
+      "worker-src 'self' blob:",
+      "child-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
