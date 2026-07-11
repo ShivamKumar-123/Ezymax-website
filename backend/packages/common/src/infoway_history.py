@@ -74,27 +74,33 @@ async def fetch_infoway_klines(
     owns = client is None
     cl = client or httpx.AsyncClient(timeout=20.0)
     try:
-        resp = await cl.post(url, headers={"apiKey": api_key}, json=body)
+        resp = await cl.post(url, headers={"apiKey": api_key, "Content-Type": "application/json"}, json=body)
         if resp.status_code != 200:
-            logger.warning("Infoway kline HTTP %s for %s %s", resp.status_code, symbol, tf)
+            logger.warning("Infoway kline HTTP %s for %s %s (code=%s url=%s): %s",
+                           resp.status_code, symbol, tf, code, url, resp.text[:300])
             return []
         payload = resp.json()
     except Exception as e:  # network / parse
-        logger.warning("Infoway kline fetch failed for %s %s: %s", symbol, tf, e)
+        logger.warning("Infoway kline fetch failed for %s %s (code=%s): %s", symbol, tf, code, e)
         return []
     finally:
         if owns:
             await cl.aclose()
 
-    if not isinstance(payload, dict) or payload.get("ret") not in (200, "200", None):
-        # Some deployments omit ret on success; only bail on an explicit error.
-        if payload.get("ret") not in (200, "200"):
-            logger.warning("Infoway kline non-200 ret for %s %s: %s", symbol, tf, payload.get("msg"))
-            return []
+    if not isinstance(payload, dict):
+        logger.warning("Infoway kline bad payload for %s %s: %s", symbol, tf, str(payload)[:300])
+        return []
+    ret = payload.get("ret")
+    if ret not in (200, "200", None):
+        logger.warning("Infoway kline ret=%s for %s %s (code=%s): msg=%s", ret, symbol, tf, code, payload.get("msg"))
+        return []
     data = payload.get("data") or []
     if not data:
+        logger.warning("Infoway kline EMPTY data for %s %s (code=%s): %s", symbol, tf, code, str(payload)[:300])
         return []
     resp_list = (data[0] or {}).get("respList") or []
+    if not resp_list:
+        logger.warning("Infoway kline empty respList for %s %s (code=%s): %s", symbol, tf, code, str(data[0])[:300])
     out: list[dict] = []
     for c in resp_list:
         try:
