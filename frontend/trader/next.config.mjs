@@ -136,7 +136,7 @@ const nextConfig = {
       "font-src 'self' data: https://fonts.gstatic.com",
       // wss: for the WebSocket price feed, https: covers gateway + 3rd party.
       "connect-src 'self' https: wss:",
-      "frame-src 'self' https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.razorpay.com",
+      "frame-src 'self' blob: https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.razorpay.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
