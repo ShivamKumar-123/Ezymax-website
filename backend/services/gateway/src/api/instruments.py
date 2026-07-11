@@ -156,15 +156,30 @@ async def _fetch_history_source(sym: str, tf: str, resolution: str, end_ts: int 
     Crypto → Binance (keyless, reliable); everything else → Infoway history.
     `end_ts` (unix seconds) requests OLDER data ending there (scroll-back);
     None fetches the most-recent deep window (first-time seed)."""
+    result: list = []
     if sym in _BINANCE_PAIRS:
         # Binance uses from/to; for scroll-back cap the window at end_ts.
-        return await _fetch_binance_klines(sym, resolution, 0, int(end_ts or 0))
-    key = getattr(get_settings(), "INFOWAY_API_KEY", "") or ""
-    if key and infoway_history.infoway_supports(tf):
-        if end_ts:
-            return await infoway_history.fetch_infoway_klines(key, sym, tf, count=500, end_ts=int(end_ts))
-        return await infoway_history.backfill_infoway(key, sym, tf, target_bars=2000)
-    return []
+        result = await _fetch_binance_klines(sym, resolution, 0, int(end_ts or 0))
+    else:
+        key = getattr(get_settings(), "INFOWAY_API_KEY", "") or ""
+        if key and infoway_history.infoway_supports(tf):
+            if end_ts:
+                result = await infoway_history.fetch_infoway_klines(key, sym, tf, count=500, end_ts=int(end_ts))
+            else:
+                result = await infoway_history.backfill_infoway(key, sym, tf, target_bars=2000)
+
+    # Guaranteed fallback: build history from our OWN TimescaleDB tick feed when
+    # the external source returns nothing (Binance geo-block / Infoway REST).
+    # No external dependency — works for every symbol the feed has recorded.
+    if not result:
+        try:
+            from ..services import timescale_bars
+            result = await timescale_bars.aggregate_ticks_to_bars(sym, tf, count=2000, end_ts=end_ts)
+            if result:
+                _logger.info("bars: %d bars for %s %s aggregated from TimescaleDB ticks", len(result), sym, tf)
+        except Exception as e:
+            _logger.warning("timescale tick aggregation error for %s %s: %s", sym, tf, e)
+    return result
 
 
 @router.get("/{symbol}/bars")
