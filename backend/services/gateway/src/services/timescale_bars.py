@@ -52,8 +52,13 @@ async def aggregate_ticks_to_bars(
     interval = _TF_INTERVAL.get(tf)
     if not interval:
         return []
+    # `interval` is inlined as a SQL literal (safe: it's a fixed value from
+    # _TF_INTERVAL, never user input). asyncpg can't bind a string to an
+    # interval-typed parameter, and binding a timedelta is more fragile than
+    # a plain literal here.
+    bucket = f"time_bucket(INTERVAL '{interval}', time)"
     where = ["symbol = :sym"]
-    params: dict = {"sym": symbol.upper(), "lim": int(count), "interval": interval}
+    params: dict = {"sym": symbol.upper(), "lim": int(count)}
     if end_ts:
         where.append("time <= to_timestamp(:end_ts)")
         params["end_ts"] = int(end_ts)
@@ -62,7 +67,7 @@ async def aggregate_ticks_to_bars(
         f"""
         SELECT ts, o, h, l, c, v FROM (
             SELECT
-                extract(epoch FROM time_bucket(CAST(:interval AS interval), time))::bigint AS ts,
+                extract(epoch FROM {bucket})::bigint AS ts,
                 first((bid + ask) / 2.0, time)  AS o,
                 max((bid + ask) / 2.0)          AS h,
                 min((bid + ask) / 2.0)          AS l,
@@ -70,7 +75,7 @@ async def aggregate_ticks_to_bars(
                 count(*)::float                 AS v
             FROM ticks
             WHERE {' AND '.join(where)}
-            GROUP BY time_bucket(CAST(:interval AS interval), time)
+            GROUP BY {bucket}
             ORDER BY 1 DESC
             LIMIT :lim
         ) q
