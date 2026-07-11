@@ -200,8 +200,9 @@ export function createDatafeed(opts: {
           .filter((b: Bar) => Number.isFinite(b.time) && Number.isFinite(b.close))
           .sort((a: Bar, b: Bar) => a.time - b.time);
 
-        if (firstDataRequest && bars.length > 0) {
-          lastBars.set(symbol, { ...bars[bars.length - 1] });
+        const last = bars[bars.length - 1];
+        if (firstDataRequest && last) {
+          lastBars.set(symbol, { ...last });
         }
         onResult(bars, { noData: bars.length === 0 });
       } catch (e) {
