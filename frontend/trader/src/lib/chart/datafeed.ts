@@ -179,7 +179,15 @@ export function createDatafeed(opts: {
           return;
         }
         const raw = await res.json();
-        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+        // The endpoint returns { s, bars, noData }; also tolerate a bare array
+        // or { items } for safety.
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.bars)
+            ? raw.bars
+            : Array.isArray(raw?.items)
+              ? raw.items
+              : [];
         const bars: Bar[] = list
           .map((b: Record<string, unknown>) => ({
             time: Number(b.time) * 1000, // epoch seconds → ms

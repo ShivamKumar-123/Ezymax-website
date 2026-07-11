@@ -198,11 +198,23 @@ async def _ensure_push_tokens_table():
         logger.warning("push_tokens table ensure skipped: %s", e)
 
 
+async def _ensure_ohlc_bars_table():
+    """Durable OHLC bar store for the advanced chart — gap-free deep history,
+    only-new-data-from-source. Created at startup, idempotent."""
+    from packages.common.src.bars_store import ensure_bars_table
+    try:
+        async with AsyncSessionLocal() as session:
+            await ensure_bars_table(session)
+    except Exception as e:
+        logger.warning("ohlc_bars table ensure skipped: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
     await _ensure_pamm_units_column()
     await _ensure_push_tokens_table()
+    await _ensure_ohlc_bars_table()
     # Run the self-heal once at startup (catches drift accumulated while
     # gateway was down), then kick off the periodic loop.
     await _heal_missing_trade_history()

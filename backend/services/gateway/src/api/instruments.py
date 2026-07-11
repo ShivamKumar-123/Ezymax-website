@@ -9,6 +9,8 @@ from packages.common.src.database import get_db
 from packages.common.src.redis_client import redis_client
 from packages.common.src.schemas import InstrumentResponse, TickData
 from packages.common.src.instrumentation import get_rate_limiter
+from packages.common.src.config import get_settings
+from packages.common.src import bars_store, infoway_history
 from ..services import instrument_service
 
 router = APIRouter()
@@ -149,6 +151,22 @@ async def get_price(symbol: str):
     return await instrument_service.get_price(symbol=symbol)
 
 
+async def _fetch_history_source(sym: str, tf: str, resolution: str, end_ts: int | None) -> list[dict]:
+    """Pull historical bars from the market-data SOURCE for a (symbol, tf).
+    Crypto → Binance (keyless, reliable); everything else → Infoway history.
+    `end_ts` (unix seconds) requests OLDER data ending there (scroll-back);
+    None fetches the most-recent deep window (first-time seed)."""
+    if sym in _BINANCE_PAIRS:
+        # Binance uses from/to; for scroll-back cap the window at end_ts.
+        return await _fetch_binance_klines(sym, resolution, 0, int(end_ts or 0))
+    key = getattr(get_settings(), "INFOWAY_API_KEY", "") or ""
+    if key and infoway_history.infoway_supports(tf):
+        if end_ts:
+            return await infoway_history.fetch_infoway_klines(key, sym, tf, count=500, end_ts=int(end_ts))
+        return await infoway_history.backfill_infoway(key, sym, tf, target_bars=2000)
+    return []
+
+
 @router.get("/{symbol}/bars")
 @_limiter.exempt
 async def get_bars(
@@ -156,77 +174,87 @@ async def get_bars(
     resolution: str = Query(default="5"),
     from_time: int = Query(default=0, alias="from"),
     to_time: int = Query(default=0, alias="to"),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Return OHLCV bars for the TradingView charting library.
+    """OHLCV bars for the charting library, served from the durable `ohlc_bars`
+    store so history is gap-free and the source is hit only for NEW/missing data.
 
-    Priority:
-    1. Real bars from Redis (BarAggregator)
-    2. Binance REST API fallback (crypto symbols)
-    3. Empty response
-
-    Bars are stored by BarAggregator in Redis as a list (newest first).
-    We read up to 1000 bars, filter by time range, sort ascending, and
-    append the current in-progress bar so the chart stays live.
+    Flow:
+      1. Persist the freshest live bars (Redis, fed by BarAggregator) into the
+         store — forward-fill, idempotent (dedup on symbol,tf,ts).
+      2. Only when the store can't satisfy the request (first time ever, or the
+         caller scrolled older than we hold) fetch that range from the source
+         (Infoway / Binance) and store it. Otherwise NO source call.
+      3. Read the window from the store; append the in-progress bar for a live
+         last candle.
     """
     tf = _TV_RESOLUTION_TO_TF.get(resolution, "5m")
     sym = symbol.upper()
-    _TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400}
-    bar_sec = _TF_SECONDS.get(tf, 300)
-
-    # --- 1. Completed bars from Redis (lpush → newest first) ---
-    raw_list: list[bytes] = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 999)
-
-    bars = []
-    for raw in raw_list:
-        try:
-            b = _json.loads(raw)
-            t = int(b.get("time", 0))
-            if from_time and t < from_time:
-                continue
-            if to_time and t > to_time:
-                continue
-            bars.append({
-                "time": t,
-                "open": float(b["open"]),
-                "high": float(b["high"]),
-                "low": float(b["low"]),
-                "close": float(b["close"]),
-                "volume": float(b.get("volume", 0.0)),
-            })
-        except Exception:
-            continue
-
-    # Sort oldest → newest (TradingView requires ascending order)
-    bars.sort(key=lambda x: x["time"])
-
-    # --- 2. Binance fallback for crypto when Redis is empty or stale ---
+    bar_sec = bars_store.TF_SECONDS.get(tf, 300)
     now_epoch = int(_time.time())
-    has_recent = bars and (now_epoch - bars[-1]["time"]) < bar_sec * 3
-    if not has_recent and sym in _BINANCE_PAIRS:
-        binance_bars = await _fetch_binance_klines(sym, resolution, from_time, to_time)
-        if binance_bars:
-            # Merge: keep Redis bars that don't overlap, then add Binance bars
-            binance_times = {b["time"] for b in binance_bars}
-            bars = [b for b in bars if b["time"] not in binance_times] + binance_bars
-            bars.sort(key=lambda x: x["time"])
 
-    # --- 3. Append current in-progress bar ---
+    # 1. Forward-fill: persist the most recent completed bars from the live
+    #    aggregator (Redis list is newest-first). Cheap + idempotent.
+    try:
+        fresh_raw: list = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 29)
+        fresh = []
+        for raw in fresh_raw:
+            try:
+                b = _json.loads(raw)
+                fresh.append({
+                    "time": int(b.get("time", 0)),
+                    "open": float(b["open"]), "high": float(b["high"]),
+                    "low": float(b["low"]), "close": float(b["close"]),
+                    "volume": float(b.get("volume", 0.0)),
+                })
+            except Exception:
+                continue
+        if fresh:
+            await bars_store.upsert_bars(db, sym, tf, fresh)
+            await db.commit()
+    except Exception as e:
+        _logger.debug("bars forward-fill skipped for %s %s: %s", sym, tf, e)
+
+    # 2. Backfill from source ONLY when the store is short for this request.
+    try:
+        count = await bars_store.bars_count(db, sym, tf)
+        need: str | None = None
+        if count == 0:
+            need = "initial"
+        elif from_time:
+            oldest = await bars_store.oldest_ts(db, sym, tf)
+            if oldest is not None and from_time < oldest - bar_sec:
+                need = "older"
+        if need:
+            end_ts = None
+            if need == "older":
+                oldest = await bars_store.oldest_ts(db, sym, tf)
+                end_ts = (oldest - 1) if oldest else None
+            src = await _fetch_history_source(sym, tf, resolution, end_ts)
+            if src:
+                await bars_store.upsert_bars(db, sym, tf, src)
+                await db.commit()
+    except Exception as e:
+        _logger.warning("bars source backfill skipped for %s %s: %s", sym, tf, e)
+
+    # 3. Serve the requested window from the durable store.
+    bars = await bars_store.read_bars(db, sym, tf, from_time or None, to_time or None, limit=5000)
+
+    # Append the current in-progress bar so the last candle stays live.
     current_raw = await redis_client.get(f"bar:current:{sym}:{tf}")
     if current_raw:
         try:
             b = _json.loads(current_raw)
             bar_start = (now_epoch // bar_sec) * bar_sec
             if (not from_time or bar_start >= from_time) and (not to_time or bar_start <= to_time):
-                # Remove any bar at same time to avoid duplicate
                 bars = [x for x in bars if x["time"] != bar_start]
                 bars.append({
                     "time": bar_start,
-                    "open": float(b["open"]),
-                    "high": float(b["high"]),
-                    "low": float(b["low"]),
-                    "close": float(b["close"]),
+                    "open": float(b["open"]), "high": float(b["high"]),
+                    "low": float(b["low"]), "close": float(b["close"]),
                     "volume": float(b.get("volume", 0.0)),
                 })
+                bars.sort(key=lambda x: x["time"])
         except Exception:
             pass
 
