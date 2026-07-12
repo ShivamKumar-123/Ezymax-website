@@ -28,12 +28,6 @@ function resSeconds(resolution: string): number {
   return RES_SECONDS[resolution] ?? 300;
 }
 
-function wsPricesUrl(): string {
-  if (typeof window === 'undefined') return '';
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${window.location.host}/ws/prices`;
-}
-
 export function createDatafeed(opts: {
   apiBase?: string; // defaults to same-origin /api/v1
   instruments?: DatafeedInstrument[];
@@ -42,65 +36,49 @@ export function createDatafeed(opts: {
   let instruments = opts.instruments || [];
 
   // subscriberUID → live subscription
-  type Sub = { symbol: string; resolution: string; onTick: (b: Bar) => void };
+  type Sub = { symbol: string; resolution: string; onTick: (b: Bar) => void; timer: ReturnType<typeof setInterval> | null };
   const subs = new Map<string, Sub>();
-  // symbol → last known bar (seeded from history so realtime extends it cleanly)
+  // symbol → last pushed bar, so we never emit an out-of-order tick.
   const lastBars = new Map<string, Bar>();
 
-  let socket: WebSocket | null = null;
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  // Realtime is DB-DRIVEN: we POLL the same /bars endpoint the history comes
+  // from (the server merges the stored bars with the live in-progress bar), so
+  // every candle — historical AND live — is one consistent source. No
+  // client-side tick aggregation, so no jumps, bounces or broken candles, and
+  // all timeframes stay smooth.
+  const POLL_MS = 1500;
 
-  function ensureSocket() {
-    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+  async function pollLatest(sub: Sub) {
+    const step = resSeconds(sub.resolution);
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - step * 5; // just the current + a couple recent bars
     try {
-      socket = new WebSocket(wsPricesUrl());
-    } catch {
-      scheduleReconnect();
-      return;
-    }
-    socket.onmessage = (ev: MessageEvent) => {
-      let d: { symbol?: string; bid?: number; ask?: number; type?: string };
-      try {
-        d = JSON.parse(ev.data as string);
-      } catch {
-        return;
+      const url = `${apiBase}/instruments/${encodeURIComponent(sub.symbol)}/bars`
+        + `?resolution=${encodeURIComponent(sub.resolution)}&from=${from}&to=${to}&live=1`;
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) return;
+      const raw = await res.json();
+      const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.bars) ? raw.bars : []);
+      const bars: Bar[] = list
+        .map((b: Record<string, unknown>) => ({
+          time: Number(b.time) * 1000,
+          open: Number(b.open), high: Number(b.high), low: Number(b.low),
+          close: Number(b.close), volume: Number(b.volume ?? 0),
+        }))
+        .filter((b: Bar) => Number.isFinite(b.time) && Number.isFinite(b.close))
+        .sort((a: Bar, b: Bar) => a.time - b.time);
+      const nb = bars[bars.length - 1];
+      if (!nb) return;
+      const prev = lastBars.get(sub.symbol);
+      // Only emit a bar at or after the last one (TradingView requires
+      // non-decreasing time) — updates the current candle, or starts a new one.
+      if (!prev || nb.time >= prev.time) {
+        lastBars.set(sub.symbol, nb);
+        sub.onTick({ ...nb });
       }
-      if (!d || !d.symbol || d.type === 'ping') return; // ignore heartbeats
-      const bid = Number(d.bid);
-      const ask = Number(d.ask);
-      const price = Number.isFinite(bid) && Number.isFinite(ask) ? (bid + ask) / 2 : bid || ask;
-      if (!Number.isFinite(price)) return;
-      const nowMs = Date.now();
-      subs.forEach((sub) => {
-        if (sub.symbol !== d.symbol) return;
-        const stepMs = resSeconds(sub.resolution) * 1000;
-        const barStart = Math.floor(nowMs / stepMs) * stepMs;
-        const prev = lastBars.get(sub.symbol);
-        if (!prev || barStart > prev.time) {
-          // New candle. Open at the previous close for continuity when we have it.
-          const open = prev ? prev.close : price;
-          const nb: Bar = { time: barStart, open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0 };
-          lastBars.set(sub.symbol, nb);
-          sub.onTick({ ...nb });
-        } else {
-          const b = prev;
-          b.close = price;
-          if (price > b.high) b.high = price;
-          if (price < b.low) b.low = price;
-          sub.onTick({ ...b });
-        }
-      });
-    };
-    socket.onclose = () => scheduleReconnect();
-    socket.onerror = () => { try { socket?.close(); } catch { /* noop */ } };
-  }
-
-  function scheduleReconnect() {
-    if (reconnectTimer) return;
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      if (subs.size > 0) ensureSocket();
-    }, 2000);
+    } catch {
+      /* transient — the next poll retries */
+    }
   }
 
   return {
@@ -217,16 +195,16 @@ export function createDatafeed(opts: {
       subscriberUID: string,
     ) {
       const symbol = (symbolInfo.ticker || symbolInfo.name || '').toUpperCase();
-      subs.set(subscriberUID, { symbol, resolution, onTick });
-      ensureSocket();
+      const sub: Sub = { symbol, resolution, onTick, timer: null };
+      subs.set(subscriberUID, sub);
+      void pollLatest(sub);
+      sub.timer = setInterval(() => { void pollLatest(sub); }, POLL_MS);
     },
 
     unsubscribeBars(subscriberUID: string) {
+      const sub = subs.get(subscriberUID);
+      if (sub?.timer) clearInterval(sub.timer);
       subs.delete(subscriberUID);
-      if (subs.size === 0 && socket) {
-        try { socket.close(); } catch { /* noop */ }
-        socket = null;
-      }
     },
   };
 }

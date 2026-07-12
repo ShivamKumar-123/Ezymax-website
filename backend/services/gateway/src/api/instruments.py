@@ -189,6 +189,7 @@ async def get_bars(
     resolution: str = Query(default="5"),
     from_time: int = Query(default=0, alias="from"),
     to_time: int = Query(default=0, alias="to"),
+    live: int = Query(default=0),
     db: AsyncSession = Depends(get_db),
 ):
     """OHLCV bars for the charting library, served from the durable `ohlc_bars`
@@ -208,57 +209,60 @@ async def get_bars(
     bar_sec = bars_store.TF_SECONDS.get(tf, 300)
     now_epoch = int(_time.time())
 
-    # 1. Deep backfill from the SOURCE when the store is short. This MUST run
-    #    before the forward-fill below — otherwise the ~30 freshly-persisted
-    #    live bars make `count` non-zero and the deep history never loads
-    #    (the original bug: chart showed only the live candle). A Redis marker
-    #    throttles retries so we never hammer the source when it's unavailable.
-    try:
-        count = await bars_store.bars_count(db, sym, tf)
-        need: str | None = None
-        if count < 100:
-            marker = f"bars:bf:{sym}:{tf}"
-            if not await redis_client.get(marker):
-                need = "initial"
-                await redis_client.set(marker, "1", ex=1800)  # retry at most every 30 min
-        elif from_time:
-            oldest = await bars_store.oldest_ts(db, sym, tf)
-            if oldest is not None and from_time < oldest - bar_sec:
-                need = "older"
-        if need:
-            end_ts = None
-            if need == "older":
+    # Realtime polls (?live=1) are pure reads — skip all backfill/writes; the
+    # background persistence + normal history requests keep the store current.
+    if not live:
+        # 1. Deep backfill from the SOURCE when the store is short. This MUST run
+        #    before the forward-fill below — otherwise the ~30 freshly-persisted
+        #    live bars make `count` non-zero and the deep history never loads
+        #    (the original bug: chart showed only the live candle). A Redis marker
+        #    throttles retries so we never hammer the source when it's unavailable.
+        try:
+            count = await bars_store.bars_count(db, sym, tf)
+            need: str | None = None
+            if count < 100:
+                marker = f"bars:bf:{sym}:{tf}"
+                if not await redis_client.get(marker):
+                    need = "initial"
+                    await redis_client.set(marker, "1", ex=1800)  # retry at most every 30 min
+            elif from_time:
                 oldest = await bars_store.oldest_ts(db, sym, tf)
-                end_ts = (oldest - 1) if oldest else None
-            src = await _fetch_history_source(sym, tf, resolution, end_ts)
-            _logger.info("bars backfill %s %s (%s): source returned %d bars", sym, tf, need, len(src))
-            if src:
-                await bars_store.upsert_bars(db, sym, tf, src)
-                await db.commit()
-    except Exception as e:
-        _logger.warning("bars source backfill skipped for %s %s: %s", sym, tf, e)
+                if oldest is not None and from_time < oldest - bar_sec:
+                    need = "older"
+            if need:
+                end_ts = None
+                if need == "older":
+                    oldest = await bars_store.oldest_ts(db, sym, tf)
+                    end_ts = (oldest - 1) if oldest else None
+                src = await _fetch_history_source(sym, tf, resolution, end_ts)
+                _logger.info("bars backfill %s %s (%s): source returned %d bars", sym, tf, need, len(src))
+                if src:
+                    await bars_store.upsert_bars(db, sym, tf, src)
+                    await db.commit()
+        except Exception as e:
+            _logger.warning("bars source backfill skipped for %s %s: %s", sym, tf, e)
 
-    # 2. Forward-fill: persist the most recent completed bars from the live
-    #    aggregator (Redis list is newest-first). Cheap + idempotent.
-    try:
-        fresh_raw: list = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 29)
-        fresh = []
-        for raw in fresh_raw:
-            try:
-                b = _json.loads(raw)
-                fresh.append({
-                    "time": int(b.get("time", 0)),
-                    "open": float(b["open"]), "high": float(b["high"]),
-                    "low": float(b["low"]), "close": float(b["close"]),
-                    "volume": float(b.get("volume", 0.0)),
-                })
-            except Exception:
-                continue
-        if fresh:
-            await bars_store.upsert_bars(db, sym, tf, fresh)
-            await db.commit()
-    except Exception as e:
-        _logger.debug("bars forward-fill skipped for %s %s: %s", sym, tf, e)
+        # 2. Forward-fill: persist the most recent completed bars from the live
+        #    aggregator (Redis list is newest-first). Cheap + idempotent.
+        try:
+            fresh_raw: list = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 29)
+            fresh = []
+            for raw in fresh_raw:
+                try:
+                    b = _json.loads(raw)
+                    fresh.append({
+                        "time": int(b.get("time", 0)),
+                        "open": float(b["open"]), "high": float(b["high"]),
+                        "low": float(b["low"]), "close": float(b["close"]),
+                        "volume": float(b.get("volume", 0.0)),
+                    })
+                except Exception:
+                    continue
+            if fresh:
+                await bars_store.upsert_bars(db, sym, tf, fresh)
+                await db.commit()
+        except Exception as e:
+            _logger.debug("bars forward-fill skipped for %s %s: %s", sym, tf, e)
 
     # 3. Serve the requested window from the durable store.
     bars = await bars_store.read_bars(db, sym, tf, from_time or None, to_time or None, limit=5000)
