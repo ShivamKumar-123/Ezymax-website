@@ -22,6 +22,30 @@ export default function Error({
   useEffect(() => {
     Sentry.captureException(error)
     console.error('[app/error]', error)
+
+    // Stale-deploy self-heal. After a new deploy, a browser holding the old
+    // HTML tries to load lazy chunk files the new build replaced → the dynamic
+    // import throws a ChunkLoadError and this boundary shows "part of the
+    // platform failed to load". Force a ONE-TIME hard reload to pick up the
+    // fresh HTML + chunks. Guarded via sessionStorage so a genuinely broken
+    // page never reloads in a loop.
+    const msg = `${error?.name || ''} ${error?.message || ''}`
+    const isChunkError =
+      /ChunkLoadError|Loading chunk\s+[^\s]+\s+failed|Failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i.test(
+        msg,
+      )
+    if (isChunkError && typeof window !== 'undefined') {
+      try {
+        const KEY = 'sc-chunk-reload-at'
+        const last = Number(sessionStorage.getItem(KEY) || 0)
+        if (Date.now() - last > 15000) {
+          sessionStorage.setItem(KEY, String(Date.now()))
+          window.location.reload()
+        }
+      } catch {
+        /* ignore */
+      }
+    }
   }, [error])
 
   return (
