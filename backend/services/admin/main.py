@@ -20,7 +20,7 @@ from routes import (
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
     admin_audit_logs,
     insurance as insurance_admin, play_zone as play_zone_admin,
-    lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk,
+    lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
     admin_notifications, pricing_rules, crm,
 )
 
@@ -291,6 +291,7 @@ app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)
 app.include_router(rms.router, prefix=prefix)
 app.include_router(trade_risk.router, prefix=prefix)
+app.include_router(rms_dashboard.router, prefix=prefix)
 app.include_router(admin_notifications.router, prefix=prefix)
 app.include_router(pricing_rules.router, prefix=prefix)
 # CRM integration API — distinct prefix (NOT the admin prefix); auth is the

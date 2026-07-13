@@ -974,6 +974,45 @@ class TradeRiskSummary(BaseModel):
     caution_level: float = 150.0
 
 
+class RmsRiskOverview(BaseModel):
+    """Module 1 — Risk Dashboard executive summary (read-only)."""
+    # Accounts / traders
+    active_accounts: int = 0
+    online_traders: int = 0            # approx: distinct users with an open position
+    total_open_positions: int = 0
+    total_open_lots: float = 0.0
+    # Floating P/L
+    total_floating_pnl: float = 0.0        # clients' unrealised P/L (Σ equity-balance-credit)
+    broker_net_floating_pnl: float = 0.0   # broker's B-book counter-P/L (= -B-book client floating)
+    # Daily revenue
+    daily_brokerage_revenue: float = 0.0
+    daily_spread_revenue: float = 0.0      # 0 until spread stored separately
+    daily_swap_revenue: float = 0.0
+    daily_commission_revenue: float = 0.0
+    # Daily money
+    daily_deposits: float = 0.0
+    daily_withdrawals: float = 0.0
+    # Margin aggregates (platform-wide, live)
+    total_margin_used: float = 0.0
+    total_free_margin: float = 0.0
+    total_equity: float = 0.0
+    margin_level_pct: Optional[float] = None
+    # Risk events
+    accounts_at_risk: int = 0
+    margin_calls: int = 0              # positions on accounts in the margin-call band
+    stop_outs: int = 0                # stop-out closes since UTC midnight
+    # Exposure
+    net_exposure: float = 0.0         # Σ |net_value| USD from live exposure:summary
+    a_book_exposure: float = 0.0      # gross notional routed to A-book
+    b_book_exposure: float = 0.0      # gross notional held in B-book
+    # Thresholds (context)
+    stop_out_level: float = 50.0
+    margin_call_level: float = 80.0
+    # Detail
+    exposure: list[Any] = []          # per-instrument rows (symbol/long/short/net/risk)
+    generated_at: datetime
+
+
 class AtRiskTradeRow(BaseModel):
     position_id: str
     user_id: str

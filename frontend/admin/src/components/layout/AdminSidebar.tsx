@@ -11,7 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Sparkles, Package,
-  Eye, Globe, ShieldAlert,
+  Eye, Globe, ShieldAlert, Gauge, Radar,
 } from 'lucide-react';
 
 interface NavItem {
@@ -60,6 +60,8 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Analytics', href: '/analytics', icon: BarChart3, perm: 'analytics.view' },
+  { label: 'Risk Dashboard', href: '/rms-dashboard', icon: Gauge, perm: 'rms.view' },
+  { label: 'Position Monitor', href: '/rms-positions', icon: Radar, perm: 'rms.view' },
   { label: 'IP Management', href: '/rms', icon: Globe, perm: 'rms.view' },
   { label: 'Trade Risk', href: '/trade-risk', icon: ShieldAlert, perm: 'rms.view' },
   { label: 'Audit logs', href: '/audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
