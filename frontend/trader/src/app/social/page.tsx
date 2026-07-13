@@ -913,6 +913,28 @@ function MyCopiesTab() {
     }
   };
 
+  // Live-refresh the open copy trades while the modal is open — the backend
+  // recomputes each position's P&L from the current tick, so a 2 s poll keeps
+  // the follower's P&L moving with the price (same cadence as positions).
+  useEffect(() => {
+    if (!tradesTarget) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || (typeof document !== 'undefined' && document.hidden)) return;
+      try {
+        const res = await api.get<CopyTradesResponse>(`/social/copies/${tradesTarget.id}/trades`);
+        if (!cancelled) setTradesData(res);
+      } catch {
+        /* ignore transient blips — next tick retries */
+      }
+    };
+    const id = setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [tradesTarget]);
+
   const submitRefill = async () => {
     if (!refillTarget) return;
     const amt = parseFloat(refillAmount);

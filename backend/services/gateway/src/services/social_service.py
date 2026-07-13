@@ -17,6 +17,28 @@ from packages.common.src.models import (
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
+from packages.common.src.trading_service import calc_position_pnl
+
+
+async def _live_open_pnl(pos, instrument) -> float:
+    """Recompute an OPEN position's P&L from the CURRENT tick so a follower's
+    copy P&L tracks the price in real time — the stored `pos.profit` only
+    refreshes on a slow cadence, which made copy P&L lag the actual move and
+    diverge between web and mobile. Currency-converted (via calc_position_pnl).
+    Falls back to the stored profit when no live tick is cached."""
+    try:
+        tick_data = await price_cache.get(instrument.symbol)
+        if tick_data:
+            tick = json.loads(tick_data)
+            sv = pos.side.value if hasattr(pos.side, "value") else str(pos.side)
+            cp = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
+            cs = instrument.contract_size or Decimal("100000")
+            return float(calc_position_pnl(
+                pos.side, pos.open_price, cp, pos.lots, cs, instrument=instrument,
+            ))
+    except Exception:
+        pass
+    return float(pos.profit or 0)
 
 
 def _gen_investor_account_number(copy_type: str = "signal") -> str:
@@ -1989,7 +2011,7 @@ async def pamm_master_trades(
     )
     open_trades = []
     for pos, inst in open_q.all():
-        profit = float(pos.profit or 0)
+        profit = await _live_open_pnl(pos, inst)
         open_trades.append({
             "id": str(pos.id),
             "symbol": inst.symbol,
@@ -2086,7 +2108,7 @@ async def copy_allocation_trades(
             "lots": float(pos.lots),
             "open_price": float(pos.open_price),
             "opened_at": pos.created_at.isoformat() if pos.created_at else None,
-            "pnl": float(pos.profit or 0),
+            "pnl": await _live_open_pnl(pos, inst),
             "status": "open",
         })
 
@@ -2213,7 +2235,7 @@ async def copy_trade_history(
             .order_by(Position.created_at.desc())
         )
         for pos, inst in open_q.all():
-            profit = float(pos.profit or 0)
+            profit = await _live_open_pnl(pos, inst)
             symbols.add(inst.symbol)
             items.append({
                 "id": str(pos.id),
