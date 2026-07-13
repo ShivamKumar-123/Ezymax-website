@@ -1,14 +1,7 @@
 'use client'
 
 import { Link } from 'react-router-dom'
-import { ArrowRight, Eye, Wallet, Cpu, Network } from 'lucide-react'
-
-const pillars = [
-  { icon: Eye,     label: 'Trading becomes more transparent' },
-  { icon: Wallet,  label: 'Users gain greater control' },
-  { icon: Cpu,     label: 'Technology improves trust' },
-  { icon: Network, label: 'Modern infrastructure replaces outdated systems' },
-]
+import { ArrowRight } from 'lucide-react'
 
 export default function AbHero() {
   return (
@@ -47,24 +40,6 @@ export default function AbHero() {
               contract infrastructure, transparent settlement systems, and trader-focused
               innovation.
             </p>
-
-            <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl fx-fade-up fx-fade-up-d3">
-              {pillars.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
-                  style={{
-                    background: 'rgba(214,169,61,0.05)',
-                    border: '1px solid rgba(214,169,61,0.22)',
-                  }}
-                >
-                  <Icon size={14} style={{ color: 'var(--fx-gold-light)' }} />
-                  <span className="text-xs md:text-sm" style={{ color: 'var(--fx-text-2)' }}>
-                    {label}
-                  </span>
-                </li>
-              ))}
-            </ul>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 fx-fade-up fx-fade-up-d4">
               <Link to="#ecosystem" className="fx-btn-primary justify-center">

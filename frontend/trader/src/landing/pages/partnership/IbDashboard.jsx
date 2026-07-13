@@ -70,10 +70,14 @@ export default function IbDashboard() {
             </ul>
           </ScrollReveal>
 
-          {/* RIGHT — dashboard image placeholder */}
+          {/* RIGHT — dashboard image */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-media h-full min-h-[320px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[320px] overflow-hidden">
+              <img
+                src="/images/partnership_card.png"
+                alt="Partner dashboard"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

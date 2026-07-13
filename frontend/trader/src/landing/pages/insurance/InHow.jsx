@@ -106,8 +106,12 @@ export default function InHow() {
 
           {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.16}>
-            <div className="fx-tile-media h-full min-h-[280px] md:col-span-2 lg:col-span-1">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] md:col-span-2 lg:col-span-1 overflow-hidden">
+              <img
+                src="/images/insurance_card2.png"
+                alt="Continuous protection"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>
