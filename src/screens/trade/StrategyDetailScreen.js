@@ -51,15 +51,20 @@ export default function StrategyDetailScreen() {
     return () => { cancelled = true; };
   }, [providerId]);
 
-  // When already copying, pull the master's positions + trade history (since
-  // you started copying) to show what you're mirroring.
+  // When already copying, pull the follower's copy positions + history. The
+  // backend recomputes each open position's P&L from the live tick, so we poll
+  // every 2s to keep the P&L moving with the price (was fetched once → static).
   useEffect(() => {
     if (!provider?.is_copying) { setActivity(null); return; }
     let cancelled = false;
-    ApiService.getProviderActivity(providerId)
-      .then((res) => { if (!cancelled) setActivity(res); })
-      .catch(() => { if (!cancelled) setActivity(null); });
-    return () => { cancelled = true; };
+    const load = () => {
+      ApiService.getProviderActivity(providerId)
+        .then((res) => { if (!cancelled) setActivity(res); })
+        .catch(() => { /* keep last data on a transient error */ });
+    };
+    load();
+    const id = setInterval(load, 2000);
+    return () => { cancelled = true; clearInterval(id); };
   }, [provider?.is_copying, providerId]);
 
   // Live accounts the copy can be funded from (demo can't host copies).
