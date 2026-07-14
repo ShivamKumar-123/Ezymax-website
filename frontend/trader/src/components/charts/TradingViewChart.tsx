@@ -476,19 +476,22 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   }, [chartReady]);
 
   // Press the SL/TP button and DRAG straight onto the chart: a line follows the
-  // cursor and, on release, the bracket is set at that price. One gesture — no
-  // "click, then go find the line, then drag it".
+  // cursor and, on release, the bracket is set at that price. One gesture.
+  //
+  // We read the price straight from the chart's own CROSSHAIR (crossHairMoved)
+  // rather than doing pixel→price math — the crosshair price is exactly the
+  // price under the cursor, so the line sits precisely where the cursor is with
+  // no calibration and no drift.
   const startPlacement = useCallback((e: ReactPointerEvent, positionId: string, leg: 'sl' | 'tp') => {
     e.preventDefault();
     e.stopPropagation();
     if (placingRef.current) return;
     const w = widgetRef.current;
-    const container = containerRef.current;
-    if (!w || !container) return;
+    if (!w) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let chart: any;
     try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
-    if (!chart?.createShape) return;
+    if (!chart?.createShape || !chart?.crossHairMoved) return;
 
     const st = useTradingStore.getState();
     const pos = st.positions.find((p) => p.id === positionId);
@@ -496,21 +499,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const color = leg === 'sl' ? '#dc2626' : '#16a34a';
     const q = st.prices[String(pos.symbol).toUpperCase()];
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
-
-    // Convert a viewport Y to a price using the same calibration the pills use.
-    const pixelToPrice = (clientY: number): number | null => {
-      try {
-        const rect = container.getBoundingClientRect();
-        const pane = chart.getPanes?.()[0];
-        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-        const paneH = pane?.getHeight?.();
-        if (!range || !paneH || range.to === range.from) return null;
-        let paneTop = paneTopRef.current;
-        if (paneTop == null) paneTop = rect.height - Number(paneH) - 46;
-        const y = clientY - rect.top;
-        return Number(range.to) - ((y - paneTop) / Number(paneH)) * (Number(range.to) - Number(range.from));
-      } catch { return null; }
-    };
+    if (!Number.isFinite(startPrice)) return;
 
     placingRef.current = true;
     (async () => {
@@ -525,20 +514,28 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         ));
       } catch { placingRef.current = false; return; }
 
-      const moveTo = (clientY: number) => {
-        const price = pixelToPrice(clientY);
-        if (price == null || !Number.isFinite(price) || !lineId) return;
-        try { chart.getShapeById(lineId).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
+      let lastPrice = startPrice;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let crossSub: any = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const onCross = (params: any) => {
+        const p = params?.price;
+        if (p == null || !Number.isFinite(p)) return;
+        lastPrice = Number(p);
+        try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
       };
-      const onPM = (ev: PointerEvent) => moveTo(ev.clientY);
-      const onPU = async (ev: PointerEvent) => {
-        document.removeEventListener('pointermove', onPM);
-        document.removeEventListener('pointerup', onPU);
+      try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
+
+      let done = false;
+      const finish = async () => {
+        if (done) return;
+        done = true;
+        document.removeEventListener('pointerup', finish);
+        window.removeEventListener('blur', finish);
+        try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
         placingRef.current = false;
-        const price = pixelToPrice(ev.clientY);
         const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
-        if (price == null || !Number.isFinite(price)) { cleanup(); return; }
-        const level = Number(price.toFixed(5));
+        const level = Number(Number(lastPrice).toFixed(5));
         const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
         const body: Record<string, number> = {};
         body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = level;
@@ -546,7 +543,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
         try {
           await api.put(`/positions/${positionId}`, body);
-          toast.success(`${leg.toUpperCase()} set`);
+          toast.success(`${leg.toUpperCase()} set @ ${level}`);
         } catch (err) {
           toast.error(err instanceof Error ? err.message : `Failed to set ${leg.toUpperCase()}`);
         } finally {
@@ -555,8 +552,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
           cleanup();
         }
       };
-      document.addEventListener('pointermove', onPM);
-      document.addEventListener('pointerup', onPU);
+      document.addEventListener('pointerup', finish);
+      window.addEventListener('blur', finish); // safety net if pointerup is missed
     })();
   }, []);
 
