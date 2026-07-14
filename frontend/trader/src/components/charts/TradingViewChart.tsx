@@ -22,9 +22,11 @@ import { loadChartLibrary } from '@/lib/chart/loadChartLibrary';
 import { api } from '@/lib/api/client';
 import toast from 'react-hot-toast';
 
-const CONTAINER_ID = 'sc_tv_terminal_chart';
-
 function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () => void }) {
+  // Unique per instance — the terminal mounts this chart in more than one place
+  // (mobile + desktop layouts); a shared DOM id would make two widgets fight
+  // over the same container. Stable across renders via useRef.
+  const CONTAINER_ID = useRef('sc_tv_terminal_' + Math.random().toString(36).slice(2, 10)).current;
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
@@ -374,7 +376,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         })();
       }, 450));
     };
-    w.subscribe('drawing_event', handler);
+    try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
   }, [chartReady, applySLTP]);
 

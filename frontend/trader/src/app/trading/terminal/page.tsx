@@ -25,6 +25,7 @@ import TerminalTicker from '@/components/trading/TerminalTicker';
 import AppNavbar from '@/components/layout/AppNavbar';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
+import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
   ssr: false,
 });
@@ -574,7 +575,9 @@ export default function TradingTerminalPage() {
                   </div>
                 ) : null}
                 <div className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
-                  <TradingViewChart />
+                  <ChartErrorBoundary>
+                    <TradingViewChart />
+                  </ChartErrorBoundary>
                 </div>
               </div>
 
@@ -764,7 +767,9 @@ export default function TradingTerminalPage() {
                   via the library's createButton API) so it never overlaps the
                   chart's own buttons. Collapse is via the header's "Normal view"
                   button / Esc when expanded. */}
-              <TradingViewChart onRequestFullscreen={enterFullscreen} />
+              <ChartErrorBoundary>
+                <TradingViewChart onRequestFullscreen={enterFullscreen} />
+              </ChartErrorBoundary>
             </div>
           </div>
 
