@@ -13,7 +13,7 @@
  * Symbol changes call widget.setSymbol() so the ~26 MB library isn't reloaded.
  */
 
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -196,6 +196,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   // on resize. paneTop is constant across zoom/pan, so freezing is correct.
   const paneTopSamplesRef = useRef<number[]>([]);
   const paneTopSolvedRef = useRef(false);
+  // Active "drag a bracket from the SL/TP button" gesture, if any.
+  const placingRef = useRef<boolean>(false);
 
   // Persist an SL/TP change. Reads the CURRENT position from the store so the
   // untouched leg isn't sent stale. Returns whether the server accepted it.
@@ -473,58 +475,89 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     };
   }, [chartReady]);
 
-  // Add an SL or TP bracket, then the on-chart line appears and the user drags
-  // it to the exact level. The default is placed FAR from the current price
-  // (near the visible chart edge) so a fast market can't hit it in the seconds
-  // it takes to drag — placing it ~0.1% away was causing instant auto-close.
-  const addBracket = useCallback(async (positionId: string, which: 'sl' | 'tp') => {
+  // Press the SL/TP button and DRAG straight onto the chart: a line follows the
+  // cursor and, on release, the bracket is set at that price. One gesture — no
+  // "click, then go find the line, then drag it".
+  const startPlacement = useCallback((e: ReactPointerEvent, positionId: string, leg: 'sl' | 'tp') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (placingRef.current) return;
+    const w = widgetRef.current;
+    const container = containerRef.current;
+    if (!w || !container) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart?.createShape) return;
+
     const st = useTradingStore.getState();
     const pos = st.positions.find((p) => p.id === positionId);
     if (!pos) return;
-    // Already set → don't overwrite; the line is already on the chart to drag.
-    if (which === 'sl' && pos.stop_loss != null) return;
-    if (which === 'tp' && pos.take_profit != null) return;
-
-    const isBuy = pos.side === 'buy';
+    const color = leg === 'sl' ? '#dc2626' : '#16a34a';
     const q = st.prices[String(pos.symbol).toUpperCase()];
-    const ref = Number(isBuy ? (q?.bid ?? pos.current_price ?? pos.open_price)
-                             : (q?.ask ?? pos.current_price ?? pos.open_price));
-    if (!Number.isFinite(ref) || ref <= 0) return;
+    const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
 
-    // Prefer the visible price range so the default sits near the chart edge —
-    // on-screen but well away from the current price.
-    let top: number | null = null, bottom: number | null = null;
-    try {
-      const range = widgetRef.current?.activeChart?.()?.getPanes?.()[0]
-        ?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-      if (range && range.to !== range.from) { top = Number(range.to); bottom = Number(range.from); }
-    } catch { /* ignore */ }
+    // Convert a viewport Y to a price using the same calibration the pills use.
+    const pixelToPrice = (clientY: number): number | null => {
+      try {
+        const rect = container.getBoundingClientRect();
+        const pane = chart.getPanes?.()[0];
+        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+        const paneH = pane?.getHeight?.();
+        if (!range || !paneH || range.to === range.from) return null;
+        let paneTop = paneTopRef.current;
+        if (paneTop == null) paneTop = rect.height - Number(paneH) - 46;
+        const y = clientY - rect.top;
+        return Number(range.to) - ((y - paneTop) / Number(paneH)) * (Number(range.to) - Number(range.from));
+      } catch { return null; }
+    };
 
-    let level: number;
-    if (top != null && bottom != null) {
-      const span = top - bottom;
-      if (isBuy) level = which === 'sl' ? bottom + span * 0.12 : top - span * 0.12;
-      else level = which === 'sl' ? top - span * 0.12 : bottom + span * 0.12;
-    } else {
-      // Fallback: a full 1.5% away — safely beyond instant-trigger range.
-      if (isBuy) level = which === 'sl' ? ref * 0.985 : ref * 1.015;
-      else level = which === 'sl' ? ref * 1.015 : ref * 0.985;
-    }
-    // Clamp to the valid side so the server never rejects the default.
-    if (isBuy) level = which === 'sl' ? Math.min(level, ref * 0.999) : Math.max(level, ref * 1.001);
-    else level = which === 'sl' ? Math.max(level, ref * 1.001) : Math.min(level, ref * 0.999);
-    level = Number(level.toFixed(5));
+    placingRef.current = true;
+    (async () => {
+      let anchorTime = Math.floor(Date.now() / 1000);
+      try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
+      let lineId: string | null = null;
+      try {
+        lineId = String(await chart.createShape(
+          { time: anchorTime, price: startPrice },
+          { shape: 'horizontal_line', text: leg.toUpperCase(), lock: true, disableSave: true, disableUndo: true,
+            overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
+        ));
+      } catch { placingRef.current = false; return; }
 
-    const body: Record<string, number> = {};
-    body[which === 'sl' ? 'stop_loss' : 'take_profit'] = level;
-    const other = which === 'sl' ? pos.take_profit : pos.stop_loss;
-    if (other != null) body[which === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
-    try {
-      await api.put(`/positions/${positionId}`, body);
-      toast.success(`${which.toUpperCase()} added — drag the line to your level`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Failed to add ${which.toUpperCase()}`);
-    }
+      const moveTo = (clientY: number) => {
+        const price = pixelToPrice(clientY);
+        if (price == null || !Number.isFinite(price) || !lineId) return;
+        try { chart.getShapeById(lineId).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
+      };
+      const onPM = (ev: PointerEvent) => moveTo(ev.clientY);
+      const onPU = async (ev: PointerEvent) => {
+        document.removeEventListener('pointermove', onPM);
+        document.removeEventListener('pointerup', onPU);
+        placingRef.current = false;
+        const price = pixelToPrice(ev.clientY);
+        const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
+        if (price == null || !Number.isFinite(price)) { cleanup(); return; }
+        const level = Number(price.toFixed(5));
+        const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
+        const body: Record<string, number> = {};
+        body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = level;
+        const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
+        if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
+        try {
+          await api.put(`/positions/${positionId}`, body);
+          toast.success(`${leg.toUpperCase()} set`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : `Failed to set ${leg.toUpperCase()}`);
+        } finally {
+          // Drop our temp line; syncLines renders the real (draggable) one from
+          // the server state on the next tick.
+          cleanup();
+        }
+      };
+      document.addEventListener('pointermove', onPM);
+      document.addEventListener('pointerup', onPU);
+    })();
   }, []);
 
   const closePositionFromChart = useCallback(async (positionId: string) => {
@@ -544,8 +577,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
       {/* On-chart quick-trade: live SELL / BUY prices + spread; places a market
-          order on the active account. Sits below the chart's top toolbar. */}
-      <div className="absolute top-14 left-2 z-30 pointer-events-none">
+          order on the active account. Sits BELOW the chart's symbol legend /
+          OHLC row so it doesn't cover them. */}
+      <div className="absolute top-[92px] left-2 z-30 pointer-events-none">
         <ChartTradeWidget />
       </div>
 
@@ -572,8 +606,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
                 </span>
                 {!isCopy && (
                   <>
-                    <button type="button" onDoubleClick={() => addBracket(p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black" title="Double-click to add stop-loss, then drag the line">SL</button>
-                    <button type="button" onDoubleClick={() => addBracket(p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white" title="Double-click to add take-profit, then drag the line">TP</button>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black cursor-ns-resize touch-none" title="Press and drag onto the chart to set the stop-loss">SL</button>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-ns-resize touch-none" title="Press and drag onto the chart to set the take-profit">TP</button>
                   </>
                 )}
                 <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
