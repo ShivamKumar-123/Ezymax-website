@@ -62,8 +62,9 @@ export function ChartTradeWidget() {
         <span className="text-[10px] font-bold tracking-wider">SELL</span>
       </button>
 
-      <div className="flex items-center justify-center px-1 min-w-[2.25rem]">
-        <span className="text-[11px] font-bold text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_90%)]">
+      <div className="flex items-center justify-center px-0.5">
+        {/* Own chip so it's readable on a light OR dark chart (was white-on-white). */}
+        <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[11px] font-bold text-white shadow ring-1 ring-white/10">
           {spread != null ? spread.toFixed(digits) : '—'}
         </span>
       </div>

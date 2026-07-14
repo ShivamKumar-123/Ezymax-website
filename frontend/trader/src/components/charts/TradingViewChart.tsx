@@ -200,11 +200,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   const paneTopRef = useRef<number | null>(null);
   const lastMouseYRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
-  // Pane-top calibration is FROZEN once solved (median of a few crosshair
-  // samples) so the pill doesn't jitter as the cursor moves; it only re-solves
-  // on resize. paneTop is constant across zoom/pan, so freezing is correct.
+  // Rolling buffer of crosshair-derived pane-top samples; paneTop is their
+  // running median (accurate but smooth — see crossCb).
   const paneTopSamplesRef = useRef<number[]>([]);
-  const paneTopSolvedRef = useRef(false);
   // Active "drag a bracket from the SL/TP button" gesture, if any.
   const placingRef = useRef<boolean>(false);
 
@@ -397,15 +395,14 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     };
     container.addEventListener('mousemove', onMove);
 
-    // Re-solve the pane-top on resize (the only thing that moves it).
-    const onResize = () => { paneTopSolvedRef.current = false; paneTopSamplesRef.current = []; };
+    // Clear the calibration buffer on resize (pane geometry changes).
+    const onResize = () => { paneTopSamplesRef.current = []; };
     window.addEventListener('resize', onResize);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let crossSub: any = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const crossCb = (params: any) => {
-      if (paneTopSolvedRef.current) return; // frozen — no per-move jitter
       const price = params?.price;
       const my = lastMouseYRef.current;
       if (price == null || my == null) return;
@@ -414,13 +411,14 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       if (!geo) return;
       const candidate = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
       if (!Number.isFinite(candidate)) return;
+      // Rolling MEDIAN of the last 15 samples: accurate (tracks the true pane
+      // top, so the pill sits exactly on the entry line) yet smooth (the median
+      // rejects the per-move mouseY/price mismatch that used to make it jitter).
       const arr = paneTopSamplesRef.current;
       arr.push(candidate);
-      if (arr.length >= 8) {
-        const sorted = [...arr].sort((a, b) => a - b);
-        paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate; // median → freeze
-        paneTopSolvedRef.current = true;
-      }
+      while (arr.length > 15) arr.shift();
+      const sorted = [...arr].sort((a, b) => a - b);
+      paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate;
     };
     try {
       crossSub = getChart()?.crossHairMoved?.();
@@ -647,7 +645,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
               <div
                 key={p.id}
                 ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
-                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap [text-shadow:_0_1px_3px_rgb(0_0_0_/_95%),_0_0_2px_rgb(0_0_0_/_80%)]"
+                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap"
               >
                 <span className={p.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}>
                   {p.side.toUpperCase()} {p.lots}
