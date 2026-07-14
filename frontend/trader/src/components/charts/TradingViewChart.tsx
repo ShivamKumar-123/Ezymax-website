@@ -52,6 +52,15 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   const linesRef = useRef<Map<string, any>>(new Map());
   const syncBusyRef = useRef(false);
 
+  // Drag-release confirmation: dropping an SL/TP asks "Set at this price?" with
+  // the projected P&L, and only commits when confirmed.
+  const [confirm, setConfirm] = useState<
+    { positionId: string; leg: 'sl' | 'tp'; price: number; side: string; lots: number; symbol: string; pnl: number } | null
+  >(null);
+  const confirmRevertRef = useRef<(() => void) | null>(null);
+  // Stable handle to requestBracket for the []-memoized drag handlers.
+  const requestBracketRef = useRef<((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => void) | null>(null);
+
   // Mount the widget once.
   useEffect(() => {
     let disposed = false;
@@ -199,27 +208,6 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   // Active "drag a bracket from the SL/TP button" gesture, if any.
   const placingRef = useRef<boolean>(false);
 
-  // Persist an SL/TP change. Reads the CURRENT position from the store so the
-  // untouched leg isn't sent stale. Returns whether the server accepted it.
-  const applySLTP = useCallback(
-    async (id: string, which: 'sl' | 'tp', price: number): Promise<boolean> => {
-      const cur = useTradingStore.getState().positions.find((x) => x.id === id);
-      const body: Record<string, number> = {};
-      body[which === 'sl' ? 'stop_loss' : 'take_profit'] = price;
-      const otherVal = which === 'sl' ? cur?.take_profit : cur?.stop_loss;
-      if (otherVal != null) body[which === 'sl' ? 'take_profit' : 'stop_loss'] = Number(otherVal);
-      try {
-        await api.put(`/positions/${id}`, body);
-        return true;
-      } catch (e) {
-        // Surface the server's reason (e.g. "would trigger instantly").
-        toast.error(e instanceof Error ? e.message : `Failed to update ${which.toUpperCase()}`);
-        return false;
-      }
-    },
-    [],
-  );
-
   // Reconcile chart lines with open positions on the charted symbol. Advanced
   // Charts has no order-line API, so we draw horizontal-line SHAPES: a locked
   // entry line + draggable SL/TP lines. Created once, then only their price is
@@ -363,25 +351,23 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         try { price = chart.getShapeById(eid).getPoints()?.[0]?.price; } catch { return; }
         if (price == null || !Number.isFinite(price)) return;
         const newPrice = Number(price);
-        void (async () => {
-          const ok = await applySLTP(meta.positionId, meta.leg, newPrice);
+        // Ask before committing; on cancel, snap the dragged line back to the
+        // stored level.
+        const revert = () => {
           const set = linesRef.current.get(meta.positionId);
-          if (ok) {
-            if (set && set[meta.leg]) set[meta.leg].price = newPrice;
-          } else {
-            const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
-            const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
-            if (back != null) {
-              try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
-              if (set && set[meta.leg]) set[meta.leg].price = Number(back);
-            }
+          const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
+          const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
+          if (back != null) {
+            try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
+            if (set && set[meta.leg]) set[meta.leg].price = Number(back);
           }
-        })();
+        };
+        requestBracketRef.current?.(meta.positionId, meta.leg, newPrice, revert);
       }, 450));
     };
     try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
-  }, [chartReady, applySLTP]);
+  }, [chartReady]);
 
   // Pin each position's control pill to its entry-price line. Advanced Charts
   // has no price→pixel API, so we calibrate the pane's top offset from a
@@ -533,21 +519,10 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       placingRef.current = false;
-      const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
-      const level = Number(Number(lastPrice).toFixed(5));
-      const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
-      const body: Record<string, number> = {};
-      body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = level;
-      const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
-      if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
-      try {
-        await api.put(`/positions/${positionId}`, body);
-        toast.success(`${leg.toUpperCase()} set @ ${level}`);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : `Failed to set ${leg.toUpperCase()}`);
-      } finally {
-        cleanup(); // syncLines renders the real draggable line from server state
-      }
+      // Drop the temp line and ASK before committing (the modal shows the price
+      // + projected P&L). On confirm the real line is rendered from server state.
+      try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
+      requestBracketRef.current?.(positionId, leg, Number(lastPrice));
     };
 
     // Release triggers: the LIBRARY's own mouse_up (fires when releasing over
@@ -585,6 +560,65 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       toast.error(e instanceof Error ? e.message : 'Failed to close position');
     }
   }, []);
+
+  // Projected P&L (account currency) if this position were closed at `price`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const computePnlAt = useCallback((pos: any, price: number): number => {
+    const sym = String(pos.symbol).toUpperCase();
+    const inst = useTradingStore.getState().instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+    const cs = Number(inst?.contract_size) || 100000;
+    let pnl = pos.side === 'buy'
+      ? (price - Number(pos.open_price)) * Number(pos.lots) * cs
+      : (Number(pos.open_price) - price) * Number(pos.lots) * cs;
+    const base = String(inst?.base_currency || sym.slice(0, 3)).toUpperCase();
+    const quote = String(inst?.quote_currency || sym.slice(3, 6)).toUpperCase();
+    if (!quote || quote === 'USD') return pnl;             // USD-quoted → already USD
+    if (base === 'USD' && price) return pnl / price;       // USD base (USDJPY…)
+    const prices = useTradingStore.getState().prices;
+    const usdQ = prices[`USD${quote}`];
+    if (usdQ?.bid) return pnl / usdQ.bid;
+    const qUsd = prices[`${quote}USD`];
+    if (qUsd?.bid) return pnl * qUsd.bid;
+    return pnl;
+  }, []);
+
+  // Ask before committing an SL/TP the user just dragged. `revert` is called if
+  // they cancel (e.g. snap a dragged line back to its stored level).
+  const requestBracket = useCallback((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => {
+    const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
+    if (!pos || !Number.isFinite(price)) { revert?.(); return; }
+    confirmRevertRef.current = revert ?? null;
+    setConfirm({
+      positionId, leg, price: Number(price.toFixed(5)),
+      side: pos.side, lots: pos.lots, symbol: pos.symbol, pnl: computePnlAt(pos, price),
+    });
+  }, [computePnlAt]);
+  requestBracketRef.current = requestBracket;
+
+  const confirmCancel = useCallback(() => {
+    const r = confirmRevertRef.current;
+    confirmRevertRef.current = null;
+    setConfirm(null);
+    r?.();
+  }, []);
+
+  const confirmSet = useCallback(async () => {
+    if (!confirm) return;
+    const { positionId, leg, price } = confirm;
+    confirmRevertRef.current = null; // committing — no revert
+    setConfirm(null);
+    const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
+    const body: Record<string, number> = {};
+    body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = price;
+    const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
+    if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
+    try {
+      await api.put(`/positions/${positionId}`, body);
+      toast.success(`${leg.toUpperCase()} set @ ${price}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Failed to set ${leg.toUpperCase()}`);
+    }
+  }, [confirm]);
 
   const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
   const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym);
@@ -631,6 +665,56 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Drag-release confirmation — "Set SL/TP @ price?" with projected P&L. */}
+      {confirm && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 pointer-events-auto"
+          onClick={confirmCancel}
+        >
+          <div
+            className="w-[340px] max-w-[90%] rounded-2xl bg-bg-secondary border border-border-primary shadow-2xl p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-bold text-text-primary">
+                Set {confirm.leg === 'sl' ? 'Stop Loss' : 'Take Profit'} @ {confirm.price}
+              </h3>
+              <button
+                type="button"
+                onClick={confirmCancel}
+                className="text-text-tertiary hover:text-text-primary text-base leading-none"
+                aria-label="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-text-secondary">
+              {confirm.side.toUpperCase()} {confirm.lots} {confirm.symbol} →{' '}
+              {confirm.pnl >= 0 ? 'profit ' : 'loss '}
+              <span className={confirm.pnl >= 0 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500'}>
+                {confirm.pnl >= 0 ? '+' : '-'}${Math.abs(confirm.pnl).toFixed(2)}
+              </span>
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={confirmCancel}
+                className="flex-1 rounded-lg bg-bg-hover text-text-secondary py-2 text-sm font-semibold hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmSet()}
+                className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white py-2 text-sm font-bold"
+              >
+                Set {confirm.leg.toUpperCase()}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
