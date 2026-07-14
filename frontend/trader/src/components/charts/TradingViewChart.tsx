@@ -486,6 +486,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     e.preventDefault();
     e.stopPropagation();
     if (placingRef.current) return;
+    const btn = e.currentTarget as HTMLElement;
+    const pointerId = e.pointerId;
     const w = widgetRef.current;
     if (!w) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -501,59 +503,77 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
     if (!Number.isFinite(startPrice)) return;
 
+    // Capture the pointer to the BUTTON so pointerup is guaranteed to fire on it
+    // (over the chart canvas a document/window listener can be swallowed — that
+    // was the "it never lets go" bug). Mouse events still reach the chart, so
+    // the crosshair keeps tracking the price.
+    try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
+
     placingRef.current = true;
+    let lineId: string | null = null;
+    let lastPrice = startPrice;
+    let anchorTime = Math.floor(Date.now() / 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let crossSub: any = null;
+    let done = false;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onCross = (params: any) => {
+      const p = params?.price;
+      if (p == null || !Number.isFinite(p)) return;
+      lastPrice = Number(p);
+      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+    };
+
+    const finish = async () => {
+      if (done) return;
+      done = true;
+      btn.removeEventListener('pointerup', finish);
+      btn.removeEventListener('pointercancel', finish);
+      window.removeEventListener('pointerup', finish, true);
+      window.removeEventListener('mouseup', finish, true);
+      window.removeEventListener('blur', finish);
+      try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
+      try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
+      placingRef.current = false;
+      const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
+      const level = Number(Number(lastPrice).toFixed(5));
+      const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
+      const body: Record<string, number> = {};
+      body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = level;
+      const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
+      if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
+      try {
+        await api.put(`/positions/${positionId}`, body);
+        toast.success(`${leg.toUpperCase()} set @ ${level}`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : `Failed to set ${leg.toUpperCase()}`);
+      } finally {
+        cleanup(); // syncLines renders the real draggable line from server state
+      }
+    };
+
+    // Attach release listeners SYNCHRONOUSLY so a fast release can't be missed.
+    btn.addEventListener('pointerup', finish);
+    btn.addEventListener('pointercancel', finish);
+    window.addEventListener('pointerup', finish, true); // capture-phase fallback
+    window.addEventListener('mouseup', finish, true);
+    window.addEventListener('blur', finish);
+
+    // Create the line + subscribe the crosshair (async). If the user already
+    // released, bail cleanly.
     (async () => {
-      let anchorTime = Math.floor(Date.now() / 1000);
       try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
-      let lineId: string | null = null;
+      if (done) return;
       try {
         lineId = String(await chart.createShape(
           { time: anchorTime, price: startPrice },
           { shape: 'horizontal_line', text: leg.toUpperCase(), lock: true, disableSave: true, disableUndo: true,
             overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
         ));
-      } catch { placingRef.current = false; return; }
-
-      let lastPrice = startPrice;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let crossSub: any = null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const onCross = (params: any) => {
-        const p = params?.price;
-        if (p == null || !Number.isFinite(p)) return;
-        lastPrice = Number(p);
-        try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
-      };
+      } catch { return; }
+      if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
       try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
-
-      let done = false;
-      const finish = async () => {
-        if (done) return;
-        done = true;
-        document.removeEventListener('pointerup', finish);
-        window.removeEventListener('blur', finish);
-        try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
-        placingRef.current = false;
-        const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
-        const level = Number(Number(lastPrice).toFixed(5));
-        const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
-        const body: Record<string, number> = {};
-        body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = level;
-        const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
-        if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
-        try {
-          await api.put(`/positions/${positionId}`, body);
-          toast.success(`${leg.toUpperCase()} set @ ${level}`);
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : `Failed to set ${leg.toUpperCase()}`);
-        } finally {
-          // Drop our temp line; syncLines renders the real (draggable) one from
-          // the server state on the next tick.
-          cleanup();
-        }
-      };
-      document.addEventListener('pointerup', finish);
-      window.addEventListener('blur', finish); // safety net if pointerup is missed
     })();
   }, []);
 
