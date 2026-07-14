@@ -278,14 +278,16 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
 
         // SL / TP draggable lines. Non-cancellable here (removal stays in the
         // order panel) because the modify endpoint can't distinguish clear from
-        // no-op via a null.
+        // no-op via a null. Copied (MAM) positions get NO editable SL/TP lines —
+        // the master strategy controls those and the server rejects edits.
+        const isCopy = p.trade_type === 'copy_trade';
         const legs: Array<['sl' | 'tp', number | undefined, string, string]> = [
           ['sl', p.stop_loss, 'SL', '#dc2626'],
           ['tp', p.take_profit, 'TP', '#16a34a'],
         ];
         for (const [leg, value, label, color] of legs) {
           const creatingKey = leg === 'sl' ? 'slCreating' : 'tpCreating';
-          if (value != null) {
+          if (value != null && !isCopy) {
             if (set[leg]) {
               try { set[leg].setPrice(Number(value)); } catch { /* ignore */ }
             } else if (!set[creatingKey]) {

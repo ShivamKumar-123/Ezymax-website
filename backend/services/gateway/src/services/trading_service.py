@@ -798,9 +798,19 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
-    # MAM followers may set their own SL/TP on a mirrored position — they have
-    # independent control of their allocated account. (Previously this raised
-    # 403 and only the master's SL/TP applied.)
+    # MAM / copy: a follower's mirrored position is driven by the master's
+    # strategy, so its SL/TP is NOT the follower's to edit. Reject bracket edits
+    # on copied positions (the follower can still CLOSE the position). A copied
+    # position is one that appears as a CopyTrade.investor_position_id — the same
+    # marker list_positions uses to tag trade_type='copy_trade'.
+    is_copy_child = (await db.execute(
+        select(CopyTrade.id).where(CopyTrade.investor_position_id == position_id).limit(1)
+    )).scalar_one_or_none() is not None
+    if is_copy_child:
+        raise HTTPException(
+            status_code=400,
+            detail="This is a copied position — its SL/TP is set by the master strategy and can't be edited here.",
+        )
 
     sv = side_val(pos.side)
     is_buy = sv == "buy"
