@@ -175,46 +175,38 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     }
   }, [selectedSymbol]);
 
-  // Close a position from its on-chart line's ✕.
-  const closePos = useCallback(async (id: string) => {
-    try {
-      await api.post(`/positions/${id}/close`, {});
-    } catch {
-      /* the positions poll will keep the line until it actually closes */
-    }
-  }, []);
+  // entity id → which (position, leg) it draws, so the global drawing_event
+  // handler knows what a dragged shape maps to.
+  const entityMapRef = useRef<Map<string, { positionId: string; leg: 'sl' | 'tp' }>>(new Map());
+  // Debounce timers per entity so a drag fires ONE modify (on release), not one
+  // per mouse-move frame.
+  const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Persist a dragged SL/TP. Reads the CURRENT position from the store so the
-  // untouched leg isn't sent stale. On rejection (e.g. SL on the wrong side of
-  // entry) the line snaps back to the stored value.
+  // Persist an SL/TP change. Reads the CURRENT position from the store so the
+  // untouched leg isn't sent stale. Returns whether the server accepted it.
   const applySLTP = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async (id: string, which: 'sl' | 'tp', price: number, line: any) => {
+    async (id: string, which: 'sl' | 'tp', price: number): Promise<boolean> => {
       const cur = useTradingStore.getState().positions.find((x) => x.id === id);
       const body: Record<string, number> = {};
       body[which === 'sl' ? 'stop_loss' : 'take_profit'] = price;
-      const otherKey = which === 'sl' ? 'take_profit' : 'stop_loss';
       const otherVal = which === 'sl' ? cur?.take_profit : cur?.stop_loss;
-      if (otherVal != null) body[otherKey] = Number(otherVal);
+      if (otherVal != null) body[which === 'sl' ? 'take_profit' : 'stop_loss'] = Number(otherVal);
       try {
         await api.put(`/positions/${id}`, body);
+        return true;
       } catch (e) {
-        // Surface the server's reason (e.g. "would trigger instantly") and snap
-        // the line back to the stored level — never leave an unaccepted level drawn.
+        // Surface the server's reason (e.g. "would trigger instantly").
         toast.error(e instanceof Error ? e.message : `Failed to update ${which.toUpperCase()}`);
-        const back = which === 'sl' ? cur?.stop_loss : cur?.take_profit;
-        try {
-          if (back != null && line) line.setPrice(Number(back));
-        } catch {
-          /* ignore */
-        }
+        return false;
       }
     },
     [],
   );
 
-  // Reconcile chart lines with the open positions on the charted symbol.
-  // Creates lines once (guarded), then just updates price/text/P&L thereafter.
+  // Reconcile chart lines with open positions on the charted symbol. Advanced
+  // Charts has no order-line API, so we draw horizontal-line SHAPES: a locked
+  // entry line + draggable SL/TP lines. Created once, then only their price is
+  // updated; removed when the position closes or the symbol changes.
   const syncLines = useCallback(async () => {
     const w = widgetRef.current;
     if (!w || syncBusyRef.current) return;
@@ -225,7 +217,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     } catch {
       return;
     }
-    if (!chart || typeof chart.createOrderLine !== 'function') return;
+    if (!chart || typeof chart.createShape !== 'function') return;
 
     syncBusyRef.current = true;
     try {
@@ -236,92 +228,128 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       );
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
+      const anchorTime = Math.floor(Date.now() / 1000);
+
+      const removeEntity = (entityId?: string) => {
+        if (entityId == null) return;
+        try { chart.removeEntity(entityId); } catch { /* ignore */ }
+        entityMapRef.current.delete(String(entityId));
+      };
 
       // Drop lines whose position closed or is off the charted symbol.
       for (const [id, set] of Array.from(map.entries())) {
         if (!relIds.has(id)) {
-          for (const k of ['pos', 'sl', 'tp'] as const) {
-            try { set[k]?.remove(); } catch { /* ignore */ }
-          }
+          removeEntity(set.entry?.id);
+          removeEntity(set.sl?.id);
+          removeEntity(set.tp?.id);
           map.delete(id);
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ensure = async (set: any, leg: 'entry' | 'sl' | 'tp', price: number, label: string, color: string, locked: boolean) => {
+        const existing = set[leg];
+        if (existing) {
+          if (Math.abs(Number(existing.price) - price) > 1e-9) {
+            try { chart.getShapeById(existing.id).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
+            existing.price = price;
+          }
+          return;
+        }
+        const creatingKey = `${leg}Creating`;
+        if (set[creatingKey]) return;
+        set[creatingKey] = true;
+        try {
+          const id = await chart.createShape(
+            { time: anchorTime, price },
+            {
+              shape: 'horizontal_line',
+              text: label,
+              lock: locked,
+              disableSelection: locked,
+              disableSave: true,
+              disableUndo: true,
+              overrides: {
+                linecolor: color, linewidth: leg === 'entry' ? 1 : 2, linestyle: leg === 'entry' ? 2 : 0,
+                showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true,
+              },
+            },
+          );
+          const sid = String(id);
+          set[leg] = { id: sid, price };
+          if (leg !== 'entry') entityMapRef.current.set(sid, { positionId: set.__pid, leg });
+        } catch { /* ignore */ }
+        set[creatingKey] = false;
+      };
+
       for (const p of rel) {
         let set = map.get(p.id);
-        if (!set) { set = {}; map.set(p.id, set); }
-        const profit = Number(p.profit ?? 0);
-        const pnl = `${profit >= 0 ? '+' : '-'}$${Math.abs(profit).toFixed(2)}`;
-        const posColor = profit >= 0 ? '#16a34a' : '#dc2626';
-
-        // Entry / position line — close ✕ closes the position.
-        if (set.pos) {
-          try {
-            set.pos.setPrice(Number(p.open_price))
-              .setText(`${p.side.toUpperCase()} ${pnl}`)
-              .setQuantity(String(p.lots));
-            set.pos.setLineColor(posColor); set.pos.setBodyTextColor(posColor);
-          } catch { /* ignore */ }
-        } else if (!set.posCreating) {
-          set.posCreating = true;
-          try {
-            const line = await chart.createPositionLine();
-            line.setText(`${p.side.toUpperCase()} ${pnl}`)
-              .setPrice(Number(p.open_price))
-              .setQuantity(String(p.lots));
-            try { line.setLineColor(posColor); line.setBodyTextColor(posColor); } catch { /* ignore */ }
-            line.onClose(() => { void closePos(p.id); });
-            set.pos = line;
-          } catch { /* ignore */ }
-          set.posCreating = false;
-        }
-
-        // SL / TP draggable lines. Non-cancellable here (removal stays in the
-        // order panel) because the modify endpoint can't distinguish clear from
-        // no-op via a null. Copied (MAM) positions get NO editable SL/TP lines —
-        // the master strategy controls those and the server rejects edits.
+        if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
         const isCopy = p.trade_type === 'copy_trade';
-        const legs: Array<['sl' | 'tp', number | undefined, string, string]> = [
-          ['sl', p.stop_loss, 'SL', '#dc2626'],
-          ['tp', p.take_profit, 'TP', '#16a34a'],
-        ];
-        for (const [leg, value, label, color] of legs) {
-          const creatingKey = leg === 'sl' ? 'slCreating' : 'tpCreating';
-          if (value != null && !isCopy) {
-            if (set[leg]) {
-              try { set[leg].setPrice(Number(value)); } catch { /* ignore */ }
-            } else if (!set[creatingKey]) {
-              set[creatingKey] = true;
-              try {
-                const line = await chart.createOrderLine();
-                line.setText(label).setPrice(Number(value)).setQuantity(String(p.lots));
-                try {
-                  line.setCancellable(false);
-                  line.setLineColor(color); line.setBodyTextColor(color);
-                  line.setBodyBorderColor(color); line.setQuantityBackgroundColor(color);
-                } catch { /* ignore */ }
-                line.onMove(() => {
-                  try { void applySLTP(p.id, leg, line.getPrice(), line); } catch { /* ignore */ }
-                });
-                set[leg] = line;
-              } catch { /* ignore */ }
-              set[creatingKey] = false;
-            }
-          } else if (set[leg]) {
-            try { set[leg].remove(); } catch { /* ignore */ }
-            set[leg] = undefined;
-          }
-        }
+
+        // Entry reference line (locked, dashed grey).
+        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
+
+        // Draggable SL / TP. Copied (MAM) positions get none — master-controlled.
+        if (!isCopy && p.stop_loss != null) {
+          await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
+        } else { removeEntity(set.sl?.id); set.sl = undefined; }
+        if (!isCopy && p.take_profit != null) {
+          await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
+        } else { removeEntity(set.tp?.id); set.tp = undefined; }
       }
     } finally {
       syncBusyRef.current = false;
     }
-  }, [applySLTP, closePos]);
+  }, []);
 
   useEffect(() => {
     if (!chartReady) return;
     void syncLines();
   }, [positions, selectedSymbol, chartReady, syncLines]);
+
+  // Global drag handler: when a user drags an SL/TP shape, persist the new level
+  // (debounced to the drag's end) and snap back on rejection.
+  useEffect(() => {
+    if (!chartReady) return;
+    const w = widgetRef.current;
+    if (!w || typeof w.subscribe !== 'function') return;
+    const handler = (sourceId: unknown, type: string) => {
+      if (type !== 'move' && type !== 'points_changed') return;
+      const eid = String(sourceId);
+      const meta = entityMapRef.current.get(eid);
+      if (!meta) return;
+      const timers = dragTimersRef.current;
+      const prev = timers.get(eid);
+      if (prev) clearTimeout(prev);
+      timers.set(eid, setTimeout(() => {
+        timers.delete(eid);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let chart: any;
+        try { chart = w.activeChart(); } catch { return; }
+        let price: number | undefined;
+        try { price = chart.getShapeById(eid).getPoints()?.[0]?.price; } catch { return; }
+        if (price == null || !Number.isFinite(price)) return;
+        const newPrice = Number(price);
+        void (async () => {
+          const ok = await applySLTP(meta.positionId, meta.leg, newPrice);
+          const set = linesRef.current.get(meta.positionId);
+          if (ok) {
+            if (set && set[meta.leg]) set[meta.leg].price = newPrice;
+          } else {
+            const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
+            const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
+            if (back != null) {
+              try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
+              if (set && set[meta.leg]) set[meta.leg].price = Number(back);
+            }
+          }
+        })();
+      }, 450));
+    };
+    w.subscribe('drawing_event', handler);
+    return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
+  }, [chartReady, applySLTP]);
 
   return (
     <div className={clsx('w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
