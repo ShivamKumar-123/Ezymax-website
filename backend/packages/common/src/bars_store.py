@@ -200,3 +200,11 @@ async def oldest_ts(db: AsyncSession, symbol: str, tf: str) -> int | None:
         {"s": symbol.upper(), "t": tf},
     )).scalar()
     return int(row) if row is not None else None
+
+
+async def newest_ts(db: AsyncSession, symbol: str, tf: str) -> int | None:
+    row = (await db.execute(
+        text("SELECT MAX(ts) FROM ohlc_bars WHERE symbol = :s AND tf = :t"),
+        {"s": symbol.upper(), "t": tf},
+    )).scalar()
+    return int(row) if row is not None else None

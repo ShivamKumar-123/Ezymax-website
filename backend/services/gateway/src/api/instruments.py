@@ -235,6 +235,24 @@ async def get_bars(
                 oldest = await bars_store.oldest_ts(db, sym, tf)
                 if oldest is not None and from_time < oldest - bar_sec:
                     need = "older"
+            # Tail-gap heal: stored history ends well before now (a feed hiccup
+            # or downtime left a hole) → the chart shows a gap between the last
+            # closed candle and the live one. Backfill the recent window from the
+            # source so history connects to the live candle. Skipped when the
+            # market is genuinely closed (that gap is expected). Throttled so a
+            # burst of chart loads can't hammer the provider.
+            if not need and count >= 100:
+                is_closed = sym not in _BINANCE_PAIRS and bars_store.is_forex_market_closed(now_epoch)
+                if not is_closed:
+                    newest = await bars_store.newest_ts(db, sym, tf)
+                    current_slot = (now_epoch // bar_sec) * bar_sec
+                    # Gap of more than a couple of bars = a real hole, not just
+                    # the still-forming current bar not yet persisted.
+                    if newest is not None and newest < current_slot - (2 * bar_sec):
+                        gap_marker = f"bars:gap:{sym}:{tf}"
+                        if not await redis_client.get(gap_marker):
+                            need = "gap"
+                            await redis_client.set(gap_marker, "1", ex=300)  # at most every 5 min
             if need:
                 end_ts = None
                 if need == "older":
