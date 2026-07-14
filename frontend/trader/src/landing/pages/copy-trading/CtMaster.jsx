@@ -64,27 +64,24 @@ export default function CtMaster() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: gold path tile + dark path tile ────────── */}
+        {/* ── Two clean dark path cards with small gold accents ── */}
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-          {/* Apply with verified P&L — solid gold accent tile */}
+          {/* Apply with verified P&L — dark tile, gold accents */}
           <ScrollReveal variant="fadeUp">
-            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <div className="relative z-[1] flex items-center justify-between mb-5">
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+              <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                  >
-                    <Crown size={20} style={{ color: '#1c1608' }} />
+                  <div className="feature-icon shrink-0" style={{ width: 44, height: 44 }}>
+                    <Crown size={20} />
                   </div>
                   <div>
                     <div
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
-                      style={{ color: 'rgba(28,22,8,0.7)' }}
+                      style={{ color: 'var(--fx-gold-light)' }}
                     >
                       Path 1 Â· For Professionals
                     </div>
-                    <h3 className="text-xl md:text-2xl font-bold" style={{ color: '#1c1608' }}>
+                    <h3 className="text-xl md:text-2xl font-bold text-white">
                       Apply with Verified P&amp;L
                     </h3>
                   </div>
@@ -92,41 +89,32 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(28,22,8,0.14)',
-                    color: '#1c1608',
-                    border: '1px solid rgba(28,22,8,0.28)',
+                    background: 'rgba(214,169,61,0.15)',
+                    color: 'var(--fx-gold-light)',
+                    border: '1px solid rgba(214,169,61,0.35)',
                   }}
                 >
                   Verification
                 </span>
               </div>
 
-              <ul className="relative z-[1] space-y-3 mb-7">
+              <ul className="space-y-3 mb-7">
                 {applyCriteria.map(({ icon: Icon, label }) => (
                   <li
                     key={label}
                     className="flex items-start gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(28,22,8,0.08)',
-                      border: '1px solid rgba(28,22,8,0.18)',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid var(--fx-line-strong)',
                     }}
                   >
-                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: '#1c1608' }} />
-                    <span className="text-sm font-medium" style={{ color: '#1c1608' }}>{label}</span>
+                    <Icon size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--fx-gold-light)' }} />
+                    <span className="text-sm text-white">{label}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link
-                to="/auth/register"
-                className="relative z-[1] mt-auto self-start inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold transition-transform hover:-translate-y-0.5"
-                style={{
-                  background: 'linear-gradient(180deg, #2a2210 0%, #14100a 100%)',
-                  color: 'var(--fx-gold-light)',
-                  border: '1px solid rgba(28,22,8,0.5)',
-                  boxShadow: '0 14px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.10)',
-                }}
-              >
+              <Link to="/auth/register" className="fx-btn-ghost mt-auto self-start">
                 Apply as Master Trader
                 <ArrowRight size={16} />
               </Link>

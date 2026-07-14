@@ -92,8 +92,12 @@ export default function PrFlow() {
 
           {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-media h-full min-h-[280px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] overflow-hidden">
+              <img
+                src="/images/protocol_card.png"
+                alt="From wallet to trade"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

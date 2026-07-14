@@ -51,39 +51,22 @@ export default function CtControl() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: feature tiles (one gold accent) ────────── */}
+        {/* ── Clean dark feature cards, top-left icon badges ─── */}
         <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-12 md:mt-16 items-stretch">
           {features.map((f, i) => {
             const Icon = f.icon
-            const isGold = i === 1
             return (
               <ScrollReveal key={f.title} variant="fadeUp" delay={i * 0.05}>
-                {isGold ? (
-                  <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-                    <div
-                      className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                    >
-                      <Icon size={20} style={{ color: '#1c1608' }} />
-                    </div>
-                    <span className="fx-accent-bar mb-4 relative z-[1]" />
-                    <h3 className="relative z-[1] text-base md:text-lg font-bold mb-2" style={{ color: '#1c1608' }}>{f.title}</h3>
-                    <p className="relative z-[1] text-sm leading-relaxed" style={{ color: 'rgba(28,22,8,0.78)' }}>
-                      {f.desc}
-                    </p>
+                <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+                  <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
+                    <Icon size={20} />
                   </div>
-                ) : (
-                  <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
-                    <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
-                      <Icon size={20} />
-                    </div>
-                    <span className="fx-accent-bar mb-4" />
-                    <h3 className="text-base md:text-lg font-bold text-white mb-2">{f.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
-                      {f.desc}
-                    </p>
-                  </div>
-                )}
+                  <span className="fx-accent-bar mb-4" />
+                  <h3 className="text-base md:text-lg font-bold text-white mb-2">{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
+                    {f.desc}
+                  </p>
+                </div>
               </ScrollReveal>
             )
           })}

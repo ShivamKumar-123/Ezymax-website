@@ -1,4 +1,4 @@
-import { Zap, ArrowDownRight } from 'lucide-react'
+import { Zap, ArrowDownRight, TrendingUp } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const improvements = [
@@ -64,71 +64,77 @@ export default function TxXP() {
                 </ul>
               </div>
 
-              {/* RIGHT — Horizontal level bar */}
+              {/* RIGHT — Ascending XP ladder (rising tier bars) */}
               <div className="lg:col-span-8">
-                <div className="relative">
-                  {/* Glow background line */}
-                  <div
-                    className="absolute left-0 right-0 h-[6px] rounded-full"
-                    style={{
-                      top: 22,
-                      background:
-                        'linear-gradient(90deg, rgba(214,169,61,0.18) 0%, rgba(214,169,61,0.65) 50%, rgba(214,169,61,1) 100%)',
-                      boxShadow: '0 0 18px rgba(214,169,61,0.45)',
-                    }}
-                  />
-
-                  {/* XP floating chip */}
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 -top-3 px-3 py-1 rounded-md text-[11px] font-extrabold"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--fx-gold-light), var(--fx-gold))',
-                      color: '#1a1408',
-                      letterSpacing: '0.08em',
-                      boxShadow: '0 6px 18px rgba(214,169,61,0.45)',
-                    }}
-                  >
-                    XP
-                  </div>
-
-                  {/* Level nodes */}
-                  <div className="relative grid grid-cols-5 gap-2 pt-12">
-                    {levels.map((lv, idx) => {
-                      const isLast = idx === levels.length - 1
-                      return (
-                        <div key={lv.tier} className="flex flex-col items-center text-center">
-                          <div
-                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-extrabold mb-2 -mt-[34px]"
-                            style={{
-                              background: isLast
-                                ? 'linear-gradient(135deg, var(--fx-gold-light), var(--fx-gold))'
-                                : 'var(--fx-bg-elev-2)',
-                              border: isLast
-                                ? '2px solid rgba(214,169,61,0.85)'
-                                : '2px solid rgba(214,169,61,0.55)',
-                              color: isLast ? '#1a1408' : 'var(--fx-gold-light)',
-                              boxShadow: isLast ? '0 0 14px rgba(214,169,61,0.6)' : 'none',
-                            }}
-                          >
-                            {lv.tier}
-                          </div>
-                          <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--fx-gold-light)' }}>
-                            Level {lv.tier}
-                          </div>
-                          <div className="text-[10px] sm:text-[11px]" style={{ color: 'var(--fx-text-3)' }}>
-                            {lv.label}
-                          </div>
+                {/* Rising bars */}
+                <div className="flex items-end gap-2 sm:gap-3 md:gap-4 h-[200px] md:h-[236px]">
+                  {levels.map((lv, idx) => {
+                    const isLast = idx === levels.length - 1
+                    const heights = ['42%', '57%', '72%', '86%', '100%']
+                    return (
+                      <div key={lv.tier} className="flex-1 min-w-0 h-full flex flex-col items-center justify-end">
+                        <div
+                          className="text-base md:text-xl font-extrabold leading-none mb-2.5 tracking-tight"
+                          style={{ color: isLast ? 'var(--fx-gold-light)' : undefined }}
+                        >
+                          <span className={isLast ? '' : 'gradient-text'}>
+                            {String(lv.tier).padStart(2, '0')}
+                          </span>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div
+                          className="w-full rounded-t-xl relative overflow-hidden"
+                          style={{
+                            height: heights[idx],
+                            background: isLast
+                              ? 'linear-gradient(180deg, #f2d477 0%, var(--fx-gold) 58%, var(--fx-gold-dark) 100%)'
+                              : 'linear-gradient(180deg, rgba(214,169,61,0.5) 0%, rgba(214,169,61,0.08) 100%)',
+                            border: '1px solid rgba(214,169,61,0.4)',
+                            borderBottom: 'none',
+                            boxShadow: isLast
+                              ? '0 0 32px rgba(214,169,61,0.5)'
+                              : 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                          }}
+                        >
+                          {/* top sheen */}
+                          <div
+                            className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
+                            style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0))' }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
 
-                  <div
-                    className="mt-8 text-center text-xs md:text-sm font-semibold"
-                    style={{ color: 'var(--fx-gold-light)' }}
-                  >
-                    More XP &rarr; Lower Costs &rarr; Better Execution
-                  </div>
+                {/* Baseline */}
+                <div
+                  className="h-px w-full"
+                  style={{ background: 'linear-gradient(90deg, rgba(214,169,61,0.08), rgba(214,169,61,0.55), rgba(214,169,61,0.08))' }}
+                />
+
+                {/* Level labels */}
+                <div className="flex gap-2 sm:gap-3 md:gap-4 mt-3">
+                  {levels.map((lv) => (
+                    <div key={lv.tier} className="flex-1 min-w-0 text-center">
+                      <div
+                        className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider"
+                        style={{ color: 'var(--fx-gold-light)' }}
+                      >
+                        Level {lv.tier}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-semibold text-white leading-tight mt-0.5">
+                        {lv.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  className="mt-7 pt-5 flex items-center gap-2 text-xs md:text-sm font-semibold"
+                  style={{ color: 'var(--fx-gold-light)', borderTop: '1px solid var(--fx-line)' }}
+                >
+                  <TrendingUp size={16} />
+                  More XP &rarr; Lower Costs &rarr; Better Execution
                 </div>
               </div>
             </div>

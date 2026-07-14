@@ -33,7 +33,7 @@ export default function PrFaq() {
 
         <ScrollReveal variant="fadeUp">
           <div className="mt-10 md:mt-14 max-w-3xl mx-auto">
-            <CtFaqList items={faq} title="Protocol FAQ" />
+            <CtFaqList items={faq} title="Protocol FAQ" showHeader={false} />
           </div>
         </ScrollReveal>
       </div>

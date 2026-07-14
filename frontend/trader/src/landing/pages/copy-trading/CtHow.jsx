@@ -19,64 +19,47 @@ export default function CtHow() {
   return (
     <section id="explore" className="fx-section" style={{ background: 'var(--fx-bg-elev)' }}>
       <div className="fx-container">
-        {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+        {/* ── Centered header (reference "How it works") ─────── */}
+        <div className="max-w-2xl mx-auto text-center">
           <ScrollReveal variant="fadeUp">
-            <div>
-              <span className="fx-eyebrow mb-5">How To Copy</span>
-              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
-                How <span className="gradient-text">It Works</span>
-              </h2>
-            </div>
+            <span className="badge mx-auto">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--fx-gold-light)' }} />
+              How To Copy
+            </span>
+          </ScrollReveal>
+          <ScrollReveal variant="fadeUp" delay={0.05}>
+            <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
+              How <span className="gradient-text">It Works</span>
+            </h2>
           </ScrollReveal>
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
+            <p className="text-base md:text-lg mt-5" style={{ color: 'var(--fx-text-2)' }}>
               Five quick steps from picking a trader to seeing the first mirrored trade in your account. No setup gymnastics.
             </p>
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: numbered step cards (middle = gold) ────── */}
-        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 mt-10 md:mt-14 items-stretch">
+        {/* ── Clean dark step cards with top icon badges ─────── */}
+        <div className="fx-bento grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 mt-12 md:mt-16 items-stretch">
           {steps.map((s, i) => {
             const Icon = s.icon
-            const gold = i === 2
             return (
               <ScrollReveal key={s.title} variant="fadeUp" delay={i * 0.05}>
-                <div className={`${gold ? 'fx-tile-gold' : 'fx-tile'} h-full p-6 md:p-7 flex flex-col`}>
-                  <div
-                    className={`${gold ? 'relative z-[1] text-4xl md:text-5xl font-extrabold mb-4' : 'text-4xl md:text-5xl font-extrabold gradient-text mb-4'}`}
-                    style={gold ? { color: '#1c1608' } : undefined}
-                  >
-                    {String(i + 1).padStart(2, '0')}
-                  </div>
-                  {gold ? (
-                    <span className="fx-accent-bar mb-4 relative z-[1]" />
-                  ) : (
-                    <span className="fx-accent-bar mb-4" />
-                  )}
-                  {gold ? (
-                    <div
-                      className="relative z-[1] w-11 h-11 rounded-xl flex items-center justify-center mb-4"
-                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                    >
-                      <Icon size={20} style={{ color: '#1c1608' }} />
-                    </div>
-                  ) : (
-                    <div className="feature-icon mb-4" style={{ width: 44, height: 44 }}>
+                <div className="fx-tile h-full p-6 md:p-7 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="feature-icon" style={{ width: 44, height: 44 }}>
                       <Icon size={20} />
                     </div>
-                  )}
-                  <h3
-                    className={`text-base md:text-[17px] font-bold mb-1.5 ${gold ? 'relative z-[1]' : 'text-white'}`}
-                    style={gold ? { color: '#1c1608' } : undefined}
-                  >
+                    <span
+                      className="text-sm font-extrabold gradient-text"
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <h3 className="text-base md:text-[17px] font-bold text-white mb-1.5">
                     {s.title}
                   </h3>
-                  <p
-                    className={`text-sm leading-relaxed ${gold ? 'relative z-[1]' : ''}`}
-                    style={{ color: gold ? 'rgba(28,22,8,0.78)' : 'var(--fx-text-2)' }}
-                  >
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
                     {s.desc}
                   </p>
                 </div>

@@ -27,7 +27,7 @@ export default function CtFee() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: fee split tile + gold logic tile ───────── */}
+        {/* ── Two clean dark cards: fee split + logic ────────── */}
         <div
           className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-stretch"
         >
@@ -105,33 +105,30 @@ export default function CtFee() {
             </div>
           </ScrollReveal>
 
-          {/* Logic explanation — solid gold accent tile */}
+          {/* Logic explanation — dark card with small gold accents */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <div
-                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-              >
-                <Building2 size={20} style={{ color: '#1c1608' }} />
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+              <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
+                <Building2 size={20} />
               </div>
-              <span className="fx-accent-bar mb-4 relative z-[1]" />
-              <h3 className="relative z-[1] text-xl md:text-2xl font-bold mb-4 leading-tight" style={{ color: '#1c1608' }}>
+              <span className="fx-accent-bar mb-4" />
+              <h3 className="text-xl md:text-2xl font-bold mb-4 leading-tight text-white">
                 Aligned incentives across all participants
               </h3>
               <ul
-                className="relative z-[1] space-y-3 mb-7 text-sm md:text-[15px] leading-relaxed"
-                style={{ color: 'rgba(28,22,8,0.78)' }}
+                className="space-y-3 mb-7 text-sm md:text-[15px] leading-relaxed"
+                style={{ color: 'var(--fx-text-2)' }}
               >
                 <li className="flex items-start gap-3">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#1c1608' }} />
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--fx-gold-light)' }} />
                   Profit is shared with the Master Trader on profitable outcomes.
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#1c1608' }} />
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--fx-gold-light)' }} />
                   The platform takes a percentage from the Master&apos;s share.
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#1c1608' }} />
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--fx-gold-light)' }} />
                   Remaining goes to the Master Trader.
                 </li>
               </ul>

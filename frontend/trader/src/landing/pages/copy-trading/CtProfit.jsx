@@ -97,31 +97,22 @@ export default function CtProfit() {
 }
 
 function FlowCard({ icon: Icon, label, title, sub, highlight = false }) {
-  if (highlight) {
-    return (
-      <div className="fx-tile-gold h-full p-5 text-center flex flex-col items-center">
-        <div
-          className="relative z-[1] w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3"
-          style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-        >
-          <Icon size={20} style={{ color: '#1c1608' }} />
-        </div>
-        <div className="relative z-[1] text-[10px] uppercase tracking-wider mb-1" style={{ color: 'rgba(28,22,8,0.7)' }}>
-          {label}
-        </div>
-        <div className="relative z-[1] text-sm md:text-base font-bold mb-1" style={{ color: '#1c1608' }}>{title}</div>
-        <div className="relative z-[1] text-xs" style={{ color: 'rgba(28,22,8,0.78)' }}>
-          {sub}
-        </div>
-      </div>
-    )
-  }
   return (
-    <div className="fx-tile h-full p-5 text-center flex flex-col items-center">
+    <div
+      className="fx-tile h-full p-5 text-center flex flex-col items-center"
+      style={
+        highlight
+          ? { background: 'rgba(214,169,61,0.06)', borderColor: 'rgba(214,169,61,0.35)' }
+          : undefined
+      }
+    >
       <div className="feature-icon mb-3" style={{ width: 48, height: 48 }}>
         <Icon size={20} />
       </div>
-      <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
+      <div
+        className="text-[10px] uppercase tracking-wider mb-1"
+        style={{ color: highlight ? 'var(--fx-gold-light)' : 'var(--fx-text-3)' }}
+      >
         {label}
       </div>
       <div className="text-sm md:text-base font-bold text-white mb-1">{title}</div>

@@ -12,7 +12,7 @@ export default function InWhy() {
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
         {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
+        <div className="fx-split-intro-center">
           <ScrollReveal variant="fadeUp">
             <div>
               <span className="fx-eyebrow mb-5">Why Trade Insurance</span>
@@ -67,8 +67,12 @@ export default function InWhy() {
 
           {/* Image tile */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
-            <div className="fx-tile-media h-full min-h-[280px]">
-              <span className="fx-tile-media-label">Image</span>
+            <div className="fx-tile h-full min-h-[280px] overflow-hidden">
+              <img
+                src="/images/insurance_card1.png"
+                alt="Trade Insurance coverage"
+                className="h-full w-full object-cover"
+              />
             </div>
           </ScrollReveal>
         </div>

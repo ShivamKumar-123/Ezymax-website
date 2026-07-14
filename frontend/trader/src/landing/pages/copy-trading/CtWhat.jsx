@@ -29,24 +29,39 @@ export default function CtWhat() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: gold explainer tile + illustration tile ── */}
-        <div className="fx-bento grid-cols-1 lg:grid-cols-12 mt-10 md:mt-14 items-stretch">
-          {/* Explainer — solid gold accent tile */}
+        {/* ── Clean dark cards: explainer + illustration ─────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mt-10 md:mt-14 items-stretch">
+          {/* Explainer — dark card with small gold icon badge */}
           <ScrollReveal variant="fadeUp" className="lg:col-span-7">
-            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <div
-                className="relative z-[1] w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-              >
-                <Copy size={20} style={{ color: '#1c1608' }} />
+            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
+              <div className="feature-icon mb-5" style={{ width: 48, height: 48 }}>
+                <Copy size={20} />
               </div>
-              <span className="fx-accent-bar mb-4 relative z-[1]" />
-              <p className="relative z-[1] text-base md:text-lg leading-relaxed" style={{ color: '#1c1608' }}>
+              <span className="fx-accent-bar mb-4" />
+              <p className="text-base md:text-lg leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
                 Copy trading allows you to automatically replicate the trades of experienced
-                traders (<span className="font-bold" style={{ color: '#1c1608' }}>Master Traders</span>).
+                traders (<span className="font-bold text-white">Master Traders</span>).
                 When a Master Trader executes a trade, the same trade is mirrored in your account
                 based on your allocation.
               </p>
+
+              {/* Mini-visual: rising gold line chart (decorative) */}
+              <div
+                className="mt-6 rounded-xl p-4"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--fx-line-strong)' }}
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 240 60" className="w-full h-14" preserveAspectRatio="none">
+                  <polyline
+                    points="0,52 34,44 68,48 102,32 136,36 170,20 204,24 240,8"
+                    fill="none"
+                    stroke="var(--fx-gold-light)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </div>
           </ScrollReveal>
 
