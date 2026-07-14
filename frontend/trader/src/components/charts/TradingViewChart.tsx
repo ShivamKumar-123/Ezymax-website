@@ -193,6 +193,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   // Debounce timers per entity so a drag fires ONE modify (on release), not one
   // per mouse-move frame.
   const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Entity ids we're moving PROGRAMMATICALLY (syncLines / revert) — their
+  // drawing_event must be ignored so it doesn't re-open the confirm dialog.
+  const suppressEidsRef = useRef<Set<string>>(new Set());
   const syncWarnedRef = useRef(false);
   // On-line control pill positioning: DOM node per position + a calibrated
   // price→pixel mapping (pane top offset, refined from the crosshair).
@@ -269,7 +272,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         const existing = set[leg];
         if (existing) {
           if (Math.abs(Number(existing.price) - price) > 1e-9) {
+            suppressEidsRef.current.add(existing.id);
             try { chart.getShapeById(existing.id).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
             existing.price = price;
           }
           return;
@@ -335,6 +340,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const handler = (sourceId: unknown, type: string) => {
       if (type !== 'move' && type !== 'points_changed') return;
       const eid = String(sourceId);
+      if (suppressEidsRef.current.has(eid)) return; // our own programmatic move
       const meta = entityMapRef.current.get(eid);
       if (!meta) return;
       const timers = dragTimersRef.current;
@@ -356,7 +362,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
           const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
           const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
           if (back != null) {
+            suppressEidsRef.current.add(eid);
             try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(eid), 300);
             if (set && set[meta.leg]) set[meta.leg].price = Number(back);
           }
         };
