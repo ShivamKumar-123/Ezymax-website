@@ -528,6 +528,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       window.removeEventListener('mouseup', finish, true);
       window.removeEventListener('pointercancel', finish, true);
       window.removeEventListener('blur', finish);
+      // Library mouse_up fires from INSIDE the chart iframe (a DOM window
+      // mouseup does not) — this is what makes release work over the chart.
+      try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       placingRef.current = false;
       const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
@@ -547,8 +550,11 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       }
     };
 
-    // Attach release listeners SYNCHRONOUSLY in the CAPTURE phase so the chart
-    // canvas can't swallow the release and a fast release can't be missed.
+    // Release triggers: the LIBRARY's own mouse_up (fires when releasing over
+    // the chart, even though it lives in an iframe) + window listeners in the
+    // CAPTURE phase (for a release outside the chart). Whichever fires first
+    // wins (finish is idempotent).
+    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
     window.addEventListener('pointerup', finish, true);
     window.addEventListener('mouseup', finish, true);
     window.addEventListener('pointercancel', finish, true);
