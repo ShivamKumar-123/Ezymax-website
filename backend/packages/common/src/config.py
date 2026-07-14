@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     INFOWAY_API_KEY: str = ""
     INFOWAY_API_URL: str = "https://api.infoway.io"
 
+    # When True, order fills and closes re-derive the user's bid/ask from the
+    # broadcast MID using the user's resolved spread config (per-user / per-tier),
+    # instead of trusting the single global broadcast spread — so the admin
+    # spread is crossed exactly once per round trip at the USER's own rate.
+    # Default OFF: this changes realized P&L for tiered accounts, so enable it
+    # only after verifying on a demo account. (Floating-P&L display and the
+    # SL/TP engine still use the global broadcast quote — identical for
+    # non-tiered accounts; full per-account floating valuation is a follow-up.)
+    USER_SPREAD_AT_EXECUTION: bool = False
+
     # Corecen LP (primary market data source). When CORECEN_LP_ENABLED=true the
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).

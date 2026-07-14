@@ -266,6 +266,38 @@ def symmetric_quote_from_mid(
     return bid, ask
 
 
+async def resolve_user_quote(
+    db: AsyncSession,
+    instrument: Instrument,
+    broadcast_bid: Decimal,
+    broadcast_ask: Decimal,
+    user_id: Optional[UUID] = None,
+    account_group_id: Optional[UUID] = None,
+) -> Tuple[Decimal, Decimal]:
+    """Re-derive the USER's executable bid/ask from the broadcast MID.
+
+    The broadcast quote is symmetric around the true mid, so mid=(bid+ask)/2.
+    We resolve the user's spread with the FULL priority chain (per-user →
+    per-tier → instrument → segment → default) and rebuild bid/ask symmetrically
+    around that mid. Using this at BOTH the open fill and the close makes the
+    admin spread cross exactly ONCE per round trip at the USER's own rate,
+    instead of trusting the single global broadcast spread. A user with no
+    config and no tier default collapses to zero spread (trades at mid).
+
+    Only affects pricing where the account is known; the broadcast stream and
+    any consumer that hasn't opted in keep using the global quote.
+    """
+    b = Decimal(str(broadcast_bid))
+    a = Decimal(str(broadcast_ask))
+    mid = (b + a) / Decimal("2")
+    spread_value, spread_type, price_impact = await resolve_spread_config(
+        db, instrument, user_id=user_id, account_group_id=account_group_id,
+    )
+    pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
+    digits = int(getattr(instrument, "digits", None) or 5)
+    return symmetric_quote_from_mid(mid, spread_value, spread_type, pip, digits, price_impact)
+
+
 def apply_spread_and_impact_to_prices(
     bid: Decimal,
     ask: Decimal,

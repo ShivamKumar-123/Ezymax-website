@@ -16,7 +16,8 @@ from packages.common.src.models import (
     TradingAccount, Instrument, InstrumentConfig,
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
-from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.instrument_pricing import resolve_commission, resolve_user_quote
+from packages.common.src.config import get_settings as _get_settings
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
@@ -238,6 +239,19 @@ async def place_order(
         raise HTTPException(status_code=400, detail=f"Lot size must be between {min_lot} and {max_lot}")
 
     bid, ask = await get_current_price(instrument.symbol)
+
+    # Per-user execution spread (opt-in). Re-derive THIS user's bid/ask from the
+    # broadcast mid so the fill reflects their resolved (per-user / per-tier)
+    # spread. Off by default → bid/ask stay the global broadcast quote.
+    if _get_settings().USER_SPREAD_AT_EXECUTION:
+        try:
+            bid, ask = await resolve_user_quote(
+                db, instrument, bid, ask,
+                user_id=user_id, account_group_id=account.account_group_id,
+            )
+        except Exception as _uq_exc:
+            logger.warning("user quote (open) failed for %s, using broadcast: %s",
+                           instrument.symbol, _uq_exc)
 
     order = Order(
         account_id=account.id,
@@ -870,7 +884,21 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
 
     tick = json.loads(tick_data)
     sv = side_val(pos.side)
-    close_price = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
+    c_bid = Decimal(str(tick["bid"]))
+    c_ask = Decimal(str(tick["ask"]))
+    # Per-user execution spread (opt-in) — mirror the open fill so the spread is
+    # crossed exactly once per round trip at the user's own rate. Off by default
+    # → close uses the global broadcast bid/ask.
+    if _get_settings().USER_SPREAD_AT_EXECUTION and pos.instrument:
+        try:
+            c_bid, c_ask = await resolve_user_quote(
+                db, pos.instrument, c_bid, c_ask,
+                user_id=user_id, account_group_id=account.account_group_id,
+            )
+        except Exception as _uq_exc:
+            logger.warning("user quote (close) failed for %s, using broadcast: %s",
+                           pos.instrument.symbol, _uq_exc)
+    close_price = c_bid if sv == "buy" else c_ask
     contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
     close_lots = Decimal(str(req.lots)) if req.lots and Decimal(str(req.lots)) < pos.lots else pos.lots
