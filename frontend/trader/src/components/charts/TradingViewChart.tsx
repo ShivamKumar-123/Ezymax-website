@@ -181,6 +181,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   // Debounce timers per entity so a drag fires ONE modify (on release), not one
   // per mouse-move frame.
   const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const syncWarnedRef = useRef(false);
 
   // Persist an SL/TP change. Reads the CURRENT position from the store so the
   // untouched leg isn't sent stale. Returns whether the server accepted it.
@@ -217,7 +218,14 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     } catch {
       return;
     }
-    if (!chart || typeof chart.createShape !== 'function') return;
+    if (!chart || typeof chart.createShape !== 'function') {
+      if (!syncWarnedRef.current) {
+        syncWarnedRef.current = true;
+        // eslint-disable-next-line no-console
+        console.warn('[SwissCresta chart] createShape unavailable — SL/TP lines cannot render on this build.');
+      }
+      return;
+    }
 
     syncBusyRef.current = true;
     try {
@@ -228,7 +236,15 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       );
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
-      const anchorTime = Math.floor(Date.now() / 1000);
+      // Anchor the horizontal lines at a time that's DEFINITELY on-screen
+      // (visible-range start), not "now" — on a closed market "now" can sit past
+      // the last bar and some builds reject an off-range time. Horizontal lines
+      // span full width regardless, so the exact time only needs to be valid.
+      let anchorTime = Math.floor(Date.now() / 1000);
+      try {
+        const vr = chart.getVisibleRange?.();
+        if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from);
+      } catch { /* keep now */ }
 
       const removeEntity = (entityId?: string) => {
         if (entityId == null) return;
