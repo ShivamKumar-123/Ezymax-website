@@ -188,6 +188,11 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   const paneTopRef = useRef<number | null>(null);
   const lastMouseYRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Pane-top calibration is FROZEN once solved (median of a few crosshair
+  // samples) so the pill doesn't jitter as the cursor moves; it only re-solves
+  // on resize. paneTop is constant across zoom/pan, so freezing is correct.
+  const paneTopSamplesRef = useRef<number[]>([]);
+  const paneTopSolvedRef = useRef(false);
 
   // Persist an SL/TP change. Reads the CURRENT position from the store so the
   // untouched leg isn't sent stale. Returns whether the server accepted it.
@@ -401,17 +406,30 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     };
     container.addEventListener('mousemove', onMove);
 
+    // Re-solve the pane-top on resize (the only thing that moves it).
+    const onResize = () => { paneTopSolvedRef.current = false; paneTopSamplesRef.current = []; };
+    window.addEventListener('resize', onResize);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let crossSub: any = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const crossCb = (params: any) => {
+      if (paneTopSolvedRef.current) return; // frozen — no per-move jitter
       const price = params?.price;
       const my = lastMouseYRef.current;
       if (price == null || my == null) return;
       const chart = getChart();
       const geo = chart && readGeo(chart);
       if (!geo) return;
-      paneTopRef.current = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
+      const candidate = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
+      if (!Number.isFinite(candidate)) return;
+      const arr = paneTopSamplesRef.current;
+      arr.push(candidate);
+      if (arr.length >= 8) {
+        const sorted = [...arr].sort((a, b) => a - b);
+        paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate; // median → freeze
+        paneTopSolvedRef.current = true;
+      }
     };
     try {
       crossSub = getChart()?.crossHairMoved?.();
@@ -431,8 +449,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
           if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
           const pos = st.positions.find((p) => p.id === id);
           if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
-          // Pin the pill to the CURRENT-price line (follows the live price).
-          const pillPrice = Number(pos.current_price ?? pos.open_price);
+          // Pin the pill to the ENTRY line (open price) — a FIXED level, so the
+          // pill sits still instead of drifting with the live price.
+          const pillPrice = Number(pos.open_price);
           const y = (paneTop as number) + ((geo.top - pillPrice) / (geo.top - geo.bottom)) * geo.paneH;
           node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
             ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
@@ -444,6 +463,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
 
     return () => {
       container.removeEventListener('mousemove', onMove);
+      window.removeEventListener('resize', onResize);
       try { crossSub?.unsubscribe(null, crossCb); } catch { /* ignore */ }
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -543,8 +563,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
                 </span>
                 {!isCopy && (
                   <>
-                    <button type="button" onClick={() => addBracket(p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black" title="Add / adjust stop-loss">SL</button>
-                    <button type="button" onClick={() => addBracket(p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white" title="Add / adjust take-profit">TP</button>
+                    <button type="button" onDoubleClick={() => addBracket(p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black" title="Double-click to add stop-loss, then drag the line">SL</button>
+                    <button type="button" onDoubleClick={() => addBracket(p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white" title="Double-click to add take-profit, then drag the line">TP</button>
                   </>
                 )}
                 <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
