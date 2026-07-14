@@ -367,9 +367,105 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
   }, [chartReady, applySLTP]);
 
+  // Add an SL or TP bracket at a sensible default level near the market, then
+  // the on-chart line appears and the user drags it to the exact level. (This
+  // is how you "set" a bracket by dragging without the Trading-Terminal-only
+  // order-line UI.) Default is placed on the valid side so the server accepts it.
+  const addBracket = useCallback(async (positionId: string, which: 'sl' | 'tp') => {
+    const st = useTradingStore.getState();
+    const pos = st.positions.find((p) => p.id === positionId);
+    if (!pos) return;
+    const q = st.prices[String(pos.symbol).toUpperCase()];
+    const ref = Number(
+      pos.side === 'buy' ? (q?.bid ?? pos.current_price ?? pos.open_price)
+                         : (q?.ask ?? pos.current_price ?? pos.open_price),
+    );
+    if (!Number.isFinite(ref) || ref <= 0) return;
+    // ~0.1% off the current price, on the valid side for the position's side.
+    let level: number;
+    if (pos.side === 'buy') level = which === 'sl' ? ref * 0.999 : ref * 1.001;
+    else level = which === 'sl' ? ref * 1.001 : ref * 0.999;
+    level = Number(level.toFixed(5));
+    const body: Record<string, number> = {};
+    body[which === 'sl' ? 'stop_loss' : 'take_profit'] = level;
+    const other = which === 'sl' ? pos.take_profit : pos.stop_loss;
+    if (other != null) body[which === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
+    try {
+      await api.put(`/positions/${positionId}`, body);
+      toast.success(`${which.toUpperCase()} added — drag the line to set the level`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Failed to add ${which.toUpperCase()}`);
+    }
+  }, []);
+
+  const closePositionFromChart = useCallback(async (positionId: string) => {
+    try {
+      await api.post(`/positions/${positionId}/close`, {});
+      toast.success('Position closed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to close position');
+    }
+  }, []);
+
+  const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym);
+
   return (
-    <div className={clsx('w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
+    <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
+
+      {/* Per-position control pill (below the chart's top toolbar). SL / TP add a
+          draggable bracket line; ✕ closes. Copied (MAM) positions get no SL/TP. */}
+      {panelPositions.length > 0 && (
+        <div className="absolute top-14 left-2 z-20 flex flex-col gap-1 pointer-events-none">
+          {panelPositions.map((p) => {
+            const profit = Number(p.profit ?? 0);
+            const up = profit >= 0;
+            const isCopy = p.trade_type === 'copy_trade';
+            return (
+              <div
+                key={p.id}
+                className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-black/75 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-white shadow-lg ring-1 ring-white/10"
+              >
+                <span className={p.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}>
+                  {p.side.toUpperCase()} {p.lots}
+                </span>
+                <span className={up ? 'text-emerald-400' : 'text-rose-400'}>
+                  {up ? '+' : '-'}${Math.abs(profit).toFixed(2)}
+                </span>
+                {!isCopy && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => addBracket(p.id, 'sl')}
+                      className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black"
+                      title={p.stop_loss != null ? 'Stop-loss set — drag the red line' : 'Add stop-loss'}
+                    >
+                      SL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addBracket(p.id, 'tp')}
+                      className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      title={p.take_profit != null ? 'Take-profit set — drag the green line' : 'Add take-profit'}
+                    >
+                      TP
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => closePositionFromChart(p.id)}
+                  className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white"
+                  title="Close position"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
