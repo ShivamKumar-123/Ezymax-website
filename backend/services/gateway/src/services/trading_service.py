@@ -20,7 +20,7 @@ from packages.common.src.instrument_pricing import resolve_commission, resolve_u
 from packages.common.src.config import get_settings as _get_settings
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
@@ -31,6 +31,34 @@ logger = logging.getLogger("trading_service")
 
 
 # ─── Shared helpers ───────────────────────────────────────────────────────
+
+def check_sltp_levels(is_buy: bool, stop_loss, take_profit, ref: Decimal, ref_label: str) -> None:
+    """Validate SL/TP against a SINGLE reference price for the side. Shared by
+    order placement and position modify so the two rules can never drift (§4).
+
+      BUY : SL must be below ref, TP above ref.
+      SELL: SL must be above ref, TP below ref.
+
+    `ref` is the FILL price at placement (ask for buy, bid for sell) or the
+    CURRENT close price at modify (bid for buy, ask for sell — the same quote
+    the SL/TP engine triggers on). Validating modify against the close price is
+    what lets break-even (SL≈entry once price has moved) and profit-locking
+    stops through; validating against the OPEN price wrongly blocks them.
+    The only rejection reason is "this level would trigger the instant it is set".
+    """
+    if stop_loss is not None:
+        sl = Decimal(str(stop_loss))
+        if is_buy and sl >= ref:
+            raise HTTPException(status_code=400, detail=f"BUY stop-loss must be below the {ref_label} ({ref})")
+        if not is_buy and sl <= ref:
+            raise HTTPException(status_code=400, detail=f"SELL stop-loss must be above the {ref_label} ({ref})")
+    if take_profit is not None:
+        tp = Decimal(str(take_profit))
+        if is_buy and tp <= ref:
+            raise HTTPException(status_code=400, detail=f"BUY take-profit must be above the {ref_label} ({ref})")
+        if not is_buy and tp >= ref:
+            raise HTTPException(status_code=400, detail=f"SELL take-profit must be below the {ref_label} ({ref})")
+
 
 async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
     tick_data = await price_cache.get(symbol)
@@ -270,16 +298,9 @@ async def place_order(
     if req.order_type == "market":
         fill_price = ask if req.side == "buy" else bid
 
-        if req.stop_loss:
-            if req.side == "buy" and req.stop_loss >= fill_price:
-                raise HTTPException(status_code=400, detail="BUY SL must be below entry price")
-            if req.side == "sell" and req.stop_loss <= fill_price:
-                raise HTTPException(status_code=400, detail="SELL SL must be above entry price")
-        if req.take_profit:
-            if req.side == "buy" and req.take_profit <= fill_price:
-                raise HTTPException(status_code=400, detail="BUY TP must be above entry price")
-            if req.side == "sell" and req.take_profit >= fill_price:
-                raise HTTPException(status_code=400, detail="SELL TP must be below entry price")
+        # Placement validates against the expected FILL price (§4); modify
+        # validates against the current close price. Same shared helper.
+        check_sltp_levels(req.side == "buy", req.stop_loss, req.take_profit, fill_price, "fill price")
 
         # Pass account_group_id so the commission_pct on the user's account
         # tier (Micro/Standard/Pro/Elite) acts as the fallback rack rate when
@@ -782,26 +803,54 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     # 403 and only the master's SL/TP applied.)
 
     sv = side_val(pos.side)
-    updated = False
+    is_buy = sv == "buy"
 
+    # Validate against the price the position would CLOSE at RIGHT NOW — BUY at
+    # bid, SELL at ask — the same quote the SL/TP engine triggers on. This is
+    # what allows break-even and profit-locking stops (validating against the
+    # OPEN price wrongly blocks them). If the feed is dead (missing or stale
+    # tick) fall back to the conservative open-price rule rather than accepting
+    # blindly, so a level that would instantly trigger is still refused.
+    ref = pos.open_price
+    ref_label = "open price"
+    try:
+        tick_raw = await price_cache.get(pos.instrument.symbol) if pos.instrument else None
+        if tick_raw:
+            tick = json.loads(tick_raw)
+            if not is_tick_stale(tick):
+                ref = Decimal(str(tick["bid"])) if is_buy else Decimal(str(tick["ask"]))
+                ref_label = "current price"
+    except Exception as _q_exc:
+        logger.debug("modify SL/TP quote lookup failed for %s: %s",
+                     getattr(pos.instrument, "symbol", "?"), _q_exc)
+
+    check_sltp_levels(is_buy, req.stop_loss, req.take_profit, Decimal(str(ref)), ref_label)
+
+    updated = False
     if req.stop_loss is not None:
-        if sv == "buy" and req.stop_loss >= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY SL must be below open price")
-        if sv == "sell" and req.stop_loss <= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL SL must be above open price")
         pos.stop_loss = req.stop_loss
         updated = True
-
     if req.take_profit is not None:
-        if sv == "buy" and req.take_profit <= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY TP must be above open price")
-        if sv == "sell" and req.take_profit >= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL TP must be below open price")
         pos.take_profit = req.take_profit
         updated = True
 
     if updated:
         await db.commit()
+
+        # Push a position_updated event so every client on this account (chart
+        # lines, positions table, mobile) reflects the new SL/TP live via WS.
+        try:
+            await redis_client.publish(
+                f"account:{acct_row.id}",
+                json.dumps({
+                    "type": "position_updated",
+                    "position_id": str(position_id),
+                    "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
+                    "take_profit": float(pos.take_profit) if pos.take_profit else None,
+                }),
+            )
+        except Exception as _pub_exc:
+            logger.debug("position_updated publish failed: %s", _pub_exc)
 
         # ── A-Book: forward SL/TP update to Corecen LP ──────────────────
         _pos_id_str = str(position_id)

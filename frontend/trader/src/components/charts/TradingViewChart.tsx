@@ -20,10 +20,11 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { createDatafeed, type DatafeedInstrument } from '@/lib/chart/datafeed';
 import { loadChartLibrary } from '@/lib/chart/loadChartLibrary';
 import { api } from '@/lib/api/client';
+import toast from 'react-hot-toast';
 
 const CONTAINER_ID = 'sc_tv_terminal_chart';
 
-function TradingViewChartInner() {
+function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () => void }) {
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
@@ -34,6 +35,10 @@ function TradingViewChartInner() {
   const widgetRef = useRef<any>(null);
   const readyRef = useRef(false);
   const initialSymbol = useRef(selectedSymbol ?? 'EURUSD').current;
+  // Latest fullscreen callback, held in a ref so the []-deps mount effect that
+  // wires the toolbar button always calls the current one (no stale closure).
+  const fsCbRef = useRef(onRequestFullscreen);
+  fsCbRef.current = onRequestFullscreen;
 
   // On-chart SL/TP: open positions on the charted symbol render as draggable
   // lines (entry with a close ✕, plus SL/TP lines you drag to modify).
@@ -114,6 +119,27 @@ function TradingViewChartInner() {
       } catch {
         /* ignore */
       }
+
+      // Add the Full-screen toggle INTO the chart's own top toolbar (via the
+      // library's createButton API) rather than overlaying an absolutely
+      // positioned button on top of the toolbar — the overlay was covering the
+      // chart's own top-right buttons. Only when a handler is supplied.
+      if (fsCbRef.current && typeof widgetRef.current.headerReady === 'function') {
+        widgetRef.current
+          .headerReady()
+          .then(() => {
+            try {
+              const btn: HTMLElement = widgetRef.current.createButton();
+              btn.textContent = '⛶ Full screen';
+              btn.title = 'Expand chart to full screen';
+              btn.style.cursor = 'pointer';
+              btn.addEventListener('click', () => fsCbRef.current?.());
+            } catch {
+              /* ignore */
+            }
+          })
+          .catch(() => {});
+      }
     })();
 
     return () => {
@@ -172,7 +198,10 @@ function TradingViewChartInner() {
       if (otherVal != null) body[otherKey] = Number(otherVal);
       try {
         await api.put(`/positions/${id}`, body);
-      } catch {
+      } catch (e) {
+        // Surface the server's reason (e.g. "would trigger instantly") and snap
+        // the line back to the stored level — never leave an unaccepted level drawn.
+        toast.error(e instanceof Error ? e.message : `Failed to update ${which.toUpperCase()}`);
         const back = which === 'sl' ? cur?.stop_loss : cur?.take_profit;
         try {
           if (back != null && line) line.setPrice(Number(back));

@@ -277,6 +277,12 @@ function TradingSession({ children }: { children: React.ReactNode }) {
         void refreshAccount();
         return;
       }
+      // SL/TP edited on this account (possibly from another device / the chart)
+      // — pull the new brackets so the chart lines and table update together.
+      if (evt.type === 'position_updated') {
+        void refreshPositions();
+        return;
+      }
       if (evt.type !== 'position_closed') return;
 
       const reason = String(evt.reason ?? '');

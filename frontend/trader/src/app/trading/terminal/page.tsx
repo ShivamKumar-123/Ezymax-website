@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { CandlestickChart, List, Maximize2, Minimize2, Search, X } from 'lucide-react';
+import { CandlestickChart, List, Minimize2, Search, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -64,6 +64,8 @@ export default function TradingTerminalPage() {
   const [activeSpace, setActiveSpace] = useState<TerminalSpaceId>('balanced');
   const [bottomCollapsed, setBottomCollapsed] = useState(false);
   const [chartExpanded, setChartExpanded] = useState(false);
+  // Stable so the memoized chart isn't re-rendered every tick.
+  const enterFullscreen = useCallback(() => setChartExpanded(true), []);
   const [terminalCalcOpen, setTerminalCalcOpen] = useState(false);
   // The Buy/Sell order panel now lives in a movable floating window instead
   // of a pinned right column, so the chart can be full-width.
@@ -758,23 +760,11 @@ export default function TradingTerminalPage() {
               </div>
             ) : null}
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
-              <TradingViewChart />
-              {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
-                  already expanded since the header's "Normal view" button
-                  collapses back. Positioned over the chart's top-right
-                  corner where TradingView's iframe has empty space. */}
-              {!chartExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setChartExpanded(true)}
-                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
-                  title="Expand chart to full screen"
-                  aria-label="Expand chart to full screen"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
-                  <span className="hidden sm:inline">Full screen</span>
-                </button>
-              )}
+              {/* Full-screen toggle lives INSIDE the chart's top toolbar (added
+                  via the library's createButton API) so it never overlaps the
+                  chart's own buttons. Collapse is via the header's "Normal view"
+                  button / Esc when expanded. */}
+              <TradingViewChart onRequestFullscreen={enterFullscreen} />
             </div>
           </div>
 
