@@ -14,6 +14,9 @@ from .risk import risk_score
 
 TIERS: tuple[str, ...] = ("basic", "advanced", "pro", "elite")
 
+# Coverage-duration plans: wire value → coverage window in days.
+DURATIONS: dict[str, int] = {"1d": 1, "1w": 7, "1m": 30}
+
 
 async def _frequent_claim_reduction(
     db: AsyncSession, user_id: Optional[UUID], cfg: InsuranceConfig,
@@ -82,6 +85,7 @@ async def quote_all_tiers(
     db: Optional[AsyncSession] = None,
     user_id: Optional[UUID] = None,
     is_copy_trade: bool = False,
+    duration: str = "1d",
 ) -> list[TierQuote]:
     """Return the four tiered quotes. Caller is expected to pre-check
     `cfg.enabled`, news blackout, and ATR bounds — this function only
@@ -113,11 +117,16 @@ async def quote_all_tiers(
     if db is not None and user_id is not None:
         coverage_multiplier = await _frequent_claim_reduction(db, user_id, cfg)
 
+    # Coverage-duration plan (1d/1w/1m). Applied AFTER the fee cap so the
+    # cap keeps its per-day meaning and longer plans stay proportionally
+    # more expensive. Unknown values price as 1d.
+    duration_mult = float(cfg.duration_fee_multipliers.get(duration, 1.0))
+
     quotes: list[TierQuote] = []
     for tier in TIERS:
         mult = cfg.tier_multipliers.get(tier, 1)
         tier_fee = base_fee * mult * (1 + surcharge)
-        final_fee = min(tier_fee, fee_cap)
+        final_fee = min(tier_fee, fee_cap) * duration_mult
 
         rack_coverage = cfg.coverage_pct.get(tier, 0)
         coverage = rack_coverage * coverage_multiplier

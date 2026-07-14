@@ -111,6 +111,13 @@ async def evaluate_claim(
     if policy.status != "active":
         return False, Decimal("0"), f"policy_{policy.status}"
 
+    # Coverage window (1d / 1w / 1m plans). Legacy policies with no
+    # expires_at are open-ended — same behaviour as before durations existed.
+    if policy.expires_at is not None:
+        closed_at = history.closed_at or datetime.now(timezone.utc)
+        if closed_at > policy.expires_at:
+            return False, Decimal("0"), "coverage_expired"
+
     profit = Decimal(str(history.profit or 0))
     if profit >= 0:
         return False, Decimal("0"), "not_a_loss"
@@ -249,6 +256,15 @@ async def maybe_pay(
         )
         db.add(tx)
         await db.flush()  # tx.id available
+
+        # Sum of PRIOR partial-close payouts on this policy. Queried before
+        # the new claim is added to the session, so autoflush can't leak the
+        # new row into the sum and double-count it against the cap.
+        paid_so_far_q = await db.execute(
+            select(func.coalesce(func.sum(InsuranceClaim.claim_amount), 0))
+            .where(InsuranceClaim.policy_id == policy.id)
+        )
+        paid_so_far = Decimal(str(paid_so_far_q.scalar_one() or 0))
 
         claim = InsuranceClaim(
             id=uuid.uuid4(),

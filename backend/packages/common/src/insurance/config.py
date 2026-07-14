@@ -46,6 +46,10 @@ class InsuranceConfig:
     # Slide 18 — copy-trade fee surcharge. Multiplies fee by (1 + this)
     # when caller marks the quote as a copy-trade context.
     copy_trade_surcharge: float
+    # Coverage-duration plans. The user picks how long the policy stays
+    # claimable (1 day / 1 week / 1 month); the fee (after the cap) is
+    # multiplied by the plan's factor. Keys are the wire values.
+    duration_fee_multipliers: dict[str, float]  # {"1d":1.0, "1w":1.5, "1m":2.5}
     news_blackout_until: Optional[datetime]
 
 
@@ -78,6 +82,7 @@ _DEFAULTS = InsuranceConfig(
     frequent_claim_window_days=30,
     frequent_claim_coverage_reduction_pct=0.25,  # 25% off coverage
     copy_trade_surcharge=0.10,                   # +10% fee on copy trades
+    duration_fee_multipliers={"1d": 1.0, "1w": 1.5, "1m": 2.5},
     news_blackout_until=None,
 )
 
@@ -123,5 +128,6 @@ async def load_config() -> InsuranceConfig:
         frequent_claim_window_days=int(await _get("insurance_frequent_claim_window_days", _DEFAULTS.frequent_claim_window_days)),
         frequent_claim_coverage_reduction_pct=float(await _get("insurance_frequent_claim_coverage_reduction_pct", _DEFAULTS.frequent_claim_coverage_reduction_pct)),
         copy_trade_surcharge=float(await _get("insurance_copy_trade_surcharge", _DEFAULTS.copy_trade_surcharge)),
+        duration_fee_multipliers=dict(await _get("insurance_duration_fee_multipliers", _DEFAULTS.duration_fee_multipliers)),
         news_blackout_until=blackout,
     )

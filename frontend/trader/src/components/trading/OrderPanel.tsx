@@ -14,7 +14,7 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
 import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
-import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
+import { insuranceApi, type InsuranceDuration, type InsuranceTier } from '@/lib/api/insurance';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 type OrderSide = 'buy' | 'sell';
@@ -65,7 +65,7 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [symbolPickerOpen, setSymbolPickerOpen] = useState(false);
-  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; fee: number } | null>(null);
+  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; duration: InsuranceDuration; fee: number } | null>(null);
   const [wsStatus, setWsStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -332,7 +332,7 @@ export default function OrderPanel() {
       // Insurance — only for market orders that immediately produced a position_id.
       if (insuranceChoice && resp?.position_id) {
         try {
-          await insuranceApi.activate(resp.position_id, insuranceChoice.tier);
+          await insuranceApi.activate(resp.position_id, insuranceChoice.tier, insuranceChoice.duration);
           toast.success(`Insured ($${insuranceChoice.fee.toFixed(2)} fee)`);
         } catch (e: any) {
           const detail = e?.response?.data?.detail || e?.message || 'insurance_failed';

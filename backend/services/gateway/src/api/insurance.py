@@ -5,7 +5,7 @@ at the repo root and `packages/common/src/insurance/` for the engine.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -26,7 +26,7 @@ from packages.common.src.schemas import (
 )
 from packages.common.src.insurance import quote_all_tiers, load_config
 from packages.common.src.insurance.volatility import get_atr
-from packages.common.src.insurance.pricing import fee_to_decimal
+from packages.common.src.insurance.pricing import fee_to_decimal, DURATIONS
 
 from ..services import wallet_service, trading_service
 
@@ -80,6 +80,7 @@ async def quote(
         win_rate=win_rate,
         db=db,
         user_id=current_user["user_id"],
+        duration=req.duration,
     )
     return quotes
 
@@ -150,6 +151,7 @@ async def activate(
         win_rate=win_rate,
         db=db,
         user_id=user_id,
+        duration=req.duration,
     )
 
     chosen = next((q for q in quotes if q["tier"] == req.tier), None)
@@ -157,6 +159,9 @@ async def activate(
         raise HTTPException(status_code=400, detail="invalid_tier")
 
     fee_dec = fee_to_decimal(chosen["fee"])
+    # Coverage window starts at activation, not position open — the user is
+    # buying protection from now.
+    expires_at = datetime.now(timezone.utc) + timedelta(days=DURATIONS[req.duration])
 
     # Persist policy first so the FK target exists for the Transaction reference.
     import uuid as _uuid
@@ -172,6 +177,8 @@ async def activate(
         max_cap=Decimal(str(chosen["max_cap"])),
         risk_score=Decimal(str(chosen["risk_score"])),
         status="active",
+        duration=req.duration,
+        expires_at=expires_at,
     )
     db.add(policy)
     await db.flush()
@@ -190,6 +197,7 @@ async def activate(
 
     return InsuranceActivateResponse(
         policy_id=policy.id, fee_charged=fee_dec, status="active",
+        duration=req.duration, expires_at=expires_at,
     )
 
 
@@ -261,6 +269,8 @@ async def _list_policies(
             coverage_pct=p.coverage_pct,
             max_cap=p.max_cap,
             status=p.status,
+            duration=p.duration or "1d",
+            expires_at=p.expires_at,
             activated_at=p.activated_at,
             settled_at=p.settled_at,
         )

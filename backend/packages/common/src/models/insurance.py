@@ -19,6 +19,10 @@ class InsurancePolicy(Base):
             "status IN ('active','claimed','expired','denied')",
             name="insurance_policies_status_check",
         ),
+        CheckConstraint(
+            "duration IN ('1d','1w','1m')",
+            name="insurance_policies_duration_check",
+        ),
         Index("ix_ins_pol_user_status", "user_id", "status"),
         Index("ix_ins_pol_position", "position_id"),
     )
@@ -34,6 +38,10 @@ class InsurancePolicy(Base):
     max_cap = Column(Numeric(18, 8), nullable=False)
     risk_score = Column(Numeric(8, 4), nullable=False)
     status = Column(String(16), nullable=False, default="active", server_default="active")
+    # Coverage-duration plan chosen at activation (1 day / 1 week / 1 month).
+    duration = Column(String(4), nullable=False, default="1d", server_default="1d")
+    # When the coverage window closes. NULL = legacy open-ended policy.
+    expires_at = Column(DateTime(timezone=True))
     activated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     settled_at = Column(DateTime(timezone=True))
 

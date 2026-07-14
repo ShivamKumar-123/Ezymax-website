@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck, Loader2 } from 'lucide-react';
-import { insuranceApi, type InsuranceTier, type QuoteRequest, type TierQuote } from '@/lib/api/insurance';
+import {
+  insuranceApi,
+  type InsuranceDuration, type InsuranceTier, type QuoteRequest, type TierQuote,
+} from '@/lib/api/insurance';
 
 interface Props {
   accountId: string | undefined;
@@ -12,7 +15,7 @@ interface Props {
   leverage?: number;
   stopLoss?: number;
   takeProfit?: number;
-  onSelect: (selection: { tier: InsuranceTier; fee: number } | null) => void;
+  onSelect: (selection: { tier: InsuranceTier; duration: InsuranceDuration; fee: number } | null) => void;
 }
 
 const TIER_LABELS: Record<InsuranceTier, string> = {
@@ -22,10 +25,17 @@ const TIER_LABELS: Record<InsuranceTier, string> = {
   elite: 'Elite',
 };
 
+const DURATION_OPTIONS: { value: InsuranceDuration; label: string }[] = [
+  { value: '1d', label: '1 Day' },
+  { value: '1w', label: '1 Week' },
+  { value: '1m', label: '1 Month' },
+];
+
 export default function InsuranceTierPicker(props: Props) {
   const { accountId, symbol, side, lots, leverage, stopLoss, takeProfit, onSelect } = props;
   const [enabled, setEnabled] = useState(false);
   const [tier, setTier] = useState<InsuranceTier | null>(null);
+  const [duration, setDuration] = useState<InsuranceDuration>('1d');
   const [quotes, setQuotes] = useState<TierQuote[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +60,7 @@ export default function InsuranceTierPicker(props: Props) {
           leverage: leverage || 100,
           stop_loss: stopLoss,
           take_profit: takeProfit,
+          duration,
         };
         const q = await insuranceApi.quote(body);
         setQuotes(q);
@@ -64,7 +75,7 @@ export default function InsuranceTierPicker(props: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [enabled, accountId, symbol, side, lots, leverage, stopLoss, takeProfit]);
+  }, [enabled, accountId, symbol, side, lots, leverage, stopLoss, takeProfit, duration]);
 
   /* Bubble selection up. Reset on disable. */
   useEffect(() => {
@@ -73,8 +84,8 @@ export default function InsuranceTierPicker(props: Props) {
       return;
     }
     const q = quotes.find((x) => x.tier === tier);
-    if (q) onSelect({ tier, fee: q.fee });
-  }, [enabled, tier, quotes, onSelect]);
+    if (q) onSelect({ tier, duration, fee: q.fee });
+  }, [enabled, tier, duration, quotes, onSelect]);
 
   return (
     <div className="rounded-xl border border-border-primary bg-card-nested p-3 space-y-3">
@@ -101,6 +112,28 @@ export default function InsuranceTierPicker(props: Props) {
 
       {enabled && (
         <>
+          {/* Coverage window — how long the policy stays claimable */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-text-tertiary mr-1">Cover for</span>
+            {DURATION_OPTIONS.map((opt) => {
+              const active = duration === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setDuration(opt.value)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all"
+                  style={{
+                    background: active ? 'rgba(214,169,61,0.14)' : 'var(--bg-card)',
+                    border: `1px solid ${active ? '#d6a93d' : 'var(--border-primary)'}`,
+                    color: active ? '#d6a93d' : 'var(--text-secondary)',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           {loading && (
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Loader2 size={12} className="animate-spin" /> Calculating quotes…
@@ -153,6 +186,8 @@ export default function InsuranceTierPicker(props: Props) {
           {tier && quotes && (
             <p className="text-[11px] text-text-tertiary">
               The fee will be charged from your main wallet after the order opens.
+              Coverage lasts {DURATION_OPTIONS.find((o) => o.value === duration)?.label.toLowerCase()} from activation —
+              a loss only pays out if the trade closes within that window.
             </p>
           )}
         </>

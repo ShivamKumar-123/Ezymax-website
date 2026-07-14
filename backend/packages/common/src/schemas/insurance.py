@@ -15,6 +15,8 @@ class InsuranceQuoteRequest(BaseModel):
     leverage: int = Field(default=100, ge=1, le=2000)
     stop_loss: Optional[Decimal] = None
     take_profit: Optional[Decimal] = None
+    # Coverage window: 1 day / 1 week / 1 month.
+    duration: str = Field(default="1d", pattern="^(1d|1w|1m)$")
 
 
 class InsuranceTierQuote(BaseModel):
@@ -29,12 +31,15 @@ class InsuranceTierQuote(BaseModel):
 class InsuranceActivateRequest(BaseModel):
     position_id: UUID
     tier: str = Field(..., pattern="^(basic|advanced|pro|elite)$")
+    duration: str = Field(default="1d", pattern="^(1d|1w|1m)$")
 
 
 class InsuranceActivateResponse(BaseModel):
     policy_id: UUID
     fee_charged: Decimal
     status: str
+    duration: str = "1d"
+    expires_at: Optional[datetime] = None
 
 
 class InsurancePolicyOut(BaseModel):
@@ -46,6 +51,8 @@ class InsurancePolicyOut(BaseModel):
     coverage_pct: Decimal
     max_cap: Decimal
     status: str
+    duration: str = "1d"
+    expires_at: Optional[datetime] = None
     activated_at: datetime
     settled_at: Optional[datetime] = None
 

@@ -5,6 +5,7 @@
 import api from './client';
 
 export type InsuranceTier = 'basic' | 'advanced' | 'pro' | 'elite';
+export type InsuranceDuration = '1d' | '1w' | '1m';
 
 export interface TierQuote {
   tier: InsuranceTier;
@@ -23,12 +24,15 @@ export interface QuoteRequest {
   leverage?: number;
   stop_loss?: number;
   take_profit?: number;
+  duration?: InsuranceDuration;
 }
 
 export interface ActivateResponse {
   policy_id: string;
   fee_charged: string;
   status: 'active';
+  duration: InsuranceDuration;
+  expires_at: string | null;
 }
 
 export interface PolicyOut {
@@ -40,6 +44,8 @@ export interface PolicyOut {
   coverage_pct: string;
   max_cap: string;
   status: 'active' | 'claimed' | 'expired' | 'denied';
+  duration: InsuranceDuration;
+  expires_at: string | null;
   activated_at: string;
   settled_at: string | null;
 }
@@ -54,8 +60,8 @@ export interface ClaimOut {
 
 export const insuranceApi = {
   quote: (body: QuoteRequest) => api.post<TierQuote[]>('/insurance/quote', body),
-  activate: (position_id: string, tier: InsuranceTier) =>
-    api.post<ActivateResponse>('/insurance/activate', { position_id, tier }),
+  activate: (position_id: string, tier: InsuranceTier, duration: InsuranceDuration = '1d') =>
+    api.post<ActivateResponse>('/insurance/activate', { position_id, tier, duration }),
   active: () => api.get<PolicyOut[]>('/insurance/active'),
   policies: (limit = 50) => api.get<PolicyOut[]>(`/insurance/policies?limit=${limit}`),
   claims: (limit = 50) => api.get<ClaimOut[]>(`/insurance/claims?limit=${limit}`),
