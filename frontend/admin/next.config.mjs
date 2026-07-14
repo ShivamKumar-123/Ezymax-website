@@ -51,13 +51,30 @@ const nextConfig = {
     ];
   },
   async headers() {
-    if (!isDev) return [];
+    if (isDev) {
+      return [
+        {
+          source: '/(.*)',
+          headers: [
+            { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+            { key: 'Pragma', value: 'no-cache' },
+          ],
+        },
+      ];
+    }
+    /* Stale-deploy / ChunkLoadError prevention (production).
+     *
+     * Next.js stamps statically-rendered pages with a one-year shared-cache
+     * `Cache-Control: s-maxage=31536000`, so a browser/CDN keeps serving old
+     * HTML whose content-hashed chunk <script> tags a later deploy replaced →
+     * the dynamic import 404s → ChunkLoadError. Force HTML + RSC payloads to
+     * revalidate every request; the negative lookahead leaves the immutable
+     * `/_next/static/*` chunks and `/_next/image` caching intact. */
     return [
       {
-        source: '/(.*)',
+        source: '/((?!_next/static/|_next/image).*)',
         headers: [
-          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
-          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
         ],
       },
     ];

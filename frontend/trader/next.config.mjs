@@ -164,6 +164,29 @@ const nextConfig = {
           { key: 'Content-Security-Policy-Report-Only', value: cspDirectives },
         ],
       },
+      {
+        /* Stale-deploy / ChunkLoadError prevention.
+         *
+         * Next.js statically renders pages that only read the URL via the
+         * client `useSearchParams()` hook (e.g. /trading/terminal) and stamps
+         * them `Cache-Control: s-maxage=31536000` — a ONE-YEAR shared-cache
+         * lifetime. A browser or CDN then keeps serving that year-old HTML,
+         * whose <script> tags point at content-hashed chunk files a later
+         * deploy has already replaced → the dynamic import 404s → ChunkLoadError
+         * ("Something broke on our end"). The error.tsx auto-reload only papers
+         * over it AFTER it fires; this stops it happening at all.
+         *
+         * So force every HTML document + RSC payload to revalidate on each
+         * request. The negative lookahead leaves `/_next/static/*` (the
+         * immutable, content-hashed chunks — safe to cache forever) and
+         * `/_next/image` untouched, so we lose no asset caching. This block is
+         * ordered AFTER the security header block so its Cache-Control wins for
+         * the matched routes. */
+        source: '/((?!_next/static/|_next/image).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+        ],
+      },
     ];
   },
   /* `redirects()` removed — its single entry pointed `/platforms/earn`
