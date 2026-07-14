@@ -21,6 +21,7 @@ import { createDatafeed, type DatafeedInstrument } from '@/lib/chart/datafeed';
 import { loadChartLibrary } from '@/lib/chart/loadChartLibrary';
 import { api } from '@/lib/api/client';
 import toast from 'react-hot-toast';
+import { ChartTradeWidget } from '@/components/charts/ChartTradeWidget';
 
 function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () => void }) {
   // Unique per instance — the terminal mounts this chart in more than one place
@@ -541,6 +542,12 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
+
+      {/* On-chart quick-trade: live SELL / BUY prices + spread; places a market
+          order on the active account. Sits below the chart's top toolbar. */}
+      <div className="absolute top-14 left-2 z-30 pointer-events-none">
+        <ChartTradeWidget />
+      </div>
 
       {/* Per-position control pills, pinned to each position's CURRENT-price line
           (positioned imperatively by the rAF loop above). SL / TP add a draggable
