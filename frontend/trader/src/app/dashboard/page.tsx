@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Broker home — replaces the old open-positions / quick-actions dashboard.
- * Layout follows the Elev8-style brief: account balance card with action
- * buttons, popular deposit methods, top daily movers, status program /
- * rewards, invite-friends banner, and the existing admin-configurable
- * banner carousel.
+ * Broker home — "premium gold hero" layout.
+ * One brand-gold hero card carries the money story (total balance, open P/L,
+ * account picker + per-account stats, wallet actions); rewards, movers and
+ * marketing follow in a two-column grid. Data flow is unchanged from the
+ * previous layout: 2s background polling of /accounts + /instruments/prices/all,
+ * daily-open bars cached once on mount, rewards state fetched once.
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -16,7 +17,7 @@ import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight,
   ShieldCheck, BadgeCheck, ExternalLink,
-  Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
+  Wallet as WalletIcon, Coins, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
@@ -49,6 +50,12 @@ interface PriceTick { symbol?: string; bid?: number; ask?: number; }
 interface BarRow { time: number; open: number; close: number; }
 
 const TOP_MOVER_SYMBOLS = ['XAUUSD', 'NAS100', 'BTCUSD', 'EURUSD'];
+
+// Hero ink colours — near-black warm tones that stay legible on the gold
+// gradient in both app themes (the hero is self-coloured, not theme-driven).
+const INK = '#1c1405';
+const INK_SOFT = 'rgba(28,20,5,0.66)';
+const INK_FAINT = 'rgba(28,20,5,0.45)';
 
 const tradeUrl = (accountId: string) => {
   const host = process.env.NEXT_PUBLIC_TRADE_HOST;
@@ -198,7 +205,6 @@ function BrokerHome() {
     [accounts, activeId],
   );
 
-  // Aggregate stats for the DAG mockup top section.
   const realAccounts = accounts.filter((a) => !a.is_demo);
   const totalBalance = realAccounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
   const totalEquity = realAccounts.reduce((s, a) => s + (Number(a.equity) || 0), 0);
@@ -213,93 +219,44 @@ function BrokerHome() {
 
   return (
     <div className="space-y-5 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── Greeting header (DAG mockup) ── */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
-          Welcome back{firstName ? `, ${firstName}` : ''} <span className="text-2xl">👋</span>
-        </h1>
-        <p className="text-sm text-zinc-400 mt-1">Trade. Earn. Level up.</p>
-      </div>
-
-      {/* ── 4 stat cards (DAG aesthetic). Surfaces + foreground colors
-              come from theme-aware `--card-*` CSS vars (defined in
-              globals.css) so the cards work in both dark and light
-              mode without per-component `dark:` overrides. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Balance */}
-        <div
-          data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
-          className="rounded-xl p-5 bg-zinc-900/50 border border-white/5"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-              <WalletIcon size={18} className="text-blue-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">Total Balance</p>
-              <p className="text-xl font-semibold mt-1 tabular-nums truncate text-white">{fmtUsd(totalBalance)}</p>
-              <p className="text-[11px] mt-0.5 text-zinc-400">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
-            </div>
-          </div>
+      {/* ── Greeting ── */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
+            Welcome back{firstName ? `, ${firstName}` : ''} <span className="text-2xl">👋</span>
+          </h1>
+          <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level up.</p>
         </div>
-
-        {/* Open P/L — semantic green / red */}
-        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
-          <div className="flex items-start gap-3">
-            <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', todaysPnl >= 0 ? 'bg-green-500/10' : 'bg-red-500/10')}>
-              {todaysPnl >= 0
-                ? <TrendingUp size={18} className="text-green-400" />
-                : <TrendingDown size={18} className="text-red-400" />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">Open P/L</p>
-              <p className={clsx('text-xl font-semibold mt-1 tabular-nums truncate', todaysPnl >= 0 ? 'text-green-400' : 'text-red-400')}>
-                {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
-              </p>
-              <p className="text-[11px] mt-0.5 text-zinc-400">
-                {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* My Level */}
-        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0 relative">
-              <Shield size={18} className="text-violet-400" />
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-violet-500 text-white ring-2 ring-zinc-900">
-                {level}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">My Level</p>
-              <p className="text-xl font-semibold mt-1 truncate text-white">Level {level}</p>
-              <p className="text-[11px] mt-0.5 truncate text-zinc-400">{levelLabel}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* DGC Coins */}
-        <div className="rounded-xl p-5 bg-zinc-900/50 border border-white/5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Coins size={18} className="text-amber-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide font-medium text-zinc-400">DGC Coins</p>
-              <p className="text-xl font-semibold mt-1 tabular-nums truncate text-white">
-                {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </p>
-              <p className="text-[11px] mt-0.5 text-zinc-400">Reward balance</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ border: '1px solid rgba(214,169,61,0.35)', background: 'rgba(214,169,61,0.08)', color: '#d6a93d' }}
+          >
+            <BadgeCheck size={13} /> Level {level} · {levelLabel}
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tabular-nums"
+            style={{ border: '1px solid rgba(214,169,61,0.35)', background: 'rgba(214,169,61,0.08)', color: '#d6a93d' }}
+          >
+            <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
+          </span>
         </div>
       </div>
 
-      {/* ── 3 Large CTA buttons (DAG mockup) ── */}
+      {/* ── Gold hero: the money story ── */}
+      <HeroBalanceCard
+        accounts={accounts}
+        active={activeAccount}
+        onChangeAccount={setActiveId}
+        loading={loading}
+        totalBalance={totalBalance}
+        realCount={realAccounts.length}
+        todaysPnl={todaysPnl}
+        todaysPnlPct={todaysPnlPct}
+      />
+
+      {/* ── Quick actions ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-        {/* Trade Now — blue gradient */}
         <button
           type="button"
           data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW}
@@ -311,198 +268,229 @@ function BrokerHome() {
             const id = activeId || accounts[0].id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
-          className="group rounded-xl p-5 bg-amber-500 hover:bg-amber-400 transition-all flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 transition-all flex items-center gap-4 text-left hover:brightness-110"
+          style={{ background: 'linear-gradient(135deg, #23282f 0%, #14171c 100%)', border: '1px solid rgba(214,169,61,0.45)' }}
         >
-          <div className="w-11 h-11 rounded-lg bg-black/10 flex items-center justify-center shrink-0">
-            <BarChart3 size={20} className="text-black" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(214,169,61,0.16)' }}>
+            <BarChart3 size={20} style={{ color: '#d6a93d' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-black truncate">Trade Now</p>
-            <p className="text-xs text-black/70 mt-0.5">Start trading</p>
+            <p className="text-base font-bold text-white truncate">Trade Now</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>Open the terminal</p>
           </div>
-          <ArrowRight size={20} className="text-black/60 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform shrink-0" style={{ color: '#d6a93d' }} />
         </button>
 
-        {/* Copy Trading — green gradient */}
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-xl p-5 bg-zinc-900 border border-white/10 hover:border-white/20 transition-all flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
-            <Users size={20} className="text-zinc-300" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+            <Users size={20} className="text-blue-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-white truncate">Copy Trading</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Copy top traders</p>
+            <p className="text-base font-semibold text-text-primary truncate">Copy Trading</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Copy top traders</p>
           </div>
-          <ArrowRight size={20} className="text-zinc-500 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
 
-        {/* Add Funds — amber gradient */}
         <button
           type="button"
           data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT}
           onClick={() => router.push('/wallet')}
-          className="group rounded-xl p-5 bg-zinc-900 border border-white/10 hover:border-white/20 transition-all flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
-            <WalletIcon size={20} className="text-zinc-300" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+            <WalletIcon size={20} className="text-green-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-white truncate">Add Funds</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Deposit now</p>
+            <p className="text-base font-semibold text-text-primary truncate">Add Funds</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Deposit now</p>
           </div>
-          <ArrowRight size={20} className="text-zinc-500 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
       </div>
 
-      <AccountBalanceCard
-        accounts={accounts}
-        active={activeAccount}
-        onChangeAccount={setActiveId}
-        loading={loading}
-      />
-      <TopMoversCard movers={movers} />
-      <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
+      {/* ── Two-column: markets + progression ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
+        <TopMoversCard movers={movers} />
+        <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
+      </div>
+
       <InviteFriendsCard />
       {banners.length > 0 && <BannerStrip banners={banners} />}
     </div>
   );
 }
 
-function AccountBalanceCard({
+function HeroBalanceCard({
   accounts, active, onChangeAccount, loading,
+  totalBalance, realCount, todaysPnl, todaysPnlPct,
 }: {
   accounts: AccountRow[];
   active: AccountRow | null;
   onChangeAccount: (id: string) => void;
   loading: boolean;
+  totalBalance: number;
+  realCount: number;
+  todaysPnl: number;
+  todaysPnlPct: number;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const a = active;
+  const pnlUp = todaysPnl >= 0;
 
   return (
     <div
-      className="rounded-2xl p-5 md:p-6"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+      data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
+      className="relative rounded-3xl p-5 md:p-7 overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #f2d484 0%, #ddb04a 42%, #c1912a 78%, #a87b1f 100%)',
+        boxShadow: '0 18px 44px rgba(168,123,31,0.28), inset 0 1px 0 rgba(255,255,255,0.5)',
+      }}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors hover:bg-bg-hover"
-            style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
-          >
-            <span
-              className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
-              style={a?.is_demo
-                ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }
-                : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)', border: '1px solid rgba(214,169,61,0.3)' }}
+      {/* soft sheen */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0) 55%)' }}
+      />
+
+      <div className="relative">
+        {/* Top row: account picker + wallet actions */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all hover:brightness-105"
+              style={{ background: 'rgba(255,255,255,0.32)', border: '1px solid rgba(28,20,5,0.18)' }}
             >
-              {a?.is_demo ? 'Demo' : 'Real'}
-            </span>
-            <span className="text-sm font-semibold tabular-nums text-text-primary">
-              {a?.account_number || (loading ? '…' : 'No accounts')}
-            </span>
-            <ChevronDown size={14} className="text-text-tertiary" />
-          </button>
-          {pickerOpen && accounts.length > 0 && (
-            <div
-              className="absolute top-full left-0 mt-2 z-30 rounded-xl p-1.5 min-w-[260px]"
-              style={{
-                background: 'rgba(16,17,20,0.97)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
-              }}
-            >
-              {accounts.map((acc) => (
-                <button
-                  key={acc.id}
-                  type="button"
-                  onClick={() => { onChangeAccount(acc.id); setPickerOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  <span
-                    className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
-                    style={acc.is_demo
-                      ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                      : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}
+              <span
+                className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+                style={{ color: '#fff', background: a?.is_demo ? 'rgba(28,20,5,0.55)' : INK }}
+              >
+                {a?.is_demo ? 'Demo' : 'Real'}
+              </span>
+              <span className="text-sm font-semibold tabular-nums" style={{ color: INK }}>
+                {a?.account_number || (loading ? '…' : 'No accounts')}
+              </span>
+              <ChevronDown size={14} style={{ color: INK_SOFT }} />
+            </button>
+            {pickerOpen && accounts.length > 0 && (
+              <div
+                className="absolute top-full left-0 mt-2 z-30 rounded-xl p-1.5 min-w-[260px]"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-primary)',
+                  boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+                }}
+              >
+                {accounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    onClick={() => { onChangeAccount(acc.id); setPickerOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
+                    style={{ color: 'var(--text-primary)' }}
                   >
-                    {acc.is_demo ? 'Demo' : 'Real'}
-                  </span>
-                  <span className="font-semibold tabular-nums">#{acc.account_number}</span>
-                  <span className="ml-auto text-xs text-text-tertiary tabular-nums">{fmtUsd(acc.balance)}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-          >
-            <ArrowDownToLine size={14} /> Deposit
-          </Link>
-          <a
-            href={a ? tradeUrl(a.id) : '#'}
-            target={a ? '_blank' : undefined}
-            rel="noopener noreferrer"
-            aria-disabled={!a}
-            className={clsx(
-              'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-              !a && 'pointer-events-none opacity-50',
+                    <span
+                      className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+                      style={acc.is_demo
+                        ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
+                        : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}
+                    >
+                      {acc.is_demo ? 'Demo' : 'Real'}
+                    </span>
+                    <span className="font-semibold tabular-nums">#{acc.account_number}</span>
+                    <span className="ml-auto text-xs text-text-tertiary tabular-nums">{fmtUsd(acc.balance)}</span>
+                  </button>
+                ))}
+              </div>
             )}
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-          >
-            Trade <ExternalLink size={13} />
-          </a>
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-          >
-            <ArrowUpFromLine size={14} /> Withdraw
-          </Link>
-          <Link
-            href="/accounts"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-          >
-            Details
-          </Link>
-        </div>
-      </div>
+          </div>
 
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-        <Stat label="Balance" value={fmtUsd(a?.balance ?? 0)} highlight />
-        <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
-        <Stat
-          label="Free margin"
-          value={fmtUsd(a?.free_margin ?? 0)}
-          tone={(a?.free_margin ?? 0) < 0 ? 'neg' : undefined}
-        />
-        {a && <Stat label="Leverage" value={`1:${a.leverage}`} />}
-        <Stat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
+          <div className="flex flex-wrap gap-2">
+            <HeroAction href="/wallet"><ArrowDownToLine size={14} /> Deposit</HeroAction>
+            <a
+              href={a ? tradeUrl(a.id) : '#'}
+              target={a ? '_blank' : undefined}
+              rel="noopener noreferrer"
+              aria-disabled={!a}
+              className={clsx(
+                'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all hover:brightness-110',
+                !a && 'pointer-events-none opacity-50',
+              )}
+              style={{ background: INK, color: '#f2d484' }}
+            >
+              Trade <ExternalLink size={13} />
+            </a>
+            <HeroAction href="/wallet"><ArrowUpFromLine size={14} /> Withdraw</HeroAction>
+            <HeroAction href="/accounts">Details</HeroAction>
+          </div>
+        </div>
+
+        {/* Balance + P/L */}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.14em] font-semibold" style={{ color: INK_SOFT }}>Total Balance</p>
+            <p className="mt-1 text-3xl md:text-4xl font-bold tabular-nums" style={{ color: INK }}>{fmtUsd(totalBalance)}</p>
+            <p className="text-xs mt-1" style={{ color: INK_FAINT }}>
+              Across {realCount} {realCount === 1 ? 'live account' : 'live accounts'}
+            </p>
+          </div>
+          <div className="sm:text-right">
+            <p className="text-[11px] uppercase tracking-[0.14em] font-semibold" style={{ color: INK_SOFT }}>Open P/L</p>
+            <p
+              className="mt-1 text-2xl md:text-3xl font-bold tabular-nums inline-flex items-center gap-2"
+              style={{ color: pnlUp ? '#14532d' : '#7f1d1d' }}
+            >
+              {pnlUp ? <TrendingUp size={22} /> : <TrendingDown size={22} />}
+              {pnlUp ? '+' : ''}{fmtUsd(todaysPnl)}
+            </p>
+            <p className="text-xs mt-1 tabular-nums" style={{ color: INK_FAINT }}>
+              {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
+            </p>
+          </div>
+        </div>
+
+        {/* Selected-account stats */}
+        <div
+          className="mt-6 pt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6"
+          style={{ borderTop: '1px solid rgba(28,20,5,0.18)' }}
+        >
+          <HeroStat label="Balance" value={fmtUsd(a?.balance ?? 0)} />
+          <HeroStat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
+          <HeroStat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} negative={(a?.free_margin ?? 0) < 0} />
+          <HeroStat label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
+          <HeroStat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
+        </div>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: 'pos' | 'neg' }) {
-  const color = tone === 'neg' ? '#f87171' : tone === 'pos' ? '#4ade80' : highlight ? '#ffffff' : 'var(--text-primary)';
+function HeroAction({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all hover:brightness-105"
+      style={{ background: 'rgba(255,255,255,0.32)', border: '1px solid rgba(28,20,5,0.18)', color: INK }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function HeroStat({ label, value, negative }: { label: string; value: string; negative?: boolean }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-zinc-400">{label}</p>
-      <p
-        className={clsx('mt-1 font-semibold tabular-nums', highlight ? 'text-2xl md:text-3xl' : 'text-base md:text-lg')}
-        style={{ color }}
-      >
+      <p className="text-[10px] uppercase tracking-[0.14em] font-semibold" style={{ color: INK_FAINT }}>{label}</p>
+      <p className="mt-1 font-semibold tabular-nums text-base md:text-lg" style={{ color: negative ? '#7f1d1d' : INK }}>
         {value}
       </p>
     </div>
@@ -516,12 +504,12 @@ function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; pric
         <div className="divide-y divide-border-primary">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="py-3 flex items-center gap-3 animate-pulse">
-              <div className="h-3.5 w-20 rounded bg-zinc-800" />
-              <div className="ml-auto h-3.5 w-16 rounded bg-zinc-800" />
-              <div className="h-6 w-16 rounded-md bg-zinc-800" />
+              <div className="h-3.5 w-20 rounded bg-bg-hover" />
+              <div className="ml-auto h-3.5 w-16 rounded bg-bg-hover" />
+              <div className="h-6 w-16 rounded-md bg-bg-hover" />
             </div>
           ))}
-          <p className="pt-3 text-xs text-zinc-400 text-center">Market data loading…</p>
+          <p className="pt-3 text-xs text-text-tertiary text-center">Market data loading…</p>
         </div>
       ) : (
         <ul className="divide-y divide-border-primary">
@@ -531,8 +519,8 @@ function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; pric
             const hasPrice = Number.isFinite(m.price) && m.price > 0;
             return (
               <li key={m.symbol} className="py-3 flex items-center gap-3">
-                <span className="text-sm font-semibold text-white flex-1">{m.symbol}</span>
-                <span className="text-sm font-mono tabular-nums text-zinc-400">
+                <span className="text-sm font-semibold text-text-primary flex-1">{m.symbol}</span>
+                <span className="text-sm font-mono tabular-nums text-text-tertiary">
                   {hasPrice ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
                 </span>
                 {hasPct && (
@@ -569,7 +557,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
             type="button"
             onClick={() => setTab('challenges')}
             className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'challenges' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white')}
+              tab === 'challenges' ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}
           >
             Challenges
           </button>
@@ -577,7 +565,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
             type="button"
             onClick={() => setTab('rewards')}
             className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'rewards' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white')}
+              tab === 'rewards' ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}
           >
             My rewards
           </button>
@@ -586,34 +574,43 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
 
       {/* XP progress toward the next level */}
       <div className="flex items-center justify-between text-xs mb-2">
-        <span className="text-zinc-400">Level {level} → Level {level + 1}</span>
-        <span className="text-zinc-400 tabular-nums">{xp} / {xpNext} XP</span>
+        <span className="text-text-tertiary">Level {level} → Level {level + 1}</span>
+        <span className="text-text-tertiary tabular-nums">{xp} / {xpNext} XP</span>
       </div>
-      <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
-        <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${pct}%` }} />
+      <div className="h-2 rounded-full bg-bg-hover overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #f2d484, #d6a93d)' }}
+        />
       </div>
 
       {tab === 'challenges' ? (
-        <div className="mt-4 rounded-xl border border-white/5 bg-zinc-900/50 p-4 flex items-center gap-3">
+        <div
+          className="mt-4 rounded-xl p-4 flex items-center gap-3"
+          style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
+        >
           <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
             <BarChart3 size={18} className="text-blue-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">Complete your first trade</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Open and close any position to earn your first reward.</p>
+            <p className="text-sm font-semibold text-text-primary">Complete your first trade</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Open and close any position to earn your first reward.</p>
           </div>
-          <span className="text-xs font-bold text-amber-400 shrink-0">+50 XP</span>
+          <span className="text-xs font-bold text-[#d6a93d] shrink-0">+50 XP</span>
         </div>
       ) : (
-        <div className="mt-4 rounded-xl border border-white/5 bg-zinc-900/50 p-4 flex items-center gap-3">
+        <div
+          className="mt-4 rounded-xl p-4 flex items-center gap-3"
+          style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
+        >
           <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
             <Coins size={18} className="text-amber-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">Reward balance</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Redeem your DGC coins in the rewards store.</p>
+            <p className="text-sm font-semibold text-text-primary">Reward balance</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Redeem your FXA coins in the rewards store.</p>
           </div>
-          <Link href="/rewards" className="text-xs font-semibold text-zinc-300 hover:text-white shrink-0">Open →</Link>
+          <Link href="/rewards" className="text-xs font-semibold text-[#d6a93d] hover:underline shrink-0">Open →</Link>
         </div>
       )}
     </Card>
