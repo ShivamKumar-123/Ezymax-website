@@ -486,8 +486,6 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     e.preventDefault();
     e.stopPropagation();
     if (placingRef.current) return;
-    const btn = e.currentTarget as HTMLElement;
-    const pointerId = e.pointerId;
     const w = widgetRef.current;
     if (!w) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -503,12 +501,6 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
     if (!Number.isFinite(startPrice)) return;
 
-    // Capture the pointer to the BUTTON so pointerup is guaranteed to fire on it
-    // (over the chart canvas a document/window listener can be swallowed — that
-    // was the "it never lets go" bug). Mouse events still reach the chart, so
-    // the crosshair keeps tracking the price.
-    try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
-
     placingRef.current = true;
     let lineId: string | null = null;
     let lastPrice = startPrice;
@@ -517,6 +509,10 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     let crossSub: any = null;
     let done = false;
 
+    // The chart's own crosshair gives the exact price under the cursor — no
+    // pointer capture (which would stop the chart getting mouse moves), and
+    // release is caught in the CAPTURE phase so the chart canvas can't swallow
+    // the pointerup (that was the "it never lets go" bug).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onCross = (params: any) => {
       const p = params?.price;
@@ -528,12 +524,10 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const finish = async () => {
       if (done) return;
       done = true;
-      btn.removeEventListener('pointerup', finish);
-      btn.removeEventListener('pointercancel', finish);
       window.removeEventListener('pointerup', finish, true);
       window.removeEventListener('mouseup', finish, true);
+      window.removeEventListener('pointercancel', finish, true);
       window.removeEventListener('blur', finish);
-      try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       placingRef.current = false;
       const cleanup = () => { try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ } };
@@ -553,11 +547,11 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
       }
     };
 
-    // Attach release listeners SYNCHRONOUSLY so a fast release can't be missed.
-    btn.addEventListener('pointerup', finish);
-    btn.addEventListener('pointercancel', finish);
-    window.addEventListener('pointerup', finish, true); // capture-phase fallback
+    // Attach release listeners SYNCHRONOUSLY in the CAPTURE phase so the chart
+    // canvas can't swallow the release and a fast release can't be missed.
+    window.addEventListener('pointerup', finish, true);
     window.addEventListener('mouseup', finish, true);
+    window.addEventListener('pointercancel', finish, true);
     window.addEventListener('blur', finish);
 
     // Create the line + subscribe the crosshair (async). If the user already
