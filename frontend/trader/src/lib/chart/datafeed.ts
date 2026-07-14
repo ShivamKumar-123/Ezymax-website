@@ -3,20 +3,36 @@
  *
  * History  → GET /api/v1/instruments/{symbol}/bars?resolution=&from=&to=
  *            (returns [{ time (epoch SECONDS), open, high, low, close, volume }])
- * Realtime → WS /ws/prices, which streams { symbol, bid, ask, timestamp, spread }
- *            for every symbol. We build/extend the in-progress candle from the
- *            mid price and push it to the chart.
+ * Realtime → WS /ws/bars (barsSocket). The gateway relays server-aggregated
+ *            forming + closed bars; TradingView redraws the candle with the
+ *            same `time` in place (the live candle) and opens a new one when
+ *            `time` advances. A slow REST poll of the same /bars endpoint runs
+ *            as a fallback so the candle still advances if the socket is down.
+ *
+ * The server serves only the BASE resolutions (1,5,15,30,60,240,1D); the
+ * library builds 3m/10m/45m/2h/3h and 1W/1M/3M/6M/12M itself from those, so
+ * the datafeed only ever receives base-resolution requests.
  *
  * Framework-agnostic (plain module) so both the web terminal and the mobile
- * WebView load the exact same chart. No auth needed: /ws/prices and the bars
- * endpoint are public (market data).
+ * WebView load the exact same chart. Market data is public.
  */
+
+import { barsSocket } from '@/lib/ws/barsSocket';
 
 type Bar = { time: number; open: number; high: number; low: number; close: number; volume: number };
 
 export type DatafeedInstrument = { symbol: string; digits?: number; segment?: string };
 
-const SUPPORTED_RESOLUTIONS = ['1', '5', '15', '30', '60', '240', '1D'] as const;
+// The SERVER serves only the base resolutions (1,5,15,30,60,240,1D).
+// SUPPORTED_RESOLUTIONS is what the chart OFFERS the user — the library derives
+// the extras from the base resolutions (intraday from intraday_multipliers,
+// W/M/3M/6M/12M from 1D).
+const SUPPORTED_RESOLUTIONS = [
+  '1', '3', '5', '10', '15', '30', '45', '60', '120', '180', '240',
+  '1D', '1W', '1M', '3M', '6M', '12M',
+] as const;
+const INTRADAY_MULTIPLIERS = ['1', '5', '15', '30', '60', '240'];
+const DAILY_MULTIPLIERS = ['1'];
 
 // Bar length in seconds per TradingView resolution.
 const RES_SECONDS: Record<string, number> = {
@@ -31,22 +47,51 @@ function resSeconds(resolution: string): number {
 export function createDatafeed(opts: {
   apiBase?: string; // defaults to same-origin /api/v1
   instruments?: DatafeedInstrument[];
+  // Current half-spread (price units) for a symbol, from the SAME store tick
+  // the order panel renders. Server bars are MID-based; we shift every bar
+  // (history AND realtime) DOWN by this so the chart's last price == panel BID
+  // == a buy position's current price (MT4/MT5 convention). Returns 0 when the
+  // spread is unknown (→ no shift, chart at mid). The spread is the admin
+  // spread (constant per symbol), so the whole series shifts uniformly with no
+  // seam between history and the live candle.
+  getHalfSpread?: (symbol: string) => number;
 }) {
   const apiBase = (opts.apiBase || '/api/v1').replace(/\/$/, '');
   let instruments = opts.instruments || [];
+  const getHalfSpread = opts.getHalfSpread;
+
+  // Shift a MID bar down to the BID basis (OHLC only; volume untouched).
+  function toBid(b: Bar, symbol: string): Bar {
+    const hs = getHalfSpread?.(symbol) ?? 0;
+    if (!hs) return b;
+    return {
+      time: b.time,
+      open: b.open - hs, high: b.high - hs, low: b.low - hs, close: b.close - hs,
+      volume: b.volume,
+    };
+  }
 
   // subscriberUID → live subscription
-  type Sub = { symbol: string; resolution: string; onTick: (b: Bar) => void; timer: ReturnType<typeof setInterval> | null };
+  type Sub = {
+    symbol: string;
+    resolution: string;
+    emit: (b: Bar) => void;
+    timer: ReturnType<typeof setInterval> | null;
+  };
   const subs = new Map<string, Sub>();
-  // symbol → last pushed bar, so we never emit an out-of-order tick.
+  // `${symbol}|${resolution}` → last pushed bar, so we never emit an
+  // out-of-order tick AND so different timeframes on the same symbol don't
+  // clobber each other's realtime state.
   const lastBars = new Map<string, Bar>();
 
-  // Realtime is DB-DRIVEN: we POLL the same /bars endpoint the history comes
-  // from (the server merges the stored bars with the live in-progress bar), so
-  // every candle — historical AND live — is one consistent source. No
-  // client-side tick aggregation, so no jumps, bounces or broken candles, and
-  // all timeframes stay smooth.
-  const POLL_MS = 1500;
+  function barKey(symbol: string, resolution: string) {
+    return `${symbol}|${resolution}`;
+  }
+
+  // Realtime primary is the WS bar stream; this slow poll is only a safety net
+  // (spec §7) for when /ws/bars is unavailable. It shares the same
+  // non-decreasing dedup so it never fights the socket.
+  const FALLBACK_POLL_MS = 4000;
 
   async function pollLatest(sub: Sub) {
     const step = resSeconds(sub.resolution);
@@ -69,13 +114,7 @@ export function createDatafeed(opts: {
         .sort((a: Bar, b: Bar) => a.time - b.time);
       const nb = bars[bars.length - 1];
       if (!nb) return;
-      const prev = lastBars.get(sub.symbol);
-      // Only emit a bar at or after the last one (TradingView requires
-      // non-decreasing time) — updates the current candle, or starts a new one.
-      if (!prev || nb.time >= prev.time) {
-        lastBars.set(sub.symbol, nb);
-        sub.onTick({ ...nb });
-      }
+      sub.emit(toBid(nb, sub.symbol)); // MID → BID basis
     } catch {
       /* transient — the next poll retries */
     }
@@ -89,6 +128,9 @@ export function createDatafeed(opts: {
     onReady(callback: (config: unknown) => void) {
       setTimeout(() => callback({
         supported_resolutions: SUPPORTED_RESOLUTIONS,
+        intraday_multipliers: INTRADAY_MULTIPLIERS,
+        // The library builds W/M/3M/6M/12M from daily bars.
+        has_weekly_and_monthly: false,
         supports_time: true,
         supports_marks: false,
         supports_timescale_marks: false,
@@ -131,8 +173,11 @@ export function createDatafeed(opts: {
         minmov: 1,
         pricescale,
         has_intraday: true,
+        intraday_multipliers: INTRADAY_MULTIPLIERS,
         has_daily: true,
-        has_weekly_and_monthly: true,
+        daily_multipliers: DAILY_MULTIPLIERS,
+        // Library builds weekly/monthly from the daily bars.
+        has_weekly_and_monthly: false,
         supported_resolutions: SUPPORTED_RESOLUTIONS,
         volume_precision: 2,
         data_status: 'streaming',
@@ -176,11 +221,12 @@ export function createDatafeed(opts: {
             volume: Number(b.volume ?? 0),
           }))
           .filter((b: Bar) => Number.isFinite(b.time) && Number.isFinite(b.close))
-          .sort((a: Bar, b: Bar) => a.time - b.time);
+          .sort((a: Bar, b: Bar) => a.time - b.time)
+          .map((b: Bar) => toBid(b, symbol)); // MID → BID basis
 
         const last = bars[bars.length - 1];
         if (firstDataRequest && last) {
-          lastBars.set(symbol, { ...last });
+          lastBars.set(barKey(symbol, resolution), { ...last });
         }
         onResult(bars, { noData: bars.length === 0 });
       } catch (e) {
@@ -193,17 +239,49 @@ export function createDatafeed(opts: {
       resolution: string,
       onTick: (b: Bar) => void,
       subscriberUID: string,
+      onResetCacheNeededCallback?: () => void,
     ) {
       const symbol = (symbolInfo.ticker || symbolInfo.name || '').toUpperCase();
-      const sub: Sub = { symbol, resolution, onTick, timer: null };
+      const key = barKey(symbol, resolution);
+
+      // Shared emit: enforces TradingView's non-decreasing time rule and
+      // dedups across the WS stream and the fallback poll.
+      const emit = (b: Bar) => {
+        const prev = lastBars.get(key);
+        if (!prev || b.time >= prev.time) {
+          lastBars.set(key, b);
+          onTick({ ...b });
+        }
+      };
+
+      const sub: Sub = { symbol, resolution, emit, timer: null };
       subs.set(subscriberUID, sub);
+
+      // Primary: live WS bar stream (server-aggregated forming + closed bars).
+      barsSocket.subscribe(
+        subscriberUID,
+        symbol,
+        resolution,
+        (bar) => emit(toBid({
+          time: bar.time * 1000, // epoch seconds → ms
+          open: bar.open, high: bar.high, low: bar.low,
+          close: bar.close, volume: bar.volume,
+        }, symbol)), // MID → BID basis
+        // On socket reconnect, drop the realtime cache so the chart re-fetches
+        // bars missed while the connection was down.
+        () => onResetCacheNeededCallback?.(),
+      );
+
+      // Fallback safety net (spec §7): a slow poll so the candle still advances
+      // if /ws/bars is unavailable. Shared dedup means it never fights the WS.
       void pollLatest(sub);
-      sub.timer = setInterval(() => { void pollLatest(sub); }, POLL_MS);
+      sub.timer = setInterval(() => { void pollLatest(sub); }, FALLBACK_POLL_MS);
     },
 
     unsubscribeBars(subscriberUID: string) {
       const sub = subs.get(subscriberUID);
       if (sub?.timer) clearInterval(sub.timer);
+      barsSocket.unsubscribe(subscriberUID);
       subs.delete(subscriberUID);
     },
   };

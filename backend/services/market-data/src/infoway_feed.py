@@ -8,6 +8,7 @@ import json
 import logging
 import secrets
 import socket
+import time
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -17,6 +18,15 @@ import websockets
 logger = logging.getLogger("market-data.infoway")
 
 INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
+
+# Data-silence watchdog: TCP + WS pings can keep a socket "healthy" while the
+# provider's push SUBSCRIPTION has silently died — classically at the Sunday
+# 22:00 UTC market open, nothing streams and no exception ever fires, so no one
+# reconnects. If no real DATA frame (code 10005) arrives for this long, we
+# force-close the socket and the reconnect loop re-subscribes. Weekend churn
+# every ~16 min is harmless; a stale subscription at open is not.
+DATA_SILENCE_SEC = 900.0
+DATA_WATCHDOG_POLL_SEC = 60.0
 
 # Platform symbol -> Infoway product code (crypto uses *USDT on Infoway).
 CRYPTO_INFOWAY_CODES: Dict[str, str] = {
@@ -64,6 +74,10 @@ class InfowayFeed:
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
+        # Monotonic timestamp of the last REAL data frame per socket. Set ONLY
+        # on code-10005 depth frames — never on heartbeats/acks — so the
+        # watchdog measures the provider's push liveness, not the TCP link's.
+        self._last_data_mono: Dict[str, float] = {}
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -202,6 +216,25 @@ class InfowayFeed:
         }
         self._enqueue(tick)
 
+    async def _data_watchdog(self, ws, business: str) -> None:
+        """Force-close the socket if no real data frame arrives for
+        DATA_SILENCE_SEC. Closing ends the `async for` in _run_socket, which
+        falls through to an immediate reconnect + resubscribe."""
+        while self._running:
+            await asyncio.sleep(DATA_WATCHDOG_POLL_SEC)
+            if not self._running:
+                break
+            last = self._last_data_mono.get(business, 0.0)
+            if last and (time.monotonic() - last) > DATA_SILENCE_SEC:
+                logger.warning(
+                    "Infoway [%s] no data for %.0fs — subscription looks dead; "
+                    "forcing reconnect.",
+                    business, time.monotonic() - last,
+                )
+                with contextlib.suppress(Exception):
+                    await ws.close()
+                break
+
     async def _heartbeat_loop(self, ws) -> None:
         while self._running:
             await asyncio.sleep(45.0)
@@ -229,6 +262,7 @@ class InfowayFeed:
 
         while self._running:
             hb_task: Optional[asyncio.Task] = None
+            wd_task: Optional[asyncio.Task] = None
             try:
                 logger.info("Infoway [%s] connecting…", business)
                 async with websockets.connect(
@@ -257,8 +291,12 @@ class InfowayFeed:
                     # Healthy subscribe — reset the backoff counter so the
                     # next failure starts at 2s, not wherever we ended up.
                     reconnect_attempts = 0
+                    # Prime the watchdog clock so a feed that never sends a
+                    # single frame post-subscribe is caught after DATA_SILENCE.
+                    self._last_data_mono[business] = time.monotonic()
 
                     hb_task = asyncio.create_task(self._heartbeat_loop(ws))
+                    wd_task = asyncio.create_task(self._data_watchdog(ws, business))
 
                     async for raw in ws:
                         if not self._running:
@@ -269,6 +307,9 @@ class InfowayFeed:
                             continue
                         code = msg.get("code")
                         if code == 10005:
+                            # Real data frame — this, and ONLY this, resets the
+                            # data-silence watchdog.
+                            self._last_data_mono[business] = time.monotonic()
                             self._emit_depth(msg.get("data") or {})
                         elif code in (10004, 10001):
                             logger.debug("Infoway [%s] ack: %s", business, msg.get("msg"))
@@ -295,9 +336,10 @@ class InfowayFeed:
                     )
                 await asyncio.sleep(delay)
             finally:
-                if hb_task:
-                    hb_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError):
-                        await hb_task
+                for _t in (hb_task, wd_task):
+                    if _t:
+                        _t.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await _t
 
         logger.info("Infoway [%s] task ended", business)

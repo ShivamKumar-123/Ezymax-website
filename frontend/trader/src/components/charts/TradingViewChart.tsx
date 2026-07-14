@@ -39,7 +39,17 @@ function TradingViewChartInner() {
     let disposed = false;
 
     (async () => {
-      const datafeed = createDatafeed({});
+      const datafeed = createDatafeed({
+        // BID-shift: feed the chart the same half-spread the order panel uses,
+        // so the chart's last price == panel BID == a buy position's current
+        // price (MT4/MT5 convention). Read live from the store at call time.
+        getHalfSpread: (sym: string) => {
+          const p = useTradingStore.getState().prices[sym.toUpperCase()];
+          if (!p) return 0;
+          const hs = (Number(p.ask) - Number(p.bid)) / 2;
+          return Number.isFinite(hs) && hs > 0 ? hs : 0;
+        },
+      });
       try {
         const r = await fetch('/api/v1/instruments/', { credentials: 'include' });
         if (r.ok) {

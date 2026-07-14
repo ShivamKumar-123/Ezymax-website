@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.models import (
     Position, TradingAccount, Transaction, TradeHistory, Instrument, User,
 )
@@ -122,6 +122,10 @@ class SLTPEngine:
                     continue
 
                 tick = self._prices[symbol]
+                # Stale-price guard: a dead feed (or a refresher republish)
+                # must never trigger an SL/TP close at a frozen price.
+                if is_tick_stale(tick):
+                    continue
                 bid = Decimal(str(tick["bid"]))
                 ask = Decimal(str(tick["ask"]))
                 side = _side_val(pos.side)

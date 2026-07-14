@@ -179,6 +179,12 @@ async def _fetch_history_source(sym: str, tf: str, resolution: str, end_ts: int 
                 _logger.info("bars: %d bars for %s %s aggregated from TimescaleDB ticks", len(result), sym, tf)
         except Exception as e:
             _logger.warning("timescale tick aggregation error for %s %s: %s", sym, tf, e)
+
+    # Grid-snap EVERY provider result before it is merged/stored — kills the
+    # "every candle doubled" bug when a provider serves part of a range on an
+    # offset grid. Idempotent for already-aligned bars.
+    if result:
+        result = bars_store.grid_snap(result, bars_store.TF_SECONDS.get(tf, 300))
     return result
 
 
@@ -264,8 +270,13 @@ async def get_bars(
         except Exception as e:
             _logger.debug("bars forward-fill skipped for %s %s: %s", sym, tf, e)
 
-    # 3. Serve the requested window from the durable store.
-    bars = await bars_store.read_bars(db, sym, tf, from_time or None, to_time or None, limit=5000)
+    # 3. Serve the requested window from the durable store. Enforce ONLY the
+    #    upper (`to`) bound — NOT `from` as a hard floor. On a closed market the
+    #    charting library asks for a window that starts after the last real bar
+    #    (e.g. gold on a Saturday); flooring on `from` would return nothing and
+    #    blank the chart. Returning the latest bars ≤ `to` keeps history visible,
+    #    and `to` is what the library moves when the user pans back.
+    bars = await bars_store.read_bars(db, sym, tf, None, to_time or None, limit=5000)
 
     # Append the current in-progress bar so the last candle stays live.
     current_raw = await redis_client.get(f"bar:current:{sym}:{tf}")
@@ -284,5 +295,11 @@ async def get_bars(
                 bars.sort(key=lambda x: x["time"])
         except Exception:
             pass
+
+    # Weekend strip (non-crypto): drop any bar a provider padded into the forex
+    # weekend close (Fri 21:00 → Sun 22:00 UTC). Crypto trades 24/7 — never
+    # stripped. Naturally-absent weekend gaps are unaffected (nothing to strip).
+    if sym not in _BINANCE_PAIRS:
+        bars = [b for b in bars if not bars_store.is_forex_market_closed(b["time"])]
 
     return {"s": "ok", "bars": bars, "noData": len(bars) == 0}

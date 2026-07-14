@@ -15,6 +15,7 @@ wiring. `ts` is epoch SECONDS, aligned to the bar's open time.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Iterable
 
@@ -27,6 +28,52 @@ TF_SECONDS: dict[str, int] = {
     "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
     "1h": 3600, "4h": 14400, "1d": 86400,
 }
+
+
+def grid_snap(bars: Iterable[dict], tf_seconds: int) -> list[dict]:
+    """Normalize provider bars to exactly one bar per UTC-grid slot.
+
+    Providers sometimes serve part of a range on an OFFSET grid (e.g. 1h bars
+    stamped at :30 alongside :00) which makes every candle appear twice. Rule
+    (verified in production): a grid-aligned original always wins; an off-grid
+    bar snaps into an EMPTY slot only. Output is ascending, each bar's `time`
+    set to its slot open. Apply in EVERY path that merges provider bars.
+    """
+    slots: dict[int, tuple[bool, dict]] = {}
+    for b in bars:
+        t = b.get("time", b.get("ts"))
+        if t is None:
+            continue
+        try:
+            t = int(t)
+        except (TypeError, ValueError):
+            continue
+        slot = (t // tf_seconds) * tf_seconds
+        aligned = t == slot
+        existing = slots.get(slot)
+        if existing is None:
+            slots[slot] = (aligned, {**b, "time": slot})
+        elif aligned and not existing[0]:
+            # A grid-aligned bar displaces an off-grid one already in the slot.
+            slots[slot] = (True, {**b, "time": slot})
+        # else: keep existing (aligned wins; off-grid never displaces).
+    return [slots[k][1] for k in sorted(slots.keys())]
+
+
+def is_forex_market_closed(epoch_s: int) -> bool:
+    """True if `epoch_s` (UTC) is inside the forex weekend close
+    (Fri 21:00 → Sun 22:00 UTC). Used to strip weekend bars a provider may pad
+    into non-crypto history. Crypto (24/7) must never be filtered with this.
+    """
+    dt = datetime.fromtimestamp(int(epoch_s), tz=timezone.utc)
+    wd = dt.weekday()  # Mon=0 .. Sun=6
+    if wd == 5:                       # Saturday — always closed
+        return True
+    if wd == 6 and dt.hour < 22:      # Sunday before the 22:00 UTC open
+        return True
+    if wd == 4 and dt.hour >= 21:     # Friday after the 21:00 UTC close
+        return True
+    return False
 
 
 async def ensure_bars_table(db: AsyncSession) -> None:

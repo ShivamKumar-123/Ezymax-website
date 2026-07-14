@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
 from packages.common.src.database import get_db, AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import redis_client, PriceChannel, BARS_UPDATES_CHANNEL
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import close_producer
 from packages.common.src.auth import decode_token, require_onboarded
@@ -471,6 +471,96 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         pass
     finally:
         await pubsub.unsubscribe(PriceChannel.PRICE_CHANNEL)
+        await pubsub.close()
+
+
+# TradingView resolution string → aggregator timeframe name. Mirrors
+# instruments._TV_RESOLUTION_TO_TF; kept local so the WS layer has no import
+# coupling to the REST router.
+_BARS_RES_TO_TF = {
+    "1": "1m", "5": "5m", "15": "15m", "30": "30m",
+    "60": "1h", "240": "4h", "1D": "1d", "D": "1d", "1d": "1d",
+}
+
+
+@app.websocket("/ws/bars")
+async def bars_stream(websocket: WebSocket, token: str | None = Query(default=None)):
+    """Live OHLCV bar stream for the TradingView datafeed's subscribeBars.
+
+    Protocol: client sends {type:"subscribe"|"unsubscribe", symbol, resolution};
+    the server subscribes to Redis `bars:updates` ONCE and relays only the bar
+    messages whose (symbol, timeframe) matches an active client subscription.
+    A new bar `time` = the previous candle closed; the same `time` redrawn =
+    the live candle extending. Bars are public market data, so auth mirrors
+    /ws/prices (validated only if a token is supplied)."""
+    if not _check_ws_origin(websocket):
+        await websocket.close(code=4003, reason="Origin not allowed")
+        return
+    effective = _ws_token_from_websocket(websocket, token)
+    if effective:
+        user = _verify_ws_token(effective)
+        if not user:
+            await websocket.close(code=4001, reason="Invalid token")
+            return
+
+    await websocket.accept()
+    pubsub = redis_client.pubsub()
+    await pubsub.subscribe(BARS_UPDATES_CHANNEL)
+
+    # Active (SYMBOL, tf) filters for THIS client.
+    subs: set[tuple[str, str]] = set()
+
+    try:
+        ping_interval = 30
+        last_ping = asyncio.get_event_loop().time()
+        while True:
+            # 1) Drain client control messages (subscribe / unsubscribe / pong).
+            raw = None
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.05)
+            except asyncio.TimeoutError:
+                pass
+            if raw:
+                try:
+                    data = json.loads(raw)
+                except (ValueError, TypeError):
+                    data = None
+                if isinstance(data, dict):
+                    mtype = data.get("type")
+                    if mtype in ("subscribe", "unsubscribe"):
+                        sym = str(data.get("symbol") or "").strip().upper()
+                        res = str(data.get("resolution") or "").strip()
+                        tf = _BARS_RES_TO_TF.get(res) or _BARS_RES_TO_TF.get(res.upper())
+                        if sym and tf:
+                            if mtype == "subscribe":
+                                subs.add((sym, tf))
+                            else:
+                                subs.discard((sym, tf))
+
+            # 2) Relay matching bar updates.
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
+            if message and message["type"] == "message" and subs:
+                try:
+                    bar = json.loads(message["data"])
+                    key = (
+                        str(bar.get("symbol") or "").upper(),
+                        str(bar.get("timeframe") or ""),
+                    )
+                    if key in subs:
+                        await websocket.send_text(message["data"])
+                except (ValueError, TypeError):
+                    pass
+
+            now = asyncio.get_event_loop().time()
+            if now - last_ping >= ping_interval:
+                await websocket.send_json({"type": "ping"})
+                last_ping = now
+
+            await asyncio.sleep(0.01)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await pubsub.unsubscribe(BARS_UPDATES_CHANNEL)
         await pubsub.close()
 
 

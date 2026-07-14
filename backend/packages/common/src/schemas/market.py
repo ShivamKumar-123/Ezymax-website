@@ -13,6 +13,10 @@ class TickData(BaseModel):
     ask: float
     timestamp: str
     spread: float
+    # Server publish time (epoch ms) + stale-refresher marker. Optional so old
+    # payloads still validate; carried so clients can freshness-guard ticks.
+    ts_ms: Optional[int] = None
+    stale: Optional[bool] = None
 
 
 class OHLCVBar(BaseModel):

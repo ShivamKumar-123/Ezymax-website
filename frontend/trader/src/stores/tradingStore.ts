@@ -8,6 +8,11 @@ export interface TickData {
   ask: number;
   timestamp: string;
   spread: number;
+  // Server publish time (epoch ms), from the backend tick payload. Used as a
+  // freshness key so a lagging REST poll can't overwrite a newer WS tick.
+  ts_ms?: number;
+  // True when the quote is a stale-refresher republish (dead upstream feed).
+  stale?: boolean;
 }
 
 export interface Position {
@@ -300,6 +305,17 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     if (!sym) return state;
     const normalized: TickData = { ...tick, symbol: sym };
     const prev = state.prices[sym];
+    // Freshness guard: the WS feed and the ~1.5s REST poll both call this, and
+    // a lagging poll response can carry an OLDER snapshot than a WS tick that
+    // already landed. Never let an older server publish time overwrite a newer
+    // one — otherwise the price (and every position's P&L) visibly bounces
+    // backward. Only enforced when both ticks carry a server ts_ms; if either
+    // is missing (legacy payload) we fail open and accept the update.
+    const incomingTs = Number(normalized.ts_ms) || 0;
+    const prevTs = Number(prev?.ts_ms) || 0;
+    if (prev && incomingTs && prevTs && incomingTs < prevTs) {
+      return state;
+    }
     return {
       prevPrices: prev
         ? { ...state.prevPrices, [sym]: prev.bid }

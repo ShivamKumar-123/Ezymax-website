@@ -39,6 +39,12 @@ function pushIfTick(row: unknown, out: TickData[]) {
       ? Number(spreadRaw)
       : ask - bid;
 
+  const tsMsRaw = r.ts_ms;
+  const tsMs =
+    tsMsRaw != null && tsMsRaw !== '' && Number.isFinite(Number(tsMsRaw))
+      ? Number(tsMsRaw)
+      : undefined;
+
   out.push({
     symbol,
     bid,
@@ -48,5 +54,7 @@ function pushIfTick(row: unknown, out: TickData[]) {
       (typeof r.ts === 'string' && r.ts) ||
       new Date().toISOString(),
     spread: Number.isFinite(spread) ? spread : ask - bid,
+    ts_ms: tsMs,
+    stale: r.stale === true || r.stale === 'true',
   });
 }

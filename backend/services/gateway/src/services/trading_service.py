@@ -839,6 +839,25 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
+    # Idempotent close guard (race-safe). Two concurrent closers — manual vs
+    # manual (double-click / retry), manual vs the SL/TP engine, manual vs the
+    # copy engine — could each pass the status check above and both book P&L +
+    # write a duplicate TradeHistory row. Lock the row AND refresh its status
+    # from the DB in one shot: FOR UPDATE serializes the closers on this row,
+    # so the loser blocks until the winner commits; the refresh then pulls the
+    # freshly-committed status into our already-loaded instance so the recheck
+    # actually sees the race. (A plain re-select would return the stale
+    # identity-map copy — status still 'open' in memory — and miss it. The
+    # status column is a Postgres enum {open,closed,partially_closed} with no
+    # intermediate 'closing' value, so the lock, not a marker state, provides
+    # mutual exclusion. Same guarantee as sltp_engine._close_position, which is
+    # safe with a plain re-select only because it runs in a fresh per-tick
+    # session with an empty identity map.)
+    await db.refresh(pos, attribute_names=["status"], with_for_update=True)
+    locked_status = pos.status.value if hasattr(pos.status, "value") else str(pos.status)
+    if locked_status != "open":
+        raise HTTPException(status_code=409, detail="Position is already being closed")
+
     # MAM gives followers independent control of their own allocated account:
     # a follower CAN close their mirrored position (it lives on the follower's
     # account). If the master later closes the original, the copy engine looks

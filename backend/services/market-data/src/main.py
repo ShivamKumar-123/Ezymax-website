@@ -4,6 +4,7 @@ import json
 import logging
 import signal
 import time
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 
 from packages.common.src.config import get_settings
@@ -39,6 +40,9 @@ settings = get_settings()
 # with last mid + current admin spread so Spr matches config until live ticks resume.
 STALE_TICK_AFTER_SEC = 90.0
 STALE_REFRESH_INTERVAL_SEC = 30.0
+# A >10% mid jump is dropped as a spike until it persists this many consecutive
+# ticks, at which point the market is deemed to have genuinely gapped.
+JUMP_ACCEPT_AFTER = 5
 
 
 class MarketDataService:
@@ -77,6 +81,13 @@ class MarketDataService:
         # or fall back to the feed's native spread — without a fresh tick.
         self._last_quote: dict[str, tuple[float, float]] = {}
         self._last_live_mono: dict[str, float] = {}
+        # Last 3 ACCEPTED native mids per symbol → median de-spike (kills a
+        # single-tick spike without lagging a real move).
+        self._mid_history: dict[str, deque] = defaultdict(lambda: deque(maxlen=3))
+        # Consecutive >10%-jump ticks per symbol. We drop a lone spike but
+        # accept the move once it persists for JUMP_ACCEPT_AFTER ticks (the
+        # market genuinely gapped, e.g. a news candle).
+        self._bad_tick_count: dict[str, int] = defaultdict(int)
 
     async def start(self):
         logger.info("Starting Market Data Service...")
@@ -176,7 +187,10 @@ class MarketDataService:
                 try:
                     b0, a0 = quote
                     bid, ask = self.spread_cache.widen(symbol, b0, a0)
-                    await publish_price(symbol, bid, ask, ts)
+                    # stale=True: this is a refresher republish (no real feed
+                    # tick for >STALE_TICK_AFTER_SEC), so SL/TP / stop-out /
+                    # liquidation consumers skip it and never phantom-close.
+                    await publish_price(symbol, bid, ask, ts, stale=True)
                 except Exception as exc:
                     logger.debug("Stale quote refresh failed for %s: %s", symbol, exc)
 
@@ -195,9 +209,43 @@ class MarketDataService:
             ask = float(tick["ask"])
             ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
 
-            self._last_mid[symbol] = (bid + ask) / 2.0
+            # --- Tick pipeline: bad-tick guard → de-spike → spread engine ---
+            # 1a. Structurally invalid quote (non-positive or crossed) — always
+            #     drop; there is no valid downstream use for it.
+            if bid <= 0 or ask <= 0 or ask < bid:
+                continue
+
+            raw_mid = (bid + ask) / 2.0
+            prev_mid = self._last_mid.get(symbol)
+
+            # 1b. Jump guard: a >10% move from the last accepted mid is treated
+            #     as a spike and dropped — unless it persists, meaning the
+            #     market really gapped (accept after JUMP_ACCEPT_AFTER).
+            if prev_mid and prev_mid > 0 and abs(raw_mid - prev_mid) / prev_mid > 0.10:
+                self._bad_tick_count[symbol] += 1
+                if self._bad_tick_count[symbol] < JUMP_ACCEPT_AFTER:
+                    continue
+                # Persisted → accept the new level and reset the median window
+                # so the old (pre-gap) mids don't drag the de-spiked value.
+                self._mid_history[symbol].clear()
+            self._bad_tick_count[symbol] = 0
+
+            # 2. De-spike: median of the last 3 accepted native mids.
+            hist = self._mid_history[symbol]
+            hist.append(raw_mid)
+            mids = sorted(hist)
+            despiked_mid = mids[len(mids) // 2]
+            # Rebuild the native quote around the de-spiked mid, preserving the
+            # feed's native half-spread; the spread engine re-spreads from this
+            # mid next, so only the mid matters downstream.
+            half = (ask - bid) / 2.0
+            bid = despiked_mid - half
+            ask = despiked_mid + half
+
+            self._last_mid[symbol] = despiked_mid
             self._last_quote[symbol] = (bid, ask)
             self._last_live_mono[symbol] = time.monotonic()
+            # 3. Spread engine: symmetric admin spread around the (de-spiked) mid.
             bid, ask = self.spread_cache.widen(symbol, bid, ask)
 
             await publish_price(symbol, bid, ask, ts)

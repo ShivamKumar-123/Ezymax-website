@@ -21,7 +21,7 @@ from packages.common.src.models import (
     Position, PositionStatus, TradingAccount, Instrument,
     OrderSide, SwapConfig, Notification, Transaction, User,
 )
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.config import get_settings
 from packages.common.src import corecen_trade_client
@@ -87,6 +87,13 @@ class RiskEngine:
                             if not tick_data:
                                 continue
                             tick = json.loads(tick_data)
+                            # Stale-price guard: don't let a frozen/refresher
+                            # quote drive a stop-out decision. Skipping the
+                            # position (treats its float as 0 for this tick) is
+                            # the fail-safe direction — we never stop-out on
+                            # dead-feed prices.
+                            if is_tick_stale(tick):
+                                continue
                             current_price = Decimal(str(tick["bid"])) if pos.side == OrderSide.BUY else Decimal(str(tick["ask"]))
 
                             if pos.side == OrderSide.BUY:
@@ -170,6 +177,11 @@ class RiskEngine:
                 continue
 
             tick = json.loads(tick_data)
+            # Stale-price guard: never close a position at a frozen/refresher
+            # price during a stop-out. Leaving it open is safer than booking a
+            # loss at a dead-feed quote.
+            if is_tick_stale(tick):
+                continue
             close_price = Decimal(str(tick["bid"])) if pos.side == OrderSide.BUY else Decimal(str(tick["ask"]))
 
             if pos.side == OrderSide.BUY:

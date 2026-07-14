@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from collections import defaultdict
 
-from packages.common.src.redis_client import redis_client
+from packages.common.src.redis_client import redis_client, BARS_UPDATES_CHANNEL
 
 logger = logging.getLogger("market-data.aggregator")
 
@@ -92,6 +92,13 @@ class BarAggregator:
         await redis_client.lpush(list_key, json.dumps(bar_data))
         await redis_client.ltrim(list_key, 0, 999)
 
+        # Fan out the CLOSED bar so live charts finalize it and open the next
+        # candle without waiting for a poll. `closed=True` is informational;
+        # the client keys off `time` (a new time = previous candle closed).
+        await redis_client.publish(
+            BARS_UPDATES_CHANNEL, json.dumps({**bar_data, "closed": True})
+        )
+
         # ATR(14) — volatility metric cached for downstream consumers.
         # Computed only on 1m bars.
         if timeframe == "1m":
@@ -128,9 +135,11 @@ class BarAggregator:
         while True:
             for symbol, timeframes in list(self._bars.items()):
                 for tf_name, bar in list(timeframes.items()):
+                    bar_start = self._bar_timestamps.get(symbol, {}).get(tf_name)
                     bar_data = {
                         "symbol": symbol,
                         "timeframe": tf_name,
+                        "time": bar_start,
                         "open": bar.open,
                         "high": bar.high,
                         "low": bar.low,
@@ -140,5 +149,12 @@ class BarAggregator:
                     }
                     bar_key = f"bar:current:{symbol}:{tf_name}"
                     await redis_client.set(bar_key, json.dumps(bar_data))
+                    # Fan out the forming bar (~1/s) so the live candle
+                    # extends in place on every subscribed chart.
+                    if bar_start is not None:
+                        await redis_client.publish(
+                            BARS_UPDATES_CHANNEL,
+                            json.dumps({**bar_data, "closed": False}),
+                        )
 
             await asyncio.sleep(1)
