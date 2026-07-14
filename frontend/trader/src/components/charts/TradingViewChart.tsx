@@ -431,7 +431,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
           if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
           const pos = st.positions.find((p) => p.id === id);
           if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
-          const y = (paneTop as number) + ((geo.top - Number(pos.open_price)) / (geo.top - geo.bottom)) * geo.paneH;
+          // Pin the pill to the CURRENT-price line (follows the live price).
+          const pillPrice = Number(pos.current_price ?? pos.open_price);
+          const y = (paneTop as number) + ((geo.top - pillPrice) / (geo.top - geo.bottom)) * geo.paneH;
           node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
             ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
         });
@@ -448,32 +450,55 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     };
   }, [chartReady]);
 
-  // Add an SL or TP bracket at a sensible default level near the market, then
-  // the on-chart line appears and the user drags it to the exact level. (This
-  // is how you "set" a bracket by dragging without the Trading-Terminal-only
-  // order-line UI.) Default is placed on the valid side so the server accepts it.
+  // Add an SL or TP bracket, then the on-chart line appears and the user drags
+  // it to the exact level. The default is placed FAR from the current price
+  // (near the visible chart edge) so a fast market can't hit it in the seconds
+  // it takes to drag — placing it ~0.1% away was causing instant auto-close.
   const addBracket = useCallback(async (positionId: string, which: 'sl' | 'tp') => {
     const st = useTradingStore.getState();
     const pos = st.positions.find((p) => p.id === positionId);
     if (!pos) return;
+    // Already set → don't overwrite; the line is already on the chart to drag.
+    if (which === 'sl' && pos.stop_loss != null) return;
+    if (which === 'tp' && pos.take_profit != null) return;
+
+    const isBuy = pos.side === 'buy';
     const q = st.prices[String(pos.symbol).toUpperCase()];
-    const ref = Number(
-      pos.side === 'buy' ? (q?.bid ?? pos.current_price ?? pos.open_price)
-                         : (q?.ask ?? pos.current_price ?? pos.open_price),
-    );
+    const ref = Number(isBuy ? (q?.bid ?? pos.current_price ?? pos.open_price)
+                             : (q?.ask ?? pos.current_price ?? pos.open_price));
     if (!Number.isFinite(ref) || ref <= 0) return;
-    // ~0.1% off the current price, on the valid side for the position's side.
+
+    // Prefer the visible price range so the default sits near the chart edge —
+    // on-screen but well away from the current price.
+    let top: number | null = null, bottom: number | null = null;
+    try {
+      const range = widgetRef.current?.activeChart?.()?.getPanes?.()[0]
+        ?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+      if (range && range.to !== range.from) { top = Number(range.to); bottom = Number(range.from); }
+    } catch { /* ignore */ }
+
     let level: number;
-    if (pos.side === 'buy') level = which === 'sl' ? ref * 0.999 : ref * 1.001;
-    else level = which === 'sl' ? ref * 1.001 : ref * 0.999;
+    if (top != null && bottom != null) {
+      const span = top - bottom;
+      if (isBuy) level = which === 'sl' ? bottom + span * 0.12 : top - span * 0.12;
+      else level = which === 'sl' ? top - span * 0.12 : bottom + span * 0.12;
+    } else {
+      // Fallback: a full 1.5% away — safely beyond instant-trigger range.
+      if (isBuy) level = which === 'sl' ? ref * 0.985 : ref * 1.015;
+      else level = which === 'sl' ? ref * 1.015 : ref * 0.985;
+    }
+    // Clamp to the valid side so the server never rejects the default.
+    if (isBuy) level = which === 'sl' ? Math.min(level, ref * 0.999) : Math.max(level, ref * 1.001);
+    else level = which === 'sl' ? Math.max(level, ref * 1.001) : Math.min(level, ref * 0.999);
     level = Number(level.toFixed(5));
+
     const body: Record<string, number> = {};
     body[which === 'sl' ? 'stop_loss' : 'take_profit'] = level;
     const other = which === 'sl' ? pos.take_profit : pos.stop_loss;
     if (other != null) body[which === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
     try {
       await api.put(`/positions/${positionId}`, body);
-      toast.success(`${which.toUpperCase()} added — drag the line to set the level`);
+      toast.success(`${which.toUpperCase()} added — drag the line to your level`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to add ${which.toUpperCase()}`);
     }
@@ -495,9 +520,9 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
-      {/* Per-position control pills, pinned to each entry-price line (positioned
-          imperatively by the rAF loop above). SL / TP add a draggable bracket
-          line; ✕ closes. Copied (MAM) positions get only ✕. */}
+      {/* Per-position control pills, pinned to each position's CURRENT-price line
+          (positioned imperatively by the rAF loop above). SL / TP add a draggable
+          bracket line; ✕ closes. Copied (MAM) positions get only ✕. */}
       {panelPositions.length > 0 && (
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
           {panelPositions.map((p) => {
@@ -508,7 +533,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
               <div
                 key={p.id}
                 ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
-                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 rounded-lg bg-black/80 backdrop-blur-sm px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-lg ring-1 ring-white/10 whitespace-nowrap"
+                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap [text-shadow:_0_1px_3px_rgb(0_0_0_/_95%),_0_0_2px_rgb(0_0_0_/_80%)]"
               >
                 <span className={p.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}>
                   {p.side.toUpperCase()} {p.lots}
