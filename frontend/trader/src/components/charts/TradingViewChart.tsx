@@ -182,6 +182,12 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   // per mouse-move frame.
   const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const syncWarnedRef = useRef(false);
+  // On-line control pill positioning: DOM node per position + a calibrated
+  // price→pixel mapping (pane top offset, refined from the crosshair).
+  const pillNodeRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  const paneTopRef = useRef<number | null>(null);
+  const lastMouseYRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Persist an SL/TP change. Reads the CURRENT position from the store so the
   // untouched leg isn't sent stale. Returns whether the server accepted it.
@@ -367,6 +373,81 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
   }, [chartReady, applySLTP]);
 
+  // Pin each position's control pill to its entry-price line. Advanced Charts
+  // has no price→pixel API, so we calibrate the pane's top offset from a
+  // crosshair sample (exact on a linear scale) and re-project every frame using
+  // the live visible price range — the pill then tracks zoom / pan / scroll.
+  useEffect(() => {
+    if (!chartReady) return;
+    const w = widgetRef.current;
+    const container = containerRef.current;
+    if (!w || !container) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getChart = (): any => { try { return w.activeChart(); } catch { return null; } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const readGeo = (chart: any) => {
+      try {
+        const pane = chart.getPanes?.()[0];
+        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+        const paneH = pane?.getHeight?.();
+        if (!range || !paneH || range.to === range.from) return null;
+        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
+      } catch { return null; }
+    };
+
+    const onMove = (e: MouseEvent) => {
+      lastMouseYRef.current = e.clientY - container.getBoundingClientRect().top;
+    };
+    container.addEventListener('mousemove', onMove);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let crossSub: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const crossCb = (params: any) => {
+      const price = params?.price;
+      const my = lastMouseYRef.current;
+      if (price == null || my == null) return;
+      const chart = getChart();
+      const geo = chart && readGeo(chart);
+      if (!geo) return;
+      paneTopRef.current = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
+    };
+    try {
+      crossSub = getChart()?.crossHairMoved?.();
+      crossSub?.subscribe(null, crossCb);
+    } catch { /* ignore */ }
+
+    const HIDE = 'translate(-50%, -9999px)';
+    const tick = () => {
+      const chart = getChart();
+      const geo = chart && readGeo(chart);
+      if (geo) {
+        let paneTop = paneTopRef.current;
+        if (paneTop == null) paneTop = container.getBoundingClientRect().height - geo.paneH - 46;
+        const st = useTradingStore.getState();
+        const sym = (st.selectedSymbol ?? 'EURUSD').toUpperCase();
+        pillNodeRef.current.forEach((node, id) => {
+          if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
+          const pos = st.positions.find((p) => p.id === id);
+          if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
+          const y = (paneTop as number) + ((geo.top - Number(pos.open_price)) / (geo.top - geo.bottom)) * geo.paneH;
+          node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
+            ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
+        });
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      container.removeEventListener('mousemove', onMove);
+      try { crossSub?.unsubscribe(null, crossCb); } catch { /* ignore */ }
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [chartReady]);
+
   // Add an SL or TP bracket at a sensible default level near the market, then
   // the on-chart line appears and the user drags it to the exact level. (This
   // is how you "set" a bracket by dragging without the Trading-Terminal-only
@@ -414,10 +495,11 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
-      {/* Per-position control pill (below the chart's top toolbar). SL / TP add a
-          draggable bracket line; ✕ closes. Copied (MAM) positions get no SL/TP. */}
+      {/* Per-position control pills, pinned to each entry-price line (positioned
+          imperatively by the rAF loop above). SL / TP add a draggable bracket
+          line; ✕ closes. Copied (MAM) positions get only ✕. */}
       {panelPositions.length > 0 && (
-        <div className="absolute top-14 left-2 z-20 flex flex-col gap-1 pointer-events-none">
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
           {panelPositions.map((p) => {
             const profit = Number(p.profit ?? 0);
             const up = profit >= 0;
@@ -425,7 +507,8 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
             return (
               <div
                 key={p.id}
-                className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-black/75 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-white shadow-lg ring-1 ring-white/10"
+                ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
+                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 rounded-lg bg-black/80 backdrop-blur-sm px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-lg ring-1 ring-white/10 whitespace-nowrap"
               >
                 <span className={p.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}>
                   {p.side.toUpperCase()} {p.lots}
@@ -435,32 +518,11 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
                 </span>
                 {!isCopy && (
                   <>
-                    <button
-                      type="button"
-                      onClick={() => addBracket(p.id, 'sl')}
-                      className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black"
-                      title={p.stop_loss != null ? 'Stop-loss set — drag the red line' : 'Add stop-loss'}
-                    >
-                      SL
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addBracket(p.id, 'tp')}
-                      className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white"
-                      title={p.take_profit != null ? 'Take-profit set — drag the green line' : 'Add take-profit'}
-                    >
-                      TP
-                    </button>
+                    <button type="button" onClick={() => addBracket(p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black" title="Add / adjust stop-loss">SL</button>
+                    <button type="button" onClick={() => addBracket(p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white" title="Add / adjust take-profit">TP</button>
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={() => closePositionFromChart(p.id)}
-                  className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white"
-                  title="Close position"
-                >
-                  ✕
-                </button>
+                <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
               </div>
             );
           })}
