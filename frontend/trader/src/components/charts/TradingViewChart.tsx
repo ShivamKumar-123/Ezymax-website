@@ -478,12 +478,15 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     e.preventDefault();
     e.stopPropagation();
     if (placingRef.current) return;
+    const btn = e.currentTarget as HTMLElement;
+    const pointerId = e.pointerId;
     const w = widgetRef.current;
-    if (!w) return;
+    const container = containerRef.current;
+    if (!w || !container) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let chart: any;
     try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
-    if (!chart?.createShape || !chart?.crossHairMoved) return;
+    if (!chart?.createShape) return;
 
     const st = useTradingStore.getState();
     const pos = st.positions.find((p) => p.id === positionId);
@@ -493,56 +496,83 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
     if (!Number.isFinite(startPrice)) return;
 
+    // Capture the pointer to the BUTTON so pointermove/up fire on it reliably
+    // for BOTH mouse and TOUCH, and the chart doesn't pan under the finger.
+    try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
+
     placingRef.current = true;
     let lineId: string | null = null;
     let lastPrice = startPrice;
     let anchorTime = Math.floor(Date.now() / 1000);
+    let lastCrossTs = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let crossSub: any = null;
     let done = false;
 
-    // The chart's own crosshair gives the exact price under the cursor — no
-    // pointer capture (which would stop the chart getting mouse moves), and
-    // release is caught in the CAPTURE phase so the chart canvas can't swallow
-    // the pointerup (that was the "it never lets go" bug).
+    const moveTo = (price: number) => {
+      if (!Number.isFinite(price) || !lineId) return;
+      lastPrice = Number(price);
+      try { chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+    };
+    // Y (viewport) → price, using the same rolling-median calibration as the
+    // pill. This is how the line follows a TOUCH drag (mobile crosshair doesn't
+    // fire during a finger drag).
+    const pixelToPrice = (clientY: number): number | null => {
+      try {
+        const rect = container.getBoundingClientRect();
+        const pane = chart.getPanes?.()[0];
+        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+        const paneH = pane?.getHeight?.();
+        if (!range || !paneH || range.to === range.from) return null;
+        let paneTop = paneTopRef.current;
+        if (paneTop == null) paneTop = rect.height - Number(paneH) - 46;
+        const y = clientY - rect.top;
+        return Number(range.to) - ((y - paneTop) / Number(paneH)) * (Number(range.to) - Number(range.from));
+      } catch { return null; }
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onCross = (params: any) => {
       const p = params?.price;
       if (p == null || !Number.isFinite(p)) return;
-      lastPrice = Number(p);
-      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+      lastCrossTs = Date.now();
+      moveTo(Number(p)); // desktop: exact price under the cursor
+    };
+    const onPointerMove = (ev: PointerEvent) => {
+      // Only when the crosshair isn't driving (i.e. touch / mobile).
+      if (Date.now() - lastCrossTs < 160) return;
+      const price = pixelToPrice(ev.clientY);
+      if (price != null) moveTo(price);
     };
 
     const finish = async () => {
       if (done) return;
       done = true;
+      btn.removeEventListener('pointermove', onPointerMove);
+      btn.removeEventListener('pointerup', finish);
+      btn.removeEventListener('pointercancel', finish);
       window.removeEventListener('pointerup', finish, true);
       window.removeEventListener('mouseup', finish, true);
-      window.removeEventListener('pointercancel', finish, true);
       window.removeEventListener('blur', finish);
-      // Library mouse_up fires from INSIDE the chart iframe (a DOM window
-      // mouseup does not) — this is what makes release work over the chart.
       try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
+      try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
       placingRef.current = false;
-      // Drop the temp line and ASK before committing (the modal shows the price
-      // + projected P&L). On confirm the real line is rendered from server state.
+      // Drop the temp line and ASK before committing (modal shows price + P&L).
       try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
       requestBracketRef.current?.(positionId, leg, Number(lastPrice));
     };
 
-    // Release triggers: the LIBRARY's own mouse_up (fires when releasing over
-    // the chart, even though it lives in an iframe) + window listeners in the
-    // CAPTURE phase (for a release outside the chart). Whichever fires first
-    // wins (finish is idempotent).
-    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
+    // Movement: captured pointer (touch + mouse fallback) and — on desktop —
+    // the chart crosshair (exact). Release: captured pointerup/cancel on the
+    // button + library mouse_up (over the iframe) + window capture fallback.
+    btn.addEventListener('pointermove', onPointerMove);
+    btn.addEventListener('pointerup', finish);
+    btn.addEventListener('pointercancel', finish);
     window.addEventListener('pointerup', finish, true);
     window.addEventListener('mouseup', finish, true);
-    window.addEventListener('pointercancel', finish, true);
     window.addEventListener('blur', finish);
+    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
 
-    // Create the line + subscribe the crosshair (async). If the user already
-    // released, bail cleanly.
     (async () => {
       try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
       if (done) return;
@@ -554,7 +584,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         ));
       } catch { return; }
       if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
-      try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
+      try { crossSub = chart.crossHairMoved?.(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
     })();
   }, []);
 
