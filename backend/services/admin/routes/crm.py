@@ -83,3 +83,54 @@ async def crm_customers(
     db: AsyncSession = Depends(get_db),
 ):
     return await crm_service.list_customers(db, page=page, per_page=per_page, search=search)
+
+
+@router.get("/trades")
+async def crm_trades(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+    search: str | None = Query(None, description="email or account number"),
+    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
+    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
+    _: bool = Depends(verify_crm_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per closed trade: user, symbol, side, lots, profit/loss, brokerage, commission."""
+    from datetime import date as _date
+    df = _date.fromisoformat(date_from) if date_from else None
+    dt = _date.fromisoformat(date_to) if date_to else None
+    return await crm_service.list_trades(
+        db, page=page, per_page=per_page, search=search, date_from=df, date_to=dt,
+    )
+
+
+@router.get("/transactions")
+async def crm_transactions(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+    type: str | None = Query(None, pattern="^(deposit|withdrawal)$"),
+    search: str | None = Query(None, description="user email"),
+    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
+    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
+    _: bool = Depends(verify_crm_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Date-wise deposits & withdrawals (unified rows)."""
+    from datetime import date as _date
+    df = _date.fromisoformat(date_from) if date_from else None
+    dt = _date.fromisoformat(date_to) if date_to else None
+    return await crm_service.list_transactions(
+        db, page=page, per_page=per_page, search=search, tx_type=type, date_from=df, date_to=dt,
+    )
+
+
+@router.get("/referrals")
+async def crm_referrals(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+    user_id: str | None = Query(None, description="filter edges touching this user (as referrer or referred)"),
+    _: bool = Depends(verify_crm_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Referral network: referrer → referred edges."""
+    return await crm_service.list_referrals(db, page=page, per_page=per_page, user_id=user_id)

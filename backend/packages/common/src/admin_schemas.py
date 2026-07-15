@@ -1056,10 +1056,19 @@ class CrmLeadRow(BaseModel):
     country: Optional[str] = None
     source: Optional[str] = None
     assigned_rm: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[str] = None          # account status (active/banned/…)
     kyc_status: Optional[str] = None
     created_at: Optional[datetime] = None
     has_account: bool = False
+    sub_accounts: int = 0                 # number of live (non-demo) trading accounts
+    # ── IB detail (item 3) ──
+    is_ib: bool = False
+    referral_code: Optional[str] = None
+    followers_count: int = 0              # users this IB referred
+    ib_commission_total: float = 0        # lifetime IB commission earned
+    # ── Referral network (item 4) ──
+    referred_by: Optional[str] = None     # email of the user/IB who referred this lead
+    referrals_count: int = 0              # users this lead referred
 
 
 class CrmCustomerRow(BaseModel):
@@ -1099,8 +1108,63 @@ class CrmCustomerRow(BaseModel):
     brokerage: float = 0
     insurance: float = 0
     staking: float = 0
-    trading_loss: float = 0
+    trading_loss: float = 0               # net realized LOSS (positive; 0 if profitable)
+    total_profit: float = 0               # net realized PROFIT (positive; 0 if in loss) — item 5
+    net_pnl: float = 0                     # realized + current unrealised P&L — item 5
     account_opened_at: Optional[datetime] = None
+    # ── Status (item 7) ──
+    account_status: Optional[str] = None   # active / inactive (ta.is_active)
+    kyc_status: Optional[str] = None
+    # ── IB detail (item 3) ──
+    is_ib: bool = False
+    referral_code: Optional[str] = None
+    ib_commission_total: float = 0
+
+
+class CrmTradeRow(BaseModel):
+    """One closed trade (item 2)."""
+    trade_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    symbol: Optional[str] = None
+    side: Optional[str] = None            # buy / sell
+    lots: float = 0
+    open_price: float = 0
+    close_price: float = 0
+    opened_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None  # trade date/time
+    profit: float = 0                     # positive part of P&L (0 if loss)
+    loss: float = 0                       # positive part of loss (0 if profit)
+    net_pnl: float = 0                    # signed realized P&L
+    commission: float = 0
+    swap: float = 0
+    brokerage: float = 0                  # commission + swap (gross brokerage)
+    close_reason: Optional[str] = None    # manual / sl / tp / stop_out
+
+
+class CrmTransactionRow(BaseModel):
+    """One deposit or withdrawal (item 6)."""
+    transaction_id: str
+    user_id: str
+    type: str                             # deposit | withdrawal
+    amount: float = 0
+    currency: Optional[str] = None
+    method: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class CrmReferralRow(BaseModel):
+    """One referral edge: referrer → referred (item 4)."""
+    referrer_id: Optional[str] = None
+    referrer_email: Optional[str] = None
+    referrer_referral_code: Optional[str] = None
+    referred_id: str
+    referred_email: Optional[str] = None
+    referred_name: Optional[str] = None
+    referred_country: Optional[str] = None
+    referred_has_account: bool = False
+    created_at: Optional[datetime] = None
 
 
 class AdminNotificationOut(BaseModel):
