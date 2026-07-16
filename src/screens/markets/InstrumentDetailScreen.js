@@ -298,11 +298,14 @@ export default function InstrumentDetailScreen() {
         theme: vantage.isDark ? 'dark' : 'light',
         api: API_URL,
         token: authToken || '',
+        // The active account — so the chart shows this account's positions and
+        // places orders / SL-TP on it (same on-chart trading as the website).
+        account: String(activeAccount?.id || activeAccount?._id || ''),
       });
       return { uri: `${CHART_URL}?${q.toString()}` };
     }
     return { html: chartHtml, baseUrl: 'https://www.tradingview.com' };
-  }, [symbol, interval, authToken, chartHtml]);
+  }, [symbol, interval, authToken, chartHtml, activeAccount]);
 
   return (
     <Screen edges={['top']}>
