@@ -32,6 +32,7 @@ from packages.common.src.models import TradingAccount, TradeHistory
 from packages.common.src.admin_schemas import (
     PaginatedResponse, CrmDashboard, CrmLeadRow, CrmCustomerRow,
     CrmTradeRow, CrmTransactionRow, CrmReferralRow,
+    CrmPositionRow, CrmOrderRow, CrmLedgerRow,
 )
 from . import analytics_service, dashboard_service
 
@@ -108,6 +109,12 @@ async def list_leads(
                ibp.referral_code AS referral_code,
                (ibp.id IS NOT NULL) AS is_ib,
                COALESCE(ibp.total_earned, 0) AS ib_commission_total,
+               ibp.level AS ib_level,
+               COALESCE(ibp.pending_payout, 0) AS ib_pending_payout,
+               ibp.custom_commission_per_lot AS ib_cpl,
+               ibp.custom_commission_per_trade AS ib_cpt,
+               (SELECT pu.email FROM ib_profiles pib JOIN users pu ON pu.id = pib.user_id
+                  WHERE pib.id = ibp.parent_ib_id) AS ib_upline_email,
                COALESCE((SELECT count(*) FROM referrals r WHERE r.ib_profile_id = ibp.id), 0) AS followers_count,
                (SELECT ru.email FROM referrals r JOIN users ru ON ru.id = r.referrer_id
                   WHERE r.referred_id = u.id AND r.referrer_id IS NOT NULL ORDER BY r.created_at LIMIT 1) AS referred_by,
@@ -141,6 +148,11 @@ async def list_leads(
             referral_code=r["referral_code"],
             followers_count=int(r["followers_count"] or 0),
             ib_commission_total=float(r["ib_commission_total"] or 0),
+            ib_level=int(r["ib_level"]) if r["ib_level"] is not None else None,
+            ib_upline_email=r["ib_upline_email"],
+            ib_pending_payout=float(r["ib_pending_payout"] or 0),
+            ib_custom_commission_per_lot=float(r["ib_cpl"]) if r["ib_cpl"] is not None else None,
+            ib_custom_commission_per_trade=float(r["ib_cpt"]) if r["ib_cpt"] is not None else None,
             referred_by=r["referred_by"],
             referrals_count=int(r["referrals_count"] or 0),
         ).model_dump())
@@ -174,7 +186,10 @@ async def list_customers(
             EXISTS (SELECT 1 FROM referrals r WHERE r.referred_id = u.id AND r.referrer_id IS NOT NULL) AS has_referrer,
             ta.account_number, ta.currency, ta.balance, ta.equity, ta.created_at AS account_opened_at,
             ta.is_active AS account_active,
+            ta.credit, ta.margin_used, ta.free_margin, ta.margin_level, ta.leverage,
             ag.name AS account_type,
+            COALESCE(ag.minimum_deposit, 0) AS minimum_deposit,
+            COALESCE(ag.swap_free, false) AS swap_free,
             ibp.referral_code AS referral_code,
             (ibp.id IS NOT NULL) AS is_ib,
             COALESCE(ibp.total_earned, 0) AS ib_commission_total,
@@ -258,6 +273,13 @@ async def list_customers(
             currency=r["currency"],
             balance=float(r["balance"] or 0),
             equity=float(r["equity"] or 0),
+            credit=float(r["credit"] or 0),
+            margin_used=float(r["margin_used"] or 0),
+            free_margin=float(r["free_margin"] or 0),
+            margin_level=float(r["margin_level"] or 0),
+            leverage=int(r["leverage"]) if r["leverage"] is not None else None,
+            minimum_deposit=float(r["minimum_deposit"] or 0),
+            swap_free=bool(r["swap_free"]),
             total_deposit=float(r["total_deposit"] or 0),
             total_withdrawal=float(r["total_withdrawal"] or 0),
             lots_traded=float(r["lots_traded"] or 0),
@@ -437,5 +459,160 @@ async def list_referrals(
             referred_country=r["referred_country"],
             referred_has_account=bool(r["referred_has_account"]),
             created_at=r["created_at"],
+        ).model_dump())
+    return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)
+
+
+# ── Live open positions ───────────────────────────────────────────────────
+
+async def list_positions(
+    db: AsyncSession, page: int, per_page: int, search: str | None,
+) -> PaginatedResponse:
+    like = f"%{search.strip()}%" if search and search.strip() else None
+    params = {"search": like, "limit": per_page, "offset": (page - 1) * per_page}
+    where = """
+        WHERE lower(cast(p.status AS text)) = 'open'
+          AND ta.is_demo = false
+          AND (CAST(:search AS text) IS NULL OR u.email ILIKE CAST(:search AS text)
+               OR ta.account_number ILIKE CAST(:search AS text))
+    """
+    base = """
+        FROM positions p
+        JOIN trading_accounts ta ON ta.id = p.account_id
+        JOIN users u ON u.id = ta.user_id
+        LEFT JOIN instruments i ON i.id = p.instrument_id
+    """
+    count_sql = text(f"SELECT count(*) {base} {where}")
+    rows_sql = text(f"""
+        SELECT p.id AS position_id, ta.user_id, ta.account_number, i.symbol,
+               p.side, p.lots, p.open_price, p.stop_loss, p.take_profit,
+               p.swap, p.commission, p.profit, p.created_at AS opened_at
+        {base} {where}
+        ORDER BY p.created_at DESC NULLS LAST
+        LIMIT :limit OFFSET :offset
+    """)
+    try:
+        total = (await db.execute(count_sql, params)).scalar() or 0
+        rows = (await db.execute(rows_sql, params)).all()
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback()
+        _log.warning("crm list_positions failed: %s", exc)
+        return PaginatedResponse(items=[], total=0, page=page, per_page=per_page)
+    items = []
+    for r in (row._mapping for row in rows):
+        items.append(CrmPositionRow(
+            position_id=str(r["position_id"]), user_id=str(r["user_id"]),
+            account_number=r["account_number"], symbol=r["symbol"],
+            side=str(r["side"]).lower() if r["side"] is not None else None,
+            lots=float(r["lots"] or 0), open_price=float(r["open_price"] or 0),
+            stop_loss=float(r["stop_loss"]) if r["stop_loss"] is not None else None,
+            take_profit=float(r["take_profit"]) if r["take_profit"] is not None else None,
+            swap=float(r["swap"] or 0), commission=float(r["commission"] or 0),
+            floating_pnl=float(r["profit"] or 0), opened_at=r["opened_at"],
+        ).model_dump())
+    return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)
+
+
+# ── Pending / working orders ──────────────────────────────────────────────
+
+async def list_orders(
+    db: AsyncSession, page: int, per_page: int, search: str | None, status: str | None,
+) -> PaginatedResponse:
+    like = f"%{search.strip()}%" if search and search.strip() else None
+    # default: only pending (working) orders; pass status to override.
+    st = (status or "pending").strip().lower()
+    params = {"search": like, "st": st, "limit": per_page, "offset": (page - 1) * per_page}
+    where = """
+        WHERE ta.is_demo = false
+          AND (CAST(:st AS text) = 'all' OR lower(cast(o.status AS text)) = CAST(:st AS text))
+          AND (CAST(:search AS text) IS NULL OR u.email ILIKE CAST(:search AS text)
+               OR ta.account_number ILIKE CAST(:search AS text))
+    """
+    base = """
+        FROM orders o
+        JOIN trading_accounts ta ON ta.id = o.account_id
+        JOIN users u ON u.id = ta.user_id
+        LEFT JOIN instruments i ON i.id = o.instrument_id
+    """
+    count_sql = text(f"SELECT count(*) {base} {where}")
+    rows_sql = text(f"""
+        SELECT o.id AS order_id, ta.user_id, ta.account_number, i.symbol,
+               o.order_type, o.side, o.status, o.lots, o.price,
+               o.stop_loss, o.take_profit, o.is_admin_created, o.created_at
+        {base} {where}
+        ORDER BY o.created_at DESC NULLS LAST
+        LIMIT :limit OFFSET :offset
+    """)
+    try:
+        total = (await db.execute(count_sql, params)).scalar() or 0
+        rows = (await db.execute(rows_sql, params)).all()
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback()
+        _log.warning("crm list_orders failed: %s", exc)
+        return PaginatedResponse(items=[], total=0, page=page, per_page=per_page)
+    items = []
+    for r in (row._mapping for row in rows):
+        items.append(CrmOrderRow(
+            order_id=str(r["order_id"]), user_id=str(r["user_id"]),
+            account_number=r["account_number"], symbol=r["symbol"],
+            order_type=str(r["order_type"]).lower() if r["order_type"] is not None else None,
+            side=str(r["side"]).lower() if r["side"] is not None else None,
+            status=str(r["status"]).lower() if r["status"] is not None else None,
+            lots=float(r["lots"] or 0),
+            price=float(r["price"]) if r["price"] is not None else None,
+            stop_loss=float(r["stop_loss"]) if r["stop_loss"] is not None else None,
+            take_profit=float(r["take_profit"]) if r["take_profit"] is not None else None,
+            is_admin_created=bool(r["is_admin_created"]),
+            created_at=r["created_at"],
+        ).model_dump())
+    return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)
+
+
+# ── Internal ledger (Transaction) — all balance movements ─────────────────
+
+async def list_ledger(
+    db: AsyncSession, page: int, per_page: int, search: str | None,
+    tx_type: str | None, date_from: date | None, date_to: date | None,
+) -> PaginatedResponse:
+    like = f"%{search.strip()}%" if search and search.strip() else None
+    df = datetime.combine(date_from, time.min, tzinfo=timezone.utc) if date_from else None
+    dt = datetime.combine(date_to, time.max, tzinfo=timezone.utc) if date_to else None
+    params = {"search": like, "ttype": tx_type, "df": df, "dt": dt,
+              "limit": per_page, "offset": (page - 1) * per_page}
+    where = """
+        WHERE (CAST(:ttype AS text) IS NULL OR lower(t.type) = lower(CAST(:ttype AS text)))
+          AND (CAST(:search AS text) IS NULL OR u.email ILIKE CAST(:search AS text)
+               OR ta.account_number ILIKE CAST(:search AS text))
+          AND (CAST(:df AS timestamptz) IS NULL OR t.created_at >= :df)
+          AND (CAST(:dt AS timestamptz) IS NULL OR t.created_at <= :dt)
+    """
+    base = """
+        FROM transactions t
+        JOIN users u ON u.id = t.user_id
+        LEFT JOIN trading_accounts ta ON ta.id = t.account_id
+    """
+    count_sql = text(f"SELECT count(*) {base} {where}")
+    rows_sql = text(f"""
+        SELECT t.id AS ledger_id, t.user_id, ta.account_number, t.type,
+               t.amount, t.balance_after, t.description, t.created_at
+        {base} {where}
+        ORDER BY t.created_at DESC NULLS LAST
+        LIMIT :limit OFFSET :offset
+    """)
+    try:
+        total = (await db.execute(count_sql, params)).scalar() or 0
+        rows = (await db.execute(rows_sql, params)).all()
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback()
+        _log.warning("crm list_ledger failed: %s", exc)
+        return PaginatedResponse(items=[], total=0, page=page, per_page=per_page)
+    items = []
+    for r in (row._mapping for row in rows):
+        items.append(CrmLedgerRow(
+            ledger_id=str(r["ledger_id"]), user_id=str(r["user_id"]),
+            account_number=r["account_number"], type=r["type"],
+            amount=float(r["amount"] or 0),
+            balance_after=float(r["balance_after"]) if r["balance_after"] is not None else None,
+            description=r["description"], created_at=r["created_at"],
         ).model_dump())
     return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)

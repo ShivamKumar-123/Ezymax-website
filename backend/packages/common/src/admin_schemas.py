@@ -1066,6 +1066,12 @@ class CrmLeadRow(BaseModel):
     referral_code: Optional[str] = None
     followers_count: int = 0              # users this IB referred
     ib_commission_total: float = 0        # lifetime IB commission earned
+    # ── IB extra ──
+    ib_level: Optional[int] = None                    # MLM depth / tier
+    ib_upline_email: Optional[str] = None             # parent (upline) IB's email
+    ib_pending_payout: float = 0                      # earned but not yet paid out
+    ib_custom_commission_per_lot: Optional[float] = None
+    ib_custom_commission_per_trade: Optional[float] = None
     # ── Referral network (item 4) ──
     referred_by: Optional[str] = None     # email of the user/IB who referred this lead
     referrals_count: int = 0              # users this lead referred
@@ -1087,6 +1093,14 @@ class CrmCustomerRow(BaseModel):
     currency: Optional[str] = None
     balance: float = 0
     equity: float = 0
+    # ── Account live/margin extra ──
+    credit: float = 0                     # bonus / credit balance
+    margin_used: float = 0
+    free_margin: float = 0
+    margin_level: float = 0               # equity / margin_used * 100
+    leverage: Optional[int] = None
+    minimum_deposit: float = 0            # from the account group
+    swap_free: bool = False               # Islamic / swap-free account group
     total_deposit: float = 0
     total_withdrawal: float = 0
     lots_traded: float = 0
@@ -1164,6 +1178,53 @@ class CrmReferralRow(BaseModel):
     referred_name: Optional[str] = None
     referred_country: Optional[str] = None
     referred_has_account: bool = False
+    created_at: Optional[datetime] = None
+
+
+class CrmPositionRow(BaseModel):
+    """One live (open) position."""
+    position_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    symbol: Optional[str] = None
+    side: Optional[str] = None            # buy / sell
+    lots: float = 0
+    open_price: float = 0
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    swap: float = 0
+    commission: float = 0
+    floating_pnl: float = 0               # engine-maintained unrealised P&L (~1s fresh)
+    opened_at: Optional[datetime] = None
+
+
+class CrmOrderRow(BaseModel):
+    """One pending / working order (not yet a position)."""
+    order_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    symbol: Optional[str] = None
+    order_type: Optional[str] = None      # market / limit / stop / stop_limit
+    side: Optional[str] = None            # buy / sell
+    status: Optional[str] = None
+    lots: float = 0
+    price: Optional[float] = None         # requested price
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    is_admin_created: bool = False
+    created_at: Optional[datetime] = None
+
+
+class CrmLedgerRow(BaseModel):
+    """One internal balance movement (Transaction ledger) — deposits, withdrawals,
+    credits, adjustments, commissions, bonuses, etc."""
+    ledger_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    type: Optional[str] = None            # deposit / withdrawal / credit / adjustment / commission / …
+    amount: float = 0                     # signed
+    balance_after: Optional[float] = None
+    description: Optional[str] = None
     created_at: Optional[datetime] = None
 
 
