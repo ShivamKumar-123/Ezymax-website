@@ -137,7 +137,9 @@ export default function ChartPage() {
       style={{ position: 'fixed', inset: 0, background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
     >
       <ChartErrorBoundary>
-        <TradingViewChart theme={theme} intervalOverride={interval} />
+        {/* Buy/Sell widget hidden here — the mobile app has its own native
+            trade panel; the chart keeps SL/TP pill + draggable lines. */}
+        <TradingViewChart theme={theme} intervalOverride={interval} showTradeWidget={false} />
       </ChartErrorBoundary>
     </div>
   );

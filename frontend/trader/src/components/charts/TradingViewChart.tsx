@@ -27,10 +27,12 @@ function TradingViewChartInner({
   onRequestFullscreen,
   theme = 'light',
   intervalOverride,
+  showTradeWidget = true,
 }: {
   onRequestFullscreen?: () => void;
   theme?: 'light' | 'dark';
   intervalOverride?: string;
+  showTradeWidget?: boolean;
 }) {
   // Unique per instance — the terminal mounts this chart in more than one place
   // (mobile + desktop layouts); a shared DOM id would make two widgets fight
@@ -702,10 +704,13 @@ function TradingViewChartInner({
 
       {/* On-chart quick-trade: live SELL / BUY prices + spread; places a market
           order on the active account. Sits BELOW the chart's symbol legend /
-          OHLC row so it doesn't cover them. */}
-      <div className="absolute top-[92px] left-2 z-30 pointer-events-none">
-        <ChartTradeWidget />
-      </div>
+          OHLC row so it doesn't cover them. Hidden on the mobile /chart WebView
+          (the app has its own native trade panel). */}
+      {showTradeWidget && (
+        <div className="absolute top-[92px] left-2 z-30 pointer-events-none">
+          <ChartTradeWidget />
+        </div>
+      )}
 
       {/* Per-position control pills, pinned to each position's CURRENT-price line
           (positioned imperatively by the rAF loop above). SL / TP add a draggable
