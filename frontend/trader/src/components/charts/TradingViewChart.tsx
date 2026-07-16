@@ -513,6 +513,12 @@ function TradingViewChartInner({
 
     placingRef.current = true;
     let lineId: string | null = null;
+    // Filled band between the entry line and the dragged level (red for SL,
+    // green for TP) — like the reference platform's P&L zone.
+    let bandId: string | null = null;
+    const entryPrice = Number(pos.open_price);
+    let bandFrom = Math.floor(Date.now() / 1000);
+    let bandTo = bandFrom + 1;
     let lastPrice = startPrice;
     let anchorTime = Math.floor(Date.now() / 1000);
     let lastCrossTs = 0;
@@ -524,6 +530,9 @@ function TradingViewChartInner({
       if (!Number.isFinite(price) || !lineId) return;
       lastPrice = Number(price);
       try { chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+      try {
+        if (bandId) chart.getShapeById(bandId).setPoints([{ time: bandFrom, price: entryPrice }, { time: bandTo, price: lastPrice }]);
+      } catch { /* ignore */ }
     };
     // Y (viewport) → price, using the same rolling-median calibration as the
     // pill. This is how the line follows a TOUCH drag (mobile crosshair doesn't
@@ -568,8 +577,9 @@ function TradingViewChartInner({
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
       placingRef.current = false;
-      // Drop the temp line and ASK before committing (modal shows price + P&L).
+      // Drop the temp line + band and ASK before committing (modal shows P&L).
       try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
+      try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ }
       requestBracketRef.current?.(positionId, leg, Number(lastPrice));
     };
 
@@ -595,6 +605,22 @@ function TradingViewChartInner({
         ));
       } catch { return; }
       if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
+
+      // Filled band from the entry line to the dragged level (transparent
+      // red for SL / green for TP), spanning the visible time range.
+      try {
+        const vr2 = chart.getVisibleRange?.();
+        if (vr2 && Number.isFinite(vr2.from) && Number.isFinite(vr2.to)) { bandFrom = Math.floor(vr2.from); bandTo = Math.floor(vr2.to); }
+        if (!done && Number.isFinite(entryPrice) && typeof chart.createMultipointShape === 'function') {
+          bandId = String(await chart.createMultipointShape(
+            [{ time: bandFrom, price: entryPrice }, { time: bandTo, price: startPrice }],
+            { shape: 'rectangle', lock: true, disableSave: true, disableUndo: true, disableSelection: true, zOrder: 'bottom',
+              overrides: { backgroundColor: color, transparency: 82, fillBackground: true, color, linewidth: 0, linestyle: 2 } },
+          ));
+          if (done && bandId) { try { chart.removeEntity(bandId); } catch { /* ignore */ } }
+        }
+      } catch { /* band is optional */ }
+
       try { crossSub = chart.crossHairMoved?.(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
     })();
   }, []);
