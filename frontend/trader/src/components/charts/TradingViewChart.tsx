@@ -23,6 +23,16 @@ import { api } from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import { ChartTradeWidget } from '@/components/charts/ChartTradeWidget';
 
+// Tell the React Native app (when this runs inside its WebView) that an SL/TP
+// drag is in progress, so it can freeze the surrounding ScrollView — otherwise
+// the page scrolls instead of the line dragging. No-op in a normal browser.
+function postDragToNative(active: boolean) {
+  try {
+    (window as unknown as { ReactNativeWebView?: { postMessage: (s: string) => void } })
+      .ReactNativeWebView?.postMessage(JSON.stringify({ type: 'chart:drag', active }));
+  } catch { /* ignore */ }
+}
+
 function TradingViewChartInner({
   onRequestFullscreen,
   theme = 'light',
@@ -573,6 +583,7 @@ function TradingViewChartInner({
     // mobile), and the chart doesn't pan under the finger. On touch the
     // crosshair doesn't fire, so the line follows via pixel→price (calibrated).
     try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
+    postDragToNative(true); // freeze the app's ScrollView during the drag
 
     placingRef.current = true;
     let lineId: string | null = null;
@@ -639,6 +650,7 @@ function TradingViewChartInner({
       try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
+      postDragToNative(false); // re-enable the app's ScrollView
       placingRef.current = false;
       // Drop the temp line + band and ASK before committing (modal shows P&L).
       try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
