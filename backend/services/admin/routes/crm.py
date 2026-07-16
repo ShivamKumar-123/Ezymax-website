@@ -90,17 +90,21 @@ async def crm_trades(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     search: str | None = Query(None, description="email or account number"),
-    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
-    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
+    status: str = Query("all", pattern="^(all|open|closed)$",
+                        description="all (default) = open + closed; or 'open' / 'closed'"),
+    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
+    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
     _: bool = Depends(verify_crm_key),
     db: AsyncSession = Depends(get_db),
 ):
-    """Per closed trade: user, symbol, side, lots, profit/loss, brokerage, commission."""
+    """All trades — open (live positions) + closed (history). Each row has
+    status='open'|'closed'. Fields: user, symbol, side, lots, profit/loss,
+    brokerage, commission, swap. Date filter = closed_at (closed) / open time (open)."""
     from datetime import date as _date
     df = _date.fromisoformat(date_from) if date_from else None
     dt = _date.fromisoformat(date_to) if date_to else None
     return await crm_service.list_trades(
-        db, page=page, per_page=per_page, search=search, date_from=df, date_to=dt,
+        db, page=page, per_page=per_page, search=search, date_from=df, date_to=dt, status=status,
     )
 
 

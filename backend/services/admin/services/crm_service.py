@@ -309,32 +309,58 @@ async def list_customers(
 
 async def list_trades(
     db: AsyncSession, page: int, per_page: int, search: str | None,
-    date_from: date | None, date_to: date | None,
+    date_from: date | None, date_to: date | None, status: str | None = "all",
 ) -> PaginatedResponse:
+    """All trades — closed (trade_history) + open (live positions), unified.
+
+    status: 'all' (default) | 'closed' | 'open'. Open trades carry status='open',
+    close_price/closed_at = null, and profit = live floating P&L (engine-fresh).
+    Date filter applies to closed_at for closed trades and open time for open ones.
+    """
+    st = (status or "all").strip().lower()
+    if st not in ("all", "open", "closed"):
+        st = "all"
     like = f"%{search.strip()}%" if search and search.strip() else None
     df = datetime.combine(date_from, time.min, tzinfo=timezone.utc) if date_from else None
     dt = datetime.combine(date_to, time.max, tzinfo=timezone.utc) if date_to else None
-    params = {"search": like, "df": df, "dt": dt, "limit": per_page, "offset": (page - 1) * per_page}
-    where = """
+    params = {"search": like, "df": df, "dt": dt, "st": st,
+              "limit": per_page, "offset": (page - 1) * per_page}
+    # Unified set: closed trades from trade_history + open trades from positions.
+    # `sort_at` = closed_at (closed) / created_at (open) for a single ORDER BY.
+    union = """
+        SELECT th.id AS trade_id, th.account_id, th.instrument_id, 'closed' AS status,
+               th.side, th.lots, th.open_price, th.close_price,
+               th.opened_at, th.closed_at, th.profit, th.commission, th.swap, th.close_reason,
+               th.closed_at AS sort_at
+        FROM trade_history th
+        WHERE CAST(:st AS text) IN ('all','closed')
+        UNION ALL
+        SELECT p.id AS trade_id, p.account_id, p.instrument_id, 'open' AS status,
+               p.side, p.lots, p.open_price, NULL::numeric AS close_price,
+               p.created_at AS opened_at, NULL::timestamptz AS closed_at,
+               p.profit, p.commission, p.swap, NULL::text AS close_reason,
+               p.created_at AS sort_at
+        FROM positions p
+        WHERE lower(cast(p.status AS text)) = 'open' AND CAST(:st AS text) IN ('all','open')
+    """
+    base = f"""
+        FROM ({union}) tr
+        JOIN trading_accounts ta ON ta.id = tr.account_id
+        JOIN users u ON u.id = ta.user_id
+        LEFT JOIN instruments i ON i.id = tr.instrument_id
         WHERE ta.is_demo = false
           AND (CAST(:search AS text) IS NULL OR u.email ILIKE CAST(:search AS text)
                OR ta.account_number ILIKE CAST(:search AS text))
-          AND (CAST(:df AS timestamptz) IS NULL OR th.closed_at >= :df)
-          AND (CAST(:dt AS timestamptz) IS NULL OR th.closed_at <= :dt)
+          AND (CAST(:df AS timestamptz) IS NULL OR tr.sort_at >= :df)
+          AND (CAST(:dt AS timestamptz) IS NULL OR tr.sort_at <= :dt)
     """
-    base = """
-        FROM trade_history th
-        JOIN trading_accounts ta ON ta.id = th.account_id
-        JOIN users u ON u.id = ta.user_id
-        LEFT JOIN instruments i ON i.id = th.instrument_id
-    """
-    count_sql = text(f"SELECT count(*) {base} {where}")
+    count_sql = text(f"SELECT count(*) {base}")
     rows_sql = text(f"""
-        SELECT th.id AS trade_id, ta.user_id, ta.account_number, i.symbol,
-               th.side, th.lots, th.open_price, th.close_price,
-               th.opened_at, th.closed_at, th.profit, th.commission, th.swap, th.close_reason
-        {base} {where}
-        ORDER BY th.closed_at DESC NULLS LAST
+        SELECT tr.trade_id, ta.user_id, ta.account_number, i.symbol, tr.status,
+               tr.side, tr.lots, tr.open_price, tr.close_price,
+               tr.opened_at, tr.closed_at, tr.profit, tr.commission, tr.swap, tr.close_reason
+        {base}
+        ORDER BY tr.sort_at DESC NULLS LAST
         LIMIT :limit OFFSET :offset
     """)
     try:
@@ -352,6 +378,7 @@ async def list_trades(
         items.append(CrmTradeRow(
             trade_id=str(r["trade_id"]), user_id=str(r["user_id"]),
             account_number=r["account_number"], symbol=r["symbol"],
+            status=r["status"],
             side=str(r["side"]).lower() if r["side"] is not None else None,
             lots=float(r["lots"] or 0),
             open_price=float(r["open_price"] or 0), close_price=float(r["close_price"] or 0),

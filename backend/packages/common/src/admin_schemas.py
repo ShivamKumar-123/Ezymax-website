@@ -1136,17 +1136,18 @@ class CrmCustomerRow(BaseModel):
 
 
 class CrmTradeRow(BaseModel):
-    """One closed trade (item 2)."""
+    """One trade — open (live position) or closed (history)."""
     trade_id: str
     user_id: str
     account_number: Optional[str] = None
     symbol: Optional[str] = None
+    status: str = "closed"                # open | closed
     side: Optional[str] = None            # buy / sell
     lots: float = 0
     open_price: float = 0
-    close_price: float = 0
+    close_price: float = 0                # 0 for open trades
     opened_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None  # trade date/time
+    closed_at: Optional[datetime] = None  # null for open trades
     profit: float = 0                     # positive part of P&L (0 if loss)
     loss: float = 0                       # positive part of loss (0 if profit)
     net_pnl: float = 0                    # signed realized P&L
