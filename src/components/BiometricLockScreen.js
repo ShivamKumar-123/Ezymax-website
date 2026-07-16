@@ -70,7 +70,15 @@ export default function BiometricLockScreen({ onUnlock, onLogout, label = 'Biome
   return (
     <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.center}>
-        <Image source={require('../../assets/swisscresta-logo.png')} style={styles.logo} resizeMode="contain" />
+        {/* Dark mode: the square favicon (shows clearly on the dark lock
+            screen); light mode: the wide wordmark. */}
+        <Image
+          source={vantage.isDark
+            ? require('../../assets/swisscresta-favicon.png')
+            : require('../../assets/swisscresta-logo.png')}
+          style={vantage.isDark ? styles.favicon : styles.logo}
+          resizeMode="contain"
+        />
         <View style={styles.iconCircle}>
           <Ionicons name={isFace ? 'scan-outline' : 'finger-print'} size={44} color={vantage.accent} />
         </View>
@@ -101,6 +109,7 @@ const styles = StyleSheet.create({
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },
   logo: { width: 150, height: 50, marginBottom: space.xl },
+  favicon: { width: 76, height: 76, marginBottom: space.xl, borderRadius: radius.lg },
   iconCircle: {
     width: 88, height: 88, borderRadius: 44,
     backgroundColor: vantage.accentMuted || 'rgba(242,106,31,0.15)',
