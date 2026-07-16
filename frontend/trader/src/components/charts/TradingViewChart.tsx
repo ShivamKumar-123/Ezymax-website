@@ -282,6 +282,8 @@ function TradingViewChartInner({
           removeEntity(set.entry?.id);
           removeEntity(set.sl?.id);
           removeEntity(set.tp?.id);
+          removeEntity(set.slBand?.id);
+          removeEntity(set.tpBand?.id);
           map.delete(id);
         }
       }
@@ -324,6 +326,39 @@ function TradingViewChartInner({
         set[creatingKey] = false;
       };
 
+      // A very wide time span so the filled band always covers the visible area
+      // regardless of pan / zoom.
+      const bandFrom = anchorTime - 630720000; // ~20y back
+      const bandTo = anchorTime + 630720000;   // ~20y forward
+      // Persistent filled zone between the entry line and a SET SL/TP (red for
+      // SL, green for TP) — stays after the bracket is set.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ensureBand = async (set: any, key: 'slBand' | 'tpBand', entryPrice: number, toPrice: number, color: string) => {
+        if (!Number.isFinite(entryPrice) || !Number.isFinite(toPrice) || typeof chart.createMultipointShape !== 'function') return;
+        const existing = set[key];
+        if (existing) {
+          if (Math.abs(existing.price - toPrice) > 1e-9 || Math.abs(existing.entry - entryPrice) > 1e-9) {
+            suppressEidsRef.current.add(existing.id);
+            try { chart.getShapeById(existing.id).setPoints([{ time: bandFrom, price: entryPrice }, { time: bandTo, price: toPrice }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
+            existing.price = toPrice; existing.entry = entryPrice;
+          }
+          return;
+        }
+        const ck = `${key}Creating`;
+        if (set[ck]) return;
+        set[ck] = true;
+        try {
+          const id = await chart.createMultipointShape(
+            [{ time: bandFrom, price: entryPrice }, { time: bandTo, price: toPrice }],
+            { shape: 'rectangle', lock: true, disableSave: true, disableUndo: true, disableSelection: true, zOrder: 'bottom',
+              overrides: { backgroundColor: color, transparency: 86, fillBackground: true, color, linewidth: 0, linestyle: 0 } },
+          );
+          set[key] = { id: String(id), price: toPrice, entry: entryPrice };
+        } catch { /* ignore */ }
+        set[ck] = false;
+      };
+
       for (const p of rel) {
         let set = map.get(p.id);
         if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
@@ -335,10 +370,18 @@ function TradingViewChartInner({
         // Draggable SL / TP. Copied (MAM) positions get none — master-controlled.
         if (!isCopy && p.stop_loss != null) {
           await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
-        } else { removeEntity(set.sl?.id); set.sl = undefined; }
+          await ensureBand(set, 'slBand', Number(p.open_price), Number(p.stop_loss), '#dc2626');
+        } else {
+          removeEntity(set.sl?.id); set.sl = undefined;
+          removeEntity(set.slBand?.id); set.slBand = undefined;
+        }
         if (!isCopy && p.take_profit != null) {
           await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
-        } else { removeEntity(set.tp?.id); set.tp = undefined; }
+          await ensureBand(set, 'tpBand', Number(p.open_price), Number(p.take_profit), '#16a34a');
+        } else {
+          removeEntity(set.tp?.id); set.tp = undefined;
+          removeEntity(set.tpBand?.id); set.tpBand = undefined;
+        }
       }
     } finally {
       syncBusyRef.current = false;
