@@ -28,7 +28,23 @@ import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import { mapApiAccount } from '@/lib/mapApiAccount';
 import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
 
-const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
+function ChartSpinner({ dark }: { dark: boolean }) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: dark ? '#0b0e11' : '#ffffff' }}
+    >
+      <div
+        className="animate-spin"
+        style={{ width: 34, height: 34, borderRadius: '50%', border: '3px solid rgba(242,106,31,0.25)', borderTopColor: '#f26a1f' }}
+      />
+    </div>
+  );
+}
+
+const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), {
+  ssr: false,
+  loading: () => <ChartSpinner dark={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('theme') !== 'light'} />,
+});
 
 function param(name: string, fallback = ''): string {
   if (typeof window === 'undefined') return fallback;

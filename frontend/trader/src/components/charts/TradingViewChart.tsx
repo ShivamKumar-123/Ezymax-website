@@ -784,6 +784,19 @@ function TradingViewChartInner({
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
+      {/* Loader until the chart is ready (covers the library load). */}
+      {!chartReady && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center"
+          style={{ background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
+        >
+          <div
+            className="animate-spin"
+            style={{ width: 34, height: 34, borderRadius: '50%', border: '3px solid rgba(242,106,31,0.25)', borderTopColor: '#f26a1f' }}
+          />
+        </div>
+      )}
+
       {/* On-chart quick-trade: live SELL / BUY prices + spread; places a market
           order on the active account. Sits BELOW the chart's symbol legend /
           OHLC row so it doesn't cover them. Hidden on the mobile /chart WebView
