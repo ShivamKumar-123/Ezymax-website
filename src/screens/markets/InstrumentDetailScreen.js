@@ -71,6 +71,7 @@ export default function InstrumentDetailScreen() {
   const [tab, setTab] = useState('chart');
   const [tf, setTf] = useState('1m');
   const [chartFull, setChartFull] = useState(false);   // fullscreen chart toggle
+  const [chartDragging, setChartDragging] = useState(false); // freeze page scroll during an on-chart SL/TP drag
   const [instrument, setInstrument] = useState(null);
   const [tick, setTick] = useState(null);
   const [bars1D, setBars1D] = useState([]);
@@ -337,7 +338,10 @@ export default function InstrumentDetailScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: footerH + space.lg }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: footerH + space.lg }}
+        scrollEnabled={!chartDragging}
+      >
         {tab === 'chart' ? (
           <>
             <View style={styles.heroRow}>
@@ -376,7 +380,17 @@ export default function InstrumentDetailScreen() {
                 allowsInlineMediaPlayback
                 startInLoadingState={false}
                 originWhitelist={['*']}
+                nestedScrollEnabled
                 onError={() => {}}
+                onMessage={(ev) => {
+                  // The chart posts { type:'chart:drag', active } around an SL/TP
+                  // drag — freeze the ScrollView so the page doesn't scroll and
+                  // the line drags properly.
+                  try {
+                    const m = JSON.parse(ev.nativeEvent.data);
+                    if (m && m.type === 'chart:drag') setChartDragging(!!m.active);
+                  } catch (_) {}
+                }}
               />
             </View>
 
