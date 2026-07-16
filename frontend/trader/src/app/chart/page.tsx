@@ -1,171 +1,144 @@
 'use client';
 
 /**
- * Shared advanced-chart page (TradingView Charting Library).
+ * Shared advanced-chart page (TradingView Charting Library) — the FULL trading
+ * chart, embedded chrome-free by the mobile app's WebView (CHART_URL points
+ * here). Same widget + on-chart SL/TP (draggable, confirm dialog) + Buy/Sell
+ * quick-trade as the web terminal, via the shared TradingViewChart component.
  *
- * Rendered chrome-free so it can be embedded identically by:
- *   • the web trading terminal (in-page), and
- *   • the mobile app's WebView (CHART_URL points here).
+ * The WebView has no session cookie, so auth comes from query params:
+ *   ?token=<jwt>     Bearer token (SecureStore) — used for API + WS
+ *   ?account=<id>    active trading account (positions / orders)
+ *   ?symbol=EURUSD   active symbol
+ *   ?interval=60     TradingView resolution (1|5|15|30|60|240|1D)
+ *   ?theme=dark|light
+ *   ?api=<url>       backend base (informational; same-origin /api/v1 proxies)
  *
- * Query params:
- *   ?symbol=EURUSD   active symbol (default EURUSD)
- *   ?interval=60     TradingView resolution: 1|5|15|30|60|240|1D (default 60)
- *   ?theme=dark|light (default dark)
- *
- * Data comes from our own backend via createDatafeed() — the candles match
- * the prices users actually trade on, not TradingView's feed.
+ * We populate the trading store here (the standalone page is outside the
+ * trading layout that normally wires it) with token-authenticated fetches +
+ * polling + the price WebSocket, then render TradingViewChart.
  */
 
-import { useEffect, useRef, useState } from 'react';
-import { createDatafeed, type DatafeedInstrument } from '@/lib/chart/datafeed';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useTradingStore, type InstrumentInfo } from '@/stores/tradingStore';
+import { api } from '@/lib/api/client';
+import { wsManager } from '@/lib/ws/wsManager';
+import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
+import { mapApiAccount } from '@/lib/mapApiAccount';
+import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
 
-// The Charting Library attaches itself to window.TradingView at runtime.
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    TradingView?: any;
-  }
-}
+const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 
-const LIBRARY_SRC = '/charting_library/charting_library.standalone.js';
-const CHART_CONTAINER_ID = 'sc_tv_chart';
-
-function loadLibrary(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof document === 'undefined') return reject(new Error('no document'));
-    if (window.TradingView) return resolve();
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${LIBRARY_SRC}"]`);
-    if (existing) {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('library load error')));
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = LIBRARY_SRC;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Failed to load charting library'));
-    document.head.appendChild(s);
-  });
+function param(name: string, fallback = ''): string {
+  if (typeof window === 'undefined') return fallback;
+  return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
 export default function ChartPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const widgetRef = useRef<any>(null);
-  // Read theme once at render (SSR-safe) so the container background matches
-  // before the widget paints — no dark flash on the light web terminal.
-  const [theme] = useState<'light' | 'dark'>(() =>
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('theme') === 'light'
-      ? 'light'
-      : 'dark',
-  );
+  const [theme] = useState<'light' | 'dark'>(() => (param('theme') === 'light' ? 'light' : 'dark'));
+  const [interval] = useState<string>(() => param('interval', '60'));
 
   useEffect(() => {
-    let disposed = false;
-    const params = new URLSearchParams(window.location.search);
-    const symbol = (params.get('symbol') || 'EURUSD').toUpperCase();
-    const interval = params.get('interval') || '60';
+    if (typeof window === 'undefined') return;
+    const token = param('token');
+    const symbol = (param('symbol', 'EURUSD')).toUpperCase();
+    const accountId = param('account');
+
+    // Token auth for API (Bearer) — the WebView has no session cookie.
+    if (token) api.setToken(token);
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+
+    const store = useTradingStore.getState();
+    store.setSelectedSymbol(symbol);
+
+    let stopped = false;
 
     (async () => {
-      const datafeed = createDatafeed({});
+      const [accountsRes, instrumentsRes] = await Promise.all([
+        api.get<unknown>('/accounts').catch(() => ({ items: [] })),
+        api.get<unknown>('/instruments/').catch(() => []),
+      ]);
+      if (stopped) return;
 
-      // Best-effort: load the instrument catalog so symbol resolution gets the
-      // right price scale (digits) and search works. Falls back to heuristics.
-      try {
-        const r = await fetch('/api/v1/instruments/', { credentials: 'include' });
-        if (r.ok) {
-          const list = await r.json();
-          if (Array.isArray(list)) {
-            datafeed.setInstruments(
-              list
-                .map((i: Record<string, unknown>): DatafeedInstrument => ({
-                  symbol: String(i.symbol || ''),
-                  digits: typeof i.digits === 'number' ? i.digits : undefined,
-                  segment: typeof i.segment === 'string' ? i.segment : undefined,
-                }))
-                .filter((i: DatafeedInstrument) => i.symbol),
-            );
-          }
-        }
-      } catch {
-        /* ignore — resolveSymbol falls back to digit heuristics */
+      const instruments = Array.isArray(instrumentsRes)
+        ? instrumentsRes
+        : ((instrumentsRes as { items?: unknown[] })?.items ?? []);
+      if (instruments.length > 0) {
+        store.setInstruments(
+          (instruments as Record<string, unknown>[]).map((i): InstrumentInfo => ({
+            symbol: String(i.symbol),
+            display_name: String(i.display_name || i.symbol),
+            segment: String((i.segment as { name?: string })?.name || i.segment || ''),
+            digits: Number(i.digits ?? 5),
+            pip_size: Number(i.pip_size ?? 0.0001),
+            min_lot: Number(i.min_lot ?? 0.01),
+            max_lot: Number(i.max_lot ?? 100),
+            lot_step: Number(i.lot_step ?? 0.01),
+            contract_size: Number(i.contract_size ?? 100000),
+            base_currency: i.base_currency ? String(i.base_currency) : null,
+            quote_currency: i.quote_currency ? String(i.quote_currency) : null,
+          })),
+        );
       }
 
-      try {
-        await loadLibrary();
-      } catch {
-        if (containerRef.current) {
-          containerRef.current.innerHTML =
-            '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:#888;font-family:system-ui">Chart failed to load</div>';
-        }
-        return;
-      }
-      if (disposed || !containerRef.current || !window.TradingView) return;
+      const rawList = Array.isArray(accountsRes)
+        ? accountsRes
+        : ((accountsRes as { items?: unknown[] })?.items ?? []);
+      const accounts = (rawList as Record<string, unknown>[]).map(mapApiAccount);
+      store.setAccounts(accounts);
+      const active = accounts.find((a) => a.id === accountId) || accounts[0] || null;
+      if (active) store.setActiveAccount(active);
+      if (stopped) return;
 
-      const dark = theme === 'dark';
-      widgetRef.current = new window.TradingView.widget({
-        symbol,
-        interval,
-        // Element ID (string), not the DOM node — this library version needs it.
-        container: CHART_CONTAINER_ID,
-        container_id: CHART_CONTAINER_ID,
-        datafeed,
-        library_path: '/charting_library/',
-        locale: 'en',
-        timezone: 'Etc/UTC',
-        theme,
-        autosize: true,
-        fullscreen: false,
-        toolbar_bg: dark ? '#0b0e11' : '#ffffff',
-        loading_screen: { backgroundColor: dark ? '#0b0e11' : '#ffffff' },
-        disabled_features: [
-          'use_localstorage_for_settings',
-          'symbol_search_hot_key',
-        ],
-        enabled_features: ['hide_left_toolbar_by_default'],
-        overrides: dark
-          ? {
-              'paneProperties.background': '#0b0e11',
-              'paneProperties.backgroundType': 'solid',
-              'scalesProperties.textColor': '#b7bdc6',
-            }
-          : {},
-      });
+      await useTradingStore.getState().refreshPositions();
+      try {
+        const p = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
+        for (const t of extractTicksFromPayload(p)) useTradingStore.getState().updatePrice(t);
+      } catch {
+        /* ignore */
+      }
     })();
 
-    // Let an embedder (the web terminal iframe) switch symbol / resolution
-    // without reloading the whole 26 MB library. Same-origin only.
+    // Live prices over WS + a REST poll fallback; positions polled for P&L and
+    // to remove SL/TP lines when the server closes a position.
+    try { wsManager.connect(); } catch { /* ignore */ }
+    const unsubWs = wsManager.onMessage((data) => {
+      for (const t of extractTicksFromPayload(data)) useTradingStore.getState().updatePrice(t);
+    });
+    const pricePoll = setInterval(async () => {
+      try {
+        const p = await api.get<unknown>('/instruments/prices/all');
+        for (const t of extractTicksFromPayload(p)) useTradingStore.getState().updatePrice(t);
+      } catch { /* ignore */ }
+    }, 1500);
+    const posPoll = setInterval(() => { void useTradingStore.getState().refreshPositions(); }, 1500);
+
+    // Native side can switch symbol without a reload.
     const onMessage = (e: MessageEvent) => {
-      if (typeof window !== 'undefined' && e.origin && e.origin !== window.location.origin) return;
-      const m = e.data as { type?: string; symbol?: string; resolution?: string };
-      const w = widgetRef.current;
-      if (!m || !w || typeof w.onChartReady !== 'function') return;
-      if (m.type === 'setSymbol' && m.symbol) {
-        w.onChartReady(() => { try { w.chart().setSymbol(String(m.symbol).toUpperCase()); } catch { /* ignore */ } });
-      } else if (m.type === 'setResolution' && m.resolution) {
-        w.onChartReady(() => { try { w.chart().setResolution(String(m.resolution)); } catch { /* ignore */ } });
-      }
+      if (e.origin && e.origin !== window.location.origin) return;
+      const m = e.data as { type?: string; symbol?: string };
+      if (m?.type === 'setSymbol' && m.symbol) useTradingStore.getState().setSelectedSymbol(String(m.symbol).toUpperCase());
     };
     window.addEventListener('message', onMessage);
 
     return () => {
-      disposed = true;
+      stopped = true;
+      unsubWs?.();
+      clearInterval(pricePoll);
+      clearInterval(posPoll);
       window.removeEventListener('message', onMessage);
-      try {
-        widgetRef.current?.remove?.();
-      } catch {
-        /* ignore */
-      }
-      widgetRef.current = null;
     };
-  }, []);
+  }, [theme]);
 
   return (
     <div
-      id={CHART_CONTAINER_ID}
-      ref={containerRef}
-      style={{ position: 'fixed', inset: 0, background: theme === 'light' ? '#ffffff' : '#0b0e11' }}
-    />
+      className={theme === 'dark' ? 'dark' : ''}
+      style={{ position: 'fixed', inset: 0, background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
+    >
+      <ChartErrorBoundary>
+        <TradingViewChart theme={theme} intervalOverride={interval} />
+      </ChartErrorBoundary>
+    </div>
   );
 }

@@ -23,7 +23,15 @@ import { api } from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import { ChartTradeWidget } from '@/components/charts/ChartTradeWidget';
 
-function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () => void }) {
+function TradingViewChartInner({
+  onRequestFullscreen,
+  theme = 'light',
+  intervalOverride,
+}: {
+  onRequestFullscreen?: () => void;
+  theme?: 'light' | 'dark';
+  intervalOverride?: string;
+}) {
   // Unique per instance — the terminal mounts this chart in more than one place
   // (mobile + desktop layouts); a shared DOM id would make two widgets fight
   // over the same container. Stable across renders via useRef.
@@ -31,7 +39,7 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const interval = onTradingTerminal ? '5' : '15';
+  const interval = intervalOverride || (onTradingTerminal ? '5' : '15');
 
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -115,13 +123,16 @@ function TradingViewChartInner({ onRequestFullscreen }: { onRequestFullscreen?: 
         library_path: '/charting_library/',
         locale: 'en',
         timezone: 'Etc/UTC',
-        theme: 'light',
+        theme,
         autosize: true,
         fullscreen: false,
-        toolbar_bg: '#ffffff',
-        loading_screen: { backgroundColor: '#ffffff' },
+        toolbar_bg: theme === 'dark' ? '#0b0e11' : '#ffffff',
+        loading_screen: { backgroundColor: theme === 'dark' ? '#0b0e11' : '#ffffff' },
         disabled_features: ['use_localstorage_for_settings', 'symbol_search_hot_key'],
         enabled_features: ['hide_left_toolbar_by_default'],
+        overrides: theme === 'dark'
+          ? { 'paneProperties.background': '#0b0e11', 'paneProperties.backgroundType': 'solid', 'scalesProperties.textColor': '#b7bdc6' }
+          : {},
       });
       try {
         widgetRef.current.onChartReady(() => {
