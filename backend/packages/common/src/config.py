@@ -164,12 +164,21 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        # The root .env legitimately carries vars for other consumers
+        # (docker compose, backup scripts, Next.js build args). Unknown
+        # keys must never crash service boot with extra_forbidden.
+        extra = "ignore"
 
 
 _DEFAULT_JWT_SECRETS = {
     "dev-secret-change-in-production",
     "admin-secret-change-in-production",
     "change-me",
+    # .env.example placeholders — long enough to pass the >=32-char length
+    # check, so they MUST be blocklisted explicitly or a copy-pasted env
+    # file boots production with publicly-known signing keys.
+    "CHANGE_THIS_RANDOM_64_CHAR_STRING",
+    "CHANGE_THIS_OTHER_RANDOM_64_CHAR_STRING",
     "",
 }
 

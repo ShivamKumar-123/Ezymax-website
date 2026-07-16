@@ -47,7 +47,6 @@ class AlgoApiKey(Base):
     account_id   = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
     api_key      = Column(String(64), unique=True, nullable=False, index=True)
     secret_hash  = Column(String(128), nullable=False)        # SHA-256 of the secret — used for auth
-    api_secret   = Column(String(128), nullable=True)         # plaintext, kept ONLY so the UI can re-display it
     label        = Column(String(100), default="")
     is_active    = Column(Boolean, default=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
@@ -60,7 +59,7 @@ class AlgoApiKey(Base):
 
 Notes:
 - `api_key` is `ak_` + 24 hex bytes; `api_secret` is `as_` + 32 hex bytes (see `algo_keys.py` generators).
-- **Auth compares `secret_hash`** (SHA-256), not the plaintext. `api_secret` plaintext exists only so the "Connected" card and the account list can show the secret again on demand — this is a product choice (convenience over strict write-once). If your WL wants strict never-store-secret behaviour, drop `api_secret`, and remove `api_secret` from the `/accounts` and `/generate` responses (the generate call still returns it once in its own response body).
+- **Auth compares `secret_hash`** (SHA-256), never a stored plaintext. The plaintext secret is returned exactly once, in the `/generate` response body, and is never persisted (alembic 0056 dropped the old `api_secret` column) — a DB dump must not contain working trading credentials. A lost secret means regenerating the key pair.
 - `account.lazy="selectin"` is important — the trade hot path (`key_row.account`) must not trigger a second round-trip.
 
 Then create the table (Alembic migration, or `Base.metadata.create_all` on boot — match how the WL manages schema).

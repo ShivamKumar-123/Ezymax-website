@@ -13,18 +13,16 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig, Transaction, User,
+    SpreadConfig,
 )
-from packages.common.src.redis_client import redis_client, PriceChannel
-from packages.common.src.kafka_client import produce_event, KafkaTopics
-from packages.common.src import corecen_trade_client
+from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.ib_commission import distribute_ib_commission
 
@@ -32,17 +30,23 @@ logger = logging.getLogger("b-book-engine")
 
 
 class MatchingEngine:
+    """Fills pending (limit/stop/stop-limit) orders against live ticks.
+
+    SL/TP monitoring deliberately does NOT live here. The gateway's
+    sltp_engine is the single SL/TP authority: it locks rows
+    (FOR UPDATE SKIP LOCKED), closes at the exact SL/TP price (MT5
+    semantics) and writes TradeHistory + Transaction rows. A second
+    monitor in this service used to race it with none of those
+    guarantees — phantom closes at market price with no history rows.
+    """
+
     def __init__(self):
         self._running = False
 
     async def start(self):
         self._running = True
         logger.info("B-Book Matching Engine started")
-
-        await asyncio.gather(
-            self._monitor_pending_orders(),
-            self._monitor_sl_tp(),
-        )
+        await self._monitor_pending_orders()
 
     async def stop(self):
         self._running = False
@@ -52,6 +56,10 @@ class MatchingEngine:
         if not tick_data:
             return None
         tick = json.loads(tick_data)
+        # A stale quote (dead feed / refresher republish) must never trigger
+        # a pending-order fill — same rule every enforcement path follows.
+        if is_tick_stale(tick):
+            return None
         return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
     async def _get_spread_markup(self, instrument_id, user_id, segment_id, db: AsyncSession) -> Decimal:
@@ -209,131 +217,3 @@ class MatchingEngine:
             "price": str(fill_price),
             "lots": str(order.lots),
         }))
-
-    async def _monitor_sl_tp(self):
-        """Monitor open positions for SL/TP hits."""
-        logger.info("SL/TP monitor started")
-        while self._running:
-            try:
-                async with AsyncSessionLocal() as db:
-                    result = await db.execute(
-                        select(Position).where(
-                            Position.status == PositionStatus.OPEN,
-                            (Position.stop_loss.isnot(None)) | (Position.take_profit.isnot(None))
-                        )
-                    )
-                    positions = result.scalars().all()
-
-                    for pos in positions:
-                        price_data = await self._get_price(pos.instrument.symbol)
-                        if not price_data:
-                            continue
-
-                        bid, ask = price_data
-                        close_price = bid if pos.side == OrderSide.BUY else ask
-
-                        sl_hit = False
-                        tp_hit = False
-
-                        if pos.stop_loss:
-                            if pos.side == OrderSide.BUY and close_price <= pos.stop_loss:
-                                sl_hit = True
-                            elif pos.side == OrderSide.SELL and close_price >= pos.stop_loss:
-                                sl_hit = True
-
-                        if pos.take_profit:
-                            if pos.side == OrderSide.BUY and close_price >= pos.take_profit:
-                                tp_hit = True
-                            elif pos.side == OrderSide.SELL and close_price <= pos.take_profit:
-                                tp_hit = True
-
-                        if sl_hit or tp_hit:
-                            await self._close_position(pos, close_price, "sl" if sl_hit else "tp", db)
-
-                    await db.commit()
-
-            except Exception as e:
-                logger.error(f"SL/TP monitor error: {e}")
-
-            await asyncio.sleep(0.1)
-
-    async def _close_position(self, pos: Position, close_price: Decimal, reason: str, db: AsyncSession):
-        from packages.common.src.trading_service import quote_to_account_pnl
-        instrument = pos.instrument
-        if pos.side == OrderSide.BUY:
-            profit = (close_price - pos.open_price) * pos.lots * instrument.contract_size
-        else:
-            profit = (pos.open_price - close_price) * pos.lots * instrument.contract_size
-        profit = quote_to_account_pnl(
-            profit,
-            getattr(instrument, "base_currency", None),
-            getattr(instrument, "quote_currency", None),
-            close_price,
-            symbol=getattr(instrument, "symbol", None),
-        )
-
-        pos.status = PositionStatus.CLOSED
-        pos.close_price = close_price
-        pos.profit = profit
-        pos.closed_at = datetime.now(timezone.utc)
-
-        account = await db.get(TradingAccount, pos.account_id)
-        if account:
-            account.balance += profit
-            margin_release = (pos.lots * instrument.contract_size * pos.open_price) / Decimal(str(account.leverage))
-            account.margin_used = max(Decimal("0"), account.margin_used - margin_release)
-            account.equity = account.balance + account.credit
-            account.free_margin = account.equity - account.margin_used
-
-        logger.info(
-            f"Position {pos.id} closed by {reason}: {instrument.symbol} "
-            f"{pos.side.value} @ {close_price}, profit: {profit}"
-        )
-
-        await redis_client.publish(f"account:{pos.account_id}", json.dumps({
-            "type": f"position_closed_{reason}",
-            "position_id": str(pos.id),
-            "symbol": instrument.symbol,
-            "close_price": str(close_price),
-            "profit": str(profit),
-        }))
-
-        await produce_event(KafkaTopics.TRADES, str(pos.id), {
-            "event": f"position_closed_{reason}",
-            "position_id": str(pos.id),
-            "account_id": str(pos.account_id),
-            "symbol": instrument.symbol,
-            "profit": str(profit),
-        })
-
-        # ── A-Book: forward SL/TP close to Corecen LP ────────────────────
-        # Pass the Decimal values through verbatim — corecen_trade_client
-        # serialises them to their exact string form so reconciliation
-        # between our records and the LP's never drifts on rounding.
-        _pos_id = str(pos.id)
-        _cp = close_price
-        _pnl = profit
-        _reason_upper = reason.upper()
-        _user_id = account.user_id if account else None
-        _is_demo = bool(account.is_demo) if account else True
-
-        async def _forward_sltp_close():
-            try:
-                # Demo accounts never route to LP, regardless of user's book_type.
-                if not _user_id or _is_demo:
-                    return
-                async with AsyncSessionLocal() as bg_db:
-                    u = (await bg_db.execute(
-                        select(User).where(User.id == _user_id)
-                    )).scalar_one_or_none()
-                    if u and (u.book_type or "B") == "A":
-                        await corecen_trade_client.forward_trade_close(
-                            position_id=_pos_id,
-                            close_price=_cp,
-                            pnl=_pnl,
-                            closed_by=_reason_upper,
-                        )
-            except Exception as exc:
-                logger.error("[A-BOOK] B-book engine SL/TP close forward failed: %s", exc)
-
-        asyncio.create_task(_forward_sltp_close())

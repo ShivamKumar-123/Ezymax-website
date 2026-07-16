@@ -69,6 +69,48 @@ def _extract_bearer_token(
     return request.cookies.get(st.ACCESS_TOKEN_COOKIE_NAME)
 
 
+# Statuses that immediately revoke API access. A JWT alone must not keep a
+# banned account alive for the remaining token lifetime (up to 45 minutes) —
+# the admin "ban" button has to take effect on the next request.
+_BLOCKED_USER_STATUSES = frozenset({"banned", "blocked", "suspended"})
+_USER_STATUS_CACHE_TTL_S = 30
+
+
+async def _get_user_status(user_id: UUID) -> Optional[str]:
+    """Current `users.status`, Redis-cached for a few seconds.
+
+    The cache keeps the per-request cost of ban enforcement at one Redis GET
+    instead of one Postgres SELECT; a ban therefore takes effect within
+    _USER_STATUS_CACHE_TTL_S seconds instead of the token lifetime. Redis
+    errors fall through to Postgres — enforcement never silently disables.
+    """
+    cache_key = f"user_status:{user_id}"
+    redis = None
+    try:
+        from .redis_client import redis_client as redis
+        cached = await redis.get(cache_key)
+        if cached:
+            return cached.decode() if isinstance(cached, bytes) else str(cached)
+    except Exception:
+        pass
+
+    from sqlalchemy import select
+
+    from .database import AsyncSessionLocal
+    from .models import User
+
+    async with AsyncSessionLocal() as db:
+        status_val = (
+            await db.execute(select(User.status).where(User.id == user_id))
+        ).scalar_one_or_none()
+    if status_val is not None and redis is not None:
+        try:
+            await redis.set(cache_key, status_val, ex=_USER_STATUS_CACHE_TTL_S)
+        except Exception:
+            pass
+    return status_val
+
+
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
@@ -78,6 +120,11 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     payload = decode_token(token)
     user_id = UUID(payload["sub"])
+    user_status = await _get_user_status(user_id)
+    if user_status is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found")
+    if user_status in _BLOCKED_USER_STATUSES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
     # Mark the user as online for ~5 minutes after this request. The admin
     # users list reads these keys to render an online/offline indicator.
     # 5 minutes is generous enough that brief idle stretches (reading a

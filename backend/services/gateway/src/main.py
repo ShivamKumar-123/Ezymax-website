@@ -132,6 +132,10 @@ async def _heal_missing_trade_history():
             await session.commit()
             inserted = res.rowcount or 0
             if inserted > 0:
+                # Historically caused by the b-book engine's duplicate SL/TP
+                # monitor, which closed positions without writing TradeHistory.
+                # That monitor was removed; this loop stays as a safety net and
+                # any new hit means a NEW close-path is dropping the write.
                 logger.warning(
                     "trade_history self-heal: inserted %d missing row(s) — "
                     "investigate close-path that's dropping the TradeHistory write",

@@ -162,8 +162,9 @@ class AlgoApiKey(Base):
     """Per-account API key/secret for external algo bots (Algo Connector).
 
     A user generates a key pair in the web UI for one trading account and
-    pastes it into their bot. Auth compares `secret_hash` (SHA-256); the
-    plaintext `api_secret` is kept only so the dashboard can re-display it.
+    pastes it into their bot. Auth compares `secret_hash` (SHA-256). The
+    plaintext secret is shown exactly once at generation and never stored —
+    a DB dump must not hand an attacker working trading credentials.
     """
     __tablename__ = "algo_api_keys"
 
@@ -172,7 +173,6 @@ class AlgoApiKey(Base):
     account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"))
     api_key = Column(String(64), unique=True, nullable=False, index=True)
     secret_hash = Column(String(128), nullable=False)
-    api_secret = Column(String(128), nullable=True)
     label = Column(String(100), default="")
     is_active = Column(Boolean, default=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)

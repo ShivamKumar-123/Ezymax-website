@@ -74,8 +74,11 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "CREATE INDEX IF NOT EXISTS idx_algo_api_keys_api_key ON algo_api_keys(api_key)"
             ))
+            # Plaintext secret storage was removed (alembic 0056) — auth only
+            # ever compares secret_hash. Drop the column here too so hosts that
+            # never run alembic also stop holding plaintext trading credentials.
             await conn.execute(text(
-                "ALTER TABLE algo_api_keys ADD COLUMN IF NOT EXISTS api_secret VARCHAR(128)"
+                "ALTER TABLE algo_api_keys DROP COLUMN IF EXISTS api_secret"
             ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
