@@ -568,32 +568,10 @@ function TradingViewChartInner({
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
     if (!Number.isFinite(startPrice)) return;
 
-    // MOBILE (touch): the crosshair doesn't fire during a finger drag and
-    // pixel→price is unreliable, so create a NATIVE draggable line the user
-    // drags with their finger (TradingView handles touch-drag smoothly). Its
-    // drag → the confirm dialog via the drawing_event handler (registered as a
-    // placement line so it's cleaned up afterwards).
-    if (e.pointerType === 'touch') {
-      (async () => {
-        let anchorTime = Math.floor(Date.now() / 1000);
-        try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
-        let id: string | null = null;
-        try {
-          id = String(await chart.createShape(
-            { time: anchorTime, price: startPrice },
-            { shape: 'horizontal_line', text: leg.toUpperCase(), lock: false, disableSave: true, disableUndo: true,
-              overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
-          ));
-        } catch { return; }
-        entityMapRef.current.set(id, { positionId, leg });
-        placementIdsRef.current.add(id);
-        toast(`Drag the ${leg.toUpperCase()} line, then confirm`, { icon: '↕️', duration: 2500 });
-      })();
-      return;
-    }
-
     // Capture the pointer to the BUTTON so pointermove/up fire on it reliably
-    // for the DESKTOP mouse drag, and the chart doesn't pan under the cursor.
+    // for BOTH mouse and TOUCH (this is what makes the finger drag the line on
+    // mobile), and the chart doesn't pan under the finger. On touch the
+    // crosshair doesn't fire, so the line follows via pixel→price (calibrated).
     try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
 
     placingRef.current = true;
