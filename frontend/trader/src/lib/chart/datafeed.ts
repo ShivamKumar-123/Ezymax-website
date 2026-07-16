@@ -196,12 +196,24 @@ export function createDatafeed(opts: {
       const { from, to, firstDataRequest } = periodParams;
       try {
         const url = `${apiBase}/instruments/${encodeURIComponent(symbol)}/bars?resolution=${encodeURIComponent(resolution)}&from=${from}&to=${to}`;
-        const res = await fetch(url, { credentials: 'include' });
-        if (!res.ok) {
-          onError(`HTTP ${res.status}`);
-          return;
+        // Retry transient 5xx (the gateway can briefly 503 during load / a
+        // rebuild) with backoff so the chart never flashes "Symbol Error" for a
+        // blip. A 4xx is a real error — surface it immediately.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let raw: any = null;
+        let lastStatus = '';
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const res = await fetch(url, { credentials: 'include' });
+            if (res.ok) { raw = await res.json(); break; }
+            lastStatus = `HTTP ${res.status}`;
+            if (res.status < 500) { onError(lastStatus); return; }
+          } catch (e) {
+            lastStatus = e instanceof Error ? e.message : String(e);
+          }
+          if (attempt < 3) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
         }
-        const raw = await res.json();
+        if (raw == null) { onError(lastStatus || 'load failed'); return; }
         // The endpoint returns { s, bars, noData }; also tolerate a bare array
         // or { items } for safety.
         const list = Array.isArray(raw)

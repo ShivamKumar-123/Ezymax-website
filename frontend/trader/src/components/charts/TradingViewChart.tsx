@@ -68,8 +68,14 @@ function TradingViewChartInner({
     { positionId: string; leg: 'sl' | 'tp'; price: number; side: string; lots: number; symbol: string; pnl: number } | null
   >(null);
   const confirmRevertRef = useRef<(() => void) | null>(null);
+  const confirmDoneRef = useRef<(() => void) | null>(null);
+  // On mobile we let the user drag a native line (touch); these are the temp
+  // "placement" line ids to clean up once the confirm dialog resolves.
+  const placementIdsRef = useRef<Set<string>>(new Set());
   // Stable handle to requestBracket for the []-memoized drag handlers.
-  const requestBracketRef = useRef<((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => void) | null>(null);
+  const requestBracketRef = useRef<
+    ((positionId: string, leg: 'sl' | 'tp', price: number, opts?: { onCancel?: () => void; onConfirm?: () => void }) => void) | null
+  >(null);
 
   // Mount the widget once.
   useEffect(() => {
@@ -368,9 +374,16 @@ function TradingViewChartInner({
         try { price = chart.getShapeById(eid).getPoints()?.[0]?.price; } catch { return; }
         if (price == null || !Number.isFinite(price)) return;
         const newPrice = Number(price);
-        // Ask before committing; on cancel, snap the dragged line back to the
-        // stored level.
-        const revert = () => {
+        const isPlacement = placementIdsRef.current.has(eid);
+        // A mobile PLACEMENT line has no stored level — remove it on both cancel
+        // and confirm (the real line renders from server state on confirm).
+        const removePlacement = () => {
+          try { chart.removeEntity(eid); } catch { /* ignore */ }
+          entityMapRef.current.delete(eid);
+          placementIdsRef.current.delete(eid);
+        };
+        // An EXISTING line snaps back to its stored level on cancel.
+        const snapBack = () => {
           const set = linesRef.current.get(meta.positionId);
           const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
           const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
@@ -381,7 +394,10 @@ function TradingViewChartInner({
             if (set && set[meta.leg]) set[meta.leg].price = Number(back);
           }
         };
-        requestBracketRef.current?.(meta.positionId, meta.leg, newPrice, revert);
+        requestBracketRef.current?.(meta.positionId, meta.leg, newPrice, {
+          onCancel: isPlacement ? removePlacement : snapBack,
+          onConfirm: isPlacement ? removePlacement : undefined,
+        });
       }, 450));
     };
     try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
@@ -509,8 +525,32 @@ function TradingViewChartInner({
     const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
     if (!Number.isFinite(startPrice)) return;
 
+    // MOBILE (touch): the crosshair doesn't fire during a finger drag and
+    // pixel→price is unreliable, so create a NATIVE draggable line the user
+    // drags with their finger (TradingView handles touch-drag smoothly). Its
+    // drag → the confirm dialog via the drawing_event handler (registered as a
+    // placement line so it's cleaned up afterwards).
+    if (e.pointerType === 'touch') {
+      (async () => {
+        let anchorTime = Math.floor(Date.now() / 1000);
+        try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
+        let id: string | null = null;
+        try {
+          id = String(await chart.createShape(
+            { time: anchorTime, price: startPrice },
+            { shape: 'horizontal_line', text: leg.toUpperCase(), lock: false, disableSave: true, disableUndo: true,
+              overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
+          ));
+        } catch { return; }
+        entityMapRef.current.set(id, { positionId, leg });
+        placementIdsRef.current.add(id);
+        toast(`Drag the ${leg.toUpperCase()} line, then confirm`, { icon: '↕️', duration: 2500 });
+      })();
+      return;
+    }
+
     // Capture the pointer to the BUTTON so pointermove/up fire on it reliably
-    // for BOTH mouse and TOUCH, and the chart doesn't pan under the finger.
+    // for the DESKTOP mouse drag, and the chart doesn't pan under the cursor.
     try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
 
     placingRef.current = true;
@@ -657,22 +697,28 @@ function TradingViewChartInner({
     return pnl;
   }, []);
 
-  // Ask before committing an SL/TP the user just dragged. `revert` is called if
-  // they cancel (e.g. snap a dragged line back to its stored level).
-  const requestBracket = useCallback((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => {
-    const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
-    if (!pos || !Number.isFinite(price)) { revert?.(); return; }
-    confirmRevertRef.current = revert ?? null;
-    setConfirm({
-      positionId, leg, price: Number(price.toFixed(5)),
-      side: pos.side, lots: pos.lots, symbol: pos.symbol, pnl: computePnlAt(pos, price),
-    });
-  }, [computePnlAt]);
+  // Ask before committing an SL/TP the user just dragged. opts.onCancel runs if
+  // they cancel (snap a dragged line back / remove a placement line);
+  // opts.onConfirm runs after a successful set (remove a placement line).
+  const requestBracket = useCallback(
+    (positionId: string, leg: 'sl' | 'tp', price: number, opts?: { onCancel?: () => void; onConfirm?: () => void }) => {
+      const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
+      if (!pos || !Number.isFinite(price)) { opts?.onCancel?.(); return; }
+      confirmRevertRef.current = opts?.onCancel ?? null;
+      confirmDoneRef.current = opts?.onConfirm ?? null;
+      setConfirm({
+        positionId, leg, price: Number(price.toFixed(5)),
+        side: pos.side, lots: pos.lots, symbol: pos.symbol, pnl: computePnlAt(pos, price),
+      });
+    },
+    [computePnlAt],
+  );
   requestBracketRef.current = requestBracket;
 
   const confirmCancel = useCallback(() => {
     const r = confirmRevertRef.current;
     confirmRevertRef.current = null;
+    confirmDoneRef.current = null;
     setConfirm(null);
     r?.();
   }, []);
@@ -681,7 +727,10 @@ function TradingViewChartInner({
     if (!confirm) return;
     const { positionId, leg, price } = confirm;
     confirmRevertRef.current = null; // committing — no revert
+    const done = confirmDoneRef.current;
+    confirmDoneRef.current = null;
     setConfirm(null);
+    done?.(); // e.g. remove the mobile placement line before the real one renders
     const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
     const body: Record<string, number> = {};
     body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = price;
