@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform, Modal } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -378,7 +378,12 @@ export default function InstrumentDetailScreen() {
                 javaScriptEnabled
                 domStorageEnabled
                 allowsInlineMediaPlayback
-                startInLoadingState={false}
+                startInLoadingState
+                renderLoading={() => (
+                  <View style={styles.chartLoader}>
+                    <ActivityIndicator size="large" color={vantage.accent} />
+                  </View>
+                )}
                 originWhitelist={['*']}
                 nestedScrollEnabled
                 onError={() => {}}
@@ -410,6 +415,12 @@ export default function InstrumentDetailScreen() {
                     javaScriptEnabled
                     domStorageEnabled
                     allowsInlineMediaPlayback
+                    startInLoadingState
+                    renderLoading={() => (
+                      <View style={styles.chartLoader}>
+                        <ActivityIndicator size="large" color={vantage.accent} />
+                      </View>
+                    )}
                     originWhitelist={['*']}
                     onError={() => {}}
                   />
@@ -703,6 +714,7 @@ const styles = StyleSheet.create({
   tfMore: { marginLeft: 'auto' },
 
   chartWrap: { height: 380, marginHorizontal: space.sm, backgroundColor: vantage.bg, borderRadius: radius.md, overflow: 'hidden' },
+  chartLoader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: vantage.bg },
   chart: { flex: 1, backgroundColor: vantage.bg },
   fsBtn: {
     // Bottom-right: clear of TradingView's top-anchored toolbar + indicator
