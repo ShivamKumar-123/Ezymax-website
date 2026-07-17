@@ -43,7 +43,7 @@ function ChartSpinner({ dark }: { dark: boolean }) {
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), {
   ssr: false,
-  loading: () => <ChartSpinner dark={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('theme') !== 'light'} />,
+  loading: () => <ChartSpinner dark={false} />,
 });
 
 function param(name: string, fallback = ''): string {
@@ -52,7 +52,8 @@ function param(name: string, fallback = ''): string {
 }
 
 export default function ChartPage() {
-  const [theme] = useState<'light' | 'dark'>(() => (param('theme') === 'light' ? 'light' : 'dark'));
+  // Chart is LIGHT-ONLY now (dark mode removed), regardless of the ?theme= param.
+  const theme = 'light' as const;
   const [interval] = useState<string>(() => param('interval', '60'));
 
   useEffect(() => {
@@ -63,7 +64,6 @@ export default function ChartPage() {
 
     // Token auth for API (Bearer) — the WebView has no session cookie.
     if (token) api.setToken(token);
-    if (theme === 'dark') document.documentElement.classList.add('dark');
 
     const store = useTradingStore.getState();
     store.setSelectedSymbol(symbol);
@@ -145,12 +145,11 @@ export default function ChartPage() {
       clearInterval(posPoll);
       window.removeEventListener('message', onMessage);
     };
-  }, [theme]);
+  }, []);
 
   return (
     <div
-      className={theme === 'dark' ? 'dark' : ''}
-      style={{ position: 'fixed', inset: 0, background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
+      style={{ position: 'fixed', inset: 0, background: '#ffffff' }}
     >
       <ChartErrorBoundary>
         {/* Buy/Sell widget hidden here — the mobile app has its own native

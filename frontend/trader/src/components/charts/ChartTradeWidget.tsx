@@ -27,7 +27,6 @@ export function ChartTradeWidget() {
 
   const bid = tick?.bid;
   const ask = tick?.ask;
-  const spread = bid != null && ask != null ? ask - bid : null;
 
   const fmt = (v?: number) => (v == null || !Number.isFinite(v) ? '—' : v.toFixed(digits));
 
@@ -62,12 +61,18 @@ export function ChartTradeWidget() {
         <span className="text-[10px] font-bold tracking-wider">SELL</span>
       </button>
 
-      <div className="flex items-center justify-center px-0.5">
-        {/* Own chip so it's readable on a light OR dark chart (was white-on-white). */}
-        <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[11px] font-bold text-white shadow ring-1 ring-white/10">
-          {spread != null ? spread.toFixed(digits) : '—'}
-        </span>
-      </div>
+      {/* Lot input sits between SELL and BUY (typing only — no stepper arrows). */}
+      <input
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min="0.01"
+        value={lots}
+        onChange={(e) => setLots(Math.max(0.01, Number(e.target.value) || 0.01))}
+        className="w-16 self-stretch rounded-md bg-black/60 text-white text-xs px-1 text-center border border-white/20 focus:outline-none focus:border-white/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+        title="Lot size"
+        aria-label="Lot size"
+      />
 
       <button
         type="button"
@@ -79,17 +84,6 @@ export function ChartTradeWidget() {
         <span className="text-sm font-extrabold leading-none">{fmt(ask)}</span>
         <span className="text-[10px] font-bold tracking-wider">BUY</span>
       </button>
-
-      <input
-        type="number"
-        step="0.01"
-        min="0.01"
-        value={lots}
-        onChange={(e) => setLots(Math.max(0.01, Number(e.target.value) || 0.01))}
-        className="w-14 rounded-md bg-black/60 text-white text-xs px-1 text-center border border-white/20 focus:outline-none focus:border-white/50"
-        title="Lot size"
-        aria-label="Lot size"
-      />
     </div>
   );
 }

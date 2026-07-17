@@ -52,7 +52,7 @@ export const useUIStore = create<UIState>()(
     (set, get) => ({
       theme: 'light' as Theme,
       watchlistWidth: WATCHLIST_DEFAULT_PX,
-      orderPanelWidth: 340,
+      orderPanelWidth: 300,
       // Bottom panel only hosts the positions table now (the TradingView
       // Technical Analysis widget was removed). 260 px shows ~5 rows
       // and gives the chart the full remaining vertical space, which
@@ -102,7 +102,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: STORAGE_KEY_UI,
-      version: 12,
+      version: 13,
       onRehydrateStorage: () => (rehydrated, err) => {
         if (err || !rehydrated || typeof window === 'undefined') return;
         if (window.innerWidth < 768) return;
@@ -116,7 +116,7 @@ export const useUIStore = create<UIState>()(
         }
         const op = useUIStore.getState().orderPanelWidth;
         if (op < 250 || op > 560) {
-          useUIStore.setState({ orderPanelWidth: Math.max(250, Math.min(560, op || 340)) });
+          useUIStore.setState({ orderPanelWidth: Math.max(250, Math.min(560, op || 300)) });
         }
       },
       migrate: (persistedState, fromVersion) => {
@@ -128,8 +128,11 @@ export const useUIStore = create<UIState>()(
         if (v < 3 && w < 520) w = WATCHLIST_DEFAULT_PX;
         if (v < 4 && w < WATCHLIST_MIN_PX) w = WATCHLIST_DEFAULT_PX;
         w = Math.max(WATCHLIST_MIN_PX, Math.min(WATCHLIST_MAX_PX, w));
-        let op = state.orderPanelWidth ?? 340;
+        let op = state.orderPanelWidth ?? 300;
         if (v < 5) op = Math.max(250, Math.min(560, op));
+        // v13: narrower default Markets/right panel. Bump anyone still on the
+        // old 340 default down to 300; deliberately-resized widths are kept.
+        if (v < 13 && op === 340) op = 300;
         if (v < 6 && w === 620) w = WATCHLIST_DEFAULT_PX;
         let bp = state.bottomPanelHeight ?? 260;
         if (v < 7 && bp <= 280) bp = 320;
