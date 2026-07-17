@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { User, Shield, Bell, Monitor, ChevronRight, Palette, Sun, Moon } from 'lucide-react';
+import { User, Shield, Bell, Monitor, ChevronRight, Palette, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/stores/uiStore';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -469,13 +469,10 @@ export default function ProfilePage() {
               <h3 className="text-base font-semibold text-text-primary mb-1">Theme</h3>
               <p className="text-xs text-text-tertiary mb-5">Choose how SwissCresta looks on this device.</p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 {([
                   { id: 'light' as const, label: 'Light', icon: Sun,
                     swatch: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #FCE6DD 100%)',
-                    ring: '#E94E1B' },
-                  { id: 'dark' as const, label: 'Dark', icon: Moon,
-                    swatch: 'radial-gradient(120% 90% at 50% 0%, #3a1c08 0%, #1a0d04 45%, #0a0a0a 100%)',
                     ring: '#E94E1B' },
                 ]).map((opt) => {
                   const Icon = opt.icon;

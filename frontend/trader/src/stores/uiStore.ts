@@ -49,7 +49,7 @@ const WATCHLIST_DEFAULT_PX = WATCHLIST_LAYOUT.default;
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       theme: 'light' as Theme,
       watchlistWidth: WATCHLIST_DEFAULT_PX,
       orderPanelWidth: 300,
@@ -73,8 +73,10 @@ export const useUIStore = create<UIState>()(
       // root would flip every other page (dashboard, portfolio,
       // wallet, etc.) into dark mode just because the user toggled
       // the terminal's local theme.
-      setTheme: (t) => set({ theme: t }),
-      toggleTheme: () => set({ theme: get().theme === 'dark' ? 'light' : 'dark' }),
+      // Dark theme has been removed — the website is light-only. Both actions
+      // are kept (call sites still reference them) but always resolve to light.
+      setTheme: () => set({ theme: 'light' }),
+      toggleTheme: () => set({ theme: 'light' }),
       setWatchlistWidth: (w) =>
         set({ watchlistWidth: Math.max(WATCHLIST_MIN_PX, Math.min(WATCHLIST_MAX_PX, w)) }),
       setOrderPanelWidth: (w) => set({ orderPanelWidth: Math.max(250, Math.min(560, w)) }),
@@ -102,9 +104,11 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: STORAGE_KEY_UI,
-      version: 13,
+      version: 14,
       onRehydrateStorage: () => (rehydrated, err) => {
         if (err || !rehydrated || typeof window === 'undefined') return;
+        // Dark theme removed — force any persisted 'dark' back to light.
+        if (rehydrated.theme !== 'light') useUIStore.setState({ theme: 'light' });
         if (window.innerWidth < 768) return;
         const w = rehydrated.watchlistWidth;
         if (w < WATCHLIST_MIN_PX) {
@@ -149,7 +153,8 @@ export const useUIStore = create<UIState>()(
           v < 9
             ? false
             : Boolean((state as UIState & { terminalNewsOpen?: boolean }).terminalNewsOpen);
-        const theme = state.theme ?? 'light';
+        // v14: dark theme removed — everyone is light-only now.
+        const theme = 'light' as Theme;
         return {
           ...state,
           theme,

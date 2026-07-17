@@ -32,7 +32,7 @@ const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/Tradin
 
 const ORDER_MIN = 250;
 const ORDER_MAX = 560;
-const MARKETS_MIN = 560;
+const MARKETS_MIN = 440;
 const MARKETS_MAX = 1200;
 const BOTTOM_MIN = 160;
 
@@ -127,7 +127,7 @@ export default function TradingTerminalPage() {
         orderWidthBeforeMarketsRef.current = opW;
       }
       const vw = typeof window !== 'undefined' ? window.innerWidth : 1600;
-      const target = Math.min(MARKETS_MAX, Math.max(MARKETS_MIN, Math.round(vw * 0.55)));
+      const target = Math.min(MARKETS_MAX, Math.max(MARKETS_MIN, Math.round(vw * 0.4)));
       setOpW(target);
       setOrderPanelWidth(target);
     } else if (orderWidthBeforeMarketsRef.current != null) {
