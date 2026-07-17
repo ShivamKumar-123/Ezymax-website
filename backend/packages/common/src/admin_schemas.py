@@ -1038,14 +1038,55 @@ class ClusterUser(BaseModel):
     email: Optional[str] = None
 
 
+class CrmRevenuePeriod(BaseModel):
+    """Platform revenue for one time window (demo accounts excluded).
+
+    brokerage_total = commission + swap  (what the admin Analytics page calls
+    "revenue"). trading_pnl is the B-book line: the customers' net realized P&L
+    inverted — positive means the platform gained. net_total is the full picture.
+    """
+    commission: float = 0
+    swap: float = 0
+    spread: float = 0                # always 0 — FXArtha bakes spread into the fill price
+    brokerage_total: float = 0       # commission + swap
+    trading_pnl: float = 0           # −(customers' realized P&L); can be negative
+    ib_commission: float = 0         # paid out to IBs in this window
+    net_total: float = 0             # brokerage_total + trading_pnl − ib_commission
+
+
+class CrmMonthlyRevenue(BaseModel):
+    """One month of the revenue series (last 12 months, oldest → newest)."""
+    month: str                       # "2026-07"
+    label: str                       # "Jul 2026"
+    commission: float = 0
+    swap: float = 0
+    brokerage_total: float = 0
+    trading_pnl: float = 0
+    ib_commission: float = 0
+    net_total: float = 0
+
+
+class CrmRevenueBlock(BaseModel):
+    today: CrmRevenuePeriod = CrmRevenuePeriod()
+    this_week: CrmRevenuePeriod = CrmRevenuePeriod()
+    this_month: CrmRevenuePeriod = CrmRevenuePeriod()
+    all_time: CrmRevenuePeriod = CrmRevenuePeriod()
+
+
 class CrmDashboard(BaseModel):
     total_traders: int = 0
     active_accounts: int = 0
     total_deposits: float = 0
     total_withdrawals: float = 0
     lots_traded: float = 0
+    # Legacy flat fields = brokerage (commission + swap) for that window.
     todays_revenue: float = 0
+    weekly_revenue: float = 0
     monthly_revenue: float = 0
+    total_revenue: float = 0         # all-time brokerage
+    # Full breakdown — use this to render revenue without recomputing anything.
+    revenue: CrmRevenueBlock = CrmRevenueBlock()
+    revenue_by_month: list[CrmMonthlyRevenue] = []
 
 
 class CrmLeadRow(BaseModel):

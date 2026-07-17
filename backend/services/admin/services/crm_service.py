@@ -33,6 +33,7 @@ from packages.common.src.admin_schemas import (
     PaginatedResponse, CrmDashboard, CrmLeadRow, CrmCustomerRow,
     CrmTradeRow, CrmTransactionRow, CrmReferralRow,
     CrmPositionRow, CrmOrderRow, CrmLedgerRow,
+    CrmRevenuePeriod, CrmMonthlyRevenue, CrmRevenueBlock,
 )
 from . import analytics_service, dashboard_service
 
@@ -45,11 +46,145 @@ def _source(utm_source, has_referrer) -> str:
     return "referral" if has_referrer else "direct"
 
 
+# ── Revenue ──────────────────────────────────────────────────────────────
+#
+# All CRM revenue is **demo-excluded** (consistent with every other CRM
+# endpoint). Note this can differ from the admin Analytics page, which sums
+# demo accounts too.
+#
+# Attribution:
+#   commission / swap -> the position's OPEN date (commission is charged at
+#                        open; this matches the admin Analytics semantics)
+#   trading_pnl       -> the trade's CLOSE date (realized only)
+#   ib_commission     -> the commission row's created_at
+#
+# Closed positions stay in `positions`, so summing positions.commission alone
+# already covers open + closed — no trade_history join needed for brokerage.
+
+def _period(commission: float, swap: float, pnl: float, ibc: float) -> CrmRevenuePeriod:
+    brokerage = commission + swap
+    trading_pnl = -pnl                       # customers' loss = platform gain
+    return CrmRevenuePeriod(
+        commission=commission, swap=swap, spread=0.0,
+        brokerage_total=brokerage, trading_pnl=trading_pnl, ib_commission=ibc,
+        net_total=brokerage + trading_pnl - ibc,
+    )
+
+
+async def _revenue(db: AsyncSession) -> tuple[CrmRevenueBlock, list]:
+    """Period revenue + a 12-month series, all demo-excluded."""
+    zero = CrmRevenueBlock(), []
+    # brokerage (commission + swap) per window, from positions
+    bro_sql = text("""
+        SELECT
+          abs(COALESCE(sum(p.commission) FILTER (WHERE p.created_at >= date_trunc('day',   now())),0)) AS c_day,
+          abs(COALESCE(sum(p.swap)       FILTER (WHERE p.created_at >= date_trunc('day',   now())),0)) AS s_day,
+          abs(COALESCE(sum(p.commission) FILTER (WHERE p.created_at >= date_trunc('week',  now())),0)) AS c_week,
+          abs(COALESCE(sum(p.swap)       FILTER (WHERE p.created_at >= date_trunc('week',  now())),0)) AS s_week,
+          abs(COALESCE(sum(p.commission) FILTER (WHERE p.created_at >= date_trunc('month', now())),0)) AS c_month,
+          abs(COALESCE(sum(p.swap)       FILTER (WHERE p.created_at >= date_trunc('month', now())),0)) AS s_month,
+          abs(COALESCE(sum(p.commission),0)) AS c_all,
+          abs(COALESCE(sum(p.swap),0))       AS s_all
+        FROM positions p JOIN trading_accounts ta ON ta.id = p.account_id
+        WHERE ta.is_demo = false
+    """)
+    # realized customer P&L per window, from trade_history (by close date)
+    pnl_sql = text("""
+        SELECT
+          COALESCE(sum(th.profit) FILTER (WHERE th.closed_at >= date_trunc('day',   now())),0) AS p_day,
+          COALESCE(sum(th.profit) FILTER (WHERE th.closed_at >= date_trunc('week',  now())),0) AS p_week,
+          COALESCE(sum(th.profit) FILTER (WHERE th.closed_at >= date_trunc('month', now())),0) AS p_month,
+          COALESCE(sum(th.profit),0) AS p_all
+        FROM trade_history th JOIN trading_accounts ta ON ta.id = th.account_id
+        WHERE ta.is_demo = false
+    """)
+    # IB commission paid per window. Demo-filtered through the originating
+    # trade (source_trade_id -> orders.account_id) so it lines up with the
+    # brokerage above; IB rows with no trade are excluded for the same reason.
+    ibc_sql = text("""
+        SELECT
+          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('day',   now())),0) AS i_day,
+          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('week',  now())),0) AS i_week,
+          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('month', now())),0) AS i_month,
+          COALESCE(sum(ic.amount),0) AS i_all
+        FROM ib_commissions ic
+        JOIN orders o ON o.id = ic.source_trade_id
+        JOIN trading_accounts ta ON ta.id = o.account_id
+        WHERE ta.is_demo = false
+    """)
+    # last 12 months, three series merged by month key
+    month_sql = text("""
+        WITH months AS (
+          SELECT generate_series(date_trunc('month', now()) - interval '11 months',
+                                 date_trunc('month', now()), interval '1 month') AS m
+        ),
+        bro AS (
+          SELECT date_trunc('month', p.created_at) AS m,
+                 abs(COALESCE(sum(p.commission),0)) AS commission,
+                 abs(COALESCE(sum(p.swap),0))       AS swap
+          FROM positions p JOIN trading_accounts ta ON ta.id = p.account_id
+          WHERE ta.is_demo = false AND p.created_at >= date_trunc('month', now()) - interval '11 months'
+          GROUP BY 1
+        ),
+        pnl AS (
+          SELECT date_trunc('month', th.closed_at) AS m, COALESCE(sum(th.profit),0) AS pnl
+          FROM trade_history th JOIN trading_accounts ta ON ta.id = th.account_id
+          WHERE ta.is_demo = false AND th.closed_at >= date_trunc('month', now()) - interval '11 months'
+          GROUP BY 1
+        ),
+        ibc AS (
+          SELECT date_trunc('month', ic.created_at) AS m, COALESCE(sum(ic.amount),0) AS ibc
+          FROM ib_commissions ic
+          JOIN orders o ON o.id = ic.source_trade_id
+          JOIN trading_accounts ta ON ta.id = o.account_id
+          WHERE ta.is_demo = false
+            AND ic.created_at >= date_trunc('month', now()) - interval '11 months'
+          GROUP BY 1
+        )
+        SELECT to_char(months.m, 'YYYY-MM') AS ym, to_char(months.m, 'Mon YYYY') AS label,
+               COALESCE(bro.commission,0) AS commission, COALESCE(bro.swap,0) AS swap,
+               COALESCE(pnl.pnl,0) AS pnl, COALESCE(ibc.ibc,0) AS ibc
+        FROM months
+        LEFT JOIN bro ON bro.m = months.m
+        LEFT JOIN pnl ON pnl.m = months.m
+        LEFT JOIN ibc ON ibc.m = months.m
+        ORDER BY months.m
+    """)
+    try:
+        b = (await db.execute(bro_sql)).first()._mapping
+        p = (await db.execute(pnl_sql)).first()._mapping
+        i = (await db.execute(ibc_sql)).first()._mapping
+        rows = (await db.execute(month_sql)).all()
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback()
+        _log.warning("crm revenue failed: %s", exc)
+        return zero
+
+    f = float
+    block = CrmRevenueBlock(
+        today=_period(f(b["c_day"]), f(b["s_day"]), f(p["p_day"]), f(i["i_day"])),
+        this_week=_period(f(b["c_week"]), f(b["s_week"]), f(p["p_week"]), f(i["i_week"])),
+        this_month=_period(f(b["c_month"]), f(b["s_month"]), f(p["p_month"]), f(i["i_month"])),
+        all_time=_period(f(b["c_all"]), f(b["s_all"]), f(p["p_all"]), f(i["i_all"])),
+    )
+    series = []
+    for r in (row._mapping for row in rows):
+        per = _period(f(r["commission"]), f(r["swap"]), f(r["pnl"]), f(r["ibc"]))
+        series.append(CrmMonthlyRevenue(
+            month=r["ym"], label=r["label"],
+            commission=per.commission, swap=per.swap,
+            brokerage_total=per.brokerage_total, trading_pnl=per.trading_pnl,
+            ib_commission=per.ib_commission, net_total=per.net_total,
+        ).model_dump())
+    return block, series
+
+
 # ── Dashboard ────────────────────────────────────────────────────────────
 
 async def dashboard(db: AsyncSession) -> CrmDashboard:
     a = await analytics_service.analytics_dashboard(db)
     d = await dashboard_service.get_dashboard_stats(db)
+    rev, by_month = await _revenue(db)
 
     active_accounts = (await db.execute(
         select(func.count(TradingAccount.id)).where(
@@ -68,8 +203,14 @@ async def dashboard(db: AsyncSession) -> CrmDashboard:
         total_deposits=float(a.get("total_deposits", 0) or 0),
         total_withdrawals=float(a.get("total_withdrawals", 0) or 0),
         lots_traded=float(lots or 0),
-        todays_revenue=float((a.get("today") or {}).get("total_revenue", 0) or 0),
-        monthly_revenue=float((a.get("this_month") or {}).get("total_revenue", 0) or 0),
+        # Flat legacy fields now come from the same demo-excluded source as the
+        # breakdown below, so every revenue number on this payload agrees.
+        todays_revenue=rev.today.brokerage_total,
+        weekly_revenue=rev.this_week.brokerage_total,
+        monthly_revenue=rev.this_month.brokerage_total,
+        total_revenue=rev.all_time.brokerage_total,
+        revenue=rev,
+        revenue_by_month=by_month,
     )
 
 
