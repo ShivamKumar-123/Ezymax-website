@@ -33,6 +33,14 @@ function postDragToNative(active: boolean) {
   } catch { /* ignore */ }
 }
 
+// A freshly-opened MARKET position shows optimistically with a temporary id
+// ("optim-…") until the server row arrives with a real UUID. SL/TP/close must
+// NOT run against that temp id — the backend rejects it ("Input should be a
+// valid UUID"). Only real UUIDs get on-chart SL/TP controls.
+function isRealPositionId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || ''));
+}
+
 function TradingViewChartInner({
   onRequestFullscreen,
   theme = 'light',
@@ -266,7 +274,7 @@ function TradingViewChartInner({
       const state = useTradingStore.getState();
       const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
       const rel = (state.positions || []).filter(
-        (p) => String(p.symbol).toUpperCase() === sym,
+        (p) => String(p.symbol).toUpperCase() === sym && isRealPositionId(p.id),
       );
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
@@ -736,7 +744,7 @@ function TradingViewChartInner({
   const requestBracket = useCallback(
     (positionId: string, leg: 'sl' | 'tp', price: number, opts?: { onCancel?: () => void; onConfirm?: () => void }) => {
       const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
-      if (!pos || !Number.isFinite(price)) { opts?.onCancel?.(); return; }
+      if (!pos || !Number.isFinite(price) || !isRealPositionId(positionId)) { opts?.onCancel?.(); return; }
       confirmRevertRef.current = opts?.onCancel ?? null;
       confirmDoneRef.current = opts?.onConfirm ?? null;
       setConfirm({
@@ -778,7 +786,9 @@ function TradingViewChartInner({
   }, [confirm]);
 
   const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
-  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym);
+  const panelPositions = positions.filter(
+    (p) => String(p.symbol).toUpperCase() === chartSym && isRealPositionId(p.id),
+  );
 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
