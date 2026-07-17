@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { User, Shield, Bell, Monitor, ChevronRight, Palette, Sun } from 'lucide-react';
+import { User, Shield, Bell, Monitor, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useUIStore } from '@/stores/uiStore';
 import DashboardShell from '@/components/layout/DashboardShell';
 import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
 import api from '@/lib/api/client';
@@ -49,13 +48,12 @@ interface Session {
   created_at: string;
 }
 
-type TabId = 'profile' | 'security' | 'notifications' | 'appearance' | 'sessions';
+type TabId = 'profile' | 'security' | 'notifications' | 'sessions';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'profile',       label: 'Profile',       icon: User },
   { id: 'security',      label: 'Security',       icon: Shield },
   { id: 'notifications', label: 'Notifications',  icon: Bell },
-  { id: 'appearance',    label: 'Appearance',     icon: Palette },
   { id: 'sessions',      label: 'Sessions',       icon: Monitor },
 ];
 
@@ -71,8 +69,6 @@ const TWO_FA_ENABLED = false;
 
 export default function ProfilePage() {
   const [tab, setTab] = useState<TabId>('profile');
-  const theme = useUIStore((s) => s.theme);
-  const setTheme = useUIStore((s) => s.setTheme);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -459,65 +455,6 @@ export default function ProfilePage() {
                 </ul>
               </div>
             )}
-          </div>
-        )}
-
-        {/* ── Appearance tab ── */}
-        {tab === 'appearance' && (
-          <div className="max-w-lg mx-auto space-y-6">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h3 className="text-base font-semibold text-text-primary mb-1">Theme</h3>
-              <p className="text-xs text-text-tertiary mb-5">Choose how SwissCresta looks on this device.</p>
-
-              <div className="grid grid-cols-1 gap-3">
-                {([
-                  { id: 'light' as const, label: 'Light', icon: Sun,
-                    swatch: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #FCE6DD 100%)',
-                    ring: '#E94E1B' },
-                ]).map((opt) => {
-                  const Icon = opt.icon;
-                  const active = theme === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTheme(opt.id)}
-                      aria-pressed={active}
-                      className={clsx(
-                        'group relative flex flex-col items-stretch gap-3 rounded-xl border p-3 text-left transition-all duration-200',
-                        active
-                          ? 'border-accent ring-2 ring-accent/30'
-                          : 'border-border-primary hover:border-accent/40',
-                      )}
-                    >
-                      <span
-                        className="h-20 w-full rounded-lg border border-border-glass"
-                        style={{ background: opt.swatch }}
-                        aria-hidden
-                      />
-                      <span className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary">
-                          <Icon size={15} className="text-accent" />
-                          {opt.label}
-                        </span>
-                        <span
-                          className={clsx(
-                            'flex h-4 w-4 items-center justify-center rounded-full border',
-                            active ? 'border-accent bg-accent' : 'border-border-primary',
-                          )}
-                        >
-                          {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className="mt-4 text-[11px] text-text-tertiary">
-                Currently using <span className="font-semibold text-text-secondary capitalize">{theme}</span> mode.
-              </p>
-            </div>
           </div>
         )}
 
