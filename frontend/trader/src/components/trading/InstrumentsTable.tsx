@@ -312,7 +312,11 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
           keep their width and scroll together on narrow/tablet viewports
           instead of being clipped. */}
       <div className="flex-1 min-h-0 overflow-auto">
-      <div className="min-w-[820px]">
+      {/* w-max min-w-full: the table is at least as wide as the panel (so the
+          header background + rows span fully to the right edge — no white gap)
+          and grows wider than it when the columns need more room (horizontal
+          scroll). */}
+      <div className="w-max min-w-full">
       {/* Table header — sticky so it stays put on vertical scroll and moves
           together with the columns on horizontal scroll. */}
       <div className="sticky top-0 z-10 grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-b border-border-primary bg-bg-secondary">
