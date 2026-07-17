@@ -25,7 +25,12 @@ const nextConfig = {
   // when you're ready to package for `docker-compose.prod.yml`. For
   // local dev / `next build` smoke-tests, leave it off.
   ...(process.env.NEXT_OUTPUT_STANDALONE === 'true' && { output: 'standalone' }),
-  reactStrictMode: true,
+  // StrictMode double-invokes effects in dev, which tears down and remounts the
+  // TradingView chart widget mid-async-init and leaves the pane blank locally
+  // (the widget mounts fine in the production build, where there is no double
+  // invoke). Keep StrictMode on for the prod/standalone build; disable it only
+  // for `next dev` so the chart renders while developing.
+  reactStrictMode: process.env.NODE_ENV === 'production',
   // Strip console.log / .info / .debug from production bundles to
   // prevent info leakage and shrink JS. Keep console.error and
   // console.warn so they reach Sentry (D.2) and stay visible in

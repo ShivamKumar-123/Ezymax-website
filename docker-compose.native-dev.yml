@@ -1,0 +1,20 @@
+# Native-dev overlay: run ONLY the data stores in containers while the app
+# processes (gateway, market-data, frontends) run natively on the host with
+# hot reload. Exposes the DBs on localhost so native processes can reach them.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.native-dev.yml \
+#     up -d postgres timescaledb redis
+#
+# Host ports 5442/5443/6389 because other projects on this machine already
+# hold the standard 5432/5433/6379. Keep in sync with the URLs in .env.
+# Never use in production — the base compose deliberately publishes no DB ports.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5442:5432"
+  timescaledb:
+    ports:
+      - "127.0.0.1:5443:5432"
+  redis:
+    ports:
+      - "127.0.0.1:6389:6379"

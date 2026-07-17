@@ -95,3 +95,4 @@ swisscresta_web/
 
 # TradingView Charting Library download (licensed — do NOT commit)
 charting_library-master/
+backend/services/market_data/

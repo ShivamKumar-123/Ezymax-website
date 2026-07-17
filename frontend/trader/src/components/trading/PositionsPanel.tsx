@@ -1806,17 +1806,17 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   )}
                 >
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className="text-text-tertiary">Symbol</span>
+                    <span className="text-text-secondary">Symbol</span>
                     <span className="font-mono text-text-primary">{closeModal.symbol}</span>
                   </div>
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className="text-text-tertiary">Side</span>
+                    <span className="text-text-secondary">Side</span>
                     <span className={clsx('font-bold', closeModal.side === 'buy' ? 'text-buy' : 'text-sell')}>
                       {closeModal.side.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex justify-between text-[11px] font-medium">
-                    <span className="text-text-tertiary">Open lots</span>
+                    <span className="text-text-secondary">Open lots</span>
                     <span className="font-mono text-text-primary">{closeModal.lots}</span>
                   </div>
                   {(() => {
@@ -1830,7 +1830,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     const net = pnl - charges + (pos?.swap ?? 0);
                     return (
                       <div className="flex justify-between text-[11px] font-medium pt-1.5 mt-1.5 border-t border-border-primary/50">
-                        <span className="text-text-tertiary">P&amp;L</span>
+                        <span className="text-text-secondary">P&amp;L</span>
                         <span
                           className="font-mono font-bold tabular-nums"
                           style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}

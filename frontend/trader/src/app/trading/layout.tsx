@@ -283,6 +283,35 @@ function TradingSession({ children }: { children: React.ReactNode }) {
         void refreshPositions();
         return;
       }
+      // A pending order filled (limit/stop triggered by the b-book engine):
+      // the fill creates a position, so pull it in so its chart line + row
+      // appear live, and refresh balance/margin.
+      if (evt.type === 'order_filled') {
+        void refreshPositions();
+        void refreshAccount();
+        return;
+      }
+      // Risk-engine stop-out closes a position but emits its OWN event type
+      // (not position_closed), so without this the stopped-out position's chart
+      // line would linger until a manual refresh. Treat it as a close: drop the
+      // position so syncLines removes the line live, then refresh + notify.
+      if (evt.type === 'stop_out') {
+        const soId = String(evt.position_id ?? '');
+        const soSym = useTradingStore.getState().positions.find((p) => p.id === soId)?.symbol ?? '';
+        if (soId) useTradingStore.getState().removePosition(soId);
+        void refreshPositions();
+        void refreshAccount();
+        const soPnl = Number(evt.profit ?? 0);
+        toast.error(`Stop-out${soSym ? ` · ${soSym}` : ''}\nP&L: ${soPnl >= 0 ? '+' : '-'}$${Math.abs(soPnl).toFixed(2)}`, { duration: 5000 });
+        sounds.loss();
+        return;
+      }
+      // Balance changed with no position event (deposit credited, withdrawal
+      // approved) — refresh the account header numbers.
+      if (evt.type === 'deposit' || evt.type === 'withdrawal') {
+        void refreshAccount();
+        return;
+      }
       if (evt.type !== 'position_closed') return;
 
       const reason = String(evt.reason ?? '');
@@ -331,13 +360,9 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
     </div>
   );
 
-  /* Terminal follows the user's theme (default light). The in-terminal
-   * Sun/Moon toggle flips uiStore.theme, and this wrapper re-renders to
-   * match — previously the wrapper hardcoded data-theme="dark" which
-   * overrode the toggle and pinned the terminal to dark. */
   if (terminalOnly) {
-    // Light-only application — dark theme has been retired. uiStore.theme
-    // is no longer read here so a stale persisted value can't flip the
+    // Light-only application — dark theme has been retired (no toggle, no
+    // uiStore.theme read here) so a stale persisted value can never flip the
     // terminal back to dark.
     return (
       <div

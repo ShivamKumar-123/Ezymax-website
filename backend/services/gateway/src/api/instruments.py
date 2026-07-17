@@ -1,11 +1,12 @@
 """Instruments API — List instruments, get current prices."""
+import asyncio
 import json as _json
 import logging
 import time as _time
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.database import get_db
+from packages.common.src.database import get_db, AsyncSessionLocal
 from packages.common.src.redis_client import redis_client
 from packages.common.src.schemas import InstrumentResponse, TickData
 from packages.common.src.instrumentation import get_rate_limiter
@@ -188,6 +189,36 @@ async def _fetch_history_source(sym: str, tf: str, resolution: str, end_ts: int 
     return result
 
 
+# Track in-flight background backfills so a burst of chart requests for the
+# same (symbol, tf) spawns exactly one provider fetch, not dozens.
+_bg_backfill_inflight: set[str] = set()
+
+
+def _schedule_bg_backfill(sym: str, tf: str, resolution: str) -> None:
+    """Fire-and-forget the slow (~2-3s) provider history fetch on its OWN db
+    session so the chart response returns immediately with whatever bars we
+    already have. Used when the store is short but NOT empty — the chart shows
+    instantly and the deeper history lands within a poll or two."""
+    key = f"{sym}|{tf}"
+    if key in _bg_backfill_inflight:
+        return
+    _bg_backfill_inflight.add(key)
+
+    async def _run() -> None:
+        try:
+            async with AsyncSessionLocal() as bg_db:
+                src = await _fetch_history_source(sym, tf, resolution, None)
+                if src:
+                    await bars_store.upsert_bars(bg_db, sym, tf, src)
+                    await bg_db.commit()
+        except Exception as e:
+            _logger.warning("bg bars backfill failed for %s %s: %s", sym, tf, e)
+        finally:
+            _bg_backfill_inflight.discard(key)
+
+    asyncio.create_task(_run())
+
+
 @router.get("/{symbol}/bars")
 @_limiter.exempt
 async def get_bars(
@@ -253,7 +284,13 @@ async def get_bars(
                         if not await redis_client.get(gap_marker):
                             need = "gap"
                             await redis_client.set(gap_marker, "1", ex=300)  # at most every 5 min
-            if need:
+            if need == "initial" and count > 0:
+                # We already have SOME bars — serve them immediately and pull the
+                # deeper history in the background. This is the fix for the ~2-3s
+                # "chart loads slow" stall: only a truly empty store (count == 0,
+                # first-ever load) still blocks on the provider round-trip.
+                _schedule_bg_backfill(sym, tf, resolution)
+            elif need:
                 end_ts = None
                 if need == "older":
                     oldest = await bars_store.oldest_ts(db, sym, tf)

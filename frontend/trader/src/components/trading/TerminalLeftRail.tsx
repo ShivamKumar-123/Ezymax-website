@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
 import {
   Search,
-  Plus,
-  PanelBottom,
-  ArrowDownUp,
   LayoutTemplate,
-  ChartCandlestick,
   Newspaper,
   MessageCircle,
   Settings,
   Calculator,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { wsManager, type ConnectionStatus } from '@/lib/ws/wsManager';
 
 /** Kept for API back-compat (callers pass activeSpace / onSpaceChange) —
  *  the Spaces section itself has been removed from the rail. */
@@ -44,14 +38,6 @@ interface TerminalLeftRailProps {
   /** Right rail: Risk calculator */
   terminalCalcOpen?: boolean;
   onPanelsSelectCalc?: () => void;
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="block w-full text-center text-[8px] font-semibold tracking-[0.12em] text-text-tertiary/60 uppercase px-0.5 mt-3 mb-1.5 first:mt-0">
-      {children}
-    </span>
-  );
 }
 
 function RailBtn({
@@ -84,43 +70,22 @@ function RailBtn({
   );
 }
 
+// The rail is intentionally minimal: Search (opens the instrument search),
+// the Panels / order view, Live news, and the Risk calculator — plus Support
+// and Settings pinned to the bottom. The old Add-symbol, Markets, Chart-focus,
+// positions-strip and connection-status buttons were removed.
 export default function TerminalLeftRail({
   terminalMarketsOpen,
-  onToggleMarkets,
-  bottomPanelCollapsed,
-  onToggleBottomPanel,
   onFocusSymbolSearch,
   chartExpanded,
   terminalNewsOpen,
-  onPanelsSelectMarkets,
   onPanelsSelectOrder,
-  onExpandFullChart,
   onPanelsSelectNews,
   terminalCalcOpen,
   onPanelsSelectCalc,
 }: TerminalLeftRailProps) {
-  const [wsStatus, setWsStatus] = useState<ConnectionStatus>('disconnected');
-
-  useEffect(() => {
-    const unsub = wsManager.onStatusChange(setWsStatus);
-    return () => {
-      unsub();
-    };
-  }, []);
-
-  const statusTitle =
-    wsStatus === 'connected'
-      ? 'Live quotes connected'
-      : wsStatus === 'connecting'
-        ? 'Connecting…'
-        : 'Disconnected';
-
-  const statusDot = clsx(
-    'w-2 h-2 rounded-full',
-    wsStatus === 'connected' && 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]',
-    wsStatus === 'connecting' && 'bg-amber-500 animate-pulse',
-    wsStatus === 'disconnected' && 'bg-red-500/90',
-  );
+  const panelsActive =
+    !terminalMarketsOpen && !chartExpanded && !terminalNewsOpen && !terminalCalcOpen;
 
   return (
     <aside
@@ -131,42 +96,19 @@ export default function TerminalLeftRail({
         <div className="mb-1 flex justify-center w-full">
           <SwissCrestaWordmark href="/accounts" variant="rail" />
         </div>
+        {/* Search — opens the Markets panel with the instrument search focused. */}
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>
           <Search size={17} strokeWidth={1.75} />
         </RailBtn>
-        <RailBtn title="Markets / add symbol" onClick={onToggleMarkets}>
-          <Plus size={17} strokeWidth={1.75} />
-        </RailBtn>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-1.5 overflow-y-auto overflow-x-hidden min-h-0 py-1">
-        {/* The legacy "Spaces" section (Balanced / Chart focus / Order
-            focus preset widths) has been retired — the changes were too
-            subtle to notice and the Chart-focus icon overlapped with the
-            ChartCandlestick Panels button below. Users can now adjust
-            column widths directly via the resize handle between the
-            chart and the right rail. */}
-        <SectionLabel>Panels</SectionLabel>
+      <div className="flex-1 flex flex-col items-center px-1.5 overflow-y-auto overflow-x-hidden min-h-0 py-1.5 gap-0.5">
         <RailBtn
-          title="Markets — symbols & prices"
-          active={terminalMarketsOpen && !chartExpanded && !terminalNewsOpen}
-          onClick={onPanelsSelectMarkets}
-        >
-          <ArrowDownUp size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Buy / Sell — order panel"
-          active={!terminalMarketsOpen && !chartExpanded && !terminalNewsOpen}
+          title="Panels — buy / sell order panel"
+          active={panelsActive}
           onClick={onPanelsSelectOrder}
         >
           <LayoutTemplate size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Chart focus — max chart + buy/sell rail"
-          active={chartExpanded && !terminalNewsOpen}
-          onClick={onExpandFullChart}
-        >
-          <ChartCandlestick size={17} strokeWidth={1.75} />
         </RailBtn>
         <RailBtn
           title="Live news — TradingView timeline"
@@ -187,13 +129,6 @@ export default function TerminalLeftRail({
       </div>
 
       <div className="flex flex-col items-center gap-0.5 px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] border-t border-border-primary">
-        <RailBtn
-          title={bottomPanelCollapsed ? 'Show positions strip' : 'Hide positions strip'}
-          active={bottomPanelCollapsed}
-          onClick={onToggleBottomPanel}
-        >
-          <PanelBottom size={17} strokeWidth={1.75} />
-        </RailBtn>
         <Link
           href="/support"
           title="Support chat"
@@ -201,12 +136,6 @@ export default function TerminalLeftRail({
         >
           <MessageCircle size={17} strokeWidth={1.75} />
         </Link>
-        <div
-          className="w-9 h-9 rounded-md flex items-center justify-center"
-          title={statusTitle}
-        >
-          <span className={statusDot} />
-        </div>
         <Link
           href="/profile"
           title="Settings"
