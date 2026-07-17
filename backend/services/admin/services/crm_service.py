@@ -48,13 +48,15 @@ def _source(utm_source, has_referrer) -> str:
 
 # ── Revenue ──────────────────────────────────────────────────────────────
 #
-# All CRM revenue is **demo-excluded** (consistent with every other CRM
-# endpoint). Note this can differ from the admin Analytics page, which sums
-# demo accounts too.
+# These figures deliberately mirror the admin **Analytics** page one-for-one,
+# so the CRM and the admin panel never disagree: same source, same windows,
+# and demo accounts are **included** exactly as `analytics_service` counts
+# them. (Every *other* CRM endpoint excludes demo — revenue is the exception,
+# on purpose, because it has to reconcile with what admins see.)
 #
 # Attribution:
 #   commission / swap -> the position's OPEN date (commission is charged at
-#                        open; this matches the admin Analytics semantics)
+#                        open) — matches analytics_service._revenue_stats
 #   trading_pnl       -> the trade's CLOSE date (realized only)
 #   ib_commission     -> the commission row's created_at
 #
@@ -74,7 +76,8 @@ def _period(commission: float, swap: float, pnl: float, ibc: float) -> CrmRevenu
 async def _revenue(db: AsyncSession) -> tuple[CrmRevenueBlock, list]:
     """Period revenue + a 12-month series, all demo-excluded."""
     zero = CrmRevenueBlock(), []
-    # brokerage (commission + swap) per window, from positions
+    # brokerage (commission + swap) per window, from positions — same rows the
+    # Analytics page sums, so total_revenue matches its All Time card exactly.
     bro_sql = text("""
         SELECT
           abs(COALESCE(sum(p.commission) FILTER (WHERE p.created_at >= date_trunc('day',   now())),0)) AS c_day,
@@ -85,8 +88,7 @@ async def _revenue(db: AsyncSession) -> tuple[CrmRevenueBlock, list]:
           abs(COALESCE(sum(p.swap)       FILTER (WHERE p.created_at >= date_trunc('month', now())),0)) AS s_month,
           abs(COALESCE(sum(p.commission),0)) AS c_all,
           abs(COALESCE(sum(p.swap),0))       AS s_all
-        FROM positions p JOIN trading_accounts ta ON ta.id = p.account_id
-        WHERE ta.is_demo = false
+        FROM positions p
     """)
     # realized customer P&L per window, from trade_history (by close date)
     pnl_sql = text("""
@@ -95,22 +97,16 @@ async def _revenue(db: AsyncSession) -> tuple[CrmRevenueBlock, list]:
           COALESCE(sum(th.profit) FILTER (WHERE th.closed_at >= date_trunc('week',  now())),0) AS p_week,
           COALESCE(sum(th.profit) FILTER (WHERE th.closed_at >= date_trunc('month', now())),0) AS p_month,
           COALESCE(sum(th.profit),0) AS p_all
-        FROM trade_history th JOIN trading_accounts ta ON ta.id = th.account_id
-        WHERE ta.is_demo = false
+        FROM trade_history th
     """)
-    # IB commission paid per window. Demo-filtered through the originating
-    # trade (source_trade_id -> orders.account_id) so it lines up with the
-    # brokerage above; IB rows with no trade are excluded for the same reason.
+    # IB commission paid per window
     ibc_sql = text("""
         SELECT
-          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('day',   now())),0) AS i_day,
-          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('week',  now())),0) AS i_week,
-          COALESCE(sum(ic.amount) FILTER (WHERE ic.created_at >= date_trunc('month', now())),0) AS i_month,
-          COALESCE(sum(ic.amount),0) AS i_all
-        FROM ib_commissions ic
-        JOIN orders o ON o.id = ic.source_trade_id
-        JOIN trading_accounts ta ON ta.id = o.account_id
-        WHERE ta.is_demo = false
+          COALESCE(sum(amount) FILTER (WHERE created_at >= date_trunc('day',   now())),0) AS i_day,
+          COALESCE(sum(amount) FILTER (WHERE created_at >= date_trunc('week',  now())),0) AS i_week,
+          COALESCE(sum(amount) FILTER (WHERE created_at >= date_trunc('month', now())),0) AS i_month,
+          COALESCE(sum(amount),0) AS i_all
+        FROM ib_commissions
     """)
     # last 12 months, three series merged by month key
     month_sql = text("""
@@ -122,23 +118,20 @@ async def _revenue(db: AsyncSession) -> tuple[CrmRevenueBlock, list]:
           SELECT date_trunc('month', p.created_at) AS m,
                  abs(COALESCE(sum(p.commission),0)) AS commission,
                  abs(COALESCE(sum(p.swap),0))       AS swap
-          FROM positions p JOIN trading_accounts ta ON ta.id = p.account_id
-          WHERE ta.is_demo = false AND p.created_at >= date_trunc('month', now()) - interval '11 months'
+          FROM positions p
+          WHERE p.created_at >= date_trunc('month', now()) - interval '11 months'
           GROUP BY 1
         ),
         pnl AS (
           SELECT date_trunc('month', th.closed_at) AS m, COALESCE(sum(th.profit),0) AS pnl
-          FROM trade_history th JOIN trading_accounts ta ON ta.id = th.account_id
-          WHERE ta.is_demo = false AND th.closed_at >= date_trunc('month', now()) - interval '11 months'
+          FROM trade_history th
+          WHERE th.closed_at >= date_trunc('month', now()) - interval '11 months'
           GROUP BY 1
         ),
         ibc AS (
-          SELECT date_trunc('month', ic.created_at) AS m, COALESCE(sum(ic.amount),0) AS ibc
-          FROM ib_commissions ic
-          JOIN orders o ON o.id = ic.source_trade_id
-          JOIN trading_accounts ta ON ta.id = o.account_id
-          WHERE ta.is_demo = false
-            AND ic.created_at >= date_trunc('month', now()) - interval '11 months'
+          SELECT date_trunc('month', created_at) AS m, COALESCE(sum(amount),0) AS ibc
+          FROM ib_commissions
+          WHERE created_at >= date_trunc('month', now()) - interval '11 months'
           GROUP BY 1
         )
         SELECT to_char(months.m, 'YYYY-MM') AS ym, to_char(months.m, 'Mon YYYY') AS label,

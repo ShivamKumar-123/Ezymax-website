@@ -1039,10 +1039,12 @@ class ClusterUser(BaseModel):
 
 
 class CrmRevenuePeriod(BaseModel):
-    """Platform revenue for one time window (demo accounts excluded).
+    """Platform revenue for one time window.
 
-    brokerage_total = commission + swap  (what the admin Analytics page calls
-    "revenue"). trading_pnl is the B-book line: the customers' net realized P&L
+    Mirrors the admin Analytics page exactly — same rows, same windows, demo
+    accounts included — so the CRM and the admin panel always show the same
+    number. brokerage_total = commission + swap is what Analytics calls
+    "revenue". trading_pnl is the B-book line: the customers' net realized P&L
     inverted — positive means the platform gained. net_total is the full picture.
     """
     commission: float = 0
