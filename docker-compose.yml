@@ -14,7 +14,10 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U swisscresta"]
+      # Explicit user+db (from this container's own env) rather than relying on
+      # pg_isready defaulting dbname to the username — that coupling is what
+      # silently broke the timescaledb check below.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -33,7 +36,12 @@ services:
       - ts_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U swisscresta"]
+      # Probe the DB this container actually serves. `pg_isready -U x` defaults
+      # dbname to the username, so the old check hit db "swisscresta" — which
+      # doesn't exist here (this is "marketdata") — and every 5s probe logged a
+      # server-side FATAL (~12 lines/min of noise that buried real errors).
+      # $$VAR reaches the container's own env, so it follows POSTGRES_* above.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 5
