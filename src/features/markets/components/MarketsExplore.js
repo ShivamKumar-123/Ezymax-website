@@ -105,8 +105,8 @@ export default function MarketsExplore({
             <InstrumentRow
               key={sym}
               symbol={sym}
-              name={i.display_name || i.name || sym}
-              subtitle={i.description || undefined}
+              name={sym}
+              subtitle={i.display_name || i.name || undefined}
               price={p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : null)}
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
               sparkData={sparksBySymbol[sym] || []}

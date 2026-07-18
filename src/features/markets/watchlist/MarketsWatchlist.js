@@ -62,8 +62,8 @@ export default function MarketsWatchlist({
             <InstrumentRow
               key={sym}
               symbol={upper}
-              name={inst?.display_name || inst?.name || upper}
-              subtitle={inst?.description || undefined}
+              name={upper}
+              subtitle={inst?.display_name || inst?.name || undefined}
               price={p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : null)}
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
               sparkData={sparksBySymbol[upper] || []}
