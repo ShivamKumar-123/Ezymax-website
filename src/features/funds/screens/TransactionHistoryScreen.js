@@ -109,13 +109,18 @@ function buildHtml(items, filter) {
   return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
   body{font-family:-apple-system,Roboto,Helvetica,sans-serif;padding:24px;color:#111}
+  .brand{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+  .brand img{height:34px}
   h1{font-size:20px;margin:0 0 4px}
   .sub{color:#666;font-size:12px;margin:0 0 16px}
   table{width:100%;border-collapse:collapse;font-size:12px}
   th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
   th{background:#fafafa;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#555}
 </style></head><body>
-  <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}</h1>
+  <div class="brand">
+    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}</h1>
+    <img src="https://trade.swisscresta.com/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
+  </div>
   <p class="sub">Generated ${now} · ${items.length} records</p>
   <table>
     <thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Amount (USD)</th><th>Status</th></tr></thead>
