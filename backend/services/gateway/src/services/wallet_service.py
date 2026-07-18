@@ -411,20 +411,26 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 detail=f"OxaPay payment creation failed: {str(oxapay_err)}",
             )
 
-    try:
-        await create_notification(
-            db, user_id,
-            title="Deposit Submitted",
-            message=f"${float(req.amount):,.2f} deposit via {req.method} is pending approval",
-            notif_type="deposit", action_url="/wallet",
-        )
-        await db.commit()
-    except Exception:
-        logger.exception("create_notification failed after deposit (deposit already saved) user_id=%s", user_id)
+    # Notify ONLY for manual methods, where submitting genuinely files a
+    # request that awaits admin approval. Automated crypto (OxaPay) deposits
+    # are merely 'initiated' here — the user hasn't paid anything yet, so a
+    # "submitted / pending approval" notification (and history entry) would be
+    # false; the webhook notifies once a real payment is detected.
+    if not is_automated_crypto:
         try:
-            await db.rollback()
+            await create_notification(
+                db, user_id,
+                title="Deposit Submitted",
+                message=f"${float(req.amount):,.2f} deposit via {req.method} is pending approval",
+                notif_type="deposit", action_url="/wallet",
+            )
+            await db.commit()
         except Exception:
-            pass
+            logger.exception("create_notification failed after deposit (deposit already saved) user_id=%s", user_id)
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
     result: dict = {"id": str(deposit.id), "status": "pending", "amount": float(deposit.amount)}
     if payment_url:
@@ -573,11 +579,25 @@ async def handle_oxapay_webhook(
     if track_id:
         deposit.transaction_id = track_id
 
-    # If payment is waiting/confirming, move from 'initiated' to 'pending'
-    if oxapay_status in ("waiting", "confirming") and deposit.status == "initiated":
+    # 'waiting' fires as soon as the invoice is CREATED — the user may just
+    # have opened (or immediately abandoned) the payment page, no money moved.
+    # Keep the deposit invisible ('initiated'); do NOT promote or notify.
+    if oxapay_status == "waiting":
+        logger.info("OxaPay webhook: deposit %s waiting (invoice open, no payment yet)", order_id)
+        return
+
+    # 'confirming' means a real on-chain payment was detected — NOW surface the
+    # deposit (history + admin queue) and tell the user.
+    if oxapay_status == "confirming" and deposit.status == "initiated":
         deposit.status = "pending"
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit detected",
+            message=f"Your ${float(deposit.amount):,.2f} crypto deposit was received and is confirming on-chain.",
+            notif_type="deposit", action_url="/wallet",
+        )
         await db.commit()
-        logger.info("OxaPay webhook: deposit %s → pending (payment started)", order_id)
+        logger.info("OxaPay webhook: deposit %s → pending (payment confirming)", order_id)
         return
 
     if oxapay_status == "paid":
@@ -693,17 +713,27 @@ async def handle_oxapay_webhook(
             logger.warning("oxapay deposit email failed: %s", _e)
 
     elif oxapay_status in ("expired", "failed"):
+        was_visible = deposit.status == "pending"
         deposit.status = "rejected"
         deposit.rejection_reason = f"OxaPay payment {oxapay_status}"
-        await create_notification(
-            db, deposit.user_id,
-            title="Deposit not completed",
-            message=f"Your ${float(deposit.amount):,.2f} crypto deposit {oxapay_status}. Please try again.",
-            notif_type="deposit", action_url="/wallet",
-        )
-        _send_deposit_failed_email(
-            user_row, deposit, oxapay_status, method_label="Crypto (OxaPay)",
-        )
+        # Only notify/email when a payment had actually started ('pending').
+        # An 'initiated' deposit expiring is just an abandoned invoice — the
+        # user never paid, so there is nothing to tell them about.
+        if was_visible:
+            await create_notification(
+                db, deposit.user_id,
+                title="Deposit not completed",
+                message=f"Your ${float(deposit.amount):,.2f} crypto deposit {oxapay_status}. Please try again.",
+                notif_type="deposit", action_url="/wallet",
+            )
+            fail_user_q = await db.execute(
+                select(User).where(User.id == deposit.user_id)
+            )
+            fail_user = fail_user_q.scalar_one_or_none()
+            if fail_user:
+                _send_deposit_failed_email(
+                    fail_user, deposit, oxapay_status, method_label="Crypto (OxaPay)",
+                )
 
     else:
         # "waiting", "confirming" — informational only
