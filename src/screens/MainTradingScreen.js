@@ -29,7 +29,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import * as Updates from 'expo-updates';
-import { API_URL, API_BASE_URL, WS_URL } from '../config';
+import { API_URL, API_BASE_URL, WS_URL, CHART_URL } from '../config';
 import { toTradingViewSymbol } from '../lib/tradingViewSymbols';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
@@ -82,7 +82,16 @@ function getChartDataSource(symbol) {
   return { provider: 'yahoo', remote: sym };
 }
 
+// Broker-symbol → backend chart-symbol overrides for the shared /chart page
+// (same map as InstrumentDetailScreen — e.g. NASDAQ 100 is served as NDX).
+const CHART_SYMBOL_ALIAS = {
+  NAS100: 'NDX',
+};
+
 // Bootstrap script for the in-WebView chart (TradingView Charting Library).
+// LEGACY — no longer injected: the Chart tab now embeds the shared web /chart
+// page (CHART_URL), which is the same TradingView Advanced Charts component the
+// web terminal uses, including the SL/TP execution-line features.
 // Hosts the chart that web uses, with custom datafeed, broker_factory, and
 // the same entry/SL/TP horizontal_line overlay logic as
 // swisscresta/frontend/trader/src/components/charts/ChartPositionOverlay.tsx.
@@ -5847,40 +5856,10 @@ const ChartTab = ({ route }) => {
     return () => { cancelled = true; };
   }, [ctx.user]);
 
-  // Open positions on the active symbol — pushed into the chart so the overlay
-  // can draw entry/SL/TP horizontal lines (mirrors web's ChartPositionOverlay).
-  const positionsForChart = useMemo(() => {
-    const sym = activeSymbol.toUpperCase();
-    const open = Array.isArray(ctx.openTrades) ? ctx.openTrades : [];
-    return open
-      .filter((t) => String(t?.symbol || '').toUpperCase() === sym)
-      .map((t) => ({
-        id: String(t._id || t.id || `${t.symbol}-${t.openPrice}-${t.side}`),
-        symbol: t.symbol,
-        side: String(t.side || '').toLowerCase(),
-        lots: Number(t.lots || t.quantity || 0),
-        openPrice: Number(t.openPrice || t.open_price || 0),
-        stopLoss: t.stopLoss != null ? Number(t.stopLoss) : (t.stop_loss != null ? Number(t.stop_loss) : null),
-        takeProfit: t.takeProfit != null ? Number(t.takeProfit) : (t.take_profit != null ? Number(t.take_profit) : null),
-      }))
-      .filter((p) => Number.isFinite(p.openPrice) && p.openPrice > 0);
-  }, [ctx.openTrades, activeSymbol]);
-
-  // Pending orders for the broker_factory (same source the broker uses on web).
-  const ordersForChart = useMemo(() => {
-    const arr = Array.isArray(ctx.pendingOrders) ? ctx.pendingOrders : [];
-    return arr.map((o) => ({
-      id: String(o._id || o.id),
-      symbol: o.symbol,
-      side: String(o.side || '').toLowerCase(),
-      orderType: o.orderType || o.order_type || 'limit',
-      lots: Number(o.lots || o.quantity || 0),
-      price: Number(o.price || 0),
-      stop_price: Number(o.stop_price || o.stopPrice || 0),
-      stop_loss: o.stopLoss || o.stop_loss || null,
-      take_profit: o.takeProfit || o.take_profit || null,
-    }));
-  }, [ctx.pendingOrders]);
+  // (Positions / pending orders are no longer pushed into the chart — the
+  // shared /chart page fetches and polls them itself with the token, exactly
+  // like the web terminal, so its SL/TP lines can never disagree with the
+  // server.)
 
   const accountForChart = useMemo(() => {
     const acc = ctx.isChallengeMode ? ctx.selectedChallengeAccount : ctx.selectedAccount;
@@ -5895,100 +5874,58 @@ const ChartTab = ({ route }) => {
     };
   }, [ctx.selectedAccount, ctx.selectedChallengeAccount, ctx.isChallengeMode]);
 
-  const chartHtml = useMemo(() => {
-    const tvSym = getSymbolForTradingView(activeSymbol);
-    return `<!DOCTYPE html>
-<html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style>*{margin:0;padding:0;box-sizing:border-box;}html,body{height:100%;width:100%;background:${chartBg};overflow:hidden;}</style>
-</head><body>
-<div class="tradingview-widget-container" style="height:100%;width:100%">
-  <div id="tradingview_chart" style="height:100%;width:100%"></div>
-</div>
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-<script type="text/javascript">
-new TradingView.widget({
-  "autosize": true,
-  "symbol": "${tvSym}",
-  "interval": "5",
-  "timezone": "Etc/UTC",
-  "theme": "${chartTheme}",
-  "style": "1",
-  "locale": "en",
-  "toolbar_bg": "${chartBg}",
-  "enable_publishing": false,
-  "hide_top_toolbar": false,
-  "hide_legend": false,
-  "hide_side_toolbar": false,
-  "save_image": false,
-  "container_id": "tradingview_chart",
-  "backgroundColor": "${chartBg}",
-  "withdateranges": true,
-  "allow_symbol_change": false,
-  "details": true,
-  "hotlist": false,
-  "calendar": false,
-  "show_popup_button": true,
-  "popup_width": "1000",
-  "popup_height": "650",
-  "studies": [],
-  "studies_overrides": {},
-  "overrides": {
-    "mainSeriesProperties.showPriceLine": true,
-    "mainSeriesProperties.highLowAvgPrice.highLowPriceLinesVisible": true,
-    "scalesProperties.showSeriesLastValue": true,
-    "scalesProperties.showStudyLastValue": true,
-    "paneProperties.legendProperties.showLegend": true,
-    "paneProperties.legendProperties.showSeriesTitle": true,
-    "paneProperties.legendProperties.showSeriesOHLC": true,
-    "paneProperties.legendProperties.showBarChange": true
-  }
-});
-</script>
-</body></html>`;
-  }, [activeSymbol, isDark, chartBg, chartTheme]);
+  // ── Chart source: the shared web /chart page — the SAME self-hosted
+  // TradingView Advanced Charts component the web terminal uses, so the app
+  // gets identical features for free: backend (gap-free) candles, execution
+  // line with live P&L label, amber/teal SL/TP lines with projected P&L,
+  // [SL] [TP] [✕] buttons (drag-to-set with preview + confirm, click-to-type),
+  // shaded P&L zones, and pending-order lines. Auth + account travel as query
+  // params (the WebView has no session cookie). The trade widget is hidden by
+  // the page itself — the app has its own native quick-trade bar.
+  //
+  // The initial symbol is frozen into the URL; chart-tab switches are pushed
+  // with postMessage('setSymbol') so the ~26 MB library never reloads.
+  const chartInitialSymbolRef = useRef(activeSymbol);
+  const chartSource = useMemo(() => {
+    const sym = chartInitialSymbolRef.current;
+    const q = new URLSearchParams({
+      symbol: CHART_SYMBOL_ALIAS[sym] || sym,
+      interval: '5',
+      theme: chartTheme,
+      api: API_URL,
+      token: chartJwt || '',
+      account: String(accountForChart?.id || ''),
+    });
+    return { uri: `${CHART_URL}?${q.toString()}` };
+  }, [chartJwt, accountForChart?.id, chartTheme]);
 
-  // Push position + order updates into the chart WebView (no remount).
+  // Switch the charted symbol in place when the active chart tab changes.
   useEffect(() => {
-    if (!chartWebViewRef.current) return;
-    const js = `window.SWISSCRESTA_API && window.SWISSCRESTA_API.setPositions(${JSON.stringify(positionsForChart)}, ${JSON.stringify(ordersForChart)}); true;`;
-    try { chartWebViewRef.current.injectJavaScript(js); } catch (e) {}
-  }, [positionsForChart, ordersForChart]);
+    chartInitialSymbolRef.current = activeSymbol;
+    const sym = CHART_SYMBOL_ALIAS[activeSymbol] || activeSymbol;
+    try {
+      chartWebViewRef.current?.injectJavaScript(
+        `window.postMessage({ type: 'setSymbol', symbol: ${JSON.stringify(sym)} }, '*'); true;`,
+      );
+    } catch (e) {}
+  }, [activeSymbol]);
 
-  // Push live ticks (fallback in case the WebView's WS connection is gated).
-  useEffect(() => {
-    if (!chartWebViewRef.current) return;
-    if (!currentPrice.bid && !currentPrice.ask) return;
-    const js = `window.SWISSCRESTA_API && window.SWISSCRESTA_API.setLiveTick(${JSON.stringify(activeSymbol)}, ${currentPrice.bid || 0}, ${currentPrice.ask || 0}); true;`;
-    try { chartWebViewRef.current.injectJavaScript(js); } catch (e) {}
-  }, [activeSymbol, currentPrice.bid, currentPrice.ask]);
-
-  // Push token / account changes without remounting.
-  useEffect(() => {
-    if (!chartWebViewRef.current || !chartJwt) return;
-    const js = `window.SWISSCRESTA_API && window.SWISSCRESTA_API.setToken(${JSON.stringify(chartJwt)}); true;`;
-    try { chartWebViewRef.current.injectJavaScript(js); } catch (e) {}
-  }, [chartJwt]);
-
-  // When chart signals it's ready, push positions+orders+token immediately.
+  // Messages from the chart page. It posts { type:'chart:drag', active }
+  // around an SL/TP drag; when a drag ends the user may have just committed a
+  // bracket, so refresh the native positions/account shortly after to keep the
+  // app's lists in lock-step with the chart.
   const handleChartMessage = useCallback((event) => {
     try {
       const msg = JSON.parse(event?.nativeEvent?.data || '{}');
-      if (msg.type === 'ready' && chartWebViewRef.current) {
-        const js = `
-          window.SWISSCRESTA_API && window.SWISSCRESTA_API.setToken(${JSON.stringify(chartJwt)});
-          window.SWISSCRESTA_API && window.SWISSCRESTA_API.setPositions(${JSON.stringify(positionsForChart)}, ${JSON.stringify(ordersForChart)});
-          true;`;
-        try { chartWebViewRef.current.injectJavaScript(js); } catch (e) {}
-      } else if (msg.type === 'orderPlaced' || msg.type === 'positionClosed' || msg.type === 'bracketUpdated' || msg.type === 'orderCancelled') {
-        ctx.fetchOpenTrades?.();
-        ctx.fetchPendingOrders?.();
-        ctx.fetchAccountSummary?.();
-      } else if (msg.type === 'error') {
-        console.warn('[Chart]', msg.message);
+      if (msg.type === 'chart:drag' && msg.active === false) {
+        setTimeout(() => {
+          ctx.fetchOpenTrades?.();
+          ctx.fetchPendingOrders?.();
+          ctx.fetchAccountSummary?.();
+        }, 1500);
       }
     } catch (e) {}
-  }, [positionsForChart, ordersForChart, chartJwt, ctx]);
+  }, [ctx]);
 
   const [showNewsTab, setShowNewsTab] = useState(false);
 
@@ -6148,11 +6085,14 @@ new TradingView.widget({
         </View>
       ) : (
         <View style={[styles.chartWrapper, { zIndex: 0 }]}>
-          {/* Simple TradingView embed widget (tv.js) — public-data candles. */}
+          {/* Shared web /chart page — same Advanced Charts + on-chart SL/TP
+              execution-line features as the web terminal. Remounts only when
+              auth/account changes; symbol switches are pushed via postMessage. */}
           <WebView
             ref={chartWebViewRef}
-            key={`tv-${activeSymbol}-${isDark}`}
-            source={{ html: chartHtml }}
+            key={`chart-${accountForChart?.id || 'noacct'}-${chartJwt ? 'auth' : 'guest'}`}
+            source={chartSource}
+            onMessage={handleChartMessage}
             style={{ flex: 1, backgroundColor: chartBg }}
             javaScriptEnabled={true}
             domStorageEnabled={true}
@@ -6161,6 +6101,13 @@ new TradingView.widget({
             mixedContentMode="always"
             allowsInlineMediaPlayback={true}
             androidLayerType="hardware"
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: chartBg }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}>Loading chart…</Text>
+              </View>
+            )}
           />
         </View>
       )}
