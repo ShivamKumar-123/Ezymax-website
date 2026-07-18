@@ -245,7 +245,7 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
             <SumRow label="Open price" value={open ? open.toFixed(5) : '—'} />
             <SumRow
               label="P&L"
-              value={pl != null ? `${plPositive ? '+' : ''}$${Math.abs(pl).toFixed(2)}` : '—'}
+              value={pl != null ? `${plPositive ? '+' : '−'}$${Math.abs(pl).toFixed(2)}` : '—'}
               color={plPositive ? vantage.up : vantage.down}
               last
             />
@@ -288,7 +288,7 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
           <View style={closeStyles.estRow}>
             <Text style={closeStyles.estLab}>EST. P&L</Text>
             <Text style={[closeStyles.estVal, { color: estPositive ? vantage.up : vantage.down }]}>
-              {estPl != null ? `${estPositive ? '+' : ''}$${Math.abs(estPl).toFixed(2)}` : '—'}
+              {estPl != null ? `${estPositive ? '+' : '−'}$${Math.abs(estPl).toFixed(2)}` : '—'}
             </Text>
           </View>
 
