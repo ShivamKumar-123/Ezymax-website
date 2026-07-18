@@ -132,29 +132,20 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     void pollPricesFromApi();
     const pricePoll = setInterval(pollPricesFromApi, 1500);
 
+    // Background reconcile only — this poll must NOT play close sounds. It used
+    // to diff before/after position ids and play a profit/loss sound for any id
+    // that vanished, but that:
+    //   • fired every 1.5s, so any transient flicker (a racing refresh re-adding
+    //     then removing a just-closed row) looped the sound;
+    //   • misfired on the optimistic→real id swap — a fresh trade's `optim-…`
+    //     id "disappears" when promoted to its UUID, which the diff read as a
+    //     close and played a phantom loss sound.
+    // Close sounds now come ONCE from the event-driven sources: the trade WS
+    // (SL/TP hit, stop-out) and the manual-close response (PositionsPanel) —
+    // both instant, neither on a timer.
     const positionPoll = setInterval(async () => {
-      const before = useTradingStore.getState().positions;
-      const beforeIds = new Set(before.map((p) => p.id));
-
       await refreshPositions();
       await refreshAccount();
-
-      const after = useTradingStore.getState().positions;
-      const afterIds = new Set(after.map((p) => p.id));
-
-      if (beforeIds.size > 0) {
-        beforeIds.forEach((id) => {
-          if (!afterIds.has(id)) {
-            const closed = before.find((p) => p.id === id);
-            if (closed) {
-              const pnl = closed.profit || 0;
-              // Play a quick sound but no popup — the reason will appear in the
-              // history tab / Closed Positions row, so no extra toast noise.
-              pnl >= 0 ? sounds.profit() : sounds.loss();
-            }
-          }
-        });
-      }
     }, 1500);
 
     return () => {
