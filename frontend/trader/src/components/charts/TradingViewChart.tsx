@@ -273,8 +273,14 @@ function TradingViewChartInner({
     try {
       const state = useTradingStore.getState();
       const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
+      // Render EVERY open position on the symbol — including the just-placed
+      // optimistic one (temp `optim-…` id) — so the entry line + pill appear the
+      // instant you trade, not a round-trip later. The SL/TP/close ACTIONS are
+      // still guarded by isRealPositionId (requestBracket + close below), so
+      // nothing fires against the temp id; the pill just swaps to the real id
+      // in place a moment later.
       const rel = (state.positions || []).filter(
-        (p) => String(p.symbol).toUpperCase() === sym && isRealPositionId(p.id),
+        (p) => String(p.symbol).toUpperCase() === sym,
       );
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
@@ -382,8 +388,9 @@ function TradingViewChartInner({
         if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
         const isCopy = p.trade_type === 'copy_trade';
 
-        // Entry reference line (locked, dashed grey).
-        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
+        // Entry / execution line (locked, dashed), colored by side: BUY = blue,
+        // SELL = red — matches the trade buttons and reads at a glance.
+        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, p.side === 'buy' ? '#2563eb' : '#f43f5e', true);
 
         // Draggable SL / TP. Copied (MAM) positions get none — master-controlled.
         if (!isCopy && p.stop_loss != null) {
@@ -488,6 +495,26 @@ function TradingViewChartInner({
       } catch { return null; }
     };
 
+    // The chart renders INLINE (not in an iframe), so we can read the price
+    // pane's REAL pixel top straight from the DOM — exact, no crosshair
+    // calibration, no drift. Pick the canvas whose height matches the API pane
+    // height (that's the price pane, not the time axis / an overlay). Returns
+    // null if not found yet, so the crosshair calibration remains the fallback.
+    const measurePaneTop = (paneH: number): number | null => {
+      try {
+        const rootTop = container.getBoundingClientRect().top;
+        let best: number | null = null;
+        let bestDiff = 40;
+        container.querySelectorAll('canvas').forEach((c) => {
+          const r = (c as HTMLCanvasElement).getBoundingClientRect();
+          if (r.width < 100) return;
+          const diff = Math.abs(r.height - paneH);
+          if (diff < bestDiff) { bestDiff = diff; best = r.top - rootTop; }
+        });
+        return best;
+      } catch { return null; }
+    };
+
     const onMove = (e: MouseEvent) => {
       lastMouseYRef.current = e.clientY - container.getBoundingClientRect().top;
     };
@@ -528,7 +555,11 @@ function TradingViewChartInner({
       const chart = getChart();
       const geo = chart && readGeo(chart);
       if (geo) {
-        let paneTop = paneTopRef.current;
+        // Prefer the EXACT DOM-measured pane top; fall back to the calibrated
+        // value, then a rough estimate before either exists.
+        let paneTop: number | null = measurePaneTop(geo.paneH);
+        if (paneTop != null) paneTopRef.current = paneTop;
+        else paneTop = paneTopRef.current;
         if (paneTop == null) paneTop = container.getBoundingClientRect().height - geo.paneH - 46;
         const st = useTradingStore.getState();
         const sym = (st.selectedSymbol ?? 'EURUSD').toUpperCase();
@@ -709,6 +740,10 @@ function TradingViewChartInner({
   }, []);
 
   const closePositionFromChart = useCallback(async (positionId: string) => {
+    // The temp `optim-…` id isn't a real position yet — don't POST it (the
+    // backend UUID check would 422). This window is ~1 tick; the real id lands
+    // and the button works.
+    if (!isRealPositionId(positionId)) { toast('Order still finalizing…'); return; }
     try {
       await api.post(`/positions/${positionId}/close`, {});
       toast.success('Position closed');
@@ -786,8 +821,11 @@ function TradingViewChartInner({
   }, [confirm]);
 
   const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+  // Show the pill for optimistic positions too (instant feedback). Its SL/TP/✕
+  // handlers are guarded against the temp id, so the buttons are inert until the
+  // real position id lands ~1 tick later.
   const panelPositions = positions.filter(
-    (p) => String(p.symbol).toUpperCase() === chartSym && isRealPositionId(p.id),
+    (p) => String(p.symbol).toUpperCase() === chartSym,
   );
 
   return (
