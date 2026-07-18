@@ -9,8 +9,10 @@ import {
   Screen,
   BuySellSplit,
   IconButton,
+  Sheet,
   showToast,
 } from '../../components/vantage';
+import OrderTicket from '../trade/OrderTicket';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import AccountSwitcher from '../trade/AccountSwitcher';
 import { useAccount } from '../../context/AccountContext';
@@ -77,6 +79,9 @@ export default function InstrumentDetailScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [footerH, setFooterH] = useState(330);
   const [kbHeight, setKbHeight] = useState(0);
+  // Advanced order sheet (limit / stop entry with TP/SL) — reachable from the
+  // normal footer AND the fullscreen chart's bottom bar.
+  const [advOpen, setAdvOpen] = useState(false);
 
   // Lift the (absolutely-positioned) footer above the keyboard when typing Lots.
   // Edge-to-edge (Expo SDK 54 default) breaks Android `adjustResize`, so the
@@ -367,6 +372,28 @@ export default function InstrumentDetailScreen() {
                     originWhitelist={['*']}
                     onError={() => {}}
                   />
+                  {/* Trade bar in fullscreen too: Lots + advanced (limit/stop)
+                      opener + the same one-tap Sell/Buy split. */}
+                  <View style={styles.fsFooter}>
+                    <View style={styles.fsLotsRow}>
+                      <Text style={styles.lotsLabel}>Lots</Text>
+                      <LotsField value={lots} onChange={setLots} />
+                      <View style={{ flex: 1 }} />
+                      <Pressable onPress={() => setAdvOpen(true)} style={styles.advBtn} accessibilityRole="button" accessibilityLabel="Advanced order — limit, stop, TP/SL">
+                        <Ionicons name="options-outline" size={14} color={vantage.textSecondary} />
+                        <Text style={styles.advBtnTxt}>Limit / Stop</Text>
+                      </Pressable>
+                    </View>
+                    <View style={{ opacity: submitting ? 0.6 : 1 }} pointerEvents={submitting ? 'none' : 'auto'}>
+                      <BuySellSplit
+                        bid={bid}
+                        ask={ask}
+                        spreadPoints={spread}
+                        side={side}
+                        onChange={(s) => { void placeOrder(s); }}
+                      />
+                    </View>
+                  </View>
                 </View>
                 <Pressable
                   onPress={() => setChartFull(false)}
@@ -376,6 +403,17 @@ export default function InstrumentDetailScreen() {
                 >
                   <Ionicons name="close" size={22} color="#fff" />
                 </Pressable>
+                {/* The advanced-order sheet must be nested INSIDE this modal
+                    while the fullscreen chart is open, or it would open
+                    underneath it. */}
+                <AdvancedOrderSheet
+                  visible={advOpen && chartFull}
+                  onClose={() => setAdvOpen(false)}
+                  account={activeAccount}
+                  symbol={symbol}
+                  tick={tick}
+                  maxH={Math.round(winH * 0.7)}
+                />
               </View>
             </Modal>
       </ScrollView>
@@ -415,6 +453,11 @@ export default function InstrumentDetailScreen() {
           <Text style={styles.freeMarginVal}>
             {activeAccount?.balance != null ? `${Number(activeAccount.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount.currency || 'USD'}` : '—'}
           </Text>
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setAdvOpen(true)} style={styles.advBtn} accessibilityRole="button" accessibilityLabel="Advanced order — limit, stop, TP/SL">
+            <Ionicons name="options-outline" size={14} color={vantage.textSecondary} />
+            <Text style={styles.advBtnTxt}>Limit / Stop</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -425,7 +468,42 @@ export default function InstrumentDetailScreen() {
         selectedId={activeAccount?.id || activeAccount?._id}
         onSelect={selectAccount}
       />
+
+      {/* Advanced order sheet (normal, non-fullscreen instance). */}
+      <AdvancedOrderSheet
+        visible={advOpen && !chartFull}
+        onClose={() => setAdvOpen(false)}
+        account={activeAccount}
+        symbol={symbol}
+        tick={tick}
+        maxH={Math.round(winH * 0.7)}
+      />
     </Screen>
+  );
+}
+
+// Slide-up sheet hosting the full order ticket — market / LIMIT / STOP order
+// types with optional TP/SL and margin preview (the same OrderTicket the old
+// Trade tab used, now reachable from the chart screen instead of duplicating
+// a second buy/sell UI).
+function AdvancedOrderSheet({ visible, onClose, account, symbol, tick, maxH }) {
+  return (
+    <Sheet visible={visible} onClose={onClose} title={`New order — ${symbol}`}>
+      <ScrollView
+        style={{ maxHeight: maxH || 520 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <OrderTicket
+          accountId={account?.id || account?._id}
+          account={account}
+          accountSummary={account}
+          symbol={symbol}
+          tick={tick}
+          onPlaced={onClose}
+        />
+      </ScrollView>
+    </Sheet>
   );
 }
 
@@ -614,6 +692,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   fsContainer: { flex: 1, backgroundColor: vantage.bg },
+  // Fullscreen-chart bottom trade bar.
+  fsFooter: { paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.sm, backgroundColor: vantage.bg },
+  fsLotsRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  // "Limit / Stop" advanced-order opener chip.
+  advBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.pill,
+    paddingHorizontal: space.md, paddingVertical: 5, backgroundColor: vantage.bgRaised,
+  },
+  advBtnTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   fsClose: {
     position: 'absolute', right: 14,
     width: 40, height: 40, borderRadius: 20,
