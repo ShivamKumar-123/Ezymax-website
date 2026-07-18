@@ -71,7 +71,7 @@ export default function SignupScreen({ navigation }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.brandWrap}>
-            <Image source={require('../../../assets/swisscresta-logo.png')} style={styles.logo} resizeMode="contain" />
+            <Image source={require('../../../assets/brand/swisscresta-logo.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.tagline}>Create your account</Text>
           </View>
 

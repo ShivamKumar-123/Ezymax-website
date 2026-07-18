@@ -5,17 +5,17 @@
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/swisscresta-icon.png",
+    "icon": "./assets/brand/swisscresta-icon.png",
     "backgroundColor": "#000000",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "jsEngine": "hermes",
     "splash": {
-      "image": "./assets/swisscresta-logo.png",
+      "image": "./assets/brand/swisscresta-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000",
       "dark": {
-        "image": "./assets/swisscresta-logo.png",
+        "image": "./assets/brand/swisscresta-logo.png",
         "resizeMode": "contain",
         "backgroundColor": "#000000"
       }
@@ -45,25 +45,25 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/swisscresta-icon.png",
+        "foregroundImage": "./assets/brand/swisscresta-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "backgroundColor": "#000000",
       "package": "com.swisscresta.app",
       "splash": {
-        "image": "./assets/swisscresta-logo.png",
+        "image": "./assets/brand/swisscresta-logo.png",
         "resizeMode": "contain",
         "backgroundColor": "#000000",
         "dark": {
-          "image": "./assets/swisscresta-logo.png",
+          "image": "./assets/brand/swisscresta-logo.png",
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
       }
     },
     "web": {
-      "favicon": "./assets/swisscresta-favicon.png"
+      "favicon": "./assets/brand/swisscresta-favicon.png"
     },
     "plugins": [
       "expo-font",

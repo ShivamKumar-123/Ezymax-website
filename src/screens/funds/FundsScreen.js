@@ -54,7 +54,7 @@ export default function FundsScreen() {
         {/* Banner div — fund_banner.png fills the card. */}
         <View style={styles.bannerCard}>
           <Image
-            source={require('../../../assets/fund_banner.png')}
+            source={require('../../../assets/images/fund_banner.png')}
             style={styles.bannerImage}
             resizeMode="cover"
           />

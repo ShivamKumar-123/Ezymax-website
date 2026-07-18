@@ -4,10 +4,10 @@ import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Default animation + the preset avatars the user can pick.
-const DEFAULT_ANIM = require('../../assets/avatar f04024.json');
+const DEFAULT_ANIM = require('../../assets/animations/avatar-active.json');
 export const LOTTIE_AVATARS = {
-  a: require('../../assets/avatar f04024.json'),
-  b: require('../../assets/avatar.json'),
+  a: require('../../assets/animations/avatar-active.json'),
+  b: require('../../assets/animations/avatar.json'),
 };
 export const ICON_AVATARS = [
   { key: 'i1', name: 'person', color: '#F04024' },

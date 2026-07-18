@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 
-const LOADER = require('../../../assets/download.gif');
+const LOADER = require('../../../assets/images/download.gif');
 
 // Full-screen startup loader — animated GIF centred on a black background.
 export default function AppLoader() {

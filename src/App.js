@@ -9,17 +9,17 @@ import { View, Text, StyleSheet, LogBox, AppState } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as SecureStore from 'expo-secure-store';
 
-import { SKIP_BOOT_LOADER_KEY } from './src/theme/themeRuntime';
-import { AuthProvider, AuthContext } from './src/context/AuthContext';
-import { ThemeProvider } from './src/context/ThemeContext';
-import { SettingsProvider } from './src/context/SettingsContext';
-import { I18nProvider } from './src/i18n';
-import RootNavigator from './src/navigation/RootNavigator';
-import { ToastHost, AppAlertHost } from './src/components/vantage';
-import AppLoader from './src/components/vantage/AppLoader';
-import BiometricLockScreen from './src/components/BiometricLockScreen';
-import { isBiometricEnabled, getBiometricSupport } from './src/utils/biometricLock';
-import { vantage } from './src/theme/vantageTheme';
+import { SKIP_BOOT_LOADER_KEY } from './theme/themeRuntime';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { I18nProvider } from './i18n';
+import RootNavigator from './navigation/RootNavigator';
+import { ToastHost, AppAlertHost } from './components/vantage';
+import AppLoader from './components/vantage/AppLoader';
+import BiometricLockScreen from './components/BiometricLockScreen';
+import { isBiometricEnabled, getBiometricSupport } from './utils/biometricLock';
+import { vantage } from './theme/vantageTheme';
 
 LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',

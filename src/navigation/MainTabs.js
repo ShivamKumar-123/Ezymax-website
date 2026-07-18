@@ -16,21 +16,21 @@ const LIGHT_THEME = vantage.isDark === false;
 
 // Light theme uses the brand-coloured logo; dark theme uses the white cut-out.
 const HOME_ICON = LIGHT_THEME
-  ? require('../../assets/swisscresta-homebar.png')
-  : require('../../assets/swisscresta-homebar-white.png');
+  ? require('../../assets/brand/swisscresta-homebar.png')
+  : require('../../assets/brand/swisscresta-homebar-white.png');
 
-// Each theme has its own Lottie set — the f04024 variants are the brand-red
-// icons used on the light theme.
+// Each theme has its own Lottie set — the *-active variants are the brand-red
+// (#f04024) icons used on the light theme.
 const LOTTIE = LIGHT_THEME
   ? {
-      MarketsTab: require('../../assets/market f04024.json'),
-      TradeTab:   require('../../assets/trade f04024.json'),
-      FundsTab:   require('../../assets/funds f04024.json'),
+      MarketsTab: require('../../assets/animations/market-active.json'),
+      TradeTab:   require('../../assets/animations/trade-active.json'),
+      FundsTab:   require('../../assets/animations/funds-active.json'),
     }
   : {
-      MarketsTab: require('../../assets/market.json'),
-      TradeTab:   require('../../assets/trade.json'),
-      FundsTab:   require('../../assets/funds.json'),
+      MarketsTab: require('../../assets/animations/market.json'),
+      TradeTab:   require('../../assets/animations/trade.json'),
+      FundsTab:   require('../../assets/animations/funds.json'),
     };
 
 // Root screen of each tab's stack — used to pop back to root on active re-tap.

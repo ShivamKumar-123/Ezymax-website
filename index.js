@@ -37,7 +37,7 @@ function Root() {
     let mounted = true;
     (async () => {
       await applyVantageThemeFromStorage();
-      const mod = await import('./App');
+      const mod = await import('./src/App');
       if (mounted) setApp(() => mod.default);
     })();
     return () => { mounted = false; };

@@ -186,7 +186,7 @@ export default function HomeScreen() {
         >
           {/* Slight zoom crops only the black padding/rounded corners so the wave
               pattern fills (fits) the whole card. Lower scale = more wave shown. */}
-          <Image source={require('../../assets/card.png')} style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.2 }] }]} resizeMode="cover" />
+          <Image source={require('../../assets/images/card.png')} style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.2 }] }]} resizeMode="cover" />
           <View style={styles.cardOverlay}>
             <BalanceBlock
               showControls={false}
@@ -201,11 +201,11 @@ export default function HomeScreen() {
             />
           </View>
           {/* SwissCresta logo — top-right. */}
-          <Image source={require('../../assets/swisscresta-homebar-white.png')} style={styles.cardLogo} resizeMode="contain" />
+          <Image source={require('../../assets/brand/swisscresta-homebar-white.png')} style={styles.cardLogo} resizeMode="contain" />
           {/* Cardholder name — bottom-left. */}
           <Text style={styles.cardName} numberOfLines={1}>{cardName}</Text>
           {/* Card chip — bottom-right. */}
-          <Image source={require('../../assets/chip.png')} style={styles.chip} resizeMode="contain" />
+          <Image source={require('../../assets/images/chip.png')} style={styles.chip} resizeMode="contain" />
         </Pressable>
 
         <QuickActionsGrid />

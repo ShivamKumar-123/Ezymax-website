@@ -2190,7 +2190,7 @@ const HomeTab = ({ navigation }) => {
         {/* Logo — non-interactive */}
         <View style={{ padding: 4 }}>
           <Image
-            source={require('../../assets/swisscresta-logo.png')}
+            source={require('../../assets/brand/swisscresta-logo.png')}
             style={{ width: 48, height: 48, borderRadius: 10 }}
             resizeMode="contain"
           />
@@ -3152,7 +3152,7 @@ const HomeTab = ({ navigation }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Image
-                  source={require('../../assets/swisscresta-logo.png')}
+                  source={require('../../assets/brand/swisscresta-logo.png')}
                   style={{ width: 28, height: 28, borderRadius: 6 }}
                   resizeMode="contain"
                 />

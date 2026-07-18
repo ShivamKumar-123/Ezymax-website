@@ -15,5 +15,9 @@ ios/
 .env
 .env.local
 
+# OS / editor junk
+.DS_Store
+Thumbs.db
+
 # Self-hosted TradingView library (hosted separately, not bundled in OTA)
 charting_library-master/

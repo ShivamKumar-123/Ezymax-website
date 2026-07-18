@@ -74,8 +74,8 @@ export default function BiometricLockScreen({ onUnlock, onLogout, label = 'Biome
             screen); light mode: the wide wordmark. */}
         <Image
           source={vantage.isDark
-            ? require('../../assets/swisscresta-favicon.png')
-            : require('../../assets/swisscresta-logo.png')}
+            ? require('../../assets/brand/swisscresta-favicon.png')
+            : require('../../assets/brand/swisscresta-logo.png')}
           style={vantage.isDark ? styles.favicon : styles.logo}
           resizeMode="contain"
         />
