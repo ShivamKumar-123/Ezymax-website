@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTradingStore } from '@/stores/tradingStore';
+import { sounds } from '@/lib/sounds';
 
 /**
  * On-chart quick-trade widget (like the reference platform's chart buy/sell):
@@ -37,6 +38,11 @@ export function ChartTradeWidget() {
       return;
     }
     const lot = Math.max(0.01, Number(lots) || 0.01);
+    // Fire the click sound BEFORE the request, like the order panel does — the
+    // tap should feel synchronous instead of waiting on the server round-trip.
+    // (The success toast still waits for the API, so a rejected order never
+    // shows a fake confirmation.)
+    sounds.orderPlaced();
     setBusy(true);
     try {
       await placeOrder({ account_id: activeAccount.id, symbol: sym, side, order_type: 'market', lots: lot });

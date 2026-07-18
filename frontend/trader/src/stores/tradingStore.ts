@@ -430,7 +430,33 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         stop_limit_price: data.stop_limit_price,
       });
 
-      // Reconcile with server-authoritative state (replaces the optimistic row).
+      // The order response already carries the REAL position_id (plus the fill
+      // price and commission), so promote the optimistic row IN PLACE instead of
+      // waiting on a refresh round-trip. This matters for more than tidiness:
+      // the chart deliberately skips optimistic rows (their `optim-…` id isn't a
+      // valid UUID and blows up the modify endpoint), so until the row carries a
+      // real id there is no position line and no SL/TP controls — which is the
+      // lag you feel between tapping BUY and the line appearing.
+      const r = (res ?? {}) as Record<string, unknown>;
+      const realId = r.position_id ? String(r.position_id) : '';
+      if (rollback && realId) {
+        const filled = Number(r.filled_price);
+        set({
+          positions: get().positions.map((p) =>
+            p.id === optimisticId
+              ? {
+                  ...p,
+                  id: realId,
+                  open_price: Number.isFinite(filled) && filled > 0 ? filled : p.open_price,
+                  commission: Number(r.commission) || 0,
+                }
+              : p,
+          ),
+        });
+      }
+
+      // Still reconcile in the background for server-authoritative numbers
+      // (margin, equity, swap) — but the UI no longer waits on it.
       Promise.all([get().refreshPositions(), get().refreshAccount()]).catch(() => {});
 
       return res;
