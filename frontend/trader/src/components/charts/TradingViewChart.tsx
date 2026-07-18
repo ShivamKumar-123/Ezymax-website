@@ -636,15 +636,29 @@ function TradingViewChartInner({
     const calibSamples: number[] = [];
     const measurePaneTop = (paneH: number): number | null => {
       try {
-        const rootTop = container.getBoundingClientRect().top;
+        const rootRect = container.getBoundingClientRect();
         let best: number | null = null;
         let bestDiff = 40;
-        container.querySelectorAll('canvas').forEach((c) => {
-          const r = (c as HTMLCanvasElement).getBoundingClientRect();
-          if (r.width < 100) return;
-          const diff = Math.abs(r.height - paneH);
-          if (diff < bestDiff) { bestDiff = diff; best = r.top - rootTop; }
-        });
+        const scan = (root: ParentNode, extraTop: number) => {
+          root.querySelectorAll('canvas').forEach((c) => {
+            const r = (c as HTMLCanvasElement).getBoundingClientRect();
+            if (r.width < 100) return;
+            const diff = Math.abs(r.height - paneH);
+            if (diff < bestDiff) { bestDiff = diff; best = r.top + extraTop - rootRect.top; }
+          });
+        };
+        scan(container, 0);
+        if (best == null) {
+          // The library may render inside its own SAME-ORIGIN iframe (mobile
+          // builds) — canvases there aren't reachable from the container.
+          // Scan the iframe document, converting its viewport coords to ours.
+          container.querySelectorAll('iframe').forEach((f) => {
+            try {
+              const doc = (f as HTMLIFrameElement).contentDocument;
+              if (doc) scan(doc, (f as HTMLIFrameElement).getBoundingClientRect().top);
+            } catch { /* cross-origin — skip */ }
+          });
+        }
         return best;
       } catch { return null; }
     };
@@ -869,9 +883,12 @@ function TradingViewChartInner({
       const side = String(p.side).toUpperCase();
       const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
       const isCopy = p.trade_type === 'copy_trade';
+      // Clamp the right offset on narrow (mobile) charts so the ~70px-wide
+      // group never slides off the left edge; desktop keeps the Swisdex 268px.
+      const rightPx = Math.min(CLOSE_BTN_RIGHT_PX, Math.max(8, container.clientWidth - 78));
       const root = document.createElement('div');
       root.style.cssText =
-        `position:absolute;right:${CLOSE_BTN_RIGHT_PX}px;transform:translateY(-50%);`
+        `position:absolute;right:${rightPx}px;transform:translateY(-50%);`
         + `display:flex;align-items:center;gap:3px;pointer-events:none;visibility:hidden;z-index:6;`;
       if (!isCopy) {
         root.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
