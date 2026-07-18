@@ -41,6 +41,32 @@ async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
     return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
 
+async def quote_to_account_rate(quote_currency: str, account_currency: str = "USD") -> Decimal | None:
+    """Live conversion factor F such that value_in_quote × F = value_in_account.
+
+    Used to convert cross-pair P&L (e.g. GBPJPY → JPY value) to the account
+    currency. Tries the `{account}{quote}` pair first (USDJPY → F = 1/bid),
+    then `{quote}{account}` (e.g. EURUSD-style → F = bid). Returns None when
+    no live rate exists — callers fall back to the raw quote value (the old
+    behaviour) rather than failing.
+    """
+    q = (quote_currency or "").upper()
+    a = (account_currency or "USD").upper()
+    if not q or q == a:
+        return Decimal("1")
+    for symbol, invert in ((f"{a}{q}", True), (f"{q}{a}", False)):
+        try:
+            raw = await redis_client.get(PriceChannel.tick_key(symbol))
+            if not raw:
+                continue
+            bid = Decimal(str(json.loads(raw)["bid"]))
+            if bid > 0:
+                return (Decimal("1") / bid) if invert else bid
+        except Exception:  # malformed tick — try the other pair
+            continue
+    return None
+
+
 # ─── Account ──────────────────────────────────────────────────────────────
 
 async def validate_account(
@@ -129,6 +155,7 @@ def quote_to_account_pnl(
     ref_price: Decimal,
     account_currency: str = "USD",
     symbol: str | None = None,
+    cross_rate: Decimal | None = None,
 ) -> Decimal:
     """Convert a P&L value expressed in the instrument's quote currency to
     the account currency (default USD).
@@ -141,6 +168,11 @@ def quote_to_account_pnl(
 
     If base/quote currencies are unknown (NULL in DB), attempt to derive them
     from the *symbol* name (e.g. USDJPY → USD / JPY).
+
+    Cross pairs (base≠acct AND quote≠acct, e.g. GBPJPY) need a live
+    quote→account `cross_rate` (see quote_to_account_rate); async callers
+    resolve it and pass it in. Without one we fall back to the raw quote
+    value — the historical behaviour — rather than guessing.
     """
     if quote_pnl == 0:
         return quote_pnl
@@ -157,8 +189,26 @@ def quote_to_account_pnl(
         if ref_price and ref_price != 0:
             return quote_pnl / ref_price
         return quote_pnl
-    # Cross pair: no cross rate available here; fall back to raw quote pnl.
+    # Cross pair: convert with the live quote→account rate when provided.
+    if cross_rate is not None and cross_rate > 0:
+        return quote_pnl * cross_rate
     return quote_pnl
+
+
+def _needs_cross_rate(instrument, account_currency: str = "USD") -> str | None:
+    """Return the quote currency when converting this instrument's P&L to the
+    account currency requires a live cross rate (base≠acct AND quote≠acct),
+    else None."""
+    base = (getattr(instrument, "base_currency", None) or "").upper()
+    quote = (getattr(instrument, "quote_currency", None) or "").upper()
+    if not base or not quote:
+        fb_base, fb_quote = _derive_currencies(getattr(instrument, "symbol", None))
+        base = base or (fb_base or "")
+        quote = quote or (fb_quote or "")
+    acct = (account_currency or "USD").upper()
+    if quote and quote != acct and base != acct:
+        return quote
+    return None
 
 
 def calc_position_pnl(
@@ -169,6 +219,7 @@ def calc_position_pnl(
     contract_size: Decimal,
     instrument=None,
     account_currency: str = "USD",
+    cross_rate: Decimal | None = None,
 ) -> Decimal:
     """Calculate unrealised P&L for a single position. When ``instrument``
     is supplied the result is converted from quote currency to the account
@@ -186,7 +237,20 @@ def calc_position_pnl(
         current_price,
         account_currency,
         symbol=getattr(instrument, "symbol", None),
+        cross_rate=cross_rate,
     )
+
+
+async def cross_rate_for(instrument, account_currency: str = "USD") -> Decimal | None:
+    """Resolve the live quote→account cross rate for an instrument, or None
+    when the instrument doesn't need one (USD-quoted / USD-base) or no live
+    rate is available. The single lookup every async P&L call site uses so
+    cross-pair (e.g. GBPJPY) P&L is expressed in the account currency
+    everywhere — positions API, equity, close bookings, engines."""
+    quote = _needs_cross_rate(instrument, account_currency)
+    if not quote:
+        return None
+    return await quote_to_account_rate(quote, account_currency)
 
 
 async def calc_account_equity(
@@ -213,6 +277,7 @@ async def calc_account_equity(
                 pos.side, pos.open_price, price,
                 pos.lots, pos.instrument.contract_size,
                 instrument=pos.instrument,
+                cross_rate=await cross_rate_for(pos.instrument),
             )
         except TradingServiceError:
             continue

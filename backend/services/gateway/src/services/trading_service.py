@@ -103,7 +103,7 @@ def side_val(side) -> str:
     return side.value if hasattr(side, 'value') else str(side)
 
 
-from packages.common.src.trading_service import quote_to_account_pnl
+from packages.common.src.trading_service import quote_to_account_pnl, cross_rate_for
 
 
 def calc_pnl(
@@ -114,6 +114,7 @@ def calc_pnl(
     contract_size: Decimal,
     instrument=None,
     account_currency: str = "USD",
+    cross_rate: Decimal | None = None,
 ) -> Decimal:
     sv = side_val(side)
     if sv == "buy":
@@ -129,6 +130,26 @@ def calc_pnl(
         close_price,
         account_currency,
         symbol=getattr(instrument, "symbol", None),
+        cross_rate=cross_rate,
+    )
+
+
+async def calc_pnl_live(
+    side,
+    open_price: Decimal,
+    close_price: Decimal,
+    lots: Decimal,
+    contract_size: Decimal,
+    instrument=None,
+    account_currency: str = "USD",
+) -> Decimal:
+    """calc_pnl with the live cross rate resolved automatically — use from
+    async code so cross pairs (GBPJPY…) convert to the account currency
+    instead of silently reporting quote-currency values (JPY) as USD."""
+    rate = await cross_rate_for(instrument, account_currency) if instrument is not None else None
+    return calc_pnl(
+        side, open_price, close_price, lots, contract_size,
+        instrument=instrument, account_currency=account_currency, cross_rate=rate,
     )
 
 
@@ -746,7 +767,7 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
         if tick_data and pos_status == "open":
             tick = json.loads(tick_data)
             current_price = float(tick["bid"]) if sv == "buy" else float(tick["ask"])
-            profit = float(calc_pnl(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size, instrument=pos.instrument))
+            profit = float(await calc_pnl_live(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size, instrument=pos.instrument))
 
         copy_trade_q = await db.execute(
             select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
@@ -963,7 +984,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     close_lots = Decimal(str(req.lots)) if req.lots and Decimal(str(req.lots)) < pos.lots else pos.lots
     is_partial = close_lots < pos.lots
 
-    full_profit = calc_pnl(pos.side, pos.open_price, close_price, pos.lots, contract_size, instrument=pos.instrument)
+    full_profit = await calc_pnl_live(pos.side, pos.open_price, close_price, pos.lots, contract_size, instrument=pos.instrument)
 
     # If the market price has already crossed the position's SL/TP level, label
     # this close as SL/TP in trade history instead of "manual" — covers the case

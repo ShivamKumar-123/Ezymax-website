@@ -25,7 +25,7 @@ from packages.common.src.models import (
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
-from packages.common.src.trading_service import calc_position_pnl
+from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
 
 
 # ─── Per-user leverage cap (Trading_Mechanism.docx risk control) ──────
@@ -438,6 +438,7 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                         pos.side, pos.open_price, cp, pos.lots, cs,
                         instrument=pos.instrument,
                         account_currency=a.currency or "USD",
+                        cross_rate=await cross_rate_for(pos.instrument, a.currency or "USD"),
                     )
             except Exception:
                 pass
@@ -538,6 +539,7 @@ async def get_account_summary(
                 getattr(pos.instrument, "quote_currency", None),
                 current_price,
                 symbol=getattr(pos.instrument, "symbol", None),
+                cross_rate=await cross_rate_for(pos.instrument),
             )
             unrealized_pnl += pnl
 

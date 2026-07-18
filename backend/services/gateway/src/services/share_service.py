@@ -146,6 +146,12 @@ async def get_public_share(code: str, db: AsyncSession) -> dict:
     if quote_ccy and quote_ccy != "USD":
         if base_ccy == "USD" and current_price:
             gross_pnl = gross_pnl / current_price
+        elif base_ccy and base_ccy != "USD":
+            # Cross pair (e.g. GBPJPY): convert via the live quote→USD rate.
+            from packages.common.src.trading_service import quote_to_account_rate
+            rate = await quote_to_account_rate(quote_ccy, "USD")
+            if rate is not None and rate > 0:
+                gross_pnl = gross_pnl * float(rate)
 
     # Margin snapshot: lots * contract_size * open_price / leverage
     leverage = int(account.leverage or 100)

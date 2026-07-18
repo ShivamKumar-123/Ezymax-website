@@ -348,7 +348,10 @@ function TradingViewChartInner({
     //    → single source of truth, so the line can never disagree with the
     //    table. SL (amber) / TP (teal) with projected P&L at the level. ──
     for (const p of myPos) {
-      const pnl = Number(p.profit || 0);
+      // NET P&L (profit − commission + swap; swap is negative for a charge) —
+      // the same figure the positions table and the mobile app show, so the
+      // chart label can never disagree with them by the fee amount.
+      const pnl = Number(p.profit || 0) - Number(p.commission || 0) + Number(p.swap || 0);
       const lots = Number(p.lots || 0);
       const entry = Number(p.open_price || 0);
       const notional = entry * lots * cs;

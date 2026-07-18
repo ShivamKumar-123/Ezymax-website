@@ -665,13 +665,14 @@ class CopyTradeEngine:
             gross_profit = (close_price - investor_pos.open_price) * investor_pos.lots * contract_size
         else:
             gross_profit = (investor_pos.open_price - close_price) * investor_pos.lots * contract_size
-        from packages.common.src.trading_service import quote_to_account_pnl
+        from packages.common.src.trading_service import quote_to_account_pnl, cross_rate_for
         gross_profit = quote_to_account_pnl(
             gross_profit,
             getattr(instrument, "base_currency", None),
             getattr(instrument, "quote_currency", None),
             close_price,
             symbol=getattr(instrument, "symbol", None),
+            cross_rate=await cross_rate_for(instrument),
         )
 
         performance_fee = Decimal("0")

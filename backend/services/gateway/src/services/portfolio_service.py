@@ -48,18 +48,20 @@ async def _get_current_price(symbol: str) -> tuple[Decimal, Decimal] | None:
     return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
 
-def _compute_pnl(pos: Position, current_price: Decimal) -> Decimal:
+async def _compute_pnl(pos: Position, current_price: Decimal) -> Decimal:
     if pos.side == OrderSide.BUY or pos.side.value == "buy":
         raw = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
     else:
         raw = (pos.open_price - current_price) * pos.lots * pos.instrument.contract_size
     from .trading_service import quote_to_account_pnl
+    from packages.common.src.trading_service import cross_rate_for
     return quote_to_account_pnl(
         raw,
         getattr(pos.instrument, "base_currency", None),
         getattr(pos.instrument, "quote_currency", None),
         current_price,
         symbol=getattr(pos.instrument, "symbol", None),
+        cross_rate=await cross_rate_for(pos.instrument),
     )
 
 
@@ -99,7 +101,7 @@ async def portfolio_summary(user_id: UUID, account_id: UUID | None, db: AsyncSes
         if prices:
             bid, ask = prices
             cp = bid if (pos.side == OrderSide.BUY or pos.side.value == "buy") else ask
-            pnl = _compute_pnl(pos, cp)
+            pnl = await _compute_pnl(pos, cp)
         else:
             pnl = pos.profit or Decimal("0")
             cp = pos.open_price

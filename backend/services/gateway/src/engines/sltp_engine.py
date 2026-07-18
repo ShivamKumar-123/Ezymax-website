@@ -184,12 +184,14 @@ class SLTPEngine:
         else:
             profit = (pos.open_price - close_price) * pos.lots * contract_size
         from ..services.trading_service import quote_to_account_pnl
+        from packages.common.src.trading_service import cross_rate_for
         profit = quote_to_account_pnl(
             profit,
             getattr(pos.instrument, "base_currency", None),
             getattr(pos.instrument, "quote_currency", None),
             close_price,
             symbol=getattr(pos.instrument, "symbol", None),
+            cross_rate=await cross_rate_for(pos.instrument),
         )
 
         pos.status = "closed"

@@ -17,7 +17,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
-from packages.common.src.trading_service import calc_position_pnl
+from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
 
 
 async def _live_open_pnl(pos, instrument) -> float:
@@ -35,6 +35,7 @@ async def _live_open_pnl(pos, instrument) -> float:
             cs = instrument.contract_size or Decimal("100000")
             return float(calc_position_pnl(
                 pos.side, pos.open_price, cp, pos.lots, cs, instrument=instrument,
+                cross_rate=await cross_rate_for(instrument),
             ))
     except Exception:
         pass
@@ -725,6 +726,7 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             getattr(instrument, "quote_currency", None),
             close_price,
             symbol=getattr(instrument, "symbol", None),
+            cross_rate=await cross_rate_for(instrument),
         )
 
         perf_fee = Decimal("0")
@@ -953,6 +955,7 @@ async def withdraw_managed_account(
             getattr(instrument, "quote_currency", None),
             close_price,
             symbol=getattr(instrument, "symbol", None),
+            cross_rate=await cross_rate_for(instrument),
         )
 
         perf_fee = Decimal("0")
