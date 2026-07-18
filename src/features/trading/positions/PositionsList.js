@@ -13,13 +13,22 @@ export default function PositionsList({ positions = [], orders = [], history = [
   // Themed close-confirm flows. We track the position *id* (not the object) so
   // the open sheet always re-reads the latest `positions` prop → live P&L.
   const [closeId, setCloseId] = useState(null);
-  const [closeAllOpen, setCloseAllOpen] = useState(false);
+  // Bulk-close confirm: null (closed) | 'all' | 'profit' | 'loss'.
+  const [closeAllType, setCloseAllType] = useState(null);
 
-  const confirmCloseOne = useCallback(async () => {
+  // Close one position — fully, or partially when `lotsToClose` is less than
+  // the open volume (mirrors the web close dialog's 25/50/75/FULL flow).
+  const confirmCloseOne = useCallback(async (lotsToClose = null) => {
     if (!closeId) return;
     try {
-      await ApiService.closePosition(closeId);
-      showToast({ kind: 'success', message: 'Position closed' });
+      const res = await ApiService.closePosition(closeId, lotsToClose);
+      const remaining = Number(res?.remaining_lots ?? 0);
+      showToast({
+        kind: 'success',
+        message: remaining > 0
+          ? `Partially closed — ${remaining.toFixed(2)} lots remain`
+          : 'Position closed',
+      });
       onChange?.();
     } catch (e) {
       // MAM-mirrored / market-closed responses surface as a calm info popup
@@ -30,9 +39,17 @@ export default function PositionsList({ positions = [], orders = [], history = [
     }
   }, [closeId, onChange]);
 
+  // Subset a bulk-close type operates on (same buckets as the web dialog).
+  const bulkTargets = useCallback((type) => {
+    if (type === 'profit') return positions.filter((p) => (plOf(p) ?? 0) >= 0);
+    if (type === 'loss') return positions.filter((p) => (plOf(p) ?? 0) < 0);
+    return positions;
+  }, [positions]);
+
   const confirmCloseAll = useCallback(async () => {
-    const ids = positions.map((p) => p.id || p._id).filter(Boolean);
-    if (!ids.length) { setCloseAllOpen(false); return; }
+    const type = closeAllType || 'all';
+    const ids = bulkTargets(type).map((p) => p.id || p._id).filter(Boolean);
+    if (!ids.length) { setCloseAllType(null); return; }
     const results = await Promise.allSettled(ids.map((id) => ApiService.closePosition(id)));
     const ok = results.filter((r) => r.status === 'fulfilled').length;
     const rejected = results.filter((r) => r.status === 'rejected');
@@ -40,7 +57,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
     const skipped = rejected.filter((r) => isSoftTradeError(r.reason?.message)).length;
     const failed = rejected.length - skipped;
 
-    setCloseAllOpen(false);
+    setCloseAllType(null);
     onChange?.();
 
     if (failed > 0) {
@@ -56,9 +73,9 @@ export default function PositionsList({ positions = [], orders = [], history = [
           : `These ${skipped} position(s) can't be closed here — they're managed (MAM) trades or the market is closed.`,
       });
     } else {
-      showToast({ kind: 'success', message: 'All positions closed' });
+      showToast({ kind: 'success', message: `Closed ${ok} position(s)` });
     }
-  }, [positions, onChange]);
+  }, [closeAllType, bulkTargets, onChange]);
 
   const closingPos = closeId
     ? positions.find((p) => String(p.id || p._id) === String(closeId)) || null
@@ -96,7 +113,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
         ) : (
           <>
             <View style={styles.closeAllRow}>
-              <Pressable onPress={() => setCloseAllOpen(true)} style={styles.closeAllBtn} accessibilityRole="button" accessibilityLabel="Close all positions">
+              <Pressable onPress={() => setCloseAllType('all')} style={styles.closeAllBtn} accessibilityRole="button" accessibilityLabel="Close all positions">
                 <Ionicons name="close-circle-outline" size={16} color={vantage.down} />
                 <Text style={styles.closeAllTxt}>Close all ({positions.length})</Text>
               </Pressable>
@@ -133,14 +150,16 @@ export default function PositionsList({ positions = [], orders = [], history = [
 
       <CloseConfirmSheet
         position={closingPos}
+        positions={positions}
         onCancel={() => setCloseId(null)}
         onConfirm={confirmCloseOne}
+        onBulk={(type) => { setCloseId(null); setCloseAllType(type); }}
       />
 
       <CloseAllSheet
-        visible={closeAllOpen}
-        positions={positions}
-        onCancel={() => setCloseAllOpen(false)}
+        type={closeAllType}
+        positions={closeAllType ? bulkTargets(closeAllType) : []}
+        onCancel={() => setCloseAllType(null)}
         onConfirm={confirmCloseAll}
       />
     </View>
@@ -160,70 +179,185 @@ function plOf(p) {
   return Number(v) - commission + swap;
 }
 
-// Themed close-confirm sheet with a big, live-updating P&L. Because the parent
-// re-derives `position` from the latest props on every refresh tick, the P&L
-// shown here keeps moving while the sheet is open.
-function CloseConfirmSheet({ position, onCancel, onConfirm }) {
+// Web-parity close sheet: position summary (symbol / side / open lots / live
+// P&L), LOTS TO CLOSE with 25/50/75/FULL chips + an editable lots field, the
+// estimated P&L for the chosen portion, Cancel/Close, and a BULK CLOSE row
+// (All / Profit / Loss with live counts). Because the parent re-derives
+// `position` from the latest props on every refresh tick, P&L keeps moving
+// while the sheet is open.
+const CLOSE_PCTS = [0.25, 0.5, 0.75, 1];
+function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBulk }) {
   const [closing, setClosing] = useState(false);
+  const [pct, setPct] = useState(1);          // selected chip (null = custom-typed)
+  const [lotsText, setLotsText] = useState('');
+  const lastIdRef = React.useRef(null);
+
   const side = String(position?.side || '').toLowerCase();
   const pl = plOf(position);
   const plPositive = pl == null ? true : pl >= 0;
-  const lots = position?.volume ?? position?.lots ?? position?.quantity ?? '—';
+  const openLots = Number(position?.volume ?? position?.lots ?? position?.quantity ?? 0) || 0;
   const open = Number(position?.open_price ?? position?.openPrice ?? 0);
-  const current = position?.current_price ?? position?.currentPrice ?? null;
+
+  // Reset the lots selection when a DIFFERENT position opens — not on every
+  // live-refresh tick (the parent passes a fresh object each poll).
+  useEffect(() => {
+    const id = position ? String(position.id || position._id) : null;
+    if (id && id !== lastIdRef.current) {
+      lastIdRef.current = id;
+      setPct(1);
+      setLotsText(openLots ? openLots.toFixed(2) : '');
+      setClosing(false);
+    }
+    if (!id) lastIdRef.current = null;
+  }, [position, openLots]);
+
+  const pickPct = useCallback((p) => {
+    setPct(p);
+    const v = Math.max(0.01, Math.round(openLots * p * 100) / 100);
+    setLotsText(v.toFixed(2));
+  }, [openLots]);
+
+  const lotsNum = Number(lotsText);
+  const lotsValid = Number.isFinite(lotsNum) && lotsNum >= 0.01 && lotsNum <= openLots + 1e-9;
+  const isFull = lotsValid && Math.abs(lotsNum - openLots) < 0.005;
+  // Estimated P&L for the portion being closed (linear in lots, like the web).
+  const estPl = pl != null && openLots > 0 && lotsValid ? pl * (lotsNum / openLots) : null;
+  const estPositive = estPl == null ? true : estPl >= 0;
+
+  const profitCount = positions.filter((x) => (plOf(x) ?? 0) >= 0).length;
+  const lossCount = positions.length - profitCount;
 
   const confirm = useCallback(async () => {
+    if (!lotsValid) return;
     setClosing(true);
-    try { await onConfirm(); } finally { setClosing(false); }
-  }, [onConfirm]);
+    try { await onConfirm(isFull ? null : lotsNum); } finally { setClosing(false); }
+  }, [onConfirm, lotsValid, isFull, lotsNum]);
 
   return (
     <Sheet visible={!!position} onClose={onCancel} title="Close position">
       {position ? (
         <View style={sheetStyles.wrap}>
-          <View style={sheetStyles.head}>
-            <Text style={styles.sym}>{position.symbol}</Text>
-            <Text style={[styles.side, { color: side === 'buy' ? vantage.up : vantage.down }]}>
-              {side.toUpperCase()} {lots} @ {open ? open.toFixed(5) : '—'}
-            </Text>
+          {/* Summary card — Symbol / Side / Open lots / live P&L. */}
+          <View style={closeStyles.sumBox}>
+            <SumRow label="Symbol" value={position.symbol} bold />
+            <SumRow label="Side" value={side.toUpperCase()} color={side === 'buy' ? vantage.up : vantage.down} />
+            <SumRow label="Open lots" value={openLots ? openLots.toFixed(2) : '—'} />
+            <SumRow label="Open price" value={open ? open.toFixed(5) : '—'} />
+            <SumRow
+              label="P&L"
+              value={pl != null ? `${plPositive ? '+' : ''}$${Math.abs(pl).toFixed(2)}` : '—'}
+              color={plPositive ? vantage.up : vantage.down}
+              last
+            />
           </View>
 
-          <View style={closeStyles.plBox}>
-            <Text style={closeStyles.plLab}>Live P&L</Text>
-            <Text style={[closeStyles.plBig, { color: plPositive ? vantage.up : vantage.down }]}>
-              {pl != null ? `${plPositive ? '+' : ''}${pl.toFixed(2)} USD` : '—'}
-            </Text>
-            {current != null ? (
-              <Text style={closeStyles.plSub}>Current {Number(current).toFixed(5)}</Text>
-            ) : null}
+          {/* Lots to close — percent chips + editable lots. */}
+          <Text style={closeStyles.secLab}>LOTS TO CLOSE</Text>
+          <View style={closeStyles.pctRow}>
+            {CLOSE_PCTS.map((p) => {
+              const active = pct === p;
+              return (
+                <Pressable
+                  key={p}
+                  onPress={() => pickPct(p)}
+                  style={[closeStyles.pctChip, active && closeStyles.pctChipActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[closeStyles.pctTxt, active && closeStyles.pctTxtActive]}>
+                    {p === 1 ? 'FULL' : `${p * 100}%`}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-
-          <Text style={sheetStyles.hint}>This closes the position at the current market price.</Text>
-
-          <PillButton
-            label={closing ? 'Closing…' : 'Close position'}
-            variant="sell"
-            size="lg"
-            loading={closing}
-            disabled={closing}
-            onPress={confirm}
-            style={{ marginTop: space.lg }}
+          <TextInput
+            value={lotsText}
+            onChangeText={(t) => { setLotsText(t.replace(/[^0-9.]/g, '')); setPct(null); }}
+            keyboardType="decimal-pad"
+            placeholder="0.01"
+            placeholderTextColor={vantage.textMuted}
+            style={[sheetStyles.input, !lotsValid && lotsText !== '' && closeStyles.inputBad]}
+            accessibilityLabel="Lots to close"
           />
-          <Pressable onPress={onCancel} disabled={closing} style={closeStyles.cancel} accessibilityRole="button">
-            <Text style={closeStyles.cancelTxt}>Cancel</Text>
-          </Pressable>
+          {!lotsValid && lotsText !== '' ? (
+            <Text style={closeStyles.badHint}>Enter between 0.01 and {openLots.toFixed(2)} lots.</Text>
+          ) : null}
+
+          {/* Estimated P&L for the selected portion. */}
+          <View style={closeStyles.estRow}>
+            <Text style={closeStyles.estLab}>EST. P&L</Text>
+            <Text style={[closeStyles.estVal, { color: estPositive ? vantage.up : vantage.down }]}>
+              {estPl != null ? `${estPositive ? '+' : ''}$${Math.abs(estPl).toFixed(2)}` : '—'}
+            </Text>
+          </View>
+
+          <View style={closeStyles.btnRow}>
+            <Pressable onPress={onCancel} disabled={closing} style={closeStyles.cancelBtn} accessibilityRole="button">
+              <Text style={closeStyles.cancelBtnTxt}>Cancel</Text>
+            </Pressable>
+            <PillButton
+              label={closing ? 'Closing…' : (isFull ? 'Close' : `Close ${lotsValid ? lotsNum.toFixed(2) : ''} lots`)}
+              variant="sell"
+              size="lg"
+              loading={closing}
+              disabled={closing || !lotsValid}
+              onPress={confirm}
+              style={{ flex: 1 }}
+            />
+          </View>
+
+          {/* Bulk close — same buckets as the web dialog. */}
+          <Text style={closeStyles.bulkLab}>BULK CLOSE</Text>
+          <View style={closeStyles.bulkRow}>
+            <BulkChip icon="layers-outline" label="All" count={positions.length} color={vantage.textPrimary}
+              disabled={closing || positions.length === 0} onPress={() => onBulk?.('all')} />
+            <BulkChip icon="trending-up-outline" label="Profit" count={profitCount} color={vantage.up}
+              disabled={closing || profitCount === 0} onPress={() => onBulk?.('profit')} />
+            <BulkChip icon="trending-down-outline" label="Loss" count={lossCount} color={vantage.down}
+              disabled={closing || lossCount === 0} onPress={() => onBulk?.('loss')} />
+          </View>
         </View>
       ) : null}
     </Sheet>
   );
 }
 
-// Close-all confirm sheet — shows the combined live P&L across every open
-// position and closes them all at market on confirm.
-function CloseAllSheet({ visible, positions, onCancel, onConfirm }) {
+function SumRow({ label, value, color, bold, last }) {
+  return (
+    <View style={[closeStyles.sumRow, !last && closeStyles.sumRowBorder]}>
+      <Text style={closeStyles.sumRowLab}>{label}</Text>
+      <Text style={[closeStyles.sumRowVal, color ? { color } : null, bold ? { fontWeight: weights.heavy } : null]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function BulkChip({ icon, label, count, color, disabled, onPress }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[closeStyles.bulkChip, disabled && { opacity: 0.4 }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Close ${label.toLowerCase()} positions`}
+    >
+      <Ionicons name={icon} size={16} color={color} />
+      <Text style={[closeStyles.bulkChipTxt, { color }]}>{label}</Text>
+      <Text style={closeStyles.bulkChipCount}>({count})</Text>
+    </Pressable>
+  );
+}
+
+// Bulk-close confirm sheet — All / Profit / Loss buckets. Shows the subset's
+// combined live P&L and closes every position in it at market on confirm.
+const BULK_TITLES = { all: 'Close all', profit: 'Close profitable', loss: 'Close losing' };
+function CloseAllSheet({ type, positions, onCancel, onConfirm }) {
   const [closing, setClosing] = useState(false);
   const total = (positions || []).reduce((sum, p) => sum + (plOf(p) ?? 0), 0);
   const positive = total >= 0;
+  const title = BULK_TITLES[type] || 'Close all';
 
   const confirm = useCallback(async () => {
     setClosing(true);
@@ -231,21 +365,21 @@ function CloseAllSheet({ visible, positions, onCancel, onConfirm }) {
   }, [onConfirm]);
 
   return (
-    <Sheet visible={visible} onClose={onCancel} title={`Close all (${positions?.length || 0})`}>
+    <Sheet visible={!!type} onClose={onCancel} title={`${title} (${positions?.length || 0})`}>
       <View style={sheetStyles.wrap}>
         <View style={closeStyles.plBox}>
-          <Text style={closeStyles.plLab}>Total live P&L</Text>
+          <Text style={closeStyles.plLab}>Combined live P&L</Text>
           <Text style={[closeStyles.plBig, { color: positive ? vantage.up : vantage.down }]}>
             {`${positive ? '+' : ''}${total.toFixed(2)} USD`}
           </Text>
         </View>
 
         <Text style={sheetStyles.hint}>
-          This closes all {positions?.length || 0} open position(s) at the current market price.
+          This closes {positions?.length || 0} open position(s) at the current market price.
         </Text>
 
         <PillButton
-          label={closing ? 'Closing…' : `Close all ${positions?.length || 0} positions`}
+          label={closing ? 'Closing…' : `${title} — ${positions?.length || 0} position(s)`}
           variant="sell"
           size="lg"
           loading={closing}
@@ -262,6 +396,58 @@ function CloseAllSheet({ visible, positions, onCancel, onConfirm }) {
 }
 
 const closeStyles = StyleSheet.create({
+  // Summary card (Symbol / Side / Open lots / P&L)
+  sumBox: {
+    backgroundColor: vantage.bgRaised, borderRadius: radius.md,
+    borderWidth: 1, borderColor: vantage.border,
+    paddingHorizontal: space.md, marginBottom: space.md,
+  },
+  sumRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space.sm },
+  sumRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: vantage.border },
+  sumRowLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label },
+  sumRowVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+  // Lots-to-close section
+  secLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro, fontWeight: weights.bold, letterSpacing: 0.6, marginBottom: space.sm },
+  pctRow: { flexDirection: 'row', gap: space.sm, marginBottom: space.sm },
+  pctChip: {
+    paddingHorizontal: space.md, paddingVertical: 6,
+    borderRadius: radius.sm || 6, borderWidth: 1, borderColor: vantage.border,
+    backgroundColor: vantage.bgRaised,
+  },
+  pctChipActive: { borderColor: vantage.accent, backgroundColor: vantage.accentMuted || 'rgba(242,106,31,0.15)' },
+  pctTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+  pctTxtActive: { color: vantage.accent },
+  inputBad: { borderColor: vantage.down },
+  badHint: { color: vantage.down, fontFamily, fontSize: sizes.micro, marginTop: space.xs },
+  estRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: vantage.bgRaised, borderRadius: radius.md, borderWidth: 1, borderColor: vantage.border,
+    paddingHorizontal: space.md, paddingVertical: space.md, marginTop: space.md,
+  },
+  estLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro, fontWeight: weights.bold, letterSpacing: 0.6 },
+  estVal: { fontFamily, fontSize: sizes.body, fontWeight: weights.heavy },
+  btnRow: { flexDirection: 'row', gap: space.sm, marginTop: space.lg, alignItems: 'stretch' },
+  cancelBtn: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    borderRadius: radius.pill, borderWidth: 1, borderColor: vantage.border,
+    backgroundColor: vantage.bgRaised,
+  },
+  cancelBtnTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.bold },
+  // Bulk close
+  bulkLab: {
+    color: vantage.textMuted, fontFamily, fontSize: sizes.micro, fontWeight: weights.bold,
+    letterSpacing: 0.6, textAlign: 'center',
+    marginTop: space.lg, paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: vantage.border,
+  },
+  bulkRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  bulkChip: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2,
+    borderRadius: radius.md, borderWidth: 1, borderColor: vantage.border,
+    backgroundColor: vantage.bgRaised, paddingVertical: space.md,
+  },
+  bulkChipTxt: { fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
+  bulkChipCount: { color: vantage.textMuted, fontFamily, fontSize: sizes.micro },
   plBox: {
     alignItems: 'center',
     backgroundColor: vantage.bgRaised,
