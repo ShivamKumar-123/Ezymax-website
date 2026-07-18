@@ -29,7 +29,6 @@ from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
 from .engines.stats_engine import stats_engine
 from .engines.staking_engine import staking_engine
-from .engines.play_zone_engine import play_zone_engine
 from .engines.overnight_fee_engine import overnight_fee_engine
 from .engines.verification_reminder_engine import verification_reminder_engine
 from .engines.monthly_statement_engine import monthly_statement_engine
@@ -211,7 +210,6 @@ async def lifespan(app: FastAPI):
     await copy_engine.start()
     await stats_engine.start()
     await staking_engine.start()
-    await play_zone_engine.start()
     await overnight_fee_engine.start()
     await verification_reminder_engine.start()
     await monthly_statement_engine.start()
@@ -230,7 +228,6 @@ async def lifespan(app: FastAPI):
     await monthly_statement_engine.stop()
     await verification_reminder_engine.stop()
     await overnight_fee_engine.stop()
-    await play_zone_engine.stop()
     await staking_engine.stop()
     await stats_engine.stop()
     await copy_engine.stop()

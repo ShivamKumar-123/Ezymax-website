@@ -19,7 +19,7 @@ from routes import (
     config as routes_config, instruments_admin, business, social, analytics, bonus, banners,
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
     admin_audit_logs,
-    insurance as insurance_admin, play_zone as play_zone_admin,
+    insurance as insurance_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
     admin_notifications, pricing_rules, crm,
 )
@@ -285,7 +285,6 @@ app.include_router(account_types.router, prefix=prefix)
 app.include_router(user_audit_logs.router, prefix=prefix)
 app.include_router(admin_audit_logs.router, prefix=prefix)
 app.include_router(insurance_admin.router, prefix=prefix)
-app.include_router(play_zone_admin.router, prefix=prefix)
 app.include_router(lifestyle_admin.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)
