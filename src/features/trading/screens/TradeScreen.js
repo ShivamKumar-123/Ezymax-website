@@ -133,13 +133,14 @@ export default function TradeScreen() {
     refreshTick();
   }, [refreshAccountData, refreshTick]));
 
-  // Poll while focused: price every 1s (snappy Sell/Buy movement), and
-  // P&L / positions every 2s. Works even if the live WebSocket stalls.
+  // Poll while focused: price AND P&L / positions every 1s — matching the web
+  // terminal's ~1.5s poll so both clients read the same server P&L within a
+  // second of each other. Works even if the live WebSocket stalls.
   useFocusEffect(useCallback(() => {
     let n = 0;
     const id = setInterval(() => {
       refreshTick();
-      if (n % 2 === 1) refreshLive();
+      refreshLive();
       if (n % 6 === 5) refreshAccountData();   // periodic full refresh (orders + closed history)
       n += 1;
     }, 1000);
