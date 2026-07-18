@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform, Modal, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, TextInput, Keyboard, Platform, Modal, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import {
   BuySellSplit,
   IconButton,
   PillButton,
-  PriceTicker,
   showToast,
 } from '../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
@@ -259,24 +258,34 @@ export default function InstrumentDetailScreen() {
     return () => { cancelled = true; };
   }, [activeAccount, symbol]);
 
-  const placeOrder = useCallback(async () => {
-    if (!activeAccount || !(lots > 0)) return;
+  // One-tap execution (MT5-style): tapping Sell/Buy places the market order
+  // immediately for that side — no separate confirm/execute button.
+  const placeOrder = useCallback(async (sideArg) => {
+    const s = sideArg === 'buy' || sideArg === 'sell' ? sideArg : side;
+    if (!activeAccount || !(lots > 0) || submitting) return;
+    setSide(s);
     setSubmitting(true);
     try {
       await ApiService.placeOrder({
         account_id: activeAccount.id || activeAccount._id,
         symbol,
-        side,
+        side: s,
         order_type: 'market',
         lots: Number(lots),
       });
-      showToast({ kind: 'success', message: `${side.toUpperCase()} ${lots} ${symbol} placed` });
+      showToast({ kind: 'success', message: `${s.toUpperCase()} ${lots} ${symbol} placed` });
     } catch (e) {
       handleTradeError(e?.message, 'Order failed');
     } finally {
       setSubmitting(false);
     }
-  }, [activeAccount, lots, side, symbol]);
+  }, [activeAccount, lots, side, symbol, submitting]);
+
+  // Chart fills everything between the tab row and the trade footer (the old
+  // fixed 380px left dead space once the price hero was removed). ~132px covers
+  // the header + tab row + chart margins; never below the old 380px minimum.
+  const { height: winH } = useWindowDimensions();
+  const chartH = Math.max(380, winH - insets.top - footerH - 132);
 
   const tvSym = toTradingViewSymbol(symbol);
   const interval = (TIMEFRAMES.find((x) => x.key === tf) || TIMEFRAMES[1]).tv;
@@ -344,34 +353,10 @@ export default function InstrumentDetailScreen() {
       >
         {tab === 'chart' ? (
           <>
-            <View style={styles.heroRow}>
-              <View style={{ flex: 1 }}>
-                <PriceTicker
-                  value={bid}
-                  format={(v) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 5 })}
-                  fontSize={sizes.hero}
-                  fontWeight={weights.heavy}
-                  fontFamily={fontFamily}
-                  upColor={vantage.up}
-                  downColor={vantage.down}
-                  neutralColor={vantage.textPrimary}
-                />
-                <Text style={[styles.heroChange, { color: pct1D == null ? vantage.textMuted : positive ? vantage.up : vantage.down }]}>
-                  {dayChangeAbs != null ? `${positive ? '+' : '−'}${Math.abs(dayChangeAbs).toFixed(2)}` : '—'}
-                  {' '}
-                  {pct1D != null ? `(${positive ? '+' : '−'}${Math.abs(pct1D).toFixed(2)}%) 1D` : ''}
-                </Text>
-                <Text style={styles.heroTime}>{new Date().toLocaleString('en-GB', { hour12: false })}</Text>
-              </View>
-              <View style={styles.ohlcGrid}>
-                <Cell label="Open"  value={fmt(ohlc.open)} />
-                <Cell label="High"  value={fmt(ohlc.high)} />
-                <Cell label="Close" value={fmt(ohlc.close)} />
-                <Cell label="Low"   value={fmt(ohlc.low)} />
-              </View>
-            </View>
-
-            <View style={styles.chartWrap}>
+            {/* Price hero / OHLC grid removed (2026-07-18) — the chart itself
+                shows price + OHLC in its legend; the freed space goes to the
+                chart, sized to fill everything between the tabs and footer. */}
+            <View style={[styles.chartWrap, { height: chartH }]}>
               <WebView
                 source={chartSource}
                 style={styles.chart}
@@ -495,28 +480,24 @@ export default function InstrumentDetailScreen() {
           <Text style={styles.lotsLabel}>Lots</Text>
           <LotsField value={lots} onChange={setLots} />
         </View>
-        <BuySellSplit
-          bid={bid}
-          ask={ask}
-          spreadPoints={spread}
-          side={side}
-          onChange={setSide}
-        />
+        {/* ONE-TAP execution: tapping Sell/Buy places the market order for
+            that side immediately (dimmed + inert while a placement is in
+            flight). No separate execute button. */}
+        <View style={{ opacity: submitting ? 0.6 : 1 }} pointerEvents={submitting ? 'none' : 'auto'}>
+          <BuySellSplit
+            bid={bid}
+            ask={ask}
+            spreadPoints={spread}
+            side={side}
+            onChange={(s) => { void placeOrder(s); }}
+          />
+        </View>
         <View style={styles.freeMarginRow}>
           <Text style={styles.freeMarginLab}>Free Margin:</Text>
           <Text style={styles.freeMarginVal}>
             {activeAccount?.balance != null ? `${Number(activeAccount.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount.currency || 'USD'}` : '—'}
           </Text>
         </View>
-        <PillButton
-          label={submitting ? 'Placing…' : `${side === 'buy' ? 'Buy' : 'Sell'} ${lots} ${symbol}`}
-          variant={side === 'buy' ? 'buy' : 'sell'}
-          size="md"
-          loading={submitting}
-          disabled={!activeAccount || !(lots > 0) || submitting}
-          onPress={placeOrder}
-          style={{ marginTop: space.xs, minHeight: 42, paddingVertical: space.sm }}
-        />
       </View>
 
       <AccountSwitcher

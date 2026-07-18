@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { showToast } from '../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 import AccountSwitcher from './AccountSwitcher';
-import SymbolPicker from './SymbolPicker';
-import OrderTicket from './OrderTicket';
 import PositionsList from './PositionsList';
 
 export default function TradeCFDs({
@@ -24,7 +21,6 @@ export default function TradeCFDs({
   onChange,
 }) {
   const [accountSheet, setAccountSheet] = useState(false);
-  const [symbolSheet, setSymbolSheet] = useState(false);
 
   const equity = accountSummary?.equity ?? accountSummary?.balance ?? null;
 
@@ -52,20 +48,10 @@ export default function TradeCFDs({
         </View>
       </View>
 
-      <Pressable onPress={() => setSymbolSheet(true)} style={styles.symbolRow} accessibilityRole="button">
-        <Text style={styles.symbolName}>{symbol || 'Select symbol'}</Text>
-        <Ionicons name="chevron-down" size={16} color={vantage.textMuted} />
-      </Pressable>
-
-      <OrderTicket
-        accountId={selectedAccount?.id || selectedAccount?._id}
-        account={selectedAccount}
-        accountSummary={accountSummary}
-        symbol={symbol}
-        tick={tick}
-        onPlaced={onChange}
-      />
-
+      {/* The duplicated order ticket was removed (2026-07-18): orders are
+          placed from the chart / instrument screen (one-tap Buy/Sell + on-chart
+          SL/TP). The Trade tab is the POSITIONS view — every open position with
+          live P&L and the Set SL/TP sheet, plus Pending and History. */}
       <PositionsList account={selectedAccount} accountSummary={accountSummary} positions={positions} orders={orders} history={history} onChange={onChange} />
 
       <AccountSwitcher
@@ -74,11 +60,6 @@ export default function TradeCFDs({
         accounts={accounts}
         selectedId={selectedAccount?.id || selectedAccount?._id}
         onSelect={onSelectAccount}
-      />
-      <SymbolPicker
-        visible={symbolSheet}
-        onClose={() => setSymbolSheet(false)}
-        onSelect={onSelectSymbol}
       />
     </View>
   );
