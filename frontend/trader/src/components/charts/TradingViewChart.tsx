@@ -648,10 +648,15 @@ function TradingViewChartInner({
         return best;
       } catch { return null; }
     };
-    const paneTopOf = (g: Geo): number | null => {
+    const paneTopOf = (g: Geo): number => {
       const m = measurePaneTop(g.h);
       if (m != null) { calibOffset = m; return m; }
-      return calibOffset;
+      if (calibOffset != null) return calibOffset;
+      // Rough estimate before any measurement/calibration exists (pane fills
+      // the container above the ~46px time axis). Slightly off is fine — the
+      // buttons must APPEAR immediately; the first real sample snaps them
+      // into exact place.
+      return container.clientHeight - g.h - 46;
     };
     const onMouseMove = (e: MouseEvent) => {
       lastMouseY = e.clientY - container.getBoundingClientRect().top;
@@ -660,12 +665,17 @@ function TradingViewChartInner({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onCross = (params: any) => {
       const price = params?.price;
-      if (price == null || lastMouseY == null) return;
+      if (price == null) return;
+      // Prefer the crosshair event's own offsetY (exact, works even when the
+      // library swallows container mouse events); fall back to the tracked
+      // container mouseY.
+      const my = typeof params?.offsetY === 'number' ? params.offsetY : lastMouseY;
+      if (my == null) return;
       const g = geom();
       if (!g) return;
       const py = paneY(Number(price), g);
       if (!Number.isFinite(py)) return;
-      const candidate = lastMouseY - py;
+      const candidate = my - py;
       // Rolling MEDIAN of the last 15 samples — rejects the per-move
       // mouseY/price mismatch that would make the offset jitter.
       calibSamples.push(candidate);
