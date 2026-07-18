@@ -72,6 +72,10 @@ export async function downloadWalletStatementPdf(
   doc.setFont('helvetica', 'bold');
   doc.text('SwissCresta', margin, 7);
 
+  // Brand logo, top-right under the band (best-effort — never blocks export).
+  const { loadPdfLogo, stampPdfLogo } = await import('./pdfLogo');
+  stampPdfLogo(doc, await loadPdfLogo(), margin);
+
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(16);
   doc.text('Wallet statement', margin, y);
