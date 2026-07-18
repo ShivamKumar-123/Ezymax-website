@@ -1,12 +1,20 @@
 """Bar Aggregator — Aggregates ticks into OHLCV bars for multiple timeframes."""
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone
 from collections import defaultdict
 
 from packages.common.src.redis_client import redis_client, BARS_UPDATES_CHANNEL
 
 logger = logging.getLogger("market-data.aggregator")
+
+# When a symbol has had NO real tick for this long, treat the market as closed
+# (weekend/holiday) or the feed as down. run_aggregation_loop then FREEZES that
+# symbol's candles — it stops rolling windows forward / painting flat "doji" bars,
+# so e.g. gold shows Friday's last candle across the weekend instead of a running
+# flat line. A single live tick immediately un-freezes it.
+MARKET_CLOSED_AFTER_SEC = 120.0
 
 TIMEFRAMES = {
     "1m": 60,
@@ -42,23 +50,69 @@ class BarAggregator:
     def __init__(self):
         self._bars: dict[str, dict[str, BarData]] = defaultdict(dict)
         self._bar_timestamps: dict[str, dict[str, int]] = defaultdict(dict)
+        # Optional durable OHLC store (set by MarketDataService). When present,
+        # every CLOSED bar is persisted to the ohlc_bars table so chart history
+        # is deep + restart-proof. None → Redis-only (backward compatible).
+        self.ohlc_store = None
+        # Monotonic wall-clock of the last REAL tick per symbol. Only update() sets
+        # it, and only live ticks reach update() — so it's the signal for the
+        # market-closed freeze in run_aggregation_loop.
+        self._last_real_tick: dict[str, float] = {}
+        # STRONG references to in-flight _store_bar tasks. asyncio only keeps
+        # WEAK references to tasks, so a bare `asyncio.create_task(...)` whose
+        # result nobody holds can be garbage-collected mid-await — silently,
+        # with no exception. That drops closed bars under load (ticks healthy,
+        # bars missing, logs clean), which is exactly the chart gaps. Keep
+        # every task referenced until it finishes; discard on completion.
+        self._store_tasks: set = set()
+
+    def _spawn_store(self, symbol: str, tf_name: str, bar: "BarData", bar_start: int) -> None:
+        """Fire off a bar persist while holding a STRONG reference to the task.
+
+        Never use a bare asyncio.create_task() here — see _store_tasks in
+        __init__. Failures are logged instead of vanishing, so a lost bar is
+        always visible in the logs rather than showing up as a chart gap.
+        """
+        task = asyncio.create_task(self._store_bar(symbol, tf_name, bar, bar_start))
+        self._store_tasks.add(task)
+
+        def _done(t: "asyncio.Task") -> None:
+            self._store_tasks.discard(t)
+            if t.cancelled():
+                logger.warning("bar store CANCELLED %s %s @%s", symbol, tf_name, bar_start)
+                return
+            exc = t.exception()
+            if exc is not None:
+                logger.error(
+                    "bar store FAILED %s %s @%s: %r", symbol, tf_name, bar_start, exc,
+                )
+
+        task.add_done_callback(_done)
 
     def update(self, symbol: str, bid: float, ask: float, timestamp: str):
+        self._last_real_tick[symbol] = time.monotonic()
         mid = (bid + ask) / 2
         now = datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc)
         epoch = int(now.timestamp())
 
         for tf_name, tf_seconds in TIMEFRAMES.items():
             bar_start = (epoch // tf_seconds) * tf_seconds
-            key = f"{symbol}:{tf_name}"
 
             current_start = self._bar_timestamps.get(symbol, {}).get(tf_name)
 
             if current_start != bar_start:
-                if current_start is not None and key in self._bars.get(symbol, {}):
+                # Persist the bar that just closed. The guard MUST use tf_name:
+                # self._bars[symbol] is keyed by timeframe ("1m"), not by
+                # "SYMBOL:1m". It used to check a `key = f"{symbol}:{tf_name}"`
+                # left over from when _bars was flat-keyed, which never matched
+                # the nested dict — so this branch never ran, _store_bar was
+                # never called from update(), and the line below overwrote the
+                # finished candle. That silent overwrite is why completed
+                # candles were never saved and history had gaps.
+                if current_start is not None and tf_name in self._bars.get(symbol, {}):
                     old_bar = self._bars[symbol].pop(tf_name, None)
                     if old_bar:
-                        asyncio.create_task(self._store_bar(symbol, tf_name, old_bar, current_start))
+                        self._spawn_store(symbol, tf_name, old_bar, current_start)
 
                 if symbol not in self._bars:
                     self._bars[symbol] = {}
@@ -99,6 +153,17 @@ class BarAggregator:
             BARS_UPDATES_CHANNEL, json.dumps({**bar_data, "closed": True})
         )
 
+        # Persist the CLOSED bar to the durable OHLC store (ohlc_bars) so chart
+        # history survives restarts, isn't capped at 1000 Redis bars, and is —
+        # by construction — EXACTLY the candle the user watched form live. Only
+        # closed bars reach _store_bar; the live/forming candle stays in Redis.
+        if self.ohlc_store is not None:
+            await self.ohlc_store.upsert(
+                symbol, timeframe, bar_start,
+                bar.open, bar.high, bar.low, bar.close,
+                volume=bar.tick_count,
+            )
+
         # ATR(14) — volatility metric cached for downstream consumers.
         # Computed only on 1m bars.
         if timeframe == "1m":
@@ -130,12 +195,79 @@ class BarAggregator:
             logger.debug("ATR update failed for %s: %s", symbol, exc)
 
     async def run_aggregation_loop(self):
-        """Periodically publish current bar state to Redis for chart consumers."""
+        """Periodically publish current bar state + roll stale bars forward.
+
+        Rollover used to be tick-driven only — a bar was closed when the
+        next tick arrived in a later window. During a feed pause (upstream
+        hiccup, weekend, low-liquidity period) the bar would sit open
+        indefinitely; when ticks finally resumed in a much later window
+        the aggregator would close the stale bar and immediately open a
+        new one many windows ahead, leaving a visible 'flat line then
+        jump' artifact on the chart.
+
+        This loop now also detects stale bars (now beyond bar_start +
+        tf_seconds) and rolls them over: the ended bar is PERSISTED (the
+        second guaranteed save path besides update()), tiny micro-pauses
+        (≤2 missed windows) are filled with a synthetic doji at the
+        previous close, and the current window's bar is opened so a live
+        tick that arrives later just updates it. When the market is
+        closed (no real tick for MARKET_CLOSED_AFTER_SEC) the symbol is
+        FROZEN instead — no dojis, no new window — so the last real
+        candle stays the last visible one until trading resumes.
+        """
         import json
         while True:
+            now_epoch = int(datetime.now(timezone.utc).timestamp())
+            now_mono = time.monotonic()
             for symbol, timeframes in list(self._bars.items()):
+                # Market closed (weekend/holiday) or feed down → no real ticks for
+                # a while → freeze this symbol's candles (see MARKET_CLOSED_AFTER_SEC).
+                symbol_stale = (
+                    now_mono - self._last_real_tick.get(symbol, 0.0)
+                ) > MARKET_CLOSED_AFTER_SEC
                 for tf_name, bar in list(timeframes.items()):
+                    tf_seconds = TIMEFRAMES.get(tf_name, 60)
                     bar_start = self._bar_timestamps.get(symbol, {}).get(tf_name)
+                    # If wall-clock has moved past this bar's window, close
+                    # it and start fresh windows up to the current one.
+                    if bar_start is not None and now_epoch >= bar_start + tf_seconds:
+                        # Persist the bar that just ended.
+                        old_bar = self._bars[symbol].pop(tf_name, None)
+                        if old_bar is not None:
+                            self._spawn_store(symbol, tf_name, old_bar, bar_start)
+                        if symbol_stale:
+                            # Market closed / feed down: FREEZE. Do NOT paint dojis
+                            # or open a new window — leave the last real bar as the
+                            # last visible candle (e.g. gold over the weekend). The
+                            # next live tick reopens the window via update().
+                            self._bar_timestamps.get(symbol, {}).pop(tf_name, None)
+                            continue
+                        last_close = bar.close
+                        # Fill only TINY micro-pauses (≤2 missed windows) with a
+                        # doji so the time axis stays smooth, but leave genuine
+                        # gaps REAL — painting many flat synthetic bars during a
+                        # real outage misleads users and any indicator that reads
+                        # them. Anything beyond 2 windows shows as an honest gap
+                        # until the next tick.
+                        cur_start = bar_start + tf_seconds
+                        filled = 0
+                        ts_iso = datetime.fromtimestamp(cur_start, tz=timezone.utc).isoformat()
+                        while cur_start + tf_seconds <= now_epoch and filled < 2:
+                            doji = BarData(last_close, ts_iso)
+                            doji.tick_count = 0  # mark as filler
+                            await self._store_bar(symbol, tf_name, doji, cur_start)
+                            cur_start += tf_seconds
+                            ts_iso = datetime.fromtimestamp(cur_start, tz=timezone.utc).isoformat()
+                            filled += 1
+                        # Open the current window's bar so live ticks
+                        # update it normally.
+                        new_bar = BarData(last_close, ts_iso)
+                        new_bar.tick_count = 0
+                        self._bars[symbol][tf_name] = new_bar
+                        self._bar_timestamps[symbol][tf_name] = cur_start
+                        bar = new_bar        # republish snapshot below
+                        bar_start = cur_start
+
                     bar_data = {
                         "symbol": symbol,
                         "timeframe": tf_name,

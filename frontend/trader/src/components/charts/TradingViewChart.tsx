@@ -11,9 +11,25 @@
  * which loads it as a top-level URL (no framing involved).
  *
  * Symbol changes call widget.setSymbol() so the ~26 MB library isn't reloaded.
+ *
+ * On-chart trading lines (SwisDex-style):
+ *  - Each open position draws a locked ENTRY (execution) line coloured by side
+ *    (BUY blue / SELL red) whose label carries the LIVE P&L (+$ and %) coloured
+ *    by profit/loss/breakeven, plus locked dashed SL (amber) / TP (teal) lines
+ *    labelled `SL <price>  +$<projected P&L at that level>`.
+ *  - Pending orders draw a dashed entry (BUY blue / SELL purple) + SL/TP.
+ *  - An HTML overlay pins an [SL] [TP] [✕] button group to each entry line:
+ *    drag SL/TP up/down to set (dashed preview line + shaded zone + price/P&L
+ *    label follows the cursor), or plain-click to type a price. ✕ closes at
+ *    market. Committing always confirms first via the in-app dialog.
+ *  - Persistent shaded zones fill entry→SL (red) and entry→TP (teal).
+ *  - A stale-price watchdog greys the entry lines when the feed stalls.
+ * All bracket edits go through PUT /positions/{id} with ONLY the changed leg
+ * (the backend partial-update leaves the other leg untouched).
  */
 
-import { memo, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -41,6 +57,42 @@ function isRealPositionId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || ''));
 }
 
+// Stale-price thresholds (ms): how long without a tick before a position
+// line's P&L is treated as stale. Crypto trades 24/7 (short), forex/metals
+// are quiet at weekends (long so we don't spam "stale" when no ticks are
+// expected), otherwise a normal live-market threshold.
+const STALE_MS = { crypto: 3000, normal: 5000, weekendClosed: 60000 };
+const STALE_COLOR = '#6b7280';
+
+// Chart line colours — blue/red industry standard. Blue = anything BUY-related
+// (BUY entry, profit); Red = anything SELL-related (SELL entry, loss).
+const CHART_BUY_COLOR = '#3b82f6';   // blue — BUY position entry line
+const CHART_SELL_COLOR = '#ef4444';  // red  — SELL position entry line
+const PROFIT_COLOR = '#3b82f6';      // blue — entry-line P&L label when in profit
+const LOSS_COLOR = '#ef4444';        // red  — entry-line P&L label when in loss
+const BREAKEVEN_COLOR = '#9ca3af';   // gray — entry-line P&L label near break-even
+const SL_COLOR = '#f59e0b';          // amber — stop-loss line
+const TP_COLOR = '#14b8a6';          // teal  — take-profit line
+const PENDING_BUY_COLOR = '#3b82f6'; // blue   — pending BUY entry line
+const PENDING_SELL_COLOR = '#a855f7';// purple — pending SELL entry line
+
+// Where the on-chart [SL] [TP] [✕] group sits, measured from the chart's RIGHT
+// edge: just left of each line's right-axis label so the buttons read as part
+// of the line's pill instead of hiding behind the left drawing toolbar.
+const CLOSE_BTN_RIGHT_PX = 268;
+
+// In-app dialog replacing window.confirm / window.prompt for the on-chart
+// trade buttons (close ✕, SL/TP drag + type-a-price). `input` switches it to
+// prompt mode (type-a-price).
+type ChartDialog = {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  danger?: boolean;
+  input?: { defaultValue: string; placeholder: string };
+  onConfirm: (value?: string) => void;
+} | null;
+
 function TradingViewChartInner({
   onRequestFullscreen,
   theme = 'light',
@@ -62,6 +114,8 @@ function TradingViewChartInner({
   const interval = intervalOverride || (onTradingTerminal ? '5' : '15');
 
   const containerRef = useRef<HTMLDivElement>(null);
+  // Overlay layer above the chart for the [SL]/[TP]/✕ buttons + shaded zones.
+  const overlayRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const widgetRef = useRef<any>(null);
   const readyRef = useRef(false);
@@ -71,29 +125,23 @@ function TradingViewChartInner({
   const fsCbRef = useRef(onRequestFullscreen);
   fsCbRef.current = onRequestFullscreen;
 
-  // On-chart SL/TP: open positions on the charted symbol render as draggable
-  // lines (entry with a close ✕, plus SL/TP lines you drag to modify).
   const positions = useTradingStore((s) => s.positions);
+  const pendingOrders = useTradingStore((s) => s.pendingOrders);
   const [chartReady, setChartReady] = useState(false);
-  // positionId → { pos, sl, tp, posCreating, slCreating, tpCreating }
+  // line key -> { id, price, creating, text, color, textColor, pnl, propAt }.
+  // Keys: <posId> (entry), <posId>-sl, <posId>-tp, ord-<id>, ord-<id>-sl/-tp.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linesRef = useRef<Map<string, any>>(new Map());
-  const syncBusyRef = useRef(false);
 
-  // Drag-release confirmation: dropping an SL/TP asks "Set at this price?" with
-  // the projected P&L, and only commits when confirmed.
-  const [confirm, setConfirm] = useState<
-    { positionId: string; leg: 'sl' | 'tp'; price: number; side: string; lots: number; symbol: string; pnl: number } | null
-  >(null);
-  const confirmRevertRef = useRef<(() => void) | null>(null);
-  const confirmDoneRef = useRef<(() => void) | null>(null);
-  // On mobile we let the user drag a native line (touch); these are the temp
-  // "placement" line ids to clean up once the confirm dialog resolves.
-  const placementIdsRef = useRef<Set<string>>(new Set());
-  // Stable handle to requestBracket for the []-memoized drag handlers.
-  const requestBracketRef = useRef<
-    ((positionId: string, leg: 'sl' | 'tp', price: number, opts?: { onCancel?: () => void; onConfirm?: () => void }) => void) | null
-  >(null);
+  const [dialog, setDialog] = useState<ChartDialog>(null);
+  const [dialogValue, setDialogValue] = useState('');
+  const openDialog = useCallback((d: NonNullable<ChartDialog>) => {
+    setDialogValue(d.input?.defaultValue ?? '');
+    setDialog(d);
+  }, []);
+  // Live handle for the imperative overlay (built in a []-ish effect below).
+  const openDialogRef = useRef(openDialog);
+  openDialogRef.current = openDialog;
 
   // Mount the widget once.
   useEffect(() => {
@@ -206,7 +254,9 @@ function TradingViewChartInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Switch symbol without reloading the library.
+  // Switch symbol without reloading the library. Position/order lines are
+  // symbol-specific overlays — remove the shapes and drop our refs so the
+  // reconcile effect re-creates them for the new symbol.
   useEffect(() => {
     const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
     const w = widgetRef.current;
@@ -214,7 +264,12 @@ function TradingViewChartInner({
     try {
       w.onChartReady(() => {
         try {
-          w.chart().setSymbol(sym);
+          const chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart();
+          for (const [, entry] of linesRef.current) {
+            try { if (entry && entry.id != null) chart?.removeEntity(entry.id); } catch { /* ignore */ }
+          }
+          linesRef.current.clear();
+          chart.setSymbol(sym);
         } catch {
           /* ignore */
         }
@@ -224,541 +279,13 @@ function TradingViewChartInner({
     }
   }, [selectedSymbol]);
 
-  // entity id → which (position, leg) it draws, so the global drawing_event
-  // handler knows what a dragged shape maps to.
-  const entityMapRef = useRef<Map<string, { positionId: string; leg: 'sl' | 'tp' }>>(new Map());
-  // Debounce timers per entity so a drag fires ONE modify (on release), not one
-  // per mouse-move frame.
-  const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  // Entity ids we're moving PROGRAMMATICALLY (syncLines / revert) — their
-  // drawing_event must be ignored so it doesn't re-open the confirm dialog.
-  const suppressEidsRef = useRef<Set<string>>(new Set());
-  const syncWarnedRef = useRef(false);
-  // On-line control pill positioning: DOM node per position + a calibrated
-  // price→pixel mapping (pane top offset, refined from the crosshair).
-  const pillNodeRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const paneTopRef = useRef<number | null>(null);
-  const lastMouseYRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  // Rolling buffer of crosshair-derived pane-top samples; paneTop is their
-  // running median (accurate but smooth — see crossCb).
-  const paneTopSamplesRef = useRef<number[]>([]);
-  // Active "drag a bracket from the SL/TP button" gesture, if any.
-  const placingRef = useRef<boolean>(false);
-
-  // Reconcile chart lines with open positions on the charted symbol. Advanced
-  // Charts has no order-line API, so we draw horizontal-line SHAPES: a locked
-  // entry line + draggable SL/TP lines. Created once, then only their price is
-  // updated; removed when the position closes or the symbol changes.
-  const syncLines = useCallback(async () => {
-    const w = widgetRef.current;
-    if (!w || syncBusyRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let chart: any;
-    try {
-      chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart();
-    } catch {
-      return;
-    }
-    if (!chart || typeof chart.createShape !== 'function') {
-      if (!syncWarnedRef.current) {
-        syncWarnedRef.current = true;
-        // eslint-disable-next-line no-console
-        console.warn('[SwissCresta chart] createShape unavailable — SL/TP lines cannot render on this build.');
-      }
-      return;
-    }
-
-    syncBusyRef.current = true;
-    try {
-      const state = useTradingStore.getState();
-      const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
-      // Render EVERY open position on the symbol — including the just-placed
-      // optimistic one (temp `optim-…` id) — so the entry line + pill appear the
-      // instant you trade, not a round-trip later. The SL/TP/close ACTIONS are
-      // still guarded by isRealPositionId (requestBracket + close below), so
-      // nothing fires against the temp id; the pill just swaps to the real id
-      // in place a moment later.
-      const rel = (state.positions || []).filter(
-        (p) => String(p.symbol).toUpperCase() === sym,
-      );
-      const relIds = new Set(rel.map((p) => p.id));
-      const map = linesRef.current;
-      // Anchor the horizontal lines at a time that's DEFINITELY on-screen
-      // (visible-range start), not "now" — on a closed market "now" can sit past
-      // the last bar and some builds reject an off-range time. Horizontal lines
-      // span full width regardless, so the exact time only needs to be valid.
-      let anchorTime = Math.floor(Date.now() / 1000);
-      try {
-        const vr = chart.getVisibleRange?.();
-        if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from);
-      } catch { /* keep now */ }
-
-      const removeEntity = (entityId?: string) => {
-        if (entityId == null) return;
-        try { chart.removeEntity(entityId); } catch { /* ignore */ }
-        entityMapRef.current.delete(String(entityId));
-      };
-
-      // Drop lines whose position closed or is off the charted symbol.
-      for (const [id, set] of Array.from(map.entries())) {
-        if (!relIds.has(id)) {
-          removeEntity(set.entry?.id);
-          removeEntity(set.sl?.id);
-          removeEntity(set.tp?.id);
-          removeEntity(set.slBand?.id);
-          removeEntity(set.tpBand?.id);
-          map.delete(id);
-        }
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ensure = async (set: any, leg: 'entry' | 'sl' | 'tp', price: number, label: string, color: string, locked: boolean) => {
-        const existing = set[leg];
-        if (existing) {
-          if (Math.abs(Number(existing.price) - price) > 1e-9) {
-            suppressEidsRef.current.add(existing.id);
-            try { chart.getShapeById(existing.id).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
-            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
-            existing.price = price;
-          }
-          return;
-        }
-        const creatingKey = `${leg}Creating`;
-        if (set[creatingKey]) return;
-        set[creatingKey] = true;
-        try {
-          const id = await chart.createShape(
-            { time: anchorTime, price },
-            {
-              shape: 'horizontal_line',
-              text: label,
-              lock: locked,
-              disableSelection: locked,
-              disableSave: true,
-              disableUndo: true,
-              overrides: {
-                linecolor: color, linewidth: leg === 'entry' ? 1 : 2, linestyle: leg === 'entry' ? 2 : 0,
-                showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true,
-              },
-            },
-          );
-          const sid = String(id);
-          set[leg] = { id: sid, price };
-          if (leg !== 'entry') entityMapRef.current.set(sid, { positionId: set.__pid, leg });
-        } catch { /* ignore */ }
-        set[creatingKey] = false;
-      };
-
-      // A very wide time span so the filled band always covers the visible area
-      // regardless of pan / zoom.
-      const bandFrom = anchorTime - 630720000; // ~20y back
-      const bandTo = anchorTime + 630720000;   // ~20y forward
-      // Persistent filled zone between the entry line and a SET SL/TP (red for
-      // SL, green for TP) — stays after the bracket is set.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ensureBand = async (set: any, key: 'slBand' | 'tpBand', entryPrice: number, toPrice: number, color: string) => {
-        if (!Number.isFinite(entryPrice) || !Number.isFinite(toPrice) || typeof chart.createMultipointShape !== 'function') return;
-        const existing = set[key];
-        if (existing) {
-          if (Math.abs(existing.price - toPrice) > 1e-9 || Math.abs(existing.entry - entryPrice) > 1e-9) {
-            suppressEidsRef.current.add(existing.id);
-            try { chart.getShapeById(existing.id).setPoints([{ time: bandFrom, price: entryPrice }, { time: bandTo, price: toPrice }]); } catch { /* ignore */ }
-            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
-            existing.price = toPrice; existing.entry = entryPrice;
-          }
-          return;
-        }
-        const ck = `${key}Creating`;
-        if (set[ck]) return;
-        set[ck] = true;
-        try {
-          const id = await chart.createMultipointShape(
-            [{ time: bandFrom, price: entryPrice }, { time: bandTo, price: toPrice }],
-            { shape: 'rectangle', lock: true, disableSave: true, disableUndo: true, disableSelection: true, zOrder: 'bottom',
-              overrides: { backgroundColor: color, transparency: 86, fillBackground: true, color, linewidth: 0, linestyle: 0 } },
-          );
-          set[key] = { id: String(id), price: toPrice, entry: entryPrice };
-        } catch { /* ignore */ }
-        set[ck] = false;
-      };
-
-      for (const p of rel) {
-        let set = map.get(p.id);
-        if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
-        const isCopy = p.trade_type === 'copy_trade';
-
-        // Entry / execution line (locked, dashed), colored by side: BUY = blue,
-        // SELL = red — matches the trade buttons and reads at a glance.
-        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, p.side === 'buy' ? '#2563eb' : '#f43f5e', true);
-
-        // Draggable SL / TP. Copied (MAM) positions get none — master-controlled.
-        if (!isCopy && p.stop_loss != null) {
-          await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
-          await ensureBand(set, 'slBand', Number(p.open_price), Number(p.stop_loss), '#dc2626');
-        } else {
-          removeEntity(set.sl?.id); set.sl = undefined;
-          removeEntity(set.slBand?.id); set.slBand = undefined;
-        }
-        if (!isCopy && p.take_profit != null) {
-          await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
-          await ensureBand(set, 'tpBand', Number(p.open_price), Number(p.take_profit), '#16a34a');
-        } else {
-          removeEntity(set.tp?.id); set.tp = undefined;
-          removeEntity(set.tpBand?.id); set.tpBand = undefined;
-        }
-      }
-    } finally {
-      syncBusyRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!chartReady) return;
-    void syncLines();
-  }, [positions, selectedSymbol, chartReady, syncLines]);
-
-  // Global drag handler: when a user drags an SL/TP shape, persist the new level
-  // (debounced to the drag's end) and snap back on rejection.
-  useEffect(() => {
-    if (!chartReady) return;
-    const w = widgetRef.current;
-    if (!w || typeof w.subscribe !== 'function') return;
-    const handler = (sourceId: unknown, type: string) => {
-      if (type !== 'move' && type !== 'points_changed') return;
-      const eid = String(sourceId);
-      if (suppressEidsRef.current.has(eid)) return; // our own programmatic move
-      const meta = entityMapRef.current.get(eid);
-      if (!meta) return;
-      const timers = dragTimersRef.current;
-      const prev = timers.get(eid);
-      if (prev) clearTimeout(prev);
-      timers.set(eid, setTimeout(() => {
-        timers.delete(eid);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let chart: any;
-        try { chart = w.activeChart(); } catch { return; }
-        let price: number | undefined;
-        try { price = chart.getShapeById(eid).getPoints()?.[0]?.price; } catch { return; }
-        if (price == null || !Number.isFinite(price)) return;
-        const newPrice = Number(price);
-        const isPlacement = placementIdsRef.current.has(eid);
-        // A mobile PLACEMENT line has no stored level — remove it on both cancel
-        // and confirm (the real line renders from server state on confirm).
-        const removePlacement = () => {
-          try { chart.removeEntity(eid); } catch { /* ignore */ }
-          entityMapRef.current.delete(eid);
-          placementIdsRef.current.delete(eid);
-        };
-        // An EXISTING line snaps back to its stored level on cancel.
-        const snapBack = () => {
-          const set = linesRef.current.get(meta.positionId);
-          const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
-          const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
-          if (back != null) {
-            suppressEidsRef.current.add(eid);
-            try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
-            setTimeout(() => suppressEidsRef.current.delete(eid), 300);
-            if (set && set[meta.leg]) set[meta.leg].price = Number(back);
-          }
-        };
-        requestBracketRef.current?.(meta.positionId, meta.leg, newPrice, {
-          onCancel: isPlacement ? removePlacement : snapBack,
-          onConfirm: isPlacement ? removePlacement : undefined,
-        });
-      }, 450));
-    };
-    try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
-    return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
-  }, [chartReady]);
-
-  // Pin each position's control pill to its entry-price line. Advanced Charts
-  // has no price→pixel API, so we calibrate the pane's top offset from a
-  // crosshair sample (exact on a linear scale) and re-project every frame using
-  // the live visible price range — the pill then tracks zoom / pan / scroll.
-  useEffect(() => {
-    if (!chartReady) return;
-    const w = widgetRef.current;
-    const container = containerRef.current;
-    if (!w || !container) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getChart = (): any => { try { return w.activeChart(); } catch { return null; } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const readGeo = (chart: any) => {
-      try {
-        const pane = chart.getPanes?.()[0];
-        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-        const paneH = pane?.getHeight?.();
-        if (!range || !paneH || range.to === range.from) return null;
-        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
-      } catch { return null; }
-    };
-
-    // The chart renders INLINE (not in an iframe), so we can read the price
-    // pane's REAL pixel top straight from the DOM — exact, no crosshair
-    // calibration, no drift. Pick the canvas whose height matches the API pane
-    // height (that's the price pane, not the time axis / an overlay). Returns
-    // null if not found yet, so the crosshair calibration remains the fallback.
-    const measurePaneTop = (paneH: number): number | null => {
-      try {
-        const rootTop = container.getBoundingClientRect().top;
-        let best: number | null = null;
-        let bestDiff = 40;
-        container.querySelectorAll('canvas').forEach((c) => {
-          const r = (c as HTMLCanvasElement).getBoundingClientRect();
-          if (r.width < 100) return;
-          const diff = Math.abs(r.height - paneH);
-          if (diff < bestDiff) { bestDiff = diff; best = r.top - rootTop; }
-        });
-        return best;
-      } catch { return null; }
-    };
-
-    const onMove = (e: MouseEvent) => {
-      lastMouseYRef.current = e.clientY - container.getBoundingClientRect().top;
-    };
-    container.addEventListener('mousemove', onMove);
-
-    // Clear the calibration buffer on resize (pane geometry changes).
-    const onResize = () => { paneTopSamplesRef.current = []; };
-    window.addEventListener('resize', onResize);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let crossSub: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const crossCb = (params: any) => {
-      const price = params?.price;
-      const my = lastMouseYRef.current;
-      if (price == null || my == null) return;
-      const chart = getChart();
-      const geo = chart && readGeo(chart);
-      if (!geo) return;
-      const candidate = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
-      if (!Number.isFinite(candidate)) return;
-      // Rolling MEDIAN of the last 15 samples: accurate (tracks the true pane
-      // top, so the pill sits exactly on the entry line) yet smooth (the median
-      // rejects the per-move mouseY/price mismatch that used to make it jitter).
-      const arr = paneTopSamplesRef.current;
-      arr.push(candidate);
-      while (arr.length > 15) arr.shift();
-      const sorted = [...arr].sort((a, b) => a - b);
-      paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate;
-    };
-    try {
-      crossSub = getChart()?.crossHairMoved?.();
-      crossSub?.subscribe(null, crossCb);
-    } catch { /* ignore */ }
-
-    const HIDE = 'translate(-50%, -9999px)';
-    const tick = () => {
-      const chart = getChart();
-      const geo = chart && readGeo(chart);
-      if (geo) {
-        // Prefer the EXACT DOM-measured pane top; fall back to the calibrated
-        // value, then a rough estimate before either exists.
-        let paneTop: number | null = measurePaneTop(geo.paneH);
-        if (paneTop != null) paneTopRef.current = paneTop;
-        else paneTop = paneTopRef.current;
-        if (paneTop == null) paneTop = container.getBoundingClientRect().height - geo.paneH - 46;
-        const st = useTradingStore.getState();
-        const sym = (st.selectedSymbol ?? 'EURUSD').toUpperCase();
-        pillNodeRef.current.forEach((node, id) => {
-          if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
-          const pos = st.positions.find((p) => p.id === id);
-          if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
-          // Pin the pill to the ENTRY line (open price) — a FIXED level, so the
-          // pill sits still instead of drifting with the live price.
-          const pillPrice = Number(pos.open_price);
-          const y = (paneTop as number) + ((geo.top - pillPrice) / (geo.top - geo.bottom)) * geo.paneH;
-          node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
-            ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
-        });
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      container.removeEventListener('mousemove', onMove);
-      window.removeEventListener('resize', onResize);
-      try { crossSub?.unsubscribe(null, crossCb); } catch { /* ignore */ }
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
-  }, [chartReady]);
-
-  // Press the SL/TP button and DRAG straight onto the chart: a line follows the
-  // cursor and, on release, the bracket is set at that price. One gesture.
-  //
-  // We read the price straight from the chart's own CROSSHAIR (crossHairMoved)
-  // rather than doing pixel→price math — the crosshair price is exactly the
-  // price under the cursor, so the line sits precisely where the cursor is with
-  // no calibration and no drift.
-  const startPlacement = useCallback((e: ReactPointerEvent, positionId: string, leg: 'sl' | 'tp') => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (placingRef.current) return;
-    const btn = e.currentTarget as HTMLElement;
-    const pointerId = e.pointerId;
-    const w = widgetRef.current;
-    const container = containerRef.current;
-    if (!w || !container) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let chart: any;
-    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
-    if (!chart?.createShape) return;
-
-    const st = useTradingStore.getState();
-    const pos = st.positions.find((p) => p.id === positionId);
-    if (!pos) return;
-    const color = leg === 'sl' ? '#dc2626' : '#16a34a';
-    const q = st.prices[String(pos.symbol).toUpperCase()];
-    const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
-    if (!Number.isFinite(startPrice)) return;
-
-    // Capture the pointer to the BUTTON so pointermove/up fire on it reliably
-    // for BOTH mouse and TOUCH (this is what makes the finger drag the line on
-    // mobile), and the chart doesn't pan under the finger. On touch the
-    // crosshair doesn't fire, so the line follows via pixel→price (calibrated).
-    try { btn.setPointerCapture(pointerId); } catch { /* ignore */ }
-    postDragToNative(true); // freeze the app's ScrollView during the drag
-
-    placingRef.current = true;
-    let lineId: string | null = null;
-    // Filled band between the entry line and the dragged level (red for SL,
-    // green for TP) — like the reference platform's P&L zone.
-    let bandId: string | null = null;
-    const entryPrice = Number(pos.open_price);
-    let bandFrom = Math.floor(Date.now() / 1000);
-    let bandTo = bandFrom + 1;
-    let lastPrice = startPrice;
-    let anchorTime = Math.floor(Date.now() / 1000);
-    let lastCrossTs = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let crossSub: any = null;
-    let done = false;
-
-    const moveTo = (price: number) => {
-      if (!Number.isFinite(price) || !lineId) return;
-      lastPrice = Number(price);
-      try { chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
-      try {
-        if (bandId) chart.getShapeById(bandId).setPoints([{ time: bandFrom, price: entryPrice }, { time: bandTo, price: lastPrice }]);
-      } catch { /* ignore */ }
-    };
-    // Y (viewport) → price, using the same rolling-median calibration as the
-    // pill. This is how the line follows a TOUCH drag (mobile crosshair doesn't
-    // fire during a finger drag).
-    const pixelToPrice = (clientY: number): number | null => {
-      try {
-        const rect = container.getBoundingClientRect();
-        const pane = chart.getPanes?.()[0];
-        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-        const paneH = pane?.getHeight?.();
-        if (!range || !paneH || range.to === range.from) return null;
-        let paneTop = paneTopRef.current;
-        if (paneTop == null) paneTop = rect.height - Number(paneH) - 46;
-        const y = clientY - rect.top;
-        return Number(range.to) - ((y - paneTop) / Number(paneH)) * (Number(range.to) - Number(range.from));
-      } catch { return null; }
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onCross = (params: any) => {
-      const p = params?.price;
-      if (p == null || !Number.isFinite(p)) return;
-      lastCrossTs = Date.now();
-      moveTo(Number(p)); // desktop: exact price under the cursor
-    };
-    const onPointerMove = (ev: PointerEvent) => {
-      // Only when the crosshair isn't driving (i.e. touch / mobile).
-      if (Date.now() - lastCrossTs < 160) return;
-      const price = pixelToPrice(ev.clientY);
-      if (price != null) moveTo(price);
-    };
-
-    const finish = async () => {
-      if (done) return;
-      done = true;
-      btn.removeEventListener('pointermove', onPointerMove);
-      btn.removeEventListener('pointerup', finish);
-      btn.removeEventListener('pointercancel', finish);
-      window.removeEventListener('pointerup', finish, true);
-      window.removeEventListener('mouseup', finish, true);
-      window.removeEventListener('blur', finish);
-      try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
-      try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
-      try { btn.releasePointerCapture(pointerId); } catch { /* ignore */ }
-      postDragToNative(false); // re-enable the app's ScrollView
-      placingRef.current = false;
-      // Drop the temp line + band and ASK before committing (modal shows P&L).
-      try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
-      try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ }
-      requestBracketRef.current?.(positionId, leg, Number(lastPrice));
-    };
-
-    // Movement: captured pointer (touch + mouse fallback) and — on desktop —
-    // the chart crosshair (exact). Release: captured pointerup/cancel on the
-    // button + library mouse_up (over the iframe) + window capture fallback.
-    btn.addEventListener('pointermove', onPointerMove);
-    btn.addEventListener('pointerup', finish);
-    btn.addEventListener('pointercancel', finish);
-    window.addEventListener('pointerup', finish, true);
-    window.addEventListener('mouseup', finish, true);
-    window.addEventListener('blur', finish);
-    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
-
-    (async () => {
-      try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
-      if (done) return;
-      try {
-        lineId = String(await chart.createShape(
-          { time: anchorTime, price: startPrice },
-          { shape: 'horizontal_line', text: leg.toUpperCase(), lock: true, disableSave: true, disableUndo: true,
-            overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
-        ));
-      } catch { return; }
-      if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
-
-      // Filled band from the entry line to the dragged level (transparent
-      // red for SL / green for TP), spanning the visible time range.
-      try {
-        const vr2 = chart.getVisibleRange?.();
-        if (vr2 && Number.isFinite(vr2.from) && Number.isFinite(vr2.to)) { bandFrom = Math.floor(vr2.from); bandTo = Math.floor(vr2.to); }
-        if (!done && Number.isFinite(entryPrice) && typeof chart.createMultipointShape === 'function') {
-          bandId = String(await chart.createMultipointShape(
-            [{ time: bandFrom, price: entryPrice }, { time: bandTo, price: startPrice }],
-            { shape: 'rectangle', lock: true, disableSave: true, disableUndo: true, disableSelection: true, zOrder: 'bottom',
-              overrides: { backgroundColor: color, transparency: 82, fillBackground: true, color, linewidth: 0, linestyle: 2 } },
-          ));
-          if (done && bandId) { try { chart.removeEntity(bandId); } catch { /* ignore */ } }
-        }
-      } catch { /* band is optional */ }
-
-      try { crossSub = chart.crossHairMoved?.(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
-    })();
-  }, []);
-
-  const closePositionFromChart = useCallback(async (positionId: string) => {
-    // The temp `optim-…` id isn't a real position yet — don't POST it (the
-    // backend UUID check would 422). This window is ~1 tick; the real id lands
-    // and the button works.
-    if (!isRealPositionId(positionId)) { toast('Order still finalizing…'); return; }
-    try {
-      await api.post(`/positions/${positionId}/close`, {});
-      toast.success('Position closed');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to close position');
-    }
-  }, []);
-
   // Projected P&L (account currency) if this position were closed at `price`.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const computePnlAt = useCallback((pos: any, price: number): number => {
     const sym = String(pos.symbol).toUpperCase();
     const inst = useTradingStore.getState().instruments.find((i) => String(i.symbol).toUpperCase() === sym);
     const cs = Number(inst?.contract_size) || 100000;
-    let pnl = pos.side === 'buy'
+    const pnl = pos.side === 'buy'
       ? (price - Number(pos.open_price)) * Number(pos.lots) * cs
       : (Number(pos.open_price) - price) * Number(pos.lots) * cs;
     const base = String(inst?.base_currency || sym.slice(0, 3)).toUpperCase();
@@ -773,60 +300,627 @@ function TradingViewChartInner({
     return pnl;
   }, []);
 
-  // Ask before committing an SL/TP the user just dragged. opts.onCancel runs if
-  // they cancel (snap a dragged line back / remove a placement line);
-  // opts.onConfirm runs after a successful set (remove a placement line).
-  const requestBracket = useCallback(
-    (positionId: string, leg: 'sl' | 'tp', price: number, opts?: { onCancel?: () => void; onConfirm?: () => void }) => {
-      const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
-      if (!pos || !Number.isFinite(price) || !isRealPositionId(positionId)) { opts?.onCancel?.(); return; }
-      confirmRevertRef.current = opts?.onCancel ?? null;
-      confirmDoneRef.current = opts?.onConfirm ?? null;
-      setConfirm({
-        positionId, leg, price: Number(price.toFixed(5)),
-        side: pos.side, lots: pos.lots, symbol: pos.symbol, pnl: computePnlAt(pos, price),
-      });
-    },
-    [computePnlAt],
-  );
-  requestBracketRef.current = requestBracket;
+  // Reconcile chart lines whenever positions / pending orders change. Each open
+  // position gets an ENTRY line whose LINE colour is fixed by side (BUY blue /
+  // SELL red) and whose LABEL shows the LIVE P&L coloured by profit/loss
+  // (blue/red/gray), throttled to 500ms; plus SL (amber) / TP (teal) labelled
+  // with the projected P&L at that level. Each pending order gets its entry
+  // (BUY blue / SELL purple, dashed) + SL/TP.
+  //
+  // Drawn with createShape('horizontal_line') — the CORE Charting Library API
+  // (Advanced Charts has no order-line API). Shapes span the FULL chart width
+  // and stay pinned to the price scale through zoom / scroll / timeframe
+  // changes; they're created once, moved with setPoints when a price (e.g.
+  // SL/TP) changes, and removed when the position/order closes. The lines are
+  // LOCKED — SL/TP is edited via the [SL]/[TP] buttons on the entry line (drag
+  // or click-to-type), never by dragging the line shape itself.
+  useEffect(() => {
+    const w = widgetRef.current;
+    if (!chartReady || !w) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart?.createShape) return;
 
-  const confirmCancel = useCallback(() => {
-    const r = confirmRevertRef.current;
-    confirmRevertRef.current = null;
-    confirmDoneRef.current = null;
-    setConfirm(null);
-    r?.();
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const myPos = positions.filter((p) => String(p.symbol).toUpperCase() === sym);
+    const myPending = (pendingOrders || []).filter((o) => String(o.symbol).toUpperCase() === sym);
+    const inst = useTradingStore.getState().instruments.find(
+      (i) => String(i.symbol).toUpperCase() === sym,
+    );
+    const digits = inst?.digits ?? 2;
+    const cs = Number(inst?.contract_size) || 100000;
+    const fp = (n: number) => Number(n).toFixed(digits);
+
+    // P&L → LABEL colour: blue in profit, red in loss, gray near break-even.
+    const pnlColor = (pnl: number) =>
+      Math.abs(pnl) < 0.10 ? BREAKEVEN_COLOR : pnl > 0 ? PROFIT_COLOR : LOSS_COLOR;
+
+    // `color` is the LINE colour, `textColor` the LABEL colour. For position
+    // entry lines they differ: the line is fixed by side (BUY blue / SELL red)
+    // while the label tracks P&L (profit blue / loss red / gray). SL/TP/pending
+    // omit textColor → it falls back to the line colour.
+    type Desired = { key: string; price: number; color: string; textColor?: string; text: string; dashed: boolean; pnl?: number };
+    const desired: Desired[] = [];
+
+    // ── Open positions: entry line labelled with LIVE P&L, coloured by P&L
+    //    state (not side). p.profit is the SAME value the positions table uses
+    //    → single source of truth, so the line can never disagree with the
+    //    table. SL (amber) / TP (teal) with projected P&L at the level. ──
+    for (const p of myPos) {
+      const pnl = Number(p.profit || 0);
+      const lots = Number(p.lots || 0);
+      const entry = Number(p.open_price || 0);
+      const notional = entry * lots * cs;
+      const pct = notional > 0 ? (pnl / notional) * 100 : 0;
+      const pnlStr = `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`;
+      const pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+      // Line colour by SIDE (BUY blue / SELL red); label colour by P&L.
+      const sideColor = p.side.toUpperCase() === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
+      desired.push({
+        key: p.id, price: entry, color: sideColor, textColor: pnlColor(pnl),
+        // Live P&L rendered as the TV shape's OWN label — TradingView pins it
+        // exactly on the entry price (right axis), so it can never drift.
+        text: `${p.side.toUpperCase()} ${lots}  ${pnlStr} (${pctStr})`,
+        dashed: false, pnl,
+      });
+      if (p.stop_loss != null && Number(p.stop_loss) > 0) {
+        const slp = Number(p.stop_loss);
+        const r = computePnlAt(p, slp);
+        const pl = Number.isFinite(r) ? `  ${r >= 0 ? '+' : '−'}$${Math.abs(r).toFixed(2)}` : '';
+        desired.push({ key: `${p.id}-sl`, price: slp, color: SL_COLOR, text: `SL ${fp(slp)}${pl}`, dashed: true });
+      }
+      if (p.take_profit != null && Number(p.take_profit) > 0) {
+        const tpp = Number(p.take_profit);
+        const r = computePnlAt(p, tpp);
+        const pl = Number.isFinite(r) ? `  ${r >= 0 ? '+' : '−'}$${Math.abs(r).toFixed(2)}` : '';
+        desired.push({ key: `${p.id}-tp`, price: tpp, color: TP_COLOR, text: `TP ${fp(tpp)}${pl}`, dashed: true });
+      }
+    }
+
+    // ── Pending orders (limit/stop): entry + SL + TP. ──
+    for (const o of myPending) {
+      const pColor = o.side === 'buy' ? PENDING_BUY_COLOR : PENDING_SELL_COLOR;
+      desired.push({ key: `ord-${o.id}`, price: Number(o.price), color: pColor,
+        text: `${String(o.order_type || '').toUpperCase()} ${o.side.toUpperCase()} ${fp(Number(o.price))}`, dashed: true });
+      if (o.stop_loss != null && Number(o.stop_loss) > 0)
+        desired.push({ key: `ord-${o.id}-sl`, price: Number(o.stop_loss), color: SL_COLOR, text: `SL ${fp(Number(o.stop_loss))}`, dashed: true });
+      if (o.take_profit != null && Number(o.take_profit) > 0)
+        desired.push({ key: `ord-${o.id}-tp`, price: Number(o.take_profit), color: TP_COLOR, text: `TP ${fp(Number(o.take_profit))}`, dashed: true });
+    }
+
+    const shapeOpts = (text: string, lineColor: string, textColor: string, dashed: boolean) => ({
+      shape: 'horizontal_line',
+      text,
+      lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+      overrides: {
+        linecolor: lineColor, linestyle: dashed ? 2 : 0, linewidth: dashed ? 1 : 2,
+        showLabel: true, textcolor: textColor, fontsize: 11, bold: true,
+        horzLabelsAlign: 'right', vertLabelsAlign: 'middle', showPrice: true,
+      },
+    });
+
+    // Anchor the horizontal lines at a time that's DEFINITELY on-screen
+    // (visible-range start), not "now" — on a closed market "now" can sit past
+    // the last bar and some builds reject an off-range time. Horizontal lines
+    // span full width regardless, so the exact time only needs to be valid.
+    let anchorTime = Math.floor(Date.now() / 1000);
+    try {
+      const vr = chart.getVisibleRange?.();
+      if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from);
+    } catch { /* keep now */ }
+    const now = Date.now();
+    // Throttle the live-P&L label refresh: 500ms normally, 1000ms once 10+
+    // positions are open, so streaming ticks never thrash the chart.
+    const throttleMs = myPos.length >= 10 ? 1000 : 500;
+    const wanted = new Set(desired.map((d) => d.key));
+
+    for (const d of desired) {
+      const existing = linesRef.current.get(d.key);
+      if (!existing) {
+        // createShape is ASYNC (Promise<EntityId>). Reserve the key with a
+        // 'creating' entry so a re-render mid-create doesn't spawn a duplicate.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry: any = { id: null, price: d.price, creating: true, text: d.text, color: d.color, textColor: d.textColor ?? d.color, pnl: d.pnl ?? null, propAt: now };
+        linesRef.current.set(d.key, entry);
+        Promise.resolve(chart.createShape({ time: anchorTime, price: d.price }, shapeOpts(d.text, d.color, d.textColor ?? d.color, d.dashed)))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then((id: any) => {
+            if (linesRef.current.get(d.key) === entry) { entry.id = id; entry.creating = false; }
+            else { try { chart.removeEntity(id); } catch { /* closed mid-create */ } }
+          })
+          .catch(() => { if (linesRef.current.get(d.key) === entry) linesRef.current.delete(d.key); });
+      } else if (existing.id != null) {
+        // Price moved (SL/TP edited) → slide the existing line, no recreate.
+        if (existing.price !== d.price) {
+          try { chart.getShapeById(existing.id)?.setPoints([{ time: anchorTime, price: d.price }]); } catch { /* ignore */ }
+          existing.price = d.price;
+        }
+        // Live label + colour refresh. For P&L lines (entry): throttle AND
+        // only when P&L moved > $0.01 or the profit/loss colour flipped — so we
+        // don't setProperties on every micro-tick. SL/TP/order labels are
+        // static, so they update immediately when they actually change.
+        const nextTextColor = d.textColor ?? d.color;
+        if (d.text !== existing.text || d.color !== existing.color || nextTextColor !== existing.textColor) {
+          const isPnl = d.pnl != null;
+          const throttleOk = !isPnl || (now - (existing.propAt || 0) >= throttleMs);
+          // For entry lines the LINE colour is fixed by side, so the P&L flip
+          // shows up in the LABEL colour — trigger on that too.
+          const worthIt = !isPnl
+            || d.color !== existing.color
+            || nextTextColor !== existing.textColor
+            || Math.abs((d.pnl as number) - (existing.pnl ?? 0)) > 0.01;
+          if (throttleOk && worthIt) {
+            try {
+              chart.getShapeById(existing.id)?.setProperties({
+                text: d.text, linecolor: d.color, textcolor: nextTextColor,
+              });
+            } catch { /* keep last-known label on error */ }
+            existing.text = d.text;
+            existing.color = d.color;
+            existing.textColor = nextTextColor;
+            existing.pnl = d.pnl ?? existing.pnl;
+            existing.propAt = now;
+          }
+        }
+      }
+    }
+
+    // Remove lines whose position / order / SL / TP is gone (or symbol changed).
+    for (const [key, entry] of linesRef.current) {
+      if (!wanted.has(key)) {
+        if (entry && entry.id != null) { try { chart.removeEntity(entry.id); } catch { /* ignore */ } }
+        linesRef.current.delete(key);
+      }
+    }
+  }, [positions, pendingOrders, selectedSymbol, chartReady, computePnlAt]);
+
+  // Stale-price watchdog. The reconcile above only runs when `positions`
+  // changes — i.e. on a tick — so if the feed stalls it simply STOPS and the
+  // last P&L freezes silently. This 1s interval independently detects "no tick
+  // for the selected symbol in > threshold" and greys the position entry
+  // lines. Recovery is automatic: the next tick re-runs the reconcile, which
+  // restores the live P&L label + colour.
+  useEffect(() => {
+    const w = widgetRef.current;
+    if (!chartReady || !w) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart?.getShapeById) return;
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const inst = useTradingStore.getState().instruments.find(
+      (i) => String(i.symbol).toUpperCase() === sym,
+    );
+    const isCrypto = String(inst?.segment || '').toLowerCase() === 'crypto'
+      || /BTC|ETH|USDT|XRP|SOL|LTC|DOGE|BNB/.test(sym);
+    const day = new Date().getUTCDay(); // 0 Sun … 6 Sat
+    const isWeekend = day === 0 || day === 6;
+    const threshold = isCrypto
+      ? STALE_MS.crypto
+      : (isWeekend ? STALE_MS.weekendClosed : STALE_MS.normal);
+
+    // Track last-tick receive time for THIS symbol via the existing store
+    // stream. prices[sym] gets a fresh object reference on every tick.
+    let lastPrice = useTradingStore.getState().prices[sym];
+    let lastTickAt = Date.now();
+    const unsub = useTradingStore.subscribe((state) => {
+      const p = state.prices[sym];
+      if (p !== lastPrice) { lastPrice = p; lastTickAt = Date.now(); }
+    });
+
+    let stale = false;
+    const intervalId = setInterval(() => {
+      const isStale = Date.now() - lastTickAt > threshold;
+      if (isStale === stale) return;          // only act on a transition
+      stale = isStale;
+      if (!isStale) return;                    // recovery handled by the reconcile
+      const now = Date.now();
+      // Position ENTRY lines (carry live P&L; entry.pnl != null). SL/TP and
+      // pending-order labels are static, so leave them untouched.
+      for (const [, entry] of linesRef.current) {
+        if (!entry || entry.id == null || entry.pnl == null) continue;
+        try {
+          chart.getShapeById(entry.id)?.setProperties({
+            linecolor: STALE_COLOR, textcolor: STALE_COLOR,
+          });
+        } catch { /* ignore */ }
+        entry.color = STALE_COLOR;
+        entry.textColor = STALE_COLOR;
+        entry.propAt = now; // so the reconcile's throttle lets recovery through
+      }
+    }, 1000);
+
+    return () => { clearInterval(intervalId); try { unsub(); } catch { /* ignore */ } };
+  }, [chartReady, selectedSymbol]);
+
+  const closePositionFromChart = useCallback((positionId: string) => {
+    // The temp `optim-…` id isn't a real position yet — don't POST it (the
+    // backend UUID check would 422). This window is ~1 tick; the real id lands
+    // and the button works.
+    if (!isRealPositionId(positionId)) { toast('Order still finalizing…'); return; }
+    const st = useTradingStore.getState();
+    const p = st.positions.find((x) => x.id === positionId);
+    if (!p) return;
+    const side = String(p.side).toUpperCase();
+    const sym = String(p.symbol).toUpperCase();
+    openDialogRef.current({
+      title: 'Close position',
+      body: `Close ${side} ${Number(p.lots)} ${sym} at market?`,
+      confirmLabel: 'Close position',
+      danger: true,
+      onConfirm: () => {
+        try { useTradingStore.getState().removePosition(positionId); } catch { /* ignore */ }
+        void (async () => {
+          try {
+            const res = await api.post<{ profit?: number; close_price?: number }>(
+              `/positions/${positionId}/close`, {}, { timeoutMs: 8000 },
+            );
+            const pnl = Number(res?.profit ?? 0);
+            toast.success(`Closed @ ${res?.close_price ?? ''} | ${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Close failed');
+          } finally {
+            Promise.all([
+              useTradingStore.getState().refreshPositions(),
+              useTradingStore.getState().refreshAccount(),
+            ]).catch(() => {});
+          }
+        })();
+      },
+    });
   }, []);
 
-  const confirmSet = useCallback(async () => {
-    if (!confirm) return;
-    const { positionId, leg, price } = confirm;
-    confirmRevertRef.current = null; // committing — no revert
-    const done = confirmDoneRef.current;
-    confirmDoneRef.current = null;
-    setConfirm(null);
-    done?.(); // e.g. remove the mobile placement line before the real one renders
-    const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
-    const body: Record<string, number> = {};
-    body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = price;
-    const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
-    if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
-    try {
-      await api.put(`/positions/${positionId}`, body);
-      toast.success(`${leg.toUpperCase()} set @ ${price}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Failed to set ${leg.toUpperCase()}`);
-    }
-  }, [confirm]);
+  // Stable key of the open positions on this symbol — the button overlay
+  // rebuilds only when the position SET changes, not every tick.
+  const symU = (selectedSymbol ?? 'EURUSD').toUpperCase();
+  const positionsKey = positions
+    .filter((p) => String(p.symbol).toUpperCase() === symU)
+    .map((p) => `${p.id}:${p.side}:${p.lots}:${p.trade_type === 'copy_trade' ? 'c' : ''}`)
+    .join('|');
 
-  const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
-  // Show the pill for optimistic positions too (instant feedback). Its SL/TP/✕
-  // handlers are guarded against the temp id, so the buttons are inert until the
-  // real position id lands ~1 tick later.
-  const panelPositions = positions.filter(
-    (p) => String(p.symbol).toUpperCase() === chartSym,
-  );
+  // ── On-chart [SL] [TP] [✕] button group per position ────────────────────────
+  // P&L is a native TV shape label (always pinned to the exact price). The
+  // buttons MUST be clickable HTML — price→pixel comes from the pane's price
+  // scale (getVisiblePriceRange + pane height, re-read every frame so it
+  // follows zoom/pan live) plus the pane's top offset, measured EXACTLY from
+  // the DOM (the chart mounts inline, so the pane canvas is reachable) with a
+  // crosshair-calibrated fallback. A rAF loop repositions the group and the
+  // persistent entry→SL / entry→TP shaded zones every frame.
+  //
+  // Drag an [SL]/[TP] button up/down to set that bracket — a dashed preview
+  // line + shaded zone + price/projected-P&L label follow the cursor; release
+  // opens the confirm dialog. A plain click opens the type-a-price dialog.
+  useEffect(() => {
+    const w = widgetRef.current;
+    const overlay = overlayRef.current;
+    const container = containerRef.current;
+    if (!chartReady || !w || !overlay || !container) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart) return;
+
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+
+    type Geo = { top: number; bottom: number; h: number; log: boolean };
+    const geom = (): Geo | null => {
+      try {
+        const pane = chart.getPanes?.()[0];
+        const ps = pane?.getMainSourcePriceScale?.();
+        if (!ps) return null;
+        const mode = ps.getMode?.() ?? 0;            // 0 linear, 1 log
+        if (mode !== 0 && mode !== 1) return null;
+        const range = ps.getVisiblePriceRange?.();
+        const h = pane?.getHeight?.() || 0;
+        if (!range || !(h > 0) || !(range.to > range.from)) return null;
+        if (mode === 1 && !(range.from > 0)) return null;
+        return { top: Number(range.to), bottom: Number(range.from), h: Number(h), log: mode === 1 };
+      } catch { return null; }
+    };
+    const paneY = (price: number, g: Geo): number => {
+      if (g.log) {
+        if (!(price > 0)) return NaN;
+        const lt = Math.log(g.top), lb = Math.log(g.bottom);
+        return (g.h * (lt - Math.log(price))) / (lt - lb);
+      }
+      return (g.h * (g.top - price)) / (g.top - g.bottom);
+    };
+
+    // Pane-top offset (container-Y of the pane's top edge). Preferred source:
+    // measure the price-pane canvas straight from the DOM — exact, no drift,
+    // and works for touch (no crosshair needed). Fallback: rolling-median
+    // crosshair calibration (candidate = mouseY - paneY(price)).
+    let calibOffset: number | null = null;
+    let lastMouseY: number | null = null;
+    const calibSamples: number[] = [];
+    const measurePaneTop = (paneH: number): number | null => {
+      try {
+        const rootTop = container.getBoundingClientRect().top;
+        let best: number | null = null;
+        let bestDiff = 40;
+        container.querySelectorAll('canvas').forEach((c) => {
+          const r = (c as HTMLCanvasElement).getBoundingClientRect();
+          if (r.width < 100) return;
+          const diff = Math.abs(r.height - paneH);
+          if (diff < bestDiff) { bestDiff = diff; best = r.top - rootTop; }
+        });
+        return best;
+      } catch { return null; }
+    };
+    const paneTopOf = (g: Geo): number | null => {
+      const m = measurePaneTop(g.h);
+      if (m != null) { calibOffset = m; return m; }
+      return calibOffset;
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      lastMouseY = e.clientY - container.getBoundingClientRect().top;
+    };
+    container.addEventListener('mousemove', onMouseMove);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onCross = (params: any) => {
+      const price = params?.price;
+      if (price == null || lastMouseY == null) return;
+      const g = geom();
+      if (!g) return;
+      const py = paneY(Number(price), g);
+      if (!Number.isFinite(py)) return;
+      const candidate = lastMouseY - py;
+      // Rolling MEDIAN of the last 15 samples — rejects the per-move
+      // mouseY/price mismatch that would make the offset jitter.
+      calibSamples.push(candidate);
+      while (calibSamples.length > 15) calibSamples.shift();
+      const sorted = [...calibSamples].sort((a, b) => a - b);
+      calibOffset = sorted[Math.floor(sorted.length / 2)] ?? candidate;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let crossSub: any = null;
+    try { crossSub = chart.crossHairMoved?.(); crossSub?.subscribe?.(null, onCross); } catch { /* ignore */ }
+
+    // Inverse of paneY: container-Y → price (drives the drag-to-set gesture).
+    const priceForY = (containerY: number): number | null => {
+      const g = geom();
+      if (!g) return null;
+      const top = paneTopOf(g);
+      if (top == null) return null;
+      const py = containerY - top; // pane-relative Y
+      if (g.log) {
+        const lt = Math.log(g.top), lb = Math.log(g.bottom);
+        return Math.exp(lt - (py / g.h) * (lt - lb));
+      }
+      return g.top - (py / g.h) * (g.top - g.bottom);
+    };
+
+    const digits = (useTradingStore.getState().instruments.find(
+      (i) => String(i.symbol).toUpperCase() === sym,
+    )?.digits) ?? 2;
+
+    // Set / clear a position's stop-loss or take-profit from the chart via the
+    // type-a-price dialog. Sends ONLY the bracket being changed — the backend
+    // does a partial update, so the OTHER bracket is never affected (the
+    // button's captured `p` is a stale closure: it only rebuilds on
+    // id/side/lots change, NOT on SL/TP change, so re-sending its copy of the
+    // other bracket would revert it).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const setBracket = (p: any, kind: 'sl' | 'tp') => {
+      if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+      const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
+      const t = useTradingStore.getState().prices[sym];
+      const cur = kind === 'sl' ? p.stop_loss : p.take_profit;
+      const dflt = Number(cur) || (t ? (p.side === 'buy' ? t.bid : t.ask) : Number(p.open_price)) || 0;
+      openDialogRef.current({
+        title: `${label} — ${String(p.side).toUpperCase()} ${p.lots} ${sym}`,
+        body: 'Enter the price. Leave blank to remove.',
+        confirmLabel: 'Save',
+        input: { defaultValue: dflt ? dflt.toFixed(digits) : '', placeholder: 'Price' },
+        onConfirm: (raw) => {
+          const trimmed = (raw ?? '').trim();
+          const val = trimmed === '' ? null : parseFloat(trimmed);
+          if (val !== null && !(val > 0)) { toast.error('Invalid price'); return; }
+          void (async () => {
+            try {
+              await api.put(`/positions/${p.id}`,
+                kind === 'sl' ? { stop_loss: val } : { take_profit: val });
+              toast.success(val === null ? `${label} removed` : `${label} set @ ${val}`);
+              await useTradingStore.getState().refreshPositions();
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
+            }
+          })();
+        },
+      });
+    };
+
+    const mkBtn = (txt: string, bg: string, title: string, onClick: () => void): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = txt;
+      b.title = title;
+      b.style.cssText =
+        `display:flex;align-items:center;justify-content:center;height:18px;min-width:18px;`
+        + `padding:0 ${txt.length > 1 ? '5' : '0'}px;border:0;border-radius:3px;cursor:pointer;`
+        + `font-size:10px;font-weight:700;line-height:1;color:#fff;pointer-events:auto;`
+        + `background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.55);`;
+      b.onmouseenter = () => { b.style.filter = 'brightness(1.15)'; };
+      b.onmouseleave = () => { b.style.filter = 'none'; };
+      b.onclick = (e) => { e.stopPropagation(); onClick(); };
+      return b;
+    };
+
+    // Draggable SL/TP button: press & drag up/down → a dashed preview line
+    // (+ shaded zone + price/P&L label) follows the cursor → release → confirm
+    // → PUT. A plain click (no drag) falls back to the type-a-price prompt.
+    // Pointer capture makes the same gesture work for mouse AND touch.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mkDragBtn = (txt: string, bg: string, title: string, p: any, kind: 'sl' | 'tp'): HTMLButtonElement => {
+      const color = kind === 'sl' ? SL_COLOR : TP_COLOR;
+      const zoneBg = kind === 'sl' ? 'rgba(239,68,68,0.13)' : 'rgba(20,184,166,0.13)';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = txt;
+      b.title = `${title} — drag up/down to set, or click to type`;
+      b.style.cssText =
+        `display:flex;align-items:center;justify-content:center;height:18px;min-width:18px;`
+        + `padding:0 5px;border:0;border-radius:3px;cursor:ns-resize;touch-action:none;`
+        + `font-size:10px;font-weight:700;line-height:1;color:#fff;pointer-events:auto;`
+        + `background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.55);`;
+      b.onmouseenter = () => { b.style.filter = 'brightness(1.15)'; };
+      b.onmouseleave = () => { b.style.filter = 'none'; };
+      b.onpointerdown = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+        // Capture the pointer to the button: the drag follows the cursor and
+        // won't "let go" even if it leaves the button — released on pointerup.
+        try { b.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+        postDragToNative(true); // freeze the app's ScrollView during the drag
+        const startY = e.clientY;
+        let moved = false;
+        // Preview: shaded zone (entry → cursor) + dashed line + price label.
+        const zone = document.createElement('div');
+        zone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:${zoneBg};pointer-events:none;z-index:6;`;
+        const line = document.createElement('div');
+        line.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;border-top:1px dashed ${color};pointer-events:none;z-index:7;`;
+        const lbl = document.createElement('div');
+        lbl.style.cssText = `position:absolute;right:2px;top:0;transform:translateY(-50%);background:${color};`
+          + `color:#fff;font:700 10px system-ui;padding:1px 6px;border-radius:3px;pointer-events:none;z-index:8;white-space:nowrap;`;
+        overlay.appendChild(zone); overlay.appendChild(line); overlay.appendChild(lbl);
+        const entryY = (): number | null => {
+          const g = geom();
+          if (!g) return null;
+          const top = paneTopOf(g);
+          if (top == null) return null;
+          return paneY(Number(p.open_price) || 0, g) + top;
+        };
+        const cleanup = () => { for (const el of [zone, line, lbl]) { try { overlay.removeChild(el); } catch { /* ignore */ } } };
+        b.onpointermove = (ev) => {
+          if (Math.abs(ev.clientY - startY) > 3) moved = true;
+          const r = container.getBoundingClientRect();
+          const cy = ev.clientY - r.top;
+          const price = priceForY(cy);
+          line.style.top = `${cy}px`;
+          lbl.style.top = `${cy}px`;
+          // Show the target price AND the projected P&L at that price (same
+          // helper the confirm dialog uses, evaluated at the SL/TP level).
+          let ptxt = `${kind === 'sl' ? 'SL' : 'TP'} ${price ? price.toFixed(digits) : '—'}`;
+          if (price) {
+            const rr = computePnlAt(p, price);
+            if (Number.isFinite(rr)) ptxt += `  ${rr >= 0 ? '+' : '−'}$${Math.abs(rr).toFixed(2)}`;
+          }
+          lbl.textContent = ptxt;
+          const ey = entryY();
+          if (ey != null) { zone.style.top = `${Math.min(ey, cy)}px`; zone.style.height = `${Math.abs(ey - cy)}px`; }
+        };
+        const endDrag = (ev: PointerEvent, cancelled: boolean) => {
+          b.onpointermove = null; b.onpointerup = null; b.onpointercancel = null;
+          try { b.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
+          cleanup();
+          postDragToNative(false); // re-enable the app's ScrollView
+          if (cancelled) return;
+          if (!moved) { setBracket(p, kind); return; } // plain click → type-a-price
+          const r = container.getBoundingClientRect();
+          const price = priceForY(ev.clientY - r.top);
+          if (!price || !(price > 0)) { toast.error('Could not read price'); return; }
+          const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
+          const proj = computePnlAt(p, price);
+          const projTxt = Number.isFinite(proj) ? ` → ${proj >= 0 ? 'profit' : 'loss'} ${proj >= 0 ? '+' : '−'}$${Math.abs(proj).toFixed(2)}` : '';
+          const applyBracket = async () => {
+            try {
+              // Only the dragged bracket — the backend partial-update keeps
+              // the other intact (see setBracket note; `p` is a stale closure).
+              await api.put(`/positions/${p.id}`,
+                kind === 'sl' ? { stop_loss: price } : { take_profit: price });
+              toast.success(`${label} set @ ${price.toFixed(digits)}`);
+              await useTradingStore.getState().refreshPositions();
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
+            }
+          };
+          openDialogRef.current({
+            title: `Set ${label} @ ${price.toFixed(digits)}`,
+            body: `${String(p.side).toUpperCase()} ${p.lots} ${sym}${projTxt}`,
+            confirmLabel: `Set ${kind.toUpperCase()}`,
+            onConfirm: () => { void applyBracket(); },
+          });
+        };
+        b.onpointerup = (ev) => endDrag(ev, false);
+        b.onpointercancel = (ev) => endDrag(ev, true);
+      };
+      return b;
+    };
+
+    // One button GROUP per open position: [SL] [TP] [✕], pinned to the entry
+    // line. Copied (MAM) positions get only ✕ — SL/TP is master-controlled.
+    const myPos = useTradingStore.getState().positions.filter(
+      (p) => String(p.symbol).toUpperCase() === sym,
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const btns: { p: any; entry: number; el: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
+    for (const p of myPos) {
+      const side = String(p.side).toUpperCase();
+      const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
+      const isCopy = p.trade_type === 'copy_trade';
+      const root = document.createElement('div');
+      root.style.cssText =
+        `position:absolute;right:${CLOSE_BTN_RIGHT_PX}px;transform:translateY(-50%);`
+        + `display:flex;align-items:center;gap:3px;pointer-events:none;visibility:hidden;z-index:6;`;
+      if (!isCopy) {
+        root.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
+        root.appendChild(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
+      }
+      root.appendChild(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
+        closePositionFromChart(p.id);
+      }));
+      // Persistent shaded zones (entry → SL red, entry → TP teal), positioned
+      // in the sync loop from the LIVE bracket prices. Below the buttons (z 4).
+      const slZone = document.createElement('div');
+      slZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(239,68,68,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
+      const tpZone = document.createElement('div');
+      tpZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(20,184,166,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
+      overlay.appendChild(slZone); overlay.appendChild(tpZone);
+      overlay.appendChild(root);
+      btns.push({ p, entry: Number(p.open_price) || 0, el: root, slZone, tpZone });
+    }
+
+    let raf = 0;
+    const sync = () => {
+      raf = requestAnimationFrame(sync);
+      if (btns.length === 0) return;
+      // Re-read the price scale EVERY frame so the buttons/zones follow live
+      // through zoom/pan; the DOM-measured pane top stays exact throughout.
+      const g = geom();
+      const top = g ? paneTopOf(g) : null;
+      if (!g || top == null) {
+        for (const b of btns) { b.el.style.visibility = 'hidden'; b.slZone.style.visibility = 'hidden'; b.tpZone.style.visibility = 'hidden'; }
+        return;
+      }
+      const h = container.clientHeight || g.h;
+      const live = useTradingStore.getState().positions;
+      const drawZone = (el: HTMLDivElement, entryY: number, price: unknown) => {
+        const pr = Number(price);
+        if (!(pr > 0)) { el.style.visibility = 'hidden'; return; }
+        const zy = paneY(pr, g) + top;
+        const zTop = Math.min(entryY, zy), ht = Math.abs(entryY - zy);
+        if (ht < 1) { el.style.visibility = 'hidden'; return; }
+        el.style.top = `${zTop}px`; el.style.height = `${ht}px`; el.style.visibility = 'visible';
+      };
+      for (const b of btns) {
+        const y = paneY(b.entry, g) + top;
+        if (!(y > 8) || y > h - 8) { b.el.style.visibility = 'hidden'; }
+        else { b.el.style.top = `${y}px`; b.el.style.visibility = 'visible'; }
+        const lp = live.find((x) => x.id === b.p.id);
+        drawZone(b.slZone, y, lp?.stop_loss);
+        drawZone(b.tpZone, y, lp?.take_profit);
+      }
+    };
+    raf = requestAnimationFrame(sync);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      container.removeEventListener('mousemove', onMouseMove);
+      try { crossSub?.unsubscribe?.(null, onCross); } catch { /* ignore */ }
+      for (const b of btns) { for (const el of [b.el, b.slZone, b.tpZone]) { try { overlay.removeChild(el); } catch { /* ignore */ } } }
+    };
+  }, [chartReady, selectedSymbol, positionsKey, computePnlAt, closePositionFromChart]);
 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
@@ -855,89 +949,80 @@ function TradingViewChartInner({
         </div>
       )}
 
-      {/* Per-position control pills, pinned to each position's CURRENT-price line
-          (positioned imperatively by the rAF loop above). SL / TP add a draggable
-          bracket line; ✕ closes. Copied (MAM) positions get only ✕. */}
-      {panelPositions.length > 0 && (
-        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-          {panelPositions.map((p) => {
-            const profit = Number(p.profit ?? 0);
-            const up = profit >= 0;
-            const isCopy = p.trade_type === 'copy_trade';
-            return (
-              <div
-                key={p.id}
-                ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
-                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap"
-              >
-                <span className={p.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}>
-                  {p.side.toUpperCase()} {p.lots}
-                </span>
-                <span className={up ? 'text-emerald-400' : 'text-rose-400'}>
-                  {up ? '+' : '-'}${Math.abs(profit).toFixed(2)}
-                </span>
-                {!isCopy && (
-                  <>
-                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black cursor-ns-resize touch-none" title="Press and drag onto the chart to set the stop-loss">SL</button>
-                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-ns-resize touch-none" title="Press and drag onto the chart to set the take-profit">TP</button>
-                  </>
-                )}
-                <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Overlay layer for the per-position [SL] [TP] [✕] button groups, the
+          persistent entry→SL / entry→TP shaded zones, and the drag previews —
+          all positioned imperatively by the rAF loop above. */}
+      <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-20 overflow-hidden" />
 
-      {/* Drag-release confirmation — "Set SL/TP @ price?" with projected P&L. */}
-      {confirm && (
-        <div
-          className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 pointer-events-auto"
-          onClick={confirmCancel}
-        >
-          <div
-            className="w-[340px] max-w-[90%] rounded-2xl bg-bg-secondary border border-border-primary shadow-2xl p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-bold text-text-primary">
-                Set {confirm.leg === 'sl' ? 'Stop Loss' : 'Take Profit'} @ {confirm.price}
-              </h3>
-              <button
-                type="button"
-                onClick={confirmCancel}
-                className="text-text-tertiary hover:text-text-primary text-base leading-none"
-                aria-label="Cancel"
+      {/* In-app dialog for the on-chart trade buttons: close ✕ confirmation,
+          SL/TP drag confirmation (with projected P&L), and type-a-price. */}
+      {dialog &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 p-0" style={{ zIndex: 2147483646, isolation: 'isolate' }}>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Dismiss"
+              className="absolute inset-0 z-0 m-0 h-full w-full cursor-default border-0 bg-black/60 p-0 backdrop-blur-sm"
+              onClick={() => setDialog(null)}
+            />
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">
+              <div
+                role="dialog"
+                aria-modal="true"
+                className="relative w-full max-w-[300px] rounded-xl border p-3.5 shadow-2xl overflow-hidden pointer-events-auto bg-bg-secondary border-border-primary"
+                onMouseDown={(e) => e.stopPropagation()}
               >
-                ✕
-              </button>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-sm font-bold pr-2 text-text-primary">{dialog.title}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setDialog(null)}
+                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors bg-bg-hover text-text-tertiary hover:text-text-primary"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-xs text-text-secondary mb-3">{dialog.body}</p>
+                {dialog.input && (
+                  <input
+                    autoFocus
+                    type="number"
+                    step="any"
+                    value={dialogValue}
+                    onChange={(e) => setDialogValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const d = dialog; setDialog(null); d.onConfirm(dialogValue);
+                      } else if (e.key === 'Escape') { setDialog(null); }
+                    }}
+                    placeholder={dialog.input.placeholder}
+                    className="w-full mb-3 px-3 py-2 rounded-lg border border-border-primary bg-bg-input font-mono text-sm text-text-primary outline-none focus:border-accent/50"
+                  />
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDialog(null)}
+                    className="flex-1 py-2.5 font-bold rounded-lg text-sm active:scale-[0.98] transition-all bg-bg-hover text-text-primary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { const d = dialog; setDialog(null); d.onConfirm(dialogValue); }}
+                    className={`flex-1 py-2.5 text-white font-bold rounded-lg shadow-lg active:scale-[0.98] transition-all text-sm ${dialog.danger ? 'bg-sell shadow-sell/20' : 'bg-buy shadow-buy/20'}`}
+                  >
+                    {dialog.confirmLabel}
+                  </button>
+                </div>
+              </div>
             </div>
-            <p className="mt-2 text-xs text-text-secondary">
-              {confirm.side.toUpperCase()} {confirm.lots} {confirm.symbol} →{' '}
-              {confirm.pnl >= 0 ? 'profit ' : 'loss '}
-              <span className={confirm.pnl >= 0 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500'}>
-                {confirm.pnl >= 0 ? '+' : '-'}${Math.abs(confirm.pnl).toFixed(2)}
-              </span>
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={confirmCancel}
-                className="flex-1 rounded-lg bg-bg-hover text-text-secondary py-2 text-sm font-semibold hover:opacity-80"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmSet()}
-                className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white py-2 text-sm font-bold"
-              >
-                Set {confirm.leg.toUpperCase()}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

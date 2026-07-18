@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 from packages.common.src.config import get_settings
 from packages.common.src.redis_client import (
+    BARS_UPDATES_CHANNEL,
     CONFIG_INSTRUMENTS_RELOAD_CHANNEL,
     PriceChannel,
     redis_client,
@@ -23,7 +24,7 @@ from .corecen_lp_feed import CorecenLPFeed
 from .bar_aggregator import BarAggregator
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
-from .store import TickStore
+from .store import OHLCStore, TickStore
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("market-data")
@@ -73,6 +74,7 @@ class MarketDataService:
             )
         self.aggregator = BarAggregator()
         self.store = TickStore()
+        self.ohlc_store = OHLCStore()
         self.spread_cache = StreamSpreadCache()
         self.running = True
         self._last_mid: dict[str, float] = {}
@@ -96,6 +98,11 @@ class MarketDataService:
         signal.signal(signal.SIGTERM, lambda *_: setattr(self, "running", False))
 
         await self.store.init()
+        await self.ohlc_store.init()
+        # Every CLOSED bar the aggregator produces is persisted to the durable
+        # OHLC store (ohlc_bars) — saved history is exactly the candle that
+        # streamed live, deep and restart-proof.
+        self.aggregator.ohlc_store = self.ohlc_store
 
         await self.spread_cache.reload_if_stale(force=True)
         await self._seed_last_mid_from_redis()
@@ -253,7 +260,47 @@ class MarketDataService:
             await self.store.insert_tick(symbol, bid, ask, ts)
 
             self.aggregator.update(symbol, bid, ask, ts)
+            await self._publish_current_bars(symbol)
             self._tick_count += 1
+
+    async def _publish_current_bars(self, symbol: str) -> None:
+        """Publish the current in-progress bar for every TF of `symbol` to
+        BARS_UPDATES_CHANNEL. Called once per tick from _process_ticks, so the
+        live candle moves with every tick instead of only on the aggregation
+        loop's 1s republish. The loop stays as the quiet-symbol heartbeat."""
+        sym_bars = self.aggregator._bars.get(symbol)
+        sym_starts = self.aggregator._bar_timestamps.get(symbol)
+        if not sym_bars or not sym_starts:
+            return
+        # Snapshot the items so the aggregator can mutate the underlying
+        # dict (new bar period rollover) while we're awaiting publish.
+        # Without this, `RuntimeError: dictionary keys changed during
+        # iteration` crashes the tick processor on every bar boundary.
+        for tf_name, bar in list(sym_bars.items()):
+            bar_start = sym_starts.get(tf_name)
+            if bar_start is None:
+                continue
+            try:
+                await redis_client.publish(
+                    BARS_UPDATES_CHANNEL,
+                    json.dumps({
+                        "symbol": symbol,
+                        "timeframe": tf_name,
+                        "time": int(bar_start),
+                        "open": float(bar.open),
+                        "high": float(bar.high),
+                        "low": float(bar.low),
+                        "close": float(bar.close),
+                        "volume": float(bar.volume),
+                        "tick_count": int(bar.tick_count),
+                        "closed": False,
+                    }),
+                )
+            except Exception as exc:
+                # Pub/sub is best-effort — don't break the tick processor
+                # if Redis briefly hiccups. The aggregation loop republishes
+                # within 1s anyway.
+                logger.debug("publish current bar %s %s failed: %s", symbol, tf_name, exc)
 
     async def _infoway_fallback_watchdog(self) -> None:
         """If Infoway never delivers ticks (bad key, network, symbol mismatch), use simulator."""
