@@ -9,11 +9,9 @@ import {
   Screen,
   BuySellSplit,
   IconButton,
-  PillButton,
   showToast,
 } from '../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
-import SymbolPicker from '../trade/SymbolPicker';
 import AccountSwitcher from '../trade/AccountSwitcher';
 import { useAccount } from '../../context/AccountContext';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
@@ -33,12 +31,6 @@ const TIMEFRAMES = [
   { key: '1h',   tv: '60', label: '1h' },
   { key: '1D',   tv: 'D',  label: '1D' },
   { key: '1W',   tv: 'W',  label: '1W' },
-];
-
-const TABS = [
-  { key: 'chart',    label: 'Chart' },
-  { key: 'orders',   label: 'Orders' },
-  { key: 'info',     label: 'Info' },
 ];
 
 // Best-effort TradingView symbol mapping for the embedded widget.
@@ -67,7 +59,6 @@ export default function InstrumentDetailScreen() {
   }, [route.params?.symbol]);
   // Remember the last instrument viewed → the Trade tab defaults to it.
   useEffect(() => { if (symbol) SecureStore.setItemAsync('lastSymbol', symbol).catch(() => {}); }, [symbol]);
-  const [tab, setTab] = useState('chart');
   const [tf, setTf] = useState('1m');
   const [chartFull, setChartFull] = useState(false);   // fullscreen chart toggle
   const [chartDragging, setChartDragging] = useState(false); // freeze page scroll during an on-chart SL/TP drag
@@ -80,14 +71,12 @@ export default function InstrumentDetailScreen() {
   // Global account selection — synced with Home & Trade.
   const { accounts, selectedAccount: activeAccount, selectAccount } = useAccount();
   const [acctSheet, setAcctSheet] = useState(false);
-  const [myPositions, setMyPositions] = useState([]);
   const [authToken, setAuthToken] = useState('');
   const [side, setSide] = useState('sell');
   const [lots, setLots] = useState(0.01);
   const [submitting, setSubmitting] = useState(false);
   const [footerH, setFooterH] = useState(330);
   const [kbHeight, setKbHeight] = useState(0);
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Lift the (absolutely-positioned) footer above the keyboard when typing Lots.
   // Edge-to-edge (Expo SDK 54 default) breaks Android `adjustResize`, so the
@@ -244,20 +233,6 @@ export default function InstrumentDetailScreen() {
     }
   }, [pinned, symbol]);
 
-  // Open positions for THIS symbol on the selected account (shown in Orders tab).
-  useEffect(() => {
-    const id = activeAccount?.id || activeAccount?._id;
-    if (!id || activeAccount?.is_active === false) { setMyPositions([]); return; }
-    let cancelled = false;
-    ApiService.getPositions(id, 'open')
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        if (!cancelled) setMyPositions(list.filter((p) => String(p.symbol || '').toUpperCase() === symbol));
-      })
-      .catch(() => { if (!cancelled) setMyPositions([]); });
-    return () => { cancelled = true; };
-  }, [activeAccount, symbol]);
-
   // One-tap execution (MT5-style): tapping Sell/Buy places the market order
   // immediately for that side — no separate confirm/execute button.
   const placeOrder = useCallback(async (sideArg) => {
@@ -281,11 +256,11 @@ export default function InstrumentDetailScreen() {
     }
   }, [activeAccount, lots, side, symbol, submitting]);
 
-  // Chart fills everything between the tab row and the trade footer (the old
-  // fixed 380px left dead space once the price hero was removed). ~132px covers
-  // the header + tab row + chart margins; never below the old 380px minimum.
+  // Chart fills everything between the header and the trade footer (the old
+  // fixed 380px left dead space once the price hero + tab row were removed).
+  // ~96px covers the header + chart margins; never below the old 380px minimum.
   const { height: winH } = useWindowDimensions();
-  const chartH = Math.max(380, winH - insets.top - footerH - 132);
+  const chartH = Math.max(380, winH - insets.top - footerH - 96);
 
   const tvSym = toTradingViewSymbol(symbol);
   const interval = (TIMEFRAMES.find((x) => x.key === tf) || TIMEFRAMES[1]).tv;
@@ -319,44 +294,27 @@ export default function InstrumentDetailScreen() {
 
   return (
     <Screen edges={['top']}>
+      {/* Minimal header: back + fullscreen / watchlist / share only. The
+          instrument name / picker row is gone — the symbol was just chosen
+          from the Markets list, and the chart legend shows it anyway. The
+          Chart/Orders/Info tab row is gone too: positions live in the Trade
+          tab, so this screen is purely chart + one-tap trading. */}
       <Header
-        symbol={symbol}
         pinned={pinned}
         onBack={() => nav.goBack()}
-        onSymbolPress={() => setPickerOpen(true)}
         onPin={togglePin}
-        onAlert={() => showToast({ kind: 'info', message: 'Alerts coming soon' })}
         onShare={() => showToast({ kind: 'info', message: 'Share coming soon' })}
         onFullscreen={() => setChartFull(true)}
       />
-
-      <SymbolPicker
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(sym) => setSymbol(String(sym).toUpperCase())}
-      />
-
-      <View style={styles.tabRow}>
-        {TABS.map((t) => (
-          <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.tabCell} accessibilityRole="tab" accessibilityState={{ selected: tab === t.key }}>
-            <Text style={[styles.tabLabel, tab === t.key && { color: vantage.textPrimary, fontWeight: weights.heavy }]}>
-              {t.label}
-            </Text>
-            <View style={[styles.tabUnderline, tab === t.key && { backgroundColor: vantage.accent }]} />
-          </Pressable>
-        ))}
-      </View>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: footerH + space.lg }}
         scrollEnabled={!chartDragging}
       >
-        {tab === 'chart' ? (
-          <>
-            {/* Price hero / OHLC grid removed (2026-07-18) — the chart itself
-                shows price + OHLC in its legend; the freed space goes to the
-                chart, sized to fill everything between the tabs and footer. */}
-            <View style={[styles.chartWrap, { height: chartH }]}>
+        {/* Price hero / OHLC grid removed (2026-07-18) — the chart itself
+            shows price + OHLC in its legend; the chart is sized to fill
+            everything between the header and the trade footer. */}
+        <View style={[styles.chartWrap, { height: chartH }]}>
               <WebView
                 source={chartSource}
                 style={styles.chart}
@@ -420,46 +378,6 @@ export default function InstrumentDetailScreen() {
                 </Pressable>
               </View>
             </Modal>
-          </>
-        ) : tab === 'orders' ? (
-          <View style={{ padding: space.lg }}>
-            {myPositions.length > 0 ? (
-              <>
-                <Text style={styles.ordTitle}>Your {symbol} positions</Text>
-                {myPositions.map((p) => {
-                  const pside = String(p.side || '').toLowerCase();
-                  const pl = p.profit ?? p.profit_loss ?? p.pnl ?? null;
-                  const plPos = pl == null ? true : Number(pl) >= 0;
-                  return (
-                    <View key={p.id || p._id} style={styles.ordRow}>
-                      <Text style={[styles.ordSide, { color: pside === 'buy' ? vantage.up : vantage.down }]}>
-                        {pside.toUpperCase()} {p.volume ?? p.lots ?? '—'} @ {Number(p.open_price ?? 0).toFixed(5)}
-                      </Text>
-                      <Text style={[styles.ordPl, { color: plPos ? vantage.up : vantage.down }]}>
-                        {pl != null ? `${plPos ? '+' : ''}${Number(pl).toFixed(2)}` : '—'}
-                      </Text>
-                    </View>
-                  );
-                })}
-                <PillButton label="Manage in Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol, tradeView: 'cfds' } })} style={{ marginTop: space.md }} />
-              </>
-            ) : (
-              <>
-                <Text style={styles.empty}>No open {symbol} positions on this account.</Text>
-                <PillButton label="Go to Trade" variant="primary" size="md" onPress={() => nav.navigate('TradeTab', { screen: 'Trade', params: { symbol, tradeView: 'cfds' } })} style={{ marginTop: space.md }} />
-              </>
-            )}
-          </View>
-        ) : (
-          <View style={{ padding: space.lg }}>
-            <InfoRow label="Symbol" value={symbol} />
-            <InfoRow label="Name" value={instrument?.display_name || instrument?.name || '—'} />
-            <InfoRow label="Segment" value={instrument?.segment || instrument?.category || '—'} />
-            <InfoRow label="Bid" value={bid != null ? bid.toFixed(5) : '—'} />
-            <InfoRow label="Ask" value={ask != null ? ask.toFixed(5) : '—'} />
-            <InfoRow label="Spread (pts)" value={spread != null ? String(spread) : '—'} last />
-          </View>
-        )}
       </ScrollView>
 
       <View
@@ -538,20 +456,10 @@ function LotsField({ value, onChange }) {
   );
 }
 
-function Header({ symbol, pinned, onBack, onSymbolPress, onPin, onAlert, onShare, onFullscreen }) {
+function Header({ pinned, onBack, onPin, onShare, onFullscreen }) {
   return (
     <View style={styles.header}>
       <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={onBack} />
-      <Pressable
-        style={styles.symbolWrap}
-        onPress={onSymbolPress}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel="Change symbol"
-      >
-        <Text style={styles.symbolTxt}>{symbol}</Text>
-        <Ionicons name="chevron-down" size={16} color={vantage.textPrimary} />
-      </Pressable>
       <View style={{ flex: 1 }} />
       <Pressable onPress={onFullscreen} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fullscreen chart" style={styles.hdrIcon}>
         <Ionicons name="expand-outline" size={21} color={vantage.textPrimary} />
