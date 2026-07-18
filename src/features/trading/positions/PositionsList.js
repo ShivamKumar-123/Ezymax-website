@@ -7,8 +7,13 @@ import { vantage, space, sizes, weights, fontFamily, radius } from '../../../the
 import ApiService from '../../../services/api/ApiService';
 import { isSoftTradeError, handleTradeError } from '../../../utils/tradeErrors';
 
+const HISTORY_PAGE = 20;
+
 export default function PositionsList({ positions = [], orders = [], history = [], account, accountSummary, onChange }) {
   const [view, setView] = useState('positions');
+  // History pagination — render a page at a time instead of every closed trade.
+  const [historyShown, setHistoryShown] = useState(HISTORY_PAGE);
+  useEffect(() => { if (view !== 'history') setHistoryShown(HISTORY_PAGE); }, [view]);
   const [slTpTarget, setSlTpTarget] = useState(null);
   // Themed close-confirm flows. We track the position *id* (not the object) so
   // the open sheet always re-reads the latest `positions` prop → live P&L.
@@ -137,9 +142,26 @@ export default function PositionsList({ positions = [], orders = [], history = [
       ) : (
         history.length === 0 ? (
           <Text style={styles.empty}>No trade history.</Text>
-        ) : history.map((h, i) => (
-          <HistoryRow key={h.id || h._id || i} trade={h} />
-        ))
+        ) : (
+          <>
+            {history.slice(0, historyShown).map((h, i) => (
+              <HistoryRow key={h.id || h._id || i} trade={h} />
+            ))}
+            {history.length > historyShown ? (
+              <Pressable
+                onPress={() => setHistoryShown((n) => n + HISTORY_PAGE)}
+                style={styles.showMoreBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Show more trade history"
+              >
+                <Text style={styles.showMoreTxt}>
+                  Show more ({history.length - historyShown} remaining)
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+              </Pressable>
+            ) : null}
+          </>
+        )
       )}
 
       <SlTpSheet
@@ -740,6 +762,12 @@ const styles = StyleSheet.create({
   },
   closeAllTxt: { color: vantage.down, fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, textAlign: 'center', padding: space.lg },
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: space.md, marginTop: space.xs,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   card: { marginBottom: space.sm },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   sym: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold },

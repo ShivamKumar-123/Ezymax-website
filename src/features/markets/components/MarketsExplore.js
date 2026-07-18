@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +11,7 @@ import {
   MoversBars,
   InstrumentRow,
 } from '../../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { topRisers, topFallers, bySegment, MARQUEE_SPOTLIGHT } from '../../../utils/marketMovers';
 
 const SEGMENT_OPTIONS = [
@@ -57,9 +57,17 @@ export default function MarketsExplore({
   }, [pricesBySymbol, moversDirection]);
 
   const essentials = useMemo(() => {
-    // Show every instrument in the segment (same set the website shows) — no cap.
+    // Full instrument set for the segment (same set the website shows).
     return bySegment(instruments, segment);
   }, [instruments, segment]);
+
+  // Paginate the list — render PAGE rows and grow on demand, so switching
+  // segments never dumps 100+ rows into the scroll view at once.
+  const ESSENTIALS_PAGE = 15;
+  const [essentialsShown, setEssentialsShown] = useState(ESSENTIALS_PAGE);
+  useEffect(() => { setEssentialsShown(ESSENTIALS_PAGE); }, [segment]);
+  const essentialsVisible = essentials.slice(0, essentialsShown);
+  const essentialsRemaining = essentials.length - essentialsVisible.length;
 
   return (
     <View>
@@ -98,7 +106,7 @@ export default function MarketsExplore({
         </View>
         {essentials.length === 0 ? (
           <Text style={styles.empty}>No instruments in this segment.</Text>
-        ) : essentials.map((i) => {
+        ) : essentialsVisible.map((i) => {
           const sym = String(i.symbol || '').toUpperCase();
           const p = pricesBySymbol[sym] || {};
           return (
@@ -115,6 +123,17 @@ export default function MarketsExplore({
             />
           );
         })}
+        {essentialsRemaining > 0 ? (
+          <Pressable
+            onPress={() => setEssentialsShown((n) => n + ESSENTIALS_PAGE)}
+            style={styles.showMoreBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`Show ${Math.min(ESSENTIALS_PAGE, essentialsRemaining)} more instruments`}
+          >
+            <Text style={styles.showMoreTxt}>Show more ({essentialsRemaining} remaining)</Text>
+            <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -127,4 +146,10 @@ const styles = StyleSheet.create({
   sectionTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
   sectionAction: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, padding: space.md, textAlign: 'center' },
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: space.md, marginTop: space.xs,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
 });

@@ -17,10 +17,15 @@ const FILTER_OPTIONS = [
   { value: 'transfer',    label: 'Transfers' },
 ];
 
+const TX_PAGE = 50;
+
 export default function TransactionHistoryScreen() {
   const nav = useNavigation();
   const [filter, setFilter] = useState('all');
   const [allItems, setAllItems] = useState([]);
+  // Paged rendering of the (potentially 1000-row) ledger.
+  const [shown, setShown] = useState(TX_PAGE);
+  useEffect(() => { setShown(TX_PAGE); }, [filter]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -83,11 +88,18 @@ export default function TransactionHistoryScreen() {
       </View>
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
       <FlatList
-        data={items}
+        data={items.slice(0, shown)}
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}
         keyExtractor={(item, idx) => String(item.id || item._id || idx)}
         renderItem={({ item }) => <Row tx={item} />}
         ListEmptyComponent={loading ? null : <Text style={styles.empty}>No transactions.</Text>}
+        // Paged infinite scroll: render TX_PAGE rows and append the next page
+        // as the user nears the end — the ledger can be 1000+ rows.
+        onEndReachedThreshold={0.4}
+        onEndReached={() => setShown((n) => (n < items.length ? n + TX_PAGE : n))}
+        ListFooterComponent={items.length > shown ? (
+          <Text style={styles.pagingFooter}>Showing {shown} of {items.length} — scroll for more</Text>
+        ) : null}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
       />
     </Screen>
@@ -156,6 +168,7 @@ function Row({ tx }) {
 }
 
 const styles = StyleSheet.create({
+  pagingFooter: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, textAlign: 'center', paddingVertical: space.md },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
   title: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, textAlign: 'center' },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.huge, textAlign: 'center' },
