@@ -1,6 +1,6 @@
 """Load admin spread settings and widen mid prices for Redis/WebSocket quotes.
 
-Spread applied to each streamed tick is the product of three layers:
+Spread applied to each streamed tick is the product of these layers:
 
   1. **Base** — admin ``spread_configs`` / ``instrument_configs`` (resolved
      by ``resolve_spread_config``). If admin has configured nothing for an
@@ -10,18 +10,24 @@ Spread applied to each streamed tick is the product of three layers:
   2. **Time-rule** — an active ``pricing_time_rules`` window (preset market
      session or custom UTC day/hour range) either multiplies the base or
      replaces it with an absolute value.
-  3. **Live volatility** — when ``dynamic_spread_enabled`` is on, the spread
-     widens with recent price movement (fast market ⇒ wider), capped at
-     ``dynamic_spread_max_mult``.
-
-Layers 2 and 3 are exactly the admin's "set it, then let it fluctuate with
-the market" requirement.
+  3a. **Floating spread** (``floating_spread_enabled``) — Vantage-style: the
+     provider's real live spread (EMA-smoothed) × (1 + admin markup %) is
+     the published spread, **floored at the admin base** (layers 1+2) and
+     **capped at base × floating_spread_max_mult**. Tight market ⇒ tight
+     spread; news spike ⇒ wide, automatically. Only applies when the admin
+     configured a base > 0 (the base IS the floor) and the feed delivers a
+     real bid/ask width (Infoway depth, Corecen LP).
+  3b. **Live volatility fallback** (``dynamic_spread_enabled``) — when the
+     floating layer can't run (disabled / no raw spread from the feed), the
+     spread widens with recent price movement, capped at
+     ``dynamic_spread_max_mult``. Never stacks on top of 3a.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from collections import deque
 from datetime import datetime, timezone
@@ -58,9 +64,15 @@ class StreamSpreadCache:
         self._rules: list[dict] = []
         self._default_spread: Tuple[Decimal, str] = (Decimal("0"), "pips")
         # Dynamic-spread tunables (system_settings); refreshed on reload.
-        self._dyn = {"enabled": False, "max_mult": 3.0, "sensitivity": 1.0, "window_sec": 60.0}
+        self._dyn = {
+            "enabled": False, "max_mult": 3.0, "sensitivity": 1.0, "window_sec": 60.0,
+            "floating_enabled": False, "floating_markup_pct": 15.0,
+            "floating_max_mult": 4.0, "floating_ema_sec": 5.0,
+        }
         # symbol -> deque[(monotonic_ts, mid)] within the volatility window
         self._hist: Dict[str, Deque[Tuple[float, float]]] = {}
+        # symbol -> (monotonic_ts, ema_of_raw_spread) for the floating layer
+        self._raw_ema: Dict[str, Tuple[float, float]] = {}
         self._lock = asyncio.Lock()
         self._last_reload = 0.0
 
@@ -150,12 +162,18 @@ class StreamSpreadCache:
         return out
 
     async def _load_dynamic_settings(self, db) -> dict:
-        dyn = {"enabled": False, "max_mult": 3.0, "sensitivity": 1.0, "window_sec": 60.0}
+        dyn = {
+            "enabled": False, "max_mult": 3.0, "sensitivity": 1.0, "window_sec": 60.0,
+            "floating_enabled": False, "floating_markup_pct": 15.0,
+            "floating_max_mult": 4.0, "floating_ema_sec": 5.0,
+        }
         try:
             rows = (await db.execute(text(
                 "SELECT key, value FROM system_settings WHERE key IN "
                 "('dynamic_spread_enabled','dynamic_spread_max_mult',"
-                "'dynamic_spread_sensitivity','dynamic_spread_window_sec')"
+                "'dynamic_spread_sensitivity','dynamic_spread_window_sec',"
+                "'floating_spread_enabled','floating_spread_markup_pct',"
+                "'floating_spread_max_mult','floating_spread_ema_sec')"
             ))).all()
             for key, value in rows:
                 raw = value if not isinstance(value, str) else value.strip('"')
@@ -167,6 +185,14 @@ class StreamSpreadCache:
                     dyn["sensitivity"] = max(0.0, float(raw))
                 elif key == "dynamic_spread_window_sec":
                     dyn["window_sec"] = max(5.0, float(raw))
+                elif key == "floating_spread_enabled":
+                    dyn["floating_enabled"] = str(raw).lower() in ("true", "1", "yes")
+                elif key == "floating_spread_markup_pct":
+                    dyn["floating_markup_pct"] = max(0.0, min(100.0, float(raw)))
+                elif key == "floating_spread_max_mult":
+                    dyn["floating_max_mult"] = max(1.0, min(_VOL_MULT_HARD_CAP, float(raw)))
+                elif key == "floating_spread_ema_sec":
+                    dyn["floating_ema_sec"] = max(1.0, min(60.0, float(raw)))
         except Exception:
             pass
         return dyn
@@ -195,9 +221,49 @@ class StreamSpreadCache:
         mult = 1.0 + self._dyn["sensitivity"] * ratio
         return max(1.0, min(self._dyn["max_mult"], mult))
 
-    def widen(self, symbol: str, mid: float) -> Tuple[float, float]:
-        """Return bid/ask around mid using admin spread + active time-rule +
-        live volatility; pass-through if unknown symbol."""
+    def _floating_adj(
+        self, symbol: str, mid: float, raw_spread: Optional[float], base_adj: float,
+    ) -> Optional[float]:
+        """Floating-spread layer: published spread (in price units) derived
+        from the provider's live market spread, EMA-smoothed so quotes move
+        professionally instead of jumping tick to tick.
+
+            target = EMA(raw_spread) × (1 + markup%)
+            result = clamp(target, floor=base_adj, cap=base_adj × max_mult)
+
+        Returns None when the layer shouldn't apply: feature off, no raw
+        spread from the feed, or no admin base configured (base_adj is the
+        floor — floating never runs on an unconfigured instrument).
+        """
+        if not self._dyn["floating_enabled"] or base_adj <= 0:
+            return None
+        if raw_spread is None or raw_spread <= 0 or mid <= 0:
+            return None
+        # Glitch guard: a "spread" wider than 5% of price is a feed artifact,
+        # not a market condition — ignore it rather than poison the EMA.
+        if raw_spread > mid * 0.05:
+            return None
+
+        now = time.monotonic()
+        tau = self._dyn["floating_ema_sec"]
+        prev = self._raw_ema.get(symbol)
+        if prev is None or (now - prev[0]) > 300.0:
+            ema = float(raw_spread)  # cold start / stale — seed from current
+        else:
+            dt = max(1e-3, now - prev[0])
+            alpha = 1.0 - math.exp(-dt / max(0.5, tau))
+            ema = prev[1] + alpha * (float(raw_spread) - prev[1])
+        self._raw_ema[symbol] = (now, ema)
+
+        target = ema * (1.0 + self._dyn["floating_markup_pct"] / 100.0)
+        return min(max(target, base_adj), base_adj * self._dyn["floating_max_mult"])
+
+    def widen(
+        self, symbol: str, mid: float, raw_spread: Optional[float] = None,
+    ) -> Tuple[float, float]:
+        """Return bid/ask around mid using admin spread + active time-rule,
+        then either the floating layer (live market spread × markup) or the
+        volatility fallback; pass-through if unknown symbol."""
         from .feed_handler import INSTRUMENTS
 
         key = (symbol or "").strip().upper()
@@ -223,15 +289,24 @@ class StreamSpreadCache:
             if rule is not None:
                 sv, st = apply_spread_rule(rule, sv, st)
 
-        # ── Layer 3: live volatility widening ──
         # base adjustment in price units (matches symmetric_quote_from_mid)
         if (st or "pips").lower() == "percentage":
             base_adj = float(mid) * (float(sv) / 100.0)
         else:
             base_adj = float(sv) * float(pip)
-        vmult = self._volatility_mult(key, float(mid), base_adj)
-        if vmult > 1.0:
-            sv = sv * Decimal(str(vmult))
+
+        # ── Layer 3a: floating spread (live market width × markup) ──
+        fadj = self._floating_adj(key, float(mid), raw_spread, base_adj)
+        if fadj is not None:
+            # Express the floating adjustment in pips so quantization in
+            # symmetric_quote_from_mid behaves identically to the base path.
+            sv = Decimal(str(fadj)) / (pip if pip > 0 else Decimal("0.0001"))
+            st = "pips"
+        else:
+            # ── Layer 3b: volatility fallback (never stacks on 3a) ──
+            vmult = self._volatility_mult(key, float(mid), base_adj)
+            if vmult > 1.0:
+                sv = sv * Decimal(str(vmult))
 
         b, a = symmetric_quote_from_mid(
             Decimal(str(mid)), sv, st, pip, digits, Decimal("0"),

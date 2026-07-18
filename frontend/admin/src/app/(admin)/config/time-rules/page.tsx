@@ -46,6 +46,10 @@ interface Dyn {
   dynamic_spread_max_mult: number;
   dynamic_spread_sensitivity: number;
   dynamic_spread_window_sec: number;
+  floating_spread_enabled: boolean;
+  floating_spread_markup_pct: number;
+  floating_spread_max_mult: number;
+  floating_spread_ema_sec: number;
 }
 interface Instr { id: string; symbol: string }
 
@@ -217,6 +221,40 @@ export default function TimeRulesPage() {
         ) : <div className="text-xs text-text-tertiary"><Loader2 className="inline animate-spin mr-1" size={13} />Loading…</div>}
         <p className="text-[11px] text-text-tertiary mt-3">
           When enabled, the base spread (below / from Spreads config) widens as the market moves — capped at the multiplier above.
+          Acts as the fallback when Floating Spread is off or the feed has no live market width.
+        </p>
+      </div>
+
+      {/* Floating spread settings */}
+      <div className="bg-bg-secondary border border-border-primary rounded-md p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+            <Activity size={15} className="text-accent" /> Floating Spread (live market width)
+          </span>
+          {dyn && (
+            <button
+              onClick={() => void saveDyn({ floating_spread_enabled: !dyn.floating_spread_enabled })}
+              className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-fast',
+                dyn.floating_spread_enabled ? 'bg-buy/15 text-buy' : 'bg-bg-hover text-text-tertiary')}
+            >
+              <Power size={13} /> {dyn.floating_spread_enabled ? 'Enabled' : 'Disabled'}
+            </button>
+          )}
+        </div>
+        {dyn ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <NumField label="Markup (%)" value={dyn.floating_spread_markup_pct} step={1} min={0} max={100}
+              onCommit={(v) => void saveDyn({ floating_spread_markup_pct: v })} hint="added on top of live market spread" />
+            <NumField label="Max multiplier (cap)" value={dyn.floating_spread_max_mult} step={0.1} min={1} max={10}
+              onCommit={(v) => void saveDyn({ floating_spread_max_mult: v })} hint="ceiling = base spread × this" />
+            <NumField label="Smoothing (sec)" value={dyn.floating_spread_ema_sec} step={1} min={1} max={60}
+              onCommit={(v) => void saveDyn({ floating_spread_ema_sec: Math.round(v) })} hint="EMA — higher = calmer quotes" />
+          </div>
+        ) : <div className="text-xs text-text-tertiary"><Loader2 className="inline animate-spin mr-1" size={13} />Loading…</div>}
+        <p className="text-[11px] text-text-tertiary mt-3">
+          Vantage-style variable spread: the published spread follows the real market spread from the price feed
+          (smoothed), plus your markup. The base spread from Spreads config is the <b>floor</b>; base × cap is the ceiling.
+          Only applies to instruments that have a base spread configured and a feed that delivers live bid/ask depth.
         </p>
       </div>
 
