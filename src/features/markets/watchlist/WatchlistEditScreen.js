@@ -38,7 +38,7 @@ export default function WatchlistEditScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  const visible = useMemo(() => {
+  const matching = useMemo(() => {
     let list = filter === 'all' ? instruments : bySegment(instruments, filter);
     const q = query.trim().toUpperCase();
     if (q) {
@@ -48,8 +48,15 @@ export default function WatchlistEditScreen() {
         return sym.includes(q) || name.includes(q);
       });
     }
-    return list.slice(0, 200);
+    return list;
   }, [instruments, filter, query]);
+
+  // Paged infinite scroll — window the list and grow near the end instead of
+  // rendering every instrument at once. Resets on search/filter change.
+  const EDIT_PAGE = 30;
+  const [shown, setShown] = useState(EDIT_PAGE);
+  useEffect(() => { setShown(EDIT_PAGE); }, [filter, query]);
+  const visible = matching.slice(0, shown);
 
   const toggleSymbol = useCallback((sym) => {
     const upper = String(sym).toUpperCase();
@@ -104,6 +111,11 @@ export default function WatchlistEditScreen() {
         data={visible}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.lg }}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => setShown((n) => (n < matching.length ? n + EDIT_PAGE : n))}
+        ListFooterComponent={matching.length > shown ? (
+          <Text style={styles.pagingFooter}>Showing {shown} of {matching.length} — scroll for more</Text>
+        ) : null}
         keyExtractor={(item) => String(item.symbol || item.id)}
         renderItem={({ item }) => {
           const sym = String(item.symbol || '').toUpperCase();
@@ -138,6 +150,7 @@ export default function WatchlistEditScreen() {
 }
 
 const styles = StyleSheet.create({
+  pagingFooter: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, textAlign: 'center', paddingVertical: space.md },
   headerRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.sm,

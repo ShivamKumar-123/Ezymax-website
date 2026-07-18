@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { InstrumentRow, CategoryTabs, GradientActionButton } from '../../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { bySegment } from '../../../utils/marketMovers';
+
+const WATCHLIST_PAGE = 15;
 
 const FILTER_OPTIONS = [
   { value: 'all',     label: 'All' },
@@ -26,13 +28,20 @@ export default function MarketsWatchlist({
   const nav = useNavigation();
   const [filter, setFilter] = useState('all');
 
-  const visible = useMemo(() => {
+  const matching = useMemo(() => {
     if (filter === 'all') return pinnedSymbols;
     const allowed = new Set(
       bySegment(instruments, filter).map((i) => String(i.symbol || '').toUpperCase())
     );
     return pinnedSymbols.filter((s) => allowed.has(String(s).toUpperCase()));
   }, [filter, pinnedSymbols, instruments]);
+
+  // Paginate — a page of rows plus "Show more", so a big watchlist doesn't
+  // become one endless scroll. Resets when the category filter changes.
+  const [shown, setShown] = useState(WATCHLIST_PAGE);
+  useEffect(() => { setShown(WATCHLIST_PAGE); }, [filter]);
+  const visible = matching.slice(0, shown);
+  const remaining = matching.length - visible.length;
 
   return (
     <View>
@@ -73,6 +82,17 @@ export default function MarketsWatchlist({
           );
         })
       )}
+      {remaining > 0 ? (
+        <Pressable
+          onPress={() => setShown((n) => n + WATCHLIST_PAGE)}
+          style={styles.showMoreBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Show ${Math.min(WATCHLIST_PAGE, remaining)} more pinned instruments`}
+        >
+          <Text style={styles.showMoreTxt}>Show more ({remaining} remaining)</Text>
+          <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+        </Pressable>
+      ) : null}
 
       <GradientActionButton
         label="Add Symbol"
@@ -90,6 +110,12 @@ const styles = StyleSheet.create({
   emptyTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold },
   emptySub: { color: vantage.textMuted, fontFamily, fontSize: sizes.body },
   emptyInline: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.lg, textAlign: 'center' },
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: space.lg, marginTop: space.sm, paddingVertical: space.md,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   addSymbol: {
     marginHorizontal: space.lg, marginTop: space.lg,
   },
