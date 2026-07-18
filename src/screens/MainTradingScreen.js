@@ -5614,13 +5614,9 @@ const ChartTab = ({ route }) => {
       }
     }
   }, [route?.params?.symbol]);
-  const [showOrderPanel, setShowOrderPanel] = useState(false);
-  const [orderSide, setOrderSide] = useState('BUY');
   const [volume, setVolume] = useState(0.01);
   const [volumeText, setVolumeText] = useState('0.01');
   const [isExecuting, setIsExecuting] = useState(false);
-  const [stopLoss, setStopLoss] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
   const [showChartSlModal, setShowChartSlModal] = useState(false);
   const [chartSlValue, setChartSlValue] = useState('');
   const [pendingChartTradeSide, setPendingChartTradeSide] = useState(null);
@@ -5690,16 +5686,6 @@ const ChartTab = ({ route }) => {
   const isForex = currentInstrument?.category === 'Forex';
   const decimals = isForex ? 5 : 2;
 
-  // Use the exact same symbol map as the website (../lib/tradingViewSymbols) so
-  // the app charts the identical TradingView feed per symbol and every backend
-  // instrument resolves the same way it does on the web terminal.
-  const getSymbolForTradingView = (symbol) => toTradingViewSymbol(symbol);
-
-  const openOrderPanel = (side) => {
-    setOrderSide(side);
-    setShowOrderPanel(true);
-  };
-
   // One-click trade execution - Fast execution (same endpoint as Quotes tab: /orders/)
   const executeOneClickTrade = async (side, slPrice = null) => {
     if (isExecuting) return;
@@ -5754,74 +5740,6 @@ const ChartTab = ({ route }) => {
       const data = await res.json().catch(() => ({}));
       if (res.ok && data) {
         toast?.showToast(`${side} ${volume} ${activeSymbol} @ ${price.toFixed(decimals)}`, 'success');
-        ctx.fetchOpenTrades();
-        ctx.fetchPendingOrders?.();
-        ctx.fetchAccountSummary();
-      } else {
-        toast?.showToast(data.detail || data.message || 'Failed to place order', 'error');
-      }
-    } catch (e) {
-      toast?.showToast('Network error', 'error');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
-  const executeTrade = async () => {
-    const hasValidAccount = ctx.isChallengeMode ? ctx.selectedChallengeAccount : ctx.selectedAccount;
-    if (!ctx.user) {
-      toast?.showToast('Please login first', 'error');
-      return;
-    }
-    if (!hasValidAccount) {
-      toast?.showToast('Please select a trading account first', 'error');
-      return;
-    }
-    if (!currentPrice.bid || !currentPrice.ask || currentPrice.bid <= 0 || currentPrice.ask <= 0) {
-      toast?.showToast('Market is closed or no price data available', 'error');
-      return;
-    }
-
-    // Client-side validation for challenge account SL mandatory rule
-    if (ctx.isChallengeMode && ctx.selectedChallengeAccount) {
-      const rules = ctx.selectedChallengeAccount.challengeId?.rules;
-      if (rules?.stopLossMandatory && !stopLoss) {
-        Alert.alert('Stop Loss Required', 'Stop Loss is mandatory for this challenge. Please set SL before trading.');
-        return;
-      }
-    }
-    
-    setIsExecuting(true);
-    try {
-      // Use challenge account ID if in challenge mode
-      const tradingAccountId = ctx.isChallengeMode && ctx.selectedChallengeAccount 
-        ? (ctx.selectedChallengeAccount.id || ctx.selectedChallengeAccount._id)
-        : (ctx.selectedAccount?.id || ctx.selectedAccount?._id);
-      
-      const orderData = {
-        account_id: tradingAccountId,
-        symbol: activeSymbol,
-        side: orderSide.toLowerCase(),
-        order_type: 'market',
-        lots: parseFloat(volume) || 0.01,
-      };
-      
-      // Add SL/TP if set (TrustEdge uses stop_loss/take_profit)
-      if (stopLoss) orderData.stop_loss = parseFloat(stopLoss);
-      if (takeProfit) orderData.take_profit = parseFloat(takeProfit);
-      
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/orders/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(orderData)
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data) {
-        toast?.showToast(`${orderSide} order placed!`, 'success');
-        setShowOrderPanel(false);
-        setStopLoss('');
-        setTakeProfit('');
         ctx.fetchOpenTrades();
         ctx.fetchPendingOrders?.();
         ctx.fetchAccountSummary();
@@ -5927,12 +5845,6 @@ const ChartTab = ({ route }) => {
     } catch (e) {}
   }, [ctx]);
 
-  const [showNewsTab, setShowNewsTab] = useState(false);
-
-  const tvSymbol = getSymbolForTradingView(activeSymbol);
-  const encodedSymbol = encodeURIComponent(tvSymbol);
-  const newsUrl = `https://www.tradingview.com/embed-widget/timeline/?locale=en&feedMode=symbol&symbol=${encodedSymbol}&colorTheme=${chartTheme}&isTransparent=true&displayMode=regular&width=100%25&height=100%25`;
-
   return (
     <View style={[styles.chartContainer, { backgroundColor: colors.bgPrimary }]}>
       {/* Status-bar spacer — keeps network/battery icons cleanly visible on a
@@ -5940,9 +5852,39 @@ const ChartTab = ({ route }) => {
           never overlaps the system status bar. */}
       <View style={{ height: insets.top, backgroundColor: colors.bgPrimary }} />
 
-      {/* Quick Trade Bar at TOP - SELL | lot | BUY (toggle in More → "Chart Quick Trade") */}
+      {/* Full-bleed chart — the shared web /chart page: same Advanced Charts +
+          on-chart SL/TP execution-line features as the web terminal. Remounts
+          only when auth/account changes; symbol switches (from the Markets tab)
+          are pushed via postMessage so the library never reloads. */}
+      <View style={[styles.chartWrapper, { zIndex: 0 }]}>
+        <WebView
+          ref={chartWebViewRef}
+          key={`chart-${accountForChart?.id || 'noacct'}-${chartJwt ? 'auth' : 'guest'}`}
+          source={chartSource}
+          onMessage={handleChartMessage}
+          style={{ flex: 1, backgroundColor: chartBg }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          scrollEnabled={false}
+          originWhitelist={['*']}
+          mixedContentMode="always"
+          allowsInlineMediaPlayback={true}
+          androidLayerType="hardware"
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: chartBg }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}>Loading chart…</Text>
+            </View>
+          )}
+        />
+      </View>
+
+      {/* Quick Trade Bar at BOTTOM — SELL | lots | BUY (toggle in More →
+          "Chart Quick Trade"). Kept below the chart so the chart gets the
+          full remaining height. */}
       {showChartQuickTrade && (
-      <View style={[styles.quickTradeBarTop, { paddingTop: 0, backgroundColor: colors.bgCard, borderBottomColor: colors.border, zIndex: 10, elevation: Platform.OS === 'android' ? 8 : 0 }]}>
+      <View style={[styles.quickTradeBarBottom, { backgroundColor: colors.bgCard, borderTopColor: colors.border, zIndex: 10, elevation: Platform.OS === 'android' ? 8 : 0 }]}>
         {/* SELL Button with Price */}
         <TouchableOpacity
           style={[styles.sellPriceBtn, isExecuting && styles.btnDisabled]}
@@ -5999,210 +5941,6 @@ const ChartTab = ({ route }) => {
         </TouchableOpacity>
       </View>
       )}
-
-      {/* Chart Tabs + NEWS tab — sits cleanly below the status-bar spacer. */}
-      <View style={[styles.chartTabsBar, { paddingTop: 4, backgroundColor: colors.bgSecondary, borderBottomColor: colors.border }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartTabsScroll}>
-          {chartTabs.map(tab => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.chartTab, { backgroundColor: !showNewsTab && activeTabId === tab.id ? (isDark ? '#333' : '#e2e8f0') : colors.bgCard, borderColor: !showNewsTab && activeTabId === tab.id ? colors.border : 'transparent', borderWidth: 1 }]}
-              onPress={() => { setActiveTabId(tab.id); setShowNewsTab(false); }}
-              onLongPress={() => removeChartTab(tab.id)}
-            >
-              <Text style={[styles.chartTabText, { color: !showNewsTab && activeTabId === tab.id ? colors.textPrimary : colors.textMuted, fontWeight: !showNewsTab && activeTabId === tab.id ? '700' : '500' }]}>
-                {tab.symbol}
-              </Text>
-              {chartTabs.length > 1 && (
-                <TouchableOpacity onPress={() => removeChartTab(tab.id)} style={{ marginLeft: 4 }}>
-                  <Ionicons name="close" size={14} color={colors.textMuted} />
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <TouchableOpacity
-          style={styles.addChartBtn}
-          onPress={() => {
-            resetChartSymbolPicker();
-            setShowSymbolPicker(true);
-          }}
-        >
-          <Ionicons name="add" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-        {/* NEWS tab */}
-        <TouchableOpacity
-          style={{
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            backgroundColor: showNewsTab ? (isDark ? '#333' : '#e2e8f0') : colors.bgCard,
-            borderRadius: 6,
-            marginRight: 8,
-            borderWidth: 1,
-            borderColor: showNewsTab ? colors.border : 'transparent',
-          }}
-          onPress={() => setShowNewsTab(!showNewsTab)}
-        >
-          <Text style={{ color: showNewsTab ? colors.textPrimary : colors.textMuted, fontSize: 13, fontWeight: showNewsTab ? '700' : '500' }}>NEWS</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Chart or News Content */}
-      {showNewsTab ? (
-        <View style={{ flex: 1, backgroundColor: chartBg }}>
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border,
-          }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600' }}>LIVE NEWS</Text>
-              <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: '700' }}>{activeSymbol}</Text>
-            </View>
-            <Text style={{ color: colors.textMuted, fontSize: 11 }}>TradingView</Text>
-          </View>
-          <WebView
-            key={`news-${activeSymbol}-${isDark}`}
-            source={{ uri: newsUrl }}
-            style={{ flex: 1, backgroundColor: chartBg }}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            scrollEnabled={true}
-            originWhitelist={['*']}
-            mixedContentMode="always"
-            startInLoadingState={true}
-            renderLoading={() => (
-              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: chartBg }}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}>Loading news...</Text>
-              </View>
-            )}
-          />
-        </View>
-      ) : (
-        <View style={[styles.chartWrapper, { zIndex: 0 }]}>
-          {/* Shared web /chart page — same Advanced Charts + on-chart SL/TP
-              execution-line features as the web terminal. Remounts only when
-              auth/account changes; symbol switches are pushed via postMessage. */}
-          <WebView
-            ref={chartWebViewRef}
-            key={`chart-${accountForChart?.id || 'noacct'}-${chartJwt ? 'auth' : 'guest'}`}
-            source={chartSource}
-            onMessage={handleChartMessage}
-            style={{ flex: 1, backgroundColor: chartBg }}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            scrollEnabled={false}
-            originWhitelist={['*']}
-            mixedContentMode="always"
-            allowsInlineMediaPlayback={true}
-            androidLayerType="hardware"
-            startInLoadingState={true}
-            renderLoading={() => (
-              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: chartBg }}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}>Loading chart…</Text>
-              </View>
-            )}
-          />
-        </View>
-      )}
-
-      {/* Order Panel Slide Up */}
-      <Modal visible={showOrderPanel} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.orderSlidePanel}>
-            <View style={styles.orderPanelHandle} />
-            <View style={styles.orderPanelHeader}>
-              <Text style={styles.orderPanelTitle}>{activeSymbol}</Text>
-              <TouchableOpacity onPress={() => setShowOrderPanel(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Side Toggle */}
-            <View style={styles.sideToggle}>
-              <TouchableOpacity 
-                style={[styles.sideBtn, orderSide === 'SELL' && styles.sideBtnSell]}
-                onPress={() => setOrderSide('SELL')}
-              >
-                <Text style={styles.sideBtnText}>SELL</Text>
-                <Text style={styles.sideBtnPrice}>{currentPrice?.bid?.toFixed(decimals) || '-'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.sideBtn, orderSide === 'BUY' && styles.sideBtnBuy]}
-                onPress={() => setOrderSide('BUY')}
-              >
-                <Text style={styles.sideBtnText}>BUY</Text>
-                <Text style={styles.sideBtnPrice}>{currentPrice?.ask?.toFixed(decimals) || '-'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Volume */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Volume (Lots)</Text>
-              <View style={styles.volumeInput}>
-                <TouchableOpacity style={styles.volumeBtn} onPress={() => setVolume(Math.max(0.01, volume - 0.01))}>
-                  <Ionicons name="remove" size={20} color="#fff" />
-                </TouchableOpacity>
-                <Text style={styles.volumeValue}>{volume.toFixed(2)}</Text>
-                <TouchableOpacity style={styles.volumeBtn} onPress={() => setVolume(volume + 0.01)}>
-                  <Ionicons name="add" size={20} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* SL/TP for Challenge Accounts */}
-            {ctx.isChallengeMode && ctx.selectedChallengeAccount && (
-              <View style={styles.slTpRow}>
-                <View style={styles.slTpInputGroup}>
-                  <Text style={[styles.inputLabel, ctx.selectedChallengeAccount.challengeId?.rules?.stopLossMandatory && { color: '#f59e0b' }]}>
-                    Stop Loss {ctx.selectedChallengeAccount.challengeId?.rules?.stopLossMandatory ? '*' : ''}
-                  </Text>
-                  <TextInput
-                    style={[styles.slTpInput, { backgroundColor: '#333333', color: '#fff', borderColor: '#333' }]}
-                    value={stopLoss}
-                    onChangeText={(text) => setStopLoss(text.replace(/[^0-9.]/g, ''))}
-                    placeholder="0.00"
-                    placeholderTextColor="#666"
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-                <View style={styles.slTpInputGroup}>
-                  <Text style={styles.inputLabel}>Take Profit</Text>
-                  <TextInput
-                    style={[styles.slTpInput, { backgroundColor: '#333333', color: '#fff', borderColor: '#333' }]}
-                    value={takeProfit}
-                    onChangeText={(text) => setTakeProfit(text.replace(/[^0-9.]/g, ''))}
-                    placeholder="0.00"
-                    placeholderTextColor="#666"
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-              </View>
-            )}
-
-            {/* Execute Button */}
-            <TouchableOpacity 
-              style={[styles.executeBtn, { backgroundColor: orderSide === 'BUY' ? '#22c55e' : '#ef4444' }, isExecuting && { opacity: 0.6 }]}
-              onPress={executeTrade}
-              disabled={isExecuting}
-            >
-              {isExecuting ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.executeBtnText}>
-                  {orderSide} {volume.toFixed(2)} {activeSymbol}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Symbol Picker Modal - segment first, then symbols (themed) */}
       <Modal
@@ -7649,6 +7387,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E1E',
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
+  },
+  // Quick Trade Bar pinned BELOW the chart (chart gets the full height above).
+  quickTradeBarBottom: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: '#1E1E1E',
+    borderTopWidth: 1,
+    borderTopColor: '#333333',
   },
   sellPriceBtn: { 
     flex: 1,
