@@ -1,5 +1,5 @@
 import { Alert } from 'react-native';
-import { authedFetch } from './authedFetch';
+import { authedFetch } from '../services/api/authedFetch';
 
 // Mirrors the web trader app: a user can sign in and browse, but cannot open
 // a new live trading account until their KYC is approved/verified. Pending,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API_URL } from '../config';
-import { getJsonAuthHeaders } from '../utils/authHeaders';
+import { API_URL } from '../constants';
+import { getJsonAuthHeaders } from '../services/api/authHeaders';
 
 const PAGE_SIZE = 20;
 

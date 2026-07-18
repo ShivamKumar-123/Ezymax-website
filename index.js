@@ -4,7 +4,7 @@ import { registerRootComponent } from 'expo';
 import React, { useEffect, useState } from 'react';
 import { Text, TextInput, View, LogBox } from 'react-native';
 
-import { applyVantageThemeFromStorage } from './src/theme/themeRuntime';
+import { applyVantageThemeFromStorage } from './src/app/bootstrap/themeRuntime';
 
 // Expo Go (SDK 53+) no longer supports remote push; expo-notifications logs an
 // unactionable error about it on load. Local notifications still work, and real
@@ -37,7 +37,7 @@ function Root() {
     let mounted = true;
     (async () => {
       await applyVantageThemeFromStorage();
-      const mod = await import('./src/App');
+      const mod = await import('./src/app/App');
       if (mounted) setApp(() => mod.default);
     })();
     return () => { mounted = false; };

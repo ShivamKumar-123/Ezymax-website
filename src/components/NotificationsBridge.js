@@ -3,9 +3,9 @@ import { AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 
-import ApiService from '../services/ApiService';
-import { configureAndroidChannel, ensureNotificationPermission, registerForPushToken, presentLocalNotification } from '../services/pushNotifications';
-import { navigate } from '../navigation/navigationRef';
+import ApiService from '../services/api/ApiService';
+import { configureAndroidChannel, ensureNotificationPermission, registerForPushToken, presentLocalNotification } from '../services/notifications/pushNotifications';
+import { navigate } from '../app/navigation/navigationRef';
 
 const SEEN_KEY = 'notif_seen_ids';
 // Poll the in-app feed every 10s while the app is foregrounded so tray alerts

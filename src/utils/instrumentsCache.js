@@ -1,4 +1,4 @@
-import ApiService from '../services/ApiService';
+import ApiService from '../services/api/ApiService';
 
 const TTL_MS = 5 * 60_000;
 let cache = null;

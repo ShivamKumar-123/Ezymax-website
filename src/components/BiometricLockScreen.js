@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, Pressable, Image, AppState, Platform } from 're
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authenticate, cancelAuthenticate } from '../utils/biometricLock';
+import { authenticate, cancelAuthenticate } from '../services/auth/biometricLock';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../theme/vantageTheme';
 
 // Android needs the activity to be fully resumed & focused before the native

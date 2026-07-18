@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { phases, TOTAL_MODULES } from '../data/academyData';
+import { phases, TOTAL_MODULES } from '../constants/data/academyData';
 
 const STORAGE_KEY = 'academy_progress';
 
