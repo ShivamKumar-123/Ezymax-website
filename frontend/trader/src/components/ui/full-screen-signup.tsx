@@ -240,6 +240,26 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
               className="h-8 w-auto"
             />
           </Link>
+
+          {/* Live market snapshot + trust points — fills the dead space
+              between the logo and the tagline. Prices are real (public
+              endpoint) and tick while the visitor decides. */}
+          <div className="relative z-10 hidden md:block">
+            <LiveMarketsCard />
+            <ul className="mt-6 space-y-2.5">
+              {[
+                '100+ instruments — FX, metals, indices, crypto',
+                'One-tap execution with on-chart SL/TP',
+                'Copy trading, PAMM & instant crypto deposits',
+              ].map((line) => (
+                <li key={line} className="flex items-start gap-2.5 text-sm text-white/80">
+                  <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#E94E1B]/20 text-[#E94E1B] text-[10px] leading-none">✓</span>
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
             {copy.hero}
           </h1>
@@ -422,6 +442,91 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 export default FullScreenSignup;
 
 /* ────────────────────────────────────────────────────────────────────── */
+
+/* Live prices for the auth hero panel. Reads the PUBLIC prices endpoint
+   (no auth needed) every 3s while mounted. Renders nothing until the first
+   successful fetch, so an API hiccup just leaves the panel as it was. */
+const HERO_SYMBOLS: { symbol: string; label: string }[] = [
+  { symbol: 'XAUUSD', label: 'Gold' },
+  { symbol: 'BTCUSD', label: 'Bitcoin' },
+  { symbol: 'EURUSD', label: 'EUR/USD' },
+  { symbol: 'NAS100', label: 'Nasdaq 100' },
+];
+
+type HeroTick = { bid: number; changePct: number | null };
+
+function LiveMarketsCard() {
+  const [ticks, setTicks] = useState<Record<string, HeroTick>>({});
+
+  useEffect(() => {
+    let stopped = false;
+    const load = async () => {
+      try {
+        const res = await api.get<unknown>('/instruments/prices/all');
+        const arr = Array.isArray(res)
+          ? res
+          : (Array.isArray((res as { items?: unknown[] })?.items) ? (res as { items: unknown[] }).items : []);
+        const next: Record<string, HeroTick> = {};
+        for (const raw of arr as Record<string, unknown>[]) {
+          const sym = String(raw.symbol || '').toUpperCase();
+          if (!HERO_SYMBOLS.some((h) => h.symbol === sym)) continue;
+          const bid = Number(raw.bid);
+          if (!Number.isFinite(bid) || bid <= 0) continue;
+          const pct = raw.change_pct != null ? Number(raw.change_pct) : null;
+          next[sym] = { bid, changePct: Number.isFinite(pct as number) ? (pct as number) : null };
+        }
+        if (!stopped && Object.keys(next).length > 0) setTicks(next);
+      } catch {
+        /* keep last values */
+      }
+    };
+    void load();
+    const id = setInterval(load, 3000);
+    return () => { stopped = true; clearInterval(id); };
+  }, []);
+
+  if (Object.keys(ticks).length === 0) return null;
+
+  const fmtPrice = (v: number) =>
+    v >= 1000
+      ? v.toLocaleString('en-US', { maximumFractionDigits: 2 })
+      : v.toFixed(v >= 100 ? 2 : 5);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+        <span className="text-xs uppercase tracking-wider text-white/60">Live markets</span>
+      </div>
+      <div className="space-y-2.5">
+        {HERO_SYMBOLS.map(({ symbol, label }) => {
+          const t = ticks[symbol];
+          if (!t) return null;
+          const up = (t.changePct ?? 0) >= 0;
+          return (
+            <div key={symbol} className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-sm font-medium text-white">{symbol}</span>
+                <span className="ml-2 text-xs text-white/50 hidden lg:inline">{label}</span>
+              </div>
+              <div className="flex items-baseline gap-2.5 tabular-nums">
+                <span className="text-sm text-white/90">{fmtPrice(t.bid)}</span>
+                {t.changePct != null && (
+                  <span className={`text-xs ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {up ? '+' : ''}{t.changePct.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 interface FieldProps {
   id: string;
