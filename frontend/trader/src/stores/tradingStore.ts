@@ -118,6 +118,8 @@ interface TradingState {
   setPendingOrders: (o: PendingOrder[]) => void;
   setSelectedSymbol: (s: string) => void;
   updatePrice: (t: TickData) => void;
+  /** Batch variant: ONE store commit (one render pass) per WS payload. */
+  updatePrices: (ticks: TickData[]) => void;
   addToWatchlist: (s: string) => void;
   removeFromWatchlist: (s: string) => void;
   setInstruments: (i: InstrumentInfo[]) => void;
@@ -157,6 +159,98 @@ function getPersistedSymbol(): string {
   } catch {
     return DEFAULT_SYMBOL;
   }
+}
+
+// ── Tick application (pure) ─────────────────────────────────────────────────
+// Shared by updatePrice (single tick) and updatePrices (batched payload).
+// Returns the changed slices, or null when the tick is a no-op (bad symbol /
+// stale by server timestamp). Perf contract: the returned `positions` is the
+// SAME array reference unless a position actually trades this symbol, so
+// positions-subscribers don't re-render on unrelated ticks.
+type TickSlices = Pick<TradingState, 'prices' | 'prevPrices' | 'positions'>;
+
+function applyTick(
+  state: TickSlices & Pick<TradingState, 'instruments'>,
+  tick: TickData,
+): TickSlices | null {
+  const sym = String(tick.symbol || '').trim().toUpperCase();
+  if (!sym) return null;
+  const normalized: TickData = { ...tick, symbol: sym };
+  const prev = state.prices[sym];
+  // Freshness guard: the WS feed and the ~1.5s REST poll both call this, and
+  // a lagging poll response can carry an OLDER snapshot than a WS tick that
+  // already landed. Never let an older server publish time overwrite a newer
+  // one — otherwise the price (and every position's P&L) visibly bounces
+  // backward. Only enforced when both ticks carry a server ts_ms; if either
+  // is missing (legacy payload) we fail open and accept the update.
+  const incomingTs = Number(normalized.ts_ms) || 0;
+  const prevTs = Number(prev?.ts_ms) || 0;
+  if (prev && incomingTs && prevTs && incomingTs < prevTs) {
+    return null;
+  }
+  const touchesPosition = state.positions.some(
+    (pos) => String(pos.symbol || '').trim().toUpperCase() === sym,
+  );
+  return {
+    prevPrices: prev
+      ? { ...state.prevPrices, [sym]: prev.bid }
+      : state.prevPrices,
+    prices: { ...state.prices, [sym]: normalized },
+    positions: !touchesPosition ? state.positions : state.positions.map((pos) => {
+      const pSym = String(pos.symbol || '').trim().toUpperCase();
+      if (pSym !== sym) return pos;
+      const cp = pos.side === 'buy' ? normalized.bid : normalized.ask;
+      const inst =
+        state.instruments.find((i) => i.symbol === sym) ||
+        state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+      const cs = inst?.contract_size || 100000;
+      let pnl = pos.side === 'buy'
+        ? (cp - pos.open_price) * pos.lots * cs
+        : (pos.open_price - cp) * pos.lots * cs;
+      // Forex P&L formula yields a value in the QUOTE currency. Convert to
+      // the account currency (USD) so e.g. USDJPY shows ~$0.006 instead of
+      // 1 JPY rendered as "$1". For pairs already quoted in USD (EURUSD,
+      // GBPUSD, XAUUSD, BTCUSD…) this is a no-op.
+      const base = (inst?.base_currency || (sym.length >= 6 ? sym.slice(0, 3) : '')).toUpperCase();
+      const quote = (inst?.quote_currency || (sym.length >= 6 ? sym.slice(3, 6) : '')).toUpperCase();
+      // `pnlUsdReady` tells us whether the value in `pnl` is already in
+      // USD. We only overwrite pos.profit when it is — otherwise we
+      // leave the server's correctly-converted profit alone.
+      let pnlUsdReady = !quote || quote === 'USD';
+      if (!pnlUsdReady) {
+        if (base === 'USD' && cp) {
+          pnl = pnl / cp;
+          pnlUsdReady = true;
+        } else {
+          // Cross pair (e.g. GBPJPY, EURJPY) — convert QUOTE → USD
+          // through whichever USD pair we already have streaming.
+          // USDJPY is in the default watchlist, so JPY crosses are
+          // covered once that tick arrives.
+          const usdQuote = state.prices[`USD${quote}`];
+          if (usdQuote && usdQuote.bid) {
+            pnl = pnl / usdQuote.bid;
+            pnlUsdReady = true;
+          } else {
+            const quoteUsd = state.prices[`${quote}USD`];
+            if (quoteUsd && quoteUsd.bid) {
+              pnl = pnl * quoteUsd.bid;
+              pnlUsdReady = true;
+            }
+          }
+        }
+      }
+      // Race fix: at page-load the position's symbol may tick BEFORE
+      // the cross-rate symbol does (e.g. GBPJPY ticks before USDJPY
+      // arrives). Without this guard we'd overwrite the server's
+      // correctly-USD-converted profit with the raw quote-currency
+      // number for that brief window — making the P&L bounce between
+      // "-$0.66" and "-$89" until USDJPY finally streams in. Now we
+      // only overwrite when we actually have a USD value to write.
+      return pnlUsdReady
+        ? { ...pos, current_price: cp, profit: pnl }
+        : { ...pos, current_price: cp };
+    }),
+  };
 }
 
 export const useTradingStore = create<TradingState>()((set, get) => ({
@@ -300,82 +394,28 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     } catch {}
   },
 
-  updatePrice: (tick) => set((state) => {
-    const sym = String(tick.symbol || '').trim().toUpperCase();
-    if (!sym) return state;
-    const normalized: TickData = { ...tick, symbol: sym };
-    const prev = state.prices[sym];
-    // Freshness guard: the WS feed and the ~1.5s REST poll both call this, and
-    // a lagging poll response can carry an OLDER snapshot than a WS tick that
-    // already landed. Never let an older server publish time overwrite a newer
-    // one — otherwise the price (and every position's P&L) visibly bounces
-    // backward. Only enforced when both ticks carry a server ts_ms; if either
-    // is missing (legacy payload) we fail open and accept the update.
-    const incomingTs = Number(normalized.ts_ms) || 0;
-    const prevTs = Number(prev?.ts_ms) || 0;
-    if (prev && incomingTs && prevTs && incomingTs < prevTs) {
-      return state;
+  updatePrice: (tick) => set((state) => applyTick(state, tick) ?? state),
+
+  updatePrices: (ticks) => set((state) => {
+    // Fold every tick of the payload into ONE partial-state commit — the old
+    // per-tick loop in callers produced one render pass per symbol.
+    let prices = state.prices;
+    let prevPrices = state.prevPrices;
+    let positions = state.positions;
+    let changed = false;
+    for (const t of ticks || []) {
+      const next = applyTick(
+        { prices, prevPrices, positions, instruments: state.instruments },
+        t,
+      );
+      if (next) {
+        prices = next.prices;
+        prevPrices = next.prevPrices;
+        positions = next.positions;
+        changed = true;
+      }
     }
-    return {
-      prevPrices: prev
-        ? { ...state.prevPrices, [sym]: prev.bid }
-        : state.prevPrices,
-      prices: { ...state.prices, [sym]: normalized },
-      positions: state.positions.map((pos) => {
-        const pSym = String(pos.symbol || '').trim().toUpperCase();
-        if (pSym !== sym) return pos;
-        const cp = pos.side === 'buy' ? normalized.bid : normalized.ask;
-        const inst =
-          state.instruments.find((i) => i.symbol === sym) ||
-          state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
-        const cs = inst?.contract_size || 100000;
-        let pnl = pos.side === 'buy'
-          ? (cp - pos.open_price) * pos.lots * cs
-          : (pos.open_price - cp) * pos.lots * cs;
-        // Forex P&L formula yields a value in the QUOTE currency. Convert to
-        // the account currency (USD) so e.g. USDJPY shows ~$0.006 instead of
-        // 1 JPY rendered as "$1". For pairs already quoted in USD (EURUSD,
-        // GBPUSD, XAUUSD, BTCUSD…) this is a no-op.
-        const base = (inst?.base_currency || (sym.length >= 6 ? sym.slice(0, 3) : '')).toUpperCase();
-        const quote = (inst?.quote_currency || (sym.length >= 6 ? sym.slice(3, 6) : '')).toUpperCase();
-        // `pnlUsdReady` tells us whether the value in `pnl` is already in
-        // USD. We only overwrite pos.profit when it is — otherwise we
-        // leave the server's correctly-converted profit alone.
-        let pnlUsdReady = !quote || quote === 'USD';
-        if (!pnlUsdReady) {
-          if (base === 'USD' && cp) {
-            pnl = pnl / cp;
-            pnlUsdReady = true;
-          } else {
-            // Cross pair (e.g. GBPJPY, EURJPY) — convert QUOTE → USD
-            // through whichever USD pair we already have streaming.
-            // USDJPY is in the default watchlist, so JPY crosses are
-            // covered once that tick arrives.
-            const usdQuote = state.prices[`USD${quote}`];
-            if (usdQuote && usdQuote.bid) {
-              pnl = pnl / usdQuote.bid;
-              pnlUsdReady = true;
-            } else {
-              const quoteUsd = state.prices[`${quote}USD`];
-              if (quoteUsd && quoteUsd.bid) {
-                pnl = pnl * quoteUsd.bid;
-                pnlUsdReady = true;
-              }
-            }
-          }
-        }
-        // Race fix: at page-load the position's symbol may tick BEFORE
-        // the cross-rate symbol does (e.g. GBPJPY ticks before USDJPY
-        // arrives). Without this guard we'd overwrite the server's
-        // correctly-USD-converted profit with the raw quote-currency
-        // number for that brief window — making the P&L bounce between
-        // "-$0.66" and "-$89" until USDJPY finally streams in. Now we
-        // only overwrite when we actually have a USD value to write.
-        return pnlUsdReady
-          ? { ...pos, current_price: cp, profit: pnl }
-          : { ...pos, current_price: cp };
-      }),
-    };
+    return changed ? { prices, prevPrices, positions } : state;
   }),
 
   addToWatchlist: (s) => set((st) => ({

@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import api from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
+import { netPnl, sumNetPnl } from '@/lib/pnl';
 import {
   RefreshCw,
   Download,
@@ -25,7 +26,12 @@ import {
   Share2,
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
-import ShareTradeModal from '@/components/trading/ShareTradeModal';
+import dynamic from 'next/dynamic';
+
+// Lazy: ShareTradeModal pulls in html-to-image (~50KB) which is only needed
+// when the user actually opens the share dialog — keep it out of the
+// terminal's initial bundle.
+const ShareTradeModal = dynamic(() => import('@/components/trading/ShareTradeModal'), { ssr: false });
 import MarginRing from '@/components/trading/MarginRing';
 
 interface ClosedTrade {
@@ -181,7 +187,7 @@ function TerminalPositionStaticCard({
 }) {
   // NET P&L (profit − commission + swap; swap stored negative) so the card
   // matches the position rows and the mobile app.
-  const pnl = (pos.profit || 0) - (pos.commission || 0) + (pos.swap || 0);
+  const pnl = netPnl(pos);
   const cur = pos.current_price;
   const priceDown = cur != null && (pos.side === 'buy' ? cur < pos.open_price : cur > pos.open_price);
 
@@ -306,16 +312,16 @@ function TerminalPositionStaticCard({
 
 export default function PositionsPanel({ variant = 'default' }: PositionsPanelProps) {
   const isTerminal = variant === 'terminal';
-  const {
-    positions,
-    pendingOrders,
-    activeAccount,
-    accounts,
-    removePosition,
-    refreshPositions,
-    refreshAccount,
-    instruments,
-  } = useTradingStore();
+  // Narrow selectors: this panel re-renders on position/account updates but no
+  // longer on unrelated slices (action references are stable in zustand).
+  const positions = useTradingStore((s) => s.positions);
+  const pendingOrders = useTradingStore((s) => s.pendingOrders);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const accounts = useTradingStore((s) => s.accounts);
+  const removePosition = useTradingStore((s) => s.removePosition);
+  const refreshPositions = useTradingStore((s) => s.refreshPositions);
+  const refreshAccount = useTradingStore((s) => s.refreshAccount);
+  const instruments = useTradingStore((s) => s.instruments);
   const [activeTab, setActiveTab] = useState<TabId>('open');
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -337,10 +343,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   // NET floating P&L (profit − commission + swap; swap is stored negative for
   // charges) — this is the figure shown to the trader and kept in sync with
   // the mobile app's per-position P&L.
-  const netTotalPnl = positions.reduce(
-    (s, p) => s + (p.profit || 0) - (p.commission || 0) + (p.swap || 0),
-    0,
-  );
+  const netTotalPnl = sumNetPnl(positions);
 
   const profitPositions = positions.filter((p) => (p.profit || 0) > 0);
   const lossPositions = positions.filter((p) => (p.profit || 0) < 0);
@@ -1050,9 +1053,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   ) : (
                     positions.map((pos) => {
                       const d = getDigits(pos.symbol);
-                      const pnl = pos.profit || 0;
-                      const charges = pos.commission || 0;
-                      const net = pnl - charges + (pos.swap || 0);
+                      const net = netPnl(pos);
                       return (
                         <div key={pos.id} className="rounded-xl border border-border-glass bg-bg-secondary/40 p-3 space-y-2">
                           <div className="flex items-center justify-between">
@@ -1141,9 +1142,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     <tbody>
                       {positions.map((pos) => {
                         const d = getDigits(pos.symbol);
-                        const pnl = pos.profit || 0;
                         const charges = pos.commission || 0;
-                        const net = pnl - charges + (pos.swap || 0);
+                        const net = netPnl(pos);
                         return (
                           <tr key={pos.id} className={tbodyRowClass}>
                             <td className={td}>{accountLabel(pos.account_id)}</td>
@@ -2080,12 +2080,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
           document.body,
         )}
 
-      <ShareTradeModal
-        open={!!sharePosition}
-        onClose={() => setSharePosition(null)}
-        position={sharePosition}
-        leverage={Number(activeAccount?.leverage) || 100}
-      />
+      {sharePosition && (
+        <ShareTradeModal
+          open={!!sharePosition}
+          onClose={() => setSharePosition(null)}
+          position={sharePosition}
+          leverage={Number(activeAccount?.leverage) || 100}
+        />
+      )}
     </div>
   );
 }

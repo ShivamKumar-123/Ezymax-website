@@ -264,14 +264,14 @@ export default function TradingTerminalPage() {
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
-  const {
-    selectedSymbol,
-    prices,
-    instruments,
-    setSelectedSymbol,
-    activeAccount,
-    placeOrder,
-  } = useTradingStore();
+  // Narrow selectors: only re-render on the slices this page actually reads
+  // (action references are stable in zustand, so selecting them is free).
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const prices = useTradingStore((s) => s.prices);
+  const instruments = useTradingStore((s) => s.instruments);
+  const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const placeOrder = useTradingStore((s) => s.placeOrder);
 
   const instrumentInfo = instruments.find((i: InstrumentInfo) => i.symbol === selectedSymbol);
   const mobileMarketStatus = getMarketStatus(selectedSymbol, (instrumentInfo as any)?.segment);

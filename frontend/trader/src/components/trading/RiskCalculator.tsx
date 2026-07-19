@@ -179,7 +179,13 @@ function CompactInstrumentPicker({
 }
 
 export default function RiskCalculator() {
-  const { selectedSymbol, prices, instruments, activeAccount, accounts } = useTradingStore();
+  // Narrow selectors: needs live `prices` for the calc inputs but no longer
+  // re-renders on unrelated store slices (positions, orders, ...).
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const prices = useTradingStore((s) => s.prices);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const accounts = useTradingStore((s) => s.accounts);
 
   const [tab, setTab] = useState<CalcTab>('margin');
   const [selectedAccountId, setSelectedAccountId] = useState(activeAccount?.id ?? '');

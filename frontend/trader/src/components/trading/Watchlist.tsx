@@ -218,7 +218,16 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const pathname = usePathname();
   const urlParams = useSearchParams();
   const terminalMarketsOpen = useUIStore((s) => s.terminalMarketsOpen);
-  const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount, addToWatchlist, removeFromWatchlist } = useTradingStore();
+  // Narrow selectors: still tracks `prices` (this list renders live ticks) but
+  // no longer re-renders on positions/accounts/etc. Actions are stable refs.
+  const watchlist = useTradingStore((s) => s.watchlist);
+  const prices = useTradingStore((s) => s.prices);
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const addToWatchlist = useTradingStore((s) => s.addToWatchlist);
+  const removeFromWatchlist = useTradingStore((s) => s.removeFromWatchlist);
   const [search, setSearch] = useState('');
   const [segment, setSegment] = useState('Starred');
   const [bidFlash, setBidFlash] = useState<Record<string, Trend>>({});

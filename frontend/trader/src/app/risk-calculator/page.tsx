@@ -241,7 +241,15 @@ function mapApiAccount(a: Record<string, unknown>): TradingAccount {
 
 /* ═══════════════════════════════════════════════════ */
 export default function RiskCalculatorPage() {
-  const { selectedSymbol, prices, instruments, activeAccount, accounts, setInstruments, setAccounts } = useTradingStore();
+  // Narrow selectors: only re-render on the slices this page actually reads
+  // (action references are stable in zustand, so selecting them is free).
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const prices = useTradingStore((s) => s.prices);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const accounts = useTradingStore((s) => s.accounts);
+  const setInstruments = useTradingStore((s) => s.setInstruments);
+  const setAccounts = useTradingStore((s) => s.setAccounts);
 
   // Fetch instruments + accounts if not already loaded
   useEffect(() => {

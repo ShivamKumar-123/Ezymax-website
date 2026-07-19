@@ -44,16 +44,16 @@ function TradingSession({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const accountQueryId = searchParams.get('account');
 
-  const {
-    updatePrice,
-    setActiveAccount,
-    setAccounts,
-    setPositions,
-    setPendingOrders,
-    setInstruments,
-    refreshPositions,
-    refreshAccount,
-  } = useTradingStore();
+  // Actions only — zustand action references are stable, so selecting them
+  // individually means this shell component never re-renders on price ticks.
+  const updatePrices = useTradingStore((s) => s.updatePrices);
+  const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
+  const setAccounts = useTradingStore((s) => s.setAccounts);
+  const setPositions = useTradingStore((s) => s.setPositions);
+  const setPendingOrders = useTradingStore((s) => s.setPendingOrders);
+  const setInstruments = useTradingStore((s) => s.setInstruments);
+  const refreshPositions = useTradingStore((s) => s.refreshPositions);
+  const refreshAccount = useTradingStore((s) => s.refreshAccount);
   const accounts = useTradingStore((s) => s.accounts);
 
   useEffect(() => {
@@ -115,16 +115,20 @@ function TradingSession({ children }: { children: React.ReactNode }) {
 
     wsManager.connect();
     const unsub = wsManager.onMessage((data) => {
-      const ticks = extractTicksFromPayload(data);
-      for (const t of ticks) updatePrice(t);
+      // Batched: one store update (and one render pass) per WS payload,
+      // regardless of how many symbols it carries.
+      updatePrices(extractTicksFromPayload(data));
     });
 
     let pollCancelled = false;
     const pollPricesFromApi = async () => {
+      // Skip network + store churn while the tab is hidden; the WS feed and
+      // the immediate poll on the next visible tick catch the state back up.
+      if (document.hidden) return;
       try {
         const raw = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
         if (pollCancelled) return;
-        for (const t of extractTicksFromPayload(raw)) updatePrice(t);
+        updatePrices(extractTicksFromPayload(raw));
       } catch {
         /* ignore */
       }
@@ -144,18 +148,30 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     // (SL/TP hit, stop-out) and the manual-close response (PositionsPanel) —
     // both instant, neither on a timer.
     const positionPoll = setInterval(async () => {
+      if (document.hidden) return;
       await refreshPositions();
       await refreshAccount();
     }, 1500);
+
+    // Returning to a hidden tab: reconcile immediately instead of waiting for
+    // the next interval slot.
+    const onVisible = () => {
+      if (document.hidden) return;
+      void pollPricesFromApi();
+      void refreshPositions();
+      void refreshAccount();
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
       pollCancelled = true;
       unsub();
+      document.removeEventListener('visibilitychange', onVisible);
       clearInterval(positionPoll);
       clearInterval(pricePoll);
     };
-  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshAccount]);
+  }, [setAccounts, setInstruments, updatePrices, refreshPositions, refreshAccount]);
 
   /* Picker vs terminal: active account + positions. */
   useEffect(() => {

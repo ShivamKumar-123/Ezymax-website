@@ -110,25 +110,31 @@ export default function ChartPage() {
       await useTradingStore.getState().refreshPositions();
       try {
         const p = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
-        for (const t of extractTicksFromPayload(p)) useTradingStore.getState().updatePrice(t);
+        useTradingStore.getState().updatePrices(extractTicksFromPayload(p));
       } catch {
         /* ignore */
       }
     })();
 
     // Live prices over WS + a REST poll fallback; positions polled for P&L and
-    // to remove SL/TP lines when the server closes a position.
+    // to remove SL/TP lines when the server closes a position. Ticks are
+    // applied as one batched store update per payload, and polls pause while
+    // the WebView/tab is hidden.
     try { wsManager.connect(); } catch { /* ignore */ }
     const unsubWs = wsManager.onMessage((data) => {
-      for (const t of extractTicksFromPayload(data)) useTradingStore.getState().updatePrice(t);
+      useTradingStore.getState().updatePrices(extractTicksFromPayload(data));
     });
     const pricePoll = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const p = await api.get<unknown>('/instruments/prices/all');
-        for (const t of extractTicksFromPayload(p)) useTradingStore.getState().updatePrice(t);
+        useTradingStore.getState().updatePrices(extractTicksFromPayload(p));
       } catch { /* ignore */ }
     }, 1500);
-    const posPoll = setInterval(() => { void useTradingStore.getState().refreshPositions(); }, 1500);
+    const posPoll = setInterval(() => {
+      if (document.hidden) return;
+      void useTradingStore.getState().refreshPositions();
+    }, 1500);
 
     // Native side can switch symbol without a reload.
     const onMessage = (e: MessageEvent) => {

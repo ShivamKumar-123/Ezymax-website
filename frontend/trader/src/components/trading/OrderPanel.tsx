@@ -27,19 +27,20 @@ export default function OrderPanel() {
     setOneClickTrading,
   } = useUIStore();
 
-  const {
-    selectedSymbol,
-    setSelectedSymbol,
-    prices,
-    instruments,
-    activeAccount,
-    positions,
-    setPositions,
-    refreshPositions,
-    refreshAccount,
-    orderFormCloneDraft,
-    setOrderFormCloneDraft,
-  } = useTradingStore();
+  // Narrow selectors: the order ticket needs live `prices`, but selecting each
+  // slice individually drops re-renders from unrelated store updates
+  // (action references are stable in zustand).
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
+  const prices = useTradingStore((s) => s.prices);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const positions = useTradingStore((s) => s.positions);
+  const setPositions = useTradingStore((s) => s.setPositions);
+  const refreshPositions = useTradingStore((s) => s.refreshPositions);
+  const refreshAccount = useTradingStore((s) => s.refreshAccount);
+  const orderFormCloneDraft = useTradingStore((s) => s.orderFormCloneDraft);
+  const setOrderFormCloneDraft = useTradingStore((s) => s.setOrderFormCloneDraft);
   const setTerminalMarketsOpen = useUIStore((s) => s.setTerminalMarketsOpen);
   const setTerminalNewsOpen = useUIStore((s) => s.setTerminalNewsOpen);
 

@@ -28,7 +28,12 @@ function pendingSubtypeToApi(sub: PendingSubtype): { order_type: 'limit' | 'stop
 }
 
 export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: MobileOrderSheetProps) {
-  const { prices, instruments, activeAccount, placeOrder } = useTradingStore();
+  // Narrow selectors: needs live `prices` but no longer re-renders on
+  // positions/accounts/etc. Action references are stable in zustand.
+  const prices = useTradingStore((s) => s.prices);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
+  const placeOrder = useTradingStore((s) => s.placeOrder);
   const [orderType, setOrderType] = useState<'market' | 'pending'>('market');
   const [pendingSubtype, setPendingSubtype] = useState<PendingSubtype>('buy_limit');
   const [submitting, setSubmitting] = useState(false);

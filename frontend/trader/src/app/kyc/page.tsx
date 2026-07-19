@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
-import api from '@/lib/api/client';
+import api, { getApiBase } from '@/lib/api/client';
 import {
   ShieldCheck,
   Clock,
@@ -159,10 +159,15 @@ export default function KycPage() {
     setSubmitting(true);
     try {
       const token = api.getToken();
-      const res = await fetch('/api/v1/profile/kyc/submit/', {
+      // Multipart upload — bypasses the api client (it sets a JSON
+      // content-type), but the base URL comes from the same helper the
+      // client uses so the request lands on the gateway, not on whatever
+      // host the user happens to be browsing.
+      const res = await fetch(`${getApiBase()}/profile/kyc/submit/`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
+        credentials: 'include',
       });
       const raw = await res.text();
       let json: { detail?: unknown } = {};

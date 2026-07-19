@@ -102,17 +102,30 @@ export default function ProfilePage() {
   const [settingUp2Fa, setSettingUp2Fa] = useState(false);
   const [verifying2Fa, setVerifying2Fa] = useState(false);
 
-  // Notification preferences
+  // Notification preferences (namespaced key; one-time migration from the
+  // legacy un-namespaced 'notifPrefs' key).
+  const NOTIF_PREFS_KEY = 'sc.notifPrefs';
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
-    try { return JSON.parse(localStorage.getItem('notifPrefs') || '{}'); }
+    try {
+      let raw = localStorage.getItem(NOTIF_PREFS_KEY);
+      if (raw === null) {
+        const legacy = localStorage.getItem('notifPrefs');
+        if (legacy !== null) {
+          localStorage.setItem(NOTIF_PREFS_KEY, legacy);
+          localStorage.removeItem('notifPrefs');
+          raw = legacy;
+        }
+      }
+      return JSON.parse(raw || '{}');
+    }
     catch { return {}; }
   });
 
   const toggleNotifPref = (key: string) => {
     setNotifPrefs((prev) => {
       const updated = { ...prev, [key]: !prev[key] };
-      localStorage.setItem('notifPrefs', JSON.stringify(updated));
+      localStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(updated));
       return updated;
     });
   };

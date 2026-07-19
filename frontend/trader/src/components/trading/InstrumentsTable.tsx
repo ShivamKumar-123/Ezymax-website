@@ -88,8 +88,14 @@ export type InstrumentsTableProps = {
 export default function InstrumentsTable({ onExitMarkets, onViewNews }: InstrumentsTableProps) {
   const router = useRouter();
   const urlParams = useSearchParams();
-  const { watchlist, prices, selectedSymbol, setSelectedSymbol, instruments, activeAccount } =
-    useTradingStore();
+  // Narrow selectors: still tracks `prices` (live table) but no longer
+  // re-renders on positions/accounts/etc. Actions are stable refs.
+  const watchlist = useTradingStore((s) => s.watchlist);
+  const prices = useTradingStore((s) => s.prices);
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
+  const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
+  const instruments = useTradingStore((s) => s.instruments);
+  const activeAccount = useTradingStore((s) => s.activeAccount);
 
   const [view, setView] = useState<View>('instruments');
   const [search, setSearch] = useState('');

@@ -29,7 +29,11 @@ export default function OrderPanelSymbolPicker({
   onPick: (symbol: string) => void;
   className?: string;
 }) {
-  const { watchlist, instruments, selectedSymbol } = useTradingStore();
+  // Narrow selectors: the picker doesn't need `prices`, so it no longer
+  // re-renders on every price tick — only on watchlist/instrument changes.
+  const watchlist = useTradingStore((s) => s.watchlist);
+  const instruments = useTradingStore((s) => s.instruments);
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const [q, setQ] = useState('');
 
   const grouped = useMemo(() => {

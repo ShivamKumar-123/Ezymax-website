@@ -12,6 +12,7 @@ class TradeSocket {
   private callbacks: Set<TradeCallback> = new Set();
   private accountId: string | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectAttempts = 0;
 
   /** `token` is now ignored — the backend reads the HttpOnly pt_access
    * cookie automatically. The parameter stays for API compatibility
@@ -26,6 +27,10 @@ class TradeSocket {
 
     this.ws = new WebSocket(wsUrl);
 
+    this.ws.onopen = () => {
+      this.reconnectAttempts = 0;
+    };
+
     this.ws.onmessage = (event) => {
       try {
         const data: TradeEvent = JSON.parse(event.data);
@@ -36,8 +41,12 @@ class TradeSocket {
     };
 
     this.ws.onclose = () => {
+      // Exponential backoff (3s → 48s cap) mirrors wsManager — a downed
+      // gateway shouldn't be hammered every 3s by every open tab forever.
       if (this.accountId) {
-        this.reconnectTimer = setTimeout(() => this.connect(accountId), 3000);
+        const delay = Math.min(3000 * 2 ** this.reconnectAttempts, 48000);
+        this.reconnectAttempts += 1;
+        this.reconnectTimer = setTimeout(() => this.connect(accountId), delay);
       }
     };
 
@@ -51,6 +60,7 @@ class TradeSocket {
 
   disconnect() {
     this.accountId = null;
+    this.reconnectAttempts = 0;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.ws?.close();
     this.ws = null;
