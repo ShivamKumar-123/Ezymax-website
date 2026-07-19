@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import { Screen, IconButton, CategoryTabs, showToast } from '../../../components/vantage';
-import { vantage, space, sizes, weights, fontFamily } from '../../../theme/vantageTheme';
+import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
 
@@ -93,12 +93,22 @@ export default function TransactionHistoryScreen() {
         keyExtractor={(item, idx) => String(item.id || item._id || idx)}
         renderItem={({ item }) => <Row tx={item} />}
         ListEmptyComponent={loading ? null : <Text style={styles.empty}>No transactions.</Text>}
-        // Paged infinite scroll: render TX_PAGE rows and append the next page
-        // as the user nears the end — the ledger can be 1000+ rows.
-        onEndReachedThreshold={0.4}
-        onEndReached={() => setShown((n) => (n < items.length ? n + TX_PAGE : n))}
+        // Explicit pagination: a page of TX_PAGE rows and a visible
+        // "Show more" button — the ledger can be 1000+ rows.
         ListFooterComponent={items.length > shown ? (
-          <Text style={styles.pagingFooter}>Showing {shown} of {items.length} — scroll for more</Text>
+          <Pressable
+            onPress={() => setShown((n) => n + TX_PAGE)}
+            style={styles.showMoreBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Show more transactions"
+          >
+            <Text style={styles.showMoreTxt}>
+              Show more ({items.length - shown} remaining)
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+          </Pressable>
+        ) : items.length > TX_PAGE ? (
+          <Text style={styles.pagingFooter}>All {items.length} transactions shown</Text>
         ) : null}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
       />
@@ -169,6 +179,12 @@ function Row({ tx }) {
 
 const styles = StyleSheet.create({
   pagingFooter: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, textAlign: 'center', paddingVertical: space.md },
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: space.lg, marginTop: space.sm, paddingVertical: space.md,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
   title: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, textAlign: 'center' },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.huge, textAlign: 'center' },
