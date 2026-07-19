@@ -7,11 +7,16 @@ class WebSocketService {
     this.priceWs = null;
     this.tradeWs = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
+    this.maxReconnectAttempts = 12;
     this.reconnectDelay = 3000;
     this.priceListeners = new Set();
     this.tradeListeners = new Set();
     this.isConnecting = false;
+    // Set while WE close a socket on purpose — its onclose must not schedule
+    // a reconnect (previously disconnectPriceStream() triggered an immediate
+    // reconnect via its own close event).
+    this.intentionalClose = { price: false, trade: false };
+    this.tradeAccountId = null;
   }
 
   async connectPriceStream() {
@@ -54,8 +59,11 @@ class WebSocketService {
       };
 
       this.priceWs.onclose = () => {
-        console.log('Price WebSocket disconnected');
         this.isConnecting = false;
+        if (this.intentionalClose.price) {
+          this.intentionalClose.price = false;
+          return;
+        }
         this.handleReconnect('price');
       };
     } catch (error) {
@@ -100,7 +108,10 @@ class WebSocketService {
       };
 
       this.tradeWs.onclose = () => {
-        console.log('Trade WebSocket disconnected');
+        if (this.intentionalClose.trade) {
+          this.intentionalClose.trade = false;
+          return;
+        }
         this.handleReconnect('trade', accountId);
       };
     } catch (error) {
@@ -110,9 +121,10 @@ class WebSocketService {
 
   handleReconnect(type, accountId = null) {
     this.reconnectAttempts++;
-    // Keep retrying quietly with a capped backoff (prices also have a REST
-    // polling fallback, so this is best-effort). reconnectAttempts resets to 0
-    // on a successful open.
+    // Bounded, backed-off retries (prices also have a REST polling fallback,
+    // so giving up is safe). reconnectAttempts resets to 0 on a successful
+    // open; a fresh connect*Stream() call from a screen also retries anew.
+    if (this.reconnectAttempts > this.maxReconnectAttempts) return;
     const delay = Math.min(this.reconnectDelay * this.reconnectAttempts, 15000);
 
     setTimeout(() => {
@@ -156,6 +168,7 @@ class WebSocketService {
 
   disconnectPriceStream() {
     if (this.priceWs) {
+      this.intentionalClose.price = true;
       this.priceWs.close();
       this.priceWs = null;
     }
@@ -163,6 +176,7 @@ class WebSocketService {
 
   disconnectTradeStream() {
     if (this.tradeWs) {
+      this.intentionalClose.trade = true;
       this.tradeWs.close();
       this.tradeWs = null;
     }

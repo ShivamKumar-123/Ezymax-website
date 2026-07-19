@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../../../constants';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import socketService from '../../../services/websocket/socketService';
+import webSocketService from '../../../services/websocket/WebSocketService';
 
 const OrderBookScreen = ({ navigation }) => {
   const { colors, isDark } = useTheme();
@@ -33,13 +33,23 @@ const OrderBookScreen = ({ navigation }) => {
     loadData();
   }, []);
 
-  // WebSocket for real-time price updates
+  // Real-time prices via the SHARED app socket — this screen previously
+  // opened a second parallel /ws/prices connection through a duplicate
+  // client. Ticks are merged per symbol into the local map.
   useEffect(() => {
-    socketService.connect();
-    const unsubscribe = socketService.addPriceListener((prices) => {
-      if (prices && Object.keys(prices).length > 0) {
-        setLivePrices(prices);
-      }
+    webSocketService.connectPriceStream?.();
+    const unsubscribe = webSocketService.onPriceUpdate((msg) => {
+      if (!msg) return;
+      const sym = String(msg.symbol || msg.s || '').toUpperCase();
+      if (!sym) return;
+      setLivePrices((prev) => ({
+        ...prev,
+        [sym]: {
+          ...(prev[sym] || {}),
+          bid: msg.bid != null ? Number(msg.bid) : prev[sym]?.bid,
+          ask: msg.ask != null ? Number(msg.ask) : prev[sym]?.ask,
+        },
+      }));
     });
     return () => unsubscribe();
   }, []);

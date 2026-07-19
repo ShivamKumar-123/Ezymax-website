@@ -77,7 +77,9 @@ function AppShell() {
         SecureStore.deleteItemAsync(SKIP_BOOT_LOADER_KEY).catch(() => {});
         setBooted(true);
       } else {
-        timer = setTimeout(() => { if (mounted) setBooted(true); }, 2500);
+        // Brief branded splash only — long fixed delays are pure dead time on
+        // every cold start (this was 2500ms; providers are ready well before).
+        timer = setTimeout(() => { if (mounted) setBooted(true); }, 700);
       }
     })();
     return () => { mounted = false; if (timer) clearTimeout(timer); };
@@ -116,9 +118,16 @@ function AppShell() {
   }, []);
 
   useEffect(() => {
+    // OTA update check: on launch, then at most once per 15 minutes when the
+    // app returns to the foreground — checking on EVERY foreground added a
+    // network round-trip each time the user switched back to the app.
+    const UPDATE_CHECK_MIN_INTERVAL_MS = 15 * 60 * 1000;
+    let lastCheckAt = 0;
     const checkAndApply = async () => {
       try {
         if (__DEV__) return;
+        if (Date.now() - lastCheckAt < UPDATE_CHECK_MIN_INTERVAL_MS) return;
+        lastCheckAt = Date.now();
         const res = await Updates.checkForUpdateAsync();
         if (res?.isAvailable) {
           await Updates.fetchUpdateAsync();

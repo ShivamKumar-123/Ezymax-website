@@ -128,7 +128,10 @@ export default function HomeScreen() {
     } catch (_) {}
   }, []);
   useFocusEffect(useCallback(() => {
-    const id = setInterval(refreshPrices, 500);
+    // REST poll is the WebSocket FALLBACK, not the price driver — the live WS
+    // subscription above delivers ticks; 2s keeps the full-universe fetch
+    // cheap instead of hammering it at 500ms.
+    const id = setInterval(refreshPrices, 2000);
     return () => clearInterval(id);
   }, [refreshPrices]));
 

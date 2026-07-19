@@ -1,9 +1,9 @@
-import React, { useMemo, useId } from 'react';
+import React, { memo, useMemo, useId } from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { vantage } from '../../theme/vantageTheme';
 
-export default function Sparkline({
+function Sparkline({
   data = [],
   width = 80,
   height = 28,
@@ -64,3 +64,7 @@ export default function Sparkline({
     </View>
   );
 }
+
+// Memoized: rows re-render on every price tick — the SVG path must only be
+// recomputed when this row's own data actually changes.
+export default memo(Sparkline);

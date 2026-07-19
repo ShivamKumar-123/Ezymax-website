@@ -55,7 +55,7 @@ function InstrumentRow({
       }}
     >
       <Pressable
-        onPress={onPress}
+        onPress={onPress ? () => onPress(symbol) : undefined}
         onPressIn={pressIn}
         onPressOut={pressOut}
         android_ripple={{ color: vantage.bgPressed }}

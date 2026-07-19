@@ -8,6 +8,8 @@ import { vantage, space, sizes, weights, fontFamily, radius } from '../../../the
 import { bySegment } from '../../../utils/marketMovers';
 
 const WATCHLIST_PAGE = 15;
+// Stable fallback so memoized rows don't see a fresh [] identity every render.
+const EMPTY_SPARK = [];
 
 const FILTER_OPTIONS = [
   { value: 'all',     label: 'All' },
@@ -75,8 +77,8 @@ export default function MarketsWatchlist({
               subtitle={inst?.display_name || inst?.name || undefined}
               price={p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : null)}
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
-              sparkData={sparksBySymbol[upper] || []}
-              onPress={() => onPressInstrument(upper)}
+              sparkData={sparksBySymbol[upper] || EMPTY_SPARK}
+              onPress={onPressInstrument}
               upColor="#FBAA45"
             />
           );

@@ -14,6 +14,9 @@ import {
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { topRisers, topFallers, bySegment, MARQUEE_SPOTLIGHT } from '../../../utils/marketMovers';
 
+// Stable fallback so memoized rows don't see a fresh [] identity every render.
+const EMPTY_SPARK = [];
+
 const SEGMENT_OPTIONS = [
   { value: 'overview',    label: 'Overview' },
   { value: 'indices',     label: 'Indices' },
@@ -117,8 +120,8 @@ export default function MarketsExplore({
               subtitle={i.display_name || i.name || undefined}
               price={p.bid != null ? Number(p.bid) : (p.price != null ? Number(p.price) : null)}
               changePct={p.change_pct != null ? Number(p.change_pct) : (p.changePct != null ? Number(p.changePct) : null)}
-              sparkData={sparksBySymbol[sym] || []}
-              onPress={() => onPressInstrument(sym)}
+              sparkData={sparksBySymbol[sym] || EMPTY_SPARK}
+              onPress={onPressInstrument}
               upColor="#FBAA45"
             />
           );

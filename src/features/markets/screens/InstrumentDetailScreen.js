@@ -154,19 +154,18 @@ export default function InstrumentDetailScreen() {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [symbol]);
 
-  // Live price via polling (every 1.5s while focused) so the header price/PnL
-  // move in real time even when the WebSocket isn't delivering.
+  // Live price via polling (WS fallback, 1.5s while focused). Fetches ONLY
+  // this symbol — the old version pulled the entire price universe every
+  // 500ms to read one row.
   useFocusEffect(useCallback(() => {
     let cancelled = false;
     const tickOnce = async () => {
       try {
-        const res = await ApiService.getAllPrices();
-        const arr = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        const t = arr.find((x) => String(x.symbol || x.ticker || '').toUpperCase() === symbol);
-        if (!cancelled && t) setTick(t);
+        const t = await ApiService.getPrice(symbol);
+        if (!cancelled && t && t.bid != null) setTick(t);
       } catch (_) {}
     };
-    const id = setInterval(tickOnce, 500);
+    const id = setInterval(tickOnce, 1500);
     return () => { cancelled = true; clearInterval(id); };
   }, [symbol]));
 
