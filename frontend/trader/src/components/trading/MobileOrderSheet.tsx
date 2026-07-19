@@ -49,6 +49,17 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
   const digits = instrument?.digits ?? 5;
   const spread = price ? (price.ask - price.bid) * Math.pow(10, digits - 1) : 0;
 
+  // Margin required for the selected lots — same formula as the desktop
+  // OrderPanel (lots × contract_size × price ÷ leverage); server stays
+  // authoritative at execution.
+  const contractSize = instrument?.contract_size ?? 100000;
+  const execPrice = price ? price.ask : 0;
+  const marginRequired = activeAccount && execPrice
+    ? (lots * contractSize * execPrice) / activeAccount.leverage
+    : 0;
+  const freeMargin = activeAccount?.free_margin || 0;
+  const hasEnoughMargin = freeMargin >= marginRequired;
+
   const handleAdjustLots = (delta: number) => {
     setLots(prev => {
       const next = Math.max(0.01, parseFloat((prev + delta).toFixed(2)));
@@ -285,12 +296,21 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
                   }}
                   className="flex-1 h-11 bg-bg-secondary rounded-xl border border-border-glass text-center text-lg font-black text-text-primary font-mono tabular-nums outline-none focus:border-accent"
                 />
-                <button 
+                <button
                   onClick={() => handleAdjustLots(0.01)}
                   className="w-11 h-11 flex items-center justify-center rounded-xl bg-bg-secondary border border-border-glass text-text-primary active:scale-90 transition-transform shadow-sm"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14"/></svg>
                 </button>
+             </div>
+             {/* Cost of the selected volume — parity with the desktop panel
+                 and the mobile app; red when free margin can't cover it. */}
+             <div className="flex items-center justify-between mt-2 px-1">
+               <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">Margin Required</span>
+               <span className={clsx('text-xs font-mono font-bold', hasEnoughMargin ? 'text-text-secondary' : 'text-[#ef5350]')}>
+                 ≈ ${marginRequired.toFixed(2)}
+                 <span className="font-normal text-text-tertiary"> · Free ${freeMargin.toFixed(2)}</span>
+               </span>
              </div>
           </div>
 
