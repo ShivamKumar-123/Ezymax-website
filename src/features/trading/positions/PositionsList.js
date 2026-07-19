@@ -377,6 +377,9 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
   // Estimated P&L for the portion being closed (linear in lots, like the web).
   const estPl = pl != null && openLots > 0 && lotsValid ? pl * (lotsNum / openLots) : null;
   const estPositive = estPl == null ? true : estPl >= 0;
+  // Effective share of the position being closed — derived from the lots
+  // field, so it stays correct for custom-typed amounts, not just the chips.
+  const effPct = lotsValid && openLots > 0 ? Math.round((lotsNum / openLots) * 100) : null;
 
   const profitCount = positions.filter((x) => (plOf(x) ?? 0) >= 0).length;
   const lossCount = positions.length - profitCount;
@@ -438,9 +441,15 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
             <Text style={closeStyles.badHint}>Enter between 0.01 and {openLots.toFixed(2)} lots.</Text>
           ) : null}
 
-          {/* Estimated P&L for the selected portion. */}
+          {/* Estimated P&L for the selected portion — the label names the
+              share (percent + lots) the figure belongs to, so "50% → +$4.10"
+              reads unambiguously even after typing a custom lots amount. */}
           <View style={closeStyles.estRow}>
-            <Text style={closeStyles.estLab}>EST. P&L</Text>
+            <Text style={closeStyles.estLab}>
+              {effPct != null
+                ? `EST. P&L · ${effPct}% (${lotsNum.toFixed(2)} lots)`
+                : 'EST. P&L'}
+            </Text>
             <Text style={[closeStyles.estVal, { color: estPositive ? vantage.up : vantage.down }]}>
               {estPl != null ? `${estPositive ? '+' : '−'}$${Math.abs(estPl).toFixed(2)}` : '—'}
             </Text>
