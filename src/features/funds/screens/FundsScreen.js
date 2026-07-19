@@ -33,6 +33,10 @@ export default function FundsScreen() {
         cutoff.setHours(0, 0, 0, 0);
         cutoff.setDate(cutoff.getDate() - 1);
         const recentOnly = list.filter((t) => {
+          // Money movements only — per-trade P&L ledger rows (type
+          // profit/loss) belong to Trade → History, not the Funds view.
+          const type = String(t.type || t.kind || '').toLowerCase();
+          if (type === 'profit' || type === 'loss') return false;
           const ts = Date.parse(t.created_at || t.createdAt || '');
           return Number.isFinite(ts) && ts >= cutoff.getTime();
         }).slice(0, RECENT_MAX_ROWS);

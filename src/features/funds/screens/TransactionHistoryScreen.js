@@ -16,6 +16,7 @@ const FILTER_OPTIONS = [
   { value: 'deposit',     label: 'Deposits' },
   { value: 'withdraw',    label: 'Withdrawals' },
   { value: 'transfer',    label: 'Transfers' },
+  { value: 'trading',     label: 'Trading' },
 ];
 
 const TX_PAGE = 50;
@@ -56,7 +57,12 @@ export default function TransactionHistoryScreen() {
 
   const items = useMemo(() => {
     if (filter === 'all') return allItems;
-    return allItems.filter((tx) => String(tx.type || tx.kind || '').toLowerCase().includes(filter));
+    return allItems.filter((tx) => {
+      const t = String(tx.type || tx.kind || '').toLowerCase();
+      // Trade-close ledger rows are typed profit/loss by the backend.
+      if (filter === 'trading') return t === 'profit' || t === 'loss';
+      return t.includes(filter);
+    });
   }, [allItems, filter]);
 
   const exportPdf = useCallback(async () => {
@@ -156,19 +162,30 @@ function Row({ tx }) {
   const t = String(tx.type || tx.kind || '').toLowerCase();
   const isDeposit = t.includes('deposit');
   const isWithdraw = t.includes('withdraw');
-  const color = isDeposit ? vantage.up : (isWithdraw ? vantage.down : vantage.textPrimary);
-  const sign = isDeposit ? '+' : (isWithdraw ? '−' : '');
+  // Trade-close ledger rows: sign/colour by result, trade details underneath.
+  const isProfit = t === 'profit';
+  const isLoss = t === 'loss';
+  const color = (isDeposit || isProfit) ? vantage.up : ((isWithdraw || isLoss) ? vantage.down : vantage.textPrimary);
+  const sign = (isDeposit || isProfit) ? '+' : ((isWithdraw || isLoss) ? '−' : '');
   const amount = Math.abs(Number(tx.amount ?? 0));
   const method = tx.payment_method || tx.method || tx.gateway || tx.type || 'Transaction';
   const status = String(tx.status || '').toLowerCase();
+  const desc = String(tx.description || '').trim();
   let dateStr = '';
   try { dateStr = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : ''; } catch (_) {}
+  const icon = isProfit ? 'trending-up'
+    : isLoss ? 'trending-down'
+    : isDeposit ? 'arrow-down-circle'
+    : isWithdraw ? 'arrow-up-circle'
+    : 'swap-horizontal';
   return (
     <View style={rowStyles.row}>
-      <Ionicons name={isDeposit ? 'arrow-down-circle' : isWithdraw ? 'arrow-up-circle' : 'swap-horizontal'} size={22} color={color} />
+      <Ionicons name={icon} size={22} color={color} />
       <View style={{ flex: 1, marginLeft: space.md }}>
         <Text style={rowStyles.method}>{String(method).toUpperCase()}</Text>
-        <Text style={rowStyles.date}>{dateStr}</Text>
+        <Text style={rowStyles.date} numberOfLines={1}>
+          {(isProfit || isLoss) && desc ? `${desc} · ${dateStr}` : dateStr}
+        </Text>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={[rowStyles.amount, { color }]}>{sign}${amount.toFixed(2)}</Text>
