@@ -126,6 +126,42 @@ async def start_pending_registration(
     if not await get_bool_setting("allow_new_registrations", True):
         raise HTTPException(status_code=403, detail="New registrations are currently disabled")
 
+    # Idempotency cooldown: a duplicate /register/start for the same email
+    # within this window (double-click, client retry while the SMTP send is
+    # still in flight, back-then-submit) must NOT mint + email a second OTP.
+    # We refresh the staged form fields (so the latest password/name wins)
+    # but keep the existing OTP and skip the email. An explicit "Resend"
+    # goes through /register/resend, which rotates the OTP deliberately.
+    RESEND_COOLDOWN_SECONDS = 60
+    existing_raw = await redis_client.get(_redis_key(email_lower))
+    if existing_raw:
+        try:
+            existing = json.loads(existing_raw)
+            created = datetime.fromisoformat(existing.get("created_at", ""))
+            age = (datetime.now(timezone.utc) - created).total_seconds()
+            if 0 <= age < RESEND_COOLDOWN_SECONDS and existing.get("otp_hash"):
+                existing.update({
+                    "password_hash": hash_password(password),
+                    "first_name": first_name.strip(),
+                    "last_name": last_name.strip(),
+                    "phone": (phone or "").strip() or None,
+                    "country": (country or "").strip() or None,
+                    "referral_code": (referral_code or "").strip() or None,
+                })
+                ttl = await redis_client.ttl(_redis_key(email_lower))
+                await redis_client.setex(
+                    _redis_key(email_lower),
+                    ttl if ttl and ttl > 0 else PENDING_TTL_SECONDS,
+                    json.dumps(existing),
+                )
+                logger.info(
+                    "Pending registration re-start within cooldown for %s — OTP reused, no email sent",
+                    email_lower,
+                )
+                return {"message": "Verification code sent. Check your email."}
+        except Exception:
+            pass  # malformed staged entry — fall through and restage fresh
+
     otp = _generate_otp()
     salt = secrets.token_hex(8)
     payload = {

@@ -87,6 +87,10 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
   const submitCredentials = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // In-flight guard: a double-click fires two submit events before React
+    // re-renders the disabled button — without this the OTP email went out
+    // twice on registration.
+    if (submitting) return;
     const next: Record<string, string> = {};
 
     if (!isValidEmail(email)) next.email = 'Please enter a valid email address.';
@@ -135,6 +139,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
   const submitOtp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return; // double-click guard
     const code = otp.replace(/\D/g, '');
     if (code.length !== 6) {
       setErrors({ otp: 'Enter the 6-digit code.' });
@@ -195,12 +200,16 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   };
 
   const resendOtp = async () => {
+    if (submitting) return; // double-click guard
     try {
+      setSubmitting(true);
       await api.post('/auth/register/resend', { email: email.trim().toLowerCase() });
       toast.success('Code resent.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not send code.';
       toast.error(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
