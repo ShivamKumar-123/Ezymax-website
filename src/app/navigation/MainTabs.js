@@ -152,15 +152,33 @@ function useFirstRunTour(barRef) {
   const [steps, setSteps] = useState(null);
 
   const buildAndShow = useCallback(() => {
-    if (!barRef.current) return;
-    barRef.current.measureInWindow((x, y, width, height) => {
-      if (!width || !height) return;
-      const segW = width / 4;
-      setSteps(TOUR_STEPS.map((s) => ({
-        ...s,
-        target: s.tab == null ? null : { x: x + s.tab * segW, y, width: segW, height },
-      })));
-    });
+    // Anchored steps need the tab bar's window frame. measureInWindow can
+    // report zeros right after a navigation/layout tick (Fabric), so retry a
+    // few times — and if it never resolves, run the tour with centred cards
+    // instead of silently doing nothing.
+    const showCentred = () => setSteps(TOUR_STEPS.map((s) => ({ ...s, target: null })));
+    const attempt = (triesLeft) => {
+      const node = barRef.current;
+      if (!node) {
+        if (triesLeft > 0) setTimeout(() => attempt(triesLeft - 1), 200);
+        else showCentred();
+        return;
+      }
+      node.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          const segW = width / 4;
+          setSteps(TOUR_STEPS.map((s) => ({
+            ...s,
+            target: s.tab == null ? null : { x: x + s.tab * segW, y, width: segW, height },
+          })));
+        } else if (triesLeft > 0) {
+          setTimeout(() => attempt(triesLeft - 1), 200);
+        } else {
+          showCentred();
+        }
+      });
+    };
+    attempt(5);
   }, [barRef]);
 
   // First run: show once after the tab bar has settled.
