@@ -104,9 +104,14 @@ function VantageTabBar({ state, navigation }) {
         // Reset the tab's stack to its root when:
         //  • re-tapping the already-active tab (e.g. Home while the profile
         //    drawer is open returns Home), OR
+        //  • opening Home — leaving the profile menu (or any Home sub-screen)
+        //    open, visiting another tab and coming back must show HOME, not
+        //    the stale sub-screen, OR
         //  • opening Markets — it should ALWAYS show the instruments list, even
         //    if an instrument-detail chart was left open before switching away.
-        if (k === activeKey || k === 'MarketsTab') {
+        // Trade/Funds intentionally keep their inner state (e.g. a deposit
+        // flow in progress survives a quick tab hop).
+        if (k === activeKey || k === 'HomeTab' || k === 'MarketsTab') {
           navigation.navigate(k, { screen: TAB_ROOT[k] });
         } else {
           navigation.navigate(k);
