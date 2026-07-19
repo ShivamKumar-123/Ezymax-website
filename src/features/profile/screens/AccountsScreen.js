@@ -15,11 +15,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import { useAccount } from '../../../app/providers/AccountContext';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
-import { authedFetch } from '../../../services/api/authedFetch';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { isKycApproved, showKycGate, fetchKycStatus } from '../../../utils/kycGate';
 
 function isDemoAccount(a) {
@@ -133,7 +133,7 @@ const AccountsScreen = ({ navigation, route }) => {
         try {
           await Promise.all([fetchAccounts(), fetchWalletBalance()]);
         } catch (e) {
-          console.error('Error loading accounts data:', e);
+          logger.error('AccountsScreen: error loading accounts data', e);
         } finally {
           setLoading(false);
         }
@@ -173,11 +173,7 @@ const AccountsScreen = ({ navigation, route }) => {
 
   const fetchWalletBalance = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) return;
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch(`${API_URL}/wallet/summary`, { headers });
-      const data = await res.json().catch(() => ({}));
+      const data = await ApiService.getWalletSummary();
       // API sometimes returns strings like "0" or "100.50" — coerce + check via Number
       let mainBal = data.main_wallet_balance ?? data.wallet_balance ?? data.balance;
 
@@ -189,21 +185,20 @@ const AccountsScreen = ({ navigation, route }) => {
             const u = JSON.parse(userData);
             const userId = u._id || u.id;
             if (userId) {
-              const r2 = await fetch(`${API_URL}/wallet/${userId}`, { headers });
-              if (r2.ok) {
-                const d2 = await r2.json().catch(() => ({}));
-                const w = d2.wallet || d2;
-                const fb = w.main_wallet_balance ?? w.wallet_balance ?? w.balance;
-                if (fb != null && Number(fb) > 0) mainBal = fb;
-              }
+              const d2 = await ApiService.request(`/wallet/${userId}`);
+              const w = d2.wallet || d2;
+              const fb = w.main_wallet_balance ?? w.wallet_balance ?? w.balance;
+              if (fb != null && Number(fb) > 0) mainBal = fb;
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          logger.error('AccountsScreen: wallet fallback fetch failed', e);
+        }
       }
 
       setWalletBalance(Number(mainBal) || 0);
     } catch (e) {
-      console.error('Error fetching wallet:', e);
+      logger.error('AccountsScreen: error fetching wallet', e);
     }
   };
 
@@ -214,19 +209,15 @@ const AccountsScreen = ({ navigation, route }) => {
         setUser(JSON.parse(userData));
       }
     } catch (e) {
-      console.error('Error loading user:', e);
+      logger.error('AccountsScreen: error loading user', e);
     }
   };
 
   const fetchAccounts = async () => {
     if (!user) return;
     try {
-      const token = await SecureStore.getItemAsync('token');
-      console.log('AccountsScreen - Fetching accounts with token auth');
-      const res = await fetch(`${API_URL}/accounts`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      logger.log('AccountsScreen - Fetching accounts with token auth');
+      const data = await ApiService.getAccounts();
       const items = data.items || data || [];
       // Map TrustEdge account fields to expected format (show both demo and live, like web)
       const mappedAccounts = items.map((a) => ({
@@ -239,10 +230,10 @@ const AccountsScreen = ({ navigation, route }) => {
         status: a.status === 'active' ? 'Active' : (a.status || 'Active'),
         accountType: a.account_type || a.accountType || (a.account_group?.name) || 'Standard',
       }));
-      console.log('AccountsScreen - Accounts response:', mappedAccounts.length, 'accounts (demo+live)');
+      logger.log('AccountsScreen - Accounts response:', mappedAccounts.length, 'accounts (demo+live)');
       setAccounts(mappedAccounts);
     } catch (e) {
-      console.warn('AccountsScreen - Error fetching accounts:', e.message);
+      logger.warn('AccountsScreen - Error fetching accounts:', e.message);
     }
   };
 
@@ -254,7 +245,7 @@ const AccountsScreen = ({ navigation, route }) => {
 
 
   const handleDeposit = (account) => {
-    console.log('Opening deposit modal for account:', account.accountId, account._id);
+    logger.log('Opening deposit modal for account:', account.accountId, account._id);
     setSelectedAccount(account);
     setTransferAmount('');
     fetchWalletBalance(); // Refresh wallet balance
@@ -262,7 +253,7 @@ const AccountsScreen = ({ navigation, route }) => {
   };
 
   const handleWithdraw = (account) => {
-    console.log('Opening withdraw modal for account:', account.accountId, account._id);
+    logger.log('Opening withdraw modal for account:', account.accountId, account._id);
     setSelectedAccount(account);
     setTransferAmount('');
     setShowWithdrawModal(true);
@@ -292,45 +283,33 @@ const AccountsScreen = ({ navigation, route }) => {
 
     setIsTransferring(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
       const accountId = selectedAccount.id || selectedAccount._id;
       const amount = parseFloat(transferAmount);
 
       // Try the web endpoint first (matches frontend/trader)
-      let res = await fetch(`${API_URL}/wallet/transfer-main-to-trading`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ to_account_id: accountId, amount }),
-      });
-
-      // Fall back to legacy /wallet/deposit if the new endpoint isn't available
-      if (res.status === 404 || res.status === 405) {
-        res = await fetch(`${API_URL}/wallet/deposit`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
+      try {
+        await ApiService.transferMainToTrading(accountId, amount);
+      } catch (err) {
+        // Fall back to legacy /wallet/deposit if the new endpoint isn't available
+        if (/not found|method not allowed|404|405/i.test(err?.message || '')) {
+          await ApiService.submitDeposit({
             account_id: accountId,
             amount,
             method: 'internal_transfer',
-          }),
-        });
+          });
+        } else {
+          throw err;
+        }
       }
 
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        await Promise.all([fetchAccounts(), fetchWalletBalance()]);
-        setShowTransferModal(false);
-        setTransferAmount('');
-        setSelectedAccount(null);
-        Alert.alert('Success', 'Funds transferred to account!');
-      } else {
-        Alert.alert('Error', data.detail || data.message || `Transfer failed (HTTP ${res.status})`);
-      }
+      await Promise.all([fetchAccounts(), fetchWalletBalance()]);
+      setShowTransferModal(false);
+      setTransferAmount('');
+      setSelectedAccount(null);
+      Alert.alert('Success', 'Funds transferred to account!');
     } catch (e) {
-      console.error('Transfer error:', e);
-      Alert.alert('Error', 'Error transferring funds: ' + e.message);
+      logger.error('AccountsScreen: transfer error', e);
+      Alert.alert('Error', e.message || 'Transfer failed');
     }
     setIsTransferring(false);
   };
@@ -352,44 +331,33 @@ const AccountsScreen = ({ navigation, route }) => {
 
     setIsTransferring(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
       const accountId = selectedAccount.id || selectedAccount._id;
       const amount = parseFloat(transferAmount);
 
       // Try the web endpoint first
-      let res = await fetch(`${API_URL}/wallet/transfer-trading-to-main`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ from_account_id: accountId, amount }),
-      });
-
-      // Fall back to legacy /wallet/withdraw with internal_transfer method
-      if (res.status === 404 || res.status === 405) {
-        res = await fetch(`${API_URL}/wallet/withdraw`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
+      try {
+        await ApiService.transferTradingToMain(accountId, amount);
+      } catch (err) {
+        // Fall back to legacy /wallet/withdraw with internal_transfer method
+        if (/not found|method not allowed|404|405/i.test(err?.message || '')) {
+          await ApiService.submitWithdrawal({
             account_id: accountId,
             amount,
             method: 'internal_transfer',
-          }),
-        });
+          });
+        } else {
+          throw err;
+        }
       }
 
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        await Promise.all([fetchAccounts(), fetchWalletBalance()]);
-        setShowWithdrawModal(false);
-        setTransferAmount('');
-        setSelectedAccount(null);
-        Alert.alert('Success', 'Funds withdrawn to main wallet!');
-      } else {
-        Alert.alert('Error', data.detail || data.message || `Withdrawal failed (HTTP ${res.status})`);
-      }
+      await Promise.all([fetchAccounts(), fetchWalletBalance()]);
+      setShowWithdrawModal(false);
+      setTransferAmount('');
+      setSelectedAccount(null);
+      Alert.alert('Success', 'Funds withdrawn to main wallet!');
     } catch (e) {
-      Alert.alert('Error', 'Error withdrawing funds: ' + e.message);
+      logger.error('AccountsScreen: withdraw error', e);
+      Alert.alert('Error', e.message || 'Withdrawal failed');
     }
     setIsTransferring(false);
   };
@@ -420,8 +388,7 @@ const AccountsScreen = ({ navigation, route }) => {
 
     setIsTransferring(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const bankAccountDetails = withdrawMethod === 'Bank' 
+      const bankAccountDetails = withdrawMethod === 'Bank'
         ? {
             type: 'Bank',
             bankName: bankDetails.bankName,
@@ -434,29 +401,21 @@ const AccountsScreen = ({ navigation, route }) => {
             upiId: upiId,
           };
 
-      const res = await fetch(`${API_URL}/wallet/withdraw`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          amount: parseFloat(transferAmount),
-          method: withdrawMethod === 'Bank' ? 'bank' : 'upi',
-          bank_details: bankAccountDetails,
-        })
+      await ApiService.submitWithdrawal({
+        amount: parseFloat(transferAmount),
+        method: withdrawMethod === 'Bank' ? 'bank' : 'upi',
+        bank_details: bankAccountDetails,
       });
-      const data = await res.json();
-      
-      if (res.ok) {
-        Alert.alert('Success', 'Withdrawal request submitted! Admin will process it shortly.');
-        setShowWithdrawRequestModal(false);
-        setTransferAmount('');
-        setBankDetails({ bankName: '', accountNumber: '', ifscCode: '', accountHolderName: '' });
-        setUpiId('');
-        fetchWalletBalance();
-      } else {
-        Alert.alert('Error', data.message || 'Withdrawal request failed');
-      }
+
+      Alert.alert('Success', 'Withdrawal request submitted! Admin will process it shortly.');
+      setShowWithdrawRequestModal(false);
+      setTransferAmount('');
+      setBankDetails({ bankName: '', accountNumber: '', ifscCode: '', accountHolderName: '' });
+      setUpiId('');
+      fetchWalletBalance();
     } catch (e) {
-      Alert.alert('Error', 'Error submitting withdrawal request');
+      logger.error('AccountsScreen: withdrawal request error', e);
+      Alert.alert('Error', e.message || 'Withdrawal request failed');
     }
     setIsTransferring(false);
   };
@@ -487,28 +446,19 @@ const AccountsScreen = ({ navigation, route }) => {
 
     setIsTransferring(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/wallet/transfer-internal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          from_account_id: selectedAccount.id || selectedAccount._id,
-          to_account_id: targetAccount.id || targetAccount._id,
-          amount: parseFloat(transferAmount),
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        await Promise.all([fetchAccounts(), fetchWalletBalance()]);
-        setShowAccountTransferModal(false);
-        setTransferAmount('');
-        setSelectedAccount(null);
-        setTargetAccount(null);
-        Alert.alert('Success', 'Funds transferred between accounts');
-      } else {
-        Alert.alert('Error', data.detail || data.message || 'Transfer failed');
-      }
+      await ApiService.transferInternal(
+        selectedAccount.id || selectedAccount._id,
+        targetAccount.id || targetAccount._id,
+        parseFloat(transferAmount),
+      );
+      await Promise.all([fetchAccounts(), fetchWalletBalance()]);
+      setShowAccountTransferModal(false);
+      setTransferAmount('');
+      setSelectedAccount(null);
+      setTargetAccount(null);
+      Alert.alert('Success', 'Funds transferred between accounts');
     } catch (e) {
+      logger.error('AccountsScreen: account transfer error', e);
       Alert.alert('Error', e.message || 'Transfer failed');
     }
     setIsTransferring(false);
@@ -518,15 +468,11 @@ const AccountsScreen = ({ navigation, route }) => {
   const fetchAccountGroups = async () => {
     setGroupsLoading(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/accounts/available-groups`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await res.json().catch(() => ({}));
+      const data = await ApiService.getAvailableAccountGroups();
       const items = data.items || data || [];
       setGroups(Array.isArray(items) ? items : []);
     } catch (e) {
-      console.warn('Account groups fetch error:', e.message);
+      logger.warn('Account groups fetch error:', e.message);
       setGroups([]);
     }
     setGroupsLoading(false);
@@ -554,22 +500,13 @@ const AccountsScreen = ({ navigation, route }) => {
     }
     setOpeningAccount(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/accounts/open`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ account_group_id: selectedGroupId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setShowOpenModal(false);
-        setSelectedGroupId(null);
-        await fetchAccounts();
-        Alert.alert('Success', `Account ${data.account_number || 'created'} opened`);
-      } else {
-        Alert.alert('Error', data.detail || data.message || 'Could not open account');
-      }
+      const data = await ApiService.openAccount(selectedGroupId);
+      setShowOpenModal(false);
+      setSelectedGroupId(null);
+      await fetchAccounts();
+      Alert.alert('Success', `Account ${data.account_number || 'created'} opened`);
     } catch (e) {
+      logger.error('AccountsScreen: open account error', e);
       Alert.alert('Error', e.message || 'Could not open account');
     }
     setOpeningAccount(false);
@@ -590,19 +527,11 @@ const AccountsScreen = ({ navigation, route }) => {
           onPress: async () => {
             setDeletingAccountId(aid);
             try {
-              const token = await SecureStore.getItemAsync('token');
-              const res = await fetch(`${API_URL}/accounts/${aid}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` },
-              });
-              if (res.ok) {
-                setAccounts((prev) => prev.filter((a) => (a.id || a._id) !== aid));
-                Alert.alert('Deleted', 'Account removed');
-              } else {
-                const data = await res.json().catch(() => ({}));
-                Alert.alert('Error', data.detail || data.message || 'Delete failed');
-              }
+              await ApiService.deleteAccount(aid);
+              setAccounts((prev) => prev.filter((a) => (a.id || a._id) !== aid));
+              Alert.alert('Deleted', 'Account removed');
             } catch (e) {
+              logger.error('AccountsScreen: delete account error', e);
               Alert.alert('Error', e.message);
             }
             setDeletingAccountId(null);
@@ -854,7 +783,7 @@ const AccountsScreen = ({ navigation, route }) => {
                     {/* Trade — primary CTA (Pressable for reliable Android touch) */}
                     <Pressable
                       onPress={() => {
-                        console.log('[AccountsScreen] Trade button pressed', aid);
+                        logger.log('[AccountsScreen] Trade button pressed', aid);
                         selectAccountForTrading(account);
                       }}
                       android_ripple={{ color: 'rgba(0,0,0,0.15)' }}
@@ -896,7 +825,7 @@ const AccountsScreen = ({ navigation, route }) => {
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                       <Pressable
                         onPress={() => {
-                          console.log('[AccountsScreen] Deposit pressed', aid);
+                          logger.log('[AccountsScreen] Deposit pressed', aid);
                           handleDeposit(account);
                         }}
                         android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
@@ -913,7 +842,7 @@ const AccountsScreen = ({ navigation, route }) => {
                       </Pressable>
                       <Pressable
                         onPress={() => {
-                          console.log('[AccountsScreen] Withdraw pressed', aid);
+                          logger.log('[AccountsScreen] Withdraw pressed', aid);
                           handleWithdraw(account);
                         }}
                         android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
@@ -931,7 +860,7 @@ const AccountsScreen = ({ navigation, route }) => {
                       {mainTradingAccounts.length > 1 && (
                         <Pressable
                           onPress={() => {
-                            console.log('[AccountsScreen] Transfer pressed', aid);
+                            logger.log('[AccountsScreen] Transfer pressed', aid);
                             handleAccountTransfer(account);
                           }}
                           android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
@@ -952,7 +881,7 @@ const AccountsScreen = ({ navigation, route }) => {
                     {/* Close account — destructive */}
                     <Pressable
                       onPress={() => {
-                        console.log('[AccountsScreen] Close account pressed', aid);
+                        logger.log('[AccountsScreen] Close account pressed', aid);
                         handleDeleteAccount(account);
                       }}
                       disabled={deletingAccountId === aid}

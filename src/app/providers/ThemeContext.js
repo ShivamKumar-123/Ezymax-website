@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import AppLoader from '../../components/vantage/AppLoader';
 import { showToast } from '../../components/vantage';
 import { vantage } from '../../theme/vantageTheme';
@@ -102,31 +102,29 @@ export const ThemeProvider = ({ children }) => {
   // Switching theme repaints the whole app, so persist the choice and reload
   // the JS bundle — this keeps the static `vantage` tokens and these `colors`
   // perfectly in sync.
-  const setTheme = async (name) => {
+  const setTheme = useCallback(async (name) => {
     const reloaded = await setThemeAndReload(name);
     if (!reloaded) {
       showToast({ kind: 'info', message: 'Theme saved — reopen the app to apply' });
     }
-  };
-  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
+  }, []);
+  const toggleTheme = useCallback(() => setTheme(isDark ? 'light' : 'dark'), [setTheme, isDark]);
 
   const theme = isDark ? darkTheme : lightTheme;
+
+  // Memoized: theme only changes via a full JS reload, so this is effectively
+  // constant — consumers never re-render because of this provider.
+  const value = useMemo(
+    () => ({ theme, colors: theme.colors, isDark, toggleTheme, setTheme, loading }),
+    [theme, isDark, toggleTheme, setTheme, loading],
+  );
 
   if (loading) {
     return <AppLoader />;
   }
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        colors: theme.colors,
-        isDark,
-        toggleTheme,
-        setTheme,
-        loading,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ScrollView, RefreshControl, View, Text, Image, StyleSheet } from 'react-native';
+import { ScrollView, RefreshControl, View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
@@ -8,6 +8,10 @@ import { vantage, space, sizes, weights, fontFamily } from '../../../theme/vanta
 import ApiService from '../../../services/api/ApiService';
 import { useHiddenBalance } from '../../../utils/hiddenBalance';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
+
+// "Recent Transactions" shows at most this many rows from the last 2 days;
+// everything else lives in the full History screen.
+const RECENT_MAX_ROWS = 8;
 
 export default function FundsScreen() {
   const nav = useNavigation();
@@ -22,7 +26,17 @@ export default function FundsScreen() {
       ApiService.getWalletSummary().then(setSummary).catch(() => setSummary(null)),
       ApiService.getTransactions({ page: 1, perPage: 5 }).then((res) => {
         const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
-        setRecent(list);
+        // "Recent" = the LAST 2 DAYS only (today + yesterday), capped — the
+        // backend ignores per_page and returns the full ledger, which used to
+        // render here in its entirety. Full history lives behind History.
+        const cutoff = new Date();
+        cutoff.setHours(0, 0, 0, 0);
+        cutoff.setDate(cutoff.getDate() - 1);
+        const recentOnly = list.filter((t) => {
+          const ts = Date.parse(t.created_at || t.createdAt || '');
+          return Number.isFinite(ts) && ts >= cutoff.getTime();
+        }).slice(0, RECENT_MAX_ROWS);
+        setRecent(recentOnly);
       }).catch(() => setRecent([])),
     ]);
   }, []);
@@ -86,9 +100,14 @@ export default function FundsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={vantage.accent} colors={[vantage.accent]} />}
       >
         <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Recent Transactions</Text>
+            <Pressable onPress={() => nav.navigate('TransactionHistory')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all transactions">
+              <Text style={styles.viewAll}>View all →</Text>
+            </Pressable>
+          </View>
           {recent.length === 0 ? (
-            <Text style={styles.empty}>No transactions yet.</Text>
+            <Text style={styles.empty}>No transactions in the last 2 days.</Text>
           ) : recent.map((t) => <TxRow key={t.id || t._id || `${t.created_at}-${t.amount}`} tx={t} />)}
         </View>
       </ScrollView>
@@ -152,6 +171,8 @@ const styles = StyleSheet.create({
   splitVal: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold, marginTop: 2 },
   tilesRow: { flexDirection: 'row', paddingHorizontal: space.lg, paddingVertical: space.lg, gap: space.md },
   recentSection: { paddingHorizontal: space.lg, paddingTop: space.md },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  viewAll: { color: vantage.accent, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   sectionTitle: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, marginBottom: space.sm },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.lg, textAlign: 'center' },
 });

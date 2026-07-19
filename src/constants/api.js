@@ -31,3 +31,7 @@ export const WS_URL = trimOrEmpty(ENV_WS_URL) || derivedWs;
 // the charting_library/ static files to be present on the trader deploy.
 // When EMPTY, instrument charts fall back to the public TradingView widget.
 export const CHART_URL = 'https://trade.swisscresta.com/chart';
+
+// Web-app origin derived from CHART_URL — single place the trader-web host
+// lives (used e.g. for brand assets in exported PDFs).
+export const TRADE_WEB_URL = CHART_URL.replace(/\/chart\/?$/, '');

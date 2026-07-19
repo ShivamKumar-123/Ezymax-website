@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API_URL } from '../constants';
-import { getJsonAuthHeaders } from '../services/api/authHeaders';
+import ApiService from '../services/api/ApiService';
+import logger from '../utils/logger';
 
 export default function usePamm() {
   const [masters, setMasters] = useState([]);
@@ -16,20 +16,16 @@ export default function usePamm() {
 
   const fetchMasters = useCallback(async () => {
     try {
-      const headers = await getJsonAuthHeaders();
-      const res = await fetch(`${API_URL}/social/mamm-pamm?page=1&per_page=50`, { headers });
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await ApiService.request('/social/mamm-pamm?page=1&per_page=50');
       if (mounted.current) setMasters(Array.isArray(data?.items) ? data.items : []);
-    } catch (_) {}
+    } catch (e) {
+      logger.error('usePamm: masters fetch failed', e);
+    }
   }, []);
 
   const fetchAllocations = useCallback(async () => {
     try {
-      const headers = await getJsonAuthHeaders();
-      const res = await fetch(`${API_URL}/social/my-allocations`, { headers });
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await ApiService.getMyAllocations();
       if (!mounted.current) return;
       const items = Array.isArray(data?.items) ? data.items : [];
       setAllocations(items);
@@ -51,19 +47,20 @@ export default function usePamm() {
           overall_pnl_pct: totalInv > 0 ? (totalPnl / totalInv) * 100 : 0,
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      logger.error('usePamm: allocations fetch failed', e);
+    }
   }, []);
 
   const fetchAccounts = useCallback(async () => {
     try {
-      const headers = await getJsonAuthHeaders();
-      const res = await fetch(`${API_URL}/accounts`, { headers });
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await ApiService.getAccounts();
       if (!mounted.current) return;
       const items = Array.isArray(data?.items ?? data) ? (data.items ?? data) : [];
       setAccounts(items);
-    } catch (_) {}
+    } catch (e) {
+      logger.error('usePamm: accounts fetch failed', e);
+    }
   }, []);
 
   const loadAll = useCallback(async (isRefresh = false) => {
@@ -80,28 +77,20 @@ export default function usePamm() {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const invest = useCallback(async (masterId, amount, opts = {}) => {
-    const headers = await getJsonAuthHeaders();
     // Funds come from the main wallet; the backend auto-creates a dedicated MAM
     // sub-account. No account needs to be picked — account_id is optional.
     const params = new URLSearchParams({ amount: String(amount) });
     if (opts.accountId) params.set('account_id', opts.accountId);
     if (opts.volumeScalingPct != null) params.set('volume_scaling_pct', String(opts.volumeScalingPct));
-    const res = await fetch(`${API_URL}/social/mamm-pamm/${masterId}/invest?${params.toString()}`, {
-      method: 'POST', headers,
+    const data = await ApiService.request(`/social/mamm-pamm/${masterId}/invest?${params.toString()}`, {
+      method: 'POST',
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.detail || data?.message || 'Investment failed');
     await fetchAllocations();
     return data;
   }, [fetchAllocations]);
 
   const withdrawAllocation = useCallback(async (allocationId) => {
-    const headers = await getJsonAuthHeaders();
-    const res = await fetch(`${API_URL}/social/mamm-pamm/${allocationId}/withdraw`, {
-      method: 'DELETE', headers,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.detail || data?.message || 'Withdrawal failed');
+    const data = await ApiService.withdrawAllocation(allocationId);
     await fetchAllocations();
     return data;
   }, [fetchAllocations]);

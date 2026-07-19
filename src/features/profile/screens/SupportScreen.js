@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+import logger from '../../../utils/logger';
   View,
   Text,
   StyleSheet,
@@ -55,7 +56,7 @@ const SupportScreen = ({ navigation }) => {
         setUser(JSON.parse(userData));
       }
     } catch (e) {
-      console.error('Error loading user:', e);
+      logger.error('Error loading user:', e);
     }
   };
 
@@ -68,7 +69,7 @@ const SupportScreen = ({ navigation }) => {
       // Normalize id field so the rest of the UI can keep using `_id`.
       setTickets(list.map((t) => ({ ...t, _id: t._id || t.id })));
     } catch (e) {
-      console.error('Error fetching tickets:', e);
+      logger.error('Error fetching tickets:', e);
     }
     setRefreshing(false);
   };

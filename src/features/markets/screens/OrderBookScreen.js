@@ -10,8 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import webSocketService from '../../../services/websocket/WebSocketService';
 
@@ -56,14 +56,8 @@ const OrderBookScreen = ({ navigation }) => {
 
   const loadData = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) { return; }
-
       // Fetch accounts
-      const accountsRes = await fetch(`${API_URL}/accounts`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const accountsData = await accountsRes.json();
+      const accountsData = await ApiService.getAccounts();
       const items = accountsData.items || accountsData || [];
       const mapped = items.map(a => ({
         ...a,
@@ -73,9 +67,9 @@ const OrderBookScreen = ({ navigation }) => {
       setAccounts(mapped);
 
       // Fetch positions & history for all accounts
-      await fetchAllTradesForAccounts(mapped, token);
+      await fetchAllTradesForAccounts(mapped);
     } catch (e) {
-      console.error('[OrderBook] Error loading data:', e);
+      logger.error('[OrderBook] Error loading data:', e);
     } finally {
       setLoading(false);
     }
@@ -88,14 +82,11 @@ const OrderBookScreen = ({ navigation }) => {
   }, [selectedAccount]);
 
   const refreshTrades = async () => {
-    const token = await SecureStore.getItemAsync('token');
-    if (token) await fetchAllTradesForAccounts(accounts, token);
+    await fetchAllTradesForAccounts(accounts);
   };
 
-  const fetchAllTradesForAccounts = async (accountsList, token) => {
+  const fetchAllTradesForAccounts = async (accountsList) => {
     try {
-      const headers = { 'Authorization': `Bearer ${token}` };
-      
       // Determine which accounts to fetch
       let accountsToFetch = accountsList;
       if (selectedAccount !== 'all') {
@@ -106,8 +97,7 @@ const OrderBookScreen = ({ navigation }) => {
 
       // Fetch all data in parallel for all accounts
       const allOpenPromises = accountsToFetch.map(acct =>
-        fetch(`${API_URL}/positions/?account_id=${acct._id}&status=open`, { headers })
-          .then(r => r.ok ? r.json() : [])
+        ApiService.getPositions(acct._id, 'open')
           .then(data => {
             const items = Array.isArray(data) ? data : (data.items || []);
             return items.map(p => ({
@@ -128,12 +118,11 @@ const OrderBookScreen = ({ navigation }) => {
               createdAt: p.created_at,
             }));
           })
-          .catch(() => [])
+          .catch((e) => { logger.error('[OrderBook] Positions fetch failed:', e); return []; })
       );
 
       const allPendingPromises = accountsToFetch.map(acct =>
-        fetch(`${API_URL}/orders/?account_id=${acct._id}&status=pending`, { headers })
-          .then(r => r.ok ? r.json() : [])
+        ApiService.getOrders(acct._id, 'pending')
           .then(data => {
             const items = Array.isArray(data) ? data : (data.items || []);
             return items.map(o => ({
@@ -150,15 +139,14 @@ const OrderBookScreen = ({ navigation }) => {
               createdAt: o.created_at,
             }));
           })
-          .catch(() => [])
+          .catch((e) => { logger.error('[OrderBook] Pending orders fetch failed:', e); return []; })
       );
 
       // Fetch trade history via portfolio/trades
       const historyAccountParam = selectedAccount !== 'all' ? `&account_id=${selectedAccount}` : '';
-      const historyRes = await fetch(`${API_URL}/portfolio/trades?per_page=50${historyAccountParam}`, { headers });
       let historyItems = [];
-      if (historyRes.ok) {
-        const histData = await historyRes.json();
+      try {
+        const histData = await ApiService.request(`/portfolio/trades?per_page=50${historyAccountParam}`);
         historyItems = (histData.items || []).map(t => ({
           _id: t.id,
           symbol: t.symbol,
@@ -174,6 +162,8 @@ const OrderBookScreen = ({ navigation }) => {
           closedAt: t.close_time || t.closed_at,
           accountName: '',
         }));
+      } catch (e) {
+        logger.error('[OrderBook] Trade history fetch failed:', e);
       }
 
       const [openResults, pendingResults] = await Promise.all([
@@ -188,7 +178,7 @@ const OrderBookScreen = ({ navigation }) => {
       setPendingOrders(allPending);
       setClosedTrades(historyItems);
     } catch (e) {
-      console.error('[OrderBook] Error fetching trades:', e);
+      logger.error('[OrderBook] Error fetching trades:', e);
     }
   };
 
@@ -255,25 +245,12 @@ const OrderBookScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await SecureStore.getItemAsync('token');
-              const res = await fetch(`${API_URL}/positions/${trade._id}/close`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({})
-              });
-              const data = await res.json();
-              if (res.ok) {
-                Alert.alert('Success', `Trade closed! P/L: $${(data.profit || data.pnl || 0).toFixed(2)}`);
-                refreshTrades();
-              } else {
-                Alert.alert('Error', data.detail || data.message || 'Failed to close trade');
-              }
+              const data = await ApiService.closePosition(trade._id);
+              Alert.alert('Success', `Trade closed! P/L: $${(data.profit || data.pnl || 0).toFixed(2)}`);
+              refreshTrades();
             } catch (e) {
-              console.error('Close trade error:', e);
-              Alert.alert('Error', 'Network error - please check your connection');
+              logger.error('[OrderBook] Close trade error:', e);
+              Alert.alert('Error', e.message || 'Failed to close trade');
             }
           }
         }
@@ -292,20 +269,12 @@ const OrderBookScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await SecureStore.getItemAsync('token');
-              const res = await fetch(`${API_URL}/orders/${order._id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              if (res.ok) {
-                Alert.alert('Success', 'Order cancelled');
-                refreshTrades();
-              } else {
-                const data = await res.json();
-                Alert.alert('Error', data.detail || 'Failed to cancel order');
-              }
+              await ApiService.cancelOrder(order._id);
+              Alert.alert('Success', 'Order cancelled');
+              refreshTrades();
             } catch (e) {
-              Alert.alert('Error', 'Network error');
+              logger.error('[OrderBook] Cancel order error:', e);
+              Alert.alert('Error', e.message || 'Failed to cancel order');
             }
           }
         }

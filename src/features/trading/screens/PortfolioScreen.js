@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import { useAccount } from '../../../app/providers/AccountContext';
 import AccountSwitcher from '../components/AccountSwitcher';
@@ -31,14 +31,6 @@ const TABS = [
   { id: 'performance', label: 'Performance' },
   { id: 'history', label: 'History' },
 ];
-
-async function authHeaders() {
-  const token = await SecureStore.getItemAsync('token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 function fmtMoney(n) {
   const v = Number(n) || 0;
@@ -110,25 +102,15 @@ export default function PortfolioScreen({ navigation }) {
     try {
       setError(null);
       if (firstLoadRef.current) setLoading(true);
-      const h = await authHeaders();
       const aq = acctId ? `&account_id=${encodeURIComponent(acctId)}` : '';
-      const [sRes, pRes] = await Promise.all([
-        fetch(`${API_URL}/portfolio/summary${acctId ? `?account_id=${encodeURIComponent(acctId)}` : ''}`, { headers: h }),
-        fetch(`${API_URL}/portfolio/performance?period=${encodeURIComponent(period)}${aq}`, { headers: h }),
+      const [sData, pData] = await Promise.all([
+        ApiService.getPortfolioSummary(acctId),
+        ApiService.request(`/portfolio/performance?period=${encodeURIComponent(period)}${aq}`),
       ]);
-      if (!sRes.ok) {
-        const err = await sRes.json().catch(() => ({}));
-        throw new Error(err.detail || err.message || `Summary ${sRes.status}`);
-      }
-      if (!pRes.ok) {
-        const err = await pRes.json().catch(() => ({}));
-        throw new Error(err.detail || err.message || `Performance ${pRes.status}`);
-      }
-      const sData = await sRes.json();
-      const pData = await pRes.json();
       setSummary(sData);
       setPerformance(pData);
     } catch (e) {
+      logger.error('PortfolioScreen: portfolio load failed', e);
       setError(e.message || 'Failed to load portfolio');
     } finally {
       setLoading(false);
@@ -139,18 +121,13 @@ export default function PortfolioScreen({ navigation }) {
   const loadTrades = useCallback(async (page) => {
     setHistLoading(true);
     try {
-      const h = await authHeaders();
-      const res = await fetch(
-        `${API_URL}/portfolio/trades?page=${page}&per_page=40${acctId ? `&account_id=${encodeURIComponent(acctId)}` : ''}`,
-        { headers: h }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || 'Failed to load trades');
+      const data = await ApiService.getTradeHistory(acctId, page, 40);
       const items = data.items || [];
       setTrades((prev) => (page === 1 ? items : [...prev, ...items]));
       setHistPages(data.pages || 1);
       setHistPage(page);
     } catch (e) {
+      logger.error('PortfolioScreen: trades load failed', e);
       setError(e.message);
     } finally {
       setHistLoading(false);

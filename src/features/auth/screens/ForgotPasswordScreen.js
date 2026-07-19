@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { Screen, PillButton, IconButton, showToast } from '../../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 
@@ -18,18 +19,14 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      await ApiService.request('/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.detail || data?.message || 'Failed to send OTP');
-      }
       showToast({ kind: 'success', message: 'OTP sent to your email' });
       setStep(2);
     } catch (e) {
+      logger.error('ForgotPasswordScreen: OTP request failed', e);
       showToast({ kind: 'error', message: e?.message || 'Failed to send OTP' });
     } finally { setSubmitting(false); }
   };
@@ -39,18 +36,14 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (newPwd.length < 8) return showToast({ kind: 'warn', message: 'Password must be 8+ characters' });
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
+      await ApiService.request('/auth/reset-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: otp.trim(), new_password: newPwd }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.detail || data?.message || 'Reset failed');
-      }
       showToast({ kind: 'success', message: 'Password reset. Please log in.' });
       navigation.navigate('Login');
     } catch (e) {
+      logger.error('ForgotPasswordScreen: password reset failed', e);
       showToast({ kind: 'error', message: e?.message || 'Reset failed' });
     } finally { setSubmitting(false); }
   };

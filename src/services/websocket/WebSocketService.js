@@ -1,5 +1,6 @@
 import { WS_URL } from '../../constants';
 import * as SecureStore from 'expo-secure-store';
+import logger from '../../utils/logger';
 
 class WebSocketService {
   constructor() {
@@ -21,12 +22,12 @@ class WebSocketService {
 
   async connectPriceStream() {
     if (this.priceWs && this.priceWs.readyState === WebSocket.OPEN) {
-      console.log('Price WebSocket already connected');
+      logger.log('Price WebSocket already connected');
       return;
     }
 
     if (this.isConnecting) {
-      console.log('Price WebSocket connection already in progress');
+      logger.log('Price WebSocket connection already in progress');
       return;
     }
 
@@ -38,7 +39,7 @@ class WebSocketService {
       this.priceWs = new WebSocket(wsUrl);
 
       this.priceWs.onopen = () => {
-        console.log('Price WebSocket connected');
+        logger.log('Price WebSocket connected');
         this.reconnectAttempts = 0;
         this.isConnecting = false;
       };
@@ -48,12 +49,12 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           this.notifyPriceListeners(data);
         } catch (error) {
-          console.error('Error parsing price message:', error);
+          logger.error('Error parsing price message:', error);
         }
       };
 
       this.priceWs.onerror = () => {
-        // Don't surface as console.error — Expo Go shows that as an in-app red toast.
+        // Don't surface as logger.error — Expo Go shows that as an in-app red toast.
         // Reconnect logic handles the actual recovery.
         this.isConnecting = false;
       };
@@ -67,21 +68,21 @@ class WebSocketService {
         this.handleReconnect('price');
       };
     } catch (error) {
-      console.error('Error connecting to price stream:', error);
+      logger.error('Error connecting to price stream:', error);
       this.isConnecting = false;
     }
   }
 
   async connectTradeStream(accountId) {
     if (this.tradeWs && this.tradeWs.readyState === WebSocket.OPEN) {
-      console.log('Trade WebSocket already connected');
+      logger.log('Trade WebSocket already connected');
       return;
     }
 
     try {
       const token = await SecureStore.getItemAsync('token');
       if (!token) {
-        console.error('No token found for trade stream');
+        logger.error('No token found for trade stream');
         return;
       }
 
@@ -90,7 +91,7 @@ class WebSocketService {
       this.tradeWs = new WebSocket(wsUrl);
 
       this.tradeWs.onopen = () => {
-        console.log('Trade WebSocket connected');
+        logger.log('Trade WebSocket connected');
         this.reconnectAttempts = 0;
       };
 
@@ -99,7 +100,7 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           this.notifyTradeListeners(data);
         } catch (error) {
-          console.error('Error parsing trade message:', error);
+          logger.error('Error parsing trade message:', error);
         }
       };
 
@@ -115,7 +116,7 @@ class WebSocketService {
         this.handleReconnect('trade', accountId);
       };
     } catch (error) {
-      console.error('Error connecting to trade stream:', error);
+      logger.error('Error connecting to trade stream:', error);
     }
   }
 
@@ -151,7 +152,7 @@ class WebSocketService {
       try {
         callback(data);
       } catch (error) {
-        console.error('Error in price listener:', error);
+        logger.error('Error in price listener:', error);
       }
     });
   }
@@ -161,7 +162,7 @@ class WebSocketService {
       try {
         callback(data);
       } catch (error) {
-        console.error('Error in trade listener:', error);
+        logger.error('Error in trade listener:', error);
       }
     });
   }

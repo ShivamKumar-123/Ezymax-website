@@ -15,8 +15,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { vantage } from '../../../theme/vantageTheme';
 import ScreenGlow from '../../../components/vantage/ScreenGlow';
 
@@ -57,11 +57,6 @@ function normalizeStatus(s) {
   return 'none';
 }
 
-async function authHeaders() {
-  const token = await SecureStore.getItemAsync('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export default function KycScreen({ navigation }) {
   const accent = colors.primary;
   const insets = useSafeAreaInsets();
@@ -86,18 +81,14 @@ export default function KycScreen({ navigation }) {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const h = await authHeaders();
-      const res = await fetch(`${API_URL}/profile`, { headers: { 'Content-Type': 'application/json', ...h } });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setProfile(data);
-        setAddress(data.address || '');
-        setCity(data.city || '');
-        setPostal(data.postal_code || '');
-        setCountry(data.country || data.country_of_residence || '');
-      }
+      const data = await ApiService.getProfile();
+      setProfile(data);
+      setAddress(data.address || '');
+      setCity(data.city || '');
+      setPostal(data.postal_code || '');
+      setCountry(data.country || data.country_of_residence || '');
     } catch (e) {
-      console.warn('KYC profile fetch:', e.message);
+      logger.error('KycScreen: profile fetch failed', e);
     }
   }, []);
 
@@ -203,30 +194,15 @@ export default function KycScreen({ navigation }) {
       if (postal) fd.append('postal_code', postal);
       if (country) fd.append('country_of_residence', country);
 
-      const h = await authHeaders();
-      // No trailing slash: `/submit/` 307-redirects to `/submit`, and React
-      // Native can't replay the multipart body across the redirect — that was
-      // surfacing as "Network request failed".
-      const res = await fetch(`${API_URL}/profile/kyc/submit`, {
-        method: 'POST',
-        headers: { ...h },
-        body: fd,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const err = Array.isArray(data?.detail)
-          ? data.detail.map((e) => e.msg || e.message || JSON.stringify(e)).join('\n')
-          : data?.detail || data?.message || `Error ${res.status}`;
-        Alert.alert('Submission failed', err);
-      } else {
-        Alert.alert('Submitted', 'Your documents are under review.');
-        setFile(null);
-        setFile2(null);
-        setDocType2('');
-        await fetchProfile();
-      }
+      await ApiService.submitKyc(fd);
+      Alert.alert('Submitted', 'Your documents are under review.');
+      setFile(null);
+      setFile2(null);
+      setDocType2('');
+      await fetchProfile();
     } catch (e) {
-      Alert.alert('Error', e.message || 'Network error');
+      logger.error('KycScreen: KYC submit failed', e);
+      Alert.alert('Submission failed', e.message || 'Network error');
     }
     setSubmitting(false);
   };

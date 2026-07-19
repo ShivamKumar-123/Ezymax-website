@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API_URL } from '../constants';
-import { getJsonAuthHeaders } from '../services/api/authHeaders';
+import ApiService from '../services/api/ApiService';
+import logger from '../utils/logger';
 
 const PAGE_SIZE = 20;
 
@@ -36,15 +36,14 @@ export default function useTransactions() {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const headers = await getJsonAuthHeaders();
-      const res = await fetch(`${API_URL}/wallet/summary`, { headers });
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await ApiService.getWalletSummary();
       if (mounted.current) setSummary({
         total_deposited: Number(data.total_deposited || 0),
         total_withdrawn: Number(data.total_withdrawn || 0),
       });
-    } catch (_) {}
+    } catch (e) {
+      logger.error('useTransactions: summary fetch failed', e);
+    }
   }, []);
 
   const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false) => {
@@ -54,17 +53,16 @@ export default function useTransactions() {
     setError(null);
 
     try {
-      const headers = await getJsonAuthHeaders();
       // Try to fetch from multiple possible endpoints
       const endpoints = [
-        `${API_URL}/wallet/transactions?page=${pageNum}&limit=${PAGE_SIZE}`,
-        `${API_URL}/wallet/deposits`,
-        `${API_URL}/wallet/withdrawals`,
+        `/wallet/transactions?page=${pageNum}&limit=${PAGE_SIZE}`,
+        `/wallet/deposits`,
+        `/wallet/withdrawals`,
       ];
 
       let allItems = [];
       const results = await Promise.allSettled(
-        endpoints.map(url => fetch(url, { headers }).then(r => r.ok ? r.json() : null))
+        endpoints.map(path => ApiService.request(path))
       );
 
       results.forEach(r => {
@@ -95,6 +93,7 @@ export default function useTransactions() {
         setPage(pageNum);
       }
     } catch (e) {
+      logger.error('useTransactions: transactions fetch failed', e);
       if (mounted.current) setError(e?.message || 'Failed to load transactions');
     }
     if (mounted.current) { setLoading(false); setRefreshing(false); setLoadingMore(false); }

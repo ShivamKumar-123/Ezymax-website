@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
 const KEY_QUICK_TRADE_BAR = 'chartQuickTradeBar';
@@ -21,17 +21,25 @@ export const SettingsProvider = ({ children }) => {
     })();
   }, []);
 
-  const setShowChartQuickTrade = async (next) => {
+  const setShowChartQuickTrade = useCallback(async (next) => {
     setShowChartQuickTradeState(next);
     try {
       await SecureStore.setItemAsync(KEY_QUICK_TRADE_BAR, next ? 'on' : 'off');
     } catch (_) {}
-  };
+  }, []);
 
-  const toggleChartQuickTrade = () => setShowChartQuickTrade(!showChartQuickTrade);
+  const toggleChartQuickTrade = useCallback(
+    () => setShowChartQuickTrade(!showChartQuickTrade),
+    [setShowChartQuickTrade, showChartQuickTrade],
+  );
+
+  const value = useMemo(
+    () => ({ showChartQuickTrade, toggleChartQuickTrade, setShowChartQuickTrade }),
+    [showChartQuickTrade, toggleChartQuickTrade, setShowChartQuickTrade],
+  );
 
   return (
-    <SettingsContext.Provider value={{ showChartQuickTrade, toggleChartQuickTrade, setShowChartQuickTrade }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

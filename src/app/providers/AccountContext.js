@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import ApiService from '../../services/api/ApiService';
 
@@ -52,8 +52,15 @@ export function AccountProvider({ children }) {
     if (id) SecureStore.setItemAsync(KEY, id).catch(() => {});
   }, []);
 
+  // Memoized so consumers only re-render when the underlying data changes,
+  // not on every provider render (the callbacks above are already stable).
+  const value = useMemo(
+    () => ({ accounts, selectedAccount, selectAccount, refreshAccounts, loading }),
+    [accounts, selectedAccount, selectAccount, refreshAccounts, loading],
+  );
+
   return (
-    <AccountContext.Provider value={{ accounts, selectedAccount, selectAccount, refreshAccounts, loading }}>
+    <AccountContext.Provider value={value}>
       {children}
     </AccountContext.Provider>
   );

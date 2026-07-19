@@ -9,6 +9,7 @@ import { Screen, IconButton, CategoryTabs, showToast } from '../../../components
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
+import { TRADE_WEB_URL } from '../../../constants';
 
 const FILTER_OPTIONS = [
   { value: 'all',         label: 'All' },
@@ -141,7 +142,7 @@ function buildHtml(items, filter) {
 </style></head><body>
   <div class="brand">
     <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}</h1>
-    <img src="https://trade.swisscresta.com/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
+    <img src="${TRADE_WEB_URL}/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
   </div>
   <p class="sub">Generated ${now} · ${items.length} records</p>
   <table>

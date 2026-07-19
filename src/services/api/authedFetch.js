@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../../constants';
+import logger from '../../utils/logger';
 
 // Single in-flight re-login promise so concurrent 401s don't trigger a stampede
 // of /auth/login calls.
@@ -32,7 +33,7 @@ async function silentRelogin() {
       }));
       return token;
     } catch (e) {
-      console.log('[silentRelogin] failed:', e?.message);
+      logger.log('[silentRelogin] failed:', e?.message);
       return null;
     } finally {
       // Allow future re-logins after this one settles.

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import {
   ChevronLeft, CheckCheck, Bell, BellOff, TrendingUp, CheckCircle2,
   AlertCircle, Trophy, Clock, Zap, Wallet, ArrowDownCircle, Copy,
@@ -10,7 +9,8 @@ import {
 import { Screen } from '../../../components/vantage';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 
 // Map a notification type (backend lowercase or legacy uppercase) to a lucide
 // icon + accent colour.
@@ -43,10 +43,7 @@ export default function NotificationsScreen({ navigation }) {
 
   const fetchNotifications = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) { setLoading(false); return; }
-      const res = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
+      const data = await ApiService.request('/notifications');
       const notifs = data.items || data.notifications || [];
       const mapped = notifs.map((n) => ({
         ...n,
@@ -56,6 +53,7 @@ export default function NotificationsScreen({ navigation }) {
       }));
       setNotifications(mapped);
     } catch (e) {
+      logger.error('NotificationsScreen: notifications fetch failed', e);
       setNotifications([]);
     }
     setLoading(false);
@@ -66,17 +64,15 @@ export default function NotificationsScreen({ navigation }) {
 
   const markAsRead = async (id) => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
-    } catch (_) {}
+      await ApiService.markNotificationRead(id);
+    } catch (e) { logger.error('NotificationsScreen: mark read failed', e); }
     setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
   };
 
   const markAllAsRead = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
-    } catch (_) {}
+      await ApiService.request('/notifications/read-all', { method: 'PUT' });
+    } catch (e) { logger.error('NotificationsScreen: mark all read failed', e); }
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 

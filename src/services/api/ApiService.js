@@ -2,6 +2,7 @@ import { API_URL } from '../../constants';
 import * as SecureStore from 'expo-secure-store';
 import { silentRelogin } from './authedFetch';
 import { toMessage } from '../../utils/errorMessage';
+import logger from '../../utils/logger';
 
 class ApiService {
   constructor() {
@@ -50,7 +51,7 @@ class ApiService {
 
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
+      logger.error('API Request Error:', error);
       throw error;
     }
   }

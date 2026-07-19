@@ -15,7 +15,8 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { vantage } from '../../../theme/vantageTheme';
 import ScreenGlow from '../../../components/vantage/ScreenGlow';
 
@@ -73,20 +74,14 @@ const IBScreen = ({ navigation, route }) => {
         setUser(JSON.parse(userData));
       }
     } catch (e) {
-      console.error('Error loading user:', e);
+      logger.error('IBScreen: error loading user', e);
     }
   };
 
   const fetchIBProfile = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) { setLoading(false); return; }
-      
-      const res = await fetch(`${API_URL}/business/status`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      
+      const data = await ApiService.getBusinessStatus();
+
       // `/business/status` returns { is_ib: bool, application_status: 'pending'|'approved'|'rejected'|null }.
       // is_ib === true means the admin approved the application (active IB).
       const appStatus = String(data.application_status || data.ib_status || data.status || '').toLowerCase();
@@ -112,33 +107,28 @@ const IBScreen = ({ navigation, route }) => {
 
         if (status === 'ACTIVE') {
           try {
-            const dashRes = await fetch(`${API_URL}/business/ib/dashboard`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (dashRes.ok) {
-              const dash = await dashRes.json();
-              profileData.totalEarned = Number(dash.total_earned || 0);
-              profileData.totalCommission = Number(dash.total_commission || 0);
-              profileData.totalCommissionEarned = Number(dash.total_earned || dash.total_commission || 0);
-              profileData.pendingPayout = Number(dash.pending_payout || 0);
-              profileData.ibWalletBalance = Number(dash.pending_payout || 0);
-              profileData.level = Number(dash.level || 1);
-              profileData.totalReferrals = Number(dash.total_referrals || 0);
-              profileData.isActive = !!dash.is_active;
-              profileData.stats = {
-                directReferrals: Number(dash.total_referrals || 0),
-                totalDownline: 0,
-              };
-              profileData.referralCode = dash.referral_code || profileData.referralCode;
-              profileData.referralLink = dash.referral_link || '';
-            }
-          } catch (e) { console.error('Dashboard fetch error:', e); }
+            const dash = await ApiService.getIBDashboard();
+            profileData.totalEarned = Number(dash.total_earned || 0);
+            profileData.totalCommission = Number(dash.total_commission || 0);
+            profileData.totalCommissionEarned = Number(dash.total_earned || dash.total_commission || 0);
+            profileData.pendingPayout = Number(dash.pending_payout || 0);
+            profileData.ibWalletBalance = Number(dash.pending_payout || 0);
+            profileData.level = Number(dash.level || 1);
+            profileData.totalReferrals = Number(dash.total_referrals || 0);
+            profileData.isActive = !!dash.is_active;
+            profileData.stats = {
+              directReferrals: Number(dash.total_referrals || 0),
+              totalDownline: 0,
+            };
+            profileData.referralCode = dash.referral_code || profileData.referralCode;
+            profileData.referralLink = dash.referral_link || '';
+          } catch (e) { logger.error('IBScreen: dashboard fetch failed', e); }
         }
         
         setIbProfile(profileData);
       }
     } catch (e) {
-      console.error('Error fetching IB profile:', e);
+      logger.error('IBScreen: error fetching IB profile', e);
       setIbProfile(null);
     }
     setLoading(false);
@@ -147,11 +137,7 @@ const IBScreen = ({ navigation, route }) => {
 
   const fetchReferrals = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/business/ib/referrals`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await ApiService.getIBReferrals();
       const items = (data.items || []).map(r => {
         const u = r.referred_user || {};
         const fullName = (u.name || '').trim();
@@ -168,17 +154,13 @@ const IBScreen = ({ navigation, route }) => {
       });
       setReferrals(items);
     } catch (e) {
-      console.error('Error fetching referrals:', e);
+      logger.error('IBScreen: error fetching referrals', e);
     }
   };
 
   const fetchCommissions = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/business/ib/commissions`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await ApiService.getIBCommissions();
       const items = (data.items || []).map(c => {
         const u = c.source_user || {};
         return {
@@ -194,7 +176,7 @@ const IBScreen = ({ navigation, route }) => {
       });
       setCommissions(items);
     } catch (e) {
-      console.error('Error fetching commissions:', e);
+      logger.error('IBScreen: error fetching commissions', e);
     }
   };
 
@@ -217,19 +199,15 @@ const IBScreen = ({ navigation, route }) => {
 
   const fetchDownline = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/business/ib/tree`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) { setDownline([]); return; }
-      const data = await res.json();
+      const data = await ApiService.getIBTree();
       const flat = flattenTree(data.tree || []);
       setDownline(flat);
       if (flat.length) {
         setIbProfile((p) => p ? { ...p, stats: { ...(p.stats || {}), totalDownline: data.total_nodes || flat.length } } : p);
       }
     } catch (e) {
-      console.error('Error fetching downline:', e);
+      logger.error('IBScreen: error fetching downline', e);
+      setDownline([]);
     }
   };
 
@@ -241,24 +219,12 @@ const IBScreen = ({ navigation, route }) => {
   const handleApplyIB = async () => {
     setIsSubmitting(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/business/apply`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({})
-      });
-      const data = await res.json();
-      if (res.ok) {
-        Alert.alert('Success', 'IB application submitted! Please wait for admin approval.');
-        fetchIBProfile();
-      } else {
-        Alert.alert('Error', data.detail || data.message || 'Failed to apply');
-      }
+      await ApiService.applyForIB();
+      Alert.alert('Success', 'IB application submitted! Please wait for admin approval.');
+      fetchIBProfile();
     } catch (e) {
-      Alert.alert('Error', 'Failed to submit application');
+      logger.error('IBScreen: IB apply failed', e);
+      Alert.alert('Error', e.message || 'Failed to apply');
     }
     setIsSubmitting(false);
   };
@@ -279,7 +245,7 @@ const IBScreen = ({ navigation, route }) => {
         message: `Join me on Swisscresta — use my referral code: ${code}\n\nSign up: ${link || ''}`,
       });
     } catch (e) {
-      console.error('Error sharing:', e);
+      logger.error('IBScreen: error sharing', e);
     }
   };
 

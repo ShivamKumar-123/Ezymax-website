@@ -14,8 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../../../constants';
+import ApiService from '../../../services/api/ApiService';
+import logger from '../../../utils/logger';
 import { vantage } from '../../../theme/vantageTheme';
 import ScreenGlow from '../../../components/vantage/ScreenGlow';
 import IBScreen from './IBScreen';
@@ -157,22 +157,19 @@ function SubBrokerPanel({ colors }) {
 
   const load = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) return;
-      const h = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-      const sRes = await fetch(`${API_URL}/business/status`, { headers: h });
-      const s = await sRes.json().catch(() => ({}));
+      const s = await ApiService.getBusinessStatus();
       setStatus(s);
       let dash = null;
-      if (s.is_ib) {
+      if (s?.is_ib) {
         try {
-          const dRes = await fetch(`${API_URL}/business/sub-broker/dashboard`, { headers: h });
-          if (dRes.ok) dash = await dRes.json();
-        } catch (_) {}
+          dash = await ApiService.getSubBrokerDashboard();
+        } catch (e) {
+          logger.error('BusinessScreen: sub-broker dashboard fetch failed', e);
+        }
       }
       setDashboard(dash);
     } catch (e) {
-      console.error(e);
+      logger.error('BusinessScreen: business status fetch failed', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -191,21 +188,12 @@ function SubBrokerPanel({ colors }) {
   const handleApply = async () => {
     setApplying(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/business/apply-sub-broker`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_name: companyName.trim() || undefined }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        Alert.alert('Submitted', data.message || 'Sub-broker application submitted for review.');
-        await load();
-      } else {
-        Alert.alert('Error', data.detail || data.message || 'Failed to apply');
-      }
+      const data = await ApiService.applyForSubBroker({ company_name: companyName.trim() || undefined });
+      Alert.alert('Submitted', data.message || 'Sub-broker application submitted for review.');
+      await load();
     } catch (e) {
-      Alert.alert('Error', 'Network error');
+      logger.error('BusinessScreen: sub-broker apply failed', e);
+      Alert.alert('Error', e.message || 'Failed to apply');
     }
     setApplying(false);
   };
@@ -350,19 +338,10 @@ function NetworkPanel({ colors }) {
   const load = async () => {
     setErr(null);
     try {
-      const token = await SecureStore.getItemAsync('token');
-      if (!token) return;
-      const res = await fetch(`${API_URL}/business/ib/tree`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        setTree(null);
-        setErr('not_ib');
-        return;
-      }
-      const data = await res.json();
+      const data = await ApiService.getIBTree();
       setTree(data);
     } catch (e) {
+      logger.error('BusinessScreen: network tree fetch failed', e);
       setTree(null);
       setErr('error');
     } finally {

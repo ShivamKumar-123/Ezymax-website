@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../../constants';
 import { toMessage } from '../../utils/errorMessage';
+import logger from '../../utils/logger';
 
 export const AuthContext = createContext();
 
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error('Error loading auth:', error);
+      logger.error('Error loading auth:', error);
     }
     setLoading(false);
   };
@@ -72,7 +73,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: toMessage(data.detail ?? data.message, 'Login failed') };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       return { success: false, message: 'Network error' };
     }
   };
@@ -114,7 +115,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: toMessage(data.detail ?? data.message, 'Signup failed') };
       }
     } catch (error) {
-      console.error('Signup error:', error);
+      logger.error('Signup error:', error);
       return { success: false, message: 'Network error' };
     }
   };
@@ -136,7 +137,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, message: toMessage(data?.detail ?? data?.message, 'Could not start signup') };
     } catch (error) {
-      console.error('register/start error:', error);
+      logger.error('register/start error:', error);
       return { success: false, message: 'Network error' };
     }
   };
@@ -170,7 +171,7 @@ export const AuthProvider = ({ children }) => {
 
       return { success: false, message: toMessage(data?.detail ?? data?.message, 'Verification failed') };
     } catch (error) {
-      console.error('register/verify error:', error);
+      logger.error('register/verify error:', error);
       return { success: false, message: 'Network error' };
     }
   };
@@ -189,7 +190,7 @@ export const AuthProvider = ({ children }) => {
         message: toMessage(data?.detail ?? data?.message, response.ok ? 'Code resent' : 'Could not resend code'),
       };
     } catch (error) {
-      console.error('register/resend error:', error);
+      logger.error('register/resend error:', error);
       return { success: false, message: 'Network error' };
     }
   };
@@ -203,7 +204,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 
@@ -212,25 +213,33 @@ export const AuthProvider = ({ children }) => {
       await SecureStore.setItemAsync('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
     } catch (error) {
-      console.error('Update user error:', error);
+      logger.error('Update user error:', error);
     }
   };
 
+  // Memoized on state only: every auth method above is state-free (reads
+  // nothing but setters/constants — verified), so re-capturing identities on
+  // state change is safe, and consumers stop re-rendering on unrelated
+  // provider renders.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      signup,
+      registerStart,
+      registerVerify,
+      registerResend,
+      logout,
+      updateUser,
+    }),
+    [user, token, loading],
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        login,
-        signup,
-        registerStart,
-        registerVerify,
-        registerResend,
-        logout,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
