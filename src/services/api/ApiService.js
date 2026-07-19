@@ -46,12 +46,20 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error(toMessage(data, `Request failed (${response.status})`));
+        const err = new Error(toMessage(data, `Request failed (${response.status})`));
+        err.status = response.status;
+        throw err;
       }
 
       return data;
     } catch (error) {
-      logger.error('API Request Error:', error);
+      // 4xx responses are expected business rejections (validation, market
+      // closed, insufficient margin…) that the calling screen surfaces itself —
+      // logging them as errors floods dev LogBox with red boxes. Only network
+      // failures and 5xx are genuinely unexpected.
+      if (!(error.status >= 400 && error.status < 500)) {
+        logger.error('API Request Error:', error);
+      }
       throw error;
     }
   }

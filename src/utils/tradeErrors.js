@@ -14,7 +14,8 @@ export function isSoftTradeError(msg) {
     m.includes('master can close') ||
     m.includes('no price') ||
     m.includes('market is closed') ||
-    m.includes('market closed')
+    m.includes('market closed') ||
+    m.includes('market opens')
   );
 }
 
@@ -27,10 +28,16 @@ function softInfo(msg) {
       message: 'This is a MAM trade. Only the master can close it — it will close automatically when the master closes their position.',
     };
   }
-  if (m.includes('no price') || m.includes('market is closed') || m.includes('market closed')) {
+  if (m.includes('no price') || m.includes('market is closed') || m.includes('market closed') || m.includes('market opens')) {
+    // The gateway's closed-market rejection includes the reopen schedule, e.g.
+    // "Forex market opens Sunday at 22:00 UTC (current time 21:11 UTC)." —
+    // surface the schedule, drop the parenthetical clutter.
+    const schedule = String(msg || '').match(/\b[A-Za-z]+ market opens [^(.]+/);
     return {
       title: 'Market closed',
-      message: 'The market is closed right now. Please try again once it reopens.',
+      message: schedule
+        ? `The market is closed right now. ${schedule[0].trim()}.`
+        : 'The market is closed right now. Please try again once it reopens.',
     };
   }
   return null;
