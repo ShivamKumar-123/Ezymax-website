@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Image } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Image, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -9,6 +9,8 @@ import TradeStack from './TradeStack';
 import FundsStack from './FundsStack';
 import { BottomNavPill } from '../../components/vantage';
 import { vantage } from '../../theme/vantageTheme';
+import OnboardingTour from '../../components/onboarding/OnboardingTour';
+import { hasSeenTour, markTourSeen } from '../../components/onboarding/tourStorage';
 
 // Active theme is already applied (index.js) before this module loads, so the
 // branch below picks the right Home icon at evaluation time.
@@ -70,7 +72,7 @@ const TAB_META = {
   FundsTab:   { label: 'Funds' },
 };
 
-function VantageTabBar({ state, navigation }) {
+function VantageTabBar({ state, navigation, barRef }) {
   const activeKey = state.routes[state.index].name;
   const tabs = state.routes.map((r) => {
     const m = TAB_META[r.name];
@@ -92,6 +94,7 @@ function VantageTabBar({ state, navigation }) {
   });
 
   return (
+    <View ref={barRef} collapsable={false}>
     <BottomNavPill
       tabs={tabs}
       activeKey={activeKey}
@@ -108,19 +111,82 @@ function VantageTabBar({ state, navigation }) {
         }
       }}
     />
+    </View>
   );
 }
 
+// ── First-run coach-mark tour ────────────────────────────────────────────────
+// Shown once after the first login. The bottom bar's frame is measured and
+// split into four equal segments so each tab gets its own spotlight; the
+// welcome/done steps are centred cards without a target.
+const TAB_TOUR_COPY = [
+  { key: 'home',    title: 'Home',    text: 'Your dashboard — balance card, watchlist and quick actions live here.' },
+  { key: 'markets', title: 'Markets', text: 'Browse every instrument, pin favourites to your watchlist and open an advanced chart with one tap.' },
+  { key: 'trade',   title: 'Trade',   text: 'All your open positions with live P&L. Set SL/TP, partial-close or bulk-close — and review pending orders and history.' },
+  { key: 'funds',   title: 'Funds',   text: 'Deposit, withdraw, transfer between accounts and download your transaction history.' },
+];
+
+function useFirstRunTour(barRef) {
+  const [steps, setSteps] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (await hasSeenTour()) return;
+      // Let the tab bar settle before measuring (first layout + animations).
+      setTimeout(() => {
+        if (cancelled || !barRef.current) return;
+        barRef.current.measureInWindow((x, y, width, height) => {
+          if (cancelled || !width || !height) return;
+          const segW = width / TAB_TOUR_COPY.length;
+          setSteps([
+            {
+              key: 'welcome',
+              title: 'Welcome to SwissCresta',
+              text: 'A quick 30-second tour of the essentials — you can skip any time.',
+              target: null,
+            },
+            ...TAB_TOUR_COPY.map((c, i) => ({
+              ...c,
+              target: { x: x + i * segW, y, width: segW, height },
+            })),
+            {
+              key: 'done',
+              title: "You're all set",
+              text: 'Tip: on any chart, drag the SL/TP buttons on your position line to set stop-loss and take-profit visually.',
+              target: null,
+            },
+          ]);
+        });
+      }, 900);
+    })();
+    return () => { cancelled = true; };
+  }, [barRef]);
+
+  const done = useCallback(() => {
+    setSteps(null);
+    markTourSeen();
+  }, []);
+
+  return { steps, done };
+}
+
 export default function MainTabs() {
+  const barRef = useRef(null);
+  const { steps, done } = useFirstRunTour(barRef);
+
   return (
-    <Tab.Navigator
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <VantageTabBar {...props} />}
-    >
-      <Tab.Screen name="HomeTab"    component={HomeStack} />
-      <Tab.Screen name="MarketsTab" component={MarketsStack} />
-      <Tab.Screen name="TradeTab"   component={TradeStack} />
-      <Tab.Screen name="FundsTab"   component={FundsStack} />
-    </Tab.Navigator>
+    <>
+      <Tab.Navigator
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <VantageTabBar {...props} barRef={barRef} />}
+      >
+        <Tab.Screen name="HomeTab"    component={HomeStack} />
+        <Tab.Screen name="MarketsTab" component={MarketsStack} />
+        <Tab.Screen name="TradeTab"   component={TradeStack} />
+        <Tab.Screen name="FundsTab"   component={FundsStack} />
+      </Tab.Navigator>
+      <OnboardingTour visible={!!steps} steps={steps || []} onDone={done} />
+    </>
   );
 }
