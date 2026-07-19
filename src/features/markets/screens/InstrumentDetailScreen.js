@@ -260,6 +260,22 @@ export default function InstrumentDetailScreen() {
     }
   }, [activeAccount, lots, side, symbol, submitting]);
 
+  // Estimated margin to open `lots` at the current price:
+  // notional (price × lots × contract_size) ÷ account leverage. For non-USD
+  // quote pairs this is an approximation in quote currency terms (hence "≈") —
+  // the server computes the authoritative figure at execution.
+  const marginReq = useMemo(() => {
+    const px = ask ?? bid;
+    const lev = Number(activeAccount?.leverage) || 100;
+    const cs = Number(instrument?.contract_size) || 100000;
+    if (!(px > 0) || !(lots > 0)) return null;
+    return (px * lots * cs) / lev;
+  }, [ask, bid, lots, activeAccount, instrument]);
+  const freeMargin = activeAccount?.free_margin != null
+    ? Number(activeAccount.free_margin)
+    : (activeAccount?.balance != null ? Number(activeAccount.balance) : null);
+  const marginTight = marginReq != null && freeMargin != null && marginReq > freeMargin;
+
   // Chart fills everything between the header and the trade footer (the old
   // fixed 380px left dead space once the price hero + tab row were removed).
   // ~96px covers the header + chart margins; never below the old 380px minimum.
@@ -446,10 +462,20 @@ export default function InstrumentDetailScreen() {
             onChange={(s) => { void placeOrder(s); }}
           />
         </View>
+        {/* Cost of the selected lots — updates live as lots/price change;
+            turns red when it exceeds free margin. */}
+        <View style={styles.freeMarginRow}>
+          <Text style={styles.freeMarginLab}>Margin required:</Text>
+          <Text style={[styles.freeMarginVal, marginTight && { color: vantage.down }]}>
+            {marginReq != null
+              ? `≈ ${marginReq.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount?.currency || 'USD'}`
+              : '—'}
+          </Text>
+        </View>
         <View style={styles.freeMarginRow}>
           <Text style={styles.freeMarginLab}>Free Margin:</Text>
           <Text style={styles.freeMarginVal}>
-            {activeAccount?.balance != null ? `${Number(activeAccount.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount.currency || 'USD'}` : '—'}
+            {freeMargin != null ? `${freeMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${activeAccount.currency || 'USD'}` : '—'}
           </Text>
           <View style={{ flex: 1 }} />
           <Pressable onPress={() => setAdvOpen(true)} style={styles.advBtn} accessibilityRole="button" accessibilityLabel="Advanced order — limit, stop, TP/SL">
@@ -509,17 +535,29 @@ function AdvancedOrderSheet({ visible, onClose, account, symbol, tick, maxH }) {
 function LotsField({ value, onChange }) {
   const [text, setText] = useState('');
   const [editing, setEditing] = useState(false);
+  const parse = (t) => {
+    const n = Number(String(t).replace(',', '.'));
+    return Number.isFinite(n) && n > 0 ? Math.min(1000, Math.max(0.01, n)) : null;
+  };
+  // Commit on EVERY keystroke, not just blur — tapping Buy/Sell while the
+  // keyboard is still open must trade the lots on screen, not the stale value
+  // (typing 0.05 then tapping Buy used to place 0.01).
+  const handleChange = (t) => {
+    setText(t);
+    const n = parse(t);
+    if (n != null) onChange(n);
+  };
   const commit = () => {
     setEditing(false);
-    const n = Number(String(text).replace(',', '.'));
-    if (Number.isFinite(n) && n > 0) onChange(Math.min(1000, Math.max(0.01, n)));
+    const n = parse(text);
+    if (n != null) onChange(n);
   };
   return (
     <TextInput
       style={styles.lotsInput}
       value={editing ? text : Number(value).toFixed(2)}
       onFocus={() => { setEditing(true); setText(Number(value).toFixed(2)); }}
-      onChangeText={setText}
+      onChangeText={handleChange}
       onBlur={commit}
       onSubmitEditing={commit}
       keyboardType="decimal-pad"
