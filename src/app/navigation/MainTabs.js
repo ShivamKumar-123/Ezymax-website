@@ -10,7 +10,7 @@ import FundsStack from './FundsStack';
 import { BottomNavPill } from '../../components/vantage';
 import { vantage } from '../../theme/vantageTheme';
 import OnboardingTour from '../../components/onboarding/OnboardingTour';
-import { hasSeenTour, markTourSeen } from '../../components/onboarding/tourStorage';
+import { hasSeenTour, markTourSeen, onTourReplay } from '../../components/onboarding/tourStorage';
 
 // Active theme is already applied (index.js) before this module loads, so the
 // branch below picks the right Home icon at evaluation time.
@@ -116,52 +116,65 @@ function VantageTabBar({ state, navigation, barRef }) {
 }
 
 // ── First-run coach-mark tour ────────────────────────────────────────────────
-// Shown once after the first login. The bottom bar's frame is measured and
-// split into four equal segments so each tab gets its own spotlight; the
-// welcome/done steps are centred cards without a target.
-const TAB_TOUR_COPY = [
-  { key: 'home',    title: 'Home',    text: 'Your dashboard — balance card, watchlist and quick actions live here.' },
-  { key: 'markets', title: 'Markets', text: 'Browse every instrument, pin favourites to your watchlist and open an advanced chart with one tap.' },
-  { key: 'trade',   title: 'Trade',   text: 'All your open positions with live P&L. Set SL/TP, partial-close or bulk-close — and review pending orders and history.' },
-  { key: 'funds',   title: 'Funds',   text: 'Deposit, withdraw, transfer between accounts and download your transaction history.' },
+// Shown once after the first login (replayable via Profile → Help → App Tour).
+// The bottom bar's frame is measured and split into four equal segments; steps
+// whose feature lives on the shell anchor to a tab spotlight, deeper features
+// (chart, buy/sell) are icon cards. `tab` below is the anchoring segment
+// index: 0 Home · 1 Markets · 2 Trade · 3 Funds · null = centred card.
+const TOUR_STEPS = [
+  { key: 'welcome',  icon: 'sparkles-outline',      tab: null, title: 'Welcome to SwissCresta',
+    text: 'A quick tour of the essentials — use Next / Back to move around, or Skip any time. You can replay it later from Profile → Help.' },
+  { key: 'market',   icon: 'stats-chart-outline',   tab: 1, title: 'Market Watch',
+    text: 'Live prices for every instrument — FX, metals, indices and crypto — with daily change and sparklines.' },
+  { key: 'search',   icon: 'search-outline',        tab: 1, title: 'Search',
+    text: 'Find any symbol fast: open Markets and tap Add Symbol or the search field to filter the full instrument list.' },
+  { key: 'chart',    icon: 'trending-up-outline',   tab: 1, title: 'Chart',
+    text: 'Tap any instrument to open the advanced chart — indicators, timeframes, and SL/TP you can drag right on the chart.' },
+  { key: 'buy',      icon: 'arrow-up-circle-outline',  tab: null, title: 'Buy',
+    text: 'On an instrument screen, tap the green Buy side to place a market Buy at one tap — or use Limit / Stop for pending orders.' },
+  { key: 'sell',     icon: 'arrow-down-circle-outline', tab: null, title: 'Sell',
+    text: 'The red Sell side works the same way — one tap to sell at market, with your chosen lot size.' },
+  { key: 'positions', icon: 'layers-outline',       tab: 2, title: 'Positions',
+    text: 'Every open position with live P&L. Set SL/TP, partial-close by percent, or bulk-close all / profitable / losing.' },
+  { key: 'orders',   icon: 'time-outline',          tab: 2, title: 'Orders',
+    text: 'Pending limit and stop orders live in the Pending tab — cancel or track them until they fill.' },
+  { key: 'history',  icon: 'book-outline',          tab: 2, title: 'History',
+    text: 'Review every closed trade with realized P&L, fees and close reason in the History tab.' },
+  { key: 'funds',    icon: 'wallet-outline',        tab: 3, title: 'Funds',
+    text: 'Deposit, withdraw, transfer between wallet and trading accounts, and export your transaction history as PDF.' },
+  { key: 'profile',  icon: 'settings-outline',      tab: 0, title: 'Profile & Settings',
+    text: 'Home hosts your profile menu — accounts, KYC, security (App Lock), theme, language and support.' },
+  { key: 'done',     icon: 'checkmark-circle-outline', tab: null, title: "You're all set",
+    text: 'Happy trading! Replay this tour any time from Profile → Help → App Tour.' },
 ];
 
 function useFirstRunTour(barRef) {
   const [steps, setSteps] = useState(null);
 
+  const buildAndShow = useCallback(() => {
+    if (!barRef.current) return;
+    barRef.current.measureInWindow((x, y, width, height) => {
+      if (!width || !height) return;
+      const segW = width / 4;
+      setSteps(TOUR_STEPS.map((s) => ({
+        ...s,
+        target: s.tab == null ? null : { x: x + s.tab * segW, y, width: segW, height },
+      })));
+    });
+  }, [barRef]);
+
+  // First run: show once after the tab bar has settled.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (await hasSeenTour()) return;
-      // Let the tab bar settle before measuring (first layout + animations).
-      setTimeout(() => {
-        if (cancelled || !barRef.current) return;
-        barRef.current.measureInWindow((x, y, width, height) => {
-          if (cancelled || !width || !height) return;
-          const segW = width / TAB_TOUR_COPY.length;
-          setSteps([
-            {
-              key: 'welcome',
-              title: 'Welcome to SwissCresta',
-              text: 'A quick 30-second tour of the essentials — you can skip any time.',
-              target: null,
-            },
-            ...TAB_TOUR_COPY.map((c, i) => ({
-              ...c,
-              target: { x: x + i * segW, y, width: segW, height },
-            })),
-            {
-              key: 'done',
-              title: "You're all set",
-              text: 'Tip: on any chart, drag the SL/TP buttons on your position line to set stop-loss and take-profit visually.',
-              target: null,
-            },
-          ]);
-        });
-      }, 900);
+      setTimeout(() => { if (!cancelled) buildAndShow(); }, 900);
     })();
     return () => { cancelled = true; };
-  }, [barRef]);
+  }, [buildAndShow]);
+
+  // Manual replay from Profile → Help → App Tour.
+  useEffect(() => onTourReplay(() => setTimeout(buildAndShow, 250)), [buildAndShow]);
 
   const done = useCallback(() => {
     setSteps(null);

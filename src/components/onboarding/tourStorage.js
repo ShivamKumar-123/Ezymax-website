@@ -33,3 +33,23 @@ export async function resetTour() {
     logger.error('tourStorage: reset failed', e);
   }
 }
+
+// ── Replay bus ───────────────────────────────────────────────────────────────
+// "Settings → Help → App Tour" lives on a different screen than the tour host
+// (MainTabs). This minimal listener registry lets any screen request an
+// immediate replay without prop drilling or a context provider.
+const replayListeners = new Set();
+
+/** Host (MainTabs) subscribes; returns an unsubscribe function. */
+export function onTourReplay(cb) {
+  replayListeners.add(cb);
+  return () => replayListeners.delete(cb);
+}
+
+/** Clears the seen flag and tells the host to start the tour now. */
+export async function requestTourReplay() {
+  await resetTour();
+  replayListeners.forEach((cb) => {
+    try { cb(); } catch (e) { logger.error('tourStorage: replay listener failed', e); }
+  });
+}

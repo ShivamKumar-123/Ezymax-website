@@ -24,6 +24,7 @@ import {
 } from '../../../services/auth/biometricLock';
 import ApiService from '../../../services/api/ApiService';
 import { LOTTIE_AVATARS, ICON_AVATARS, parseAvatar, renderAvatar } from '../../../utils/avatarRender';
+import { requestTourReplay } from '../../../components/onboarding/tourStorage';
 
 export default function ProfileMenuScreen() {
   const nav = useNavigation();
@@ -287,6 +288,16 @@ export default function ProfileMenuScreen() {
           <MenuRow icon={<Ionicons name="chatbubble-outline" size={18} color={vantage.textPrimary} />} label="Support" onPress={() => nav.navigate('Support')} />
           <MenuRow icon={<Ionicons name="notifications-outline" size={18} color={vantage.textPrimary} />} label="Notifications" onPress={() => nav.navigate('Notifications')} />
           <MenuRow icon={<Ionicons name="book-outline" size={18} color={vantage.textPrimary} />} label="How to use" onPress={() => nav.navigate('Instructions')} />
+          <MenuRow
+            icon={<Ionicons name="map-outline" size={18} color={vantage.textPrimary} />}
+            label="App Tour"
+            onPress={() => {
+              // Pop back to the dashboard so the tour plays over the shell,
+              // then ask the tour host (MainTabs) to start immediately.
+              nav.navigate('Home');
+              requestTourReplay();
+            }}
+          />
         </Section>
 
         <Section title="ABOUT">

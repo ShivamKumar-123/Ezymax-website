@@ -1,87 +1,149 @@
 /**
- * Dependency-free coach-mark tour.
+ * Dependency-free coach-mark tour (TradingView/Binance-style).
  *
- * Renders a dimmed overlay with a "spotlight" cutout over the current step's
- * target (four dark rectangles around the target — no SVG masks needed), a
- * card with the step copy, progress dots, and Skip / Next controls.
+ * Features:
+ *  - dimmed backdrop with an animated SPOTLIGHT cutout that glides between
+ *    targets (four dark rects + accent ring, no SVG masks)
+ *  - tooltip card with icon, title, description, progress dots and
+ *    Back / Next / Skip / Finish controls; card content cross-fades on step
+ *    change and auto-positions above/below the target (centred when the step
+ *    has no target)
+ *  - responsive: card is width-capped and the spotlight math is
+ *    window-relative, so tablets/landscape work unchanged
+ *  - extensible: steps are plain data `{ key, icon, title, text, target }`;
+ *    an optional async `step.prepare()` hook runs before a step is shown
+ *    (reserved for future scroll-into-view of off-screen targets)
  *
- * Steps: [{ key, title, text, target: {x, y, width, height} | null }]
- * A null target centres the card (used for welcome / done steps).
+ * Steps: [{ key, icon, title, text, target: {x,y,width,height}|null, prepare? }]
  */
-import React, { useState } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Modal, View, Text, Pressable, StyleSheet, Animated, Easing, useWindowDimensions,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
-const DIM = 'rgba(0,0,0,0.78)';
+const DIM = 'rgba(0,0,0,0.80)';
 const SPOT_PAD = 6;      // breathing room around the highlighted element
 const CARD_GAP = 14;     // gap between spotlight and the card
+const ANIM_MS = 260;
 
 export default function OnboardingTour({ visible, steps = [], onDone }) {
   const [index, setIndex] = useState(0);
   const { width: winW, height: winH } = useWindowDimensions();
 
-  if (!visible || steps.length === 0) return null;
-  const step = steps[Math.min(index, steps.length - 1)];
+  // Animated spotlight rect + card opacity. The spotlight GLIDES from the
+  // previous target to the next; the card cross-fades.
+  const spotX = useRef(new Animated.Value(0)).current;
+  const spotY = useRef(new Animated.Value(0)).current;
+  const spotW = useRef(new Animated.Value(0)).current;
+  const spotH = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const hasSpotRef = useRef(false);
+
+  const step = steps[Math.min(index, Math.max(0, steps.length - 1))] || null;
   const isLast = index >= steps.length - 1;
 
-  const finish = () => {
-    setIndex(0);
-    onDone?.();
-  };
-  const next = () => (isLast ? finish() : setIndex((i) => i + 1));
+  const spotRectFor = useCallback((s) => {
+    if (!s?.target) return null;
+    const t = s.target;
+    return {
+      x: Math.max(0, t.x - SPOT_PAD),
+      y: Math.max(0, t.y - SPOT_PAD),
+      w: Math.min(winW, t.width + SPOT_PAD * 2),
+      h: t.height + SPOT_PAD * 2,
+    };
+  }, [winW]);
 
-  // Spotlight rect (padded target, clamped to the window).
-  const t = step.target;
-  const spot = t
-    ? {
-        x: Math.max(0, t.x - SPOT_PAD),
-        y: Math.max(0, t.y - SPOT_PAD),
-        w: Math.min(winW, t.width + SPOT_PAD * 2),
-        h: t.height + SPOT_PAD * 2,
+  // Drive the animation whenever the step changes.
+  useEffect(() => {
+    if (!visible || !step) return;
+    let cancelled = false;
+    (async () => {
+      try { await step.prepare?.(); } catch { /* prepare is best-effort */ }
+      if (cancelled) return;
+      const rect = spotRectFor(step);
+      const anims = [];
+      if (rect) {
+        const move = (v, to) => Animated.timing(v, {
+          toValue: to, duration: ANIM_MS, easing: Easing.out(Easing.cubic), useNativeDriver: false,
+        });
+        if (!hasSpotRef.current) {
+          // First spotlight: appear in place (no glide from 0,0).
+          spotX.setValue(rect.x); spotY.setValue(rect.y);
+          spotW.setValue(rect.w); spotH.setValue(rect.h);
+        } else {
+          anims.push(move(spotX, rect.x), move(spotY, rect.y), move(spotW, rect.w), move(spotH, rect.h));
+        }
+        hasSpotRef.current = true;
+      } else {
+        hasSpotRef.current = false;
       }
-    : null;
+      cardOpacity.setValue(0);
+      anims.push(Animated.timing(cardOpacity, {
+        toValue: 1, duration: ANIM_MS, easing: Easing.out(Easing.quad), useNativeDriver: false,
+      }));
+      Animated.parallel(anims).start();
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, index, steps]);
 
-  // Card sits below the spotlight when the target is in the upper half,
-  // above it otherwise; centred when there is no target.
-  const cardAbove = spot ? spot.y + spot.h / 2 > winH / 2 : false;
+  if (!visible || !step) return null;
+
+  const finish = () => { setIndex(0); hasSpotRef.current = false; onDone?.(); };
+  const next = () => (isLast ? finish() : setIndex((i) => i + 1));
+  const back = () => setIndex((i) => Math.max(0, i - 1));
+
+  const rect = spotRectFor(step);
+  // Card above the target when the target sits in the lower half.
+  const cardAbove = rect ? rect.y + rect.h / 2 > winH / 2 : false;
 
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={finish}>
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        {spot ? (
+        {rect ? (
           <>
-            {/* Dim everything except the spotlight (4 rects around it). */}
-            <View style={[styles.dim, { top: 0, left: 0, right: 0, height: spot.y }]} />
-            <View style={[styles.dim, { top: spot.y, left: 0, width: spot.x, height: spot.h }]} />
-            <View style={[styles.dim, { top: spot.y, left: spot.x + spot.w, right: 0, height: spot.h }]} />
-            <View style={[styles.dim, { top: spot.y + spot.h, left: 0, right: 0, bottom: 0 }]} />
-            {/* Spotlight ring */}
-            <View
+            {/* Animated dim rects around the gliding spotlight. */}
+            <Animated.View style={[styles.dim, { top: 0, left: 0, right: 0, height: spotY }]} />
+            <Animated.View style={[styles.dim, { top: spotY, left: 0, width: spotX, height: spotH }]} />
+            <Animated.View
+              style={[styles.dim, {
+                top: spotY, height: spotH, right: 0,
+                left: Animated.add(spotX, spotW),
+              }]}
+            />
+            <Animated.View style={[styles.dim, { top: Animated.add(spotY, spotH), left: 0, right: 0, bottom: 0 }]} />
+            <Animated.View
               pointerEvents="none"
-              style={[
-                styles.ring,
-                { top: spot.y, left: spot.x, width: spot.w, height: spot.h },
-              ]}
+              style={[styles.ring, { top: spotY, left: spotX, width: spotW, height: spotH }]}
             />
           </>
         ) : (
           <View style={[styles.dim, StyleSheet.absoluteFill]} />
         )}
 
-        {/* Step card */}
+        {/* Tooltip card */}
         <View
           style={[
             styles.cardWrap,
-            spot
+            rect
               ? cardAbove
-                ? { bottom: winH - spot.y + CARD_GAP }
-                : { top: spot.y + spot.h + CARD_GAP }
+                ? { bottom: winH - rect.y + CARD_GAP }
+                : { top: rect.y + rect.h + CARD_GAP }
               : { top: 0, bottom: 0, justifyContent: 'center' },
           ]}
           pointerEvents="box-none"
         >
-          <View style={styles.card}>
-            <Text style={styles.title}>{step.title}</Text>
+          <Animated.View style={[styles.card, { opacity: cardOpacity }]}>
+            <View style={styles.titleRow}>
+              {step.icon ? (
+                <View style={styles.iconBadge}>
+                  <Ionicons name={step.icon} size={18} color={vantage.accent} />
+                </View>
+              ) : null}
+              <Text style={styles.title}>{step.title}</Text>
+            </View>
             <Text style={styles.text}>{step.text}</Text>
 
             <View style={styles.footer}>
@@ -96,17 +158,24 @@ export default function OnboardingTour({ visible, steps = [], onDone }) {
                     <Text style={styles.skip}>Skip</Text>
                   </Pressable>
                 )}
+                {index > 0 && (
+                  <Pressable onPress={back} style={styles.backBtn} hitSlop={4} accessibilityRole="button" accessibilityLabel="Previous tip">
+                    <Ionicons name="chevron-back" size={16} color={vantage.textSecondary} />
+                    <Text style={styles.backTxt}>Back</Text>
+                  </Pressable>
+                )}
                 <Pressable
                   onPress={next}
                   style={styles.nextBtn}
                   accessibilityRole="button"
                   accessibilityLabel={isLast ? 'Finish tour' : 'Next tip'}
                 >
-                  <Text style={styles.nextTxt}>{isLast ? 'Got it' : 'Next'}</Text>
+                  <Text style={styles.nextTxt}>{isLast ? 'Finish' : 'Next'}</Text>
+                  {!isLast && <Ionicons name="chevron-forward" size={14} color="#fff" />}
                 </Pressable>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </View>
     </Modal>
@@ -120,29 +189,43 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: vantage.accent,
+    shadowColor: vantage.accent,
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   cardWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', paddingHorizontal: space.xl },
   card: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
     backgroundColor: vantage.bgElevated,
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: vantage.border,
     padding: space.lg,
   },
-  title: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  iconBadge: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: vantage.accentMuted || 'rgba(242,106,31,0.14)',
+  },
+  title: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, flexShrink: 1 },
   text: { color: vantage.textSecondary, fontFamily, fontSize: sizes.body, marginTop: space.sm, lineHeight: 20 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg },
-  dots: { flexDirection: 'row', gap: 5 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, gap: space.md },
+  dots: { flexDirection: 'row', gap: 4, flexShrink: 1, flexWrap: 'wrap', maxWidth: 120 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: vantage.border },
   dotActive: { backgroundColor: vantage.accent, width: 16 },
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   skip: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: space.xs },
+  backTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   nextBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: vantage.accent,
     borderRadius: radius.pill,
-    paddingHorizontal: space.xl,
+    paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
   nextTxt: { color: '#fff', fontFamily, fontSize: sizes.label, fontWeight: weights.bold },
