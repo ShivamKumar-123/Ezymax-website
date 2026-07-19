@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
@@ -6,14 +6,12 @@ import { useNavigation } from '@react-navigation/native';
 
 import { AuthContext } from '../../../app/providers/AuthContext';
 import { IconButton } from '../../../components/vantage';
-import SymbolPicker from '../../trading/components/SymbolPicker';
 import { parseAvatar, renderAvatar } from '../../../utils/avatarRender';
 import { vantage, space, sizes, weights, fontFamily } from '../../../theme/vantageTheme';
 
 export default function HomeHeader({ unreadNotifications = 0, accountLabel, onPickAccount, onAddAccount }) {
   const nav = useNavigation();
   const { user } = useContext(AuthContext) || {};
-  const [searchOpen, setSearchOpen] = useState(false);
   const av = parseAvatar(user?.avatar);   // reflects the avatar chosen in Profile
 
   return (
@@ -58,22 +56,13 @@ export default function HomeHeader({ unreadNotifications = 0, accountLabel, onPi
 
       <View style={{ flex: 1 }} />
 
-      <IconButton
-        icon={<Ionicons name="search" size={18} color={vantage.textPrimary} />}
-        accessibilityLabel="Search"
-        onPress={() => setSearchOpen(true)}
-      />
+      {/* No search icon on Home — instrument search lives in the Markets tab,
+          which has its own header search. */}
       <IconButton
         icon={<Ionicons name="notifications-outline" size={18} color={vantage.textPrimary} />}
         badgeColor={unreadNotifications > 0 ? vantage.down : undefined}
         accessibilityLabel="Notifications"
         onPress={() => nav.navigate('Notifications')}
-      />
-
-      <SymbolPicker
-        visible={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSelect={(sym) => nav.navigate('MarketsTab', { screen: 'InstrumentDetail', params: { symbol: sym } })}
       />
     </View>
   );
