@@ -21,3 +21,6 @@ Thumbs.db
 
 # Self-hosted TradingView library (hosted separately, not bundled in OTA)
 charting_library-master/
+
+# Local dev helper (QR for Expo Go)
+expo-qr.png
