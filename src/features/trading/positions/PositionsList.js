@@ -1,11 +1,90 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 import { SegmentedTabs, Card, Sheet, PillButton, PriceTicker, showToast, showAppAlert } from '../../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import ApiService from '../../../services/api/ApiService';
 import { isSoftTradeError, handleTradeError } from '../../../utils/tradeErrors';
+import { TRADE_WEB_URL } from '../../../constants';
+import { formatMoney, formatSignedMoney } from '../../../utils/format';
+import logger from '../../../utils/logger';
+
+// History date-range filter options and their cutoffs.
+const HISTORY_RANGES = [
+  { value: 'all',   label: 'All' },
+  { value: 'today', label: 'Today' },
+  { value: 'week',  label: '7D' },
+  { value: 'month', label: '30D' },
+];
+const HISTORY_RANGE_LABEL = {
+  all: 'All time', today: 'Today', week: 'Last 7 days', month: 'Last 30 days',
+};
+
+function historyCutoff(range) {
+  const now = new Date();
+  if (range === 'today') { const d = new Date(now); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  if (range === 'week') return now.getTime() - 7 * 24 * 3600 * 1000;
+  if (range === 'month') return now.getTime() - 30 * 24 * 3600 * 1000;
+  return null;
+}
+
+function closeTimeOf(trade) {
+  return Date.parse(trade.close_time || trade.closed_at || trade.closedAt || '') || 0;
+}
+
+/** Branded printable statement for the (filtered) closed trades. */
+function buildHistoryHtml(trades, rangeLabel, account) {
+  const netOf = (t) => {
+    const gross = Number(t.pnl ?? t.profit ?? t.realized_pnl ?? 0) || 0;
+    return gross - (Number(t.commission ?? 0) || 0) + (Number(t.swap ?? 0) || 0);
+  };
+  const totalNet = trades.reduce((s, t) => s + netOf(t), 0);
+  const rows = trades.map((t) => {
+    const ts = closeTimeOf(t);
+    const date = ts ? new Date(ts).toLocaleString() : '';
+    const net = netOf(t);
+    return `<tr>
+      <td>${date}</td><td>${t.symbol || ''}</td><td>${String(t.side || '').toUpperCase()}</td>
+      <td style="text-align:right">${t.lots ?? t.volume ?? t.quantity ?? ''}</td>
+      <td style="text-align:right">${t.open_price ?? ''}</td>
+      <td style="text-align:right">${t.close_price ?? ''}</td>
+      <td style="text-align:right">${formatMoney(t.commission ?? 0)}</td>
+      <td style="text-align:right">${formatMoney(t.swap ?? 0)}</td>
+      <td style="text-align:right;color:${net >= 0 ? '#16a34a' : '#dc2626'}">${formatSignedMoney(net)}</td>
+    </tr>`;
+  }).join('');
+  const acctLabel = account
+    ? `${account.is_demo ? 'Demo' : 'Live'} ${account.account_number || account.id || ''}`
+    : '';
+  let now = '';
+  try { now = new Date().toLocaleString(); } catch (_) {}
+  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  body{font-family:-apple-system,Roboto,Helvetica,sans-serif;padding:24px;color:#111}
+  .brand{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+  .brand img{height:34px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#666;font-size:12px;margin:0 0 16px}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th,td{border-bottom:1px solid #eee;padding:6px;text-align:left}
+  th{background:#fafafa;text-transform:uppercase;font-size:9px;letter-spacing:.5px;color:#555}
+  tfoot td{font-weight:700;border-top:2px solid #ddd}
+</style></head><body>
+  <div class="brand">
+    <h1>Trade History Statement</h1>
+    <img src="${TRADE_WEB_URL}/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
+  </div>
+  <p class="sub">${acctLabel ? acctLabel + ' · ' : ''}${rangeLabel} · Generated ${now} · ${trades.length} trades</p>
+  <table>
+    <thead><tr><th>Closed</th><th>Symbol</th><th>Side</th><th>Lots</th><th>Open</th><th>Close</th><th>Commission</th><th>Swap</th><th>Net P&amp;L</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="8">Total net P&amp;L</td><td style="text-align:right;color:${totalNet >= 0 ? '#16a34a' : '#dc2626'}">${formatSignedMoney(totalNet)}</td></tr></tfoot>
+  </table>
+</body></html>`;
+}
 
 const HISTORY_PAGE = 20;
 
@@ -14,6 +93,39 @@ export default function PositionsList({ positions = [], orders = [], history = [
   // History pagination — render a page at a time instead of every closed trade.
   const [historyShown, setHistoryShown] = useState(HISTORY_PAGE);
   useEffect(() => { if (view !== 'history') setHistoryShown(HISTORY_PAGE); }, [view]);
+
+  // History date filter + PDF export.
+  const [historyRange, setHistoryRange] = useState('all');
+  useEffect(() => { setHistoryShown(HISTORY_PAGE); }, [historyRange]);
+  const filteredHistory = useMemo(() => {
+    const cutoff = historyCutoff(historyRange);
+    if (cutoff == null) return history;
+    return history.filter((h) => closeTimeOf(h) >= cutoff);
+  }, [history, historyRange]);
+
+  const [exporting, setExporting] = useState(false);
+  const exportHistoryPdf = useCallback(async () => {
+    if (!filteredHistory.length) {
+      showToast({ kind: 'warn', message: 'No trades in this period to export' });
+      return;
+    }
+    setExporting(true);
+    try {
+      const { uri } = await Print.printToFileAsync({
+        html: buildHistoryHtml(filteredHistory, HISTORY_RANGE_LABEL[historyRange], account),
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Trade History PDF', UTI: 'com.adobe.pdf' });
+      } else {
+        showToast({ kind: 'info', message: `Saved to: ${uri}` });
+      }
+    } catch (e) {
+      logger.error('PositionsList: history PDF export failed', e);
+      showToast({ kind: 'error', message: e?.message || 'Could not export PDF' });
+    } finally {
+      setExporting(false);
+    }
+  }, [filteredHistory, historyRange, account]);
   const [slTpTarget, setSlTpTarget] = useState(null);
   // Themed close-confirm flows. We track the position *id* (not the object) so
   // the open sheet always re-reads the latest `positions` prop → live P&L.
@@ -144,22 +256,42 @@ export default function PositionsList({ positions = [], orders = [], history = [
           <Text style={styles.empty}>No trade history.</Text>
         ) : (
           <>
-            {history.slice(0, historyShown).map((h, i) => (
-              <HistoryRow key={h.id || h._id || i} trade={h} />
-            ))}
-            {history.length > historyShown ? (
+            {/* Date-range filter + PDF export for the filtered set. */}
+            <View style={styles.histControls}>
+              <View style={{ flex: 1 }}>
+                <SegmentedTabs value={historyRange} onChange={setHistoryRange} options={HISTORY_RANGES} />
+              </View>
               <Pressable
-                onPress={() => setHistoryShown((n) => n + HISTORY_PAGE)}
-                style={styles.showMoreBtn}
+                onPress={exporting ? undefined : exportHistoryPdf}
+                style={styles.pdfBtn}
                 accessibilityRole="button"
-                accessibilityLabel="Show more trade history"
+                accessibilityLabel="Download trade history PDF"
               >
-                <Text style={styles.showMoreTxt}>
-                  Show more ({history.length - historyShown} remaining)
-                </Text>
-                <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+                <Ionicons name={exporting ? 'hourglass-outline' : 'download-outline'} size={18} color={vantage.accent} />
               </Pressable>
-            ) : null}
+            </View>
+            {filteredHistory.length === 0 ? (
+              <Text style={styles.empty}>No trades in this period.</Text>
+            ) : (
+              <>
+                {filteredHistory.slice(0, historyShown).map((h, i) => (
+                  <HistoryRow key={h.id || h._id || i} trade={h} />
+                ))}
+                {filteredHistory.length > historyShown ? (
+                  <Pressable
+                    onPress={() => setHistoryShown((n) => n + HISTORY_PAGE)}
+                    style={styles.showMoreBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Show more trade history"
+                  >
+                    <Text style={styles.showMoreTxt}>
+                      Show more ({filteredHistory.length - historyShown} remaining)
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+                  </Pressable>
+                ) : null}
+              </>
+            )}
           </>
         )
       )}
@@ -768,6 +900,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
   },
   showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  histControls: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm },
+  pdfBtn: {
+    width: 38, height: 38, alignItems: 'center', justifyContent: 'center',
+    borderRadius: radius.md, borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
+  },
   card: { marginBottom: space.sm },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   sym: { color: vantage.textPrimary, fontFamily, fontSize: sizes.h3, fontWeight: weights.bold },
