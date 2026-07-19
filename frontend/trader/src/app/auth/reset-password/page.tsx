@@ -3,10 +3,26 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { scorePassword } from '@/lib/passwordStrength';
 import toast from 'react-hot-toast';
+
+function EyeToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      tabIndex={-1}
+      aria-label={shown ? 'Hide password' : 'Show password'}
+      className="text-text-tertiary hover:text-text-primary transition-colors"
+    >
+      {shown ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+    </button>
+  );
+}
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -16,7 +32,10 @@ function ResetPasswordForm() {
   const [code, setCode] = useState(searchParams.get('token') || '');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const strength = scorePassword(password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +43,8 @@ function ResetPasswordForm() {
       toast.error('Enter the 6-digit code from your email');
       return;
     }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (!strength.ok) {
+      toast.error(strength.issues[0] ?? 'Choose a stronger password');
       return;
     }
     if (password !== confirm) {
@@ -80,19 +99,54 @@ function ResetPasswordForm() {
             />
             <Input
               label="New password"
-              type="password"
+              type={showPw ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               placeholder="At least 8 characters"
+              suffix={<EyeToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
             />
+            {password ? (
+              <div aria-live="polite">
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4].map((seg) => (
+                    <span
+                      key={seg}
+                      className="h-1 flex-1 rounded-full transition-colors"
+                      style={{
+                        backgroundColor: strength.score >= seg
+                          ? ['#EF4444', '#EF4444', '#F59E0B', '#84CC16', '#22C55E'][strength.score]
+                          : 'rgba(128,128,128,0.25)',
+                      }}
+                    />
+                  ))}
+                  <span
+                    className="text-xs ml-1 shrink-0"
+                    style={{ color: ['#EF4444', '#EF4444', '#F59E0B', '#84CC16', '#22C55E'][strength.score] }}
+                  >
+                    {strength.label}
+                  </span>
+                </div>
+                {strength.issues.length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5">
+                    {strength.issues.map((issue) => (
+                      <li key={issue} className="text-xs text-text-tertiary flex items-start gap-1.5">
+                        <span className="text-danger leading-4">•</span>
+                        {issue}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
             <Input
               label="Confirm password"
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
               placeholder="Repeat password"
+              suffix={<EyeToggle shown={showConfirm} onToggle={() => setShowConfirm((s) => !s)} />}
             />
             <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
               Update password

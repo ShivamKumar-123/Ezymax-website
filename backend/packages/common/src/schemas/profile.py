@@ -1,5 +1,7 @@
 """Profile + change-password schemas (POST /profile/...)."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from ..password_policy import validate_password_strength
 
 
 class UpdateProfileRequest(BaseModel):
@@ -26,3 +28,8 @@ class UpdateProfileRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=1)
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong_password(cls, v: str) -> str:
+        return validate_password_strength(v)

@@ -4,11 +4,12 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import { scorePassword } from '@/lib/passwordStrength';
 
 type Mode = 'login' | 'signup';
 type SignupStep = 'credentials' | 'otp';
@@ -91,7 +92,8 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     if (!isValidEmail(email)) next.email = 'Please enter a valid email address.';
 
     if (mode === 'signup') {
-      if (password.length < 8) next.password = 'Password must be at least 8 characters.';
+      const strength = scorePassword(password);
+      if (!strength.ok) next.password = strength.issues[0] ?? 'Choose a stronger password.';
       if (confirmPassword !== password) next.confirmPassword = 'Passwords do not match.';
     } else if (password.length === 0) {
       next.password = 'Enter your password.';
@@ -262,6 +264,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                   id="password"
                   label={mode === 'signup' ? 'Create password' : 'Password'}
                   type="password"
+                  revealable
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
                   value={password}
@@ -279,11 +282,14 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                   }
                 />
 
+                {mode === 'signup' && <PasswordStrengthMeter password={password} />}
+
                 {mode === 'signup' && (
                   <Field
                     id="confirm-password"
                     label="Confirm password"
                     type="password"
+                    revealable
                     autoComplete="new-password"
                     placeholder="Re-type your password"
                     value={confirmPassword}
@@ -420,12 +426,16 @@ interface FieldProps {
   error?: string;
   rightSlot?: React.ReactNode;
   maxLength?: number;
+  /** Password fields: render an eye toggle that reveals/hides the value. */
+  revealable?: boolean;
 }
 
 function Field({
   id, label, type, autoComplete, inputMode, placeholder,
-  value, onChange, error, rightSlot, maxLength,
+  value, onChange, error, rightSlot, maxLength, revealable,
 }: FieldProps) {
+  const [revealed, setRevealed] = useState(false);
+  const effectiveType = revealable && revealed ? 'text' : type;
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -434,25 +444,73 @@ function Field({
         </label>
         {rightSlot}
       </div>
-      <input
-        type={type}
-        id={id}
-        autoComplete={autoComplete}
-        inputMode={inputMode}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        className={`text-sm w-full py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E94E1B]/20 bg-white text-black transition-colors ${
-          error ? 'border-red-500' : 'border-[#E5E5E5] focus:border-[#E94E1B]'
-        }`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
+      <div className="relative">
+        <input
+          type={effectiveType}
+          id={id}
+          autoComplete={autoComplete}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          className={`text-sm w-full py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E94E1B]/20 bg-white text-black transition-colors ${
+            revealable ? 'pr-10' : ''
+          } ${error ? 'border-red-500' : 'border-[#E5E5E5] focus:border-[#E94E1B]'}`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+        />
+        {revealable && (
+          <button
+            type="button"
+            onClick={() => setRevealed((r) => !r)}
+            tabIndex={-1}
+            aria-label={revealed ? 'Hide password' : 'Show password'}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-[#9A9A9A] hover:text-[#0A0A0A] transition-colors"
+          >
+            {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
       {error && (
         <p id={`${id}-error`} className="text-red-500 text-xs mt-1">
           {error}
         </p>
+      )}
+    </div>
+  );
+}
+
+/* Live strength meter for the signup password: 4-segment bar coloured by
+   score, the score label, and the specific unmet requirements. */
+function PasswordStrengthMeter({ password }: { password: string }) {
+  if (!password) return null;
+  const s = scorePassword(password);
+  const segColors = ['#EF4444', '#EF4444', '#F59E0B', '#84CC16', '#22C55E'];
+  const color = segColors[s.score];
+  return (
+    <div className="-mt-2" aria-live="polite">
+      <div className="flex items-center gap-1.5">
+        {[1, 2, 3, 4].map((seg) => (
+          <span
+            key={seg}
+            className="h-1 flex-1 rounded-full transition-colors"
+            style={{ backgroundColor: s.score >= seg ? color : '#E5E5E5' }}
+          />
+        ))}
+        <span className="text-xs ml-1 shrink-0" style={{ color: s.score >= 2 ? color : '#EF4444' }}>
+          {s.label}
+        </span>
+      </div>
+      {s.issues.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {s.issues.map((issue) => (
+            <li key={issue} className="text-xs text-[#9A9A9A] flex items-start gap-1.5">
+              <span className="text-[#EF4444] leading-4">•</span>
+              {issue}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

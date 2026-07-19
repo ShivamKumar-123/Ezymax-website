@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from ..password_policy import validate_password_strength
 
 
 class RegisterRequest(BaseModel):
@@ -14,6 +16,11 @@ class RegisterRequest(BaseModel):
     phone: Optional[str] = None
     country: Optional[str] = None
     referral_code: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def _strong_password(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 class LoginRequest(BaseModel):
@@ -30,6 +37,11 @@ class ResetPasswordRequest(BaseModel):
     # Accepts the 6-digit reset code (app) or a longer token (legacy link).
     token: str = Field(min_length=6, max_length=512)
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong_password(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 class BootstrapSessionRequest(BaseModel):
