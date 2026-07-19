@@ -365,11 +365,29 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
     if (!id) lastIdRef.current = null;
   }, [position, openLots]);
 
-  const pickPct = useCallback((p) => {
-    setPct(p);
-    const v = Math.max(0.01, Math.round(openLots * p * 100) / 100);
-    setLotsText(v.toFixed(2));
+  // Effective lots a chip resolves to: percentage of the open lots snapped to
+  // the 0.01 lot step and clamped to [0.01, openLots].
+  const chipLots = useCallback((p) => {
+    if (!(openLots > 0)) return null;
+    if (p === 1) return openLots;
+    return Math.max(0.01, Math.min(Math.round(openLots * p * 100) / 100, openLots));
   }, [openLots]);
+
+  // A partial chip whose snapped lots equal the full size can't actually do a
+  // partial close (e.g. 75% of a 0.01-lot position is below the minimum trade
+  // size) — disable it rather than silently closing 100%.
+  const chipDisabled = useCallback(
+    (p) => p !== 1 && (chipLots(p) == null || chipLots(p) >= openLots - 1e-9),
+    [chipLots, openLots],
+  );
+  const noPartialPossible = CLOSE_PCTS.every((p) => p === 1 || chipDisabled(p));
+
+  const pickPct = useCallback((p) => {
+    if (chipDisabled(p)) return;
+    setPct(p);
+    const v = chipLots(p);
+    if (v != null) setLotsText(v.toFixed(2));
+  }, [chipLots, chipDisabled]);
 
   const lotsNum = Number(lotsText);
   const lotsValid = Number.isFinite(lotsNum) && lotsNum >= 0.01 && lotsNum <= openLots + 1e-9;
@@ -413,13 +431,19 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
           <View style={closeStyles.pctRow}>
             {CLOSE_PCTS.map((p) => {
               const active = pct === p;
+              const disabled = chipDisabled(p);
               return (
                 <Pressable
                   key={p}
                   onPress={() => pickPct(p)}
-                  style={[closeStyles.pctChip, active && closeStyles.pctChipActive]}
+                  disabled={disabled}
+                  style={[
+                    closeStyles.pctChip,
+                    active && closeStyles.pctChipActive,
+                    disabled && { opacity: 0.35 },
+                  ]}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityState={{ selected: active, disabled }}
                 >
                   <Text style={[closeStyles.pctTxt, active && closeStyles.pctTxtActive]}>
                     {p === 1 ? 'FULL' : `${p * 100}%`}
@@ -428,6 +452,11 @@ function CloseConfirmSheet({ position, positions = [], onCancel, onConfirm, onBu
               );
             })}
           </View>
+          {noPartialPossible ? (
+            <Text style={closeStyles.badHint}>
+              This position is at the minimum size (0.01 lots) — it can only be closed in full.
+            </Text>
+          ) : null}
           <TextInput
             value={lotsText}
             onChangeText={(t) => { setLotsText(t.replace(/[^0-9.]/g, '')); setPct(null); }}
