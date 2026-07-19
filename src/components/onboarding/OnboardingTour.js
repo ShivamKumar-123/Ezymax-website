@@ -20,13 +20,49 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal, View, Text, Pressable, StyleSheet, Animated, Easing, useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../theme/vantageTheme';
 
 const DIM = 'rgba(0,0,0,0.80)';
 const SPOT_PAD = 6;      // breathing room around the highlighted element
 const CARD_GAP = 14;     // gap between spotlight and the card
 const ANIM_MS = 260;
+const POINTER_SIZE = 36; // the bouncing "tap here" hand
+const POINTER_GAP = 46;  // space reserved between spotlight and card for it
+const ANCHORED_CARD_W = 310;
+
+/** Bouncing tap-hand that hovers over the spotlighted element. */
+function TapPointer({ x, y }) {
+  const bounce = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: 8, duration: 420, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 420, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounce]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: x - POINTER_SIZE / 2,
+        top: y,
+        transform: [{ translateY: bounce }],
+      }}
+    >
+      <MaterialCommunityIcons
+        name="gesture-tap"
+        size={POINTER_SIZE}
+        color="#fff"
+        style={{ textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
+      />
+    </Animated.View>
+  );
+}
 
 export default function OnboardingTour({ visible, steps = [], onDone }) {
   const [index, setIndex] = useState(0);
@@ -123,14 +159,34 @@ export default function OnboardingTour({ visible, steps = [], onDone }) {
           <View style={[styles.dim, StyleSheet.absoluteFill]} />
         )}
 
-        {/* Tooltip card */}
+        {/* Bouncing "tap here" hand over the spotlighted element. */}
+        {rect ? (
+          <TapPointer
+            x={rect.x + rect.w / 2}
+            y={cardAbove ? rect.y - POINTER_GAP + 4 : rect.y + rect.h + 8}
+          />
+        ) : null}
+
+        {/* Tooltip card. Anchored steps get a COMPACT card horizontally
+            centred on the target (clamped to the screen) with room for the
+            pointer between them; targetless steps get a centred card. */}
         <View
           style={[
             styles.cardWrap,
             rect
-              ? cardAbove
-                ? { bottom: winH - rect.y + CARD_GAP }
-                : { top: rect.y + rect.h + CARD_GAP }
+              ? {
+                  alignItems: 'flex-start',
+                  paddingHorizontal: 0,
+                  left: Math.min(
+                    Math.max(space.md, rect.x + rect.w / 2 - ANCHORED_CARD_W / 2),
+                    Math.max(space.md, winW - ANCHORED_CARD_W - space.md),
+                  ),
+                  right: undefined,
+                  width: Math.min(ANCHORED_CARD_W, winW - space.md * 2),
+                  ...(cardAbove
+                    ? { bottom: winH - rect.y + CARD_GAP + POINTER_GAP - 8 }
+                    : { top: rect.y + rect.h + CARD_GAP + POINTER_GAP }),
+                }
               : { top: 0, bottom: 0, justifyContent: 'center' },
           ]}
           pointerEvents="box-none"

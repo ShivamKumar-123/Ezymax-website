@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Image, View } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -8,6 +9,7 @@ import MarketsStack from './MarketsStack';
 import TradeStack from './TradeStack';
 import FundsStack from './FundsStack';
 import { BottomNavPill } from '../../components/vantage';
+import { BOTTOM_NAV_PILL_HEIGHT } from '../../components/vantage/BottomNavPill';
 import { vantage } from '../../theme/vantageTheme';
 import OnboardingTour from '../../components/onboarding/OnboardingTour';
 import { hasSeenTour, markTourSeen, onTourReplay } from '../../components/onboarding/tourStorage';
@@ -72,7 +74,7 @@ const TAB_META = {
   FundsTab:   { label: 'Funds' },
 };
 
-function VantageTabBar({ state, navigation, barRef }) {
+function VantageTabBar({ state, navigation }) {
   const activeKey = state.routes[state.index].name;
   const tabs = state.routes.map((r) => {
     const m = TAB_META[r.name];
@@ -94,7 +96,7 @@ function VantageTabBar({ state, navigation, barRef }) {
   });
 
   return (
-    <View ref={barRef} collapsable={false}>
+    <View collapsable={false}>
     <BottomNavPill
       tabs={tabs}
       activeKey={activeKey}
@@ -148,38 +150,25 @@ const TOUR_STEPS = [
     text: 'You can replay this tour any time from Profile → Help → App Tour.' },
 ];
 
-function useFirstRunTour(barRef) {
+function useFirstRunTour() {
   const [steps, setSteps] = useState(null);
+  const { width: winW, height: winH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const buildAndShow = useCallback(() => {
-    // Anchored steps need the tab bar's window frame. measureInWindow can
-    // report zeros right after a navigation/layout tick (Fabric), so retry a
-    // few times — and if it never resolves, run the tour with centred cards
-    // instead of silently doing nothing.
-    const showCentred = () => setSteps(TOUR_STEPS.map((s) => ({ ...s, target: null })));
-    const attempt = (triesLeft) => {
-      const node = barRef.current;
-      if (!node) {
-        if (triesLeft > 0) setTimeout(() => attempt(triesLeft - 1), 200);
-        else showCentred();
-        return;
-      }
-      node.measureInWindow((x, y, width, height) => {
-        if (width > 0 && height > 0) {
-          const segW = width / 4;
-          setSteps(TOUR_STEPS.map((s) => ({
-            ...s,
-            target: s.tab == null ? null : { x: x + s.tab * segW, y, width: segW, height },
-          })));
-        } else if (triesLeft > 0) {
-          setTimeout(() => attempt(triesLeft - 1), 200);
-        } else {
-          showCentred();
-        }
-      });
-    };
-    attempt(5);
-  }, [barRef]);
+    // The nav pill is absolutely positioned at bottom:0 with a known height
+    // (BOTTOM_NAV_PILL_HEIGHT + bottom safe-area), so each tab's frame is
+    // computed directly from the window dimensions — deterministic, no
+    // measureInWindow (which returned zeros on some Fabric devices and
+    // degraded the tour to floating cards).
+    const barH = BOTTOM_NAV_PILL_HEIGHT + insets.bottom;
+    const y = winH - barH;
+    const segW = winW / 4;
+    setSteps(TOUR_STEPS.map((s) => ({
+      ...s,
+      target: s.tab == null ? null : { x: s.tab * segW, y, width: segW, height: barH - insets.bottom },
+    })));
+  }, [winW, winH, insets.bottom]);
 
   // First run: show once after the tab bar has settled.
   useEffect(() => {
@@ -203,14 +192,13 @@ function useFirstRunTour(barRef) {
 }
 
 export default function MainTabs() {
-  const barRef = useRef(null);
-  const { steps, done } = useFirstRunTour(barRef);
+  const { steps, done } = useFirstRunTour();
 
   return (
     <>
       <Tab.Navigator
         screenOptions={{ headerShown: false }}
-        tabBar={(props) => <VantageTabBar {...props} barRef={barRef} />}
+        tabBar={(props) => <VantageTabBar {...props} />}
       >
         <Tab.Screen name="HomeTab"    component={HomeStack} />
         <Tab.Screen name="MarketsTab" component={MarketsStack} />
