@@ -298,7 +298,7 @@ export default function InstrumentDetailScreen() {
 
   return (
     <Screen edges={['top']}>
-      {/* Minimal header: back + fullscreen / watchlist / share only. The
+      {/* Minimal header: back + fullscreen / watchlist only. The
           instrument name / picker row is gone — the symbol was just chosen
           from the Markets list, and the chart legend shows it anyway. The
           Chart/Orders/Info tab row is gone too: positions live in the Trade
@@ -307,7 +307,6 @@ export default function InstrumentDetailScreen() {
         pinned={pinned}
         onBack={() => nav.goBack()}
         onPin={togglePin}
-        onShare={() => showToast({ kind: 'info', message: 'Share coming soon' })}
         onFullscreen={() => setChartFull(true)}
       />
 
@@ -533,7 +532,7 @@ function LotsField({ value, onChange }) {
   );
 }
 
-function Header({ pinned, onBack, onPin, onShare, onFullscreen }) {
+function Header({ pinned, onBack, onPin, onFullscreen }) {
   return (
     <View style={styles.header}>
       <IconButton icon={<Ionicons name="chevron-back" size={22} color={vantage.textPrimary} />} accessibilityLabel="Back" onPress={onBack} />
@@ -543,9 +542,6 @@ function Header({ pinned, onBack, onPin, onShare, onFullscreen }) {
       </Pressable>
       <Pressable onPress={onPin} hitSlop={8} accessibilityRole="button" accessibilityLabel={pinned ? 'Unpin' : 'Pin to watchlist'} style={styles.hdrIcon}>
         <Ionicons name={pinned ? 'star' : 'star-outline'} size={22} color={pinned ? vantage.accent : vantage.textPrimary} />
-      </Pressable>
-      <Pressable onPress={onShare} hitSlop={8} accessibilityRole="button" accessibilityLabel="Share" style={styles.hdrIcon}>
-        <Ionicons name="share-outline" size={22} color={vantage.textPrimary} />
       </Pressable>
     </View>
   );
