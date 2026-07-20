@@ -21,13 +21,31 @@ const FILTER_OPTIONS = [
 
 const TX_PAGE = 50;
 
+// Date ranges — same set as Trade → History.
+const RANGE_OPTIONS = [
+  { value: 'all',   label: 'All time' },
+  { value: 'today', label: 'Today' },
+  { value: '7d',    label: '7D' },
+  { value: '30d',   label: '30D' },
+];
+
+function rangeCutoff(range) {
+  if (range === 'all') return null;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  if (range === '7d') d.setDate(d.getDate() - 7);
+  if (range === '30d') d.setDate(d.getDate() - 30);
+  return d.getTime();
+}
+
 export default function TransactionHistoryScreen() {
   const nav = useNavigation();
   const [filter, setFilter] = useState('all');
+  const [range, setRange] = useState('all');
   const [allItems, setAllItems] = useState([]);
   // Paged rendering of the (potentially 1000-row) ledger.
   const [shown, setShown] = useState(TX_PAGE);
-  useEffect(() => { setShown(TX_PAGE); }, [filter]);
+  useEffect(() => { setShown(TX_PAGE); }, [filter, range]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -56,20 +74,25 @@ export default function TransactionHistoryScreen() {
   }, [load]);
 
   const items = useMemo(() => {
-    if (filter === 'all') return allItems;
+    const cutoff = rangeCutoff(range);
     return allItems.filter((tx) => {
+      if (cutoff != null) {
+        const ts = Date.parse(tx.created_at || tx.createdAt || '');
+        if (!Number.isFinite(ts) || ts < cutoff) return false;
+      }
+      if (filter === 'all') return true;
       const t = String(tx.type || tx.kind || '').toLowerCase();
       // Trade-close ledger rows are typed profit/loss by the backend.
       if (filter === 'trading') return t === 'profit' || t === 'loss';
       return t.includes(filter);
     });
-  }, [allItems, filter]);
+  }, [allItems, filter, range]);
 
   const exportPdf = useCallback(async () => {
     if (!items.length) { showToast({ kind: 'warn', message: 'No transactions to export' }); return; }
     setExporting(true);
     try {
-      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter) });
+      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter, range) });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Transactions PDF', UTI: 'com.adobe.pdf' });
       } else {
@@ -80,7 +103,7 @@ export default function TransactionHistoryScreen() {
     } finally {
       setExporting(false);
     }
-  }, [items, filter]);
+  }, [items, filter, range]);
 
   return (
     <Screen edges={['top']}>
@@ -94,6 +117,24 @@ export default function TransactionHistoryScreen() {
         />
       </View>
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
+      {/* Date range — combines with the type filter above; also scopes the
+          PDF export. */}
+      <View style={styles.rangeRow}>
+        {RANGE_OPTIONS.map((r) => {
+          const active = range === r.value;
+          return (
+            <Pressable
+              key={r.value}
+              onPress={() => setRange(r.value)}
+              style={[styles.rangeChip, active && styles.rangeChipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.rangeTxt, active && styles.rangeTxtActive]}>{r.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <FlatList
         data={items.slice(0, shown)}
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}
@@ -123,7 +164,8 @@ export default function TransactionHistoryScreen() {
   );
 }
 
-function buildHtml(items, filter) {
+function buildHtml(items, filter, range) {
+  const rangeLabel = (RANGE_OPTIONS.find((r) => r.value === range) || {}).label;
   const rows = items.map((tx) => {
     const type = String(tx.type || tx.kind || '').toUpperCase();
     const method = tx.payment_method || tx.method || tx.gateway || tx.type || '';
@@ -147,7 +189,7 @@ function buildHtml(items, filter) {
   th{background:#fafafa;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#555}
 </style></head><body>
   <div class="brand">
-    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}</h1>
+    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}${range !== 'all' && rangeLabel ? ' · ' + rangeLabel : ''}</h1>
     <img src="${TRADE_WEB_URL}/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
   </div>
   <p class="sub">Generated ${now} · ${items.length} records</p>
@@ -204,6 +246,14 @@ const styles = StyleSheet.create({
   },
   showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
+  rangeRow: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm },
+  rangeChip: {
+    paddingHorizontal: space.md, paddingVertical: 6, borderRadius: 999,
+    borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
+  },
+  rangeChipActive: { borderColor: vantage.accent, backgroundColor: vantage.accentSoft || vantage.bgRaised },
+  rangeTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
+  rangeTxtActive: { color: vantage.accent },
   title: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, textAlign: 'center' },
   empty: { color: vantage.textMuted, fontFamily, fontSize: sizes.body, padding: space.huge, textAlign: 'center' },
 });
