@@ -124,16 +124,6 @@ export default function BusinessPage() {
                 Refer traders, build a team, or partner as a sub-broker. Earn revenue share on every trade your network places.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#0A0A0A]">
-                <DollarSign size={13} className="text-emerald-600" strokeWidth={2.5} />
-                Lifetime revenue share
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#0A0A0A]">
-                <TrendingUp size={13} className="text-[#E94E1B]" strokeWidth={2.5} />
-                Up to 5 levels deep
-              </div>
-            </div>
           </div>
         </div>
 
