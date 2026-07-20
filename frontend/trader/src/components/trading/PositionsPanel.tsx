@@ -324,6 +324,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const instruments = useTradingStore((s) => s.instruments);
   const [activeTab, setActiveTab] = useState<TabId>('open');
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
+  // Server-reported TOTAL closed trades — the list holds only the latest page
+  // (200), so counts must come from here, not items.length.
+  const [historyTotal, setHistoryTotal] = useState<number | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [closeModal, setCloseModal] = useState<CloseModal>(null);
   const [closeSubmitting, setCloseSubmitting] = useState(false);
@@ -384,13 +387,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     // flicker into a "Loading history…" placeholder every 4 s.
     if (!opts.silent) setHistoryLoading(true);
     try {
-      const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', {
+      const res = await api.get<{ items?: ClosedTrade[]; total?: number } | ClosedTrade[]>('/portfolio/trades', {
         page: '1',
         per_page: '200',
         account_id: activeAccountId,
       });
       setHistoryTrades(
         (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
+      );
+      setHistoryTotal(
+        res && typeof res === 'object' && 'total' in res && Number.isFinite(Number(res.total))
+          ? Number(res.total)
+          : null,
       );
     } catch {
       // Silent polls swallow errors — last-known list stays put.
@@ -431,6 +439,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   // silent refetch below would otherwise leave them visible until it lands.
   useEffect(() => {
     setHistoryTrades([]);
+    setHistoryTotal(null);
   }, [activeAccountId]);
 
   // Load closed-trade history once on mount (and again on account switch,
@@ -724,7 +733,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const tabs: { id: TabId; label: string; count: number }[] = [
     { id: 'open', label: 'Open', count: positions.length },
     { id: 'pending', label: 'Pending', count: pendingOrders.length },
-    { id: 'history', label: 'History', count: historyTrades.length },
+    { id: 'history', label: 'History', count: historyTotal ?? historyTrades.length },
   ];
 
   const exportCurrentCsv = () => {
