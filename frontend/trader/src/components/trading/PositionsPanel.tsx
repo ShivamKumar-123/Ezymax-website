@@ -370,7 +370,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return a?.account_number ?? accountId.slice(0, 8);
   };
 
+  // History is scoped to the ACTIVE account — without account_id the endpoint
+  // returns every account's trades, so switching accounts showed the same
+  // (mixed) history everywhere. Keyed on the account id so the callback
+  // identity changes on switch and every effect below refetches.
+  const activeAccountId = activeAccount?.id;
   const loadHistory = useCallback(async (opts: { silent?: boolean } = {}) => {
+    if (!activeAccountId) {
+      setHistoryTrades([]);
+      return;
+    }
     // Silent polls skip the loading toggle so the list doesn't
     // flicker into a "Loading history…" placeholder every 4 s.
     if (!opts.silent) setHistoryLoading(true);
@@ -378,6 +387,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', {
         page: '1',
         per_page: '200',
+        account_id: activeAccountId,
       });
       setHistoryTrades(
         (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
@@ -387,7 +397,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       if (!opts.silent) setHistoryTrades([]);
     }
     if (!opts.silent) setHistoryLoading(false);
-  }, []);
+  }, [activeAccountId]);
 
   useEffect(() => {
     if (activeTab === 'history') void loadHistory();
@@ -417,8 +427,15 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return () => window.removeEventListener('trade:closed', onClosed);
   }, [loadHistory]);
 
-  // Load closed-trade history once on mount so the "Closed Positions" count
-  // badge is accurate immediately — not 0 until the user first opens the tab.
+  // Drop the previous account's rows the moment the account switches — the
+  // silent refetch below would otherwise leave them visible until it lands.
+  useEffect(() => {
+    setHistoryTrades([]);
+  }, [activeAccountId]);
+
+  // Load closed-trade history once on mount (and again on account switch,
+  // since loadHistory is keyed on the account id) so the "Closed Positions"
+  // count badge is accurate immediately — not 0 until the tab is opened.
   useEffect(() => {
     void loadHistory({ silent: true });
   }, [loadHistory]);
