@@ -49,11 +49,32 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
 
     host = str(s.SMTP_HOST).strip()
     port = int(s.SMTP_PORT)
+    user = (s.SMTP_USER or "").strip()
+    pwd = (s.SMTP_PASSWORD or "").strip()
+
+    # Two mutually exclusive TLS modes — picking the wrong one hangs until
+    # the socket timeout instead of failing fast, which is why a
+    # misconfigured port looks like "email silently never arrives":
+    #
+    #   • Port 465 = implicit TLS (SMTPS). The server expects a TLS
+    #     handshake immediately, so plain SMTP must NOT be used and
+    #     starttls() must NOT be called. Hostinger and many shared hosts
+    #     default to this.
+    #   • Port 587 = STARTTLS. Connect in plaintext, then upgrade.
+    #
+    # Previously only the 587 path existed, so any deployment configured
+    # for 465 could never send mail at all.
+    use_implicit_ssl = port == 465
+    if use_implicit_ssl:
+        with smtplib.SMTP_SSL(host, port, timeout=30) as server:
+            if user:
+                server.login(user, pwd)
+            server.send_message(msg)
+        return
+
     with smtplib.SMTP(host, port, timeout=30) as server:
         if s.SMTP_USE_TLS:
             server.starttls()
-        user = (s.SMTP_USER or "").strip()
-        pwd = (s.SMTP_PASSWORD or "").strip()
         if user:
             server.login(user, pwd)
         server.send_message(msg)

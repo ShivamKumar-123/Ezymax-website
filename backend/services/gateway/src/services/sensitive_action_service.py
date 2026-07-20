@@ -234,8 +234,11 @@ async def start_challenge(
                 "step-up OTP send failed user=%s action=%s",
                 user.id, action,
             )
+            # 503 not 502 — SMTP is our downstream dependency, and an origin
+            # 502 gets swapped for Cloudflare's branded HTML error page,
+            # hiding this message from the user.
             raise HTTPException(
-                status_code=502,
+                status_code=503,
                 detail="We couldn't send the verification email. Please retry.",
             )
         public_payload["target_email_masked"] = _mask_email(user.email)
