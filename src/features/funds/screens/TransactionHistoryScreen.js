@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { Screen, IconButton, CategoryTabs, showToast, DateRangeSheet, formatRangeLabel } from '../../../components/vantage';
+import { Screen, IconButton, CategoryTabs, Sheet, showToast, DateRangeSheet, formatRangeLabel } from '../../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
@@ -51,6 +51,7 @@ export default function TransactionHistoryScreen() {
   // Custom From→To range: {from, to} ms timestamps set via DateRangeSheet.
   const [customRange, setCustomRange] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [acctSheetOpen, setAcctSheetOpen] = useState(false);
   const [allItems, setAllItems] = useState([]);
   // Paged rendering of the (potentially 1000-row) ledger.
   const [shown, setShown] = useState(TX_PAGE);
@@ -146,34 +147,48 @@ export default function TransactionHistoryScreen() {
           onPress={exporting ? undefined : exportPdf}
         />
       </View>
-      {/* Account scope — the ledger mixes all accounts; pick one to see only
-          its rows. Hidden when the user has a single account or none. */}
+      {/* Account scope — the ledger mixes all accounts; a compact dropdown
+          bar opens a sheet to pick one. Hidden for single-account users. */}
       {Object.keys(acctMap).length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.acctRow}>
-          <Pressable
-            onPress={() => setAcctId(null)}
-            style={[styles.rangeChip, acctId == null && styles.rangeChipActive]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: acctId == null }}
-          >
-            <Text style={[styles.rangeTxt, acctId == null && styles.rangeTxtActive]}>All accounts</Text>
-          </Pressable>
-          {Object.entries(acctMap).map(([id, label]) => {
+        <Pressable
+          onPress={() => setAcctSheetOpen(true)}
+          style={styles.acctBar}
+          accessibilityRole="button"
+          accessibilityLabel="Filter by account"
+        >
+          <Ionicons name="wallet-outline" size={15} color={vantage.textSecondary} />
+          <Text style={styles.acctBarLab}>Account</Text>
+          <Text style={styles.acctBarVal} numberOfLines={1}>
+            {acctId ? acctMap[acctId] : 'All accounts'}
+          </Text>
+          <Ionicons name="chevron-down" size={15} color={vantage.textMuted} />
+        </Pressable>
+      ) : null}
+      <Sheet visible={acctSheetOpen} onClose={() => setAcctSheetOpen(false)} title="Select account">
+        <View style={styles.acctSheetWrap}>
+          {[[null, 'All accounts'], ...Object.entries(acctMap)].map(([id, label]) => {
             const active = acctId === id;
             return (
               <Pressable
-                key={id}
-                onPress={() => setAcctId(id)}
-                style={[styles.rangeChip, active && styles.rangeChipActive]}
+                key={id ?? 'all'}
+                onPress={() => { setAcctId(id); setAcctSheetOpen(false); }}
+                style={[styles.acctOption, active && styles.acctOptionActive]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.rangeTxt, active && styles.rangeTxtActive]}>{label}</Text>
+                <Ionicons
+                  name={id == null ? 'albums-outline' : 'wallet-outline'}
+                  size={18}
+                  color={active ? vantage.accent : vantage.textSecondary}
+                />
+                <Text style={[styles.acctOptionTxt, active && { color: vantage.accent }]}>{label}</Text>
+                <View style={{ flex: 1 }} />
+                {active ? <Ionicons name="checkmark-circle" size={18} color={vantage.accent} /> : null}
               </Pressable>
             );
           })}
-        </ScrollView>
-      ) : null}
+        </View>
+      </Sheet>
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
       {/* Date range — combines with the type filter above; also scopes the
           PDF export. "Custom" opens the From→To calendar. */}
@@ -327,7 +342,22 @@ const styles = StyleSheet.create({
   showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
   rangeRow: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm },
-  acctRow: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.xs },
+  acctBar: {
+    flexDirection: 'row', alignItems: 'center', gap: space.xs,
+    marginHorizontal: space.lg, marginBottom: space.sm,
+    paddingHorizontal: space.md, paddingVertical: 10,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  acctBarLab: { color: vantage.textMuted, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  acctBarVal: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold, textAlign: 'right' },
+  acctSheetWrap: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.xs },
+  acctOption: {
+    flexDirection: 'row', alignItems: 'center', gap: space.md,
+    paddingHorizontal: space.md, paddingVertical: space.md,
+    borderWidth: 1, borderColor: vantage.border, borderRadius: radius.md, backgroundColor: vantage.bgRaised,
+  },
+  acctOptionActive: { borderColor: vantage.accent },
+  acctOptionTxt: { color: vantage.textPrimary, fontFamily, fontSize: sizes.body, fontWeight: weights.semibold },
   rangeChip: {
     paddingHorizontal: space.md, paddingVertical: 6, borderRadius: 999,
     borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
