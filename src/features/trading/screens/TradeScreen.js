@@ -33,6 +33,17 @@ export default function TradeScreen() {
 
   const accountId = selectedAccount?.id || selectedAccount?._id;
 
+  // Account switch: drop the previous account's data immediately — the fetch
+  // below repopulates. Without this, account A's positions/history stay on
+  // screen under account B until the network round-trip completes.
+  useEffect(() => {
+    setPositions([]);
+    setOrders([]);
+    setHistory([]);
+    setAccountSummary(null);
+    prevPosCountRef.current = 0;
+  }, [accountId]);
+
   useEffect(() => {
     if (route.params?.symbol) setSymbol(String(route.params.symbol).toUpperCase());
   }, [route.params?.symbol]);
