@@ -41,19 +41,22 @@ function ChartSpinner({ dark }: { dark: boolean }) {
   );
 }
 
-const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), {
-  ssr: false,
-  loading: () => <ChartSpinner dark={false} />,
-});
-
 function param(name: string, fallback = ''): string {
   if (typeof window === 'undefined') return fallback;
   return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
+const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), {
+  ssr: false,
+  // Spinner matches the requested theme so a dark-mode app never flashes a
+  // white screen while the chart lib loads.
+  loading: () => <ChartSpinner dark={param('theme') === 'dark'} />,
+});
+
 export default function ChartPage() {
-  // Chart is LIGHT-ONLY now (dark mode removed), regardless of the ?theme= param.
-  const theme = 'light' as const;
+  // Theme follows the embedding app: the APK passes ?theme=dark|light from
+  // its own theme, so the chart always matches the app around it.
+  const [theme] = useState<'light' | 'dark'>(() => (param('theme') === 'dark' ? 'dark' : 'light'));
   const [interval] = useState<string>(() => param('interval', '60'));
 
   useEffect(() => {
@@ -155,7 +158,7 @@ export default function ChartPage() {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: '#ffffff' }}
+      style={{ position: 'fixed', inset: 0, background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
     >
       <ChartErrorBoundary>
         {/* Buy/Sell widget hidden here — the mobile app has its own native
