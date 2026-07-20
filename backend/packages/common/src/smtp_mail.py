@@ -21,9 +21,31 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 
-def smtp_configured() -> bool:
+def _resend_configured() -> bool:
+    s = get_settings()
+    return bool(getattr(s, "RESEND_API_KEY", "") and str(s.RESEND_API_KEY).strip())
+
+
+def _smtp_transport_configured() -> bool:
     s = get_settings()
     return bool(s.SMTP_HOST and str(s.SMTP_HOST).strip())
+
+
+def email_configured() -> bool:
+    """True when *any* email transport is usable (HTTPS API or SMTP)."""
+    return _resend_configured() or _smtp_transport_configured()
+
+
+def smtp_configured() -> bool:
+    """Legacy name, now meaning "can we send email at all?".
+
+    ~30 call sites across the gateway, admin and risk-engine use this as
+    a gate before composing a message. Widening it here (rather than
+    renaming at every site) means a Resend-only deployment — no SMTP_HOST
+    set — keeps sending instead of silently skipping every email.
+    Prefer `email_configured()` in new code.
+    """
+    return email_configured()
 
 
 def _from_address() -> str:
@@ -80,6 +102,39 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
         server.send_message(msg)
 
 
+async def _send_via_resend(
+    to_email: str, subject: str, html: str, text: Optional[str],
+) -> None:
+    """POST the message to Resend over HTTPS. Raises on any non-2xx."""
+    import httpx
+
+    s = get_settings()
+    payload = {
+        "from": _from_address(),
+        "to": [to_email],
+        "subject": subject,
+        "html": html,
+    }
+    if text:
+        payload["text"] = text
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.post(
+            str(s.RESEND_API_URL).strip(),
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {str(s.RESEND_API_KEY).strip()}",
+                "Content-Type": "application/json",
+            },
+        )
+    if resp.status_code >= 300:
+        # Surface the provider's own message — it names the actual problem
+        # (unverified domain, bad key, invalid from-address).
+        raise RuntimeError(
+            f"Resend returned {resp.status_code}: {resp.text[:400]}"
+        )
+
+
 async def send_email(
     to_email: str,
     subject: str,
@@ -88,17 +143,45 @@ async def send_email(
     text: Optional[str] = None,
 ) -> bool:
     """Send a transactional email. Returns True on success, False on
-    misconfiguration or SMTP failure. Never raises — caller can ignore
-    the result if they don't care."""
-    if not smtp_configured():
-        logger.warning("SMTP not configured — skipping email to %s subj=%r", to_email, subject)
-        return False
+    misconfiguration or send failure. Never raises — caller can ignore
+    the result if they don't care.
+
+    Transport order: Resend (HTTPS) first when configured, then SMTP.
+    Both are attempted before giving up, so a transient failure on the
+    primary still gets the message out if the fallback is reachable.
+    """
     if not to_email or "@" not in to_email:
         logger.warning("Skipping email — bad recipient %r", to_email)
         return False
+    if not email_configured():
+        logger.warning(
+            "No email transport configured (set RESEND_API_KEY or SMTP_HOST) "
+            "— skipping email to %s subj=%r", to_email, subject,
+        )
+        return False
+
+    if _resend_configured():
+        try:
+            await _send_via_resend(to_email, subject, html, text)
+            logger.info("email sent via resend to=%s subj=%r", to_email, subject)
+            return True
+        except Exception:
+            # Only worth a full traceback if there's no fallback left.
+            if _smtp_transport_configured():
+                logger.warning(
+                    "Resend send failed for %s subj=%r — falling back to SMTP",
+                    to_email, subject, exc_info=True,
+                )
+            else:
+                logger.exception("Failed to send email to %s subj=%r", to_email, subject)
+                return False
+
+    if not _smtp_transport_configured():
+        return False
+
     try:
         await asyncio.to_thread(_send_sync, to_email, subject, html, text)
-        logger.info("email sent to=%s subj=%r", to_email, subject)
+        logger.info("email sent via smtp to=%s subj=%r", to_email, subject)
         return True
     except Exception:
         logger.exception("Failed to send email to %s subj=%r", to_email, subject)

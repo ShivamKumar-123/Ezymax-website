@@ -73,7 +73,25 @@ class Settings(BaseSettings):
     # Public trader app URL (password reset links). No trailing slash.
     TRADER_APP_URL: str = "http://localhost:3000"
 
-    # Optional SMTP — required for password-reset emails in non-dev. If SMTP_HOST is empty, reset links are only logged in development.
+    # ── Transactional email ───────────────────────────────────────────
+    # Two transports. RESEND_API_KEY (HTTPS) is preferred and is tried
+    # first; SMTP is the fallback.
+    #
+    # Why HTTPS is the default: DigitalOcean — and most cloud providers —
+    # block outbound TCP 25/465/587 at the network level as an anti-spam
+    # measure. Verified on this host: port 443 to smtp.hostinger.com is
+    # OPEN while 587 to *both* Hostinger and Gmail fails, and a raw-IP
+    # connect on 587 times out with no RST. smtplib therefore cannot
+    # connect at all, regardless of host, port or credentials. An HTTP
+    # email API rides 443 and is unaffected.
+    #
+    # Keep the SMTP_* values populated: if the provider ever lifts the
+    # block, clearing RESEND_API_KEY restores SMTP with no code change.
+    RESEND_API_KEY: str = ""
+    RESEND_API_URL: str = "https://api.resend.com/emails"
+
+    # Optional SMTP — fallback transport. If both SMTP_HOST and
+    # RESEND_API_KEY are empty, reset links are only logged in development.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
