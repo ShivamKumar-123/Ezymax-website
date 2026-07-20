@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
@@ -9,6 +9,7 @@ import { Screen, IconButton, CategoryTabs, showToast, DateRangeSheet, formatRang
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
+import { useAccount } from '../../../app/providers/AccountContext';
 import { TRADE_WEB_URL } from '../../../constants';
 
 const FILTER_OPTIONS = [
@@ -40,15 +41,32 @@ function rangeCutoff(range) {
 
 export default function TransactionHistoryScreen() {
   const nav = useNavigation();
+  const { accounts } = useAccount();
   const [filter, setFilter] = useState('all');
   const [range, setRange] = useState('all');
+  // Account scope: null = all accounts, else the selected account's id. The
+  // ledger mixes every account's rows — without this the user can't tell
+  // whose history they're looking at.
+  const [acctId, setAcctId] = useState(null);
   // Custom From→To range: {from, to} ms timestamps set via DateRangeSheet.
   const [customRange, setCustomRange] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [allItems, setAllItems] = useState([]);
   // Paged rendering of the (potentially 1000-row) ledger.
   const [shown, setShown] = useState(TX_PAGE);
-  useEffect(() => { setShown(TX_PAGE); }, [filter, range, customRange]);
+  useEffect(() => { setShown(TX_PAGE); }, [filter, range, customRange, acctId]);
+
+  // account id → short display label (e.g. "Live 98690328"), used by the
+  // scope chips, each row's account tag, and the PDF.
+  const acctMap = useMemo(() => {
+    const m = {};
+    for (const a of accounts || []) {
+      const id = String(a.id || a._id || '');
+      if (!id) continue;
+      m[id] = `${a.is_demo ? 'Demo' : 'Live'} ${a.account_number || id.slice(0, 8)}`;
+    }
+    return m;
+  }, [accounts]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -80,6 +98,7 @@ export default function TransactionHistoryScreen() {
     const cutoff = range === 'custom' ? null : rangeCutoff(range);
     const win = range === 'custom' ? customRange : null;
     return allItems.filter((tx) => {
+      if (acctId && String(tx.account_id || '') !== acctId) return false;
       if (cutoff != null || win) {
         const ts = Date.parse(tx.created_at || tx.createdAt || '');
         if (!Number.isFinite(ts)) return false;
@@ -92,7 +111,7 @@ export default function TransactionHistoryScreen() {
       if (filter === 'trading') return t === 'profit' || t === 'loss';
       return t.includes(filter);
     });
-  }, [allItems, filter, range, customRange]);
+  }, [allItems, filter, range, customRange, acctId]);
 
   const exportPdf = useCallback(async () => {
     if (!items.length) { showToast({ kind: 'warn', message: 'No transactions to export' }); return; }
@@ -101,7 +120,9 @@ export default function TransactionHistoryScreen() {
       const rangeLabel = range === 'custom' && customRange
         ? formatRangeLabel(customRange.from, customRange.to)
         : (RANGE_OPTIONS.find((r) => r.value === range) || {}).label;
-      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter, rangeLabel) });
+      const { uri } = await Print.printToFileAsync({
+        html: buildHtml(items, filter, rangeLabel, acctId ? acctMap[acctId] : null, acctMap),
+      });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Transactions PDF', UTI: 'com.adobe.pdf' });
       } else {
@@ -112,7 +133,7 @@ export default function TransactionHistoryScreen() {
     } finally {
       setExporting(false);
     }
-  }, [items, filter, range, customRange]);
+  }, [items, filter, range, customRange, acctId, acctMap]);
 
   return (
     <Screen edges={['top']}>
@@ -125,6 +146,34 @@ export default function TransactionHistoryScreen() {
           onPress={exporting ? undefined : exportPdf}
         />
       </View>
+      {/* Account scope — the ledger mixes all accounts; pick one to see only
+          its rows. Hidden when the user has a single account or none. */}
+      {Object.keys(acctMap).length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.acctRow}>
+          <Pressable
+            onPress={() => setAcctId(null)}
+            style={[styles.rangeChip, acctId == null && styles.rangeChipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: acctId == null }}
+          >
+            <Text style={[styles.rangeTxt, acctId == null && styles.rangeTxtActive]}>All accounts</Text>
+          </Pressable>
+          {Object.entries(acctMap).map(([id, label]) => {
+            const active = acctId === id;
+            return (
+              <Pressable
+                key={id}
+                onPress={() => setAcctId(id)}
+                style={[styles.rangeChip, active && styles.rangeChipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.rangeTxt, active && styles.rangeTxtActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
       {/* Date range — combines with the type filter above; also scopes the
           PDF export. "Custom" opens the From→To calendar. */}
@@ -167,7 +216,7 @@ export default function TransactionHistoryScreen() {
         data={items.slice(0, shown)}
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}
         keyExtractor={(item, idx) => String(item.id || item._id || idx)}
-        renderItem={({ item }) => <Row tx={item} />}
+        renderItem={({ item }) => <Row tx={item} acctLabel={acctMap[String(item.account_id || '')]} />}
         ListEmptyComponent={loading ? null : <Text style={styles.empty}>No transactions.</Text>}
         // Explicit pagination: a page of TX_PAGE rows and a visible
         // "Show more" button — the ledger can be 1000+ rows.
@@ -192,15 +241,16 @@ export default function TransactionHistoryScreen() {
   );
 }
 
-function buildHtml(items, filter, rangeLabel) {
+function buildHtml(items, filter, rangeLabel, acctLabel, acctMap = {}) {
   const rows = items.map((tx) => {
     const type = String(tx.type || tx.kind || '').toUpperCase();
     const method = tx.payment_method || tx.method || tx.gateway || tx.type || '';
+    const account = acctMap[String(tx.account_id || '')] || '—';
     const amount = Number(tx.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const status = tx.status || 'pending';
     let date = '';
     try { date = tx.created_at ? new Date(tx.created_at).toLocaleString() : ''; } catch (_) {}
-    return `<tr><td>${date}</td><td>${type}</td><td>${method}</td><td style="text-align:right">${amount}</td><td>${status}</td></tr>`;
+    return `<tr><td>${date}</td><td>${account}</td><td>${type}</td><td>${method}</td><td style="text-align:right">${amount}</td><td>${status}</td></tr>`;
   }).join('');
   let now = '';
   try { now = new Date().toLocaleString(); } catch (_) {}
@@ -216,18 +266,18 @@ function buildHtml(items, filter, rangeLabel) {
   th{background:#fafafa;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#555}
 </style></head><body>
   <div class="brand">
-    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}${rangeLabel && rangeLabel !== 'All time' ? ' · ' + rangeLabel : ''}</h1>
+    <h1>SwissCresta — Transactions${acctLabel ? ' · ' + acctLabel : ''}${filter !== 'all' ? ' · ' + filter : ''}${rangeLabel && rangeLabel !== 'All time' ? ' · ' + rangeLabel : ''}</h1>
     <img src="${TRADE_WEB_URL}/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
   </div>
   <p class="sub">Generated ${now} · ${items.length} records</p>
   <table>
-    <thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Amount (USD)</th><th>Status</th></tr></thead>
+    <thead><tr><th>Date</th><th>Account</th><th>Type</th><th>Method</th><th>Amount (USD)</th><th>Status</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
 </body></html>`;
 }
 
-function Row({ tx }) {
+function Row({ tx, acctLabel }) {
   const t = String(tx.type || tx.kind || '').toLowerCase();
   const isDeposit = t.includes('deposit');
   const isWithdraw = t.includes('withdraw');
@@ -253,7 +303,10 @@ function Row({ tx }) {
       <View style={{ flex: 1, marginLeft: space.md }}>
         <Text style={rowStyles.method}>{String(method).toUpperCase()}</Text>
         <Text style={rowStyles.date} numberOfLines={1}>
-          {(isProfit || isLoss) && desc ? `${desc} · ${dateStr}` : dateStr}
+          {/* Account tag first so the user always knows WHOSE row this is. */}
+          {[acctLabel, (isProfit || isLoss) && desc ? desc : null, dateStr]
+            .filter(Boolean)
+            .join(' · ')}
         </Text>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
@@ -274,6 +327,7 @@ const styles = StyleSheet.create({
   showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingTop: space.sm, paddingBottom: space.xs },
   rangeRow: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm },
+  acctRow: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.xs },
   rangeChip: {
     paddingHorizontal: space.md, paddingVertical: 6, borderRadius: 999,
     borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
