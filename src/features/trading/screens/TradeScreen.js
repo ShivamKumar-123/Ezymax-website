@@ -28,6 +28,9 @@ export default function TradeScreen() {
   const [positions, setPositions] = useState([]);
   const [orders, setOrders] = useState([]);
   const [history, setHistory] = useState([]);
+  const [historyTotal, setHistoryTotal] = useState(null); // server-reported total closed trades
+  const historyPageRef = useRef(1);                       // last fetched server page
+  const historyLoadingMoreRef = useRef(false);            // in-flight guard for load-more
   const prevPosCountRef = useRef(0);   // detect when an open position closes
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,6 +43,8 @@ export default function TradeScreen() {
     setPositions([]);
     setOrders([]);
     setHistory([]);
+    setHistoryTotal(null);
+    historyPageRef.current = 1;
     setAccountSummary(null);
     prevPosCountRef.current = 0;
   }, [accountId]);
@@ -100,10 +105,40 @@ export default function TradeScreen() {
     }
     if (hist.status === 'fulfilled') {
       const list = Array.isArray(hist.value) ? hist.value : (Array.isArray(hist.value?.items) ? hist.value.items : []);
-      // History = closed trades only.
+      // History = closed trades only. The endpoint pages (50/page) — keep the
+      // server's TOTAL so counts show the real number (a 51st trade must read
+      // 51, not the page size), and reset paging on every full refresh.
       setHistory(list.filter((t) => t.close_time || t.close_price));
+      setHistoryTotal(Number.isFinite(Number(hist.value?.total)) ? Number(hist.value.total) : null);
+      historyPageRef.current = 1;
     }
   }, [accountId, selectedAccount]);
+
+  // Fetch the next server page of closed trades and append (deduped by id).
+  // Called by the history list when the user has revealed everything fetched
+  // so far and the server reports more.
+  const loadMoreHistory = useCallback(async () => {
+    if (!accountId || historyLoadingMoreRef.current) return;
+    historyLoadingMoreRef.current = true;
+    try {
+      const next = historyPageRef.current + 1;
+      const res = await ApiService.getTradeHistory(accountId, next, 50);
+      const list = Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []);
+      if (list.length) {
+        historyPageRef.current = next;
+        setHistory((prev) => {
+          const seen = new Set(prev.map((t) => String(t.id || t._id)));
+          const fresh = list.filter((t) => (t.close_time || t.close_price) && !seen.has(String(t.id || t._id)));
+          return [...prev, ...fresh];
+        });
+      }
+      if (Number.isFinite(Number(res?.total))) setHistoryTotal(Number(res.total));
+    } catch (_) {
+      /* keep what we have; user can retry via Show more */
+    } finally {
+      historyLoadingMoreRef.current = false;
+    }
+  }, [accountId]);
 
   const refreshTick = useCallback(async () => {
     if (!symbol) return;
@@ -212,6 +247,8 @@ export default function TradeScreen() {
             positions={positions}
             orders={orders}
             history={history}
+            historyTotal={historyTotal}
+            onLoadMoreHistory={loadMoreHistory}
             onChange={refreshAccountData}
           />
         ) : (

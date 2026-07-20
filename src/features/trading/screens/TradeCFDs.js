@@ -18,6 +18,8 @@ export default function TradeCFDs({
   positions,
   orders,
   history,
+  historyTotal,
+  onLoadMoreHistory,
   onChange,
 }) {
   const [accountSheet, setAccountSheet] = useState(false);
@@ -52,7 +54,7 @@ export default function TradeCFDs({
           placed from the chart / instrument screen (one-tap Buy/Sell + on-chart
           SL/TP). The Trade tab is the POSITIONS view — every open position with
           live P&L and the Set SL/TP sheet, plus Pending and History. */}
-      <PositionsList account={selectedAccount} accountSummary={accountSummary} positions={positions} orders={orders} history={history} onChange={onChange} />
+      <PositionsList account={selectedAccount} accountSummary={accountSummary} positions={positions} orders={orders} history={history} historyTotal={historyTotal} onLoadMoreHistory={onLoadMoreHistory} onChange={onChange} />
 
       <AccountSwitcher
         visible={accountSheet}

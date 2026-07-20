@@ -88,11 +88,17 @@ function buildHistoryHtml(trades, rangeLabel, account) {
 
 const HISTORY_PAGE = 20;
 
-export default function PositionsList({ positions = [], orders = [], history = [], account, accountSummary, onChange }) {
+export default function PositionsList({ positions = [], orders = [], history = [], historyTotal = null, onLoadMoreHistory, account, accountSummary, onChange }) {
   const [view, setView] = useState('positions');
   // History pagination — render a page at a time instead of every closed trade.
   const [historyShown, setHistoryShown] = useState(HISTORY_PAGE);
   useEffect(() => { if (view !== 'history') setHistoryShown(HISTORY_PAGE); }, [view]);
+
+  // Real closed-trade count: the fetched list is server-paged (50/page), so
+  // history.length caps at what's been fetched — the server total is truth.
+  const closedCount = historyTotal != null ? historyTotal : history.length;
+  // More rows exist on the server beyond what's been fetched so far.
+  const serverHasMore = historyTotal != null && history.length < historyTotal;
 
   // History date filter + PDF export. 'custom' uses the From→To calendar.
   const [historyRange, setHistoryRange] = useState('all');
@@ -221,7 +227,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
 
   return (
     <View style={styles.wrap}>
-      <AccountSummaryCard account={account} summary={accountSummary} openCount={positions.length} closedCount={history.length} />
+      <AccountSummaryCard account={account} summary={accountSummary} openCount={positions.length} closedCount={closedCount} />
 
       <View style={styles.headerRow}>
         <SegmentedTabs
@@ -230,7 +236,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
           options={[
             { value: 'positions', label: `Positions (${positions.length})` },
             { value: 'pending',   label: `Pending (${orders.length})` },
-            { value: 'history',   label: `History (${history.length})` },
+            { value: 'history',   label: `History (${closedCount})` },
           ]}
         />
       </View>
@@ -328,6 +334,20 @@ export default function PositionsList({ positions = [], orders = [], history = [
                       Show more ({filteredHistory.length - historyShown} remaining)
                     </Text>
                     <Ionicons name="chevron-down" size={16} color={vantage.textSecondary} />
+                  </Pressable>
+                ) : serverHasMore ? (
+                  /* Everything fetched so far is on screen but the server has
+                     older pages — pull the next 50 and keep revealing. */
+                  <Pressable
+                    onPress={() => { onLoadMoreHistory?.(); setHistoryShown((n) => n + HISTORY_PAGE); }}
+                    style={styles.showMoreBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Load older trades"
+                  >
+                    <Text style={styles.showMoreTxt}>
+                      Load older trades ({historyTotal - history.length} more)
+                    </Text>
+                    <Ionicons name="cloud-download-outline" size={16} color={vantage.textSecondary} />
                   </Pressable>
                 ) : null}
               </>
