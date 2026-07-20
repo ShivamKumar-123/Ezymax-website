@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { Screen, IconButton, CategoryTabs, showToast } from '../../../components/vantage';
+import { Screen, IconButton, CategoryTabs, showToast, DateRangeSheet, formatRangeLabel } from '../../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
@@ -42,10 +42,13 @@ export default function TransactionHistoryScreen() {
   const nav = useNavigation();
   const [filter, setFilter] = useState('all');
   const [range, setRange] = useState('all');
+  // Custom From→To range: {from, to} ms timestamps set via DateRangeSheet.
+  const [customRange, setCustomRange] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [allItems, setAllItems] = useState([]);
   // Paged rendering of the (potentially 1000-row) ledger.
   const [shown, setShown] = useState(TX_PAGE);
-  useEffect(() => { setShown(TX_PAGE); }, [filter, range]);
+  useEffect(() => { setShown(TX_PAGE); }, [filter, range, customRange]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -74,11 +77,14 @@ export default function TransactionHistoryScreen() {
   }, [load]);
 
   const items = useMemo(() => {
-    const cutoff = rangeCutoff(range);
+    const cutoff = range === 'custom' ? null : rangeCutoff(range);
+    const win = range === 'custom' ? customRange : null;
     return allItems.filter((tx) => {
-      if (cutoff != null) {
+      if (cutoff != null || win) {
         const ts = Date.parse(tx.created_at || tx.createdAt || '');
-        if (!Number.isFinite(ts) || ts < cutoff) return false;
+        if (!Number.isFinite(ts)) return false;
+        if (cutoff != null && ts < cutoff) return false;
+        if (win && (ts < win.from || ts > win.to)) return false;
       }
       if (filter === 'all') return true;
       const t = String(tx.type || tx.kind || '').toLowerCase();
@@ -86,13 +92,16 @@ export default function TransactionHistoryScreen() {
       if (filter === 'trading') return t === 'profit' || t === 'loss';
       return t.includes(filter);
     });
-  }, [allItems, filter, range]);
+  }, [allItems, filter, range, customRange]);
 
   const exportPdf = useCallback(async () => {
     if (!items.length) { showToast({ kind: 'warn', message: 'No transactions to export' }); return; }
     setExporting(true);
     try {
-      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter, range) });
+      const rangeLabel = range === 'custom' && customRange
+        ? formatRangeLabel(customRange.from, customRange.to)
+        : (RANGE_OPTIONS.find((r) => r.value === range) || {}).label;
+      const { uri } = await Print.printToFileAsync({ html: buildHtml(items, filter, rangeLabel) });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Transactions PDF', UTI: 'com.adobe.pdf' });
       } else {
@@ -103,7 +112,7 @@ export default function TransactionHistoryScreen() {
     } finally {
       setExporting(false);
     }
-  }, [items, filter, range]);
+  }, [items, filter, range, customRange]);
 
   return (
     <Screen edges={['top']}>
@@ -118,7 +127,7 @@ export default function TransactionHistoryScreen() {
       </View>
       <CategoryTabs value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
       {/* Date range — combines with the type filter above; also scopes the
-          PDF export. */}
+          PDF export. "Custom" opens the From→To calendar. */}
       <View style={styles.rangeRow}>
         {RANGE_OPTIONS.map((r) => {
           const active = range === r.value;
@@ -134,7 +143,26 @@ export default function TransactionHistoryScreen() {
             </Pressable>
           );
         })}
+        <Pressable
+          onPress={() => setPickerOpen(true)}
+          style={[styles.rangeChip, styles.customChip, range === 'custom' && styles.rangeChipActive]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: range === 'custom' }}
+          accessibilityLabel="Custom date range"
+        >
+          <Ionicons name="calendar-outline" size={13} color={range === 'custom' ? vantage.accent : vantage.textSecondary} />
+          <Text style={[styles.rangeTxt, range === 'custom' && styles.rangeTxtActive]}>
+            {range === 'custom' && customRange ? formatRangeLabel(customRange.from, customRange.to) : 'Custom'}
+          </Text>
+        </Pressable>
       </View>
+      <DateRangeSheet
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        initialFrom={customRange?.from}
+        initialTo={customRange?.to}
+        onApply={(win) => { setCustomRange(win); setRange('custom'); }}
+      />
       <FlatList
         data={items.slice(0, shown)}
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_PILL_HEIGHT + space.huge }}
@@ -164,8 +192,7 @@ export default function TransactionHistoryScreen() {
   );
 }
 
-function buildHtml(items, filter, range) {
-  const rangeLabel = (RANGE_OPTIONS.find((r) => r.value === range) || {}).label;
+function buildHtml(items, filter, rangeLabel) {
   const rows = items.map((tx) => {
     const type = String(tx.type || tx.kind || '').toUpperCase();
     const method = tx.payment_method || tx.method || tx.gateway || tx.type || '';
@@ -189,7 +216,7 @@ function buildHtml(items, filter, range) {
   th{background:#fafafa;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:#555}
 </style></head><body>
   <div class="brand">
-    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}${range !== 'all' && rangeLabel ? ' · ' + rangeLabel : ''}</h1>
+    <h1>SwissCresta — Transactions${filter !== 'all' ? ' · ' + filter : ''}${rangeLabel && rangeLabel !== 'All time' ? ' · ' + rangeLabel : ''}</h1>
     <img src="${TRADE_WEB_URL}/marketing/swisscresta-logo.png" alt="" onerror="this.style.display='none'"/>
   </div>
   <p class="sub">Generated ${now} · ${items.length} records</p>
@@ -252,6 +279,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
   },
   rangeChipActive: { borderColor: vantage.accent, backgroundColor: vantage.accentSoft || vantage.bgRaised },
+  customChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rangeTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   rangeTxtActive: { color: vantage.accent },
   title: { flex: 1, color: vantage.textPrimary, fontFamily, fontSize: sizes.h2, fontWeight: weights.heavy, textAlign: 'center' },

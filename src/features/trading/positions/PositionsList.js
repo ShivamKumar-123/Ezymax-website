@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { SegmentedTabs, Card, Sheet, PillButton, PriceTicker, showToast, showAppAlert } from '../../../components/vantage';
+import { SegmentedTabs, Card, Sheet, PillButton, PriceTicker, showToast, showAppAlert, DateRangeSheet, formatRangeLabel } from '../../../components/vantage';
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import ApiService from '../../../services/api/ApiService';
 import { isSoftTradeError, handleTradeError } from '../../../utils/tradeErrors';
@@ -94,14 +94,25 @@ export default function PositionsList({ positions = [], orders = [], history = [
   const [historyShown, setHistoryShown] = useState(HISTORY_PAGE);
   useEffect(() => { if (view !== 'history') setHistoryShown(HISTORY_PAGE); }, [view]);
 
-  // History date filter + PDF export.
+  // History date filter + PDF export. 'custom' uses the From→To calendar.
   const [historyRange, setHistoryRange] = useState('all');
-  useEffect(() => { setHistoryShown(HISTORY_PAGE); }, [historyRange]);
+  const [historyCustom, setHistoryCustom] = useState(null); // {from, to} ms
+  const [historyPickerOpen, setHistoryPickerOpen] = useState(false);
+  useEffect(() => { setHistoryShown(HISTORY_PAGE); }, [historyRange, historyCustom]);
   const filteredHistory = useMemo(() => {
+    if (historyRange === 'custom' && historyCustom) {
+      return history.filter((h) => {
+        const ts = closeTimeOf(h);
+        return ts >= historyCustom.from && ts <= historyCustom.to;
+      });
+    }
     const cutoff = historyCutoff(historyRange);
     if (cutoff == null) return history;
     return history.filter((h) => closeTimeOf(h) >= cutoff);
-  }, [history, historyRange]);
+  }, [history, historyRange, historyCustom]);
+  const historyRangeLabel = historyRange === 'custom' && historyCustom
+    ? formatRangeLabel(historyCustom.from, historyCustom.to)
+    : HISTORY_RANGE_LABEL[historyRange];
 
   const [exporting, setExporting] = useState(false);
   const exportHistoryPdf = useCallback(async () => {
@@ -112,7 +123,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
     setExporting(true);
     try {
       const { uri } = await Print.printToFileAsync({
-        html: buildHistoryHtml(filteredHistory, HISTORY_RANGE_LABEL[historyRange], account),
+        html: buildHistoryHtml(filteredHistory, historyRangeLabel, account),
       });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Trade History PDF', UTI: 'com.adobe.pdf' });
@@ -125,7 +136,7 @@ export default function PositionsList({ positions = [], orders = [], history = [
     } finally {
       setExporting(false);
     }
-  }, [filteredHistory, historyRange, account]);
+  }, [filteredHistory, historyRangeLabel, account]);
   const [slTpTarget, setSlTpTarget] = useState(null);
   // Themed close-confirm flows. We track the position *id* (not the object) so
   // the open sheet always re-reads the latest `positions` prop → live P&L.
@@ -262,6 +273,14 @@ export default function PositionsList({ positions = [], orders = [], history = [
                 <SegmentedTabs value={historyRange} onChange={setHistoryRange} options={HISTORY_RANGES} />
               </View>
               <Pressable
+                onPress={() => setHistoryPickerOpen(true)}
+                style={styles.pdfBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Custom date range"
+              >
+                <Ionicons name="calendar-outline" size={18} color={historyRange === 'custom' ? vantage.accent : vantage.textSecondary} />
+              </Pressable>
+              <Pressable
                 onPress={exporting ? undefined : exportHistoryPdf}
                 style={styles.pdfBtn}
                 accessibilityRole="button"
@@ -270,6 +289,27 @@ export default function PositionsList({ positions = [], orders = [], history = [
                 <Ionicons name={exporting ? 'hourglass-outline' : 'download-outline'} size={18} color={vantage.accent} />
               </Pressable>
             </View>
+            {historyRange === 'custom' && historyCustom ? (
+              <View style={styles.customRangeRow}>
+                <Ionicons name="calendar" size={13} color={vantage.accent} />
+                <Text style={styles.customRangeTxt}>{formatRangeLabel(historyCustom.from, historyCustom.to)}</Text>
+                <Pressable
+                  onPress={() => { setHistoryRange('all'); setHistoryCustom(null); }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear custom range"
+                >
+                  <Ionicons name="close-circle" size={16} color={vantage.textMuted} />
+                </Pressable>
+              </View>
+            ) : null}
+            <DateRangeSheet
+              visible={historyPickerOpen}
+              onClose={() => setHistoryPickerOpen(false)}
+              initialFrom={historyCustom?.from}
+              initialTo={historyCustom?.to}
+              onApply={(win) => { setHistoryCustom(win); setHistoryRange('custom'); }}
+            />
             {filteredHistory.length === 0 ? (
               <Text style={styles.empty}>No trades in this period.</Text>
             ) : (
@@ -939,6 +979,8 @@ const styles = StyleSheet.create({
   },
   showMoreTxt: { color: vantage.textSecondary, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   histControls: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm },
+  customRangeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: space.sm, paddingHorizontal: 2 },
+  customRangeTxt: { color: vantage.accent, fontFamily, fontSize: sizes.label, fontWeight: weights.semibold },
   pdfBtn: {
     width: 38, height: 38, alignItems: 'center', justifyContent: 'center',
     borderRadius: radius.md, borderWidth: 1, borderColor: vantage.border, backgroundColor: vantage.bgRaised,
