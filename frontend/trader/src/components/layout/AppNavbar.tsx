@@ -36,6 +36,7 @@ import {
   Receipt,
   ShieldCheck,
   Settings,
+  Smartphone,
   TrendingUp,
   Users,
   Wallet,
@@ -57,7 +58,13 @@ type NavItem = {
   /** When present, the item renders as a hover dropdown instead of a
    *  plain link (the `href` then points at the first/default child). */
   children?: readonly NavItem[];
+  /** File download (e.g. the Android APK) — rendered as a plain <a download>
+   *  so the browser saves the file instead of the router trying to navigate. */
+  download?: boolean;
 };
+
+/** Android APK served by nginx from /opt/swisscresta/downloads on the host. */
+const APK_DOWNLOAD_PATH = '/downloads/SwissCresta.apk';
 
 /** Primary horizontal nav items (visible on lg+). */
 const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
@@ -86,6 +93,7 @@ const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Algo Connector', href: '/algo-connector', icon: Plug, isNew: true },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Terms', href: '/terms', icon: FileText },
+  { label: 'Download Android App', href: APK_DOWNLOAD_PATH, icon: Smartphone, isNew: true, download: true },
 ];
 
 /** Flattened list — used by the mobile drawer (expands dropdown children). */
@@ -270,19 +278,14 @@ export default function AppNavbar() {
                   {MORE_ITEMS.map((item) => {
                     const active = isActive(pathname, item.href);
                     const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        prefetch={false}
-                        onClick={() => setMoreOpen(false)}
-                        className={cn(
-                          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                          active
-                            ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                            : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                        )}
-                      >
+                    const rowCls = cn(
+                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                      active
+                        ? 'bg-[#FCE6DD] text-[#E94E1B]'
+                        : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                    );
+                    const inner = (
+                      <>
                         <span
                           className={cn(
                             'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
@@ -292,6 +295,18 @@ export default function AppNavbar() {
                           <Icon size={17} strokeWidth={1.9} />
                         </span>
                         <span className="truncate">{item.label}</span>
+                        {item.isNew && <NewBadge />}
+                      </>
+                    );
+                    // File downloads bypass the Next router — a plain anchor
+                    // lets the browser save the file (APK) directly.
+                    return item.download ? (
+                      <a key={item.href} href={item.href} download onClick={() => setMoreOpen(false)} className={rowCls}>
+                        {inner}
+                      </a>
+                    ) : (
+                      <Link key={item.href} href={item.href} prefetch={false} onClick={() => setMoreOpen(false)} className={rowCls}>
+                        {inner}
                       </Link>
                     );
                   })}
@@ -440,22 +455,26 @@ export default function AppNavbar() {
               {ALL_NAV.map((item) => {
                 const active = isActive(pathname, item.href);
                 const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    prefetch={false}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors',
-                      active
-                        ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                        : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                    )}
-                  >
+                const rowCls = cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors',
+                  active
+                    ? 'bg-[#FCE6DD] text-[#E94E1B]'
+                    : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                );
+                const inner = (
+                  <>
                     <Icon size={18} strokeWidth={1.85} className="shrink-0" />
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.isNew && <NewBadge />}
+                  </>
+                );
+                return item.download ? (
+                  <a key={item.href} href={item.href} download onClick={() => setSidebarOpen(false)} className={rowCls}>
+                    {inner}
+                  </a>
+                ) : (
+                  <Link key={item.href} href={item.href} prefetch={false} onClick={() => setSidebarOpen(false)} className={rowCls}>
+                    {inner}
                   </Link>
                 );
               })}
