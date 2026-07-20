@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 
 import Link from 'next/link';
 
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { clsx } from 'clsx';
 
@@ -185,9 +185,56 @@ function parseAccountId(raw: string | null): string | null {
   return UUID_RE.test(raw) ? raw : null;
 }
 
+interface AccountOption {
+  id: string;
+  account_number: string;
+  is_demo: boolean;
+}
+
 function PortfolioPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const queryKey = searchParams.toString();
+
+  // Trading accounts for the scope dropdown — lets the user pick which
+  // account's journal/history to view (or all combined) right on the page,
+  // instead of relying on an ?account_id= deep link.
+  const [accountOptions, setAccountOptions] = useState<AccountOption[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<unknown>('/accounts');
+        if (cancelled) return;
+        const raw = Array.isArray(res) ? res : ((res as { items?: unknown[] })?.items ?? []);
+        setAccountOptions(
+          (raw as Record<string, unknown>[]).map((a) => ({
+            id: String(a.id),
+            account_number: String(a.account_number ?? '').trim(),
+            is_demo: Boolean(a.is_demo),
+          })),
+        );
+      } catch {
+        /* dropdown simply stays hidden */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const onPickAccount = (id: string) => {
+    const params = new URLSearchParams(queryKey);
+    if (id) {
+      const acc = accountOptions.find((a) => a.id === id);
+      params.set('account_id', id);
+      if (acc?.account_number) params.set('account_no', acc.account_number);
+      else params.delete('account_no');
+    } else {
+      params.delete('account_id');
+      params.delete('account_no');
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/portfolio?${qs}` : '/portfolio', { scroll: false });
+  };
 
   const validAccountId = useMemo(() => {
     return parseAccountId(new URLSearchParams(queryKey).get('account_id'));
@@ -539,9 +586,29 @@ function PortfolioPageContent() {
     <DashboardShell>
       <div className="page-main space-y-4 sm:space-y-6 text-text-primary">
 
-        <h2 className="text-lg font-semibold text-text-primary">
-          {validAccountId ? 'Trading journal' : 'Portfolio'}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-text-primary">
+            {validAccountId ? 'Trading journal' : 'Portfolio'}
+          </h2>
+          {accountOptions.length > 0 && (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Account</span>
+              <select
+                value={validAccountId ?? ''}
+                onChange={(e) => onPickAccount(e.target.value)}
+                className="rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-sm font-medium text-text-primary outline-none focus:border-[#E94E1B] cursor-pointer"
+                aria-label="Filter by trading account"
+              >
+                <option value="">All accounts</option>
+                {accountOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.is_demo ? 'Demo' : 'Live'} {a.account_number || a.id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         {invalidAccountParam ? (
           <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-text-primary">
