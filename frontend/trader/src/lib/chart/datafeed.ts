@@ -120,6 +120,34 @@ export function createDatafeed(opts: {
     }
   }
 
+  // Crypto trades 24/7; everything else closes on weekends.
+  function isCryptoSymbol(symbol: string): boolean {
+    const s = symbol.toUpperCase();
+    const inst = instruments.find((i) => i.symbol.toUpperCase() === s);
+    const seg = String(inst?.segment || '').toLowerCase();
+    if (seg) return seg.includes('crypto');
+    return /BTC|ETH|SOL|XRP|LTC|DOGE|BNB|ADA/.test(s);
+  }
+
+  // Drop closed-market weekend candles from a NON-crypto symbol's history.
+  // Forex / metals / indices are closed from Friday ~21:00 UTC until Sunday
+  // ~21:00-22:00 UTC, so bars inside that window are "no-trade" fillers that
+  // clutter the chart. The Sunday-night reopen session (from 21:00 UTC) is
+  // REAL trading data and must be kept — dropping all-of-Sunday-UTC blanks
+  // the first hours of Monday's Asian session (sibling-platform client
+  // report: "3:30-5:30 AM IST gap"). Crypto (24/7) is untouched. Weekday and
+  // hour are read in UTC — bar.time is bar-open in ms UTC.
+  function dropWeekendBars(bars: Bar[], symbol: string): Bar[] {
+    if (isCryptoSymbol(symbol)) return bars;
+    return bars.filter((b) => {
+      const d = new Date(b.time);
+      const day = d.getUTCDay(); // 0 = Sun, 6 = Sat
+      if (day === 6) return false;                 // Saturday: closed all day
+      if (day === 0) return d.getUTCHours() >= 21; // Sunday: keep from the 21:00 UTC reopen
+      return true;
+    });
+  }
+
   return {
     setInstruments(list: DatafeedInstrument[]) {
       instruments = list || [];
@@ -236,11 +264,14 @@ export function createDatafeed(opts: {
           .sort((a: Bar, b: Bar) => a.time - b.time)
           .map((b: Bar) => toBid(b, symbol)); // MID → BID basis
 
-        const last = bars[bars.length - 1];
+        const cleaned = dropWeekendBars(bars, symbol);
+        const last = cleaned[cleaned.length - 1];
         if (firstDataRequest && last) {
           lastBars.set(barKey(symbol, resolution), { ...last });
         }
-        onResult(bars, { noData: bars.length === 0 });
+        // noData reflects the RAW fetch — an all-weekend window that filtered
+        // to zero must not be reported as end-of-history.
+        onResult(cleaned, { noData: bars.length === 0 });
       } catch (e) {
         onError(e instanceof Error ? e.message : String(e));
       }

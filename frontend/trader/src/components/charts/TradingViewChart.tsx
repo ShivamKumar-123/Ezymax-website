@@ -213,6 +213,17 @@ function TradingViewChartInner({
         widgetRef.current.onChartReady(() => {
           readyRef.current = true;
           setChartReady(true);
+          // Pin a small FIXED right margin (~3 bars) so the latest candle hugs
+          // the right edge like MT5 — the library's default wide future
+          // whitespace reads as a "candle gap" (sibling-platform client
+          // report). Best-effort: the TimeScale API shape varies by version.
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const ts = (widgetRef.current as any).activeChart?.().getTimeScale?.();
+            ts?.usePercentageRightOffset?.().setValue(false);
+            ts?.defaultRightOffset?.().setValue(3);
+            ts?.setRightOffset?.(3);
+          } catch { /* ignore */ }
         });
       } catch {
         /* ignore */
@@ -368,16 +379,25 @@ function TradingViewChartInner({
         text: `${p.side.toUpperCase()} ${lots}  ${pnlStr} (${pctStr})`,
         dashed: false, pnl,
       });
+      // SL/TP labels PROJECT the realized outcome if price reaches that level,
+      // so they must show NET P&L — computePnlAt returns gross, but the close
+      // books net = profit − commission + swap (lib/pnl netPnl; swap stored
+      // negative for charges). Without this a TP label reads e.g. +$2.06 while
+      // the trade realizes +$2.01 after a $0.06 commission (sibling-platform
+      // client: "TP amount doesn't match what I get").
+      const netAt = (gross: number) => gross - (Number(p.commission) || 0) + (Number(p.swap) || 0);
       if (p.stop_loss != null && Number(p.stop_loss) > 0) {
         const slp = Number(p.stop_loss);
         const r = computePnlAt(p, slp);
-        const pl = Number.isFinite(r) ? `  ${r >= 0 ? '+' : '−'}$${Math.abs(r).toFixed(2)}` : '';
+        const net = Number.isFinite(r) ? netAt(r) : NaN;
+        const pl = Number.isFinite(net) ? `  ${net >= 0 ? '+' : '−'}$${Math.abs(net).toFixed(2)}` : '';
         desired.push({ key: `${p.id}-sl`, price: slp, color: SL_COLOR, text: `SL ${fp(slp)}${pl}`, dashed: true });
       }
       if (p.take_profit != null && Number(p.take_profit) > 0) {
         const tpp = Number(p.take_profit);
         const r = computePnlAt(p, tpp);
-        const pl = Number.isFinite(r) ? `  ${r >= 0 ? '+' : '−'}$${Math.abs(r).toFixed(2)}` : '';
+        const net = Number.isFinite(r) ? netAt(r) : NaN;
+        const pl = Number.isFinite(net) ? `  ${net >= 0 ? '+' : '−'}$${Math.abs(net).toFixed(2)}` : '';
         desired.push({ key: `${p.id}-tp`, price: tpp, color: TP_COLOR, text: `TP ${fp(tpp)}${pl}`, dashed: true });
       }
     }
@@ -827,12 +847,14 @@ function TradingViewChartInner({
           const price = priceForY(cy);
           line.style.top = `${cy}px`;
           lbl.style.top = `${cy}px`;
-          // Show the target price AND the projected P&L at that price (same
-          // helper the confirm dialog uses, evaluated at the SL/TP level).
+          // Show the target price AND the projected NET P&L at that price
+          // (gross − commission + swap; matches the static SL/TP labels and
+          // the amount the close actually books).
           let ptxt = `${kind === 'sl' ? 'SL' : 'TP'} ${price ? price.toFixed(digits) : '—'}`;
           if (price) {
             const rr = computePnlAt(p, price);
-            if (Number.isFinite(rr)) ptxt += `  ${rr >= 0 ? '+' : '−'}$${Math.abs(rr).toFixed(2)}`;
+            const netRR = Number.isFinite(rr) ? rr - (Number(p.commission) || 0) + (Number(p.swap) || 0) : NaN;
+            if (Number.isFinite(netRR)) ptxt += `  ${netRR >= 0 ? '+' : '−'}$${Math.abs(netRR).toFixed(2)}`;
           }
           lbl.textContent = ptxt;
           const ey = entryY();
@@ -849,7 +871,10 @@ function TradingViewChartInner({
           const price = priceForY(ev.clientY - r.top);
           if (!price || !(price > 0)) { toast.error('Could not read price'); return; }
           const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
-          const proj = computePnlAt(p, price);
+          const projGross = computePnlAt(p, price);
+          const proj = Number.isFinite(projGross)
+            ? projGross - (Number(p.commission) || 0) + (Number(p.swap) || 0)
+            : NaN;
           const projTxt = Number.isFinite(proj) ? ` → ${proj >= 0 ? 'profit' : 'loss'} ${proj >= 0 ? '+' : '−'}$${Math.abs(proj).toFixed(2)}` : '';
           const applyBracket = async () => {
             try {
