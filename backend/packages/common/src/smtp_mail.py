@@ -21,6 +21,11 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 
+def _sendgrid_configured() -> bool:
+    s = get_settings()
+    return bool(getattr(s, "SENDGRID_API_KEY", "") and str(s.SENDGRID_API_KEY).strip())
+
+
 def _resend_configured() -> bool:
     s = get_settings()
     return bool(getattr(s, "RESEND_API_KEY", "") and str(s.RESEND_API_KEY).strip())
@@ -33,7 +38,7 @@ def _smtp_transport_configured() -> bool:
 
 def email_configured() -> bool:
     """True when *any* email transport is usable (HTTPS API or SMTP)."""
-    return _resend_configured() or _smtp_transport_configured()
+    return _sendgrid_configured() or _resend_configured() or _smtp_transport_configured()
 
 
 def smtp_configured() -> bool:
@@ -102,6 +107,42 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
         server.send_message(msg)
 
 
+async def _send_via_sendgrid(
+    to_email: str, subject: str, html: str, text: Optional[str],
+) -> None:
+    """POST the message to SendGrid's v3 mail/send over HTTPS. Raises on
+    any non-2xx (success is 202 Accepted with an empty body)."""
+    import httpx
+
+    s = get_settings()
+    content = []
+    # SendGrid requires text/plain before text/html when both are present.
+    content.append({"type": "text/plain", "value": text if text else _strip_tags(html)})
+    content.append({"type": "text/html", "value": html})
+    payload = {
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": _from_address(), "name": "FXArtha"},
+        "subject": subject,
+        "content": content,
+    }
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.post(
+            str(s.SENDGRID_API_URL).strip(),
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {str(s.SENDGRID_API_KEY).strip()}",
+                "Content-Type": "application/json",
+            },
+        )
+    if resp.status_code >= 300:
+        # Surface the provider's own message — it names the actual problem
+        # (unverified domain, bad key, invalid from-address).
+        raise RuntimeError(
+            f"SendGrid returned {resp.status_code}: {resp.text[:400]}"
+        )
+
+
 async def _send_via_resend(
     to_email: str, subject: str, html: str, text: Optional[str],
 ) -> None:
@@ -146,19 +187,36 @@ async def send_email(
     misconfiguration or send failure. Never raises — caller can ignore
     the result if they don't care.
 
-    Transport order: Resend (HTTPS) first when configured, then SMTP.
-    Both are attempted before giving up, so a transient failure on the
-    primary still gets the message out if the fallback is reachable.
+    Transport order: SendGrid (HTTPS) first when configured, then Resend
+    (HTTPS), then SMTP. Each is attempted before giving up, so a transient
+    failure on the primary still gets the message out if a fallback is
+    reachable.
     """
     if not to_email or "@" not in to_email:
         logger.warning("Skipping email — bad recipient %r", to_email)
         return False
     if not email_configured():
         logger.warning(
-            "No email transport configured (set RESEND_API_KEY or SMTP_HOST) "
-            "— skipping email to %s subj=%r", to_email, subject,
+            "No email transport configured (set SENDGRID_API_KEY, "
+            "RESEND_API_KEY or SMTP_HOST) — skipping email to %s subj=%r",
+            to_email, subject,
         )
         return False
+
+    if _sendgrid_configured():
+        try:
+            await _send_via_sendgrid(to_email, subject, html, text)
+            logger.info("email sent via sendgrid to=%s subj=%r", to_email, subject)
+            return True
+        except Exception:
+            if _resend_configured() or _smtp_transport_configured():
+                logger.warning(
+                    "SendGrid send failed for %s subj=%r — trying fallback",
+                    to_email, subject, exc_info=True,
+                )
+            else:
+                logger.exception("Failed to send email to %s subj=%r", to_email, subject)
+                return False
 
     if _resend_configured():
         try:

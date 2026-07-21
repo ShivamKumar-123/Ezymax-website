@@ -90,6 +90,12 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_API_URL: str = "https://api.resend.com/emails"
 
+    # SendGrid — the client's provider of record for fxartha.com (domain
+    # verified via CNAMEs in Cloudflare). Tried FIRST when set; Resend and
+    # SMTP remain as fallbacks. Key needs only the "Mail Send" permission.
+    SENDGRID_API_KEY: str = ""
+    SENDGRID_API_URL: str = "https://api.sendgrid.com/v3/mail/send"
+
     # Optional SMTP — fallback transport. If both SMTP_HOST and
     # RESEND_API_KEY are empty, reset links are only logged in development.
     SMTP_HOST: str = ""
