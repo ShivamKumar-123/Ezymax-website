@@ -16,7 +16,7 @@ from .models import (
     Instrument, InstrumentConfig, Order, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount,
 )
-from .redis_client import redis_client, PriceChannel
+from .redis_client import redis_client, PriceChannel, is_tick_stale
 
 logger = logging.getLogger("trading_service")
 
@@ -38,6 +38,15 @@ async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
     if not tick_data:
         raise TradingServiceError(f"No price available for {symbol}")
     tick = json.loads(tick_data)
+    # A stale quote (dead upstream feed being republished by the refresher)
+    # must never EXECUTE anything — opening or closing at a price the market
+    # left minutes ago fills users at fantasy levels (observed: a buy filled
+    # ~38 points under the live market during a feed outage). Same guard the
+    # SL/TP engine and pending-order matcher already apply.
+    if is_tick_stale(tick):
+        raise TradingServiceError(
+            f"No live price for {symbol} right now — market data is reconnecting. Please try again in a few seconds."
+        )
     return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
 

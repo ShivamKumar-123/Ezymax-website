@@ -99,6 +99,9 @@ class MarketDataService:
         # Monotonic time of the last Binance side-feed tick per crypto symbol
         # (see _binance_crypto_feed / BINANCE_FRESH_SEC).
         self._binance_live_mono: dict[str, float] = {}
+        # Monotonic time of the last tick received from the PRIMARY feed
+        # (Infoway) — drives the mid-flight reconnect watchdog below.
+        self._last_feed_tick_mono: float = time.monotonic()
 
     async def start(self):
         logger.info("Starting Market Data Service...")
@@ -132,6 +135,7 @@ class MarketDataService:
         # Infoway (many ticks/sec) — same fix as the sibling platform.
         if isinstance(self.feed, InfowayFeed):
             tasks.append(asyncio.create_task(self._binance_crypto_feed()))
+            tasks.append(asyncio.create_task(self._feed_reconnect_watchdog()))
 
         await asyncio.gather(*tasks)
 
@@ -226,6 +230,7 @@ class MarketDataService:
             symbol = str(tick["symbol"] or "").strip().upper()
             if not symbol:
                 continue
+            self._last_feed_tick_mono = time.monotonic()
             # Crypto precedence: while the Binance side-feed is live for this
             # symbol its ~10 ticks/s stream is the source of truth — drop the
             # (much slower) Infoway crypto tick so the two feeds' slightly
@@ -390,6 +395,49 @@ class MarketDataService:
             except Exception as e:
                 logger.warning("Binance crypto feed error: %s — reconnecting in 5s", e)
                 await asyncio.sleep(5)
+
+    async def _feed_reconnect_watchdog(self) -> None:
+        """Mid-flight self-heal: reconnect a silently-dead Infoway socket.
+
+        The startup watchdog below only covers the first 55s. Observed
+        2026-07-21: the WS died after hours of running — no error, no close
+        frame — leaving every non-crypto symbol frozen (stale republishes)
+        until a MANUAL service restart. This loop detects the stall (no
+        primary-feed tick for FEED_STALL_RECONNECT_SEC while the forex
+        market is open) and rebuilds the feed automatically.
+        """
+        FEED_STALL_RECONNECT_SEC = 90.0
+        from packages.common.src.market_hours import is_market_open
+
+        while self.running:
+            await asyncio.sleep(30.0)
+            if not self.running or not isinstance(self.feed, InfowayFeed):
+                continue
+            gap = time.monotonic() - self._last_feed_tick_mono
+            if gap < FEED_STALL_RECONNECT_SEC:
+                continue
+            # Weekend/holiday: zero forex ticks is NORMAL — don't churn the
+            # connection all weekend. (Crypto stays live via Binance anyway.)
+            try:
+                forex_open, _ = is_market_open("EURUSD", "forex", None)
+            except Exception:
+                forex_open = True  # fail open: better a redundant reconnect than a dead feed
+            if not forex_open:
+                continue
+            logger.error(
+                "Feed stalled: no Infoway ticks for %.0fs with the market open — reconnecting the feed.",
+                gap,
+            )
+            try:
+                await self.feed.stop()
+            except Exception as exc:
+                logger.warning("Stopping stalled Infoway feed: %s", exc)
+            raw_key = (settings.INFOWAY_API_KEY or "").strip()
+            self.feed = InfowayFeed(raw_key, INSTRUMENTS)
+            asyncio.create_task(self.feed.start())
+            # Fresh grace window so we don't immediately re-trigger while the
+            # new socket performs its handshake/subscriptions.
+            self._last_feed_tick_mono = time.monotonic()
 
     async def _infoway_fallback_watchdog(self) -> None:
         """If Infoway never delivers ticks (bad key, network, symbol mismatch), use simulator."""

@@ -65,6 +65,15 @@ async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
     if not tick_data:
         raise HTTPException(status_code=400, detail=f"No price available for {symbol}")
     tick = json.loads(tick_data)
+    # Stale quote (dead upstream feed) → refuse to execute at a price the
+    # market left minutes ago. Mirrors the SL/TP engine and b-book matcher,
+    # which already skip stale ticks; without this, market opens/closes were
+    # the one path that still filled at frozen prices during a feed outage.
+    if is_tick_stale(tick):
+        raise HTTPException(
+            status_code=400,
+            detail=f"No live price for {symbol} right now — market data is reconnecting. Please try again in a few seconds.",
+        )
     return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
 
