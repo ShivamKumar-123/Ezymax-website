@@ -13,6 +13,8 @@ export function isSoftTradeError(msg) {
     m.includes('mirror') ||
     m.includes('master can close') ||
     m.includes('no price') ||
+    m.includes('no live price') ||
+    m.includes('reconnecting') ||
     m.includes('market is closed') ||
     m.includes('market closed') ||
     m.includes('market opens')
@@ -26,6 +28,12 @@ function softInfo(msg) {
     return {
       title: 'Managed (MAM) trade',
       message: 'This is a MAM trade. Only the master can close it — it will close automatically when the master closes their position.',
+    };
+  }
+  if (m.includes('no live price') || m.includes('reconnecting')) {
+    return {
+      title: 'Price unavailable',
+      message: 'Live prices are reconnecting right now. Please try again in a few seconds.',
     };
   }
   if (m.includes('no price') || m.includes('market is closed') || m.includes('market closed') || m.includes('market opens')) {
