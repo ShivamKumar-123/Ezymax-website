@@ -6,15 +6,13 @@
  * split-screen chrome of the sign-in page (FullScreenSignup), but the
  * right panel shows two choices instead of the credentials form:
  *   • Login with SwissCresta → the real /auth/login page.
- *   • Login with MT5         → redirects to the MT5 portal (swisscresta.org).
+ *   • Login with MT5         → coming soon (toast; no link yet).
  */
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
-
-/** External MT5 portal — MT5 logins live on the .org platform. */
-const MT5_PORTAL_URL = 'https://swisscresta.org';
+import { ArrowRight, Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function LoginPortalPage() {
   return (
@@ -71,14 +69,24 @@ export default function LoginPortalPage() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
 
-            {/* Login with MT5 → external MT5 portal (swisscresta.org). */}
-            <a
-              href={MT5_PORTAL_URL}
-              className="group w-full bg-white hover:bg-gray-50 border border-[#E5E5E5] text-[#0A0A0A] font-medium py-3.5 px-4 rounded-lg transition-colors inline-flex items-center justify-between gap-2"
+            {/* Login with MT5 — coming soon. Kept as a real, clickable button
+                (with a "Soon" badge) so it's easy to wire to the MT5 portal
+                later without a layout change. */}
+            <button
+              type="button"
+              onClick={() =>
+                toast('MetaTrader 5 access is coming soon.', { icon: '🛠️' })
+              }
+              className="w-full bg-white hover:bg-gray-50 border border-[#E5E5E5] text-[#0A0A0A] font-medium py-3.5 px-4 rounded-lg transition-colors inline-flex items-center justify-between gap-2"
             >
-              <span>Login with MT5</span>
-              <ArrowRight className="h-4 w-4 text-[#9A9A9A] transition-transform group-hover:translate-x-0.5" />
-            </a>
+              <span className="inline-flex items-center gap-2">
+                Login with MT5
+                <span className="inline-flex items-center rounded-full bg-[#F0F0F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9A9A9A]">
+                  Soon
+                </span>
+              </span>
+              <Lock className="h-4 w-4 text-[#9A9A9A]" />
+            </button>
           </div>
 
           <div className="mt-8 text-center text-[#5B5B5B] text-sm">
