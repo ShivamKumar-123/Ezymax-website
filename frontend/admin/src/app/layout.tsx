@@ -14,19 +14,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'FXArtha Admin',
   description: 'FXArtha broker administration panel',
-  // Browser-tab favicon. The admin app shipped without any icon declared
-  // (no app/favicon.ico, no metadata.icons), so tabs fell back to Chrome's
-  // default globe. Point every slot at the existing public/logo.png.
+  // Same favicon as the trader app — the identical fxartha_icon.png asset,
+  // declared the same way (metadata + explicit <head> links below).
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: [{ url: '/images/fxartha_icon.png', type: 'image/png' }],
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable} style={{ ['--font-jetbrains' as string]: "ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace" }}>
+      <head>
+        {/* Same favicon markup as the trader app so both tabs show the
+            identical FXArtha icon instead of the browser default. */}
+        <link rel="icon" href="/images/fxartha_icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/fxartha_icon.png" />
+      </head>
       <body className={`${inter.className} min-h-screen bg-bg-page text-text-primary antialiased`} suppressHydrationWarning>
         <ThemeInitScript />
         {children}
