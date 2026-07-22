@@ -118,11 +118,12 @@ export default function AdminSidebar() {
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {collapsed ? (
-          <img src="/logo.png" alt="FXArtha" className="w-7 h-7 object-contain mx-auto" />
+          <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center gap-2 min-w-0">
-            <img src="/logo.png" alt="FXArtha" className="w-7 h-7 object-contain shrink-0" />
-            <span className="font-bold tracking-tight text-sm select-none">
+            <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain shrink-0" />
+            {/* Match the trader chrome wordmark: bold italic with the gold glow. */}
+            <span className="inline-flex items-baseline font-bold italic tracking-tight text-lg drop-shadow-[0_0_20px_rgba(214,169,61,0.12)] select-none">
               <span className="text-text-primary">FX</span><span className="text-[#d6a93d]">Artha</span>
             </span>
           </Link>
