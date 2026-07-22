@@ -72,6 +72,7 @@ from .staking import (
 from .vip import VipPass
 from .share import SharedTrade
 from .rms import IpGeoCache, RmsAlert, AdminNotification, PricingTimeRule
+from .hedge import HedgeEpisode
 
 
 __all__ = [
@@ -116,4 +117,6 @@ __all__ = [
     "SharedTrade",
     # rms / ip-management
     "IpGeoCache", "RmsAlert", "AdminNotification", "PricingTimeRule",
+    # hedge history
+    "HedgeEpisode",
 ]

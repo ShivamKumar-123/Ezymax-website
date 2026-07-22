@@ -177,4 +177,5 @@ _ALL_VIEW_PERMISSIONS = {
     "config.view", "instruments.view", "insurance.view", "play_zone.view",
     "lifestyle.view", "employees.view", "settings.view",
     "transactions.view", "account_types.view", "deposit_wallets.view",
+    "rms.view", "hedge.view",
 }

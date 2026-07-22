@@ -22,6 +22,7 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "trades.view", "trades.modify", "trades.close", "trades.create",
         "positions.view", "orders.view", "users.view",
         "social.view", "social.manage",
+        "hedge.view", "hedge.manage",
     },
     "support": {
         "tickets.view", "tickets.reply", "tickets.assign",
@@ -43,6 +44,7 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "analytics.view", "exposure.view",
         "audit_logs.view",
         "rms.view", "rms.manage",
+        "hedge.view", "hedge.manage",
     },
     "marketing": {
         "banners.view", "banners.create", "banners.update", "banners.delete",
