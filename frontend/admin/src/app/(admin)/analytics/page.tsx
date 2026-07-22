@@ -608,6 +608,10 @@ export default function AnalyticsPage() {
             revenue per user (drill-down for "who brought how much"). */}
         <UserRevenueTable />
       </div>
+
+      {showCommissionModal && (
+        <CommissionBreakdownModal onClose={() => setShowCommissionModal(false)} />
+      )}
     </>
   );
 }
@@ -792,10 +796,6 @@ function UserRevenueTable() {
             <button type="button" disabled={page >= pages || loading} onClick={() => setPage((p) => p + 1)} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"><ChevronRight size={14} /></button>
           </div>
         </div>
-      )}
-
-      {showCommissionModal && (
-        <CommissionBreakdownModal onClose={() => setShowCommissionModal(false)} />
       )}
     </div>
   );
