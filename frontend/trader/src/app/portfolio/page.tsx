@@ -471,11 +471,12 @@ function PortfolioPageContent() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Live P&L for open positions — poll the summary every 2s while the
+  // Live P&L for open positions — poll the summary every 1s while the
   // Open-positions tab is showing (silent: no loading flicker), paused when
-  // the browser tab is hidden. Without this the portfolio P&L was a one-time
-  // snapshot while the terminal updated every tick, so a follower's numbers
-  // looked frozen / out of sync with the master's live P&L.
+  // the browser tab is hidden. Both the terminal and this page read the same
+  // backend Redis price, but the terminal polls its positions every ~1.5s;
+  // polling here at 1s keeps the follower's P&L at least as fresh as the
+  // master's terminal, so it no longer visibly lags behind.
   useEffect(() => {
     if (tab !== 'overview') return;
     let cancelled = false;
@@ -487,7 +488,7 @@ function PortfolioPageContent() {
         if (!cancelled) setSummary(s);
       } catch {}
     };
-    const id = setInterval(poll, 2000);
+    const id = setInterval(poll, 1000);
     return () => { cancelled = true; clearInterval(id); };
   }, [tab, validAccountId]);
 
