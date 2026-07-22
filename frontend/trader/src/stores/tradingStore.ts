@@ -11,7 +11,16 @@ export interface TickData {
 }
 
 export interface Position {
+  /** React-stable key. For a just-placed market order this stays the
+   *  client-side `optim-…` placeholder across the optim→real transition
+   *  (see refreshPositions) so the row never remounts. NOT a valid UUID
+   *  during that window — never send it to the backend. */
   id: string;
+  /** The real server position UUID. Always set once the position has been
+   *  reconciled with the server; undefined only in the ~1s optimistic
+   *  window before the first poll returns. Use THIS for every
+   *  /positions/{id} call (close, modify, share). */
+  server_id?: string;
   account_id: string;
   symbol: string;
   side: 'buy' | 'sell';
@@ -213,6 +222,9 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const merged = list.map((p: any) => {
         const serverPos = {
           id: p.id as string,
+          // Always the real UUID, even when we inherit an optimistic key
+          // for `id` below — so backend calls have a valid id to use.
+          server_id: p.id as string,
           account_id: p.account_id as string,
           symbol: (p.symbol || '') as string,
           side: p.side as 'buy' | 'sell',
@@ -359,6 +371,8 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const prev = s.positions;
       const optimisticPos = {
         id: optimisticId,
+        // No real server id yet — the reconcile poll fills this in.
+        server_id: undefined,
         account_id: data.account_id,
         symbol: data.symbol,
         side: data.side,
