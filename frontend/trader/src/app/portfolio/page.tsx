@@ -471,6 +471,26 @@ function PortfolioPageContent() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Live P&L for open positions — poll the summary every 2s while the
+  // Open-positions tab is showing (silent: no loading flicker), paused when
+  // the browser tab is hidden. Without this the portfolio P&L was a one-time
+  // snapshot while the terminal updated every tick, so a follower's numbers
+  // looked frozen / out of sync with the master's live P&L.
+  useEffect(() => {
+    if (tab !== 'overview') return;
+    let cancelled = false;
+    const params = validAccountId ? { account_id: validAccountId } : undefined;
+    const poll = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const s = await api.get<PortfolioSummary>('/portfolio/summary', params);
+        if (!cancelled) setSummary(s);
+      } catch {}
+    };
+    const id = setInterval(poll, 2000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [tab, validAccountId]);
+
   useEffect(() => { if (tab === 'history') fetchTrades(page); }, [tab, page, fetchTrades]);
 
 
