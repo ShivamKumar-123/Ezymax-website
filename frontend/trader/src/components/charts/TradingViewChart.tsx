@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, memo } from 'react';
+import { useMemo, memo, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
+import { RotateCw } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
@@ -74,6 +75,15 @@ function TradingViewChartInner() {
   const tvTheme: 'dark' | 'light' = theme === 'light' ? 'light' : 'dark';
   const interval = onTradingTerminal ? '5' : '15';
 
+  // Manual reload. The TradingView embed is a third-party iframe that
+  // occasionally gets stuck on its own spinner (its ChartApi returns
+  // "bad auth token" / 403s from tradingview-widget.com — all on
+  // TradingView's servers, not ours, and usually transient). Bumping this
+  // nonce remounts the iframe so the user can recover the chart without
+  // reloading the whole terminal.
+  const [reloadNonce, setReloadNonce] = useState(0);
+  const reloadChart = useCallback(() => setReloadNonce((n) => n + 1), []);
+
   const src = useMemo(
     () => buildWidgetEmbedUrl(selectedSymbol ?? 'EURUSD', tvTheme, interval),
     [selectedSymbol, tvTheme, interval],
@@ -87,13 +97,24 @@ function TradingViewChartInner() {
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0', surface)} data-tv-chart-root>
       <iframe
-        key={src}
+        key={`${src}#${reloadNonce}`}
         title={`Chart ${selectedSymbol || 'EURUSD'}`}
         src={src}
         className={clsx('h-full w-full min-h-[200px] border-0', surface)}
         allow="clipboard-write; fullscreen"
         referrerPolicy="no-referrer-when-downgrade"
       />
+      {/* Recover a stuck chart without a full page reload. */}
+      <button
+        type="button"
+        onClick={reloadChart}
+        title="Reload chart"
+        aria-label="Reload chart"
+        className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] text-text-secondary shadow-md backdrop-blur hover:text-text-primary hover:border-border-primary transition-fast"
+      >
+        <RotateCw className="w-3 h-3" aria-hidden />
+        <span>Reload</span>
+      </button>
       {/* Broker-quote overlay. The embedded TradingView chart pulls
         * candle data from public exchanges (BINANCE for crypto, OANDA
         * for metals, FX:* for forex) — those prices can diverge from
