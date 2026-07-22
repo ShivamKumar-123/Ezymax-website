@@ -196,7 +196,9 @@ export default function AnalyticsPage() {
     try {
       const res = await adminApi.get<UserPnlPage>('/analytics/user-pnl', {
         page: String(pnlPage),
-        per_page: '50',
+        // 20/page so the list actually paginates instead of dumping every
+        // user of the period onto one screen.
+        per_page: '20',
         sort_by: pnlSortBy,
         sort_dir: pnlSortDir,
         period,
@@ -573,8 +575,9 @@ export default function AnalyticsPage() {
             )}
           </div>
 
-          {/* Pagination */}
-          {pnlPages > 1 && (
+          {/* Pagination — always shown when the period has any users, so the
+              control (and the total count) is visible even on a single page. */}
+          {pnlTotal > 0 && (
             <div className="px-4 py-3 border-t border-border-primary flex items-center justify-between">
               <p className="text-xxs text-text-tertiary">
                 {pnlTotal} user{pnlTotal === 1 ? '' : 's'} · Page {pnlPage} of {pnlPages}
