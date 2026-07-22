@@ -395,6 +395,17 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
         select(TradingAccount)
         .options(selectinload(TradingAccount.account_group))
         .where(TradingAccount.user_id == user_id)
+        # Deterministic ordering. Without an explicit ORDER BY, Postgres
+        # returns rows in heap order, which shifts as this endpoint's own
+        # 2 s poll rewrites each account's equity — so the /accounts cards
+        # visibly swapped places on every refresh. Live accounts first,
+        # demo last, then stable creation order (id as the final tiebreak
+        # so accounts created in the same tick never reorder).
+        .order_by(
+            TradingAccount.is_demo.asc(),
+            TradingAccount.created_at.asc(),
+            TradingAccount.id.asc(),
+        )
     )
     accounts = result.scalars().unique().all()
 
