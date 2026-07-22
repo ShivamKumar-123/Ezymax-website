@@ -70,6 +70,30 @@ interface PortfolioSummary {
 
   }>;
 
+  // Per-position rows (one entry per open position — NOT aggregated by
+  // symbol like `holdings`). This is what the Open-positions table renders,
+  // so a hedged BUY+SELL on the same symbol shows as two rows and each
+  // carries its own side/lots/entry_price/pnl.
+  open_positions?: Array<{
+
+    id?: string;
+
+    symbol: string;
+
+    side: string;
+
+    lots: number;
+
+    entry_price: number;
+
+    current_price: number;
+
+    pnl: number;
+
+    pnl_pct?: number;
+
+  }>;
+
   open_positions_count: number;
 
 }
@@ -451,11 +475,15 @@ function PortfolioPageContent() {
 
 
 
-  const holdings = summary?.holdings ?? [];
+  // Use the per-position list, not the symbol-aggregated `holdings`. The
+  // aggregated shape uses different keys (total_lots / avg_open_price /
+  // unrealized_pnl / net_side), which rendered blank Side/Lots/Entry and a
+  // $NaN P&L, and collapsed a hedged BUY+SELL into a single row.
+  const holdings = summary?.open_positions ?? [];
 
   const dashboardData = useMemo(() => {
     if (!summary) return null;
-    const lotsOpen = (summary.holdings ?? []).reduce((a, h) => a + (Number(h.lots) || 0), 0);
+    const lotsOpen = (summary.open_positions ?? []).reduce((a, h) => a + (Number(h.lots) || 0), 0);
     const equity = Number(summary.total_equity) || 0;
     const balance = Number(summary.total_balance) || 0;
     // Approx: each open lot blocks ~$1000 margin (100:1 leverage on ~$100k notional).
