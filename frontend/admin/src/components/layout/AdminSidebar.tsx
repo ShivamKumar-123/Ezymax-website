@@ -120,12 +120,11 @@ export default function AdminSidebar() {
         {collapsed ? (
           <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain mx-auto" />
         ) : (
-          <Link href="/" className="flex items-center gap-2 min-w-0">
-            <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain shrink-0" />
-            {/* Match the trader chrome wordmark: bold italic with the gold glow. */}
-            <span className="inline-flex items-baseline font-bold italic tracking-tight text-lg drop-shadow-[0_0_20px_rgba(214,169,61,0.12)] select-none">
-              <span className="text-text-primary">FX</span><span className="text-[#d6a93d]">Artha</span>
-            </span>
+          // Logo image only — no separate "FXArtha" text (the logo asset
+          // already carries the branding). Shown larger, height-based so the
+          // horizontal logo keeps its aspect ratio.
+          <Link href="/" className="flex items-center min-w-0">
+            <img src="/logo.png" alt="FXArtha" className="h-9 w-auto object-contain" />
           </Link>
         )}
         <button
