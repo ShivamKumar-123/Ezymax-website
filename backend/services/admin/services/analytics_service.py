@@ -137,6 +137,28 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
     )
     copy_trade_admin_revenue = float(copy_rev_q.scalar() or 0)
 
+    # Trading commission total shown on the "Admin Commission (Total)" card:
+    # spread + charges (per-lot/per-trade commission) + swap, across NON-DEMO
+    # accounts. Spread is baked into the executable price (market-data widens
+    # bid/ask) so there is no separate realised-spread column yet — it reads
+    # 0 until per-trade spread capture lands. Computed with the SAME non-demo
+    # Position filter as commission_breakdown() so the card total always
+    # equals the sum of the per-user drill-down rows. Raw sums (no abs) so
+    # card and rows reconcile exactly.
+    trade_rev_q = await db.execute(
+        select(
+            func.coalesce(func.sum(Position.commission), 0),
+            func.coalesce(func.sum(Position.swap), 0),
+        )
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+    )
+    _tr = trade_rev_q.first()
+    tc_charges = float(_tr[0] or 0)
+    tc_swap = float(_tr[1] or 0)
+    tc_spread = 0.0
+    trading_commission_total = tc_spread + tc_charges + tc_swap
+
     master_count_q = await db.execute(
         select(func.count(MasterAccount.id)).where(MasterAccount.status.in_(["approved", "active"]))
     )
@@ -210,6 +232,14 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
         "open_positions": open_pos_q.scalar() or 0,
         "closed_trades": closed_trades_q.scalar() or 0,
         "total_admin_commission": total_admin_commission,
+        # Card total = spread + charges + swap (non-demo). Drill-down via
+        # /analytics/commission-breakdown reconciles to this exactly.
+        "trading_commission_total": trading_commission_total,
+        "trading_commission_breakdown": {
+            "spread": tc_spread,
+            "charges": tc_charges,
+            "swap": tc_swap,
+        },
         "pamm_admin_commission": pamm_admin_commission,
         "copy_trade_revenue": copy_trade_admin_revenue,
         "active_masters": master_count_q.scalar() or 0,
@@ -748,3 +778,114 @@ async def user_revenue_breakdown(
             "net_revenue": float(r["net_revenue"] or 0),
         })
     return {"items": items, "total": int(total), "page": page, "per_page": per_page}
+
+
+async def commission_breakdown(
+    db: AsyncSession,
+    *,
+    page: int = 1,
+    per_page: int = 25,
+    search: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> dict:
+    """Per-user trading-commission drill-down behind the "Admin Commission
+    (Total)" card. One row per NON-DEMO user with the spread, charges
+    (per-lot/per-trade commission) and swap the platform earned from that
+    user's positions, plus a grand total that reconciles to the card.
+
+    Spread is baked into the executable price today (no per-trade capture),
+    so the spread column is 0 until that lands — the column is kept so the
+    UI and payload don't change when it does. Filterable by a Position
+    created-at date window and searchable by email / name. Paginated.
+
+    Uses the identical non-demo Position filter as the card total in
+    analytics_dashboard(), with raw sums (no abs), so the card value always
+    equals the sum of every row across all pages.
+    """
+    page = max(1, int(page or 1))
+    per_page = min(200, max(1, int(per_page or 25)))
+
+    filters = [TradingAccount.is_demo == False]
+    if date_from is not None:
+        filters.append(Position.created_at >= date_from)
+    if date_to is not None:
+        filters.append(Position.created_at <= date_to)
+    if search and search.strip():
+        s = f"%{search.strip().lower()}%"
+        name_expr = func.lower(
+            func.coalesce(User.first_name, "") + " " + func.coalesce(User.last_name, "")
+        )
+        filters.append(func.lower(User.email).like(s) | name_expr.like(s))
+
+    charges_sum = func.coalesce(func.sum(Position.commission), 0)
+    swap_sum = func.coalesce(func.sum(Position.swap), 0)
+
+    # Grand totals over the same filter (drives the modal header + must equal
+    # the dashboard card).
+    totals_q = await db.execute(
+        select(charges_sum, swap_sum)
+        .select_from(Position)
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .join(User, TradingAccount.user_id == User.id)
+        .where(*filters)
+    )
+    _t = totals_q.first()
+    t_charges = float(_t[0] or 0)
+    t_swap = float(_t[1] or 0)
+
+    grouped = (
+        select(
+            User.id.label("uid"),
+            User.email.label("email"),
+            User.first_name.label("first_name"),
+            User.last_name.label("last_name"),
+            charges_sum.label("charges"),
+            swap_sum.label("swap"),
+        )
+        .select_from(Position)
+        .join(TradingAccount, Position.account_id == TradingAccount.id)
+        .join(User, TradingAccount.user_id == User.id)
+        .where(*filters)
+        .group_by(User.id, User.email, User.first_name, User.last_name)
+    )
+
+    count_q = await db.execute(select(func.count()).select_from(grouped.subquery()))
+    total_count = int(count_q.scalar() or 0)
+
+    rows = (
+        await db.execute(
+            grouped.order_by((charges_sum + swap_sum).desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+    ).all()
+
+    items = []
+    for r in rows:
+        ch = float(r.charges or 0)
+        sw = float(r.swap or 0)
+        name = f"{(r.first_name or '')} {(r.last_name or '')}".strip()
+        items.append({
+            "user_id": str(r.uid),
+            "email": r.email,
+            "name": name or None,
+            "spread": 0.0,
+            "charges": ch,
+            "swap": sw,
+            "total": ch + sw,
+        })
+
+    return {
+        "totals": {
+            "spread": 0.0,
+            "charges": t_charges,
+            "swap": t_swap,
+            "total": t_charges + t_swap,
+        },
+        "items": items,
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": max(1, (total_count + per_page - 1) // per_page),
+    }

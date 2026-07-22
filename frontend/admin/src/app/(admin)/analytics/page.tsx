@@ -6,6 +6,7 @@ import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Loader2, RefreshCw, DollarSign, TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, CreditCard, Gift, GitBranch, Search, ChevronLeft, ChevronRight, ArrowUpDown, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CommissionBreakdownModal from '@/components/analytics/CommissionBreakdownModal';
 
 interface RevenueStats {
   total_revenue: number;
@@ -85,12 +86,23 @@ function riskBadge(r: string) {
   return r === 'low' ? 'bg-success/15 text-success' : r === 'medium' ? 'bg-warning/15 text-warning' : 'bg-danger/15 text-danger';
 }
 
-function StatBox({ label, value, color, icon: Icon }: { label: string; value: string; color?: string; icon?: any }) {
+function StatBox({ label, value, color, icon: Icon, onClick }: { label: string; value: string; color?: string; icon?: any; onClick?: () => void }) {
+  const clickable = typeof onClick === 'function';
   return (
-    <div className="bg-bg-secondary border border-border-primary rounded-md p-3">
+    <div
+      onClick={onClick}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick!(); } } : undefined}
+      className={cn(
+        'bg-bg-secondary border border-border-primary rounded-md p-3',
+        clickable && 'cursor-pointer hover:border-buy/50 hover:bg-bg-hover transition-fast focus:outline-none focus:ring-1 focus:ring-buy/50',
+      )}
+    >
       <div className="flex items-center gap-2 mb-1">
         {Icon && <Icon size={12} className={color || 'text-text-tertiary'} />}
         <span className="text-xxs text-text-tertiary">{label}</span>
+        {clickable && <span className="ml-auto text-xxs text-text-tertiary/70">View →</span>}
       </div>
       <p className={cn('text-lg font-semibold font-mono tabular-nums', color || 'text-text-primary')}>{value}</p>
     </div>
@@ -131,6 +143,7 @@ function fmtDate(d: string | null) {
 export default function AnalyticsPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [exposure, setExposure] = useState<ExposureRow[]>([]);
   const [profitableUsers, setProfitableUsers] = useState<ProfitableUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -246,7 +259,13 @@ export default function AnalyticsPage() {
             <StatBox label="Total Deposits" value={`$${fmt(data.total_deposits)}`} color="text-success" icon={DollarSign} />
             <StatBox label="Total Withdrawals" value={`$${fmt(data.total_withdrawals)}`} color="text-danger" icon={DollarSign} />
             <StatBox label="Net Deposits" value={`$${fmt(data.net_deposits)}`} color="text-buy" icon={TrendingUp} />
-            <StatBox label="Admin Commission (Total)" value={`$${fmt(data.total_admin_commission || 0)}`} color="text-success" icon={DollarSign} />
+            <StatBox
+              label="Admin Commission (Total)"
+              value={`$${fmt(data.trading_commission_total ?? data.total_admin_commission ?? 0)}`}
+              color="text-success"
+              icon={DollarSign}
+              onClick={() => setShowCommissionModal(true)}
+            />
             <StatBox label="Open / Closed Trades" value={`${data.open_positions} / ${data.closed_trades}`} icon={BarChart3} />
           </div>
         )}
@@ -773,6 +792,10 @@ function UserRevenueTable() {
             <button type="button" disabled={page >= pages || loading} onClick={() => setPage((p) => p + 1)} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:pointer-events-none transition-fast"><ChevronRight size={14} /></button>
           </div>
         </div>
+      )}
+
+      {showCommissionModal && (
+        <CommissionBreakdownModal onClose={() => setShowCommissionModal(false)} />
       )}
     </div>
   );
