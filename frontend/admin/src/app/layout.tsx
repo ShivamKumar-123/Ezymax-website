@@ -14,6 +14,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'FXArtha Admin',
   description: 'FXArtha broker administration panel',
+  // Browser-tab favicon. The admin app shipped without any icon declared
+  // (no app/favicon.ico, no metadata.icons), so tabs fell back to Chrome's
+  // default globe. Point every slot at the existing public/logo.png.
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
