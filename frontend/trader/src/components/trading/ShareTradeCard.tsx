@@ -104,20 +104,20 @@ export default function ShareTradeCard({
       <div className="absolute bottom-5 right-5 w-6 h-6 border-r-2 border-b-2 border-white/40" />
 
       <div className="relative h-full flex flex-col p-6 md:p-8">
-        {/* Header logo */}
-        <div className="flex justify-center pt-2 pb-3">
-          <div className="inline-flex items-center gap-1.5">
-            {/* Real FXArtha emblem (same asset as the app topbar). Same-origin
-                public image so html-to-image inlines it into the captured PNG. */}
-            <img
-              src="/images/fxartha-logo.png"
-              alt="FXArtha"
-              width={22}
-              height={22}
-              className="w-[22px] h-[22px] object-contain"
-            />
-            <span className="text-white text-[10px] font-bold tracking-[0.25em]">FXARTHA</span>
-          </div>
+        {/* Header logo — prominent brand lockup: large emblem stacked over
+            the wordmark, centered. */}
+        <div className="flex flex-col items-center gap-1.5 pt-2 pb-4">
+          {/* Real FXArtha emblem (same asset as the app topbar). Same-origin
+              public image so html-to-image inlines it into the captured PNG.
+              Explicit width/height keep the capture crisp at 2x pixelRatio. */}
+          <img
+            src="/images/fxartha-logo.png"
+            alt="FXArtha"
+            width={56}
+            height={56}
+            className="w-14 h-14 object-contain"
+          />
+          <span className="text-white text-sm font-bold tracking-[0.3em] leading-none">FXARTHA</span>
         </div>
 
         {/* Status + value */}
