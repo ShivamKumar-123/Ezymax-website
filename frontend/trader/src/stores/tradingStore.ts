@@ -255,7 +255,24 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         return serverPos;
       });
 
-      set({ positions: merged });
+      // Keep a just-placed optimistic position that the server hasn't
+      // returned yet. The 1.5s poll (and the reconcile fired right after
+      // placeOrder) often races ahead of the position insert's commit, so
+      // the new trade is absent from THIS response — building `positions`
+      // purely from the server list would drop it, making the trade blink
+      // out for one poll and reappear on the next. Carry any unmatched
+      // optimistic row for a short grace window; a genuinely failed order is
+      // already removed by placeOrder's own rollback, and anything stale
+      // ages out here.
+      const now = Date.now();
+      const OPTIMISTIC_GRACE_MS = 12_000;
+      const survivingOptimistic = optimisticPrev.filter((opt) => {
+        if (optimMatched.has(opt.id)) return false; // already folded into a server row
+        const openedAt = opt.created_at ? new Date(opt.created_at).getTime() : now;
+        return Number.isFinite(openedAt) && now - openedAt < OPTIMISTIC_GRACE_MS;
+      });
+
+      set({ positions: [...survivingOptimistic, ...merged] });
     } catch {}
   },
 
