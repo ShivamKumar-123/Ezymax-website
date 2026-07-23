@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.models import (
     IBProfile, IBApplication, IBCommission, IBCommissionPlan,
     Referral, User, TradingAccount, Position, Deposit, UserAuditLog,
+    TradeHistory, Instrument,
 )
 
 from . import trading_service
@@ -318,7 +319,7 @@ async def ib_referrals(
         select(
             Referral.id, Referral.referred_id, Referral.created_at,
             Referral.utm_source, Referral.utm_medium, Referral.utm_campaign,
-            User.email, User.first_name, User.last_name,
+            User.email, User.first_name, User.last_name, User.phone,
             User.created_at.label("user_created"),
         )
         .join(User, Referral.referred_id == User.id)
@@ -373,6 +374,23 @@ async def ib_referrals(
         )
         acct_agg = {uid: (cnt, bal) for uid, cnt, bal in aa.all()}
 
+    # 5. Commission this IB has earned FROM each follower, one aggregate for
+    #    the page — so the followers list shows per-follower earnings.
+    comm_agg: dict = {}
+    if page_ids:
+        ca = await db.execute(
+            select(
+                IBCommission.source_user_id,
+                func.coalesce(func.sum(IBCommission.amount), 0),
+            )
+            .where(
+                IBCommission.ib_id == profile.id,
+                IBCommission.source_user_id.in_(page_ids),
+            )
+            .group_by(IBCommission.source_user_id)
+        )
+        comm_agg = {uid: amt for uid, amt in ca.all()}
+
     items = []
     for r in page_rows:
         acct_count, total_deposit = acct_agg.get(r.referred_id, (0, 0))
@@ -384,8 +402,11 @@ async def ib_referrals(
                 "id": str(r.referred_id),
                 "email": r.email,
                 "name": f"{r.first_name or ''} {r.last_name or ''}".strip(),
+                "phone": r.phone,
                 "joined_at": r.user_created.isoformat() if r.user_created else None,
             },
+            "phone": r.phone,
+            "commission_earned": float(comm_agg.get(r.referred_id, 0)),
             "accounts_count": acct_count,
             "total_deposit": float(total_deposit),
             "trades_count": trades_count,
@@ -698,11 +719,44 @@ async def ib_user_detail(ib_user_id: UUID, target_user_id: UUID, db: AsyncSessio
         )
     )).scalar()
 
+    # Closed trade history across every account, newest first, so the
+    # follower detail can show a filterable trades log (open + closed).
+    account_ids = [a.id for a in accounts]
+    closed_trades: list = []
+    if account_ids:
+        acct_no_by_id = {a.id: a.account_number for a in accounts}
+        th_rows = (await db.execute(
+            select(TradeHistory, Instrument.symbol)
+            .join(Instrument, TradeHistory.instrument_id == Instrument.id, isouter=True)
+            .where(TradeHistory.account_id.in_(account_ids))
+            .order_by(TradeHistory.closed_at.desc())
+            .limit(500)
+        )).all()
+        for th, symbol in th_rows:
+            side = th.side.value if hasattr(th.side, "value") else str(th.side)
+            closed_trades.append({
+                "id": str(th.id),
+                "account_number": acct_no_by_id.get(th.account_id),
+                "symbol": symbol,
+                "side": side,
+                "lots": float(th.lots),
+                "open_price": float(th.open_price) if th.open_price is not None else None,
+                "close_price": float(th.close_price) if th.close_price is not None else None,
+                "profit": float(th.profit) if th.profit is not None else 0.0,
+                "commission": float(th.commission) if th.commission is not None else 0.0,
+                "swap": float(th.swap) if th.swap is not None else 0.0,
+                "close_reason": th.close_reason,
+                "status": "closed",
+                "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+                "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+            })
+
     return {
         "user": {
             "id": str(user.id),
             "email": user.email,
             "name": f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            "phone": user.phone,
             "status": user.status,
             "kyc_status": user.kyc_status,
             "country": user.country,
@@ -710,6 +764,7 @@ async def ib_user_detail(ib_user_id: UUID, target_user_id: UUID, db: AsyncSessio
         },
         "accounts": account_dicts,
         "open_positions": open_positions,
+        "closed_trades": closed_trades,
         "deposits_total": float(deposits_total or 0),
         "commission_earned": float(commission_earned or 0),
     }

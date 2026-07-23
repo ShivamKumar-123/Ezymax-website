@@ -10,6 +10,7 @@ import SectionCard from '@/components/SectionCard';
 import DataTable from '@/components/DataTable';
 import Filters, { FilterState } from '@/components/Filters';
 import Pagination from '@/components/Pagination';
+import PhoneActions from '@/components/PhoneActions';
 import { downloadStatementPdf } from '@/lib/pdf/statementPdf';
 
 export default function ReferralsPage() {
@@ -50,9 +51,11 @@ export default function ReferralsPage() {
         { header: 'User', value: (r: Referral) => r.referred_user?.name || '—', width: 45 },
         { header: 'Email', value: (r: Referral) => r.referred_user?.email || '—', width: 55 },
         { header: 'Joined', value: (r: Referral) => fmtDate(r.referred_user?.joined_at) },
+        { header: 'Phone', value: (r: Referral) => r.referred_user?.phone || r.phone || '—' },
         { header: 'Accounts', value: (r: Referral) => String(r.accounts_count), align: 'right' },
         { header: 'Traded', value: (r: Referral) => (r.has_traded ? `Yes (${r.trades_count})` : 'No') },
         { header: 'Balance', value: (r: Referral) => `$${fmt(r.total_deposit)}`, align: 'right' },
+        { header: 'Commission', value: (r: Referral) => `$${fmt(r.commission_earned)}`, align: 'right' },
       ],
       { title: 'Referrals statement', subtitle: `Page ${data?.page} · ${data?.total} total`, filename: 'fxartha-ib-referrals.pdf' },
     ).catch(() => toast.error('PDF export failed.'));
@@ -88,6 +91,11 @@ export default function ReferralsPage() {
             },
             { key: 'joined', label: 'Joined', render: (r) => fmtDate(r.referred_user?.joined_at) },
             {
+              key: 'contact',
+              label: 'Contact',
+              render: (r) => <PhoneActions phone={r.referred_user?.phone || r.phone} />,
+            },
+            {
               key: 'activity',
               label: 'Activity',
               align: 'center',
@@ -100,6 +108,12 @@ export default function ReferralsPage() {
             },
             { key: 'accounts_count', label: 'Accounts', align: 'right' },
             { key: 'balance', label: 'Balance', align: 'right', render: (r) => <span className="font-mono">${fmt(r.total_deposit)}</span> },
+            {
+              key: 'commission',
+              label: 'Commission',
+              align: 'right',
+              render: (r) => <span className="font-mono text-success">${fmt(r.commission_earned)}</span>,
+            },
           ]}
         />
         {data && <Pagination page={data.page} pages={data.pages} total={data.total} onPage={setPage} />}
