@@ -48,12 +48,23 @@ async def distribute_ib_commission(
     lots: Decimal,
     instrument_symbol: str,
 ):
-    """Called after a market order is filled. Distributes commission to IB chain."""
+    """Called after a market order is filled. Distributes commission to IB chain.
+
+    Every skip path logs WHY it distributed nothing — otherwise "commission
+    isn't distributing" is impossible to diagnose (the whole function used to
+    return silently on missing referral / inactive IB / zero per-lot rate).
+    """
     referral_q = await db.execute(
         select(Referral).where(Referral.referred_id == trader_user_id)
     )
     referral = referral_q.scalar_one_or_none()
     if not referral or not referral.ib_profile_id:
+        logger.info(
+            "IB commission skipped: trader=%s has no IB referral "
+            "(no Referral row, or Referral.ib_profile_id is NULL). "
+            "Commission only flows when the trader was signed up under an IB.",
+            trader_user_id,
+        )
         return
 
     ib_profile_q = await db.execute(
@@ -61,6 +72,11 @@ async def distribute_ib_commission(
     )
     direct_ib = ib_profile_q.scalar_one_or_none()
     if not direct_ib:
+        logger.info(
+            "IB commission skipped: trader=%s referred by ib_profile=%s but that "
+            "IB is inactive or missing.",
+            trader_user_id, referral.ib_profile_id,
+        )
         return
 
     plan = None
@@ -84,11 +100,32 @@ async def distribute_ib_commission(
         per_lot = Decimal(str(plan.commission_per_lot))
 
     if per_lot is None or per_lot <= 0:
+        logger.info(
+            "IB commission skipped: trader=%s IB=%s has no per-lot rate > 0 "
+            "(custom_commission_per_lot=%s, plan=%s, plan.commission_per_lot=%s). "
+            "Set a commission_per_lot on the IB's plan (or a custom rate on the IB).",
+            trader_user_id, direct_ib.referral_code,
+            direct_ib.custom_commission_per_lot,
+            getattr(plan, "name", None),
+            getattr(plan, "commission_per_lot", None),
+        )
         return
 
     total_commission = per_lot * lots
     if total_commission <= 0:
+        logger.info(
+            "IB commission skipped: computed total_commission<=0 "
+            "(per_lot=%s × lots=%s) for trader=%s.",
+            per_lot, lots, trader_user_id,
+        )
         return
+
+    logger.info(
+        "IB commission: distributing $%.4f (per_lot=%s × %s lots) from trader=%s "
+        "up the chain from IB=%s (%s)",
+        float(total_commission), per_lot, lots, trader_user_id,
+        direct_ib.referral_code, instrument_symbol,
+    )
 
     # Prefer plan's MLM distribution; fall back to global SystemSetting; then default.
     mlm_dist: list[int] | None = None

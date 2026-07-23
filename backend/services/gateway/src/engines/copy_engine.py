@@ -581,6 +581,39 @@ class CopyTradeEngine:
 
         net_profit = gross_profit - performance_fee
 
+        # Diagnostic: make "copy commission isn't distributing" visible. Fees
+        # only accrue on a PROFITABLE close, and each part is gated on a master
+        # config value:
+        #   • performance fee → master.performance_fee_pct (>0)
+        #   • master's share  → performance fee minus admin cut
+        #   • platform cut + follower's 10-level network share → master.admin_commission_pct (>0)
+        if gross_profit <= 0:
+            logger.info(
+                "Copy close: no commission — trade closed at a loss/flat "
+                "(gross=%.4f). Fees accrue only on profitable closes. master=%s",
+                float(gross_profit), master.id,
+            )
+        else:
+            logger.info(
+                "Copy close commission: gross=%.4f perf_pct=%s%% fee=%.4f "
+                "admin_pct=%s%% admin_fee=%.4f master_share=%.4f master=%s",
+                float(gross_profit), master.performance_fee_pct, float(performance_fee),
+                master.admin_commission_pct, float(admin_fee),
+                float(performance_fee - admin_fee), master.id,
+            )
+            if (master.performance_fee_pct or 0) == 0:
+                logger.warning(
+                    "Copy close: master=%s has performance_fee_pct=0 — master earns "
+                    "NO commission. Set it on the master account to distribute.",
+                    master.id,
+                )
+            if (master.admin_commission_pct or 0) == 0:
+                logger.info(
+                    "Copy close: master=%s has admin_commission_pct=0 — no platform "
+                    "cut and no 10-level network commission is distributed.",
+                    master.id,
+                )
+
         investor_pos.status = PositionStatus.CLOSED.value
         investor_pos.close_price = close_price
         investor_pos.profit = net_profit
