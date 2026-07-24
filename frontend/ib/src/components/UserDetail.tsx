@@ -70,6 +70,26 @@ export default function UserDetail({ userId }: { userId: string }) {
     })();
   }, [userId, router]);
 
+  // Live P&L. The detail (open positions + their P&L) is a one-time snapshot,
+  // so after the IB opened a trade on this account the position's P&L looked
+  // frozen. Re-fetch silently every 2.5s while the tab is visible — no loading
+  // spinner, keeps the last good data on a transient error — so P&L moves and
+  // newly opened trades appear without a manual refresh.
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const fresh = await ibGet<IbUserDetail>(`/business/ib/users/${userId}`);
+        if (!cancelled) setData(fresh);
+      } catch {
+        /* transient — keep showing the last good snapshot */
+      }
+    };
+    const id = setInterval(tick, 2500);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [userId]);
+
   // Combine open positions + closed history into one filterable log.
   const allTrades = useMemo<UnifiedTrade[]>(() => {
     if (!data) return [];
