@@ -559,11 +559,14 @@ class IBCommissionPlanIn(BaseModel):
 class MLMConfigOut(BaseModel):
     mlm_levels: int = 5
     mlm_distribution: list = []
+    # Two-tier direct model: Master IB's cut (%) of a sub-IB's commission.
+    ib_master_share_pct: float = 20.0
 
 
 class MLMConfigIn(BaseModel):
     mlm_levels: int
     mlm_distribution: list
+    ib_master_share_pct: float | None = None
 
 
 class MasterAccountOut(BaseModel):

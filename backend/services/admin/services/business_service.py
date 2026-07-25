@@ -21,6 +21,7 @@ from packages.common.src.admin_schemas import (
     IBCommissionPlanOut, IBCommissionPlanIn,
 )
 from dependencies import write_audit_log
+from packages.common.src.settings_store import invalidate_cache as invalidate_settings_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -434,9 +435,15 @@ async def get_mlm_config(db: AsyncSession):
     )
     dist_setting = dist_q.scalar_one_or_none()
 
+    share_q = await db.execute(
+        select(SystemSetting).where(SystemSetting.key == "ib_master_share_pct")
+    )
+    share_setting = share_q.scalar_one_or_none()
+
     return MLMConfigOut(
         mlm_levels=int(levels_setting.value) if levels_setting else 5,
         mlm_distribution=dist_setting.value if dist_setting else [40, 25, 15, 10, 10],
+        ib_master_share_pct=float(share_setting.value) if share_setting else 20.0,
     )
 
 
@@ -473,12 +480,36 @@ async def update_mlm_config(
             updated_by=admin_id,
         ))
 
+    if body.ib_master_share_pct is not None:
+        pct = max(0.0, min(100.0, float(body.ib_master_share_pct)))
+        share_q = await db.execute(
+            select(SystemSetting).where(SystemSetting.key == "ib_master_share_pct")
+        )
+        share_setting = share_q.scalar_one_or_none()
+        if share_setting:
+            share_setting.value = pct
+            share_setting.updated_by = admin_id
+            share_setting.updated_at = datetime.utcnow()
+        else:
+            db.add(SystemSetting(
+                key="ib_master_share_pct", value=pct,
+                description="Master IB's cut (%) of a sub-IB's commission (two-tier direct model)",
+                updated_by=admin_id,
+            ))
+
     await write_audit_log(
         db, admin_id, "update_mlm_config", "system_setting", None,
-        new_values={"mlm_levels": body.mlm_levels, "mlm_distribution": body.mlm_distribution},
+        new_values={
+            "mlm_levels": body.mlm_levels,
+            "mlm_distribution": body.mlm_distribution,
+            "ib_master_share_pct": body.ib_master_share_pct,
+        },
         ip_address=ip_address,
     )
     await db.commit()
+    # The gateway/b-book read ib_master_share_pct through the Redis-cached
+    # settings store — invalidate so the new split applies immediately.
+    await invalidate_settings_cache()
     return {"message": "MLM config updated"}
 
 

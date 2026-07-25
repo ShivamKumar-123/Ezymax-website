@@ -1,12 +1,14 @@
 """IB Commission distribution — shared across services.
 
 When a referred user's trade is FILLED (market order in the gateway, or a
-pending order filled by the b-book-engine), this distributes commission up
-the referrer's MLM chain:
+pending order filled by the b-book-engine), this distributes commission on
+the TWO-TIER DIRECT model (client spec, July 2026):
 
 1. Find the referrer IB via the Referral table (referred_id → ib_profile_id).
 2. Resolve the per-lot rate (IB custom override > plan > default plan).
-3. Split it across the MLM levels and credit each IB.
+3. The direct IB earns it. If the IB has a Master IB (parent_ib_id), the
+   master takes `ib_master_share_pct` (system setting, default 20%) and the
+   IB keeps the rest. Nobody deeper in the chain earns anything.
 
 Lives in packages/common so BOTH the gateway (trading_service, copy_engine)
 and the standalone b-book-engine can call it — a pending/limit order that
@@ -28,6 +30,7 @@ from .models import (
     Referral, IBProfile, IBCommission, IBCommissionPlan,
     TradingAccount, Transaction, SystemSetting, User,
 )
+from .settings_store import get_system_setting
 
 logger = logging.getLogger("ib-commission")
 
@@ -133,49 +136,49 @@ async def distribute_ib_commission(
         direct_ib.referral_code, instrument_symbol,
     )
 
-    # Prefer plan's MLM distribution; fall back to global SystemSetting; then default.
-    mlm_dist: list[int] | None = None
-    if plan and plan.mlm_distribution:
-        raw = plan.mlm_distribution
-        if isinstance(raw, str):
-            try:
-                raw = json.loads(raw)
-            except Exception:
-                raw = None
-        if isinstance(raw, list) and raw:
-            mlm_dist = [int(x) for x in raw]
-    if mlm_dist is None:
-        mlm_dist = await get_mlm_distribution(db)
+    # ── Two-tier direct model (client spec, July 2026) ─────────────────
+    # The old N-level MLM walk is gone. Rules:
+    #   • Commission belongs to the trader's DIRECT IB only — nobody deeper
+    #     in the chain earns anything from this trade.
+    #   • If that IB has a parent (Master IB), the master takes an
+    #     admin-configurable share of it: system setting
+    #     `ib_master_share_pct` (default 20 → the IB keeps 80%).
+    #   • An IB with no Master IB keeps 100%.
+    #   • A Master IB's OWN direct referrals follow the same rule — the
+    #     master is simply the direct IB (and usually has no parent).
+    master_share_pct = Decimal("20")
+    try:
+        raw_pct = await get_system_setting("ib_master_share_pct", 20)
+        if raw_pct is not None:
+            master_share_pct = Decimal(str(raw_pct))
+    except Exception:
+        pass
+    master_share_pct = max(Decimal("0"), min(Decimal("100"), master_share_pct))
 
-    current_ib = direct_ib
-    # Cycle / self-referral guard — mirrors the guards in
-    # rewards_service._distribute_to_referral_chain and
-    # social_service.distribute_copy_trade_platform_fee. Without it, a
-    # parent_ib_id cycle (A→B→A) pays the same IB at multiple levels, and a
-    # trader who is their own referring IB earns commission on their own
-    # volume.
-    visited_ib_ids: set = set()
-    for level, pct in enumerate(mlm_dist, start=1):
-        if current_ib is None:
-            break
-        if current_ib.id in visited_ib_ids:
-            logger.warning(
-                "IB commission walk aborted at L%d: cycle detected in "
-                "parent_ib_id chain at IB=%s", level, current_ib.referral_code,
-            )
-            break
-        visited_ib_ids.add(current_ib.id)
-        if current_ib.user_id == trader_user_id:
-            # Trader is their own IB at this level — skip the payout but keep
-            # walking so an honest upline still earns its share.
-            current_ib = await _get_parent_ib(current_ib, db)
-            continue
+    master_ib = await _get_parent_ib(direct_ib, db)
+    # Guards: self-parent cycles and a master that is the trader themselves
+    # earn nothing.
+    if master_ib is not None and (
+        master_ib.id == direct_ib.id or master_ib.user_id == trader_user_id
+    ):
+        master_ib = None
 
-        share = total_commission * Decimal(str(pct)) / Decimal("100")
-        if share <= 0:
-            current_ib = await _get_parent_ib(current_ib, db)
-            continue
+    ib_amount = total_commission
+    master_amount = Decimal("0")
+    if master_ib is not None and master_share_pct > 0:
+        master_amount = (
+            total_commission * master_share_pct / Decimal("100")
+        ).quantize(Decimal("0.00000001"))
+        ib_amount = total_commission - master_amount
 
+    # (ib, amount, level): level 1 = direct IB, level 2 = Master IB's share.
+    payouts: list = []
+    if direct_ib.user_id != trader_user_id and ib_amount > 0:
+        payouts.append((direct_ib, ib_amount, 1))
+    if master_ib is not None and master_amount > 0:
+        payouts.append((master_ib, master_amount, 2))
+
+    for current_ib, share, level in payouts:
         commission_record = IBCommission(
             ib_id=current_ib.id,
             source_user_id=trader_user_id,
@@ -236,8 +239,6 @@ async def distribute_ib_commission(
                 )
 
         logger.info(f"IB commission L{level}: ${share:.2f} to {current_ib.referral_code} ({instrument_symbol} {lots} lots)")
-
-        current_ib = await _get_parent_ib(current_ib, db)
 
 
 async def _get_parent_ib(ib: IBProfile, db: AsyncSession) -> IBProfile | None:

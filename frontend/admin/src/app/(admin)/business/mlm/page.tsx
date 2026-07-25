@@ -13,13 +13,14 @@ interface MLMLevel {
 
 export default function MLMPage() {
   const [levels, setLevels] = useState<MLMLevel[]>([]);
+  const [masterShare, setMasterShare] = useState<number>(20);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await adminApi.get<{ mlm_levels: number; mlm_distribution: number[] }>('/business/mlm/config');
+      const res = await adminApi.get<{ mlm_levels: number; mlm_distribution: number[]; ib_master_share_pct?: number }>('/business/mlm/config');
       const dist = res.mlm_distribution || [40, 25, 15, 10, 10];
       const count = res.mlm_levels || dist.length;
       const lvls: MLMLevel[] = [];
@@ -27,6 +28,7 @@ export default function MLMPage() {
         lvls.push({ level: i + 1, distribution_pct: dist[i] ?? 0 });
       }
       setLevels(lvls);
+      setMasterShare(Number(res.ib_master_share_pct ?? 20));
     } catch (e: any) {
       toast.error(e.message || 'Failed to load MLM config');
       setLevels([40, 25, 15, 10, 10].map((p, i) => ({ level: i + 1, distribution_pct: p })));
@@ -68,6 +70,7 @@ export default function MLMPage() {
       await adminApi.put('/business/mlm/config', {
         mlm_levels: levels.length,
         mlm_distribution: levels.map(l => l.distribution_pct),
+        ib_master_share_pct: Math.max(0, Math.min(100, masterShare)),
       });
       toast.success('MLM configuration saved');
     } catch (e: any) {
@@ -104,9 +107,40 @@ export default function MLMPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Two-tier direct model — the split that actually drives payouts. */}
+            <div className="bg-bg-secondary border border-accent/40 rounded-md lg:col-span-2">
+              <div className="px-4 py-3 border-b border-border-primary">
+                <h2 className="text-sm font-medium text-text-primary">Master IB Share (active model)</h2>
+                <p className="text-xxs text-text-tertiary mt-0.5">
+                  Commission goes to the trader&apos;s direct IB only. If that IB has a Master IB,
+                  the Master takes this percentage and the IB keeps the rest. IBs without a
+                  Master keep 100%.
+                </p>
+              </div>
+              <div className="px-4 py-3 flex items-center gap-4 flex-wrap">
+                <label className="text-xs text-text-secondary">Master IB cut</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={masterShare}
+                    onChange={(e) => setMasterShare(Number(e.target.value))}
+                    className="w-24 rounded-md border border-border-primary bg-bg-primary px-2 py-1.5 text-sm text-text-primary text-right focus:border-accent/50 focus:outline-none"
+                  />
+                  <span className="text-sm text-text-secondary">%</span>
+                </div>
+                <span className="text-xxs text-text-tertiary">
+                  → IB keeps <span className="text-text-primary font-semibold">{Math.max(0, 100 - masterShare)}%</span>,
+                  Master IB gets <span className="text-text-primary font-semibold">{Math.min(100, Math.max(0, masterShare))}%</span>
+                  &nbsp;(e.g. $100 commission → IB ${Math.max(0, 100 - masterShare).toFixed(0)}, Master ${Math.min(100, Math.max(0, masterShare)).toFixed(0)})
+                </span>
+              </div>
+            </div>
+
             <div className="bg-bg-secondary border border-border-primary rounded-md">
               <div className="px-4 py-3 border-b border-border-primary">
-                <h2 className="text-sm font-medium text-text-primary">Level Distribution</h2>
+                <h2 className="text-sm font-medium text-text-primary">Level Distribution (legacy — no longer used for payouts)</h2>
               </div>
               <div className="p-4">
                 <table className="w-full">
