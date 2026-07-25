@@ -201,7 +201,9 @@ function TraderCard({
                 <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-bold uppercase shrink-0">Master</span>
                 {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
               </div>
-              <div className="text-xxs text-text-tertiary mt-0.5">Fee: {provider.performance_fee_pct}% · {provider.followers_count} followers</div>
+              <div className="text-xxs text-text-tertiary mt-0.5">
+                Fee: {provider.performance_fee_pct}% · Min: <span className="text-text-secondary font-semibold">${Number(provider.min_investment).toLocaleString()}</span> · {provider.followers_count} followers
+              </div>
             </div>
           </div>
           {isSelf ? (
