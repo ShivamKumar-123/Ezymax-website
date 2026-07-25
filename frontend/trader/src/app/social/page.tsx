@@ -47,6 +47,7 @@ interface ProviderDetail extends Provider {
   total_trades: number;
   total_profit: number;
   win_rate: number;
+  management_fee_pct: number;
   monthly_breakdown: { month: string; profit: number }[];
   is_copying: boolean;
 }
