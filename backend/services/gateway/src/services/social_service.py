@@ -563,6 +563,23 @@ async def my_copies(user_id: UUID, db: AsyncSession) -> dict:
 
 
 async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    """Unfollow a signal provider.
+
+    Settlement rules (fixed after the audit found the old version credited
+    the wallet WITHOUT draining the copy account — doubling funds):
+
+      * Every open copied position is closed via the copy engine's own
+        ``_close_copy`` so P&L, margin release, performance fee → master,
+        admin fee → platform (+ network distribution) behave EXACTLY like a
+        normal engine close. No settlement logic is duplicated here.
+      * MODE B (auto-created CF/IF sub-account): the account's remaining
+        balance is moved back to the main wallet and the sub-account is
+        zeroed + deactivated. The wallet is credited exactly what the
+        account held — never the allocation snapshot.
+      * MODE A (linked personal account): nothing is moved — the P&L from
+        the closes already lives in the user's own account. The account is
+        simply unlinked and stays active for normal trading.
+    """
     result = await db.execute(
         select(InvestorAllocation).where(
             InvestorAllocation.id == allocation_id,
@@ -575,106 +592,81 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     if allocation.status != "active":
         raise HTTPException(status_code=400, detail="Subscription already inactive")
 
-    # Close open copied positions and calculate PnL
-    from packages.common.src.redis_client import PriceChannel
-    open_copies_q = await db.execute(
+    master = (await db.execute(
+        select(MasterAccount).where(MasterAccount.id == allocation.master_id)
+    )).scalar_one_or_none()
+    if master is None:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    open_copies = (await db.execute(
         select(CopyTrade).where(
             CopyTrade.investor_allocation_id == allocation.id,
             CopyTrade.status == "open",
         )
-    )
-    open_copies = open_copies_q.scalars().all()
+    )).scalars().all()
 
-    total_pnl = Decimal("0")
-    master_result = await db.execute(
-        select(MasterAccount).where(MasterAccount.id == allocation.master_id)
-    )
-    master = master_result.scalar_one_or_none()
-
+    # Close each open copy through the engine's canonical close path.
+    # Local import — copy_engine lazily imports this module for the network
+    # fee distribution, so a top-level import would be circular.
+    from ..engines.copy_engine import copy_engine
+    profit_before = Decimal(str(allocation.total_profit or 0))
     for copy in open_copies:
-        investor_pos = await db.get(Position, copy.investor_position_id)
-        if not investor_pos or investor_pos.status != PositionStatus.OPEN:
-            copy.status = "closed"
-            continue
+        await copy_engine._close_copy(copy, master, db)
+    await db.flush()
+    total_pnl = Decimal(str(allocation.total_profit or 0)) - profit_before
 
-        instrument = investor_pos.instrument
-        if not instrument:
-            copy.status = "closed"
-            continue
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    acct = await db.get(TradingAccount, allocation.investor_account_id) if allocation.investor_account_id else None
 
-        tick_data = await price_cache.get(instrument.symbol)
-        if not tick_data:
-            continue
+    # MODE detection: auto-created sub-accounts carry the CF/IF prefix from
+    # _gen_investor_account_number; linked personal accounts never do.
+    is_sub_account = bool(acct and str(acct.account_number or "").startswith(("CF", "IF")))
 
-        tick = json.loads(tick_data)
-        side_val = investor_pos.side.value if hasattr(investor_pos.side, "value") else str(investor_pos.side)
-        close_price = Decimal(str(tick["bid"])) if side_val == "buy" else Decimal(str(tick["ask"]))
-        contract_size = instrument.contract_size or Decimal("100000")
+    return_amount = Decimal("0")
+    if is_sub_account and acct is not None:
+        # Safety: never drain while any position on the account is still open
+        # (e.g. a close fell back and left one behind — should not happen,
+        # but a stuck position must block the payout, not double-pay it).
+        open_left = (await db.execute(
+            select(func.count()).select_from(Position).where(
+                Position.account_id == acct.id,
+                Position.status == PositionStatus.OPEN.value,
+            )
+        )).scalar() or 0
+        if open_left > 0:
+            raise HTTPException(
+                status_code=409,
+                detail="Some copied positions could not be closed yet — try again shortly.",
+            )
+        return_amount = max(Decimal("0"), Decimal(str(acct.balance or 0)))
+        acct.balance = Decimal("0")
+        acct.equity = Decimal(str(acct.credit or 0))
+        acct.margin_used = Decimal("0")
+        acct.free_margin = acct.equity
+        acct.is_active = False
+        if user and return_amount > 0:
+            user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
+            db.add(Transaction(
+                user_id=user_id, account_id=acct.id, type="deposit",
+                amount=return_amount,
+                balance_after=user.main_wallet_balance,
+                description=f"Copy trading stopped — funds returned from {acct.account_number}",
+            ))
 
-        if side_val == "buy":
-            gross = (close_price - investor_pos.open_price) * investor_pos.lots * contract_size
-        else:
-            gross = (investor_pos.open_price - close_price) * investor_pos.lots * contract_size
-        from packages.common.src.trading_service import quote_to_account_pnl
-        gross = quote_to_account_pnl(
-            gross,
-            getattr(instrument, "base_currency", None),
-            getattr(instrument, "quote_currency", None),
-            close_price,
-            symbol=getattr(instrument, "symbol", None),
-        )
-
-        perf_fee = Decimal("0")
-        if gross > 0 and master:
-            perf_fee = gross * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
-        net = gross - perf_fee
-        total_pnl += net
-
-        investor_pos.status = PositionStatus.CLOSED.value
-        investor_pos.close_price = close_price
-        investor_pos.profit = net
-        from datetime import datetime, timezone
-        investor_pos.closed_at = datetime.now(timezone.utc)
-
-        db.add(TradeHistory(
-            position_id=investor_pos.id, account_id=investor_pos.account_id,
-            instrument_id=investor_pos.instrument_id, side=investor_pos.side,
-            lots=investor_pos.lots, open_price=investor_pos.open_price,
-            close_price=close_price, swap=investor_pos.swap or Decimal("0"),
-            commission=investor_pos.commission or Decimal("0"), profit=net,
-            close_reason="copy_stopped", opened_at=investor_pos.created_at,
-            closed_at=datetime.now(timezone.utc),
-        ))
-        copy.status = "closed"
-
-    # No master-pool deduct: signal/copy trade keeps follower funds in the follower's
-    # own CF account throughout. Master never held this money.
-
-    # Return capital + PnL to main wallet
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-
-    return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
-    if return_amount < 0:
-        return_amount = Decimal("0")
-
-    if user:
-        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
-        db.add(Transaction(
-            user_id=user_id, account_id=None, type="deposit",
-            amount=return_amount,
-            description="Copy trading withdrawal (capital + P&L)",
-        ))
-
-    allocation.status = "stopped"
-    allocation.total_profit = (allocation.total_profit or Decimal("0")) + total_pnl
-
-    if master and master.followers_count and master.followers_count > 0:
+    # NB: the investor_allocations status CHECK allows
+    # pending/active/paused/closed/withdrawn — "stopped" is NOT in the set
+    # (writing it was the cause of every unfollow 500ing in prod).
+    allocation.status = "closed"
+    if master.followers_count and master.followers_count > 0:
         master.followers_count -= 1
 
     await db.commit()
     return {
-        "message": "Copy trading stopped — funds returned to wallet",
+        "message": (
+            "Copy trading stopped — funds returned to wallet"
+            if is_sub_account else
+            "Copy trading stopped — your account keeps its balance and stays active"
+        ),
         "allocation_id": str(allocation_id),
         "positions_closed": len(open_copies),
         "returned_to_wallet": float(return_amount),

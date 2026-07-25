@@ -152,12 +152,14 @@ function TraderCard({
   onCopy,
   isSelf,
   onViewFollowers,
+  onUnfollow,
 }: {
   provider: Provider;
   onClick: () => void;
   onCopy: (e: React.MouseEvent) => void;
   isSelf?: boolean;
   onViewFollowers?: (e: React.MouseEvent) => void;
+  onUnfollow?: (e: React.MouseEvent) => void;
 }) {
   const initials = provider.provider_name
     .split(/\s+/)
@@ -222,9 +224,18 @@ function TraderCard({
               )}
             </div>
           ) : provider.is_copying ? (
-            <span className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
-              Following
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
+                Following
+              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onUnfollow?.(e); }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-sell/40 text-sell hover:bg-sell hover:text-white transition-all"
+              >
+                Unfollow
+              </button>
+            </div>
           ) : (
             <button
               type="button"
@@ -583,6 +594,8 @@ function LeaderboardTab() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [copyTarget, setCopyTarget] = useState<Provider | ProviderDetail | null>(null);
+  const [unfollowTarget, setUnfollowTarget] = useState<Provider | null>(null);
+  const [unfollowing, setUnfollowing] = useState(false);
 
   /* Followers modal */
   const [showFollowers, setShowFollowers] = useState(false);
@@ -639,6 +652,37 @@ function LeaderboardTab() {
     }
   };
 
+  const confirmUnfollow = async () => {
+    if (!unfollowTarget) return;
+    setUnfollowing(true);
+    try {
+      // The card only knows the master — resolve the caller's active
+      // allocation for it, then stop that subscription.
+      const mine = await api.get<{ items: Array<{ id: string; master_id: string; status: string }> }>('/social/my-copies');
+      const alloc = (mine.items || []).find(
+        (a) => a.master_id === unfollowTarget.id && a.status === 'active',
+      );
+      if (!alloc) {
+        toast.error('No active subscription found for this master');
+        setUnfollowTarget(null);
+        return;
+      }
+      const res = await api.delete<{ returned_to_wallet?: number; message?: string }>(`/social/copy/${alloc.id}`);
+      const returned = res?.returned_to_wallet;
+      toast.success(
+        returned && returned > 0
+          ? `Unfollowed ${unfollowTarget.provider_name} — $${returned.toFixed(2)} returned to wallet`
+          : `Unfollowed ${unfollowTarget.provider_name}`,
+      );
+      setUnfollowTarget(null);
+      fetchLeaderboard();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to unfollow');
+    } finally {
+      setUnfollowing(false);
+    }
+  };
+
   return (
     <>
       {/* Sort bar */}
@@ -675,6 +719,7 @@ function LeaderboardTab() {
                 onClick={() => openDetail(p.id)}
                 onCopy={(e) => { e.stopPropagation(); setCopyTarget(p); }}
                 onViewFollowers={(e) => loadFollowers(e, p.id, p.user_id === currentUserId)}
+                onUnfollow={() => setUnfollowTarget(p)}
               />
             ))}
           </div>
@@ -721,6 +766,50 @@ function LeaderboardTab() {
           onClose={() => setCopyTarget(null)}
           onSuccess={() => { setCopyTarget(null); fetchLeaderboard(); }}
         />
+      )}
+
+      {/* Unfollow confirmation modal */}
+      {unfollowTarget && createPortal(
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4"
+          onClick={() => !unfollowing && setUnfollowTarget(null)}
+        >
+          <div
+            className="w-full max-w-md bg-bg-secondary border border-border-glass rounded-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-text-primary mb-2">
+              Unfollow {unfollowTarget.provider_name}?
+            </h3>
+            <p className="text-sm text-text-secondary leading-relaxed mb-1">
+              Any open copied trades will be <span className="text-text-primary font-semibold">closed at the current market price</span>.
+            </p>
+            <p className="text-xs text-text-tertiary leading-relaxed mb-4">
+              If your copy runs on a dedicated copy account, its remaining funds are returned to
+              your main wallet. If you linked one of your own accounts, it simply stops copying —
+              the balance stays in that account.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={unfollowing}
+                onClick={() => setUnfollowTarget(null)}
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-glass text-text-secondary hover:text-text-primary disabled:opacity-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={unfollowing}
+                onClick={confirmUnfollow}
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-sell text-sell hover:bg-sell hover:text-white disabled:opacity-50 transition-all"
+              >
+                {unfollowing ? 'Stopping…' : 'Yes, unfollow'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* Followers modal */}
@@ -902,7 +991,11 @@ function MyCopiesTab() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {c.status === 'active' && (
+            {/* Refill is PAMM/MAM-only: the invest endpoint supports top-up.
+                Signal copies have no top-up API yet — the old button always
+                errored with "Already copying this provider", so it's hidden
+                until a proper signal top-up exists. */}
+            {c.status === 'active' && (c.copy_type === 'pamm' || c.copy_type === 'mam') && (
               <button
                 type="button"
                 onClick={() => openRefill(c)}
