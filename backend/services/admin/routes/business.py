@@ -309,3 +309,45 @@ async def delete_master(
         master_id=master_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )
+
+
+# ── IB commission report ─────────────────────────────────────────────────
+
+from datetime import date as _date
+
+
+@router.get("/ib/commissions")
+async def ib_commission_ledger(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    date_from: _date | None = Query(None),
+    date_to: _date | None = Query(None),
+    ib_id: uuid.UUID | None = Query(None),
+    level: int | None = Query(None, ge=1, le=2),
+    search: str | None = Query(None),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Row-level IB commission ledger with date/IB/level/search filters."""
+    return await business_service.ib_commission_ledger(
+        db, page=page, per_page=per_page, date_from=date_from, date_to=date_to,
+        ib_id=ib_id, level=level, search=search,
+    )
+
+
+@router.get("/ib/commissions/summary")
+async def ib_commission_summary(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    date_from: _date | None = Query(None),
+    date_to: _date | None = Query(None),
+    search: str | None = Query(None),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-IB totals for the window: own earnings, master-share earnings,
+    distinct generating users."""
+    return await business_service.ib_commission_summary(
+        db, page=page, per_page=per_page, date_from=date_from, date_to=date_to,
+        search=search,
+    )
