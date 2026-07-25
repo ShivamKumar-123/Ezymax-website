@@ -140,6 +140,17 @@ async def crm_referrals(
     return await crm_service.list_referrals(db, page=page, per_page=per_page, user_id=user_id)
 
 
+@router.get("/products")
+async def crm_products(
+    _: bool = Depends(verify_crm_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """FXArtha product catalogue with pricing — account types, instruments,
+    staking plans, trade insurance, VIP pass, reward store. Single call, not
+    paginated (catalogue is small)."""
+    return await crm_service.products(db)
+
+
 @router.get("/positions")
 async def crm_positions(
     page: int = Query(1, ge=1),

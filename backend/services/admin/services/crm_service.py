@@ -34,6 +34,8 @@ from packages.common.src.admin_schemas import (
     CrmTradeRow, CrmTransactionRow, CrmReferralRow,
     CrmPositionRow, CrmOrderRow, CrmLedgerRow,
     CrmRevenuePeriod, CrmMonthlyRevenue, CrmRevenueBlock,
+    CrmProducts, CrmAccountType, CrmInstrument, CrmStakingPlan,
+    CrmInsuranceTier, CrmInsuranceProduct, CrmVipProduct, CrmRewardItem,
 )
 from . import analytics_service, dashboard_service
 
@@ -777,3 +779,130 @@ async def list_ledger(
             description=r["description"], created_at=r["created_at"],
         ).model_dump())
     return PaginatedResponse(items=items, total=int(total), page=page, per_page=per_page)
+
+
+# ── Product catalogue ─────────────────────────────────────────────────────
+#
+# Read-only sales catalogue for the CRM team: account types, tradable
+# instruments, staking plans, trade-insurance tiers, VIP pass, and reward
+# store items — each with its live configured pricing. Everything comes from
+# the same catalogue tables/config the trader app itself uses.
+
+async def products(db: AsyncSession) -> CrmProducts:
+    out = CrmProducts()
+
+    # 1) Account types
+    try:
+        rows = (await db.execute(text("""
+            SELECT name, description, minimum_deposit, leverage_default, max_leverage,
+                   spread_markup_default, commission_default, commission_pct,
+                   swap_free, is_demo, is_active
+            FROM account_groups ORDER BY minimum_deposit NULLS FIRST, name
+        """))).all()
+        out.account_types = [CrmAccountType(
+            name=r._mapping["name"], description=r._mapping["description"],
+            minimum_deposit=float(r._mapping["minimum_deposit"] or 0),
+            leverage=int(r._mapping["leverage_default"]) if r._mapping["leverage_default"] is not None else None,
+            max_leverage=int(r._mapping["max_leverage"]) if r._mapping["max_leverage"] is not None else None,
+            spread_markup=float(r._mapping["spread_markup_default"] or 0),
+            commission=float(r._mapping["commission_default"] or 0),
+            commission_pct=float(r._mapping["commission_pct"]) if r._mapping["commission_pct"] is not None else None,
+            swap_free=bool(r._mapping["swap_free"]), is_demo=bool(r._mapping["is_demo"]),
+            is_active=bool(r._mapping["is_active"]),
+        ) for r in rows]
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback(); _log.warning("crm products account_types failed: %s", exc)
+
+    # 2) Instruments (+ per-instrument config)
+    try:
+        rows = (await db.execute(text("""
+            SELECT i.symbol, i.display_name, seg.name AS segment,
+                   i.base_currency, i.quote_currency,
+                   ic.spread_value, ic.spread_type, ic.commission_value, ic.commission_type,
+                   ic.swap_long, ic.swap_short, COALESCE(ic.swap_free, false) AS swap_free,
+                   i.min_lot, i.max_lot, ic.leverage_max, i.is_active
+            FROM instruments i
+            LEFT JOIN instrument_segments seg ON seg.id = i.segment_id
+            LEFT JOIN instrument_configs ic ON ic.instrument_id = i.id
+            WHERE i.is_active = true
+            ORDER BY seg.name NULLS LAST, i.symbol
+        """))).all()
+        for r in (row._mapping for row in rows):
+            out.instruments.append(CrmInstrument(
+                symbol=r["symbol"], display_name=r["display_name"], segment=r["segment"],
+                base_currency=r["base_currency"], quote_currency=r["quote_currency"],
+                spread=float(r["spread_value"]) if r["spread_value"] is not None else None,
+                spread_type=r["spread_type"],
+                commission=float(r["commission_value"]) if r["commission_value"] is not None else None,
+                commission_type=r["commission_type"],
+                swap_long=float(r["swap_long"]) if r["swap_long"] is not None else None,
+                swap_short=float(r["swap_short"]) if r["swap_short"] is not None else None,
+                swap_free=bool(r["swap_free"]),
+                min_lot=float(r["min_lot"]) if r["min_lot"] is not None else None,
+                max_lot=float(r["max_lot"]) if r["max_lot"] is not None else None,
+                max_leverage=int(r["leverage_max"]) if r["leverage_max"] is not None else None,
+                is_active=bool(r["is_active"]),
+            ))
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback(); _log.warning("crm products instruments failed: %s", exc)
+
+    # 3) Staking plans
+    try:
+        rows = (await db.execute(text("""
+            SELECT slug, label, description, mode, lock_months, apy_bps, min_amount,
+                   trading_bonus_multiplier_bps, is_active
+            FROM staking_plans WHERE is_active = true ORDER BY display_order, apy_bps
+        """))).all()
+        out.staking_plans = [CrmStakingPlan(
+            slug=r._mapping["slug"], label=r._mapping["label"], description=r._mapping["description"],
+            mode=r._mapping["mode"],
+            lock_months=int(r._mapping["lock_months"]) if r._mapping["lock_months"] is not None else None,
+            apy_percent=float(r._mapping["apy_bps"] or 0) / 100.0,
+            min_amount=float(r._mapping["min_amount"] or 0),
+            trading_bonus_percent=float(r._mapping["trading_bonus_multiplier_bps"] or 0) / 100.0,
+            is_active=bool(r._mapping["is_active"]),
+        ) for r in rows]
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback(); _log.warning("crm products staking failed: %s", exc)
+
+    # 4) Reward store items
+    try:
+        rows = (await db.execute(text("""
+            SELECT slug, category, label, description, ac_price, is_active
+            FROM reward_store_items WHERE is_active = true ORDER BY display_order, ac_price
+        """))).all()
+        out.reward_store_items = [CrmRewardItem(
+            slug=r._mapping["slug"], category=r._mapping["category"], label=r._mapping["label"],
+            description=r._mapping["description"], ac_price=float(r._mapping["ac_price"] or 0),
+            is_active=bool(r._mapping["is_active"]),
+        ) for r in rows]
+    except (ProgrammingError, DBAPIError) as exc:
+        await db.rollback(); _log.warning("crm products rewards failed: %s", exc)
+
+    # 5) Insurance — live config (falls back to code defaults on any error)
+    try:
+        from packages.common.src.insurance.config import load_config, _DEFAULTS
+        from packages.common.src.insurance.pricing import TIERS, DURATIONS
+        try:
+            cfg = await load_config()
+        except Exception:  # noqa: BLE001 — config store optional; use code defaults
+            cfg = _DEFAULTS
+        out.insurance = CrmInsuranceProduct(
+            enabled=bool(getattr(cfg, "enabled", True)),
+            tiers=[CrmInsuranceTier(
+                tier=t,
+                coverage_pct=float(cfg.coverage_pct.get(t, 0)),
+                fee_multiplier=float(cfg.tier_multipliers.get(t, 1)),
+            ) for t in TIERS],
+            durations=list(DURATIONS.keys()),
+            duration_fee_multipliers=dict(getattr(cfg, "duration_fee_multipliers",
+                                                  {"1d": 1.0, "1w": 1.5, "1m": 2.5})),
+            fee_cap=float(getattr(cfg, "fee_cap", 0)),
+            fee_cap_high_volume=float(getattr(cfg, "fee_cap_high_volume", 0)),
+        )
+    except Exception as exc:  # noqa: BLE001 — never fail the whole catalogue on insurance
+        _log.warning("crm products insurance failed: %s", exc)
+
+    # 6) VIP — fixed product (price + boosts are platform constants)
+    out.vip = CrmVipProduct()
+    return out

@@ -1275,6 +1275,94 @@ class CrmLedgerRow(BaseModel):
     created_at: Optional[datetime] = None
 
 
+# ── Product catalogue (for the CRM sales team) ────────────────────────────
+
+class CrmAccountType(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    minimum_deposit: float = 0
+    leverage: Optional[int] = None            # default leverage (e.g. 100 = 1:100)
+    max_leverage: Optional[int] = None
+    spread_markup: float = 0                   # extra pips added on top of raw spread
+    commission: float = 0                      # per-lot commission
+    commission_pct: Optional[float] = None
+    swap_free: bool = False                    # Islamic / no overnight swap
+    is_demo: bool = False
+    is_active: bool = True
+
+
+class CrmInstrument(BaseModel):
+    symbol: str
+    display_name: Optional[str] = None
+    segment: Optional[str] = None              # forex / metals / crypto / indices …
+    base_currency: Optional[str] = None
+    quote_currency: Optional[str] = None
+    spread: Optional[float] = None
+    spread_type: Optional[str] = None          # pips / points
+    commission: Optional[float] = None
+    commission_type: Optional[str] = None      # per_lot / percent
+    swap_long: Optional[float] = None          # overnight fee (buy)
+    swap_short: Optional[float] = None         # overnight fee (sell)
+    swap_free: bool = False
+    min_lot: Optional[float] = None
+    max_lot: Optional[float] = None
+    max_leverage: Optional[int] = None
+    is_active: bool = True
+
+
+class CrmStakingPlan(BaseModel):
+    slug: str
+    label: Optional[str] = None
+    description: Optional[str] = None
+    mode: Optional[str] = None                 # flexible | locked
+    lock_months: Optional[int] = None
+    apy_percent: float = 0                      # annual yield %
+    min_amount: float = 0
+    trading_bonus_percent: float = 0           # stake→trading-bonus multiplier %
+    is_active: bool = True
+
+
+class CrmInsuranceTier(BaseModel):
+    tier: str                                  # basic / advanced / pro / elite
+    coverage_pct: float = 0                     # % of loss covered
+    fee_multiplier: float = 1                    # relative fee weight vs base
+
+
+class CrmInsuranceProduct(BaseModel):
+    enabled: bool = True
+    tiers: list[CrmInsuranceTier] = []
+    durations: list[str] = []                   # 1d / 1w / 1m
+    duration_fee_multipliers: dict = {}
+    fee_cap: float = 0                           # max fee (normal)
+    fee_cap_high_volume: float = 0               # max fee (≥ high-volume lots)
+
+
+class CrmVipProduct(BaseModel):
+    price_usd: float = 100
+    xp_boost_pct: int = 20
+    ac_boost_pct: int = 20
+    ps_boost_pct: int = 20
+
+
+class CrmRewardItem(BaseModel):
+    slug: str
+    category: Optional[str] = None             # cashback / bonus / perk / tool
+    label: Optional[str] = None
+    description: Optional[str] = None
+    ac_price: float = 0                          # price in in-app currency (AC)
+    is_active: bool = True
+
+
+class CrmProducts(BaseModel):
+    """Full FXArtha product catalogue with pricing — one call for the CRM."""
+    account_types: list[CrmAccountType] = []
+    instruments: list[CrmInstrument] = []
+    staking_plans: list[CrmStakingPlan] = []
+    insurance: CrmInsuranceProduct = CrmInsuranceProduct()
+    vip: CrmVipProduct = CrmVipProduct()
+    reward_store_items: list[CrmRewardItem] = []
+
+
 class AdminNotificationOut(BaseModel):
     id: str
     category: str
