@@ -329,8 +329,8 @@ async def list_customers(
             ibp.referral_code AS referral_code,
             (ibp.id IS NOT NULL) AS is_ib,
             COALESCE(ibp.total_earned, 0) AS ib_commission_total,
-            COALESCE(dep.total, 0) AS total_deposit,
-            COALESCE(wd.total, 0) AS total_withdrawal,
+            COALESCE(dep.total, 0) + COALESCE(ldep.total, 0) AS total_deposit,
+            COALESCE(wd.total, 0) + COALESCE(lwd.total, 0) AS total_withdrawal,
             COALESCE(th.lots, 0) + COALESCE(op.lots, 0) AS lots_traded,
             COALESCE(op.pnl, 0) AS current_pnl,
             COALESCE(th.profit, 0) AS realized_pnl,
@@ -347,9 +347,20 @@ async def list_customers(
             WHERE status IN ('approved','auto_approved') GROUP BY user_id
         ) dep ON dep.user_id = u.id
         LEFT JOIN (
-            SELECT user_id, sum(amount) AS total FROM withdrawals
-            WHERE status IN ('approved','completed') GROUP BY user_id
+            SELECT wd0.user_id, sum(wd0.amount) AS total FROM withdrawals wd0
+            WHERE wd0.status IN ('approved','completed') GROUP BY wd0.user_id
         ) wd ON wd.user_id = u.id
+        -- Admin fund-additions credited straight to the ledger (no linked
+        -- deposit row) are real settled deposits on an admin-funded platform,
+        -- so count them too — matching analytics_service / the dashboard total.
+        LEFT JOIN (
+            SELECT user_id, sum(amount) AS total FROM transactions
+            WHERE type = 'deposit' AND reference_id IS NULL GROUP BY user_id
+        ) ldep ON ldep.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, sum(abs(amount)) AS total FROM transactions
+            WHERE type = 'withdrawal' AND reference_id IS NULL GROUP BY user_id
+        ) lwd ON lwd.user_id = u.id
         LEFT JOIN (
             SELECT account_id, sum(lots) AS lots, sum(profit) AS profit, sum(commission) AS comm
             FROM trade_history GROUP BY account_id
