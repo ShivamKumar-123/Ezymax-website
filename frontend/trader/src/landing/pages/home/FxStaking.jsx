@@ -38,52 +38,59 @@ export default function FxStaking() {
         <div className="fx-bento grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-10 md:mt-14 items-stretch">
           {/* Step flow — modern vertical timeline */}
           <ScrollReveal variant="fadeUp">
-            <div className="fx-tile h-full p-6 sm:p-7 md:p-8 flex flex-col">
+            <div
+              className="fx-tile h-full p-6 sm:p-7 md:p-8 flex flex-col"
+              style={{
+                backgroundImage:
+                  'linear-gradient(180deg, rgba(13,14,17,0.42) 0%, rgba(13,14,17,0.30) 100%), url(/images/card_bg.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            >
               <span className="fx-accent-bar mb-4" />
               <h3 className="text-xl md:text-2xl font-bold text-white mb-7">
                 Stake &rarr; Earn &rarr; Trade with Utility
               </h3>
 
-              <div className="relative">
-                {/* vertical gradient rail running through the numbered nodes */}
-                <span
-                  aria-hidden
-                  className="absolute left-[23px] top-[24px] bottom-[24px] w-[3px] rounded-full"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
-                    boxShadow: '0 0 16px rgba(214,169,61,0.4)',
-                  }}
-                />
-                <ul className="relative space-y-6 md:space-y-7">
+              {/* Minimal timeline: each connector is drawn only between two
+                  consecutive nodes and sits behind them, so the line can never
+                  cross a number. Nodes are opaque for the same reason. */}
+              <div className="relative flex-1 flex flex-col justify-center">
+                <ol className="relative flex flex-col gap-7 md:gap-8">
                   {flow.map((s, i) => (
-                    <li key={s.title} className="relative flex items-start gap-5">
-                      {s.highlight ? (
-                        <div
-                          className="shrink-0 flex items-center justify-center rounded-full text-base font-extrabold"
+                    <li key={s.title} className="group relative flex items-start gap-4">
+                      {i < flow.length - 1 && (
+                        <span
+                          aria-hidden
+                          className="absolute left-[17px] top-[34px] -bottom-7 md:-bottom-8 w-px -translate-x-1/2 z-0"
                           style={{
-                            width: 48,
-                            height: 48,
                             background:
-                              'linear-gradient(180deg, #fbeaa8 0%, #ecc657 55%, #b6842a 100%)',
-                            color: '#1c1608',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            boxShadow:
-                              '0 0 0 5px rgba(214,169,61,0.14), 0 14px 30px -10px rgba(214,169,61,0.6)',
+                              'linear-gradient(180deg, rgba(221,169,46,0.55), rgba(221,169,46,0.14))',
                           }}
-                        >
-                          {i + 1}
-                        </div>
-                      ) : (
-                        <div className="fx-icon-badge shrink-0" style={{ width: 48, height: 48 }}>
-                          <span className="text-base font-bold" style={{ color: 'var(--fx-gold-light)' }}>
-                            {i + 1}
-                          </span>
-                        </div>
+                        />
                       )}
-                      <div className="pt-1.5">
+
+                      <span
+                        className="relative z-[1] shrink-0 flex items-center justify-center rounded-full text-xs font-bold transition-transform duration-300 group-hover:scale-105"
+                        style={{
+                          width: 34,
+                          height: 34,
+                          background: s.highlight
+                            ? 'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%)'
+                            : 'var(--fx-bg-elev-2)',
+                          color: s.highlight ? '#1c1608' : 'var(--fx-gold-light)',
+                          border: s.highlight
+                            ? '1px solid rgba(247,216,115,0.5)'
+                            : '1px solid rgba(221,169,46,0.32)',
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+
+                      <div className="pt-[3px]">
                         <div
-                          className="text-[11px] font-bold uppercase tracking-[0.22em] mb-1.5"
+                          className="text-[10px] font-bold uppercase tracking-[0.24em] mb-1"
                           style={{ color: 'var(--fx-gold-light)' }}
                         >
                           {s.label}
@@ -94,7 +101,7 @@ export default function FxStaking() {
                       </div>
                     </li>
                   ))}
-                </ul>
+                </ol>
               </div>
             </div>
           </ScrollReveal>
@@ -147,7 +154,7 @@ export default function FxStaking() {
 
         <ScrollReveal variant="fadeUp" delay={0.25}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Make your assets work beyond holding.&rdquo;

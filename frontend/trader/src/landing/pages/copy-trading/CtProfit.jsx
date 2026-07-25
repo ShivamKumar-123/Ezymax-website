@@ -65,8 +65,8 @@ export default function CtProfit() {
             <div
               className="mt-7 rounded-xl p-4 text-center"
               style={{
-                background: 'rgba(214,169,61,0.06)',
-                border: '1px solid rgba(214,169,61,0.30)',
+                background: 'rgba(221,169,46,0.06)',
+                border: '1px solid rgba(221,169,46,0.30)',
               }}
             >
               <div className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--fx-gold-light)' }}>
@@ -79,7 +79,7 @@ export default function CtProfit() {
 
         <ScrollReveal variant="fadeUp" delay={0.18}>
           <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;You earn only when your followers profit.&rdquo;
@@ -102,7 +102,7 @@ function FlowCard({ icon: Icon, label, title, sub, highlight = false }) {
       className="fx-tile h-full p-5 text-center flex flex-col items-center"
       style={
         highlight
-          ? { background: 'rgba(214,169,61,0.06)', borderColor: 'rgba(214,169,61,0.35)' }
+          ? { background: 'rgba(221,169,46,0.06)', borderColor: 'rgba(221,169,46,0.35)' }
           : undefined
       }
     >

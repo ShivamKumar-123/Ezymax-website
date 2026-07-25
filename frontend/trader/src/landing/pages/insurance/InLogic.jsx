@@ -88,7 +88,7 @@ export default function InLogic() {
                     width: '90%',
                     background:
                       'linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold))',
-                    boxShadow: '0 0 12px rgba(214,169,61,0.55)',
+                    boxShadow: '0 0 12px rgba(221,169,46,0.55)',
                   }}
                 />
               </div>
@@ -101,7 +101,7 @@ export default function InLogic() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Coverage applies across your activity — not individually per trade.&rdquo;
@@ -118,10 +118,10 @@ function Node({ icon: Icon, color, label, title, sub, step, highlight = false })
       className="rounded-2xl p-5 text-center relative"
       style={{
         background: highlight
-          ? 'linear-gradient(180deg, rgba(214,169,61,0.14), rgba(214,169,61,0.03))'
+          ? 'linear-gradient(180deg, rgba(221,169,46,0.14), rgba(221,169,46,0.03))'
           : 'var(--fx-bg-elev)',
         border: `1px solid ${color}55`,
-        boxShadow: highlight ? '0 16px 40px -16px rgba(214,169,61,0.45)' : 'none',
+        boxShadow: highlight ? '0 16px 40px -16px rgba(221,169,46,0.45)' : 'none',
       }}
     >
       <span
@@ -129,7 +129,7 @@ function Node({ icon: Icon, color, label, title, sub, step, highlight = false })
         style={{
           background: 'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
           color: '#1a1408',
-          boxShadow: '0 6px 14px -6px rgba(214,169,61,0.55)',
+          boxShadow: '0 6px 14px -6px rgba(221,169,46,0.55)',
         }}
       >
         {step}

@@ -89,9 +89,9 @@ export default function InDuration() {
                     <span
                       className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase"
                       style={{
-                        background: 'rgba(214,169,61,0.12)',
+                        background: 'rgba(221,169,46,0.12)',
                         color: 'var(--fx-gold-light)',
-                        border: '1px solid rgba(214,169,61,0.35)',
+                        border: '1px solid rgba(221,169,46,0.35)',
                       }}
                     >
                       {d.tag}
@@ -110,7 +110,7 @@ export default function InDuration() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Coverage stays active for the selected duration — not per trade.&rdquo;

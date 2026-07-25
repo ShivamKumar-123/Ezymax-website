@@ -1,40 +1,47 @@
-﻿import { Fragment } from 'react'
-import Icon3D from '@/landing/components/Icons3d'
+﻿import {
+  Wallet,
+  UserCheck,
+  LayoutDashboard,
+  ArrowDownToLine,
+  Activity,
+  Coins,
+  ArrowUpFromLine,
+} from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const steps = [
   {
-    icon: 'wallet',
+    icon: Wallet,
     title: 'Connect Your Wallet',
     desc: 'Securely connect your wallet to begin.',
   },
   {
-    icon: 'profile',
+    icon: UserCheck,
     title: 'Complete Your Profile',
     desc: 'Access your dashboard, manage settings, and prepare your account.',
   },
   {
-    icon: 'dashboard',
+    icon: LayoutDashboard,
     title: 'Create Trading Account',
     desc: 'Use FX Artha App or connect external environment (e.g., MT5).',
   },
   {
-    icon: 'allocate',
+    icon: ArrowDownToLine,
     title: 'Allocate Funds',
     desc: 'Move funds into the trading contract — not to a broker.',
   },
   {
-    icon: 'trading',
+    icon: Activity,
     title: 'Start Trading',
     desc: 'Execute trades using your selected trading account.',
   },
   {
-    icon: 'coins',
+    icon: Coins,
     title: 'Automatic P&L',
     desc: 'Profits credited and losses adjusted automatically.',
   },
   {
-    icon: 'withdraw',
+    icon: ArrowUpFromLine,
     title: 'Withdraw Anytime',
     desc: 'Direct settlement back to your wallet without delays.',
   },
@@ -65,40 +72,21 @@ export default function FxHowItWorks() {
           </ScrollReveal>
         </div>
 
-        {/* ── Interlocking puzzle-step chain (scrolls on smaller screens) ── */}
-        <div className="mt-12 md:mt-16 xl:overflow-visible">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 xl:flex xl:items-stretch xl:gap-0 xl:min-w-0 py-2">
+        {/* ── Seven stations threaded on one continuous rail ── */}
+        <div className="mt-14 md:mt-20">
+          <div className="fx-station-grid grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-x-7 gap-y-12 md:gap-y-14">
             {steps.map((step, i) => {
-              const isLast = i === steps.length - 1
+              const Icon = step.icon
               return (
-                <Fragment key={step.title}>
-                  <ScrollReveal
-                    variant="fadeUp"
-                    delay={i * 0.05}
-                    className="basis-[190px] shrink-0 xl:basis-0 xl:grow xl:min-w-0"
-                  >
-                    <div className="fx-puzzle-piece h-full px-4 py-7 md:py-8 flex flex-col items-center text-center">
-                      <div className="fx-icon-badge mb-4" style={{ width: 60, height: 60 }}>
-                        <Icon3D name={step.icon} size={40} />
-                      </div>
-                      <span className="fx-puzzle-divider mb-3.5" />
-                      <h3 className="text-[12px] md:text-[13px] font-bold uppercase tracking-[0.14em] text-white leading-snug mb-2.5">
-                        {step.title}
-                      </h3>
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
-                        {step.desc}
-                      </p>
-                    </div>
-                  </ScrollReveal>
-
-                  {!isLast && (
-                    <div className="relative z-[3] w-5 md:w-4 shrink-0 hidden xl:block" aria-hidden="true">
-                      <span
-                        className={`fx-puzzle-neck ${i % 2 === 0 ? 'fx-puzzle-neck-top' : 'fx-puzzle-neck-bottom'}`}
-                      />
-                    </div>
-                  )}
-                </Fragment>
+              <ScrollReveal key={step.title} variant="fadeUp" delay={i * 0.06}>
+                <div className="fx-station">
+                  <div className="fx-station-node fx-icon-badge">
+                    <Icon size={22} />
+                  </div>
+                  <h3 className="fx-station-title">{step.title}</h3>
+                  <p className="fx-station-desc">{step.desc}</p>
+                </div>
+              </ScrollReveal>
               )
             })}
           </div>
@@ -106,7 +94,7 @@ export default function FxHowItWorks() {
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Structured flow. No manual control. Fully system-driven.&rdquo;

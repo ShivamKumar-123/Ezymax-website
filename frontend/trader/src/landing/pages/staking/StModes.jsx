@@ -86,8 +86,8 @@ export default function StModes() {
               <div
                 className="mt-auto rounded-xl px-4 py-3 text-xs"
                 style={{
-                  background: 'rgba(214,169,61,0.06)',
-                  border: '1px solid rgba(214,169,61,0.30)',
+                  background: 'rgba(221,169,46,0.06)',
+                  border: '1px solid rgba(221,169,46,0.30)',
                   color: 'var(--fx-gold-light)',
                 }}
               >

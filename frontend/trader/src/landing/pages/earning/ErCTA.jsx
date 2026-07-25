@@ -11,16 +11,16 @@ export default function ErCTA() {
             className="relative rounded-3xl p-8 md:p-12 lg:p-14 overflow-hidden"
             style={{
               background:
-                'linear-gradient(135deg, rgba(214,169,61,0.18) 0%, var(--fx-bg-elev-2) 60%), var(--fx-bg-elev)',
-              border: '1px solid rgba(214,169,61,0.35)',
-              boxShadow: '0 40px 80px -30px rgba(214,169,61,0.35)',
+                'linear-gradient(135deg, rgba(221,169,46,0.18) 0%, var(--fx-bg-elev-2) 60%), var(--fx-bg-elev)',
+              border: '1px solid rgba(221,169,46,0.35)',
+              boxShadow: '0 40px 80px -30px rgba(221,169,46,0.35)',
             }}
           >
             <div
               className="absolute -top-px left-[8%] right-[8%] h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(214,169,61,0.85), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(221,169,46,0.85), transparent)',
               }}
             />
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />

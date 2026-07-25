@@ -53,17 +53,17 @@ export default function FxPageBanner({
     >
       <div className="fx-container py-8 md:py-10 lg:py-12">
         {image ? (
-          <div className="relative overflow-hidden rounded-2xl">
+          <div className="fx-banner">
             <img src={image} alt={alt} className="w-full h-auto block" />
 
             {tagline && (
               <>
                 <div
                   aria-hidden
-                  className="absolute inset-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none fx-banner-copy"
                   style={{ background: scrim }}
                 />
-                <div className={`absolute inset-0 flex items-center ${justify}`}>
+                <div className={`absolute inset-0 flex items-center fx-banner-copy ${justify}`}>
                   <div
                     className={`px-[7%] md:px-[8%] ${textAlign}`}
                     style={{ maxWidth: align === 'center' ? '80%' : '52%' }}

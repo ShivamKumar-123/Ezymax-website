@@ -94,7 +94,7 @@ export default function AbEcosystem() {
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Every feature is designed to strengthen the ecosystem experience.&rdquo;
