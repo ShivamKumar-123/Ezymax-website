@@ -79,7 +79,7 @@ export default function CtMaster() {
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
                       style={{ color: 'var(--fx-gold-light)' }}
                     >
-                      Path 1 Â· For Professionals
+                      Path 1 · For Professionals
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       Apply with Verified P&amp;L
@@ -89,9 +89,9 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(214,169,61,0.15)',
+                    background: 'rgba(221,169,46,0.15)',
                     color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(214,169,61,0.35)',
+                    border: '1px solid rgba(221,169,46,0.35)',
                   }}
                 >
                   Verification
@@ -134,7 +134,7 @@ export default function CtMaster() {
                       className="text-[11px] uppercase tracking-[0.22em] font-bold"
                       style={{ color: 'var(--fx-gold-light)' }}
                     >
-                      Path 2 Â· For Platform Users
+                      Path 2 · For Platform Users
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       Qualify Through FX Artha
@@ -144,9 +144,9 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(214,169,61,0.15)',
+                    background: 'rgba(221,169,46,0.15)',
                     color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(214,169,61,0.35)',
+                    border: '1px solid rgba(221,169,46,0.35)',
                   }}
                 >
                   Performance
@@ -156,8 +156,8 @@ export default function CtMaster() {
               <div
                 className="mb-4 px-4 py-2.5 rounded-xl text-xs font-semibold inline-flex items-center gap-2"
                 style={{
-                  background: 'rgba(214,169,61,0.08)',
-                  border: '1px solid rgba(214,169,61,0.32)',
+                  background: 'rgba(221,169,46,0.08)',
+                  border: '1px solid rgba(221,169,46,0.32)',
                   color: 'var(--fx-gold-light)',
                 }}
               >
@@ -190,7 +190,7 @@ export default function CtMaster() {
 
         <ScrollReveal variant="fadeUp" delay={0.18}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Only consistent performers become leaders.&rdquo;

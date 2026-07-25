@@ -308,9 +308,16 @@ async def ib_dashboard(user_id: UUID, db: AsyncSession) -> dict:
 
     base_url = _get_frontend_url()
 
+    # Master IB flag — drives the portal's "Introduce an IB" card. A Master
+    # IB's referral link doubles as the IB-introduction link: registrations
+    # through it are the prerequisite for an IB application (see apply_ib).
+    role_q = await db.execute(select(User.role).where(User.id == profile.user_id))
+    is_master_ib = (role_q.scalar_one_or_none() == "sub_broker")
+
     return {
         "referral_code": profile.referral_code,
         "referral_link": f"{base_url}/auth/register?ref={profile.referral_code}",
+        "is_master_ib": is_master_ib,
         "level": profile.level,
         "total_referrals": total_referrals,
         "total_commission": float(total_comm),

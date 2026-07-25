@@ -77,6 +77,33 @@ export default function OverviewPage() {
         </div>
       </section>
 
+      {/* Master IB — the referral link doubles as the IB-introduction link. */}
+      {d.is_master_ib && d.referral_link && (
+        <section className="rounded-2xl border border-accent/40 bg-accent/5 p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-text-primary">Introduce an IB</h2>
+              <p className="mt-1 text-xs leading-relaxed text-text-secondary max-w-xl">
+                As a <span className="font-semibold text-accent">Master IB</span>, you introduce new IBs with this
+                link. Anyone who registers through it becomes your direct referral — when they apply as an IB and
+                are approved, they are automatically linked under you, and you earn your share of every commission
+                they generate.
+              </p>
+            </div>
+            <div className="flex w-full max-w-md items-center gap-2 sm:shrink-0">
+              <input type="text" readOnly value={d.referral_link} className="min-w-0 flex-1 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2 font-mono text-xs text-text-primary outline-none" />
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard.writeText(d.referral_link); toast.success('Introduction link copied!'); }}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-accent/90"
+              >
+                <CopyIcon size={13} /> Copy link
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {cards.map((c) => <StatCard key={c.label} {...c} />)}
       </div>

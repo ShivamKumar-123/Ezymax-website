@@ -58,7 +58,7 @@ export default function PrFlow() {
                   style={{
                     background:
                       'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
-                    boxShadow: '0 0 16px rgba(214,169,61,0.4)',
+                    boxShadow: '0 0 16px rgba(221,169,46,0.4)',
                   }}
                 />
                 <ul className="relative space-y-6 md:space-y-7">
@@ -104,7 +104,7 @@ export default function PrFlow() {
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Every step is system-driven. No manual control involved.&rdquo;

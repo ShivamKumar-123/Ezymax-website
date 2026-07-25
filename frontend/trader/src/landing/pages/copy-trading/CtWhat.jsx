@@ -75,7 +75,7 @@ export default function CtWhat() {
                     className="rounded-xl p-4 text-center"
                     style={{
                       background: 'var(--fx-bg-elev)',
-                      border: '1px solid rgba(214,169,61,0.35)',
+                      border: '1px solid rgba(221,169,46,0.35)',
                     }}
                   >
                     <div className="feature-icon mx-auto mb-2" style={{ width: 36, height: 36 }}>
@@ -96,7 +96,7 @@ export default function CtWhat() {
                     className="rounded-xl p-4 text-center"
                     style={{
                       background: 'var(--fx-bg-elev)',
-                      border: '1px solid rgba(214,169,61,0.30)',
+                      border: '1px solid rgba(221,169,46,0.30)',
                     }}
                   >
                     <div className="feature-icon mx-auto mb-2" style={{ width: 36, height: 36 }}>
@@ -120,7 +120,7 @@ export default function CtWhat() {
                 <div className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--fx-text-3)' }}>
                   Your Allocation
                 </div>
-                <div className="text-lg font-extrabold gradient-text">$500 Â· 1Ã— ratio</div>
+                <div className="text-lg font-extrabold gradient-text">$500 · 1× ratio</div>
               </div>
             </div>
           </ScrollReveal>
@@ -128,7 +128,7 @@ export default function CtWhat() {
 
         <ScrollReveal variant="fadeUp" delay={0.15}>
           <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Follow real performance — not predictions.&rdquo;

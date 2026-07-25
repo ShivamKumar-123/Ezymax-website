@@ -26,14 +26,14 @@ function IconShell({ name, size = 46, children }) {
       <defs>
         {/* main gold body: light top-left → deep gold bottom-right */}
         <linearGradient id={gId} x1="14" y1="8" x2="50" y2="58" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fdeeb0" />
-          <stop offset="0.42" stopColor="#ecc657" />
-          <stop offset="1" stopColor="#a9781f" />
+          <stop stopColor="#f7d873" />
+          <stop offset="0.42" stopColor="#f0c94f" />
+          <stop offset="1" stopColor="#8f6a18" />
         </linearGradient>
         {/* darker gold for backs / recessed faces */}
         <linearGradient id={gdId} x1="32" y1="8" x2="32" y2="58" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#c99a34" />
-          <stop offset="1" stopColor="#7c561a" />
+          <stop stopColor="#dda92e" />
+          <stop offset="1" stopColor="#8f6a18" />
         </linearGradient>
         {/* specular highlight on the top */}
         <linearGradient id={ghId} x1="32" y1="6" x2="32" y2="36" gradientUnits="userSpaceOnUse">
@@ -43,7 +43,7 @@ function IconShell({ name, size = 46, children }) {
         {/* depth shadow + subtle gold ambient glow */}
         <filter id={shId} x="-40%" y="-35%" width="180%" height="180%">
           <feDropShadow dx="0" dy="2.4" stdDeviation="1.8" floodColor="#3a2708" floodOpacity="0.55" />
-          <feDropShadow dx="0" dy="0" stdDeviation="3.2" floodColor="#ecc657" floodOpacity="0.35" />
+          <feDropShadow dx="0" dy="0" stdDeviation="3.2" floodColor="#f0c94f" floodOpacity="0.35" />
         </filter>
       </defs>
       <g filter={`url(#${shId})`}>
@@ -64,7 +64,7 @@ function Wallet(p) {
           <rect x="9" y="23" width="46" height="27" rx="8" fill={g} />
           <path d="M17 23h30a8 8 0 0 1 8 8v0H9v0a8 8 0 0 1 8-8Z" fill={gh} opacity="0.5" />
           <circle cx="45" cy="36" r="5.5" fill={gd} />
-          <circle cx="45" cy="36" r="2.4" fill="#fdeeb0" />
+          <circle cx="45" cy="36" r="2.4" fill="#f7d873" />
         </>
       )}
     </IconShell>
@@ -80,7 +80,7 @@ function Profile(p) {
           <circle cx="30" cy="21" r="11" fill={g} />
           <ellipse cx="30" cy="15" rx="7" ry="4" fill={gh} opacity="0.55" />
           <circle cx="47" cy="45" r="10" fill={gd} />
-          <path d="M42.5 45.5l3.2 3.2 5.8-6" stroke="#fdeeb0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M42.5 45.5l3.2 3.2 5.8-6" stroke="#f7d873" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </>
       )}
     </IconShell>

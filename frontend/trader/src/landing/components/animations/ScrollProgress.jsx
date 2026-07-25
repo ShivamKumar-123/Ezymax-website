@@ -9,7 +9,7 @@ const ScrollProgress = () => {
         scaleX: scrollYProgress,
         transformOrigin: 'left',
         height: 3,
-        background: 'linear-gradient(to right, #1A56FF, #7B2FFF)',
+        background: 'linear-gradient(to right, var(--fx-gold-dark), var(--fx-gold), var(--fx-gold-sheen))',
         position: 'fixed',
         top: 0,
         left: 0,

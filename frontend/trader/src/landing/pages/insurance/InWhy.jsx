@@ -79,7 +79,7 @@ export default function InWhy() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Structured protection helps you stay consistent.&rdquo;

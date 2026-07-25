@@ -18,16 +18,16 @@ function Circle({ variant, title, text }) {
           ? {
               background:
                 'radial-gradient(125% 125% at 30% 22%, #24262e 0%, #0c0d11 55%, #060709 100%)',
-              border: '1px solid rgba(214,169,61,0.18)',
+              border: '1px solid rgba(221,169,46,0.18)',
               boxShadow:
                 '0 44px 100px -34px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)',
             }
           : {
               background:
-                'radial-gradient(120% 120% at 60% 28%, #fbeaa8 0%, #ecc657 45%, #b6842a 100%)',
-              border: '1px solid rgba(255,255,255,0.22)',
+                'radial-gradient(120% 120% at 60% 28%, var(--fx-gold-sheen) 0%, var(--fx-gold) 48%, var(--fx-gold-dark) 100%)',
+              border: '1px solid rgba(247,216,115,0.35)',
               boxShadow:
-                '0 44px 110px -30px rgba(214,169,61,0.6), inset 0 2px 10px rgba(255,255,255,0.5)',
+                '0 44px 110px -30px rgba(221,169,46,0.6), inset 0 2px 10px rgba(247,216,115,0.45)',
             }
       }
     >
@@ -88,7 +88,7 @@ export default function FxProblemSolution() {
               className="w-[720px] h-[520px] max-w-none"
               style={{
                 background:
-                  'radial-gradient(closest-side, rgba(214,169,61,0.14), rgba(214,169,61,0) 72%)',
+                  'radial-gradient(closest-side, rgba(221,169,46,0.14), rgba(221,169,46,0) 72%)',
                 filter: 'blur(20px)',
               }}
             />
@@ -108,7 +108,7 @@ export default function FxProblemSolution() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-8 md:mt-4 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-4 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Control stays with you. Execution stays with the system.&rdquo;

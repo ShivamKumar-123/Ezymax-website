@@ -50,7 +50,7 @@ export default function CtFee() {
                     width: '75%',
                     background:
                       'linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold))',
-                    boxShadow: '0 0 12px rgba(214,169,61,0.5)',
+                    boxShadow: '0 0 12px rgba(221,169,46,0.5)',
                   }}
                 />
                 <div
@@ -58,8 +58,8 @@ export default function CtFee() {
                   style={{
                     width: '25%',
                     background:
-                      'linear-gradient(90deg, rgba(214,169,61,0.35), rgba(214,169,61,0.6))',
-                    boxShadow: '0 0 12px rgba(214,169,61,0.4)',
+                      'linear-gradient(90deg, rgba(221,169,46,0.35), rgba(221,169,46,0.6))',
+                    boxShadow: '0 0 12px rgba(221,169,46,0.4)',
                   }}
                 />
               </div>
@@ -75,7 +75,7 @@ export default function CtFee() {
                 <div className="flex items-center gap-2 justify-end">
                   <span
                     className="w-2 h-2 rounded-full"
-                    style={{ background: 'rgba(214,169,61,0.55)' }}
+                    style={{ background: 'rgba(221,169,46,0.55)' }}
                   />
                   <span style={{ color: 'var(--fx-text-2)' }}>Platform</span>
                 </div>
@@ -138,7 +138,7 @@ export default function CtFee() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Aligned incentives across all participants.&rdquo;
@@ -160,16 +160,16 @@ function Row({ icon: Icon, label, value, note, highlight = false }) {
     <div
       className="flex items-center justify-between rounded-xl px-4 py-3"
       style={{
-        background: highlight ? 'rgba(214,169,61,0.10)' : 'rgba(255,255,255,0.03)',
-        border: highlight ? '1px solid rgba(214,169,61,0.35)' : '1px solid var(--fx-line-strong)',
+        background: highlight ? 'rgba(221,169,46,0.10)' : 'rgba(255,255,255,0.03)',
+        border: highlight ? '1px solid rgba(221,169,46,0.35)' : '1px solid var(--fx-line-strong)',
       }}
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           style={{
-            background: 'rgba(214,169,61,0.12)',
-            border: '1px solid rgba(214,169,61,0.35)',
+            background: 'rgba(221,169,46,0.12)',
+            border: '1px solid rgba(221,169,46,0.35)',
           }}
         >
           <Icon size={14} style={{ color: 'var(--fx-gold-light)' }} />

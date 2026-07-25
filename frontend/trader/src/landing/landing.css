@@ -17,10 +17,14 @@
   --fx-line:         rgba(255, 255, 255, 0.06);
   --fx-line-strong:  rgba(255, 255, 255, 0.12);
 
-  --fx-gold:         #d6a93d;   /* primary accent — matches logo */
-  --fx-gold-light:   #ecc657;   /* highlight */
-  --fx-gold-dark:    #9b7d3a;   /* deep gold */
-  --fx-gold-soft:    rgba(214, 169, 61, 0.12);
+  /* Gold ramp — single hue family (~43°) with rising saturation so every
+     surface reads as real gold instead of dusty beige. Use these four only;
+     never hard-code a pale cream highlight. */
+  --fx-gold-sheen:   #f7d873;   /* top-light / specular highlight */
+  --fx-gold-light:   #f0c94f;   /* highlight */
+  --fx-gold:         #dda92e;   /* primary accent — matches logo */
+  --fx-gold-dark:    #8f6a18;   /* deep gold */
+  --fx-gold-soft:    rgba(221, 169, 46, 0.12);
 
   --fx-text:         #f5f5f5;
   --fx-text-2:       rgba(245, 245, 245, 0.72);
@@ -37,20 +41,43 @@
   color: var(--fx-text);
   overflow-x: hidden;
   font-feature-settings: 'ss01', 'cv11';
+  /* Light type on a dark canvas renders optically heavier than it should;
+     antialiasing pulls the weight back so text reads crisp, not smeared. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Reset trader-app font/radius shrinks inside the landing wrapper */
-.landing-root .text-xs   { font-size: 0.75rem !important;  line-height: 1rem !important; }
-.landing-root .text-sm   { font-size: 0.875rem !important; line-height: 1.25rem !important; }
-.landing-root .text-base { font-size: 1rem !important;     line-height: 1.5rem !important; }
-.landing-root .text-lg   { font-size: 1.125rem !important; line-height: 1.75rem !important; }
-.landing-root .text-xl   { font-size: 1.25rem !important;  line-height: 1.75rem !important; }
-.landing-root .text-2xl  { font-size: 1.5rem !important;   line-height: 2rem !important; }
-.landing-root .text-3xl  { font-size: 1.875rem !important; line-height: 2.25rem !important; }
-.landing-root .text-4xl  { font-size: 2.25rem !important;  line-height: 2.5rem !important; }
-.landing-root .text-5xl  { font-size: 3rem !important;     line-height: 1.05 !important; }
-.landing-root .text-6xl  { font-size: 3.75rem !important;  line-height: 1.05 !important; }
-.landing-root .text-7xl  { font-size: 4.5rem !important;   line-height: 1.02 !important; }
+/* Reset trader-app font/radius shrinks inside the landing wrapper.
+   The trader Tailwind config shrinks the whole scale (base = 13px) for a
+   dense app UI; a marketing page needs normal web sizes, so these have to
+   win with !important.
+
+   Line-heights are the reading rhythm for the entire site. Body sizes get
+   real air (~1.65) so paragraphs scan; display sizes stay tight so a
+   headline reads as one shape instead of stacked lines. */
+.landing-root .text-xs   { font-size: 0.75rem !important;  line-height: 1.15rem !important; }
+.landing-root .text-sm   { font-size: 0.875rem !important; line-height: 1.45rem !important; }
+.landing-root .text-base { font-size: 1rem !important;     line-height: 1.65rem !important; }
+.landing-root .text-lg   { font-size: 1.125rem !important; line-height: 1.85rem !important; }
+.landing-root .text-xl   { font-size: 1.25rem !important;  line-height: 1.8rem !important; }
+.landing-root .text-2xl  { font-size: 1.5rem !important;   line-height: 2.05rem !important; }
+.landing-root .text-3xl  { font-size: 1.875rem !important; line-height: 2.3rem !important; }
+.landing-root .text-4xl  { font-size: 2.25rem !important;  line-height: 2.6rem !important; }
+.landing-root .text-5xl  { font-size: 3rem !important;     line-height: 1.08 !important; }
+.landing-root .text-6xl  { font-size: 3.75rem !important;  line-height: 1.06 !important; }
+.landing-root .text-7xl  { font-size: 4.5rem !important;   line-height: 1.03 !important; }
+
+/* Tailwind's fontSize config sets font-size AND line-height together, so the
+   !important overrides above were also silently killing every `leading-*`
+   class in the components. Re-declare them here — after the scale — so a
+   component that deliberately asks for tight or relaxed leading gets it. */
+.landing-root .leading-none    { line-height: 1 !important; }
+.landing-root .leading-tight   { line-height: 1.25 !important; }
+.landing-root .leading-snug    { line-height: 1.4 !important; }
+.landing-root .leading-normal  { line-height: 1.55 !important; }
+.landing-root .leading-relaxed { line-height: 1.7 !important; }
+.landing-root .leading-loose   { line-height: 1.95 !important; }
 
 .landing-root .rounded-sm   { border-radius: 0.125rem !important; }
 .landing-root .rounded      { border-radius: 0.25rem !important; }
@@ -80,9 +107,9 @@
     height: 1px;
     background: linear-gradient(90deg,
       transparent,
-      rgba(214,169,61,0.55) 25%,
-      rgba(236,198,87,0.95) 50%,
-      rgba(214,169,61,0.55) 75%,
+      rgba(221,169,46,0.55) 25%,
+      rgba(240,201,79,0.95) 50%,
+      rgba(221,169,46,0.55) 75%,
       transparent);
     opacity: .55;
     pointer-events: none;
@@ -96,7 +123,7 @@
     position: absolute;
     top: -1px; left: 0; right: 0;
     height: 36px;
-    background: radial-gradient(60% 100% at 50% 0%, rgba(214,169,61,0.22), transparent 80%);
+    background: radial-gradient(60% 100% at 50% 0%, rgba(221,169,46,0.22), transparent 80%);
     pointer-events: none;
     opacity: 0;
     transition: opacity .35s ease;
@@ -104,10 +131,10 @@
   .fx-card:hover,
   .fx-card.fx-tapped {
     transform: translateY(-3px);
-    border-color: rgba(214,169,61,0.28);
+    border-color: rgba(221,169,46,0.28);
     box-shadow:
       0 26px 55px -22px rgba(0,0,0,0.75),
-      0 0 0 1px rgba(214,169,61,0.08) inset;
+      0 0 0 1px rgba(221,169,46,0.08) inset;
   }
   .fx-card:hover::before,
   .fx-card.fx-tapped::before { left: 0; right: 0; opacity: 1; }
@@ -115,8 +142,8 @@
   .fx-card.fx-tapped::after  { opacity: 1; }
 
   .fx-card-gold {
-    background: linear-gradient(180deg, rgba(214,169,61,0.06) 0%, rgba(214,169,61,0) 60%), var(--fx-bg-elev);
-    border: 1px solid rgba(214, 169, 61, 0.18);
+    background: linear-gradient(180deg, rgba(221,169,46,0.06) 0%, rgba(221,169,46,0) 60%), var(--fx-bg-elev);
+    border: 1px solid rgba(221,169,46, 0.18);
     border-radius: 1rem;
   }
 
@@ -129,11 +156,32 @@
     padding: .75rem 1.4rem;
     border-radius: 9999px;
     border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(214,169,61,0.25);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(221,169,46,0.25);
     transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
   }
-  .fx-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-  .fx-btn-primary:active { transform: translateY(0); }
+  /* Light sweeps across the face on hover — reads as polished metal
+     rather than a flat fill. Sits above the gradient, below the label. */
+  .fx-btn-primary { position: relative; overflow: hidden; isolation: isolate; }
+  .fx-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(105deg,
+      transparent 38%,
+      rgba(255,255,255,0.45) 50%,
+      transparent 62%);
+    transform: translateX(-130%);
+    transition: transform .65s cubic-bezier(.2,.7,.2,1);
+    pointer-events: none;
+  }
+  .fx-btn-primary:hover::before { transform: translateX(130%); }
+  .fx-btn-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 12px 30px rgba(221,169,46,0.36);
+  }
+  .fx-btn-primary:active { transform: translateY(0); filter: brightness(0.99); }
 
   .fx-btn-ghost {
     display: inline-flex; align-items: center; gap: .5rem;
@@ -145,7 +193,7 @@
     border: 1px solid var(--fx-line-strong);
     transition: background .2s ease, border-color .2s ease;
   }
-  .fx-btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(214,169,61,0.4); }
+  .fx-btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(221,169,46,0.4); }
 
   .fx-btn-link {
     display: inline-flex; align-items: center; gap: .35rem;
@@ -176,6 +224,9 @@
     letter-spacing: -0.02em;
     color: var(--fx-text);
     line-height: 1.04;
+    /* Even, deliberate line breaks instead of a long line + orphan word.
+       This is the difference between "typeset" and "just wrapped". */
+    text-wrap: balance;
   }
 
   .fx-gold-text {
@@ -215,8 +266,8 @@
     pointer-events: none;
     z-index: 0;
     background:
-      radial-gradient(60% 50% at 85% 0%,  rgba(214,169,61,0.06) 0%, rgba(214,169,61,0) 60%),
-      radial-gradient(45% 40% at 10% 100%, rgba(214,169,61,0.05) 0%, rgba(214,169,61,0) 60%);
+      radial-gradient(60% 50% at 85% 0%,  rgba(221,169,46,0.06) 0%, rgba(221,169,46,0) 60%),
+      radial-gradient(45% 40% at 10% 100%, rgba(221,169,46,0.05) 0%, rgba(221,169,46,0) 60%);
   }
   .fx-section > *,
   .section-padding > * { position: relative; z-index: 1; }
@@ -232,7 +283,7 @@
     left: 10%;
     right: 10%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(214,169,61,0.35), transparent);
+    background: linear-gradient(90deg, transparent, rgba(221,169,46,0.35), transparent);
     pointer-events: none;
     z-index: 1;
   }
@@ -254,14 +305,14 @@
     border-radius: 1.5rem;
     padding: 2rem 1.5rem;
     background:
-      radial-gradient(120% 90% at 0% 0%, rgba(214,169,61,0.05), rgba(214,169,61,0) 55%),
-      radial-gradient(110% 80% at 100% 100%, rgba(214,169,61,0.03), rgba(214,169,61,0) 60%),
+      radial-gradient(120% 90% at 0% 0%, rgba(221,169,46,0.05), rgba(221,169,46,0) 55%),
+      radial-gradient(110% 80% at 100% 100%, rgba(221,169,46,0.03), rgba(221,169,46,0) 60%),
       linear-gradient(180deg, rgba(22,24,28,0.96) 0%, rgba(13,14,17,0.96) 100%);
     border: 1px solid rgba(255,255,255,0.06);
     box-shadow:
       0 1px 0 rgba(255,255,255,0.04) inset,
       0 30px 80px -40px rgba(0,0,0,0.85),
-      0 0 0 1px rgba(214,169,61,0.04);
+      0 0 0 1px rgba(221,169,46,0.04);
     overflow: hidden;
   }
   .fx-section-frame::before {
@@ -272,9 +323,9 @@
     height: 1px;
     background: linear-gradient(90deg,
       transparent,
-      rgba(214,169,61,0.45) 30%,
-      rgba(236,198,87,0.7) 50%,
-      rgba(214,169,61,0.45) 70%,
+      rgba(221,169,46,0.45) 30%,
+      rgba(240,201,79,0.7) 50%,
+      rgba(221,169,46,0.45) 70%,
       transparent);
     opacity: .55;
     pointer-events: none;
@@ -305,7 +356,7 @@
     width: 100%;
     border-radius: 1rem;
     background:
-      radial-gradient(110% 80% at 50% 30%, rgba(214,169,61,0.10), rgba(214,169,61,0) 65%),
+      radial-gradient(110% 80% at 50% 30%, rgba(221,169,46,0.10), rgba(221,169,46,0) 65%),
       linear-gradient(180deg, rgba(28,30,34,1) 0%, rgba(16,17,20,1) 100%);
     border: 1px solid rgba(255,255,255,0.06);
     overflow: hidden;
@@ -317,7 +368,7 @@
     position: absolute;
     width: 22px;
     height: 22px;
-    border-color: rgba(214,169,61,0.45);
+    border-color: rgba(221,169,46,0.45);
     border-style: solid;
     border-width: 0;
     pointer-events: none;
@@ -336,8 +387,8 @@
   }
   .fx-image-slot:hover {
     transform: translateY(-2px);
-    border-color: rgba(214,169,61,0.25);
-    box-shadow: 0 24px 60px -28px rgba(214,169,61,0.20);
+    border-color: rgba(221,169,46,0.25);
+    box-shadow: 0 24px 60px -28px rgba(221,169,46,0.20);
   }
   /* Aspect ratios for slot variants. */
   .fx-image-slot-4x3   { aspect-ratio: 4 / 3; }
@@ -360,9 +411,9 @@
     aspect-ratio: 3 / 1;
     border-radius: 1rem;
     background:
-      radial-gradient(120% 90% at 50% 0%, rgba(214,169,61,0.10), rgba(214,169,61,0) 60%),
+      radial-gradient(120% 90% at 50% 0%, rgba(221,169,46,0.10), rgba(221,169,46,0) 60%),
       linear-gradient(180deg, rgba(20,22,26,1) 0%, rgba(12,13,16,1) 100%);
-    border: 1px dashed rgba(214,169,61,0.22);
+    border: 1px dashed rgba(221,169,46,0.22);
     overflow: hidden;
     margin: 2rem 0 0;
     transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
@@ -379,7 +430,7 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    border-color: rgba(214,169,61,0.45);
+    border-color: rgba(221,169,46,0.45);
     border-style: solid;
     border-width: 0;
     pointer-events: none;
@@ -397,9 +448,9 @@
     border-bottom-right-radius: 6px;
   }
   .fx-section-banner:hover {
-    border-color: rgba(214,169,61,0.40);
+    border-color: rgba(221,169,46,0.40);
     transform: translateY(-2px);
-    box-shadow: 0 24px 60px -28px rgba(214,169,61,0.20);
+    box-shadow: 0 24px 60px -28px rgba(221,169,46,0.20);
   }
   .fx-section-banner > span {
     position: absolute;
@@ -407,7 +458,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(214,169,61,0.55);
+    color: rgba(221,169,46,0.55);
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.28em;
@@ -424,7 +475,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    color: rgba(214,169,61,0.55);
+    color: rgba(221,169,46,0.55);
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.28em;
@@ -462,7 +513,7 @@
     position: absolute;
     top: 0; left: 0; right: 30%;
     height: 1px;
-    background: linear-gradient(90deg, rgba(214,169,61,0.45), rgba(214,169,61,0));
+    background: linear-gradient(90deg, rgba(221,169,46,0.45), rgba(221,169,46,0));
   }
 
   /* ── Decorative ────────────────────────────────────────── */
@@ -477,8 +528,8 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(60% 50% at 80% 30%, rgba(214,169,61,0.18) 0%, rgba(214,169,61,0) 60%),
-      radial-gradient(40% 40% at 20% 90%, rgba(214,169,61,0.08) 0%, rgba(214,169,61,0) 60%);
+      radial-gradient(60% 50% at 80% 30%, rgba(221,169,46,0.18) 0%, rgba(221,169,46,0) 60%),
+      radial-gradient(40% 40% at 20% 90%, rgba(221,169,46,0.08) 0%, rgba(221,169,46,0) 60%);
   }
 
   .fx-grid-bg {
@@ -527,9 +578,9 @@
     height: 1px;
     background: linear-gradient(90deg,
       transparent,
-      rgba(214,169,61,0.55) 25%,
-      rgba(236,198,87,0.95) 50%,
-      rgba(214,169,61,0.55) 75%,
+      rgba(221,169,46,0.55) 25%,
+      rgba(240,201,79,0.95) 50%,
+      rgba(221,169,46,0.55) 75%,
       transparent);
     opacity: .55;
     pointer-events: none;
@@ -543,7 +594,7 @@
     position: absolute;
     top: -1px; left: 0; right: 0;
     height: 36px;
-    background: radial-gradient(60% 100% at 50% 0%, rgba(214,169,61,0.22), transparent 80%);
+    background: radial-gradient(60% 100% at 50% 0%, rgba(221,169,46,0.22), transparent 80%);
     pointer-events: none;
     opacity: 0;
     transition: opacity .35s ease;
@@ -551,64 +602,57 @@
   .glass-card:hover,
   .glass-card.fx-tapped {
     transform: translateY(-3px);
-    border-color: rgba(214,169,61,0.28);
+    border-color: rgba(221,169,46,0.28);
     box-shadow:
       0 26px 55px -22px rgba(0,0,0,0.75),
-      0 0 0 1px rgba(214,169,61,0.08) inset;
+      0 0 0 1px rgba(221,169,46,0.08) inset;
   }
   .glass-card:hover::before,
   .glass-card.fx-tapped::before { left: 0; right: 0; opacity: 1; }
   .glass-card:hover::after,
   .glass-card.fx-tapped::after  { opacity: 1; }
 
-  /* Glossy gold icon badge — shared site-wide. `.feature-icon` is the icon
-     holder used across 40+ sections; `.fx-icon-badge` is the same glossy look
-     for the How It Works 3D icons. Dark-gold glass disc with a top sheen,
-     inner highlights, a gold rim and a soft ambient glow. */
+  /* Icon holder — shared site-wide across 80+ sections.
+     Deliberately flat. The previous treatment stacked a specular sheen
+     arc, an inset bevel, an ambient gold halo and a gradient-painted,
+     glow-filtered glyph — which is precisely the rendered-3D-orb look
+     that reads as machine-made. A quiet tinted squircle with a hairline
+     rim and one solid-colour glyph is what a person draws: the icon is
+     legible, and nothing competes with it. */
   .feature-icon,
   .fx-icon-badge {
     position: relative;
-    isolation: isolate;
     width: 3rem; height: 3rem;
-    border-radius: 9999px;
+    border-radius: 0.875rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--fx-gold-light);
-    background:
-      radial-gradient(78% 58% at 50% 22%, rgba(255,255,255,0.32), rgba(255,255,255,0) 55%),
-      linear-gradient(180deg, rgba(78,64,33,0.72) 0%, rgba(20,18,14,0.94) 80%);
-    border: 1px solid rgba(214,169,61,0.5);
-    box-shadow:
-      inset 0 1.5px 1px rgba(255,255,255,0.35),
-      inset 0 -7px 14px rgba(0,0,0,0.5),
-      0 10px 22px -10px rgba(0,0,0,0.7),
-      0 0 24px -6px rgba(214,169,61,0.5);
+    background: rgba(221,169,46,0.08);
+    border: 1px solid rgba(221,169,46,0.22);
+    transition: background .35s ease, border-color .35s ease;
   }
-  /* specular sheen arc across the top — the "glossy" bit */
-  .feature-icon::after,
-  .fx-icon-badge::after {
-    content: '';
-    position: absolute;
-    left: 15%; right: 15%; top: 8%; height: 38%;
-    border-radius: 9999px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0));
-    filter: blur(1px);
-    pointer-events: none;
-    z-index: 0;
+
+  /* One weight for every glyph on the site. Lucide ships at 2, which
+     goes chunky at badge sizes; 1.75 keeps the drawing precise. */
+  .feature-icon > svg,
+  .fx-icon-badge > svg {
+    stroke-width: 1.75;
   }
-  .feature-icon > *,
-  .fx-icon-badge > * { position: relative; z-index: 1; }
-  /* Glossy gold treatment on the line icons that sit inside the badge —
-     paints the lucide strokes with the shared gold gradient and adds depth +
-     a soft gold glow so they read as dimensional gold site-wide. */
-  .feature-icon > svg {
-    stroke: url(#fxIconGold);
-    filter:
-      drop-shadow(0 1px 1px rgba(0,0,0,0.55))
-      drop-shadow(0 0 3px rgba(236,198,87,0.4));
+
+  /* The container reacts to hover, not the glyph — a glowing icon is the
+     other half of the machine-made look. */
+  .fx-tile:hover .feature-icon,
+  .fx-card:hover .feature-icon,
+  .fx-station:hover .fx-icon-badge {
+    background: rgba(221,169,46,0.13);
+    border-color: rgba(221,169,46,0.4);
   }
-  .feature-icon > svg [fill]:not([fill="none"]) { fill: url(#fxIconGold); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feature-icon,
+    .fx-icon-badge { transition: none; }
+  }
 
   .badge {
     display: inline-flex;
@@ -621,9 +665,9 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     background:
-      linear-gradient(180deg, rgba(214,169,61,0.18), rgba(214,169,61,0.06));
+      linear-gradient(180deg, rgba(221,169,46,0.18), rgba(221,169,46,0.06));
     color: var(--fx-gold-light);
-    border: 1px solid rgba(214,169,61,0.32);
+    border: 1px solid rgba(221,169,46,0.32);
     box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
   }
 
@@ -635,7 +679,7 @@
     padding: .625rem 1.25rem;
     border-radius: 9999px;
     border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(214,169,61,0.25);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(221,169,46,0.25);
     font-size: 0.875rem;
     transition: transform .15s ease, filter .15s ease;
   }
@@ -655,7 +699,7 @@
   }
   .btn-ghost:hover, .btn-outline:hover {
     background: rgba(255,255,255,0.04);
-    border-color: rgba(214,169,61,0.4);
+    border-color: rgba(221,169,46,0.4);
   }
 
   .gradient-text {
@@ -741,23 +785,109 @@ canvas { display: block; }
 }
 @media (min-width: 768px) { .landing-root .fx-bento { gap: 1.5rem; } }
 
-/* ── Base tile ─────────────────────────────────────────────── */
+/* ── Body copy: avoid orphan words on the last line ──────────── */
+.landing-root p,
+.landing-root li { text-wrap: pretty; }
+
+/* ── Film grain ────────────────────────────────────────────────
+   A fine, fixed noise layer over the whole landing surface. Large flat
+   dark gradients are what make a dark UI read as synthetic; a touch of
+   grain gives it the tooth of print and hides gradient banding.
+   Non-interactive, and sits under the navbar (z-50) so chrome stays crisp. */
+.landing-root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root::after { opacity: 0.025; }
+}
+
+/* ── Accessibility: visible keyboard focus ─────────────────────
+   Keyboard users get a clear gold focus ring; mouse users never see it.
+   Applied to every interactive element inside the landing surface. */
+.landing-root a:focus-visible,
+.landing-root button:focus-visible,
+.landing-root [role="button"]:focus-visible,
+.landing-root input:focus-visible,
+.landing-root select:focus-visible,
+.landing-root textarea:focus-visible,
+.landing-root summary:focus-visible,
+.landing-root [tabindex]:focus-visible {
+  outline: 2px solid var(--fx-gold-light);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+/* Respect users who ask for less motion: keep state changes, drop movement. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-root *,
+  .landing-root *::before,
+  .landing-root *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .landing-root .fx-tile:hover,
+  .landing-root .fx-tile.fx-tapped,
+  .landing-root .fx-tile-gold:hover,
+  .landing-root .fx-tile-gold.fx-tapped,
+  .landing-root .fx-tile-media:hover { transform: none; }
+}
+
+/* ── Base tile ─────────────────────────────────────────────────
+   Layered surface: a soft top-left sheen over the base gradient so the
+   card reads as a lit object rather than a flat swatch. Rest state carries
+   a faint inner top highlight (specular edge); hover lifts subtly and warms
+   the border instead of scaling the whole card. */
 .landing-root .fx-tile {
   position: relative;
   border-radius: 1.5rem;
-  background: linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
+  background:
+    radial-gradient(120% 80% at 12% 0%, rgba(255,255,255,0.045), rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
   border: 1px solid rgba(255, 255, 255, 0.07);
   overflow: hidden;
-  transition: transform .4s cubic-bezier(.2,.7,.2,1),
-              border-color .4s ease, box-shadow .4s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 14px 34px -26px rgba(0,0,0,0.9);
+  transition: transform .45s cubic-bezier(.2,.7,.2,1),
+              border-color .45s ease, box-shadow .45s ease;
+}
+/* hairline specular edge that widens on hover — a light catching the rim */
+.landing-root .fx-tile::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 28%; right: 28%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(240,201,79,0.55) 30%,
+    rgba(247,216,115,0.9) 50%,
+    rgba(240,201,79,0.55) 70%,
+    transparent);
+  opacity: .35;
+  pointer-events: none;
+  z-index: 2;
+  transition: left .55s cubic-bezier(.2,.7,.2,1),
+              right .55s cubic-bezier(.2,.7,.2,1),
+              opacity .45s ease;
 }
 .landing-root .fx-tile:hover,
 .landing-root .fx-tile.fx-tapped {
-  transform: translateY(-4px) scale(1.035);
-  border-color: rgba(214, 169, 61, 0.30);
-  box-shadow: 0 34px 70px -34px rgba(0,0,0,.85),
-              0 0 0 1px rgba(214,169,61,0.08) inset;
+  transform: translateY(-5px);
+  border-color: rgba(221,169,46, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 32px 66px -30px rgba(0,0,0,.9),
+    0 10px 34px -22px rgba(221,169,46,0.28);
 }
+.landing-root .fx-tile:hover::before,
+.landing-root .fx-tile.fx-tapped::before { left: 6%; right: 6%; opacity: 1; }
 
 /* Golden-gradient wash that fades in on hover / tap (opt-in per tile). Sits
    behind the tile content so text stays readable. */
@@ -767,8 +897,8 @@ canvas { display: block; }
   inset: 0;
   border-radius: inherit;
   background:
-    linear-gradient(155deg, rgba(236,198,87,0.32) 0%, rgba(214,169,61,0.12) 42%, rgba(214,169,61,0) 72%),
-    radial-gradient(90% 70% at 50% 112%, rgba(236,198,87,0.20), rgba(214,169,61,0) 70%);
+    linear-gradient(155deg, rgba(240,201,79,0.32) 0%, rgba(221,169,46,0.12) 42%, rgba(221,169,46,0) 72%),
+    radial-gradient(90% 70% at 50% 112%, rgba(240,201,79,0.20), rgba(221,169,46,0) 70%);
   opacity: 0;
   transition: opacity .45s ease;
   pointer-events: none;
@@ -777,7 +907,7 @@ canvas { display: block; }
 .landing-root .fx-tile-hover-gold > * { position: relative; z-index: 1; }
 .landing-root .fx-tile-hover-gold:hover,
 .landing-root .fx-tile-hover-gold.fx-tapped {
-  border-color: rgba(214, 169, 61, 0.55);
+  border-color: rgba(221,169,46, 0.55);
 }
 .landing-root .fx-tile-hover-gold:hover::before,
 .landing-root .fx-tile-hover-gold.fx-tapped::before { opacity: 1; }
@@ -787,14 +917,19 @@ canvas { display: block; }
   position: relative;
   border-radius: 1.5rem;
   overflow: hidden;
-  background: linear-gradient(155deg, #f2d477 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%);
+  background: linear-gradient(155deg, #f7d873 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #1c1608;
-  box-shadow: 0 26px 60px -30px rgba(214,169,61,0.55);
+  box-shadow: 0 26px 60px -30px rgba(221,169,46,0.55);
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease;
 }
 .landing-root .fx-tile-gold:hover,
-.landing-root .fx-tile-gold.fx-tapped { transform: translateY(-4px) scale(1.035); }
+.landing-root .fx-tile-gold.fx-tapped {
+  transform: translateY(-5px);
+  box-shadow:
+    0 36px 78px -32px rgba(221,169,46,0.68),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+}
 .landing-root .fx-tile-gold::after {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
@@ -806,7 +941,7 @@ canvas { display: block; }
   display: block;
   width: 46px; height: 3px; border-radius: 3px;
   background: linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold));
-  box-shadow: 0 0 14px rgba(214,169,61,0.55);
+  box-shadow: 0 0 14px rgba(221,169,46,0.55);
 }
 .landing-root .fx-tile-gold .fx-accent-bar {
   background: #1c1608; box-shadow: none;
@@ -819,7 +954,7 @@ canvas { display: block; }
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
-    radial-gradient(120% 90% at 50% 20%, rgba(214,169,61,0.14), rgba(214,169,61,0) 60%),
+    radial-gradient(120% 90% at 50% 20%, rgba(221,169,46,0.14), rgba(221,169,46,0) 60%),
     linear-gradient(180deg, rgba(30,32,37,1) 0%, rgba(15,16,19,1) 100%);
   min-height: 260px;
   transition: transform .4s cubic-bezier(.2,.7,.2,1),
@@ -827,16 +962,18 @@ canvas { display: block; }
 }
 .landing-root .fx-tile-media:hover,
 .landing-root .fx-tile-media.fx-tapped {
-  transform: translateY(-4px) scale(1.035);
-  border-color: rgba(214, 169, 61, 0.30);
-  box-shadow: 0 34px 70px -34px rgba(0,0,0,.85);
+  transform: translateY(-5px);
+  border-color: rgba(221,169,46, 0.34);
+  box-shadow:
+    0 32px 66px -30px rgba(0,0,0,.9),
+    0 10px 34px -22px rgba(221,169,46,0.26);
 }
 /* corner brackets: signals "real image lands here" */
 .landing-root .fx-tile-media::before,
 .landing-root .fx-tile-media::after {
   content: '';
   position: absolute; width: 20px; height: 20px;
-  border-color: rgba(214,169,61,0.45); border-style: solid; border-width: 0;
+  border-color: rgba(221,169,46,0.45); border-style: solid; border-width: 0;
   pointer-events: none; z-index: 3;
 }
 .landing-root .fx-tile-media::before {
@@ -856,7 +993,7 @@ canvas { display: block; }
 .landing-root .fx-tile-media-label {
   position: absolute; inset: 0; z-index: 1;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(214,169,61,0.5);
+  color: rgba(221,169,46,0.5);
   font-size: .62rem; font-weight: 700; letter-spacing: .28em; text-transform: uppercase;
   pointer-events: none;
 }
@@ -866,9 +1003,9 @@ canvas { display: block; }
   position: relative;
   border-radius: 1.5rem;
   overflow: hidden;
-  border: 1px solid rgba(214, 169, 61, 0.22);
+  border: 1px solid rgba(221,169,46, 0.22);
   background:
-    radial-gradient(120% 80% at 20% 0%, rgba(214,169,61,0.16), rgba(214,169,61,0) 55%),
+    radial-gradient(120% 80% at 20% 0%, rgba(221,169,46,0.16), rgba(221,169,46,0) 55%),
     linear-gradient(180deg, rgba(24,22,16,1) 0%, rgba(13,12,10,1) 100%);
   min-height: 220px;
   transition: transform .4s cubic-bezier(.2,.7,.2,1),
@@ -877,14 +1014,14 @@ canvas { display: block; }
 .landing-root .fx-stat-chart:hover,
 .landing-root .fx-stat-chart.fx-tapped {
   transform: translateY(-4px);
-  border-color: rgba(214, 169, 61, 0.42);
-  box-shadow: 0 30px 60px -30px rgba(214,169,61,0.32);
+  border-color: rgba(221,169,46, 0.42);
+  box-shadow: 0 30px 60px -30px rgba(221,169,46,0.32);
 }
 /* jagged gold mountain silhouette (like the reference growth cards) */
 .landing-root .fx-chart-curve {
   position: absolute; left: 0; right: 0; bottom: 0; height: 72%;
   z-index: 0; pointer-events: none; opacity: .6;
-  background: linear-gradient(180deg, rgba(236,198,87,0.9) 0%, rgba(214,169,61,0.15) 100%);
+  background: linear-gradient(180deg, rgba(240,201,79,0.9) 0%, rgba(221,169,46,0.15) 100%);
   clip-path: polygon(0 100%, 0 66%, 10% 72%, 22% 44%, 34% 60%, 46% 30%,
                      58% 52%, 70% 32%, 82% 54%, 92% 38%, 100% 50%, 100% 100%);
 }
@@ -895,7 +1032,7 @@ canvas { display: block; }
   display: inline-flex; align-items: center; justify-content: center;
   background: linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold));
   color: #1a1408;
-  box-shadow: 0 14px 44px rgba(214,169,61,0.5), 0 0 0 8px rgba(214,169,61,0.10);
+  box-shadow: 0 14px 44px rgba(221,169,46,0.5), 0 0 0 8px rgba(221,169,46,0.10);
   transition: transform .2s ease, filter .2s ease;
 }
 .landing-root .fx-play-btn:hover { transform: scale(1.06); filter: brightness(1.05); }
@@ -919,7 +1056,7 @@ canvas { display: block; }
 }
 .landing-root .fx-marquee-strip .fx-marquee-dot {
   width: 6px; height: 6px; border-radius: 9999px; background: var(--fx-gold);
-  box-shadow: 0 0 10px rgba(214,169,61,0.7);
+  box-shadow: 0 0 10px rgba(221,169,46,0.7);
   display: inline-block;
 }
 
@@ -957,9 +1094,9 @@ canvas { display: block; }
   position: relative;
   border-radius: 1.25rem;
   background:
-    radial-gradient(120% 70% at 50% 120%, rgba(214,169,61,0.30), rgba(214,169,61,0) 62%),
+    radial-gradient(120% 70% at 50% 120%, rgba(221,169,46,0.30), rgba(221,169,46,0) 62%),
     linear-gradient(180deg, rgba(24,26,31,0.72) 0%, rgba(13,14,17,0.92) 100%);
-  border: 1px solid rgba(214,169,61,0.32);
+  border: 1px solid rgba(221,169,46,0.32);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.05),
     0 22px 50px -26px rgba(0,0,0,0.85);
@@ -972,7 +1109,7 @@ canvas { display: block; }
   content: '';
   position: absolute; left: 8%; right: 8%; bottom: 0; height: 46%;
   border-radius: 1.25rem;
-  background: radial-gradient(72% 100% at 50% 100%, rgba(236,198,87,0.5), rgba(214,169,61,0) 72%);
+  background: radial-gradient(72% 100% at 50% 100%, rgba(240,201,79,0.5), rgba(221,169,46,0) 72%);
   filter: blur(9px);
   pointer-events: none;
   z-index: 0;
@@ -981,11 +1118,11 @@ canvas { display: block; }
 .landing-root .fx-puzzle-piece:hover,
 .landing-root .fx-puzzle-piece.fx-tapped {
   transform: translateY(-5px);
-  border-color: rgba(236,198,87,0.65);
+  border-color: rgba(240,201,79,0.65);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.08),
     0 30px 62px -24px rgba(0,0,0,0.9),
-    0 18px 48px -18px rgba(214,169,61,0.5);
+    0 18px 48px -18px rgba(221,169,46,0.5);
 }
 
 /* connector "neck" that bridges two pieces (overlaps their edges) */
@@ -995,8 +1132,8 @@ canvas { display: block; }
   height: 24px;
   border-radius: 9999px;
   background: linear-gradient(180deg, rgba(24,26,31,0.96), rgba(13,14,17,0.96));
-  border: 1px solid rgba(214,169,61,0.35);
-  box-shadow: 0 0 22px -6px rgba(214,169,61,0.55);
+  border: 1px solid rgba(221,169,46,0.35);
+  box-shadow: 0 0 22px -6px rgba(221,169,46,0.55);
   z-index: 2;
 }
 .landing-root .fx-puzzle-neck-top    { top: 22%; }
@@ -1006,8 +1143,8 @@ canvas { display: block; }
 .landing-root .fx-puzzle-divider {
   display: block;
   width: 34px; height: 2px; border-radius: 2px;
-  background: linear-gradient(90deg, rgba(236,198,87,0.95), rgba(214,169,61,0.35));
-  box-shadow: 0 0 10px rgba(214,169,61,0.55);
+  background: linear-gradient(90deg, rgba(240,201,79,0.95), rgba(221,169,46,0.35));
+  box-shadow: 0 0 10px rgba(221,169,46,0.55);
 }
 
 /* ── Venn circles (Problem vs Solution) — zoom-in on hover ──── */
@@ -1061,4 +1198,559 @@ canvas { display: block; }
   .landing-root .fx-tile-gold,
   .landing-root .fx-tile-media,
   .landing-root .fx-stat-chart { border-radius: 1.15rem; }
+}
+
+/* ============================================================
+   Typographic polish — presentation only, no content changes.
+   Sets the reading rhythm, measure and micro-hierarchy for every
+   landing page from one place.
+
+   Every rule below opts out the moment the markup states its own
+   intent (`leading-*`, `max-w-*`, `tracking-*`, `text-center`), so
+   a deliberate choice in a component always beats the default here.
+   ============================================================ */
+
+/* 1 ── Reading rhythm.
+   Body copy at 1.7 is the difference between "scannable" and "a wall".
+   Headings keep their tight leading so they read as one shape. */
+.landing-root p:not([class*="leading-"]),
+.landing-root li:not([class*="leading-"]) {
+  line-height: 1.7;
+}
+
+/* 2 ── Measure.
+   Over-long lines are what make a wide dark layout tiring — the eye
+   loses the line it was on. ~72 characters is the comfortable cap.
+   This no-ops inside cards and columns, which are already narrower. */
+.landing-root p:not([class*="max-w"]) {
+  max-width: 72ch;
+}
+/* A capped block still has to stay optically centered where the
+   section centers its text — otherwise the cap reads as a bug. */
+.landing-root [class*="text-center"] p:not([class*="max-w"]),
+.landing-root p[class*="text-center"]:not([class*="max-w"]) {
+  margin-inline: auto;
+}
+
+/* 3 ── Optical tracking.
+   Bold text at heading sizes looks loose at default tracking; a hair
+   of negative space closes it up and makes the hierarchy read. */
+.landing-root h2:not([class*="tracking-"]),
+.landing-root h3:not([class*="tracking-"]),
+.landing-root h4:not([class*="tracking-"]) {
+  letter-spacing: -0.012em;
+}
+
+/* 4 ── Micro-labels.
+   Eyebrows and badges are the same class of element — an uppercase
+   marker above a heading — so they share one tracking value. */
+.landing-root .badge {
+  letter-spacing: 0.12em;
+}
+
+/* 5 ── Widow control on short headings and lead paragraphs, so a
+   heading never drops a single orphan word onto its own line. */
+.landing-root h2,
+.landing-root h3,
+.landing-root h4 {
+  text-wrap: balance;
+}
+
+/* ============================================================
+   Coverage tier card — dark at rest, solid gold on hover.
+   The colours live on custom properties so one hover rule flips
+   the whole card (surface, labels, value, rule, cap) at once
+   instead of each element carrying its own conditional.
+   `.fx-tier-top` is the always-gold card; it reuses the exact
+   same declarations so hovered and top can never drift apart.
+   ============================================================ */
+.landing-root .fx-tier {
+  --tier-label: var(--fx-text-3);
+  --tier-name:  var(--fx-gold-light);
+  --tier-cap:   #ffffff;
+  --tier-line:  var(--fx-line);
+
+  background:
+    radial-gradient(120% 80% at 12% 0%, rgba(255,255,255,0.05), rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
+  border: 1px solid var(--fx-line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: background .45s ease, border-color .45s ease,
+              box-shadow .45s ease, transform .5s cubic-bezier(.2,.7,.2,1);
+}
+
+/* `.fx-tapped` keeps the same reveal reachable on touch, where
+   there is no hover to trigger it. */
+.landing-root .fx-tier:hover,
+.landing-root .fx-tier.fx-tapped,
+.landing-root .fx-tier-top {
+  --tier-label: rgba(28,22,8,0.6);
+  --tier-name:  #1c1608;
+  --tier-cap:   #1c1608;
+  --tier-line:  rgba(28,22,8,0.22);
+
+  background: linear-gradient(160deg,
+    var(--fx-gold-sheen) 0%, var(--fx-gold) 55%, var(--fx-gold-dark) 100%);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 30px 70px -34px rgba(221,169,46,0.6);
+}
+
+/* The figure is gold gradient-filled text at rest; on gold it has to
+   become solid ink or it disappears into the background. */
+.landing-root .fx-tier:hover .fx-tier-value,
+.landing-root .fx-tier.fx-tapped .fx-tier-value,
+.landing-root .fx-tier-top .fx-tier-value {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #1c1608;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .fx-tier { transition: none; }
+}
+
+/* ============================================================
+   Journey rail — the "How It Works" flow.
+   Replaces seven identical bordered cards with stations threaded
+   on one continuous hairline. The card chrome was what made the
+   row read as a template: every step framed identically, so step
+   one looked exactly as important as step seven. Here the line
+   carries the sequence and the type carries the meaning.
+   ============================================================ */
+.landing-root .fx-station {
+  position: relative;
+  text-align: left;
+}
+
+/* The rail only makes sense once all seven sit on one row; below
+   that the grid wraps and a horizontal line would be nonsense. */
+@media (min-width: 1280px) {
+  /* Each station draws only the segment reaching forward to the next one,
+     starting clear of its own node and stopping clear of the next. A
+     connector that touches the thing it connects reads as a collision,
+     not a link — the breathing room at both ends is the whole point. */
+  .landing-root .fx-station::before {
+    content: '';
+    position: absolute;
+    top: 29px;                        /* vertical centre of the 58px node */
+    left: calc(58px + 0.85rem);       /* clear of this node */
+    right: calc(-1.75rem + 0.85rem);  /* clear of the next node */
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(221,169,46,0.14),
+      rgba(221,169,46,0.44) 22%,
+      rgba(221,169,46,0.44) 78%,
+      rgba(221,169,46,0.14));
+    z-index: 0;
+  }
+  /* The last station has nothing to reach forward to. Targeted through the
+     grid, because each station sits inside its own reveal wrapper — a
+     `:last-child` on the station itself would match every one of them. */
+  .landing-root .fx-station-grid > *:last-child .fx-station::before {
+    display: none;
+  }
+}
+
+/* The rail now stops short of the node on both sides, so the node needs no
+   opaque backing to occlude it — and it keeps the plain translucent badge
+   tint, rather than hard-coding this section's background colour. */
+.landing-root .fx-station-node {
+  position: relative;
+  z-index: 1;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 1.5rem;
+  transition: transform .45s cubic-bezier(.2,.7,.2,1),
+              box-shadow .45s ease;
+}
+.landing-root .fx-station:hover .fx-station-node,
+.landing-root .fx-station.fx-tapped .fx-station-node {
+  transform: translateY(-3px);
+}
+
+/* Title case, not uppercase. Seven all-caps labels at 12px with wide
+   tracking is what a template does; sentence weight and a real size
+   is what a designer does. */
+.landing-root .fx-station-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--fx-text);
+  margin-bottom: 0.5rem;
+  text-wrap: balance;
+  /* Some titles run to two lines and some to one. Reserving two lines
+     puts every description on the same baseline across the row — the
+     alignment is what makes seven separate columns read as one row. */
+  min-height: 2.7em;
+}
+.landing-root .fx-station-desc {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--fx-text-2);
+  max-width: 22ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .fx-station-node { transition: none; }
+  .landing-root .fx-station:hover .fx-station-node { transform: none; }
+}
+
+/* ============================================================
+   Engagement cells — the four activity entries.
+   They used to be small pills pinned to the bottom of a mostly
+   empty tile. As full cells they fill the composition, and the
+   icon gets a quiet gold wash so the group reads as one family.
+   ============================================================ */
+.landing-root .fx-engage {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(221,169,46,0.07), rgba(221,169,46,0.02));
+  border: 1px solid rgba(221,169,46,0.16);
+  transition: border-color .35s ease, background .35s ease, transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.landing-root .fx-engage:hover,
+.landing-root .fx-engage.fx-tapped {
+  transform: translateY(-2px);
+  border-color: rgba(221,169,46,0.4);
+  background: linear-gradient(180deg, rgba(221,169,46,0.12), rgba(221,169,46,0.04));
+}
+.landing-root .fx-engage-icon {
+  flex-shrink: 0;
+  color: var(--fx-gold-light);
+}
+.landing-root .fx-engage-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  color: var(--fx-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .fx-engage { transition: none; }
+  .landing-root .fx-engage:hover { transform: none; }
+}
+
+/* ============================================================
+   Page banner — the full-width image bands between sections.
+   A bright golden image butted against a near-black page with a
+   hard rectangular edge reads as pasted on rather than composed
+   in. The rim, the feathered edges and the seated shadow are what
+   make it belong to the page.
+   ============================================================ */
+.landing-root .fx-banner {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(221,169,46,0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 34px 80px -46px rgba(0,0,0,0.95),
+    0 0 0 1px rgba(221,169,46,0.05);
+}
+.landing-root .fx-banner > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Feather the four edges into the canvas. Kept gentle — enough to
+   dissolve the cut line, not so much that it crops the artwork. */
+.landing-root .fx-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      rgba(8,9,11,0.62) 0%, rgba(8,9,11,0) 15%,
+      rgba(8,9,11,0) 85%, rgba(8,9,11,0.62) 100%),
+    linear-gradient(180deg,
+      rgba(8,9,11,0.34) 0%, rgba(8,9,11,0) 20%,
+      rgba(8,9,11,0) 80%, rgba(8,9,11,0.40) 100%);
+}
+
+/* Specular top edge — the same hairline the tiles and section frames
+   carry, so the banner reads as part of the same material family. */
+.landing-root .fx-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 22%; right: 22%;
+  height: 1px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    transparent, rgba(240,201,79,0.55) 50%, transparent);
+}
+
+/* Overlaid copy has to sit above the feathering, or the vignette dims the
+   very text it is meant to keep readable. z-index only — these elements are
+   already absolutely positioned by the component, and setting `position`
+   here would beat that utility and drop the overlay out of the image. */
+.landing-root .fx-banner-copy { z-index: 3; }
+
+@media (max-width: 640px) {
+  .landing-root .fx-banner { border-radius: 1.15rem; }
+}
+
+/* ============================================================
+   Gamification bento.
+   Asymmetric cells on one grid: a tall gold anchor, a wide panel,
+   a square, a picture, and four small chips closing it out.
+
+   Every cell shares one anatomy — overline top-left, icon top-right,
+   substance pinned to the bottom edge. That shared reading path is
+   what holds four different cell sizes together as a single grid.
+   ============================================================ */
+.landing-root .fx-gam-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+}
+@media (min-width: 768px) {
+  .landing-root .fx-gam-bento {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.125rem;
+  }
+  /* The picture takes the tall slot — an image fills whatever height it is
+     given, where a two-character title like "XP" would leave a void. So the
+     gold cell is wide and short, which is the shape its content actually is. */
+  .landing-root .fx-gam-media  { grid-column: span 2; grid-row: span 2; }
+  .landing-root .fx-gam-anchor { grid-column: span 2; }
+  .landing-root .fx-gam-wide   { grid-column: span 1; }
+  .landing-root .fx-gam-score  { grid-column: span 1; }
+  .landing-root .fx-gam-chip   { grid-column: span 1; }
+}
+/* On two columns the panels each take a full row, leaving the four chips to
+   pair off cleanly 2x2. Letting the score cell stay half-width would strand
+   a gap beside it and knock every chip out of alignment. */
+@media (max-width: 767px) {
+  .landing-root .fx-gam-media,
+  .landing-root .fx-gam-anchor,
+  .landing-root .fx-gam-wide,
+  .landing-root .fx-gam-score { grid-column: span 2; }
+}
+
+/* ── Cell shell ─────────────────────────────────────────────── */
+.landing-root .fx-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 168px;
+  padding: 1.35rem 1.4rem;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 12% 0%, rgba(255,255,255,0.045), rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: border-color .4s ease, transform .4s cubic-bezier(.2,.7,.2,1);
+}
+.landing-root .fx-cell:hover,
+.landing-root .fx-cell.fx-tapped {
+  transform: translateY(-3px);
+  border-color: rgba(221,169,46,0.32);
+}
+@media (min-width: 768px) {
+  .landing-root .fx-cell { padding: 1.6rem 1.7rem; min-height: 186px; }
+}
+
+.landing-root .fx-cell-gold {
+  background: linear-gradient(155deg,
+    var(--fx-gold-sheen) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 30px 70px -38px rgba(221,169,46,0.55);
+}
+
+/* ── Cell anatomy ───────────────────────────────────────────── */
+.landing-root .fx-cell-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.landing-root .fx-cell-overline {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fx-gold-light);
+}
+.landing-root .fx-cell-icon {
+  flex-shrink: 0;
+  color: var(--fx-gold-light);
+}
+.landing-root .fx-cell-gold .fx-cell-overline,
+.landing-root .fx-cell-gold .fx-cell-icon { color: rgba(28,22,8,0.72); }
+
+.landing-root .fx-cell-body { margin-top: auto; }
+
+.landing-root .fx-cell-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  color: var(--fx-text);
+}
+.landing-root .fx-cell-title-lg { font-size: 1.75rem; }
+@media (min-width: 768px) {
+  .landing-root .fx-cell-title-lg { font-size: 2.25rem; }
+}
+.landing-root .fx-cell-title-sm {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--fx-text);
+}
+.landing-root .fx-cell-desc {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--fx-text-2);
+  max-width: 34ch;
+}
+.landing-root .fx-cell-gold .fx-cell-title { color: #1c1608; }
+.landing-root .fx-cell-gold .fx-cell-desc  { color: rgba(28,22,8,0.78); }
+
+/* Small chips carry a label only — shorter, and no descender to balance. */
+.landing-root .fx-cell-sm { min-height: 118px; }
+@media (min-width: 768px) {
+  .landing-root .fx-cell-sm { min-height: 132px; }
+}
+
+/* ── Meter ──────────────────────────────────────────────────── */
+.landing-root .fx-meter {
+  margin-top: 1.15rem;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+}
+.landing-root .fx-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold));
+}
+.landing-root .fx-meter-gold { background: rgba(28,22,8,0.2); }
+.landing-root .fx-meter-gold > span { background: #1c1608; }
+
+/* ── Picture cell ───────────────────────────────────────────── */
+.landing-root .fx-cell-media { padding: 0; }
+.landing-root .fx-cell-media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .fx-cell { transition: none; }
+  .landing-root .fx-cell:hover { transform: none; }
+}
+
+/* ============================================================
+   Stat card — dark at rest, solid gold on hover; the accent card
+   (Market Position) is gold at rest through the same rule, so the
+   hovered card and the accent card are always identical. Colours
+   live on custom properties, so one rule recolours the whole card
+   — surface, icon chip, value and label together.
+   ============================================================ */
+.landing-root .fx-stat-card {
+  --stat-ico-bg: rgba(221,169,46,0.08);
+  --stat-ico-bd: rgba(221,169,46,0.22);
+  --stat-ico-fg: var(--fx-gold-light);
+  --stat-label:  var(--fx-text-3);
+
+  position: relative;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(120% 80% at 12% 0%, rgba(255,255,255,0.045), rgba(255,255,255,0) 58%),
+    linear-gradient(180deg, #17191d 0%, #0d0e11 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: background .4s ease, border-color .4s ease,
+              box-shadow .4s ease, transform .45s cubic-bezier(.2,.7,.2,1);
+}
+/* `.fx-tapped` gives touch devices the same reveal, where there is no hover. */
+.landing-root .fx-stat-card:hover,
+.landing-root .fx-stat-card.fx-tapped,
+.landing-root .fx-stat-card-accent {
+  --stat-ico-bg: rgba(28,22,8,0.14);
+  --stat-ico-bd: rgba(28,22,8,0.24);
+  --stat-ico-fg: #1c1608;
+  --stat-label:  rgba(28,22,8,0.72);
+
+  background: linear-gradient(155deg,
+    var(--fx-gold-sheen) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 30px 70px -38px rgba(221,169,46,0.55);
+}
+/* Only a genuine hover lifts the card — the always-gold accent stays put. */
+.landing-root .fx-stat-card:hover,
+.landing-root .fx-stat-card.fx-tapped { transform: translateY(-4px); }
+
+.landing-root .fx-stat-icon {
+  width: 54px; height: 54px;
+  border-radius: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--stat-ico-bg);
+  border: 1px solid var(--stat-ico-bd);
+  color: var(--stat-ico-fg);
+  transition: background .4s ease, border-color .4s ease, color .4s ease;
+}
+
+/* Value is gold gradient-filled text at rest; on the gold surface it has to
+   become solid ink or it vanishes into the background. */
+.landing-root .fx-stat-card:hover .fx-stat-value,
+.landing-root .fx-stat-card.fx-tapped .fx-stat-value,
+.landing-root .fx-stat-card-accent .fx-stat-value {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #1c1608;
+}
+
+.landing-root .fx-stat-label {
+  color: var(--stat-label);
+  transition: color .4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .fx-stat-card { transition: none; }
+  .landing-root .fx-stat-card:hover,
+  .landing-root .fx-stat-card.fx-tapped { transform: none; }
+}
+
+/* ============================================================
+   Section closing line — the italic aphorism that ends ~38 sections.
+   As a large text-lg line it read as a second heading and, repeated
+   section after section, as noise. Demoted to a quiet, tighter caption
+   so each section resolves on a calm note instead of a flourish.
+   !important is required: the size fights the !important type-scale
+   reset, and the colour fights an inline style on each element.
+   ============================================================ */
+.landing-root .fx-quote {
+  font-size: 0.9375rem !important;
+  line-height: 1.6 !important;
+  color: var(--fx-text-3) !important;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  max-width: 42ch;
+  text-wrap: balance;
+}
+@media (min-width: 768px) {
+  .landing-root .fx-quote { font-size: 1rem !important; }
 }

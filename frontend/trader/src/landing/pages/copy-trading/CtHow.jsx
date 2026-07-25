@@ -70,7 +70,7 @@ export default function CtHow() {
 
         <ScrollReveal variant="fadeUp" delay={0.18}>
           <p
-            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-8 md:mt-10 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Simple setup. Full flexibility.&rdquo;

@@ -26,7 +26,7 @@ const TABS: { id: TabId; label: string }[] = [
 
   { id: 'ib', label: 'IB Program' },
 
-  { id: 'sub-broker', label: 'Sub-Broker' },
+  { id: 'sub-broker', label: 'Master IB' },
 
   { id: 'network', label: 'My Network' },
 

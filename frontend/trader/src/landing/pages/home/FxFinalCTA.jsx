@@ -11,16 +11,16 @@ export default function FxFinalCTA() {
             className="relative rounded-3xl p-8 md:p-12 lg:p-14 overflow-hidden"
             style={{
               background:
-                'linear-gradient(135deg, rgba(214,169,61,0.18) 0%, var(--fx-bg-elev-2) 60%), var(--fx-bg-elev)',
-              border: '1px solid rgba(214,169,61,0.35)',
-              boxShadow: '0 40px 80px -30px rgba(214,169,61,0.35)',
+                'linear-gradient(135deg, rgba(221,169,46,0.18) 0%, var(--fx-bg-elev-2) 60%), var(--fx-bg-elev)',
+              border: '1px solid rgba(221,169,46,0.35)',
+              boxShadow: '0 40px 80px -30px rgba(221,169,46,0.35)',
             }}
           >
             <div
               className="absolute -top-px left-[8%] right-[8%] h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(214,169,61,0.85), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(221,169,46,0.85), transparent)',
               }}
             />
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />
@@ -33,7 +33,7 @@ export default function FxFinalCTA() {
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+                    style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(221,169,46,0.7)' }}
                   />
                   Final Step
                 </span>
@@ -64,7 +64,7 @@ export default function FxFinalCTA() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-12 text-center text-base md:text-lg italic max-w-3xl mx-auto"
+            className="mt-12 text-center text-base md:text-lg italic max-w-3xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             FX Artha is not a broker. It&apos;s a structured trading system where execution is

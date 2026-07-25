@@ -15,8 +15,8 @@ const SectionHeader = ({ badge, title, highlight, subtitle, align = 'center' }) 
                 letterSpacing: '0.22em',
                 color: 'var(--fx-gold-light)',
                 background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.18), rgba(214,169,61,0.04))',
-                border: '1px solid rgba(214,169,61,0.32)',
+                  'linear-gradient(180deg, rgba(221,169,46,0.18), rgba(221,169,46,0.04))',
+                border: '1px solid rgba(221,169,46,0.32)',
                 boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
               }}
             >
@@ -24,7 +24,7 @@ const SectionHeader = ({ badge, title, highlight, subtitle, align = 'center' }) 
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
                   background: 'var(--fx-gold)',
-                  boxShadow: '0 0 8px rgba(214,169,61,0.7)',
+                  boxShadow: '0 0 8px rgba(221,169,46,0.7)',
                 }}
               />
               {badge}
@@ -50,12 +50,12 @@ const SectionHeader = ({ badge, title, highlight, subtitle, align = 'center' }) 
       <ScrollReveal variant="fadeUp" delay={0.15}>
         <div className={`flex ${isCenter ? 'justify-center' : ''} mb-5`}>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-px" style={{ background: 'rgba(214,169,61,0.6)' }} />
+            <span className="w-8 h-px" style={{ background: 'rgba(221,169,46,0.6)' }} />
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+              style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(221,169,46,0.7)' }}
             />
-            <span className="w-8 h-px" style={{ background: 'rgba(214,169,61,0.6)' }} />
+            <span className="w-8 h-px" style={{ background: 'rgba(221,169,46,0.6)' }} />
           </div>
         </div>
       </ScrollReveal>

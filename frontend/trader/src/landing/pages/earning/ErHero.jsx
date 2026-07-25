@@ -21,7 +21,7 @@ export default function ErHero() {
         className="absolute inset-0 z-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
+            'linear-gradient(90deg, rgba(8,10,14,0.9) 0%, rgba(8,10,14,0.6) 32%, rgba(8,10,14,0.18) 58%, rgba(8,10,14,0) 82%), radial-gradient(60% 60% at 80% 25%, rgba(221,169,46,0.10) 0%, rgba(221,169,46,0) 60%)',
         }}
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">

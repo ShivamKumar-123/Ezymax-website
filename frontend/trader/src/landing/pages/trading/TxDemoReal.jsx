@@ -89,9 +89,9 @@ export default function TxDemoReal() {
                 <span
                   className="px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(214,169,61,0.15)',
+                    background: 'rgba(221,169,46,0.15)',
                     color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(214,169,61,0.35)',
+                    border: '1px solid rgba(221,169,46,0.35)',
                   }}
                 >
                   Live

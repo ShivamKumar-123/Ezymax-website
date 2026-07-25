@@ -116,10 +116,10 @@ function StepCard({ icon: Icon, label, title, highlight = false }) {
       className="flex items-center gap-3 rounded-xl px-4 py-3"
       style={{
         background: highlight
-          ? 'linear-gradient(180deg, rgba(214,169,61,0.16), rgba(214,169,61,0.03))'
+          ? 'linear-gradient(180deg, rgba(221,169,46,0.16), rgba(221,169,46,0.03))'
           : 'var(--fx-bg-elev)',
-        border: '1px solid rgba(214,169,61,0.35)',
-        boxShadow: highlight ? '0 16px 40px -16px rgba(214,169,61,0.4)' : 'none',
+        border: '1px solid rgba(221,169,46,0.35)',
+        boxShadow: highlight ? '0 16px 40px -16px rgba(221,169,46,0.4)' : 'none',
       }}
     >
       <div className="feature-icon shrink-0" style={{ width: 40, height: 40 }}>

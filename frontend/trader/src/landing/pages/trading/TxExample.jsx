@@ -51,7 +51,7 @@ export default function TxExample() {
               className="flex items-center justify-between px-6 md:px-7 py-4"
               style={{
                 borderBottom: '1px solid var(--fx-line)',
-                background: 'rgba(214,169,61,0.04)',
+                background: 'rgba(221,169,46,0.04)',
               }}
             >
               <div className="flex items-center gap-3">
@@ -119,10 +119,10 @@ export default function TxExample() {
                         className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
                         style={{
                           background:
-                            tradeSize === v ? 'rgba(214,169,61,0.18)' : 'rgba(255,255,255,0.04)',
+                            tradeSize === v ? 'rgba(221,169,46,0.18)' : 'rgba(255,255,255,0.04)',
                           border:
                             tradeSize === v
-                              ? '1px solid rgba(214,169,61,0.55)'
+                              ? '1px solid rgba(221,169,46,0.55)'
                               : '1px solid var(--fx-line-strong)',
                           color: tradeSize === v ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                         }}
@@ -139,7 +139,7 @@ export default function TxExample() {
                     <label className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-text-3)' }}>
                       Leverage
                     </label>
-                    <span className="text-sm font-bold gradient-text">{leverage}Ã—</span>
+                    <span className="text-sm font-bold gradient-text">{leverage}×</span>
                   </div>
                   <input
                     type="range"
@@ -148,12 +148,12 @@ export default function TxExample() {
                     step={1}
                     value={leverage}
                     onChange={(e) => setLeverage(Number(e.target.value))}
-                    className="mt-3 w-full accent-[#ecc657]"
+                    className="mt-3 w-full accent-[#f0c94f]"
                   />
                   <div className="mt-1 flex justify-between text-[10px]" style={{ color: 'var(--fx-text-3)' }}>
-                    <span>1Ã—</span>
-                    <span>10Ã—</span>
-                    <span>20Ã—</span>
+                    <span>1×</span>
+                    <span>10×</span>
+                    <span>20×</span>
                   </div>
                 </div>
 
@@ -170,10 +170,10 @@ export default function TxExample() {
                       className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
                       style={{
                         background: !overnight
-                          ? 'rgba(214,169,61,0.12)'
+                          ? 'rgba(221,169,46,0.12)'
                           : 'rgba(255,255,255,0.03)',
                         border: !overnight
-                          ? '1px solid rgba(214,169,61,0.45)'
+                          ? '1px solid rgba(221,169,46,0.45)'
                           : '1px solid var(--fx-line-strong)',
                         color: !overnight ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                       }}
@@ -212,14 +212,14 @@ export default function TxExample() {
                 />
                 <Row
                   icon={Receipt}
-                  iconColor="#ecc657"
+                  iconColor="#f0c94f"
                   label="Brokerage"
                   value={`$${fmt(brokerage)}`}
                   sub="Applied on execution"
                 />
                 <Row
                   icon={Gauge}
-                  iconColor={overnight ? '#f87171' : '#ecc657'}
+                  iconColor={overnight ? '#f87171' : '#f0c94f'}
                   label="Leverage Fee"
                   value={overnight ? `$${fmt(leverageFee)}` : '$0.00'}
                   sub={overnight ? 'Overnight rate applied' : 'Intraday — none'}
@@ -227,7 +227,7 @@ export default function TxExample() {
                 />
                 <Row
                   icon={Activity}
-                  iconColor="#ecc657"
+                  iconColor="#f0c94f"
                   label="Spread"
                   value="Market"
                   sub="Tightens with XP"
@@ -254,18 +254,18 @@ export default function TxExample() {
               className="px-6 md:px-7 py-4 text-xs text-center"
               style={{
                 borderTop: '1px solid var(--fx-line)',
-                background: 'rgba(214,169,61,0.04)',
+                background: 'rgba(221,169,46,0.04)',
                 color: 'var(--fx-text-3)',
               }}
             >
-              Indicative figures Â· Spread is market-driven, not a fixed cost Â· Profit and loss settle automatically
+              Indicative figures · Spread is market-driven, not a fixed cost · Profit and loss settle automatically
             </div>
           </div>
         </ScrollReveal>
 
         <ScrollReveal variant="fadeUp" delay={0.18}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;All costs are known before execution.&rdquo;

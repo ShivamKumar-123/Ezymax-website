@@ -55,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Overview', href: '/business' },
       { label: 'IB Program', href: '/business/ib' },
       { label: 'Master IB', href: '/business/sub-broker' },
+      { label: 'Commission Report', href: '/business/commissions' },
       { label: 'Copy Masters', href: '/business/masters' },
       { label: 'MLM Config', href: '/business/mlm' },
     ],

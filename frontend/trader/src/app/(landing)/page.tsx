@@ -10,6 +10,7 @@ import FxCopyTrading from '@/landing/pages/home/FxCopyTrading'
 import FxStaking from '@/landing/pages/home/FxStaking'
 import FxReferral from '@/landing/pages/home/FxReferral'
 import FxFinalCTA from '@/landing/pages/home/FxFinalCTA'
+import FxPageBanner from '@/landing/components/FxPageBanner'
 
 export default function LandingHomePage() {
   return (
@@ -17,39 +18,15 @@ export default function LandingHomePage() {
       <HeroSection />
       <FxProblemSolution />
       <FxHowItWorks />
-      <section style={{ background: 'var(--fx-bg)' }}>
-        <div className="fx-container py-8 md:py-10 lg:py-12">
-          <img
-            src="/images/hero_banner1.png"
-            alt=""
-            className="w-full h-auto rounded-2xl"
-          />
-        </div>
-      </section>
+      <FxPageBanner image="/images/hero_banner1.png" />
       <FxTradingModes />
       <FxTradeInsurance />
       <FxGamification />
-      <section style={{ background: 'var(--fx-bg-elev)' }}>
-        <div className="fx-container py-8 md:py-10 lg:py-12">
-          <img
-            src="/images/hero_banner2.png"
-            alt=""
-            className="w-full h-auto rounded-2xl"
-          />
-        </div>
-      </section>
+      <FxPageBanner image="/images/hero_banner2.png" tone="elev" />
       <FxCopyTrading />
       <FxStaking />
       <FxReferral />
-      <section style={{ background: 'var(--fx-bg)' }}>
-        <div className="fx-container py-8 md:py-10 lg:py-12">
-          <img
-            src="/images/hero_banner3.png"
-            alt=""
-            className="w-full h-auto rounded-2xl"
-          />
-        </div>
-      </section>
+      <FxPageBanner image="/images/hero_banner3.png" />
       <FxFinalCTA />
     </>
   )

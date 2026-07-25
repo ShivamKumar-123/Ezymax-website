@@ -1009,3 +1009,159 @@ async def delete_master(
         "followers_refunded": follower_count,
         "total_refunded_to_followers": float(total_refunded),
     }
+
+
+# ── IB commission report (admin) ─────────────────────────────────────────
+# Client spec: admin sees, per Master/IB chain, who earned how much, from
+# which users — filterable by date (all time / last N days / custom range),
+# detailed, paginated. Two views: a per-IB summary and the row-level ledger.
+
+from sqlalchemy import text as _text  # local alias; module imports select/func already
+
+
+def _commission_window(date_from, date_to) -> tuple[str, dict]:
+    where = ["1=1"]
+    params: dict = {}
+    if date_from is not None:
+        where.append("ic.created_at >= :date_from")
+        params["date_from"] = date_from
+    if date_to is not None:
+        # inclusive end-of-day when a bare date is passed
+        where.append("ic.created_at < (CAST(:date_to AS date) + INTERVAL '1 day')")
+        params["date_to"] = date_to
+    return " AND ".join(where), params
+
+
+async def ib_commission_ledger(
+    db: AsyncSession, *, page: int = 1, per_page: int = 50,
+    date_from=None, date_to=None, ib_id: uuid.UUID | None = None,
+    level: int | None = None, search: str | None = None,
+) -> dict:
+    where_sql, params = _commission_window(date_from, date_to)
+    if ib_id is not None:
+        where_sql += " AND ic.ib_id = :ib_id"
+        params["ib_id"] = str(ib_id)
+    if level in (1, 2):
+        where_sql += " AND ic.mlm_level = :level"
+        params["level"] = level
+    if search:
+        where_sql += (
+            " AND (ibu.email ILIKE :q OR ip.referral_code ILIKE :q"
+            " OR su.email ILIKE :q)"
+        )
+        params["q"] = f"%{search}%"
+
+    base = f"""
+        FROM ib_commissions ic
+        JOIN ib_profiles ip ON ip.id = ic.ib_id
+        JOIN users ibu      ON ibu.id = ip.user_id
+        LEFT JOIN users su  ON su.id = ic.source_user_id
+        WHERE {where_sql}
+    """
+    params_page = dict(params, limit=per_page, offset=(page - 1) * per_page)
+    try:
+        summary = (await db.execute(_text(
+            f"SELECT count(*), coalesce(sum(ic.amount),0), "
+            f"count(DISTINCT ic.ib_id), count(DISTINCT ic.source_user_id) {base}"
+        ), params)).one()
+        rows = (await db.execute(_text(f"""
+            SELECT ic.created_at, ic.amount, ic.mlm_level, ic.commission_type,
+                   ic.source_trade_id,
+                   ip.referral_code, ibu.email AS ib_email,
+                   ibu.first_name AS ib_fn, ibu.last_name AS ib_ln, ibu.role AS ib_role,
+                   su.email AS src_email, su.first_name AS src_fn, su.last_name AS src_ln
+            {base}
+            ORDER BY ic.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """), params_page)).all()
+    except Exception as exc:  # noqa: BLE001
+        await db.rollback()
+        logger.warning("ib_commission_ledger failed: %s", exc)
+        return {"items": [], "total": 0, "page": page, "per_page": per_page,
+                "summary": {"total_amount": 0, "rows": 0, "ibs": 0, "source_users": 0}}
+
+    items = []
+    for r in rows:
+        m = r._mapping
+        ib_name = f"{m['ib_fn'] or ''} {m['ib_ln'] or ''}".strip() or m["ib_email"]
+        src_name = f"{m['src_fn'] or ''} {m['src_ln'] or ''}".strip() or (m["src_email"] or "—")
+        items.append({
+            "created_at": m["created_at"].isoformat() if m["created_at"] else None,
+            "amount": float(m["amount"] or 0),
+            "level": int(m["mlm_level"] or 1),
+            "commission_type": m["commission_type"],
+            "ib_name": ib_name,
+            "ib_email": m["ib_email"],
+            "ib_referral_code": m["referral_code"],
+            "ib_kind": "Master IB" if m["ib_role"] == "sub_broker" else "IB",
+            "source_user": src_name,
+            "source_email": m["src_email"],
+            "source_trade_id": str(m["source_trade_id"]) if m["source_trade_id"] else None,
+        })
+    return {
+        "items": items,
+        "total": int(summary[0] or 0),
+        "page": page, "per_page": per_page,
+        "summary": {
+            "total_amount": float(summary[1] or 0),
+            "rows": int(summary[0] or 0),
+            "ibs": int(summary[2] or 0),
+            "source_users": int(summary[3] or 0),
+        },
+    }
+
+
+async def ib_commission_summary(
+    db: AsyncSession, *, page: int = 1, per_page: int = 50,
+    date_from=None, date_to=None, search: str | None = None,
+) -> dict:
+    """Per-IB aggregation for the window: own-referral earnings (L1),
+    master-share earnings (L2), distinct generating users, total."""
+    where_sql, params = _commission_window(date_from, date_to)
+    if search:
+        where_sql += " AND (ibu.email ILIKE :q OR ip.referral_code ILIKE :q)"
+        params["q"] = f"%{search}%"
+    base = f"""
+        FROM ib_commissions ic
+        JOIN ib_profiles ip ON ip.id = ic.ib_id
+        JOIN users ibu      ON ibu.id = ip.user_id
+        WHERE {where_sql}
+        GROUP BY ic.ib_id, ip.referral_code, ibu.email, ibu.first_name, ibu.last_name, ibu.role
+    """
+    params_page = dict(params, limit=per_page, offset=(page - 1) * per_page)
+    try:
+        total = (await db.execute(_text(
+            f"SELECT count(*) FROM (SELECT ic.ib_id {base}) t"
+        ), params)).scalar() or 0
+        rows = (await db.execute(_text(f"""
+            SELECT ic.ib_id, ip.referral_code, ibu.email, ibu.first_name, ibu.last_name, ibu.role,
+                   coalesce(sum(ic.amount) FILTER (WHERE ic.mlm_level = 1), 0) AS own_amount,
+                   coalesce(sum(ic.amount) FILTER (WHERE ic.mlm_level >= 2), 0) AS master_amount,
+                   coalesce(sum(ic.amount), 0) AS total_amount,
+                   count(DISTINCT ic.source_user_id) AS source_users,
+                   count(*) AS entries
+            {base}
+            ORDER BY total_amount DESC
+            LIMIT :limit OFFSET :offset
+        """), params_page)).all()
+    except Exception as exc:  # noqa: BLE001
+        await db.rollback()
+        logger.warning("ib_commission_summary failed: %s", exc)
+        return {"items": [], "total": 0, "page": page, "per_page": per_page}
+
+    items = []
+    for r in rows:
+        m = r._mapping
+        items.append({
+            "ib_id": str(m["ib_id"]),
+            "ib_name": f"{m['first_name'] or ''} {m['last_name'] or ''}".strip() or m["email"],
+            "ib_email": m["email"],
+            "ib_referral_code": m["referral_code"],
+            "ib_kind": "Master IB" if m["role"] == "sub_broker" else "IB",
+            "own_amount": float(m["own_amount"]),
+            "master_share_amount": float(m["master_amount"]),
+            "total_amount": float(m["total_amount"]),
+            "source_users": int(m["source_users"]),
+            "entries": int(m["entries"]),
+        })
+    return {"items": items, "total": int(total), "page": page, "per_page": per_page}

@@ -30,11 +30,11 @@ export default function CtFaqList({ items, title = 'FAQ', showHeader = true }) {
               key={it.q}
               className="rounded-2xl transition-colors duration-200"
               style={{
-                background: isOpen ? 'rgba(214,169,61,0.06)' : 'var(--fx-bg-elev-2)',
+                background: isOpen ? 'rgba(221,169,46,0.06)' : 'var(--fx-bg-elev-2)',
                 border: isOpen
-                  ? '1px solid rgba(214,169,61,0.38)'
+                  ? '1px solid rgba(221,169,46,0.38)'
                   : '1px solid var(--fx-line)',
-                boxShadow: isOpen ? '0 24px 60px -40px rgba(214,169,61,0.4)' : 'none',
+                boxShadow: isOpen ? '0 24px 60px -40px rgba(221,169,46,0.4)' : 'none',
               }}
             >
               <button

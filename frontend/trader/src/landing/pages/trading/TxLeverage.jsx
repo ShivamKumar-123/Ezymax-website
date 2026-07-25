@@ -31,42 +31,27 @@ export default function TxLeverage() {
           </ScrollReveal>
         </div>
 
-        {/* ── Stat cards: the worked example ────────────────── */}
+        {/* ── Stat cards: the worked example ──────────────────
+             Each card is dark at rest and flips fully gold on hover; the
+             accent card (Market Position) is gold at rest via the same rule,
+             so hovered and accent can never drift apart. Colours are driven
+             by custom properties so one rule recolours the whole card. */}
         <div className="mt-12 md:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-stretch">
           {stats.map((s, i) => {
             const Icon = s.icon
             return (
               <ScrollReveal key={s.label} variant="fadeUp" delay={i * 0.06}>
                 <div
-                  className={`h-full p-6 md:p-8 flex flex-col items-center text-center ${
-                    s.accent ? 'fx-tile-gold' : 'fx-tile'
-                  }`}
+                  className={`fx-stat-card${s.accent ? ' fx-stat-card-accent' : ''} h-full p-6 md:p-8 flex flex-col items-center text-center`}
                 >
-                  {s.accent ? (
-                    <div
-                      className="relative z-[1] mb-5 w-[54px] h-[54px] rounded-2xl flex items-center justify-center"
-                      style={{ background: 'rgba(28,22,8,0.14)', border: '1px solid rgba(28,22,8,0.22)' }}
-                    >
-                      <Icon size={24} style={{ color: '#1c1608' }} />
-                    </div>
-                  ) : (
-                    <div className="feature-icon mb-5" style={{ width: 54, height: 54 }}>
-                      <Icon size={24} />
-                    </div>
-                  )}
+                  <div className="fx-stat-icon mb-5">
+                    <Icon size={24} strokeWidth={1.75} />
+                  </div>
 
-                  <div
-                    className={`relative z-[1] text-[34px] md:text-[42px] font-extrabold leading-none mb-2 tracking-tight ${
-                      s.accent ? '' : 'gradient-text'
-                    }`}
-                    style={s.accent ? { color: '#1c1608' } : undefined}
-                  >
+                  <div className="fx-stat-value gradient-text text-[34px] md:text-[42px] font-extrabold leading-none mb-2 tracking-tight">
                     {s.value}
                   </div>
-                  <div
-                    className="relative z-[1] text-[11px] font-bold uppercase tracking-[0.18em]"
-                    style={{ color: s.accent ? 'rgba(28,22,8,0.72)' : 'var(--fx-text-3)' }}
-                  >
+                  <div className="fx-stat-label text-[11px] font-bold uppercase tracking-[0.18em]">
                     {s.label}
                   </div>
                 </div>
@@ -77,7 +62,7 @@ export default function TxLeverage() {
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;You only pay for leverage when you actually use it over time.&rdquo;
