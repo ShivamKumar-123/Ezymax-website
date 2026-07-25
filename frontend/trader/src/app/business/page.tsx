@@ -355,6 +355,10 @@ function IBTab() {
         <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
 
         <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Apply once — after admin approval you&apos;ll get your IB Portal login ID and password by email.</p>
+        <p className="text-xxs text-text-tertiary max-w-md mx-auto leading-relaxed">
+          Note: IB registration requires an introduction from a <span className="text-text-secondary font-semibold">Master IB</span> —
+          your account must have been created through a Master IB&apos;s referral link.
+        </p>
 
         <button
 

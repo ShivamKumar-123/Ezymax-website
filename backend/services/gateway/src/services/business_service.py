@@ -169,6 +169,30 @@ async def apply_ib(user_id: UUID, application_data: dict | None, db: AsyncSessio
     if existing_app.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a pending application")
 
+    # Client rule (July 2026): an IB can only be INTRODUCED BY A MASTER IB —
+    # the applicant must have signed up under an active Master IB's referral
+    # link. Users referred by a plain IB, or not referred at all, cannot
+    # apply. (Master IB applications themselves stay open to everyone.)
+    intro_q = await db.execute(
+        select(IBProfile.id)
+        .join(Referral, Referral.ib_profile_id == IBProfile.id)
+        .join(User, User.id == IBProfile.user_id)
+        .where(
+            Referral.referred_id == user_id,
+            IBProfile.is_active == True,
+            User.role == "sub_broker",
+        )
+        .limit(1)
+    )
+    if intro_q.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "IB registration requires an introduction from a Master IB. "
+                "Ask a Master IB for their referral link and register through it."
+            ),
+        )
+
     application = IBApplication(
         user_id=user_id,
         status="pending",
