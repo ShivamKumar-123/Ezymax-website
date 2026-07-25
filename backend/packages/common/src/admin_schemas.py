@@ -1041,14 +1041,57 @@ class ClusterUser(BaseModel):
     email: Optional[str] = None
 
 
+class CrmRevenuePeriod(BaseModel):
+    """Platform revenue for one time window.
+
+    Mirrors the admin Analytics page exactly — same rows, same windows, demo
+    accounts included — so the CRM and the admin panel always show the same
+    number. brokerage_total = commission + swap is what Analytics calls
+    "revenue". trading_pnl is the B-book line: the customers' net realized P&L
+    inverted — positive means the platform gained. net_total is the full picture.
+    """
+    commission: float = 0
+    swap: float = 0
+    spread: float = 0                # always 0 — FXArtha bakes spread into the fill price
+    brokerage_total: float = 0       # commission + swap
+    trading_pnl: float = 0           # −(customers' realized P&L); can be negative
+    ib_commission: float = 0         # paid out to IBs in this window
+    net_total: float = 0             # brokerage_total + trading_pnl − ib_commission
+
+
+class CrmMonthlyRevenue(BaseModel):
+    """One month of the revenue series (last 12 months, oldest → newest)."""
+    month: str                       # "2026-07"
+    label: str                       # "Jul 2026"
+    commission: float = 0
+    swap: float = 0
+    brokerage_total: float = 0
+    trading_pnl: float = 0
+    ib_commission: float = 0
+    net_total: float = 0
+
+
+class CrmRevenueBlock(BaseModel):
+    today: CrmRevenuePeriod = CrmRevenuePeriod()
+    this_week: CrmRevenuePeriod = CrmRevenuePeriod()
+    this_month: CrmRevenuePeriod = CrmRevenuePeriod()
+    all_time: CrmRevenuePeriod = CrmRevenuePeriod()
+
+
 class CrmDashboard(BaseModel):
     total_traders: int = 0
     active_accounts: int = 0
     total_deposits: float = 0
     total_withdrawals: float = 0
     lots_traded: float = 0
+    # Legacy flat fields = brokerage (commission + swap) for that window.
     todays_revenue: float = 0
+    weekly_revenue: float = 0
     monthly_revenue: float = 0
+    total_revenue: float = 0         # all-time brokerage
+    # Full breakdown — use this to render revenue without recomputing anything.
+    revenue: CrmRevenueBlock = CrmRevenueBlock()
+    revenue_by_month: list[CrmMonthlyRevenue] = []
 
 
 class CrmLeadRow(BaseModel):
@@ -1069,6 +1112,12 @@ class CrmLeadRow(BaseModel):
     referral_code: Optional[str] = None
     followers_count: int = 0              # users this IB referred
     ib_commission_total: float = 0        # lifetime IB commission earned
+    # ── IB extra ──
+    ib_level: Optional[int] = None                    # MLM depth / tier
+    ib_upline_email: Optional[str] = None             # parent (upline) IB's email
+    ib_pending_payout: float = 0                      # earned but not yet paid out
+    ib_custom_commission_per_lot: Optional[float] = None
+    ib_custom_commission_per_trade: Optional[float] = None
     # ── Referral network (item 4) ──
     referred_by: Optional[str] = None     # email of the user/IB who referred this lead
     referrals_count: int = 0              # users this lead referred
@@ -1090,6 +1139,14 @@ class CrmCustomerRow(BaseModel):
     currency: Optional[str] = None
     balance: float = 0
     equity: float = 0
+    # ── Account live/margin extra ──
+    credit: float = 0                     # bonus / credit balance
+    margin_used: float = 0
+    free_margin: float = 0
+    margin_level: float = 0               # equity / margin_used * 100
+    leverage: Optional[int] = None
+    minimum_deposit: float = 0            # from the account group
+    swap_free: bool = False               # Islamic / swap-free account group
     total_deposit: float = 0
     total_withdrawal: float = 0
     lots_traded: float = 0
@@ -1125,17 +1182,18 @@ class CrmCustomerRow(BaseModel):
 
 
 class CrmTradeRow(BaseModel):
-    """One closed trade (item 2)."""
+    """One trade — open (live position) or closed (history)."""
     trade_id: str
     user_id: str
     account_number: Optional[str] = None
     symbol: Optional[str] = None
+    status: str = "closed"                # open | closed
     side: Optional[str] = None            # buy / sell
     lots: float = 0
     open_price: float = 0
-    close_price: float = 0
+    close_price: float = 0                # 0 for open trades
     opened_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None  # trade date/time
+    closed_at: Optional[datetime] = None  # null for open trades
     profit: float = 0                     # positive part of P&L (0 if loss)
     loss: float = 0                       # positive part of loss (0 if profit)
     net_pnl: float = 0                    # signed realized P&L
@@ -1167,6 +1225,53 @@ class CrmReferralRow(BaseModel):
     referred_name: Optional[str] = None
     referred_country: Optional[str] = None
     referred_has_account: bool = False
+    created_at: Optional[datetime] = None
+
+
+class CrmPositionRow(BaseModel):
+    """One live (open) position."""
+    position_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    symbol: Optional[str] = None
+    side: Optional[str] = None            # buy / sell
+    lots: float = 0
+    open_price: float = 0
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    swap: float = 0
+    commission: float = 0
+    floating_pnl: float = 0               # engine-maintained unrealised P&L (~1s fresh)
+    opened_at: Optional[datetime] = None
+
+
+class CrmOrderRow(BaseModel):
+    """One pending / working order (not yet a position)."""
+    order_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    symbol: Optional[str] = None
+    order_type: Optional[str] = None      # market / limit / stop / stop_limit
+    side: Optional[str] = None            # buy / sell
+    status: Optional[str] = None
+    lots: float = 0
+    price: Optional[float] = None         # requested price
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    is_admin_created: bool = False
+    created_at: Optional[datetime] = None
+
+
+class CrmLedgerRow(BaseModel):
+    """One internal balance movement (Transaction ledger) — deposits, withdrawals,
+    credits, adjustments, commissions, bonuses, etc."""
+    ledger_id: str
+    user_id: str
+    account_number: Optional[str] = None
+    type: Optional[str] = None            # deposit / withdrawal / credit / adjustment / commission / …
+    amount: float = 0                     # signed
+    balance_after: Optional[float] = None
+    description: Optional[str] = None
     created_at: Optional[datetime] = None
 
 
