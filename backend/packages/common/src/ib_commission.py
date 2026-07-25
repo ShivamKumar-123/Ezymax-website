@@ -148,9 +148,28 @@ async def distribute_ib_commission(
         mlm_dist = await get_mlm_distribution(db)
 
     current_ib = direct_ib
+    # Cycle / self-referral guard — mirrors the guards in
+    # rewards_service._distribute_to_referral_chain and
+    # social_service.distribute_copy_trade_platform_fee. Without it, a
+    # parent_ib_id cycle (A→B→A) pays the same IB at multiple levels, and a
+    # trader who is their own referring IB earns commission on their own
+    # volume.
+    visited_ib_ids: set = set()
     for level, pct in enumerate(mlm_dist, start=1):
         if current_ib is None:
             break
+        if current_ib.id in visited_ib_ids:
+            logger.warning(
+                "IB commission walk aborted at L%d: cycle detected in "
+                "parent_ib_id chain at IB=%s", level, current_ib.referral_code,
+            )
+            break
+        visited_ib_ids.add(current_ib.id)
+        if current_ib.user_id == trader_user_id:
+            # Trader is their own IB at this level — skip the payout but keep
+            # walking so an honest upline still earns its share.
+            current_ib = await _get_parent_ib(current_ib, db)
+            continue
 
         share = total_commission * Decimal(str(pct)) / Decimal("100")
         if share <= 0:
