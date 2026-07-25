@@ -17,6 +17,7 @@ export interface SubIb {
 export interface DashboardData {
   referral_code: string;
   referral_link: string;
+  is_master_ib?: boolean;
   level: number;
   total_referrals: number;
   total_commission: number;
