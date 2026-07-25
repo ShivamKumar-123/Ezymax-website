@@ -122,7 +122,7 @@ export default function PrCompare() {
                   'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold) 70%, var(--fx-gold-dark))',
                 color: '#1a1408',
                 boxShadow:
-                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(214,169,61,0.45), 0 16px 40px -12px rgba(214,169,61,0.45)',
+                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(221,169,46,0.45), 0 16px 40px -12px rgba(221,169,46,0.45)',
               }}
             >
               VS
@@ -132,7 +132,7 @@ export default function PrCompare() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;We don&apos;t hold your money. The system manages execution.&rdquo;

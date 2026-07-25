@@ -36,7 +36,7 @@ export default function WhySection() {
                   className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{
                     background: 'var(--fx-gold-soft)',
-                    border: '1px solid rgba(214,169,61,0.28)',
+                    border: '1px solid rgba(221,169,46,0.28)',
                   }}
                 >
                   <Icon size={20} style={{ color: 'var(--fx-gold-light)' }} />

@@ -237,7 +237,7 @@ export default function Partnership() {
                     style={{
                       background: 'var(--fx-gold-soft)',
                       color: 'var(--fx-gold-light)',
-                      border: '1px solid rgba(214,169,61,0.28)',
+                      border: '1px solid rgba(221,169,46,0.28)',
                     }}
                   >
                     STEP {s.n}
@@ -264,8 +264,8 @@ export default function Partnership() {
               className="relative overflow-hidden rounded-2xl p-8 md:p-12 text-center"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 70%), var(--fx-bg-elev)',
-                border: '1px solid rgba(214,169,61,0.22)',
+                  'linear-gradient(180deg, rgba(221,169,46,0.10) 0%, rgba(221,169,46,0) 70%), var(--fx-bg-elev)',
+                border: '1px solid rgba(221,169,46,0.22)',
               }}
             >
               <Handshake

@@ -28,7 +28,7 @@ export default function InHero() {
         className="absolute inset-0 z-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
+            'linear-gradient(90deg, rgba(8,10,14,0.9) 0%, rgba(8,10,14,0.6) 32%, rgba(8,10,14,0.18) 58%, rgba(8,10,14,0) 82%), radial-gradient(60% 60% at 80% 25%, rgba(221,169,46,0.10) 0%, rgba(221,169,46,0) 60%)',
         }}
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-10 md:pb-14">
@@ -39,7 +39,7 @@ export default function InHero() {
               <span className="badge">
                 <span
                   className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+                  style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(221,169,46,0.7)' }}
                 />
                 Trade Insurance
               </span>
@@ -82,7 +82,7 @@ export default function InHero() {
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background:
-                    'radial-gradient(40% 50% at 50% 50%, rgba(214,169,61,0.35) 0%, rgba(214,169,61,0) 70%)',
+                    'radial-gradient(40% 50% at 50% 50%, rgba(221,169,46,0.35) 0%, rgba(221,169,46,0) 70%)',
                 }}
               />
 
@@ -94,18 +94,18 @@ export default function InHero() {
                     className="rounded-xl p-3 sm:p-4 flex items-start gap-2.5"
                     style={{
                       background:
-                        'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.03) 100%), rgba(15,17,21,0.65)',
-                      border: '1px solid rgba(214,169,61,0.32)',
+                        'linear-gradient(180deg, rgba(221,169,46,0.10) 0%, rgba(221,169,46,0.03) 100%), rgba(15,17,21,0.65)',
+                      border: '1px solid rgba(221,169,46,0.32)',
                       backdropFilter: 'blur(6px)',
-                      boxShadow: '0 18px 40px -22px rgba(214,169,61,0.30)',
+                      boxShadow: '0 18px 40px -22px rgba(221,169,46,0.30)',
                       animation: `fxFloat ${6 + (idx % 2)}s ease-in-out infinite${idx % 2 ? ' reverse' : ''}`,
                     }}
                   >
                     <div
                       className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                       style={{
-                        background: 'rgba(214,169,61,0.18)',
-                        border: '1px solid rgba(214,169,61,0.40)',
+                        background: 'rgba(221,169,46,0.18)',
+                        border: '1px solid rgba(221,169,46,0.40)',
                       }}
                     >
                       <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
@@ -133,7 +133,7 @@ export default function InHero() {
                   background:
                     'linear-gradient(135deg, var(--fx-gold-light), var(--fx-gold))',
                   boxShadow:
-                    '0 0 0 8px rgba(214,169,61,0.10), 0 30px 60px -20px rgba(214,169,61,0.55)',
+                    '0 0 0 8px rgba(221,169,46,0.10), 0 30px 60px -20px rgba(221,169,46,0.55)',
                   animation: 'fxFloat 6s ease-in-out infinite',
                 }}
               >

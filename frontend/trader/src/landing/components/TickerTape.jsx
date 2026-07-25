@@ -106,9 +106,9 @@ export default function TickerTape() {
       className="w-full overflow-hidden relative"
       style={{
         background:
-          'linear-gradient(180deg, rgba(214,169,61,0.04) 0%, rgba(0,0,0,0) 100%), #0b0c0e',
-        borderTop: '1px solid rgba(214,169,61,0.18)',
-        borderBottom: '1px solid rgba(214,169,61,0.18)',
+          'linear-gradient(180deg, rgba(221,169,46,0.04) 0%, rgba(0,0,0,0) 100%), #0b0c0e',
+        borderTop: '1px solid rgba(221,169,46,0.18)',
+        borderBottom: '1px solid rgba(221,169,46,0.18)',
       }}
     >
       {/* Edge fade masks so items disappear smoothly */}

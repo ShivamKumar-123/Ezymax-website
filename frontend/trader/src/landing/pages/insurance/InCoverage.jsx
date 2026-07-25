@@ -120,8 +120,8 @@ export default function InCoverage() {
           <div
             className="mt-8 mx-auto max-w-3xl rounded-xl px-4 py-3 text-sm flex items-center gap-3"
             style={{
-              background: 'rgba(214,169,61,0.05)',
-              border: '1px solid rgba(214,169,61,0.22)',
+              background: 'rgba(221,169,46,0.05)',
+              border: '1px solid rgba(221,169,46,0.22)',
               color: 'var(--fx-text-2)',
             }}
           >

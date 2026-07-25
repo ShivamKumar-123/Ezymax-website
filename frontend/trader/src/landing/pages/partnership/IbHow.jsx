@@ -49,7 +49,7 @@ export default function IbHow() {
                   style={{
                     background:
                       'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
-                    boxShadow: '0 0 16px rgba(214,169,61,0.4)',
+                    boxShadow: '0 0 16px rgba(221,169,46,0.4)',
                   }}
                 />
                 <ul className="relative space-y-6 md:space-y-7">
@@ -64,11 +64,11 @@ export default function IbHow() {
                               width: 48,
                               height: 48,
                               background:
-                                'linear-gradient(180deg, #fbeaa8 0%, #ecc657 55%, #b6842a 100%)',
+                                'linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 52%, var(--fx-gold-dark) 100%)',
                               color: '#1c1608',
                               border: '1px solid rgba(255,255,255,0.3)',
                               boxShadow:
-                                '0 0 0 5px rgba(214,169,61,0.14), 0 14px 30px -10px rgba(214,169,61,0.6)',
+                                '0 0 0 5px rgba(221,169,46,0.14), 0 14px 30px -10px rgba(221,169,46,0.6)',
                             }}
                           >
                             {i + 1}

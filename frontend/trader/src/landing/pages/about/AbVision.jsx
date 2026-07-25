@@ -72,9 +72,9 @@ export default function AbVision() {
                     key={b}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
                     style={{
-                      background: 'rgba(214,169,61,0.08)',
+                      background: 'rgba(221,169,46,0.08)',
                       color: 'var(--fx-gold-light)',
-                      border: '1px solid rgba(214,169,61,0.30)',
+                      border: '1px solid rgba(221,169,46,0.30)',
                     }}
                   >
                     {b}

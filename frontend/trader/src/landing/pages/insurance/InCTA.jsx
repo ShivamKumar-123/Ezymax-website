@@ -11,7 +11,7 @@ export default function InCTA() {
             className="relative rounded-3xl p-10 md:p-14 lg:p-16 overflow-hidden"
             style={{
               background:
-                'radial-gradient(120% 130% at 50% 0%, rgba(214,169,61,0.12) 0%, rgba(214,169,61,0) 55%), var(--fx-bg-elev)',
+                'radial-gradient(120% 130% at 50% 0%, rgba(221,169,46,0.12) 0%, rgba(221,169,46,0) 55%), var(--fx-bg-elev)',
               border: '1px solid var(--fx-line-strong)',
               boxShadow: '0 40px 90px -44px rgba(0,0,0,0.75)',
             }}
@@ -20,7 +20,7 @@ export default function InCTA() {
               className="absolute -top-px left-[8%] right-[8%] h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(214,169,61,0.85), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(221,169,46,0.85), transparent)',
               }}
             />
             <div className="absolute inset-0 fx-grid-bg pointer-events-none" />
@@ -30,7 +30,7 @@ export default function InCTA() {
                 <span className="badge mb-6" style={{ display: 'inline-flex' }}>
                   <span
                     className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+                    style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(221,169,46,0.7)' }}
                   />
                   Get Protected
                 </span>

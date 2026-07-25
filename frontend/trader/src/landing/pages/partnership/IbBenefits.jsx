@@ -48,7 +48,7 @@ function GoldChip({ icon: Icon, size = 52 }) {
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       }}
     >
-      <Icon size={Math.round(size * 0.42)} style={{ color: '#f2d477' }} />
+      <Icon size={Math.round(size * 0.42)} style={{ color: '#f7d873' }} />
     </div>
   )
 }

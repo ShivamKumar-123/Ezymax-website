@@ -109,7 +109,7 @@ const HeroScrollCanvas = () => {
         <canvas
           ref={canvasRef}
           className="block w-full h-full"
-          style={{ backgroundColor: '#0A0E1A' }}
+          style={{ backgroundColor: 'var(--fx-bg)' }}
         />
       </div>
 
@@ -119,7 +119,7 @@ const HeroScrollCanvas = () => {
           className="fixed right-4 top-0 w-[2px] z-50 origin-top"
           style={{
             height: '100vh',
-            background: 'linear-gradient(to bottom, #1A56FF, #7B2FFF)',
+            background: 'linear-gradient(to bottom, var(--fx-gold-sheen), var(--fx-gold), var(--fx-gold-dark))',
             scaleY: scrollYProgress,
           }}
         />

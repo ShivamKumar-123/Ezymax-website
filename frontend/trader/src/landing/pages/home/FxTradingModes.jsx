@@ -1,99 +1,152 @@
-import { CheckCircle2 } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
-const fundedFeatures = [
-  'No borrowing',
-  'No overnight costs',
-  'Clear risk exposure',
-]
-
-const leveragedFeatures = [
-  'Adjustable leverage',
-  'Optimized capital usage',
-  'Transparent cost on leveraged exposure',
+const modes = [
+  {
+    n: '01',
+    title: 'Fully Funded Trading',
+    desc: 'Trade using your available capital without leverage.',
+    features: ['No borrowing', 'No overnight costs', 'Clear risk exposure'],
+    accent: true,
+  },
+  {
+    n: '02',
+    title: 'Leveraged Trading',
+    desc: 'Access larger positions using leverage based on your preference.',
+    features: [
+      'Adjustable leverage',
+      'Optimized capital usage',
+      'Transparent cost on leveraged exposure',
+    ],
+    note: 'Costs apply only when leverage is used.',
+  },
 ]
 
 export default function FxTradingModes() {
   return (
     <section className="fx-section" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-container">
-        {/* ── Two-column intro ──────────────────────────────── */}
-        <div className="fx-split-intro">
-          <ScrollReveal variant="fadeUp">
-            <div>
-              <span className="fx-eyebrow mb-5">Trading Modes</span>
-              <h2 className="fx-headline text-3xl md:text-4xl lg:text-5xl mt-5">
-                Flexible Trading Built Around <span className="gradient-text">Your Strategy</span>
-              </h2>
-            </div>
-          </ScrollReveal>
-          <ScrollReveal variant="fadeUp" delay={0.1}>
-            <p className="text-base md:text-lg" style={{ color: 'var(--fx-text-2)' }}>
-              Two ways to trade. Same platform, same fair rules — pick whichever matches how much risk you're willing to carry today.
-            </p>
-          </ScrollReveal>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+          {/* ── Left: editorial column + anchored visual ── */}
+          <div className="lg:col-span-5">
+            <ScrollReveal variant="fadeUp">
+              <div>
+                <span className="fx-eyebrow">Trading Modes</span>
+                <h2 className="fx-headline text-3xl md:text-4xl lg:text-[44px] mt-6 leading-[1.08]">
+                  Flexible Trading Built Around{' '}
+                  <span className="gradient-text">Your Strategy</span>
+                </h2>
+                <p
+                  className="mt-6 text-base md:text-lg max-w-md"
+                  style={{ color: 'var(--fx-text-2)' }}
+                >
+                  Two ways to trade. Same platform, same fair rules — pick whichever matches how
+                  much risk you're willing to carry today.
+                </p>
+              </div>
+            </ScrollReveal>
 
-        {/* ── Bento: gold tile + dark tile + image tile ─────── */}
-        <div className="fx-bento grid-cols-1 md:grid-cols-3 mt-10 md:mt-14 items-stretch">
-          {/* Fully Funded — solid gold accent tile */}
-          <ScrollReveal variant="fadeUp">
-            <div className="fx-tile-gold h-full p-7 md:p-8 flex flex-col">
-              <span className="fx-accent-bar mb-4 relative z-[1]" />
-              <h3 className="relative z-[1] text-2xl md:text-[26px] font-bold mb-3" style={{ color: '#1c1608' }}>
-                Fully Funded Trading
-              </h3>
-              <p className="relative z-[1] text-base mb-6" style={{ color: 'rgba(28,22,8,0.78)' }}>
-                Trade using your available capital without leverage.
-              </p>
-              <ul className="relative z-[1] space-y-3 mt-auto">
-                {fundedFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: '#1c1608' }} />
-                    <span className="text-sm md:text-[15px] font-medium" style={{ color: '#1c1608' }}>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </ScrollReveal>
-
-          {/* Leveraged — dark tile with gold accent bar */}
-          <ScrollReveal variant="fadeUp" delay={0.08}>
-            <div className="fx-tile h-full p-7 md:p-8 flex flex-col">
-              <span className="fx-accent-bar mb-4" />
-              <h3 className="text-2xl md:text-[26px] font-bold text-white mb-3">
-                Leveraged Trading
-              </h3>
-              <p className="text-base mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                Access larger positions using leverage based on your preference.
-              </p>
-              <ul className="space-y-3">
-                {leveragedFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <CheckCircle2 size={18} style={{ color: 'var(--fx-gold-light)' }} />
-                    <span className="text-sm md:text-[15px] text-white">{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <p
-                className="mt-6 pt-5 text-xs italic"
-                style={{ borderTop: '1px solid var(--fx-line)', color: 'var(--fx-text-3)' }}
+            <ScrollReveal variant="fadeUp" delay={0.12}>
+              <figure
+                className="relative mt-10 lg:mt-12 rounded-[1.25rem] overflow-hidden"
+                style={{ border: '1px solid var(--fx-line)' }}
               >
-                Costs apply only when leverage is used.
-              </p>
-            </div>
-          </ScrollReveal>
+                <img
+                  src="/images/hero_card1.png"
+                  alt="Flexible trading"
+                  className="w-full h-[240px] lg:h-[320px] object-cover"
+                />
+                {/* veil so the image seats into the page instead of floating */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(8,9,11,0) 40%, rgba(8,9,11,0.8) 100%)',
+                  }}
+                />
+              </figure>
+            </ScrollReveal>
+          </div>
 
-          {/* Image tile */}
-          <ScrollReveal variant="fadeUp" delay={0.16}>
-            <div className="fx-tile h-full min-h-[300px] overflow-hidden">
-              <img
-                src="/images/hero_card1.png"
-                alt="Flexible trading"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </ScrollReveal>
+          {/* ── Right: the two modes as hairline-separated editorial rows ── */}
+          <div className="lg:col-span-7 lg:pt-2">
+            {modes.map((m, i) => (
+              <ScrollReveal key={m.title} variant="fadeUp" delay={0.08 * (i + 1)}>
+                <article
+                  className="group relative py-9 md:py-11"
+                  style={{
+                    borderTop: '1px solid var(--fx-line)',
+                    borderBottom:
+                      i === modes.length - 1 ? '1px solid var(--fx-line)' : 'none',
+                  }}
+                >
+                  {/* warm wash that bleeds in from the left on hover */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 -left-5 -right-5 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, rgba(221,169,46,0.08), rgba(221,169,46,0) 58%)',
+                    }}
+                  />
+                  {/* gold tick that draws along the top rule on hover */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-0 top-0 h-px w-0 transition-all duration-500 group-hover:w-24"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, var(--fx-gold-light), rgba(221,169,46,0))',
+                    }}
+                  />
+
+                  <div className="relative flex items-start gap-5 md:gap-8">
+                    <span
+                      className={`shrink-0 text-[34px] md:text-[44px] font-bold leading-none tabular-nums transition-opacity duration-300 ${
+                        m.accent ? 'gradient-text' : 'opacity-45 group-hover:opacity-70'
+                      }`}
+                      style={m.accent ? undefined : { color: 'var(--fx-text-3)' }}
+                    >
+                      {m.n}
+                    </span>
+
+                    <div className="min-w-0">
+                      <h3 className="text-xl md:text-2xl font-bold text-white leading-snug">
+                        {m.title}
+                      </h3>
+                      <p className="mt-2.5 text-base" style={{ color: 'var(--fx-text-2)' }}>
+                        {m.desc}
+                      </p>
+
+                      <ul className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2.5">
+                        {m.features.map((f) => (
+                          <li
+                            key={f}
+                            className="flex items-center gap-2 text-sm"
+                            style={{ color: 'var(--fx-text-2)' }}
+                          >
+                            <span
+                              className="w-1 h-1 rounded-full shrink-0"
+                              style={{ background: 'var(--fx-gold)' }}
+                            />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {m.note && (
+                        <p
+                          className="mt-5 text-xs italic"
+                          style={{ color: 'var(--fx-text-3)' }}
+                        >
+                          {m.note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              </ScrollReveal>
+            ))}
+          </div>
         </div>
       </div>
     </section>

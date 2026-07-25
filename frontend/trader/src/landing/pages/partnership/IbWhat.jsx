@@ -82,7 +82,7 @@ export default function IbWhat() {
                         className="flex items-center gap-3 rounded-xl px-4 py-3"
                         style={{
                           background: 'var(--fx-bg-elev)',
-                          border: '1px solid rgba(214,169,61,0.28)',
+                          border: '1px solid rgba(221,169,46,0.28)',
                         }}
                       >
                         <div className="feature-icon shrink-0" style={{ width: 40, height: 40 }}>

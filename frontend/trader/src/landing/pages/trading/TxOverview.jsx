@@ -31,8 +31,8 @@ function StatCard({ value, unit, label, desc, raised }) {
       style={
         raised
           ? {
-              borderColor: 'rgba(214,169,61,0.35)',
-              boxShadow: '0 40px 90px -44px rgba(214,169,61,0.35)',
+              borderColor: 'rgba(221,169,46,0.35)',
+              boxShadow: '0 40px 90px -44px rgba(221,169,46,0.35)',
             }
           : undefined
       }
@@ -89,7 +89,7 @@ export default function TxOverview() {
             className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[860px] h-[860px] max-w-none rounded-full"
             style={{
               background:
-                'repeating-radial-gradient(circle at center, transparent 0 89px, rgba(214,169,61,0.08) 89px 90px)',
+                'repeating-radial-gradient(circle at center, transparent 0 89px, rgba(221,169,46,0.08) 89px 90px)',
               WebkitMaskImage: 'radial-gradient(circle, #000 0%, rgba(0,0,0,0.35) 55%, transparent 72%)',
               maskImage: 'radial-gradient(circle, #000 0%, rgba(0,0,0,0.35) 55%, transparent 72%)',
             }}
@@ -106,7 +106,7 @@ export default function TxOverview() {
 
         <ScrollReveal variant="fadeUp" delay={0.3}>
           <p
-            className="mt-16 md:mt-24 lg:mt-28 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-16 md:mt-24 lg:mt-28 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Your growth as a trader improves your trading conditions.&rdquo;

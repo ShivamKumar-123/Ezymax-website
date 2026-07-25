@@ -1,4 +1,4 @@
-import { Zap, ArrowDownRight, TrendingUp } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const improvements = [
@@ -14,6 +14,8 @@ const levels = [
   { tier: '4',   label: 'Advanced Trader' },
   { tier: '5+',  label: 'Elite Trader' },
 ]
+
+const heights = ['42%', '57%', '72%', '86%', '100%']
 
 export default function TxXP() {
   return (
@@ -38,41 +40,52 @@ export default function TxXP() {
 
         <ScrollReveal variant="fadeUp">
           <div className="fx-tile mt-12 md:mt-16 p-6 md:p-8 lg:p-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              {/* LEFT — text + benefits */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              {/* LEFT — minimal: heading, one line, a clean ruled list */}
               <div className="lg:col-span-4">
-                <div className="feature-icon mb-4" style={{ width: 48, height: 48 }}>
-                  <Zap size={20} />
-                </div>
-                <span className="fx-accent-bar mb-4" />
-                <h3 className="text-xl md:text-2xl font-bold text-white leading-tight mb-3">
+                <h3 className="text-xl md:text-2xl font-bold text-white leading-tight">
                   The more you trade, the better your conditions.
                 </h3>
-                <p className="text-sm md:text-base mb-5" style={{ color: 'var(--fx-text-2)' }}>
+                <p className="mt-4 text-sm md:text-base" style={{ color: 'var(--fx-text-2)' }}>
                   XP isn&apos;t a badge — it directly shapes your live trading conditions across all three cost components.
                 </p>
-                <ul className="space-y-3">
-                  {improvements.map((i) => (
-                    <li key={i.title} className="flex items-start gap-3">
-                      <ArrowDownRight size={16} style={{ color: 'var(--fx-gold-light)', marginTop: 3 }} />
-                      <div>
-                        <div className="text-sm font-bold text-white">{i.title}</div>
-                        <div className="text-xs" style={{ color: 'var(--fx-text-3)' }}>{i.desc}</div>
+                <ul className="mt-8">
+                  {improvements.map((it, idx) => (
+                    <li
+                      key={it.title}
+                      className="py-4"
+                      style={{
+                        borderTop: '1px solid var(--fx-line)',
+                        borderBottom:
+                          idx === improvements.length - 1 ? '1px solid var(--fx-line)' : 'none',
+                      }}
+                    >
+                      <div className="text-sm md:text-[15px] font-semibold text-white">
+                        {it.title}
+                      </div>
+                      <div
+                        className="mt-1 text-xs md:text-[13px]"
+                        style={{ color: 'var(--fx-text-3)' }}
+                      >
+                        {it.desc}
                       </div>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* RIGHT — Ascending XP ladder (rising tier bars) */}
+              {/* RIGHT — Ascending XP ladder; each level rises in one-by-one */}
               <div className="lg:col-span-8">
-                {/* Rising bars */}
                 <div className="flex items-end gap-2 sm:gap-3 md:gap-4 h-[200px] md:h-[236px]">
                   {levels.map((lv, idx) => {
                     const isLast = idx === levels.length - 1
-                    const heights = ['42%', '57%', '72%', '86%', '100%']
                     return (
-                      <div key={lv.tier} className="flex-1 min-w-0 h-full flex flex-col items-center justify-end">
+                      <ScrollReveal
+                        key={lv.tier}
+                        variant="fadeUp"
+                        delay={idx * 0.14}
+                        className="flex-1 min-w-0 h-full flex flex-col items-center justify-end"
+                      >
                         <div
                           className="text-base md:text-xl font-extrabold leading-none mb-2.5 tracking-tight"
                           style={{ color: isLast ? 'var(--fx-gold-light)' : undefined }}
@@ -86,12 +99,12 @@ export default function TxXP() {
                           style={{
                             height: heights[idx],
                             background: isLast
-                              ? 'linear-gradient(180deg, #f2d477 0%, var(--fx-gold) 58%, var(--fx-gold-dark) 100%)'
-                              : 'linear-gradient(180deg, rgba(214,169,61,0.5) 0%, rgba(214,169,61,0.08) 100%)',
-                            border: '1px solid rgba(214,169,61,0.4)',
+                              ? 'linear-gradient(180deg, #f7d873 0%, var(--fx-gold) 58%, var(--fx-gold-dark) 100%)'
+                              : 'linear-gradient(180deg, rgba(221,169,46,0.5) 0%, rgba(221,169,46,0.08) 100%)',
+                            border: '1px solid rgba(221,169,46,0.4)',
                             borderBottom: 'none',
                             boxShadow: isLast
-                              ? '0 0 32px rgba(214,169,61,0.5)'
+                              ? '0 0 32px rgba(221,169,46,0.5)'
                               : 'inset 0 1px 0 rgba(255,255,255,0.06)',
                           }}
                         >
@@ -101,7 +114,7 @@ export default function TxXP() {
                             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0))' }}
                           />
                         </div>
-                      </div>
+                      </ScrollReveal>
                     )
                   })}
                 </div>
@@ -109,13 +122,18 @@ export default function TxXP() {
                 {/* Baseline */}
                 <div
                   className="h-px w-full"
-                  style={{ background: 'linear-gradient(90deg, rgba(214,169,61,0.08), rgba(214,169,61,0.55), rgba(214,169,61,0.08))' }}
+                  style={{ background: 'linear-gradient(90deg, rgba(221,169,46,0.08), rgba(221,169,46,0.55), rgba(221,169,46,0.08))' }}
                 />
 
-                {/* Level labels */}
+                {/* Level labels — reveal in step with their bars */}
                 <div className="flex gap-2 sm:gap-3 md:gap-4 mt-3">
-                  {levels.map((lv) => (
-                    <div key={lv.tier} className="flex-1 min-w-0 text-center">
+                  {levels.map((lv, idx) => (
+                    <ScrollReveal
+                      key={lv.tier}
+                      variant="fadeUp"
+                      delay={idx * 0.14 + 0.05}
+                      className="flex-1 min-w-0 text-center"
+                    >
                       <div
                         className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider"
                         style={{ color: 'var(--fx-gold-light)' }}
@@ -125,7 +143,7 @@ export default function TxXP() {
                       <div className="text-[10px] sm:text-xs font-semibold text-white leading-tight mt-0.5">
                         {lv.label}
                       </div>
-                    </div>
+                    </ScrollReveal>
                   ))}
                 </div>
 
@@ -143,7 +161,7 @@ export default function TxXP() {
 
         <ScrollReveal variant="fadeUp" delay={0.2}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;The more you trade, the more efficient your trading becomes.&rdquo;

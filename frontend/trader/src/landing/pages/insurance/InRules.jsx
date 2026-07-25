@@ -140,7 +140,7 @@ export default function InRules() {
 
         <ScrollReveal variant="fadeUp" delay={0.25}>
           <p
-            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto"
+            className="mt-10 md:mt-12 text-center text-base md:text-lg italic max-w-2xl mx-auto fx-quote"
             style={{ color: 'var(--fx-text-2)' }}
           >
             &ldquo;Structured rules ensure fairness and sustainability.&rdquo;

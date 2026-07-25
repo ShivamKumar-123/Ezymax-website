@@ -27,7 +27,7 @@ export default function FxHero() {
       style={{
         backgroundColor: 'var(--fx-bg)',
         backgroundImage:
-          'radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%), radial-gradient(40% 40% at 15% 90%, rgba(214,169,61,0.06) 0%, rgba(214,169,61,0) 60%)',
+          'radial-gradient(60% 60% at 80% 25%, rgba(221,169,46,0.10) 0%, rgba(221,169,46,0) 60%), radial-gradient(40% 40% at 15% 90%, rgba(221,169,46,0.06) 0%, rgba(221,169,46,0) 60%)',
       }}
     >
       <div className="fx-grid-bg" />
@@ -40,7 +40,7 @@ export default function FxHero() {
               <span className="badge">
                 <span
                   className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(214,169,61,0.7)' }}
+                  style={{ background: 'var(--fx-gold)', boxShadow: '0 0 8px rgba(221,169,46,0.7)' }}
                 />
                 Smart-Contract Trading
               </span>
@@ -85,8 +85,8 @@ export default function FxHero() {
                   key={label}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
                   style={{
-                    background: 'rgba(214,169,61,0.06)',
-                    border: '1px solid rgba(214,169,61,0.22)',
+                    background: 'rgba(221,169,46,0.06)',
+                    border: '1px solid rgba(221,169,46,0.22)',
                   }}
                 >
                   <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
@@ -133,8 +133,8 @@ export default function FxHero() {
                 <svg viewBox="0 0 280 100" className="w-full h-24" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="fxHeroSpark" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(214,169,61,0.45)" />
-                      <stop offset="100%" stopColor="rgba(214,169,61,0)" />
+                      <stop offset="0%" stopColor="rgba(221,169,46,0.45)" />
+                      <stop offset="100%" stopColor="rgba(221,169,46,0)" />
                     </linearGradient>
                   </defs>
                   <path
@@ -144,7 +144,7 @@ export default function FxHero() {
                   <path
                     d="M0,72 L24,60 L52,68 L82,42 L114,50 L144,30 L172,40 L204,22 L236,30 L264,12 L280,18"
                     fill="none"
-                    stroke="#ecc657"
+                    stroke="#f0c94f"
                     strokeWidth="1.75"
                   />
                 </svg>
@@ -205,7 +205,7 @@ export default function FxHero() {
                 className="absolute inset-0 -z-10 pointer-events-none"
                 style={{
                   background:
-                    'radial-gradient(50% 50% at 50% 50%, rgba(214,169,61,0.16), transparent 70%)',
+                    'radial-gradient(50% 50% at 50% 50%, rgba(221,169,46,0.16), transparent 70%)',
                 }}
               />
             </div>
