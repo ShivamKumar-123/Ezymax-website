@@ -90,21 +90,17 @@ async def crm_trades(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     search: str | None = Query(None, description="email or account number"),
-    status: str = Query("all", pattern="^(all|open|closed)$",
-                        description="all (default) = open + closed; or 'open' / 'closed'"),
-    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
-    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
+    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
+    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC, on closed_at)"),
     _: bool = Depends(verify_crm_key),
     db: AsyncSession = Depends(get_db),
 ):
-    """All trades — open (live positions) + closed (history). Each row has
-    status='open'|'closed'. Fields: user, symbol, side, lots, profit/loss,
-    brokerage, commission, swap. Date filter = closed_at (closed) / open time (open)."""
+    """Per closed trade: user, symbol, side, lots, profit/loss, brokerage, commission."""
     from datetime import date as _date
     df = _date.fromisoformat(date_from) if date_from else None
     dt = _date.fromisoformat(date_to) if date_to else None
     return await crm_service.list_trades(
-        db, page=page, per_page=per_page, search=search, date_from=df, date_to=dt, status=status,
+        db, page=page, per_page=per_page, search=search, date_from=df, date_to=dt,
     )
 
 
@@ -138,49 +134,3 @@ async def crm_referrals(
 ):
     """Referral network: referrer → referred edges."""
     return await crm_service.list_referrals(db, page=page, per_page=per_page, user_id=user_id)
-
-
-@router.get("/positions")
-async def crm_positions(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=100),
-    search: str | None = Query(None, description="email or account number"),
-    _: bool = Depends(verify_crm_key),
-    db: AsyncSession = Depends(get_db),
-):
-    """Live (open) positions with engine-maintained floating P&L."""
-    return await crm_service.list_positions(db, page=page, per_page=per_page, search=search)
-
-
-@router.get("/orders")
-async def crm_orders(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=100),
-    search: str | None = Query(None, description="email or account number"),
-    status: str | None = Query(None, description="order status (default: pending; 'all' for every status)"),
-    _: bool = Depends(verify_crm_key),
-    db: AsyncSession = Depends(get_db),
-):
-    """Pending / working orders (limit, stop, etc.). Default = pending only."""
-    return await crm_service.list_orders(db, page=page, per_page=per_page, search=search, status=status)
-
-
-@router.get("/ledger")
-async def crm_ledger(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=100),
-    type: str | None = Query(None, description="filter by movement type (deposit/withdrawal/credit/adjustment/…)"),
-    search: str | None = Query(None, description="user email or account number"),
-    date_from: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
-    date_to: str | None = Query(None, description="YYYY-MM-DD (UTC)"),
-    _: bool = Depends(verify_crm_key),
-    db: AsyncSession = Depends(get_db),
-):
-    """Internal balance ledger — every Transaction (deposits, withdrawals, credits,
-    adjustments, commissions, bonuses …) with running balance_after."""
-    from datetime import date as _date
-    df = _date.fromisoformat(date_from) if date_from else None
-    dt = _date.fromisoformat(date_to) if date_to else None
-    return await crm_service.list_ledger(
-        db, page=page, per_page=per_page, search=search, tx_type=type, date_from=df, date_to=dt,
-    )
