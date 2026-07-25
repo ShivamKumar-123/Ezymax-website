@@ -504,7 +504,13 @@ class CopyTradeEngine:
         )
 
     async def _close_copy(self, copy: CopyTrade, master: MasterAccount, db: AsyncSession):
-        investor_pos = await db.get(Position, copy.investor_position_id)
+        # Row-lock the position: _close_copy is called by BOTH the engine
+        # leader loop and stop_copy (unfollow) request handlers. Without the
+        # lock, two concurrent callers can each observe status=open and
+        # double-book the close (double perf fee, double admin fee, double
+        # network payout). With it, the loser of the race re-reads a closed
+        # position and no-ops below.
+        investor_pos = await db.get(Position, copy.investor_position_id, with_for_update=True)
         if not investor_pos:
             copy.status = "closed"
             logger.info("Close copy: investor position missing, marking copy closed")
@@ -581,6 +587,39 @@ class CopyTradeEngine:
 
         net_profit = gross_profit - performance_fee
 
+        # Diagnostic: make "copy commission isn't distributing" visible. Fees
+        # only accrue on a PROFITABLE close, and each part is gated on a master
+        # config value:
+        #   • performance fee → master.performance_fee_pct (>0)
+        #   • master's share  → performance fee minus admin cut
+        #   • platform cut + follower's 10-level network share → master.admin_commission_pct (>0)
+        if gross_profit <= 0:
+            logger.info(
+                "Copy close: no commission — trade closed at a loss/flat "
+                "(gross=%.4f). Fees accrue only on profitable closes. master=%s",
+                float(gross_profit), master.id,
+            )
+        else:
+            logger.info(
+                "Copy close commission: gross=%.4f perf_pct=%s%% fee=%.4f "
+                "admin_pct=%s%% admin_fee=%.4f master_share=%.4f master=%s",
+                float(gross_profit), master.performance_fee_pct, float(performance_fee),
+                master.admin_commission_pct, float(admin_fee),
+                float(performance_fee - admin_fee), master.id,
+            )
+            if (master.performance_fee_pct or 0) == 0:
+                logger.warning(
+                    "Copy close: master=%s has performance_fee_pct=0 — master earns "
+                    "NO commission. Set it on the master account to distribute.",
+                    master.id,
+                )
+            if (master.admin_commission_pct or 0) == 0:
+                logger.info(
+                    "Copy close: master=%s has admin_commission_pct=0 — no platform "
+                    "cut and no 10-level network commission is distributed.",
+                    master.id,
+                )
+
         investor_pos.status = PositionStatus.CLOSED.value
         investor_pos.close_price = close_price
         investor_pos.profit = net_profit
@@ -654,25 +693,33 @@ class CopyTradeEngine:
                 )
 
                 if admin_fee > 0:
+                    # XP_Reward_mechanism slide 6: 50% of the platform's
+                    # copy-trade cut is redistributed across the follower's
+                    # 10-level referral chain; the platform keeps the REST.
+                    # Order matters for conservation: distribute first, then
+                    # credit the admin with admin_fee − paid_out. The old code
+                    # credited the FULL admin_fee and paid the network on top,
+                    # minting up to 0.5×admin_fee out of thin air on every
+                    # profitable copy close. Best-effort — a distribution
+                    # failure must not roll back the trade close.
+                    network_paid = Decimal("0")
+                    if alloc is not None:
+                        try:
+                            from ..services.social_service import distribute_copy_trade_platform_fee
+                            network_paid = await distribute_copy_trade_platform_fee(
+                                db,
+                                follower_user_id=alloc.investor_user_id,
+                                platform_fee=admin_fee,
+                                reference_id=investor_pos.id,
+                            )
+                        except Exception as _e:
+                            logger.warning("copy-trade fee network distribution failed: %s", _e)
+                            network_paid = Decimal("0")
                     await credit_admin_fee(
-                        db, admin_fee,
+                        db, admin_fee - network_paid,
                         description=f"Platform commission ({master.admin_commission_pct}%) from master {master_account.account_number} copy trade",
                         reference_id=investor_pos.id,
                     )
-                    # XP_Reward_mechanism slide 6: 50% of the platform's
-                    # copy-trade cut is redistributed across the follower's
-                    # 10-level referral chain. Best-effort — failure here
-                    # must not roll back the trade close.
-                    try:
-                        from ..services.social_service import distribute_copy_trade_platform_fee
-                        await distribute_copy_trade_platform_fee(
-                            db,
-                            follower_user_id=alloc.investor_user_id,
-                            platform_fee=admin_fee,
-                            reference_id=investor_pos.id,
-                        )
-                    except Exception as _e:
-                        logger.warning("copy-trade fee network distribution failed: %s", _e)
 
                 # Update master's total fee earned
                 master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_share

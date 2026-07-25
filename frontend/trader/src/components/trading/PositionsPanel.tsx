@@ -51,8 +51,12 @@ interface ClosedTrade {
   trade_type?: string;
 }
 
-type CloseModal = { id: string; symbol: string; side: string; lots: number; closeLots: string } | null;
-type SltpEdit = { positionId: string; sl: string; tp: string } | null;
+// `id` is the store/React key (may be an `optim-…` placeholder); `serverId`
+// is the real position UUID used in the /positions/{id}/close URL.
+type CloseModal = { id: string; serverId: string; symbol: string; side: string; lots: number; closeLots: string } | null;
+// `positionId` matches the store/React key (may be `optim-…`); `serverId`
+// is the real UUID used in the PUT /positions/{id} URL.
+type SltpEdit = { positionId: string; serverId: string; sl: string; tp: string } | null;
 type BulkCloseType = 'all' | 'profit' | 'loss';
 
 type TabId = 'open' | 'pending' | 'history';
@@ -497,7 +501,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return () => clearInterval(interval);
   }, [activeTab, loadHistory]);
 
-  const closePosition = (id: string, lots?: number) => {
+  // `id` is the store/React key (for optimistic removal); `serverId` is the
+  // real UUID for the backend URL — they differ for a just-opened position
+  // whose key is still an `optim-…` placeholder.
+  const closePosition = (id: string, serverId: string, lots?: number) => {
     unlockAudio();
     // Close modal instantly — don't wait for API
     setCloseModal(null);
@@ -512,7 +519,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     void (async () => {
       try {
         const res = await api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
-          `/positions/${id}/close`,
+          `/positions/${serverId}/close`,
           body,
           { timeoutMs: 8_000 },
         );
@@ -556,7 +563,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     for (const pos of targets) {
       try {
         const res = await api.post<{ profit?: number; close_price?: number }>(
-          `/positions/${pos.id}/close`,
+          `/positions/${pos.server_id ?? pos.id}/close`,
           {},
         );
         const pnl = res.profit ?? 0;
@@ -586,7 +593,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       const tpVal = sltpEdit.tp.trim();
       if (slVal !== '' && slVal !== '—') body.stop_loss = parseFloat(slVal);
       if (tpVal !== '' && tpVal !== '—') body.take_profit = parseFloat(tpVal);
-      await api.put(`/positions/${sltpEdit.positionId}`, body);
+      await api.put(`/positions/${sltpEdit.serverId ?? sltpEdit.positionId}`, body);
       toast.success('SL/TP updated');
       setSltpEdit(null);
       refreshPositions();
@@ -1102,6 +1109,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               onCloseFull={() =>
                                 setCloseModal({
                                   id: pos.id,
+                                  serverId: pos.server_id ?? pos.id,
                                   symbol: pos.symbol,
                                   side: pos.side,
                                   lots: pos.lots,
@@ -1116,6 +1124,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 }
                                 setCloseModal({
                                   id: pos.id,
+                                  serverId: pos.server_id ?? pos.id,
                                   symbol: pos.symbol,
                                   side: pos.side,
                                   lots: pos.lots,
@@ -1184,7 +1193,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   <button type="button" onClick={() => setSltpEdit(null)} className="p-1 rounded bg-sell/15 text-sell hover:bg-sell/25"><X className="w-3.5 h-3.5" /></button>
                                 </div>
                               ) : (
-                                <button type="button" onClick={() => setSltpEdit({ positionId: pos.id, sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '', tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '' })} className="text-text-tertiary active:text-text-secondary">
+                                <button type="button" onClick={() => setSltpEdit({ positionId: pos.id, serverId: pos.server_id ?? pos.id, sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '', tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '' })} className="text-text-tertiary active:text-text-secondary">
                                   SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'} · TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}
                                   <Pencil className="w-2.5 h-2.5 inline ml-1 opacity-60" />
                                 </button>
@@ -1204,7 +1213,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   MAM
                                 </span>
                               ) : (
-                                <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
+                                <button type="button" onClick={() => setCloseModal({ id: pos.id, serverId: pos.server_id ?? pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
                                   Close
                                 </button>
                               )}
@@ -1329,6 +1338,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   type="button"
                                   onClick={() => setSltpEdit({
                                     positionId: pos.id,
+                                    serverId: pos.server_id ?? pos.id,
                                     sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
                                     tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
                                   })}
@@ -1365,6 +1375,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                     onClick={() =>
                                       setCloseModal({
                                         id: pos.id,
+                                        serverId: pos.server_id ?? pos.id,
                                         symbol: pos.symbol,
                                         side: pos.side,
                                         lots: pos.lots,
@@ -1953,7 +1964,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         toast.error(`Cannot exceed ${closeModal.lots} lots`);
                         return;
                       }
-                      closePosition(closeModal.id, cl < closeModal.lots - 1e-9 ? cl : undefined);
+                      closePosition(closeModal.id, closeModal.serverId, cl < closeModal.lots - 1e-9 ? cl : undefined);
                     }}
                     className="flex-1 py-2.5 bg-sell text-white font-bold rounded-lg shadow-lg shadow-sell/20 active:scale-[0.98] transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:pointer-events-none"
                   >
@@ -2058,6 +2069,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         leverage={Number(activeAccount?.leverage) || 100}
         position={shareClosed ? {
           id: String(shareClosed.position_id || ''),
+          server_id: String(shareClosed.position_id || ''),
           symbol: shareClosed.symbol,
           side: shareClosed.side,
           lots: shareClosed.lots,

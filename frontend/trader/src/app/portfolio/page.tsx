@@ -70,6 +70,30 @@ interface PortfolioSummary {
 
   }>;
 
+  // Per-position rows (one entry per open position — NOT aggregated by
+  // symbol like `holdings`). This is what the Open-positions table renders,
+  // so a hedged BUY+SELL on the same symbol shows as two rows and each
+  // carries its own side/lots/entry_price/pnl.
+  open_positions?: Array<{
+
+    id?: string;
+
+    symbol: string;
+
+    side: string;
+
+    lots: number;
+
+    entry_price: number;
+
+    current_price: number;
+
+    pnl: number;
+
+    pnl_pct?: number;
+
+  }>;
+
   open_positions_count: number;
 
 }
@@ -447,15 +471,40 @@ function PortfolioPageContent() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Live P&L for open positions — poll the summary every 1s while the
+  // Open-positions tab is showing (silent: no loading flicker), paused when
+  // the browser tab is hidden. Both the terminal and this page read the same
+  // backend Redis price, but the terminal polls its positions every ~1.5s;
+  // polling here at 1s keeps the follower's P&L at least as fresh as the
+  // master's terminal, so it no longer visibly lags behind.
+  useEffect(() => {
+    if (tab !== 'overview') return;
+    let cancelled = false;
+    const params = validAccountId ? { account_id: validAccountId } : undefined;
+    const poll = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const s = await api.get<PortfolioSummary>('/portfolio/summary', params);
+        if (!cancelled) setSummary(s);
+      } catch {}
+    };
+    const id = setInterval(poll, 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [tab, validAccountId]);
+
   useEffect(() => { if (tab === 'history') fetchTrades(page); }, [tab, page, fetchTrades]);
 
 
 
-  const holdings = summary?.holdings ?? [];
+  // Use the per-position list, not the symbol-aggregated `holdings`. The
+  // aggregated shape uses different keys (total_lots / avg_open_price /
+  // unrealized_pnl / net_side), which rendered blank Side/Lots/Entry and a
+  // $NaN P&L, and collapsed a hedged BUY+SELL into a single row.
+  const holdings = summary?.open_positions ?? [];
 
   const dashboardData = useMemo(() => {
     if (!summary) return null;
-    const lotsOpen = (summary.holdings ?? []).reduce((a, h) => a + (Number(h.lots) || 0), 0);
+    const lotsOpen = (summary.open_positions ?? []).reduce((a, h) => a + (Number(h.lots) || 0), 0);
     const equity = Number(summary.total_equity) || 0;
     const balance = Number(summary.total_balance) || 0;
     // Approx: each open lot blocks ~$1000 margin (100:1 leverage on ~$100k notional).

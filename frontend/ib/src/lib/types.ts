@@ -33,6 +33,7 @@ export interface ReferredUser {
   id: string;
   email: string;
   name: string;
+  phone?: string | null;
   joined_at: string | null;
 }
 
@@ -40,6 +41,8 @@ export interface Referral {
   id: string;
   user_id: string;
   referred_user: ReferredUser;
+  phone?: string | null;
+  commission_earned: number;
   accounts_count: number;
   total_deposit: number;
   trades_count: number;
@@ -107,11 +110,29 @@ export interface Position {
   created_at?: string | null;
 }
 
+export interface ClosedTrade {
+  id: string;
+  account_number: string | null;
+  symbol: string | null;
+  side: string;
+  lots: number;
+  open_price: number | null;
+  close_price: number | null;
+  profit: number;
+  commission: number;
+  swap: number;
+  close_reason: string | null;
+  status: 'closed';
+  opened_at: string | null;
+  closed_at: string | null;
+}
+
 export interface IbUserDetail {
   user: {
     id: string;
     email: string;
     name: string;
+    phone?: string | null;
     status: string;
     kyc_status: string;
     country: string | null;
@@ -119,6 +140,7 @@ export interface IbUserDetail {
   };
   accounts: TradingAccount[];
   open_positions: Position[];
+  closed_trades: ClosedTrade[];
   deposits_total: number;
   commission_earned: number;
 }

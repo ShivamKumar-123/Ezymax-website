@@ -195,9 +195,14 @@ class MarketDataService:
             ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
 
             mid = (bid + ask) / 2.0
+            # Provider's own live spread (0 when the feed collapses to mid,
+            # e.g. Binance trade stream) — the floating-spread mode's signal.
+            raw_spread = ask - bid
             self._last_mid[symbol] = mid
             self._last_live_mono[symbol] = time.monotonic()
-            bid, ask = self.spread_cache.widen(symbol, mid)
+            bid, ask = self.spread_cache.widen(
+                symbol, mid, raw_spread=raw_spread if raw_spread > 0 else None,
+            )
 
             await publish_price(symbol, bid, ask, ts)
 

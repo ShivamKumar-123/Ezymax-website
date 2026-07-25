@@ -35,19 +35,18 @@ export function FXArthaWordmark({
     );
   }
 
+  // Logo image only — no "FXArtha" text (the logo asset already carries the
+  // branding). Shown larger, height-based so the horizontal logo keeps its
+  // aspect ratio. `textClassName` is accepted but unused now, kept so
+  // existing callers don't need to change.
+  void textClassName;
   const mark = (
-    <span className={cn('inline-flex items-center gap-2 select-none', className)}>
-      <img src="/images/fxartha-logo.png" alt="FXArtha" className="w-8 h-8 object-contain shrink-0" />
-      <span
-        className={cn(
-          'inline-flex items-baseline font-bold italic tracking-tight',
-          'text-xl sm:text-2xl drop-shadow-[0_0_20px_rgba(214,169,61,0.12)]',
-          textClassName,
-        )}
-      >
-        <span className="text-text-primary">FX</span>
-        <span className="text-[#d6a93d]">Artha</span>
-      </span>
+    <span className={cn('inline-flex items-center select-none', className)}>
+      <img
+        src="/images/fxartha-logo.png"
+        alt="FXArtha"
+        className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(214,169,61,0.12)]"
+      />
     </span>
   );
 

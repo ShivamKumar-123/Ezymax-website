@@ -19,9 +19,9 @@ from routes import (
     config as routes_config, instruments_admin, business, social, analytics, bonus, banners,
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
     admin_audit_logs,
-    insurance as insurance_admin, play_zone as play_zone_admin,
+    insurance as insurance_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
-    admin_notifications, pricing_rules, crm,
+    admin_notifications, pricing_rules, crm, hedge,
 )
 
 app_settings = get_settings()
@@ -285,13 +285,13 @@ app.include_router(account_types.router, prefix=prefix)
 app.include_router(user_audit_logs.router, prefix=prefix)
 app.include_router(admin_audit_logs.router, prefix=prefix)
 app.include_router(insurance_admin.router, prefix=prefix)
-app.include_router(play_zone_admin.router, prefix=prefix)
 app.include_router(lifestyle_admin.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)
 app.include_router(rms.router, prefix=prefix)
 app.include_router(trade_risk.router, prefix=prefix)
 app.include_router(rms_dashboard.router, prefix=prefix)
+app.include_router(hedge.router, prefix=prefix)
 app.include_router(admin_notifications.router, prefix=prefix)
 app.include_router(pricing_rules.router, prefix=prefix)
 # CRM integration API — distinct prefix (NOT the admin prefix); auth is the

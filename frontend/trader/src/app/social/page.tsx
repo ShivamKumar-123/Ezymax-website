@@ -47,6 +47,7 @@ interface ProviderDetail extends Provider {
   total_trades: number;
   total_profit: number;
   win_rate: number;
+  management_fee_pct: number;
   monthly_breakdown: { month: string; profit: number }[];
   is_copying: boolean;
 }
@@ -152,12 +153,14 @@ function TraderCard({
   onCopy,
   isSelf,
   onViewFollowers,
+  onUnfollow,
 }: {
   provider: Provider;
   onClick: () => void;
   onCopy: (e: React.MouseEvent) => void;
   isSelf?: boolean;
   onViewFollowers?: (e: React.MouseEvent) => void;
+  onUnfollow?: (e: React.MouseEvent) => void;
 }) {
   const initials = provider.provider_name
     .split(/\s+/)
@@ -199,7 +202,9 @@ function TraderCard({
                 <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-bold uppercase shrink-0">Master</span>
                 {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
               </div>
-              <div className="text-xxs text-text-tertiary mt-0.5">Fee: {provider.performance_fee_pct}% · {provider.followers_count} followers</div>
+              <div className="text-xxs text-text-tertiary mt-0.5">
+                Fee: {provider.performance_fee_pct}% · Min: <span className="text-text-secondary font-semibold">${Number(provider.min_investment).toLocaleString()}</span> · {provider.followers_count} followers
+              </div>
             </div>
           </div>
           {isSelf ? (
@@ -222,9 +227,18 @@ function TraderCard({
               )}
             </div>
           ) : provider.is_copying ? (
-            <span className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
-              Following
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
+                Following
+              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onUnfollow?.(e); }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-sell/40 text-sell hover:bg-sell hover:text-white transition-all"
+              >
+                Unfollow
+              </button>
+            </div>
           ) : (
             <button
               type="button"
@@ -285,6 +299,87 @@ function TraderCard({
 }
 
 /* ─── Detail Modal ─── */
+interface MasterTrade {
+  id: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  lots: number;
+  open_price: number;
+  close_price: number;
+  profit: number;
+  closed_at: string | null;
+}
+
+/* Recent closed trades of the master — the track record behind the ROI. */
+function MasterTradesTable({ providerId }: { providerId: string }) {
+  const [trades, setTrades] = useState<MasterTrade[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ items: MasterTrade[] }>(`/social/providers/${providerId}/trades?limit=50`);
+        if (!cancelled) setTrades(r.items || []);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [providerId]);
+
+  if (failed) return null; // history is a bonus — never break the modal
+  return (
+    <div className="mt-4">
+      <div className="text-xs font-semibold text-text-primary mb-2">Recent Trades</div>
+      {trades === null ? (
+        <div className="text-xxs text-text-tertiary py-3">Loading trade history…</div>
+      ) : trades.length === 0 ? (
+        <div className="text-xxs text-text-tertiary py-3">No closed trades yet</div>
+      ) : (
+        <div className="rounded-lg border border-border-glass overflow-hidden">
+          <div className="max-h-56 overflow-y-auto">
+            <table className="w-full text-xxs">
+              <thead className="sticky top-0 bg-bg-tertiary text-text-tertiary">
+                <tr>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Closed</th>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Symbol</th>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Side</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">Lots</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">Open → Close</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">P/L</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map((t) => (
+                  <tr key={t.id} className="border-t border-border-glass/50">
+                    <td className="px-2.5 py-1.5 text-text-tertiary whitespace-nowrap">
+                      {t.closed_at ? new Date(t.closed_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }) : '—'}
+                    </td>
+                    <td className="px-2.5 py-1.5 font-semibold text-text-primary">{t.symbol}</td>
+                    <td className="px-2.5 py-1.5">
+                      <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', t.side === 'buy' ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>
+                        {t.side}
+                      </span>
+                    </td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-text-secondary">{t.lots.toFixed(2)}</td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-text-secondary whitespace-nowrap">
+                      {t.open_price} → {t.close_price}
+                    </td>
+                    <td className={clsx('px-2.5 py-1.5 text-right tabular-nums font-semibold', t.profit >= 0 ? 'text-buy' : 'text-sell')}>
+                      {t.profit >= 0 ? '+' : ''}{t.profit.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DetailModal({
   detail,
   loading,
@@ -348,6 +443,8 @@ function DetailModal({
             )}
 
             <MonthlyChart data={detail.monthly_breakdown} />
+
+            <MasterTradesTable providerId={detail.id} />
 
             <button
               type="button"
@@ -478,8 +575,30 @@ function CopyModal({
         className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6"
       >
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
-        <h3 className="text-sm font-semibold text-text-primary mb-1">Follow {provider.provider_name}</h3>
-        <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
+        <h3 className="text-sm font-semibold text-text-primary mb-3">Follow {provider.provider_name}</h3>
+
+        {/* Fees — shown prominently BEFORE the user commits. */}
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-4 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Performance fee</span>
+            <span className="font-bold text-accent tabular-nums">{provider.performance_fee_pct}%</span>
+          </div>
+          {'management_fee_pct' in provider && Number((provider as ProviderDetail).management_fee_pct) > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-text-secondary">Management fee</span>
+              <span className="font-bold text-accent tabular-nums">{(provider as ProviderDetail).management_fee_pct}%</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Minimum investment</span>
+            <span className="font-semibold text-text-primary tabular-nums">${provider.min_investment}</span>
+          </div>
+          <p className="text-xxs text-text-tertiary leading-relaxed pt-0.5">
+            The fee applies only to <span className="text-text-primary">profitable</span> copied trades — e.g. a $100
+            profit pays ${(100 * Number(provider.performance_fee_pct) / 100).toFixed(0)} to the master, you keep
+            ${(100 - 100 * Number(provider.performance_fee_pct) / 100).toFixed(0)}. Losing trades cost no fee.
+          </p>
+        </div>
 
         {loadingAccounts ? (
           <div className="py-6 text-center text-xs text-text-tertiary">Loading your accounts…</div>
@@ -494,14 +613,14 @@ function CopyModal({
                   onClick={() => setMode('existing')}
                   className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'existing' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
                 >
-                  Use existing account
+                  Existing account
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('new')}
                   className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'new' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
                 >
-                  New copy account
+                  Custom amount
                 </button>
               </div>
             )}
@@ -520,9 +639,25 @@ function CopyModal({
                     </option>
                   ))}
                 </select>
-                <p className="text-xxs text-text-tertiary mb-4">
-                  Master trades will mirror onto this account scaled by your account&apos;s equity vs the master&apos;s equity. No deposit required.
-                </p>
+                {(() => {
+                  const sel = accounts.find((a) => a.id === accountId);
+                  const eq = Number(sel?.equity ?? sel?.balance ?? 0);
+                  return (
+                    <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-text-secondary">Copy allocation</span>
+                        <span className="font-bold text-text-primary tabular-nums">
+                          ${eq.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <p className="text-xxs text-text-tertiary leading-relaxed">
+                        This mode uses the account&apos;s <span className="text-text-primary">full equity</span> —
+                        trades scale by your equity vs the master&apos;s. Want to invest a smaller or larger
+                        specific amount? Switch to <button type="button" onClick={() => setMode('new')} className="text-accent font-semibold hover:underline">Custom amount</button>.
+                      </p>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
@@ -539,15 +674,53 @@ function CopyModal({
                   A dedicated copy-trading account will be auto-created and funded from your main wallet. Mirrored trades appear there.
                 </div>
                 <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min={provider.min_investment}
-                  max={walletBalance}
-                  placeholder={`Min $${provider.min_investment}`}
-                  className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
-                />
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setAmount((prev) => String(Math.max(provider.min_investment, (parseFloat(prev) || 0) - 50)))}
+                    className="shrink-0 w-9 h-9 rounded-lg border border-border-primary bg-bg-primary text-text-primary text-base font-bold hover:border-accent/50 transition-all"
+                    aria-label="Decrease amount"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min={provider.min_investment}
+                    max={walletBalance}
+                    placeholder={`Min $${provider.min_investment}`}
+                    className="flex-1 rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary text-center placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAmount((prev) => String(Math.min(walletBalance, (parseFloat(prev) || 0) + 50)))}
+                    className="shrink-0 w-9 h-9 rounded-lg border border-border-primary bg-bg-primary text-text-primary text-base font-bold hover:border-accent/50 transition-all"
+                    aria-label="Increase amount"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 mb-4">
+                  {[provider.min_investment, 100, 250, 500, 1000]
+                    .filter((v, i, arr) => v <= walletBalance && arr.indexOf(v) === i)
+                    .slice(0, 4)
+                    .map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setAmount(String(v))}
+                        className={clsx(
+                          'px-2.5 py-1 rounded-full text-xxs font-semibold border transition-all',
+                          parseFloat(amount) === v
+                            ? 'border-accent bg-accent/15 text-accent'
+                            : 'border-border-glass text-text-secondary hover:text-text-primary',
+                        )}
+                      >
+                        ${v}
+                      </button>
+                    ))}
+                </div>
               </>
             )}
 
@@ -583,6 +756,8 @@ function LeaderboardTab() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [copyTarget, setCopyTarget] = useState<Provider | ProviderDetail | null>(null);
+  const [unfollowTarget, setUnfollowTarget] = useState<Provider | null>(null);
+  const [unfollowing, setUnfollowing] = useState(false);
 
   /* Followers modal */
   const [showFollowers, setShowFollowers] = useState(false);
@@ -639,6 +814,37 @@ function LeaderboardTab() {
     }
   };
 
+  const confirmUnfollow = async () => {
+    if (!unfollowTarget) return;
+    setUnfollowing(true);
+    try {
+      // The card only knows the master — resolve the caller's active
+      // allocation for it, then stop that subscription.
+      const mine = await api.get<{ items: Array<{ id: string; master_id: string; status: string }> }>('/social/my-copies');
+      const alloc = (mine.items || []).find(
+        (a) => a.master_id === unfollowTarget.id && a.status === 'active',
+      );
+      if (!alloc) {
+        toast.error('No active subscription found for this master');
+        setUnfollowTarget(null);
+        return;
+      }
+      const res = await api.delete<{ returned_to_wallet?: number; message?: string }>(`/social/copy/${alloc.id}`);
+      const returned = res?.returned_to_wallet;
+      toast.success(
+        returned && returned > 0
+          ? `Unfollowed ${unfollowTarget.provider_name} — $${returned.toFixed(2)} returned to wallet`
+          : `Unfollowed ${unfollowTarget.provider_name}`,
+      );
+      setUnfollowTarget(null);
+      fetchLeaderboard();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to unfollow');
+    } finally {
+      setUnfollowing(false);
+    }
+  };
+
   return (
     <>
       {/* Sort bar */}
@@ -675,6 +881,7 @@ function LeaderboardTab() {
                 onClick={() => openDetail(p.id)}
                 onCopy={(e) => { e.stopPropagation(); setCopyTarget(p); }}
                 onViewFollowers={(e) => loadFollowers(e, p.id, p.user_id === currentUserId)}
+                onUnfollow={() => setUnfollowTarget(p)}
               />
             ))}
           </div>
@@ -721,6 +928,50 @@ function LeaderboardTab() {
           onClose={() => setCopyTarget(null)}
           onSuccess={() => { setCopyTarget(null); fetchLeaderboard(); }}
         />
+      )}
+
+      {/* Unfollow confirmation modal */}
+      {unfollowTarget && createPortal(
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4"
+          onClick={() => !unfollowing && setUnfollowTarget(null)}
+        >
+          <div
+            className="w-full max-w-md bg-bg-secondary border border-border-glass rounded-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-text-primary mb-2">
+              Unfollow {unfollowTarget.provider_name}?
+            </h3>
+            <p className="text-sm text-text-secondary leading-relaxed mb-1">
+              Any open copied trades will be <span className="text-text-primary font-semibold">closed at the current market price</span>.
+            </p>
+            <p className="text-xs text-text-tertiary leading-relaxed mb-4">
+              If your copy runs on a dedicated copy account, its remaining funds are returned to
+              your main wallet. If you linked one of your own accounts, it simply stops copying —
+              the balance stays in that account.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={unfollowing}
+                onClick={() => setUnfollowTarget(null)}
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-glass text-text-secondary hover:text-text-primary disabled:opacity-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={unfollowing}
+                onClick={confirmUnfollow}
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-sell text-sell hover:bg-sell hover:text-white disabled:opacity-50 transition-all"
+              >
+                {unfollowing ? 'Stopping…' : 'Yes, unfollow'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* Followers modal */}
@@ -902,7 +1153,11 @@ function MyCopiesTab() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {c.status === 'active' && (
+            {/* Refill is PAMM/MAM-only: the invest endpoint supports top-up.
+                Signal copies have no top-up API yet — the old button always
+                errored with "Already copying this provider", so it's hidden
+                until a proper signal top-up exists. */}
+            {c.status === 'active' && (c.copy_type === 'pamm' || c.copy_type === 'mam') && (
               <button
                 type="button"
                 onClick={() => openRefill(c)}

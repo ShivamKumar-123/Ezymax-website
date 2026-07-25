@@ -10,8 +10,8 @@ import {
   Settings, Sliders, BarChart3, Gift, Image, HeadphonesIcon,
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
-  Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Sparkles, Package,
-  Eye, Globe, ShieldAlert, Gauge, Radar,
+  Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Package,
+  Eye, Globe, ShieldAlert, Gauge, Radar, Scale,
 } from 'lucide-react';
 
 interface NavItem {
@@ -54,7 +54,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: 'Overview', href: '/business' },
       { label: 'IB Program', href: '/business/ib' },
-      { label: 'Sub-Broker', href: '/business/sub-broker' },
+      { label: 'Master IB', href: '/business/sub-broker' },
       { label: 'Copy Masters', href: '/business/masters' },
       { label: 'MLM Config', href: '/business/mlm' },
     ],
@@ -64,11 +64,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Position Monitor', href: '/rms-positions', icon: Radar, perm: 'rms.view' },
   { label: 'IP Management', href: '/rms', icon: Globe, perm: 'rms.view' },
   { label: 'Trade Risk', href: '/trade-risk', icon: ShieldAlert, perm: 'rms.view' },
+  { label: 'Hedged Trades', href: '/hedge', icon: Scale, perm: 'hedge.view' },
   { label: 'Audit logs', href: '/audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Admin audit logs', href: '/admin-audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
   { label: 'Trade Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
-  { label: 'Play Zone', href: '/play-zone', icon: Sparkles, perm: '*' },
   { label: 'Lifestyle Queue', href: '/lifestyle', icon: Package, perm: '*' },
   { label: 'Banners', href: '/banners', icon: Image, perm: 'banners.view' },
   { label: 'Support', href: '/support', icon: HeadphonesIcon, perm: 'tickets.view' },
@@ -119,13 +119,13 @@ export default function AdminSidebar() {
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {collapsed ? (
-          <img src="/logo.png" alt="FXArtha" className="w-7 h-7 object-contain mx-auto" />
+          <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain mx-auto" />
         ) : (
-          <Link href="/" className="flex items-center gap-2 min-w-0">
-            <img src="/logo.png" alt="FXArtha" className="w-7 h-7 object-contain shrink-0" />
-            <span className="font-bold tracking-tight text-sm select-none">
-              <span className="text-text-primary">FX</span><span className="text-[#d6a93d]">Artha</span>
-            </span>
+          // Logo image only — no separate "FXArtha" text (the logo asset
+          // already carries the branding). Shown larger, height-based so the
+          // horizontal logo keeps its aspect ratio.
+          <Link href="/" className="flex items-center min-w-0">
+            <img src="/logo.png" alt="FXArtha" className="h-9 w-auto object-contain" />
           </Link>
         )}
         <button

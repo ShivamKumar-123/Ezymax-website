@@ -11,7 +11,16 @@ export interface TickData {
 }
 
 export interface Position {
+  /** React-stable key. For a just-placed market order this stays the
+   *  client-side `optim-…` placeholder across the optim→real transition
+   *  (see refreshPositions) so the row never remounts. NOT a valid UUID
+   *  during that window — never send it to the backend. */
   id: string;
+  /** The real server position UUID. Always set once the position has been
+   *  reconciled with the server; undefined only in the ~1s optimistic
+   *  window before the first poll returns. Use THIS for every
+   *  /positions/{id} call (close, modify, share). */
+  server_id?: string;
   account_id: string;
   symbol: string;
   side: 'buy' | 'sell';
@@ -213,6 +222,9 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const merged = list.map((p: any) => {
         const serverPos = {
           id: p.id as string,
+          // Always the real UUID, even when we inherit an optimistic key
+          // for `id` below — so backend calls have a valid id to use.
+          server_id: p.id as string,
           account_id: p.account_id as string,
           symbol: (p.symbol || '') as string,
           side: p.side as 'buy' | 'sell',
@@ -243,7 +255,24 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         return serverPos;
       });
 
-      set({ positions: merged });
+      // Keep a just-placed optimistic position that the server hasn't
+      // returned yet. The 1.5s poll (and the reconcile fired right after
+      // placeOrder) often races ahead of the position insert's commit, so
+      // the new trade is absent from THIS response — building `positions`
+      // purely from the server list would drop it, making the trade blink
+      // out for one poll and reappear on the next. Carry any unmatched
+      // optimistic row for a short grace window; a genuinely failed order is
+      // already removed by placeOrder's own rollback, and anything stale
+      // ages out here.
+      const now = Date.now();
+      const OPTIMISTIC_GRACE_MS = 12_000;
+      const survivingOptimistic = optimisticPrev.filter((opt) => {
+        if (optimMatched.has(opt.id)) return false; // already folded into a server row
+        const openedAt = opt.created_at ? new Date(opt.created_at).getTime() : now;
+        return Number.isFinite(openedAt) && now - openedAt < OPTIMISTIC_GRACE_MS;
+      });
+
+      set({ positions: [...survivingOptimistic, ...merged] });
     } catch {}
   },
 
@@ -359,6 +388,8 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const prev = s.positions;
       const optimisticPos = {
         id: optimisticId,
+        // No real server id yet — the reconcile poll fills this in.
+        server_id: undefined,
         account_id: data.account_id,
         symbol: data.symbol,
         side: data.side,

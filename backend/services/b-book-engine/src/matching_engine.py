@@ -219,6 +219,23 @@ class MatchingEngine:
 
         logger.info(f"Pending order {order.id} executed: {instrument.symbol} {order.side.value} @ {fill_price}")
 
+        # IB commission on the FILLED pending order. Market orders already
+        # distribute this in the gateway's trading_service; pending/limit/stop
+        # orders fill here in the b-book-engine, so without this call that
+        # volume earned the IB chain nothing. Best-effort: a commission error
+        # must not roll back the fill.
+        try:
+            from packages.common.src.ib_commission import distribute_ib_commission
+            await distribute_ib_commission(
+                db,
+                account.user_id,
+                order.id,
+                order.lots,
+                instrument.symbol,
+            )
+        except Exception as exc:
+            logger.error("IB commission on pending fill failed (order=%s): %s", order.id, exc)
+
         await redis_client.publish(f"account:{account.id}", json.dumps({
             "type": "order_filled",
             "order_id": str(order.id),

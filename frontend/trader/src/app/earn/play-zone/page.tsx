@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Ticket, Gavel, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 
 export default function EarnPlayZonePage() {
@@ -12,7 +12,7 @@ export default function EarnPlayZonePage() {
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             Play Zone <Sparkles size={22} className="text-[#d6a93d]" />
           </h1>
-          <p className="text-sm text-text-secondary mt-1">Spend your FXArtha Coins on Spin, Lottery, and Bidding rewards.</p>
+          <p className="text-sm text-text-secondary mt-1">Spend your FXArtha Coins on Spin &amp; Win rewards.</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -21,18 +21,6 @@ export default function EarnPlayZonePage() {
             title="Spin & Win"
             blurb="30 FXA per spin. Win up to 500 FXA instantly."
             href="/earn/play-zone/spin"
-          />
-          <ActiveCard
-            icon={Ticket}
-            title="Lottery"
-            blurb="100 FXA per ticket. Weekly draws for big rewards."
-            href="/earn/play-zone/lottery"
-          />
-          <ActiveCard
-            icon={Gavel}
-            title="Bidding"
-            blurb="Bid FXArtha Coins on premium prizes. Losers refunded 50%."
-            href="/earn/play-zone/bidding"
           />
         </div>
       </div>
@@ -62,4 +50,3 @@ function ActiveCard({
     </Link>
   );
 }
-

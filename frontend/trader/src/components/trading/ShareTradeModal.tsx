@@ -12,6 +12,9 @@ type DisplayMode = 'pnl' | 'roi' | 'ticks';
 
 interface Position {
   id: string;
+  /** Real server UUID. For a just-opened position `id` may still be an
+   *  `optim-…` placeholder, so the share request must use this. */
+  server_id?: string;
   symbol: string;
   side: string;
   lots: number;
@@ -55,7 +58,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
     setCreating(true);
     try {
       const res = await api.post<{ short_code: string; expires_at: string }>(
-        `/positions/${position.id}/share`,
+        `/positions/${position.server_id ?? position.id}/share`,
         {
           description: description || null,
           link_description: linkDescription || null,

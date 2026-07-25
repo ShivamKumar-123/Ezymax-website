@@ -72,7 +72,7 @@ export default function SubBrokerPage() {
         payout_structure: payoutStructure,
         revenue_share_pct: revSharePct ? parseFloat(revSharePct) : undefined,
       });
-      toast.success('Sub-broker approved');
+      toast.success('Master IB approved');
       setApproveModal(null);
       setPayoutStructure('revenue_share');
       setRevSharePct('');
@@ -105,8 +105,8 @@ export default function SubBrokerPage() {
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-text-primary">Sub-Broker Management</h1>
-            <p className="text-xxs text-text-tertiary mt-0.5">Manage sub-broker partnerships and payouts</p>
+            <h1 className="text-lg font-semibold text-text-primary">Master IB Management</h1>
+            <p className="text-xxs text-text-tertiary mt-0.5">Manage Master IB partnerships and payouts</p>
           </div>
           <button onClick={fetchData} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover transition-fast">
             <RefreshCw size={14} />
@@ -115,7 +115,7 @@ export default function SubBrokerPage() {
 
         <div className="bg-bg-secondary border border-border-primary rounded-md">
           <div className="flex gap-1 p-1 border-b border-border-primary">
-            {([['applications', 'Applications'], ['active', 'Active Sub-Brokers']] as const).map(([id, label]) => (
+            {([['applications', 'Applications'], ['active', 'Active Master IBs']] as const).map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -177,7 +177,7 @@ export default function SubBrokerPage() {
                 </div>
               )
             ) : brokers.length === 0 ? (
-              <div className="text-center text-xs text-text-tertiary py-12">No active sub-brokers</div>
+              <div className="text-center text-xs text-text-tertiary py-12">No active Master IBs</div>
             ) : (
               <div className="border border-border-primary rounded-md overflow-hidden">
                 <div className="overflow-x-auto">
@@ -220,7 +220,7 @@ export default function SubBrokerPage() {
         <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setApproveModal(null)}>
           <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border-primary">
-              <h3 className="text-sm font-semibold text-text-primary">Approve Sub-Broker</h3>
+              <h3 className="text-sm font-semibold text-text-primary">Approve Master IB</h3>
               <p className="text-xxs text-text-tertiary mt-0.5">{approveModal.user_name} — {approveModal.company_name || approveModal.user_email}</p>
             </div>
             <div className="px-5 py-4 space-y-3">

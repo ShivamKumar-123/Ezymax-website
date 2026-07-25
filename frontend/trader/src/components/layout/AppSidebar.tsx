@@ -138,11 +138,14 @@ export default function AppSidebar() {
         )}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
-          <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
-            <span className="inline-flex items-baseline font-bold italic tracking-tight text-xl select-none">
-              <span className="text-text-primary">FX</span>
-              <span className="text-[#d6a93d]">Artha</span>
-            </span>
+          <Link href="/dashboard" className="flex items-center min-w-0">
+            {/* FXArtha logo image (no text — the asset carries the branding).
+                Height-based sizing keeps the horizontal logo's aspect ratio. */}
+            <img
+              src="/images/fxartha-logo.png"
+              alt="FXArtha"
+              className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(214,169,61,0.12)]"
+            />
           </Link>
           <button
             type="button"

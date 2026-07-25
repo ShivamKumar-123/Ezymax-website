@@ -200,8 +200,15 @@ async def start_verification(
     ok = await send_email(target, subject, html, text=text)
     if not ok:
         logger.warning("OTP email failed to send for user=%s target=%s", user_id, target)
+        # 503, NOT 502. We are the origin server and SMTP is a downstream
+        # dependency — "Service Unavailable" is the accurate code, and it
+        # matches the smtp_configured() check above. It also matters
+        # operationally: Cloudflare replaces an origin 502 with its own
+        # branded "Bad gateway" HTML page, which destroys this JSON body,
+        # so the browser gets un-parseable HTML and shows a bare
+        # "Request failed" instead of the message below.
         raise HTTPException(
-            status_code=502,
+            status_code=503,
             detail="We couldn't send the verification email. Please retry in a moment.",
         )
 

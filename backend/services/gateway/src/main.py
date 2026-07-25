@@ -29,13 +29,13 @@ from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
 from .engines.stats_engine import stats_engine
 from .engines.staking_engine import staking_engine
-from .engines.play_zone_engine import play_zone_engine
 from .engines.overnight_fee_engine import overnight_fee_engine
 from .engines.verification_reminder_engine import verification_reminder_engine
 from .engines.monthly_statement_engine import monthly_statement_engine
 from .engines.chain_verifier_engine import chain_verifier_engine
 from .engines.cleanup_engine import cleanup_engine
 from .engines.rms_engine import rms_engine
+from .engines.hedge_recorder_engine import hedge_recorder_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -211,26 +211,26 @@ async def lifespan(app: FastAPI):
     await copy_engine.start()
     await stats_engine.start()
     await staking_engine.start()
-    await play_zone_engine.start()
     await overnight_fee_engine.start()
     await verification_reminder_engine.start()
     await monthly_statement_engine.start()
     await chain_verifier_engine.start()
     await cleanup_engine.start()
     await rms_engine.start()
+    await hedge_recorder_engine.start()
     yield
     healer_task.cancel()
     try:
         await healer_task
     except asyncio.CancelledError:
         pass
+    await hedge_recorder_engine.stop()
     await rms_engine.stop()
     await cleanup_engine.stop()
     await chain_verifier_engine.stop()
     await monthly_statement_engine.stop()
     await verification_reminder_engine.stop()
     await overnight_fee_engine.stop()
-    await play_zone_engine.stop()
     await staking_engine.stop()
     await stats_engine.stop()
     await copy_engine.stop()

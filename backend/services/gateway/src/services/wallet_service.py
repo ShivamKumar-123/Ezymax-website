@@ -405,7 +405,10 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             await db.delete(deposit)
             await db.commit()
             raise HTTPException(
-                status_code=502,
+                # 503 not 502: an origin 502 is replaced by Cloudflare's
+                # branded HTML error page, so the user would see a raw
+                # "Bad gateway" screen instead of this message.
+                status_code=503,
                 detail=f"OxaPay payment creation failed: {str(oxapay_err)}",
             )
     elif is_nowpayments:
@@ -428,7 +431,8 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             await db.delete(deposit)
             await db.commit()
             raise HTTPException(
-                status_code=502,
+                # 503 not 502 — see the OxaPay branch above.
+                status_code=503,
                 detail=f"NOWPayments payment creation failed: {str(np_err)}",
             )
 
@@ -781,8 +785,10 @@ async def create_wallet_deposit(
         await db.commit()
         # Don't surface the upstream provider's raw error to the user —
         # full detail is in the server logs above.
+        # 503 not 502 — an origin 502 is swapped for Cloudflare's branded
+        # HTML page, which would hide this message entirely.
         raise HTTPException(
-            status_code=502,
+            status_code=503,
             detail="Crypto payment creation failed. Please try again in a moment.",
         )
 
@@ -867,8 +873,9 @@ async def create_hosted_invoice_deposit(
         )
         await db.delete(deposit)
         await db.commit()
+        # 503 not 502 — see the direct-payment branch above.
         raise HTTPException(
-            status_code=502,
+            status_code=503,
             detail="Crypto payment creation failed. Please try again in a moment.",
         )
 

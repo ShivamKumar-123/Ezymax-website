@@ -18,6 +18,12 @@ _DYN_DEFAULTS = {
     "dynamic_spread_max_mult": 3.0,
     "dynamic_spread_sensitivity": 1.0,
     "dynamic_spread_window_sec": 60,
+    # Floating spread (Vantage-style): publish EMA(live market spread) ×
+    # (1 + markup%), floored at the admin base spread, capped at base × max_mult.
+    "floating_spread_enabled": False,
+    "floating_spread_markup_pct": 15.0,
+    "floating_spread_max_mult": 4.0,
+    "floating_spread_ema_sec": 5,
 }
 
 
@@ -169,9 +175,9 @@ async def get_dynamic(db: AsyncSession) -> dict:
         ), {"keys": list(_DYN_DEFAULTS.keys())})).all()
         for key, value in rows:
             raw = value if not isinstance(value, str) else value.strip('"')
-            if key == "dynamic_spread_enabled":
+            if key in ("dynamic_spread_enabled", "floating_spread_enabled"):
                 out[key] = str(raw).lower() in ("true", "1", "yes")
-            elif key == "dynamic_spread_window_sec":
+            elif key in ("dynamic_spread_window_sec", "floating_spread_ema_sec"):
                 out[key] = int(float(raw))
             else:
                 out[key] = float(raw)
@@ -191,6 +197,14 @@ async def set_dynamic(db: AsyncSession, payload: dict, admin_id: uuid.UUID) -> d
         vals["dynamic_spread_sensitivity"] = max(0.0, min(20.0, float(payload["dynamic_spread_sensitivity"])))
     if "dynamic_spread_window_sec" in payload:
         vals["dynamic_spread_window_sec"] = max(5, min(3600, int(payload["dynamic_spread_window_sec"])))
+    if "floating_spread_enabled" in payload:
+        vals["floating_spread_enabled"] = bool(payload["floating_spread_enabled"])
+    if "floating_spread_markup_pct" in payload:
+        vals["floating_spread_markup_pct"] = max(0.0, min(100.0, float(payload["floating_spread_markup_pct"])))
+    if "floating_spread_max_mult" in payload:
+        vals["floating_spread_max_mult"] = max(1.0, min(10.0, float(payload["floating_spread_max_mult"])))
+    if "floating_spread_ema_sec" in payload:
+        vals["floating_spread_ema_sec"] = max(1, min(60, int(payload["floating_spread_ema_sec"])))
 
     for key, v in vals.items():
         await db.execute(text(

@@ -96,6 +96,11 @@ function toTradingAccount(row: AccountRow): TradingAccount {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot transfer funds. Open a live account to move balance between accounts.';
 
+/** True for a canonical UUID string. Guards transfers from posting an empty
+ *  or malformed account id (which the backend rejects as an invalid UUID). */
+const isUuid = (s: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
 export default function AccountsPage() {
   const user = useAuthStore((s) => s.user);
   const setStoreAccounts = useTradingStore((s) => s.setAccounts);
@@ -328,11 +333,16 @@ export default function AccountsPage() {
 
   /* ── Unified transfer helpers ── */
   useEffect(() => {
-    if (uniInitialized || loading) return;
+    // Do NOT mark initialized until accounts have actually loaded. Otherwise
+    // this runs once with an empty liveAccounts (loading just flipped false
+    // before the list populated), sets uniInitialized=true, and never re-runs
+    // — leaving uniTo='' while the <select> shows the first account by browser
+    // default. Submitting then posts an empty to_account_id → UUID error.
+    if (uniInitialized || loading || liveAccounts.length === 0) return;
     if (liveAccounts.length >= 2) {
       setUniFrom(liveAccounts[0].id);
       setUniTo(liveAccounts[1].id);
-    } else if (liveAccounts.length === 1) {
+    } else {
       setUniFrom('wallet');
       setUniTo(liveAccounts[0].id);
     }
@@ -371,22 +381,32 @@ export default function AccountsPage() {
     if (demoFundingBlocked) { toast.error(DEMO_FUNDING_MSG); return; }
     const amt = parseFloat(transferAmount);
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    if (uniFrom === uniTo) { toast.error('Select different source and destination'); return; }
-    if (uniFrom === 'wallet' && uniTo === 'wallet') { toast.error('Cannot transfer wallet to wallet'); return; }
+
+    // Safety net: a controlled <select> shows its first option when its state
+    // value is empty, so uniFrom/uniTo can be '' while the dropdown displays an
+    // account. Resolve to the actually-displayed option so we never post an
+    // empty UUID (which the backend rejects as an invalid UUID).
+    const from = uniFrom || 'wallet';
+    const to = uniTo || transferOptions.find((o) => o.id !== from)?.id || '';
+
+    if (from === to) { toast.error('Select different source and destination'); return; }
+    if (from === 'wallet' && to === 'wallet') { toast.error('Cannot transfer wallet to wallet'); return; }
+    if (from !== 'wallet' && !isUuid(from)) { toast.error('Select a valid source account'); return; }
+    if (to !== 'wallet' && !isUuid(to)) { toast.error('Select a valid destination account'); return; }
     if (amt > uniFromBalance + 1e-9) { toast.error('Insufficient balance'); return; }
 
     setTransferSubmitting(true);
     try {
-      if (uniFrom === 'wallet') {
-        await api.post('/wallet/transfer-main-to-trading', { to_account_id: uniTo, amount: amt });
-        const num = liveAccounts.find((a) => a.id === uniTo)?.account_number ?? '';
+      if (from === 'wallet') {
+        await api.post('/wallet/transfer-main-to-trading', { to_account_id: to, amount: amt });
+        const num = liveAccounts.find((a) => a.id === to)?.account_number ?? '';
         toast.success(`Sent ${fmt(amt)} to account ${num}`);
-      } else if (uniTo === 'wallet') {
-        await api.post('/wallet/transfer-trading-to-main', { from_account_id: uniFrom, amount: amt });
+      } else if (to === 'wallet') {
+        await api.post('/wallet/transfer-trading-to-main', { from_account_id: from, amount: amt });
         toast.success(`Moved ${fmt(amt)} to your wallet`);
       } else {
-        await api.post('/wallet/transfer-internal', { from_account_id: uniFrom, to_account_id: uniTo, amount: amt });
-        const toNum = liveAccounts.find((a) => a.id === uniTo)?.account_number ?? '';
+        await api.post('/wallet/transfer-internal', { from_account_id: from, to_account_id: to, amount: amt });
+        const toNum = liveAccounts.find((a) => a.id === to)?.account_number ?? '';
         toast.success(`Moved ${fmt(amt)} to ${toNum}`);
       }
       setTransferAmount('');
