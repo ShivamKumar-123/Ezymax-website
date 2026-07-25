@@ -216,7 +216,7 @@ async def apply_sub_broker(user_id: UUID, application_data: dict | None, db: Asy
     return {
         "id": str(application.id),
         "status": application.status,
-        "message": "Sub-broker application submitted for review",
+        "message": "Master IB application submitted for review",
     }
 
 
@@ -570,7 +570,7 @@ async def sub_broker_dashboard(user_id: UUID, db: AsyncSession) -> dict:
     )
     profile = profile_result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(status_code=404, detail="Sub-broker profile not found")
+        raise HTTPException(status_code=404, detail="Master IB profile not found")
 
     direct_referrals = await db.execute(
         select(func.count()).select_from(Referral).where(Referral.ib_profile_id == profile.id)

@@ -548,7 +548,7 @@ async def approve_sub_broker(
         ip_address=ip_address,
     )
     await db.commit()
-    return {"message": "Sub-broker approved", "referral_code": referral_code}
+    return {"message": "Master IB approved", "referral_code": referral_code}
 
 
 async def reject_sub_broker(
@@ -571,7 +571,7 @@ async def reject_sub_broker(
         ip_address=ip_address,
     )
     await db.commit()
-    return {"message": "Sub-broker rejected"}
+    return {"message": "Master IB rejected"}
 
 
 async def list_sub_brokers(page: int, per_page: int, db: AsyncSession):

@@ -15,8 +15,8 @@ const CARDS = [
     borderColor: 'border-buy/20',
   },
   {
-    title: 'Sub-Broker Management',
-    description: 'Manage sub-broker partnerships, payout structures, and performance tracking',
+    title: 'Master IB Management',
+    description: 'Manage Master IB partnerships, payout structures, and performance tracking',
     icon: GitBranch,
     href: '/business/sub-broker',
     color: 'text-accent',
@@ -40,7 +40,7 @@ export default function BusinessPage() {
       <div className="p-6 space-y-4">
         <div>
           <h1 className="text-lg font-semibold text-text-primary">Business</h1>
-          <p className="text-xxs text-text-tertiary mt-0.5">IB, Sub-Broker, and MLM management</p>
+          <p className="text-xxs text-text-tertiary mt-0.5">IB, Master IB, and MLM management</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

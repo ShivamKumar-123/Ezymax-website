@@ -272,17 +272,17 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* IB & Sub-Broker Section */}
+        {/* IB & Master IB Section */}
         {data && (
           <>
             <div className="bg-bg-secondary border border-border-primary rounded-md">
               <div className="px-4 py-3 border-b border-border-primary">
-                <h2 className="text-sm font-medium text-text-primary">IB & Sub-Broker Revenue</h2>
-                <p className="text-xxs text-text-tertiary mt-0.5">Commission paid to IBs and sub-brokers from user trades</p>
+                <h2 className="text-sm font-medium text-text-primary">IB & Master IB Revenue</h2>
+                <p className="text-xxs text-text-tertiary mt-0.5">Commission paid to IBs and Master IBs from user trades</p>
               </div>
               <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatBox label="Active IBs" value={String(data.total_ibs || 0)} color="text-buy" icon={Users} />
-                <StatBox label="Sub-Brokers" value={String(data.total_sub_brokers || 0)} color="text-buy" icon={GitBranch} />
+                <StatBox label="Master IBs" value={String(data.total_sub_brokers || 0)} color="text-buy" icon={GitBranch} />
                 <StatBox label="Total IB Commission Paid" value={`$${fmt(data.total_ib_commission || 0)}`} color="text-warning" icon={DollarSign} />
                 <StatBox label="IB Pending Payout" value={`$${fmt(data.ib_pending_commission || 0)}`} color="text-text-tertiary" icon={DollarSign} />
               </div>

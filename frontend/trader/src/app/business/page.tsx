@@ -50,7 +50,7 @@ function Spinner() {
   );
 }
 
-// Once a user is an approved IB / sub-broker, the full dashboard lives in the
+// Once a user is an approved IB / Master IB, the full dashboard lives in the
 // dedicated partner portal — the trader app just points them there.
 function IBPortalCTA({ subtitle }: { subtitle?: string }) {
   return (
@@ -89,7 +89,7 @@ export default function BusinessPage() {
       <DashboardShell>
         <DemoLockGate
           feature="Affiliates & IB rewards"
-          description="IB commissions, sub-broker partnerships and network payouts require a real trading account. Register a live account to start earning."
+          description="IB commissions, Master IB partnerships and network payouts require a real trading account. Register a live account to start earning."
         >
           <></>
         </DemoLockGate>
@@ -686,7 +686,7 @@ function SubBrokerTab() {
 
       await api.post('/business/apply-sub-broker', { company_name: companyName || undefined });
 
-      toast.success('Sub-broker application submitted!');
+      toast.success('Master IB application submitted!');
 
       const s = await api.get<any>('/business/status');
 
@@ -702,7 +702,7 @@ function SubBrokerTab() {
 
 
 
-  // Approved partner → portal CTA instead of the inline sub-broker dashboard.
+  // Approved partner → portal CTA instead of the inline Master IB dashboard.
   if (status?.is_ib) return <IBPortalCTA subtitle="Manage your clients and revenue share from your dedicated IB partner portal." />;
 
   if (status?.application_status === 'pending') {
@@ -715,7 +715,7 @@ function SubBrokerTab() {
 
         <h3 className="text-sm font-semibold text-text-primary">Application Pending</h3>
 
-        <p className="text-xxs text-text-tertiary mt-1">Your sub-broker application is under review.</p>
+        <p className="text-xxs text-text-tertiary mt-1">Your Master IB application is under review.</p>
 
       </div>
 
@@ -827,9 +827,9 @@ function SubBrokerTab() {
 
     <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5 max-w-2xl mx-auto">
 
-      <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become a Sub-Broker</h3>
+      <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become a Master IB</h3>
 
-      <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Partner with us as a sub-broker. Get your own referral code, manage clients, and earn revenue share on all their trading activity.</p>
+      <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Partner with us as a Master IB. Get your own referral code, manage clients, and earn revenue share on all their trading activity.</p>
 
       <div className="max-w-sm mx-auto text-left">
 
@@ -857,7 +857,7 @@ function SubBrokerTab() {
 
       >
 
-        {applying ? 'Submitting...' : 'Apply as Sub-Broker'}
+        {applying ? 'Submitting...' : 'Apply as Master IB'}
 
       </button>
 
