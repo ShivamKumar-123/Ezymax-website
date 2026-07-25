@@ -38,6 +38,17 @@ async def get_provider_detail(
     )
 
 
+@router.get("/providers/{provider_id}/trades")
+async def master_trades(
+    provider_id: UUID,
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent closed trades of a master — the track record behind the ROI."""
+    return await social_service.master_trade_history(provider_id, db, limit=limit)
+
+
 @router.post("/copy", status_code=201)
 async def start_copy(
     master_id: UUID = Query(...),

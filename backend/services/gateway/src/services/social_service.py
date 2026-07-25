@@ -13,7 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
-    Referral, RewardsTransaction,
+    Referral, RewardsTransaction, Instrument,
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
@@ -205,6 +205,45 @@ async def get_provider_detail(
         "is_copying": is_copying,
         "created_at": master.created_at.isoformat() if master.created_at else None,
     }
+
+
+async def master_trade_history(
+    provider_id: UUID, db: AsyncSession, *, limit: int = 50,
+) -> dict:
+    """Recent closed trades of an approved master — shown to followers and
+    prospects on the provider detail modal so the ROI number is backed by a
+    visible track record. Read-only; only closed trades, newest first."""
+    master = (await db.execute(
+        select(MasterAccount).where(
+            MasterAccount.id == provider_id, MasterAccount.status == "approved"
+        )
+    )).scalar_one_or_none()
+    if master is None:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    rows = (await db.execute(
+        select(TradeHistory, Instrument.symbol)
+        .join(Instrument, Instrument.id == TradeHistory.instrument_id)
+        .where(TradeHistory.account_id == master.account_id)
+        .order_by(TradeHistory.closed_at.desc())
+        .limit(max(1, min(int(limit), 200)))
+    )).all()
+
+    items = []
+    for th, symbol in rows:
+        side_val = th.side.value if hasattr(th.side, "value") else str(th.side)
+        items.append({
+            "id": str(th.id),
+            "symbol": symbol,
+            "side": side_val,
+            "lots": float(th.lots or 0),
+            "open_price": float(th.open_price or 0),
+            "close_price": float(th.close_price or 0),
+            "profit": float(th.profit or 0),
+            "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+            "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+        })
+    return {"items": items, "total": len(items)}
 
 
 async def start_copy(

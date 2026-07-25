@@ -296,6 +296,87 @@ function TraderCard({
 }
 
 /* ─── Detail Modal ─── */
+interface MasterTrade {
+  id: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  lots: number;
+  open_price: number;
+  close_price: number;
+  profit: number;
+  closed_at: string | null;
+}
+
+/* Recent closed trades of the master — the track record behind the ROI. */
+function MasterTradesTable({ providerId }: { providerId: string }) {
+  const [trades, setTrades] = useState<MasterTrade[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<{ items: MasterTrade[] }>(`/social/providers/${providerId}/trades?limit=50`);
+        if (!cancelled) setTrades(r.items || []);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [providerId]);
+
+  if (failed) return null; // history is a bonus — never break the modal
+  return (
+    <div className="mt-4">
+      <div className="text-xs font-semibold text-text-primary mb-2">Recent Trades</div>
+      {trades === null ? (
+        <div className="text-xxs text-text-tertiary py-3">Loading trade history…</div>
+      ) : trades.length === 0 ? (
+        <div className="text-xxs text-text-tertiary py-3">No closed trades yet</div>
+      ) : (
+        <div className="rounded-lg border border-border-glass overflow-hidden">
+          <div className="max-h-56 overflow-y-auto">
+            <table className="w-full text-xxs">
+              <thead className="sticky top-0 bg-bg-tertiary text-text-tertiary">
+                <tr>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Closed</th>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Symbol</th>
+                  <th className="text-left px-2.5 py-1.5 font-medium">Side</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">Lots</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">Open → Close</th>
+                  <th className="text-right px-2.5 py-1.5 font-medium">P/L</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map((t) => (
+                  <tr key={t.id} className="border-t border-border-glass/50">
+                    <td className="px-2.5 py-1.5 text-text-tertiary whitespace-nowrap">
+                      {t.closed_at ? new Date(t.closed_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }) : '—'}
+                    </td>
+                    <td className="px-2.5 py-1.5 font-semibold text-text-primary">{t.symbol}</td>
+                    <td className="px-2.5 py-1.5">
+                      <span className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', t.side === 'buy' ? 'bg-buy/15 text-buy' : 'bg-sell/15 text-sell')}>
+                        {t.side}
+                      </span>
+                    </td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-text-secondary">{t.lots.toFixed(2)}</td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-text-secondary whitespace-nowrap">
+                      {t.open_price} → {t.close_price}
+                    </td>
+                    <td className={clsx('px-2.5 py-1.5 text-right tabular-nums font-semibold', t.profit >= 0 ? 'text-buy' : 'text-sell')}>
+                      {t.profit >= 0 ? '+' : ''}{t.profit.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DetailModal({
   detail,
   loading,
@@ -359,6 +440,8 @@ function DetailModal({
             )}
 
             <MonthlyChart data={detail.monthly_breakdown} />
+
+            <MasterTradesTable providerId={detail.id} />
 
             <button
               type="button"
