@@ -572,8 +572,30 @@ function CopyModal({
         className="relative w-full max-w-sm rounded-2xl bg-bg-secondary border border-border-glass p-6"
       >
         <button type="button" onClick={onClose} className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary text-lg">✕</button>
-        <h3 className="text-sm font-semibold text-text-primary mb-1">Follow {provider.provider_name}</h3>
-        <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
+        <h3 className="text-sm font-semibold text-text-primary mb-3">Follow {provider.provider_name}</h3>
+
+        {/* Fees — shown prominently BEFORE the user commits. */}
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-4 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Performance fee</span>
+            <span className="font-bold text-accent tabular-nums">{provider.performance_fee_pct}%</span>
+          </div>
+          {'management_fee_pct' in provider && Number((provider as ProviderDetail).management_fee_pct) > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-text-secondary">Management fee</span>
+              <span className="font-bold text-accent tabular-nums">{(provider as ProviderDetail).management_fee_pct}%</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-secondary">Minimum investment</span>
+            <span className="font-semibold text-text-primary tabular-nums">${provider.min_investment}</span>
+          </div>
+          <p className="text-xxs text-text-tertiary leading-relaxed pt-0.5">
+            The fee applies only to <span className="text-text-primary">profitable</span> copied trades — e.g. a $100
+            profit pays ${(100 * Number(provider.performance_fee_pct) / 100).toFixed(0)} to the master, you keep
+            ${(100 - 100 * Number(provider.performance_fee_pct) / 100).toFixed(0)}. Losing trades cost no fee.
+          </p>
+        </div>
 
         {loadingAccounts ? (
           <div className="py-6 text-center text-xs text-text-tertiary">Loading your accounts…</div>
@@ -588,14 +610,14 @@ function CopyModal({
                   onClick={() => setMode('existing')}
                   className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'existing' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
                 >
-                  Use existing account
+                  Existing account
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('new')}
                   className={`flex-1 py-1.5 rounded text-xs font-medium transition ${mode === 'new' ? 'bg-accent text-black' : 'text-text-secondary hover:text-text-primary'}`}
                 >
-                  New copy account
+                  Custom amount
                 </button>
               </div>
             )}
@@ -614,9 +636,25 @@ function CopyModal({
                     </option>
                   ))}
                 </select>
-                <p className="text-xxs text-text-tertiary mb-4">
-                  Master trades will mirror onto this account scaled by your account&apos;s equity vs the master&apos;s equity. No deposit required.
-                </p>
+                {(() => {
+                  const sel = accounts.find((a) => a.id === accountId);
+                  const eq = Number(sel?.equity ?? sel?.balance ?? 0);
+                  return (
+                    <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-text-secondary">Copy allocation</span>
+                        <span className="font-bold text-text-primary tabular-nums">
+                          ${eq.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <p className="text-xxs text-text-tertiary leading-relaxed">
+                        This mode uses the account&apos;s <span className="text-text-primary">full equity</span> —
+                        trades scale by your equity vs the master&apos;s. Want to invest a smaller or larger
+                        specific amount? Switch to <button type="button" onClick={() => setMode('new')} className="text-accent font-semibold hover:underline">Custom amount</button>.
+                      </p>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
@@ -633,15 +671,53 @@ function CopyModal({
                   A dedicated copy-trading account will be auto-created and funded from your main wallet. Mirrored trades appear there.
                 </div>
                 <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min={provider.min_investment}
-                  max={walletBalance}
-                  placeholder={`Min $${provider.min_investment}`}
-                  className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
-                />
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setAmount((prev) => String(Math.max(provider.min_investment, (parseFloat(prev) || 0) - 50)))}
+                    className="shrink-0 w-9 h-9 rounded-lg border border-border-primary bg-bg-primary text-text-primary text-base font-bold hover:border-accent/50 transition-all"
+                    aria-label="Decrease amount"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min={provider.min_investment}
+                    max={walletBalance}
+                    placeholder={`Min $${provider.min_investment}`}
+                    className="flex-1 rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary text-center placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAmount((prev) => String(Math.min(walletBalance, (parseFloat(prev) || 0) + 50)))}
+                    className="shrink-0 w-9 h-9 rounded-lg border border-border-primary bg-bg-primary text-text-primary text-base font-bold hover:border-accent/50 transition-all"
+                    aria-label="Increase amount"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 mb-4">
+                  {[provider.min_investment, 100, 250, 500, 1000]
+                    .filter((v, i, arr) => v <= walletBalance && arr.indexOf(v) === i)
+                    .slice(0, 4)
+                    .map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setAmount(String(v))}
+                        className={clsx(
+                          'px-2.5 py-1 rounded-full text-xxs font-semibold border transition-all',
+                          parseFloat(amount) === v
+                            ? 'border-accent bg-accent/15 text-accent'
+                            : 'border-border-glass text-text-secondary hover:text-text-primary',
+                        )}
+                      >
+                        ${v}
+                      </button>
+                    ))}
+                </div>
               </>
             )}
 
