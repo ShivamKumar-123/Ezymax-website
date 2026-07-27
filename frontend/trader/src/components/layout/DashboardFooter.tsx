@@ -25,12 +25,24 @@ export default function DashboardFooter() {
   return (
     <footer className="w-full mt-8 border-t border-border-glass bg-bg-secondary/50">
       <div className="w-full px-4 sm:px-6 md:px-8 py-5 space-y-3">
-        {/* Risk-warning band — high-contrast amber dot + concise copy.
-            Mandatory disclosure under most regulators for any leveraged
-            CFD platform. Keep terse so it doesn't dominate the page. */}
+        {/* Risk-warning band. Mandatory disclosure for a leveraged CFD
+            platform, but on mobile the full paragraph filled short pages
+            (e.g. Wallet) end-to-end — the client's report. So: a compact
+            one-liner on phones (links to the full Risk Disclosure), and the
+            full text from `sm` up. The disclosure is still one tap away
+            everywhere, so compliance is preserved. */}
         <div className="flex items-start gap-2.5 text-[11px] leading-relaxed text-text-tertiary">
           <AlertTriangle size={14} className="text-amber-400/90 shrink-0 mt-0.5" aria-hidden />
-          <p>
+          {/* Mobile: short */}
+          <p className="sm:hidden">
+            <span className="font-semibold text-text-secondary">Risk warning:</span>{' '}
+            Trading leveraged products is high-risk; you can lose more than your deposit.{' '}
+            <Link href="/risk-disclosure" className="text-[#d6a93d] hover:underline whitespace-nowrap">
+              Read more
+            </Link>
+          </p>
+          {/* Desktop / tablet: full */}
+          <p className="hidden sm:block">
             <span className="font-semibold text-text-secondary">Risk warning:</span>{' '}
             Trading forex, CFDs, and other leveraged products carries a high level of risk and may
             not be suitable for every investor. You could lose more than your initial deposit. Past
@@ -60,7 +72,7 @@ export default function DashboardFooter() {
               Support
             </Link>
           </div>
-          <span className="text-text-tertiary/80">
+          <span className="hidden sm:inline text-text-tertiary/80">
             By using this platform you accept the Terms and acknowledge the trading risks.
           </span>
         </div>
