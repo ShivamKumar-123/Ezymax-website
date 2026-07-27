@@ -370,9 +370,14 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                       key={key}
                       role={hasData ? 'button' : undefined}
                       tabIndex={hasData ? 0 : undefined}
+                      // Tap opens the popup (mobile) — dismissed via the
+                      // backdrop / Close button. Hover open+close is limited
+                      // to a real MOUSE via pointerType, so a touch tap no
+                      // longer fires a synthetic mouseenter+mouseleave that
+                      // opened then instantly closed the card on mobile.
                       onClick={hasData ? () => setDayPopup(cell!) : undefined}
-                      onMouseEnter={hasData ? () => setDayPopup(cell!) : undefined}
-                      onMouseLeave={hasData ? () => setDayPopup(null) : undefined}
+                      onPointerEnter={hasData ? (e) => { if (e.pointerType === 'mouse') setDayPopup(cell!); } : undefined}
+                      onPointerLeave={hasData ? (e) => { if (e.pointerType === 'mouse') setDayPopup(null); } : undefined}
                       className={clsx(
                         // overflow-hidden + min-w-0 stop the P&L text spilling
                         // out of the narrow mobile cells (the reported overlay).
