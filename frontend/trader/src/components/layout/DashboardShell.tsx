@@ -40,20 +40,22 @@ export default function DashboardShell({
         <main
           key={pathname}
           className={cn(
-            // flex column + a growing content wrapper below implements a
-            // "sticky footer": on short pages (e.g. Wallet) the footer is
-            // pushed to the bottom of the viewport instead of floating right
-            // under the content; on tall pages it scrolls normally.
-            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-2.5 sm:p-4 md:p-6 page-fade-in flex flex-col',
+            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-2.5 sm:p-4 md:p-6 page-fade-in',
             mainClassName,
           )}
         >
-          <div className="flex-1 min-h-0">{children}</div>
-          {/* Compliance + nav footer — full-width band pinned to the bottom
-              of every dashboard page. Scrolls with content (not fixed) so it
-              doesn't eat terminal vertical space, but the flex-1 wrapper above
-              keeps it at the page bottom on short pages. */}
-          <DashboardFooter />
+          {/* Sticky-footer wrapper: `min-h-full` (a MINIMUM height, never a
+              cap) makes the column at least as tall as the viewport, so on
+              short pages the footer is pushed to the bottom. On tall pages the
+              wrapper grows past the viewport and `main` scrolls normally — the
+              content is never clipped. */}
+          <div className="flex flex-col min-h-full">
+            <div className="flex-1">{children}</div>
+            {/* Compliance + nav footer — scrolls with content (not fixed) so it
+                doesn't eat terminal vertical space; the flex-1 region above
+                keeps it at the page bottom on short pages. */}
+            <DashboardFooter />
+          </div>
         </main>
       </div>
       <Link
