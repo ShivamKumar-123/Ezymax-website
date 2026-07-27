@@ -651,10 +651,14 @@ html {
 
 /* Page fade-in — applied to main content area on route change */
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.page-fade-in { animation: pageFadeIn 0.18s ease-out both; }
+/* Global page entrance — applied to <main> keyed by pathname, so every
+   dashboard page fades + rises smoothly on load and on navigation. A
+   refined ease-out (not linear) is what makes it read as premium rather
+   than mechanical. Respects prefers-reduced-motion (see media query below). */
+.page-fade-in { animation: pageFadeIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* Sidebar icon glow pulse */
 @keyframes iconGlowPulse {
@@ -891,4 +895,5 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   .dash-rise { animation: none; }
   .gold-sheen::after { display: none; }
   .hover-lift:hover { transform: none; }
+  .page-fade-in { animation: none; }
 }
