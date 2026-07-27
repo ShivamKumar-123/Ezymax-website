@@ -185,3 +185,41 @@ async def user_copy_fees_paid(
         page=page,
         per_page=per_page,
     )
+
+
+# ── Copy-Trade Commission Report ─────────────────────────────────────────
+from datetime import date as _date
+
+
+@router.get("/copy-commissions/summary")
+async def copy_commissions_summary(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    date_from: _date | None = Query(None),
+    date_to: _date | None = Query(None),
+    search: str | None = Query(None),
+    admin: User = Depends(require_permission("social.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-master copy-trade commission earnings for the window."""
+    return await social_service.copy_commission_summary(
+        db, page=page, per_page=per_page, date_from=date_from, date_to=date_to, search=search,
+    )
+
+
+@router.get("/copy-commissions")
+async def copy_commissions_ledger(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    date_from: _date | None = Query(None),
+    date_to: _date | None = Query(None),
+    master_user_id: uuid.UUID | None = Query(None),
+    search: str | None = Query(None),
+    admin: User = Depends(require_permission("social.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Row-level copy-trade commission ledger (date, master, follower, amount)."""
+    return await social_service.copy_commission_ledger(
+        db, page=page, per_page=per_page, date_from=date_from, date_to=date_to,
+        master_user_id=master_user_id, search=search,
+    )

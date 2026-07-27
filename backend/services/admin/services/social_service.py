@@ -1,7 +1,10 @@
 """Admin Social Trading Service — master requests, masters CRUD."""
+import logging
 import secrets
 import uuid
 from decimal import Decimal
+
+logger = logging.getLogger("uvicorn.error")
 
 from fastapi import HTTPException
 from sqlalchemy import select, func
@@ -558,3 +561,133 @@ async def delete_master(
     )
     await db.commit()
     return {"message": "Master account deleted successfully"}
+
+
+# ── Copy-Trade Commission Report (admin) ─────────────────────────────────
+# Per-master (per-user) copy-trade commission earnings, date-filterable.
+# Copy-trade fee transactions are isolated by their description marker
+# ("copy trade") so they don't blend with IB referral commissions (which
+# share the ib_commission type). Master earning rows:
+#   type='ib_commission' AND description ILIKE '%copy trade%'
+# reference_id on each points to the follower's position → account → user.
+
+from sqlalchemy import text as _sql_text
+
+
+def _copy_comm_window(date_from, date_to):
+    where = ["t.type = 'ib_commission'", "t.description ILIKE '%copy trade%'"]
+    params: dict = {}
+    if date_from is not None:
+        where.append("t.created_at >= :date_from")
+        params["date_from"] = date_from
+    if date_to is not None:
+        where.append("t.created_at < (CAST(:date_to AS date) + INTERVAL '1 day')")
+        params["date_to"] = date_to
+    return " AND ".join(where), params
+
+
+async def copy_commission_summary(
+    db: AsyncSession, *, page: int = 1, per_page: int = 50,
+    date_from=None, date_to=None, search: str | None = None,
+) -> dict:
+    """One row per master: total copy commission earned in the window,
+    number of entries, and distinct followers who generated it."""
+    where_sql, params = _copy_comm_window(date_from, date_to)
+    if search:
+        where_sql += " AND (mu.email ILIKE :q OR mu.first_name ILIKE :q OR mu.last_name ILIKE :q)"
+        params["q"] = f"%{search}%"
+    base = f"""
+        FROM transactions t
+        JOIN users mu ON mu.id = t.user_id
+        LEFT JOIN positions pos ON pos.id = t.reference_id
+        LEFT JOIN trading_accounts fa ON fa.id = pos.account_id
+        WHERE {where_sql}
+        GROUP BY t.user_id, mu.email, mu.first_name, mu.last_name
+    """
+    pp = dict(params, limit=per_page, offset=(page - 1) * per_page)
+    try:
+        total = (await db.execute(_sql_text(
+            f"SELECT count(*) FROM (SELECT t.user_id {base}) s"
+        ), params)).scalar() or 0
+        grand = (await db.execute(_sql_text(
+            f"SELECT coalesce(sum(t.amount),0) FROM transactions t "
+            f"JOIN users mu ON mu.id=t.user_id WHERE {where_sql}"
+        ), params)).scalar() or 0
+        rows = (await db.execute(_sql_text(f"""
+            SELECT t.user_id, mu.email, mu.first_name, mu.last_name,
+                   coalesce(sum(t.amount),0) AS earned,
+                   count(*) AS entries,
+                   count(DISTINCT fa.user_id) AS followers
+            {base}
+            ORDER BY earned DESC
+            LIMIT :limit OFFSET :offset
+        """), pp)).all()
+    except Exception as exc:  # noqa: BLE001
+        await db.rollback()
+        logger.warning("copy_commission_summary failed: %s", exc)
+        return {"items": [], "total": 0, "page": page, "per_page": per_page, "grand_total": 0.0}
+    items = []
+    for r in rows:
+        m = r._mapping
+        items.append({
+            "master_user_id": str(m["user_id"]),
+            "master_name": f"{m['first_name'] or ''} {m['last_name'] or ''}".strip() or m["email"],
+            "master_email": m["email"],
+            "earned": float(m["earned"] or 0),
+            "entries": int(m["entries"] or 0),
+            "followers": int(m["followers"] or 0),
+        })
+    return {"items": items, "total": int(total), "page": page, "per_page": per_page,
+            "grand_total": float(grand or 0)}
+
+
+async def copy_commission_ledger(
+    db: AsyncSession, *, page: int = 1, per_page: int = 50,
+    date_from=None, date_to=None, master_user_id=None, search: str | None = None,
+) -> dict:
+    """Row-level copy-trade commission entries: date, master, source
+    follower, amount. Filterable by date, master, and search."""
+    where_sql, params = _copy_comm_window(date_from, date_to)
+    if master_user_id is not None:
+        where_sql += " AND t.user_id = :muid"
+        params["muid"] = str(master_user_id)
+    if search:
+        where_sql += " AND (mu.email ILIKE :q OR fu.email ILIKE :q)"
+        params["q"] = f"%{search}%"
+    base = f"""
+        FROM transactions t
+        JOIN users mu ON mu.id = t.user_id
+        LEFT JOIN positions pos ON pos.id = t.reference_id
+        LEFT JOIN trading_accounts fa ON fa.id = pos.account_id
+        LEFT JOIN users fu ON fu.id = fa.user_id
+        WHERE {where_sql}
+    """
+    pp = dict(params, limit=per_page, offset=(page - 1) * per_page)
+    try:
+        total = (await db.execute(_sql_text(f"SELECT count(*) {base}"), params)).scalar() or 0
+        rows = (await db.execute(_sql_text(f"""
+            SELECT t.created_at, t.amount,
+                   mu.email AS master_email, mu.first_name AS m_fn, mu.last_name AS m_ln,
+                   fu.email AS follower_email, fu.first_name AS f_fn, fu.last_name AS f_ln,
+                   fa.account_number AS follower_account
+            {base}
+            ORDER BY t.created_at DESC
+            LIMIT :limit OFFSET :offset
+        """), pp)).all()
+    except Exception as exc:  # noqa: BLE001
+        await db.rollback()
+        logger.warning("copy_commission_ledger failed: %s", exc)
+        return {"items": [], "total": 0, "page": page, "per_page": per_page}
+    items = []
+    for r in rows:
+        m = r._mapping
+        items.append({
+            "created_at": m["created_at"].isoformat() if m["created_at"] else None,
+            "amount": float(m["amount"] or 0),
+            "master_name": f"{m['m_fn'] or ''} {m['m_ln'] or ''}".strip() or m["master_email"],
+            "master_email": m["master_email"],
+            "follower_name": (f"{m['f_fn'] or ''} {m['f_ln'] or ''}".strip() or m["follower_email"] or "—"),
+            "follower_email": m["follower_email"],
+            "follower_account": m["follower_account"],
+        })
+    return {"items": items, "total": int(total), "page": page, "per_page": per_page}
