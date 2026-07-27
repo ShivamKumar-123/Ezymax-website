@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   addMonths,
   eachDayOfInterval,
@@ -428,8 +429,13 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
             ))}
           </div>
 
-          {/* Day detail popup — opens on tap (mobile) or hover (desktop). */}
-          {dayPopup ? (
+          {/* Day detail popup — opens on tap (mobile) or hover (desktop).
+              Portalled to <body>: the calendar sits inside ancestors that
+              carry a CSS transform (the page-entrance animation), which would
+              otherwise make `position: fixed` resolve against that ancestor
+              instead of the viewport — pushing the mobile bottom-sheet far off
+              screen. The portal escapes all of that. */}
+          {dayPopup && typeof document !== 'undefined' ? createPortal(
             <div
               className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-0"
               onClick={() => setDayPopup(null)}
@@ -489,7 +495,8 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                   Close
                 </button>
               </div>
-            </div>
+            </div>,
+            document.body,
           ) : null}
         </div>
 
