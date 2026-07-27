@@ -220,7 +220,7 @@ function BrokerHome() {
   return (
     <div className="space-y-5 pb-8 max-w-6xl mx-auto w-full">
       {/* ── Greeting ── */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="dash-rise flex flex-wrap items-end justify-between gap-3" style={{ animationDelay: '0ms' }}>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
             Welcome back{firstName ? `, ${firstName}` : ''} <span className="text-2xl">👋</span>
@@ -244,19 +244,21 @@ function BrokerHome() {
       </div>
 
       {/* ── Gold hero: the money story ── */}
-      <HeroBalanceCard
-        accounts={accounts}
-        active={activeAccount}
-        onChangeAccount={setActiveId}
-        loading={loading}
-        totalBalance={totalBalance}
-        realCount={realAccounts.length}
-        todaysPnl={todaysPnl}
-        todaysPnlPct={todaysPnlPct}
-      />
+      <div className="dash-rise" style={{ animationDelay: '80ms' }}>
+        <HeroBalanceCard
+          accounts={accounts}
+          active={activeAccount}
+          onChangeAccount={setActiveId}
+          loading={loading}
+          totalBalance={totalBalance}
+          realCount={realAccounts.length}
+          todaysPnl={todaysPnl}
+          todaysPnlPct={todaysPnlPct}
+        />
+      </div>
 
       {/* ── Quick actions ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+      <div className="dash-rise grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4" style={{ animationDelay: '160ms' }}>
         <button
           type="button"
           data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW}
@@ -268,7 +270,7 @@ function BrokerHome() {
             const id = activeId || accounts[0].id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
-          className="group rounded-2xl p-5 transition-all flex items-center gap-4 text-left hover:brightness-110"
+          className="hover-lift group rounded-2xl p-5 transition-all flex items-center gap-4 text-left hover:brightness-110"
           style={{ background: 'linear-gradient(135deg, #23282f 0%, #14171c 100%)', border: '1px solid rgba(214,169,61,0.45)' }}
         >
           <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(214,169,61,0.16)' }}>
@@ -284,7 +286,7 @@ function BrokerHome() {
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
+          className="hover-lift group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
         >
           <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
@@ -301,7 +303,7 @@ function BrokerHome() {
           type="button"
           data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT}
           onClick={() => router.push('/wallet')}
-          className="group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
+          className="hover-lift group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
         >
           <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
@@ -316,13 +318,13 @@ function BrokerHome() {
       </div>
 
       {/* ── Two-column: markets + progression ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
+      <div className="dash-rise grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start" style={{ animationDelay: '240ms' }}>
         <TopMoversCard movers={movers} />
         <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
       </div>
 
-      <InviteFriendsCard />
-      {banners.length > 0 && <BannerStrip banners={banners} />}
+      <div className="dash-rise" style={{ animationDelay: '320ms' }}><InviteFriendsCard /></div>
+      {banners.length > 0 && <div className="dash-rise" style={{ animationDelay: '400ms' }}><BannerStrip banners={banners} /></div>}
     </div>
   );
 }
@@ -347,7 +349,7 @@ function HeroBalanceCard({
   return (
     <div
       data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
-      className="relative rounded-3xl p-5 md:p-7 overflow-hidden"
+      className="gold-sheen relative rounded-3xl p-5 md:p-7 overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #f2d484 0%, #ddb04a 42%, #c1912a 78%, #a87b1f 100%)',
         boxShadow: '0 18px 44px rgba(168,123,31,0.28), inset 0 1px 0 rgba(255,255,255,0.5)',

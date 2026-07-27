@@ -854,3 +854,41 @@ html[data-page="accounts"] header.h-\[65px\] + div,
 html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   background: transparent !important;
 }
+
+/* ── Dashboard polish (presentation only — no logic touched) ──────────── */
+/* Staggered entrance: sections fade + rise on mount. Runs once, so live
+   polling never re-triggers it. Stagger applied via inline animation-delay. */
+@keyframes dashRiseIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dash-rise { animation: dashRiseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* A slow diagonal light sweep across the gold hero — premium sheen. The
+   host must be position:relative + overflow:hidden (the hero already is). */
+@keyframes goldSheenSweep {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  60%  { transform: translateX(240%)  skewX(-18deg); }
+  100% { transform: translateX(240%)  skewX(-18deg); }
+}
+.gold-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  transform: translateX(-140%) skewX(-18deg);
+  animation: goldSheenSweep 6s ease-in-out 1.4s infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Subtle lift on interactive cards. */
+.hover-lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.hover-lift:hover { transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-rise { animation: none; }
+  .gold-sheen::after { display: none; }
+  .hover-lift:hover { transform: none; }
+}
