@@ -230,6 +230,10 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
   const j = d.journal;
   const [calMonth, setCalMonth] = useState(() => parseISO(`${d.calendar.defaultMonth}-01`));
   const [calView, setCalView] = useState<'usd' | 'pct' | 'r' | 'trades'>('usd');
+  // Tapped/hovered day → detail popup. On mobile the tiny cells can't show
+  // the full figure, so the colour signals win/loss and the popup carries
+  // the numbers.
+  const [dayPopup, setDayPopup] = useState<CalendarDayCell | null>(null);
   const dayMap = useMemo(() => dayMapFromCells(d.calendar.days), [d.calendar.days]);
 
   const weeks = useMemo(() => {
@@ -360,48 +364,57 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
                   const isWin = cell?.kind === 'win';
                   const isLoss = cell?.kind === 'loss';
                   const showUsd = calView === 'usd' && cell?.pnlUsd != null;
+                  const hasData = !!(inMonth && cell && cell.kind !== 'empty');
                   return (
                     <div
                       key={key}
+                      role={hasData ? 'button' : undefined}
+                      tabIndex={hasData ? 0 : undefined}
+                      onClick={hasData ? () => setDayPopup(cell!) : undefined}
+                      onMouseEnter={hasData ? () => setDayPopup(cell!) : undefined}
+                      onMouseLeave={hasData ? () => setDayPopup(null) : undefined}
                       className={clsx(
-                        'min-h-[72px] rounded-lg border p-1 flex flex-col',
+                        // overflow-hidden + min-w-0 stop the P&L text spilling
+                        // out of the narrow mobile cells (the reported overlay).
+                        'min-h-[52px] md:min-h-[72px] rounded-lg border p-1 flex flex-col overflow-hidden min-w-0',
                         !inMonth && 'opacity-25 border-transparent bg-transparent',
                         inMonth && !cell && 'border-border-primary bg-bg-secondary/40',
                         inMonth && isWin && 'border-[#d6a93d]/50 bg-[#d6a93d]/10',
                         inMonth && isLoss && 'border-red-500/50 bg-red-500/10',
+                        hasData && 'cursor-pointer hover:brightness-125 transition',
                       )}
                     >
-                      <span className="text-[10px] text-text-tertiary">{format(dt, 'd')}</span>
-                      {inMonth && cell && cell.kind !== 'empty' ? (
+                      <span className="text-[10px] text-text-tertiary leading-none">{format(dt, 'd')}</span>
+                      {hasData ? (
                         <>
                           {showUsd ? (
                             <span
                               className={clsx(
-                                'text-[11px] font-bold leading-tight',
-                                cell.pnlUsd! >= 0 ? 'text-[#d6a93d]' : 'text-red-400',
+                                'text-[10px] md:text-[11px] font-bold leading-tight truncate w-full',
+                                cell!.pnlUsd! >= 0 ? 'text-[#d6a93d]' : 'text-red-400',
                               )}
                             >
-                              {fmtCompactSigned(cell.pnlUsd!)}
+                              {fmtCompactSigned(cell!.pnlUsd!)}
                             </span>
                           ) : null}
-                          {calView === 'trades' && cell.trades != null ? (
-                            <span className="text-[10px] text-text-secondary">{cell.trades} trades</span>
+                          {calView === 'trades' && cell!.trades != null ? (
+                            <span className="text-[10px] text-text-secondary truncate w-full">{cell!.trades} trades</span>
                           ) : null}
-                          {calView === 'r' && cell.rMultiple != null ? (
-                            <span className="text-[10px] text-text-secondary">{cell.rMultiple}R</span>
+                          {calView === 'r' && cell!.rMultiple != null ? (
+                            <span className="text-[10px] text-text-secondary truncate w-full">{cell!.rMultiple}R</span>
                           ) : null}
-                          {calView === 'pct' && cell.pnlUsd != null ? (
-                            <span className="text-[10px] text-text-secondary">{(cell.pnlUsd / 100).toFixed(1)}%</span>
+                          {calView === 'pct' && cell!.pnlUsd != null ? (
+                            <span className="text-[10px] text-text-secondary truncate w-full">{(cell!.pnlUsd / 100).toFixed(1)}%</span>
                           ) : null}
-                          {calView === 'usd' && cell.trades != null ? (
-                            <span className="text-[9px] text-text-tertiary mt-auto">{cell.trades} t</span>
+                          {calView === 'usd' && cell!.trades != null ? (
+                            <span className="text-[9px] text-text-tertiary mt-auto truncate w-full">{cell!.trades} t</span>
                           ) : null}
                         </>
                       ) : null}
                     </div>
                   );
                 })}
-                <div className="min-h-[72px] rounded-lg border border-border-primary bg-bg-secondary/50 flex flex-col items-center justify-center text-[10px]">
+                <div className="min-h-[52px] md:min-h-[72px] rounded-lg border border-border-primary bg-bg-secondary/50 flex flex-col items-center justify-center text-[10px]">
                   <span className="text-text-tertiary font-mono">
                     {weekTotals[wi].n > 0 ? fmtCompactSigned(weekTotals[wi].sum) : '—'}
                   </span>
@@ -409,6 +422,70 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               </div>
             ))}
           </div>
+
+          {/* Day detail popup — opens on tap (mobile) or hover (desktop). */}
+          {dayPopup ? (
+            <div
+              className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-0"
+              onClick={() => setDayPopup(null)}
+            >
+              <div className="absolute inset-0 bg-black/40 sm:bg-transparent" />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={clsx(
+                  'relative w-full sm:w-72 rounded-2xl border p-4 shadow-2xl',
+                  'bg-bg-secondary',
+                  dayPopup.kind === 'loss' ? 'border-red-500/50' : 'border-[#d6a93d]/50',
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-text-primary">
+                    {(() => {
+                      const dd = parseISO(dayPopup.date);
+                      return Number.isNaN(dd.getTime()) ? dayPopup.date : format(dd, 'EEE, MMM d, yyyy');
+                    })()}
+                  </span>
+                  <span
+                    className={clsx(
+                      'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full',
+                      dayPopup.kind === 'loss' ? 'bg-red-500/15 text-red-400' : 'bg-[#d6a93d]/15 text-[#d6a93d]',
+                    )}
+                  >
+                    {dayPopup.kind === 'loss' ? 'Losing day' : 'Winning day'}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {dayPopup.pnlUsd != null ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-text-tertiary">Profit / Loss</span>
+                      <span className={clsx('font-bold tabular-nums', dayPopup.pnlUsd >= 0 ? 'text-[#d6a93d]' : 'text-red-400')}>
+                        {fmtUsd(dayPopup.pnlUsd)}
+                      </span>
+                    </div>
+                  ) : null}
+                  {dayPopup.trades != null ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-text-tertiary">Trades</span>
+                      <span className="font-semibold text-text-primary tabular-nums">{dayPopup.trades}</span>
+                    </div>
+                  ) : null}
+                  {dayPopup.rMultiple != null ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-text-tertiary">R multiple</span>
+                      <span className="font-semibold text-text-primary tabular-nums">{dayPopup.rMultiple}R</span>
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDayPopup(null)}
+                  className="mt-4 w-full sm:hidden py-2 rounded-lg bg-bg-hover text-text-secondary text-sm font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-3">
