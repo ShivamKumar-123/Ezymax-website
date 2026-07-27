@@ -1,23 +1,13 @@
-import { Dices, Ticket, Gavel } from 'lucide-react'
+import { Dices } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
 const features = [
   {
     icon: Dices,
+    gold: true,
     title: 'Spin',
     desc: 'Quick reward interaction. Spend a few Coins, see what comes up.',
-  },
-  {
-    icon: Ticket,
-    title: 'Lottery',
-    desc: 'Enter reward-based pools and try your luck.',
-  },
-  {
-    icon: Gavel,
-    gold: true,
-    title: 'Bidding',
-    desc: 'Compete for rewards using Coins. Highest bid wins.',
   },
 ]
 
