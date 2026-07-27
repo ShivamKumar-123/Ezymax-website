@@ -90,6 +90,26 @@ function BrokerHome() {
     api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
   }, []);
 
+  // ── Equity curve for the portfolio chart hero (real data — cumulative
+  //    realised P&L from closed trades via /portfolio/performance). Empty
+  //    for accounts with no closed trades; the chart shows an empty state. ──
+  type ChartPeriod = '1m' | '3m' | '6m' | '1y' | 'all';
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1m');
+  const [equityCurve, setEquityCurve] = useState<{ time: string; equity: number }[]>([]);
+  const [chartLoading, setChartLoading] = useState(true);
+  // Daily-close series per top-mover for the watchlist sparklines.
+  const [moverBars, setMoverBars] = useState<number[][]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setChartLoading(true);
+    api.get<{ equity_curve: { time: string; equity: number }[] }>('/portfolio/performance', { period: chartPeriod })
+      .then((r) => { if (!cancelled) setEquityCurve(r.equity_curve || []); })
+      .catch(() => { if (!cancelled) setEquityCurve([]); })
+      .finally(() => { if (!cancelled) setChartLoading(false); });
+    return () => { cancelled = true; };
+  }, [chartPeriod]);
+
   // Cached daily-open bars — these don't change intraday, so we fetch
   // once on mount and reuse across every mover refresh. The poll only
   // re-pulls the cheap /instruments/prices/all endpoint.
@@ -166,6 +186,8 @@ function BrokerHome() {
         ]);
         if (cancelled) return;
         dayOpenBarsRef.current = barsRaw;
+        // Close-price series per symbol for the watchlist sparklines.
+        setMoverBars(barsRaw.map((bars) => (bars || []).map((b) => Number(b.close)).filter((n) => Number.isFinite(n))));
         recomputeMovers(ticksRaw || []);
       } catch {}
     })();
@@ -217,35 +239,37 @@ function BrokerHome() {
   const levelLabel = rewardsState?.level_label || 'New Trader';
   const dgcCoins = rewardsState?.artha_coins ?? 0;
 
+  const goTrade = () => {
+    if (accounts.length === 0) { router.push('/trading/open-account'); return; }
+    const id = activeId || accounts[0].id;
+    router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
+  };
+
   return (
-    <div className="space-y-5 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── Greeting ── */}
-      <div className="dash-rise flex flex-wrap items-end justify-between gap-3" style={{ animationDelay: '0ms' }}>
+    <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
+      {/* ── Greeting bar ── */}
+      <div className="dash-rise flex flex-wrap items-center justify-between gap-3" style={{ animationDelay: '0ms' }}>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
-            Welcome back{firstName ? `, ${firstName}` : ''} <span className="text-2xl">👋</span>
+          <h1 className="text-xl md:text-2xl font-bold text-text-primary flex items-center gap-2">
+            Welcome back{firstName ? `, ${firstName}` : ''} <span>👋</span>
           </h1>
-          <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level up.</p>
+          <p className="text-xs text-text-tertiary mt-0.5">Here's your portfolio at a glance.</p>
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-            style={{ border: '1px solid rgba(214,169,61,0.35)', background: 'rgba(214,169,61,0.08)', color: '#d6a93d' }}
-          >
-            <BadgeCheck size={13} /> Level {level} · {levelLabel}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
+            <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </span>
-          <span
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tabular-nums"
-            style={{ border: '1px solid rgba(214,169,61,0.35)', background: 'rgba(214,169,61,0.08)', color: '#d6a93d' }}
-          >
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums"
+            style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
           </span>
         </div>
       </div>
 
-      {/* ── Gold hero: the money story ── */}
-      <div className="dash-rise" style={{ animationDelay: '80ms' }}>
-        <HeroBalanceCard
+      {/* ── Portfolio chart hero (exchange-style) ── */}
+      <div className="dash-rise" style={{ animationDelay: '70ms' }}>
+        <PortfolioHero
           accounts={accounts}
           active={activeAccount}
           onChangeAccount={setActiveId}
@@ -254,78 +278,296 @@ function BrokerHome() {
           realCount={realAccounts.length}
           todaysPnl={todaysPnl}
           todaysPnlPct={todaysPnlPct}
+          equityCurve={equityCurve}
+          chartLoading={chartLoading}
+          period={chartPeriod}
+          onPeriod={setChartPeriod}
+          onTrade={goTrade}
+          onDeposit={() => router.push('/wallet')}
+          onWithdraw={() => router.push('/wallet?action=withdraw')}
+          onDetails={() => router.push('/accounts')}
         />
       </div>
 
-      {/* ── Quick actions ── */}
-      <div className="dash-rise grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4" style={{ animationDelay: '160ms' }}>
-        <button
-          type="button"
-          data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW}
-          onClick={() => {
-            if (accounts.length === 0) {
-              router.push('/trading/open-account');
-              return;
-            }
-            const id = activeId || accounts[0].id;
-            router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
-          }}
-          className="hover-lift group rounded-2xl p-5 transition-all flex items-center gap-4 text-left hover:brightness-110"
-          style={{ background: 'linear-gradient(135deg, #23282f 0%, #14171c 100%)', border: '1px solid rgba(214,169,61,0.45)' }}
-        >
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(214,169,61,0.16)' }}>
-            <BarChart3 size={20} style={{ color: '#d6a93d' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Trade Now</p>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>Open the terminal</p>
-          </div>
-          <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform shrink-0" style={{ color: '#d6a93d' }} />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => router.push('/social')}
-          className="hover-lift group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
-        >
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-            <Users size={20} className="text-blue-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-text-primary truncate">Copy Trading</p>
-            <p className="text-xs text-text-tertiary mt-0.5">Copy top traders</p>
-          </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT}
-          onClick={() => router.push('/wallet')}
-          className="hover-lift group rounded-2xl p-5 transition-colors flex items-center gap-4 text-left hover:bg-bg-hover"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
-        >
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
-            <WalletIcon size={20} className="text-green-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-text-primary truncate">Add Funds</p>
-            <p className="text-xs text-text-tertiary mt-0.5">Deposit now</p>
-          </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
-        </button>
+      {/* ── Markets watchlist + right rail ── */}
+      <div className="dash-rise grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 items-start" style={{ animationDelay: '150ms' }}>
+        <div className="lg:col-span-2">
+          <MarketsTable movers={movers} series={moverBars} onTrade={goTrade} />
+        </div>
+        <div className="space-y-3 sm:space-y-4">
+          {/* Copy Trading promo — carries the discovery CTA */}
+          <button
+            type="button"
+            onClick={() => router.push('/social')}
+            className="hover-lift group w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-colors hover:bg-bg-hover"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+              <Users size={18} className="text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-text-primary">Copy Trading</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">Mirror top traders automatically</p>
+            </div>
+            <ArrowRight size={18} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
+          </button>
+          <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
+        </div>
       </div>
 
-      {/* ── Two-column: markets + progression ── */}
-      <div className="dash-rise grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start" style={{ animationDelay: '240ms' }}>
-        <TopMoversCard movers={movers} />
-        <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
-      </div>
-
-      <div className="dash-rise" style={{ animationDelay: '320ms' }}><InviteFriendsCard /></div>
-      {banners.length > 0 && <div className="dash-rise" style={{ animationDelay: '400ms' }}><BannerStrip banners={banners} /></div>}
+      <div className="dash-rise" style={{ animationDelay: '230ms' }}><InviteFriendsCard /></div>
+      {banners.length > 0 && <div className="dash-rise" style={{ animationDelay: '310ms' }}><BannerStrip banners={banners} /></div>}
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Exchange-style portfolio hero: value + P/L + timeframe tabs + equity
+   chart + per-account stat bar + Deposit/Trade/Withdraw actions.
+   ───────────────────────────────────────────────────────────────────── */
+function PortfolioHero({
+  accounts, active, onChangeAccount, loading,
+  totalBalance, realCount, todaysPnl, todaysPnlPct,
+  equityCurve, chartLoading, period, onPeriod,
+  onTrade, onDeposit, onWithdraw, onDetails,
+}: {
+  accounts: AccountRow[];
+  active: AccountRow | null;
+  onChangeAccount: (id: string) => void;
+  loading: boolean;
+  totalBalance: number;
+  realCount: number;
+  todaysPnl: number;
+  todaysPnlPct: number;
+  equityCurve: { time: string; equity: number }[];
+  chartLoading: boolean;
+  period: '1m' | '3m' | '6m' | '1y' | 'all';
+  onPeriod: (p: '1m' | '3m' | '6m' | '1y' | 'all') => void;
+  onTrade: () => void;
+  onDeposit: () => void;
+  onWithdraw: () => void;
+  onDetails: () => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const a = active;
+  const up = todaysPnl >= 0;
+  const PERIODS: { id: typeof period; label: string }[] = [
+    { id: '1m', label: '1M' }, { id: '3m', label: '3M' }, { id: '6m', label: '6M' },
+    { id: '1y', label: '1Y' }, { id: 'all', label: 'All' },
+  ];
+
+  return (
+    <div
+      data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+    >
+      {/* Top bar: account picker + actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors hover:bg-bg-hover"
+            style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
+          >
+            <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+              style={a?.is_demo
+                ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
+                : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}>
+              {a?.is_demo ? 'Demo' : 'Real'}
+            </span>
+            <span className="text-sm font-semibold tabular-nums text-text-primary">
+              {a?.account_number || (loading ? '…' : 'No accounts')}
+            </span>
+            <ChevronDown size={14} className="text-text-tertiary" />
+          </button>
+          {pickerOpen && accounts.length > 0 && (
+            <div className="absolute top-full left-0 mt-2 z-30 rounded-xl p-1.5 min-w-[260px]"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)', boxShadow: '0 16px 40px rgba(0,0,0,0.45)' }}>
+              {accounts.map((acc) => (
+                <button key={acc.id} type="button"
+                  onClick={() => { onChangeAccount(acc.id); setPickerOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
+                  style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}>
+                    {acc.is_demo ? 'Demo' : 'Real'}
+                  </span>
+                  <span className="font-semibold tabular-nums">#{acc.account_number}</span>
+                  <span className="ml-auto text-xs text-text-tertiary tabular-nums">{fmtUsd(acc.balance)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT} onClick={onDeposit}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
+            style={{ background: '#d6a93d' }}>
+            <ArrowDownToLine size={14} /> Deposit
+          </button>
+          <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW} onClick={onTrade}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
+            <BarChart3 size={14} /> Trade
+          </button>
+          <button type="button" onClick={onWithdraw}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
+            <ArrowUpFromLine size={14} /> Withdraw
+          </button>
+          <button type="button" onClick={onDetails}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
+            Details
+          </button>
+        </div>
+      </div>
+
+      {/* Value + P/L + timeframe */}
+      <div className="px-4 sm:px-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-text-tertiary">Portfolio value</p>
+          <p className="text-3xl md:text-4xl font-bold tabular-nums text-text-primary mt-1">{fmtUsd(totalBalance)}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums"
+            style={{ color: up ? '#22c55e' : '#f87171' }}>
+            {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
+            {up ? '+' : ''}{fmtUsd(todaysPnl)} ({todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}%)
+            <span className="text-text-tertiary font-normal">open P/L · {realCount} {realCount === 1 ? 'account' : 'accounts'}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-1 p-0.5 rounded-lg self-start sm:self-auto"
+          style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}>
+          {PERIODS.map((p) => (
+            <button key={p.id} type="button" onClick={() => onPeriod(p.id)}
+              className={clsx('px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors',
+                period === p.id ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Equity chart */}
+      <div className="px-2 sm:px-3 pt-2">
+        <EquityChart points={equityCurve} loading={chartLoading} up={up} />
+      </div>
+
+      {/* Per-account stat bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px mt-2" style={{ background: 'var(--border-primary)' }}>
+        {[
+          { label: 'Balance', value: fmtUsd(a?.balance ?? 0) },
+          { label: 'Equity', value: fmtUsd(a?.equity ?? 0) },
+          { label: 'Free margin', value: fmtUsd(a?.free_margin ?? 0), neg: (a?.free_margin ?? 0) < 0 },
+          { label: 'Leverage', value: a ? `1:${a.leverage}` : '—' },
+        ].map((s) => (
+          <div key={s.label} className="p-3 sm:p-4" style={{ background: 'var(--bg-card)' }}>
+            <p className="text-[10px] uppercase tracking-[0.12em] font-semibold text-text-tertiary">{s.label}</p>
+            <p className="mt-1 text-sm md:text-base font-bold tabular-nums" style={{ color: s.neg ? '#f87171' : 'var(--text-primary)' }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Inline SVG equity/area chart — no chart library. Renders a graceful
+   empty state when there are no closed trades yet. */
+function EquityChart({ points, loading, up }: { points: { time: string; equity: number }[]; loading: boolean; up: boolean }) {
+  const H = 150;
+  const W = 800;
+  const stroke = up ? '#22c55e' : '#f87171';
+  const grad = up ? 'rgba(34,197,94,0.20)' : 'rgba(248,113,113,0.20)';
+
+  if (loading) {
+    return <div className="h-[150px] flex items-center justify-center text-xs text-text-tertiary">Loading chart…</div>;
+  }
+  if (!points || points.length < 2) {
+    return (
+      <div className="h-[150px] flex flex-col items-center justify-center gap-1 text-center px-4">
+        <BarChart3 size={22} className="text-text-tertiary/60" />
+        <p className="text-xs text-text-tertiary">Your equity curve appears here once you have closed trades.</p>
+      </div>
+    );
+  }
+
+  const ys = points.map((p) => p.equity);
+  const min = Math.min(...ys, 0);
+  const max = Math.max(...ys, 0);
+  const range = max - min || 1;
+  const n = points.length;
+  const x = (i: number) => (i / (n - 1)) * W;
+  const y = (v: number) => H - ((v - min) / range) * (H - 12) - 6;
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p.equity).toFixed(1)}`).join(' ');
+  const area = `${line} L ${W} ${H} L 0 ${H} Z`;
+  const zeroY = y(0);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-[150px]">
+      <defs>
+        <linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={grad} />
+          <stop offset="100%" stopColor="transparent" />
+        </linearGradient>
+      </defs>
+      {/* zero baseline */}
+      {min < 0 && max > 0 && (
+        <line x1="0" y1={zeroY} x2={W} y2={zeroY} stroke="var(--border-primary)" strokeDasharray="4 5" strokeWidth="1" />
+      )}
+      <path d={area} fill="url(#eqfill)" />
+      <path d={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+/* Markets watchlist table with mini sparklines. */
+function MarketsTable({ movers, series, onTrade }: {
+  movers: { symbol: string; pct: number; price: number }[];
+  series: number[][];
+  onTrade: () => void;
+}) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+        <h2 className="text-sm font-bold text-text-primary">Markets</h2>
+        <button type="button" onClick={onTrade} className="text-[11px] font-semibold text-[#d6a93d] hover:underline">Open terminal →</button>
+      </div>
+      {movers.length === 0 ? (
+        <div className="p-6 text-center text-xs text-text-tertiary">Loading market data…</div>
+      ) : (
+        <ul>
+          {movers.map((m, i) => {
+            const upTick = m.pct >= 0;
+            const hasPrice = Number.isFinite(m.price) && m.price > 0;
+            return (
+              <li key={m.symbol} className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0" style={{ borderColor: 'var(--border-primary)' }}>
+                <span className="w-20 text-sm font-semibold text-text-primary">{m.symbol}</span>
+                <div className="flex-1 hidden sm:block"><Sparkline data={series[i] || []} up={upTick} /></div>
+                <span className="text-sm font-mono tabular-nums text-text-secondary w-24 text-right">
+                  {hasPrice ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
+                </span>
+                <span className={clsx('inline-flex items-center justify-end gap-1 text-xs font-bold tabular-nums w-20 text-right', upTick ? 'text-green-400' : 'text-red-400')}>
+                  {upTick ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{upTick ? '+' : ''}{m.pct.toFixed(2)}%
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Sparkline({ data, up }: { data: number[]; up: boolean }) {
+  if (!data || data.length < 2) return <div className="h-6" />;
+  const W = 120, H = 24;
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * (H - 4) - 2}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-6">
+      <polyline points={pts} fill="none" stroke={up ? '#22c55e' : '#f87171'} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+    </svg>
   );
 }
 
