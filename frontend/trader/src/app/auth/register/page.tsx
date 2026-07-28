@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
@@ -120,7 +120,9 @@ function RegisterContent() {
     } else if (!/^\+?[0-9 \-()]{6,20}$/.test(form.phone.trim())) {
       e.phone = 'Please enter a valid phone number.';
     }
-    if (form.password.length < 8) e.password = 'Password must be at least 8 characters.';
+    if (!pwChecks.length) e.password = 'Password must be at least 8 characters.';
+    else if (pwCommon) e.password = 'This password is too common and easy to guess. Please choose a stronger one.';
+    else if (pwVariety < 2) e.password = 'Use a mix of letters, numbers or symbols — not just one type.';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';
     setErrors(e);
     if (Object.keys(e).length > 0) return;
@@ -144,9 +146,37 @@ function RegisterContent() {
     }
   };
 
-  /* password strength */
-  const strength = form.password.length >= 12 ? 4 : form.password.length >= 10 ? 3 : form.password.length >= 8 ? 2 : form.password.length > 0 ? 1 : 0;
+  /* ── Password strength & policy ──────────────────────────────────────
+     Length alone isn't enough — "12345678" is 8 chars but trivially weak.
+     We grade on character variety and block common passwords so users
+     can't register with "123456" / "password" etc. */
+  const pwd = form.password;
+  const pwChecks = {
+    length: pwd.length >= 8,
+    lower: /[a-z]/.test(pwd),
+    upper: /[A-Z]/.test(pwd),
+    number: /[0-9]/.test(pwd),
+    symbol: /[^A-Za-z0-9]/.test(pwd),
+  };
+  const pwVariety = [pwChecks.lower, pwChecks.upper, pwChecks.number, pwChecks.symbol].filter(Boolean).length;
+  const COMMON_PASSWORDS = [
+    '123456', '1234567', '12345678', '123456789', '1234567890', '12345',
+    'password', 'password1', 'passw0rd', 'qwerty', 'qwerty123', 'abc123',
+    '111111', '000000', 'iloveyou', 'admin', 'welcome', 'letmein', 'monkey',
+  ];
+  const pwCommon = pwd.length > 0 && COMMON_PASSWORDS.includes(pwd.toLowerCase());
+  // Minimum policy to allow registration.
+  const pwValid = pwChecks.length && pwVariety >= 2 && !pwCommon;
+  // 0 empty · 1 weak · 2 fair · 3 good · 4 strong
+  const strength = (() => {
+    if (pwd.length === 0) return 0;
+    if (!pwValid) return 1;
+    if (pwd.length >= 12 && pwVariety >= 3) return 4;
+    if (pwd.length >= 10 && pwVariety >= 3) return 3;
+    return 2;
+  })();
   const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#d6a93d'];
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
 
   /* ── Step change ── */
   const handleStepClick = (step: number) => {
@@ -274,20 +304,53 @@ function RegisterContent() {
                       value={form.password}
                       onChange={(e) => update('password', e.target.value)}
                       error={errors.password}
-                      helper="Must be at least 8 characters."
+                      helper={strength > 0 ? undefined : 'Use 8+ characters with a mix of letters, numbers or symbols.'}
                       rightIcon={showPass ? <Eye size={18} /> : <EyeOff size={18} />}
                       onIconClick={() => setShowPass(!showPass)}
                     />
                     {strength > 0 && (
-                      <div className="auth-strength" style={{ marginTop: 6 }}>
-                        {[1, 2, 3, 4].map((i) => (
-                          <div
-                            key={i}
-                            className="auth-strength__bar"
-                            style={{ background: i <= strength ? strengthColors[strength - 1] : undefined }}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        <div className="auth-strength" style={{ marginTop: 6 }}>
+                          {[1, 2, 3, 4].map((i) => (
+                            <div
+                              key={i}
+                              className="auth-strength__bar"
+                              style={{ background: i <= strength ? strengthColors[strength - 1] : undefined }}
+                            />
+                          ))}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: strengthColors[strength - 1],
+                          }}
+                        >
+                          {pwCommon ? 'Too common — easily guessed' : `Password strength: ${strengthLabel}`}
+                        </div>
+                        <ul style={{ marginTop: 6, display: 'grid', gap: 3, listStyle: 'none', padding: 0 }}>
+                          {[
+                            { ok: pwChecks.length, text: 'At least 8 characters' },
+                            { ok: pwVariety >= 2, text: 'Mix of letters, numbers or symbols' },
+                            { ok: !pwCommon, text: 'Not a common password' },
+                          ].map((req) => (
+                            <li
+                              key={req.text}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                fontSize: 12,
+                                color: req.ok ? '#22c55e' : 'rgba(148,163,184,0.9)',
+                              }}
+                            >
+                              {req.ok ? <Check size={13} /> : <X size={13} />}
+                              {req.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
                     )}
                   </motion.div>
 
