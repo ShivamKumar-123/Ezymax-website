@@ -90,7 +90,7 @@ const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon
   { name: 'Rewards', path: '/earn/store', color: '#d6a93d', icon: ShoppingBag },
   { name: 'Tasks', path: '/earn/tasks', color: '#10b981', icon: CheckSquare },
   { name: 'Leaderboard', path: '/earn/leaderboard', color: '#f59e0b', icon: Trophy },
-  { name: 'Play Zone', path: '/earn/play-zone', color: '#ec4899', icon: Sparkles },
+  { name: 'Spin & Win', path: '/earn/play-zone/spin', color: '#ec4899', icon: Sparkles },
   { name: 'Staking', path: '/earn/staking', color: '#059669', icon: Coins },
   { name: 'Insurance', path: '/insurance', color: '#0ea5e9', icon: ShieldCheck },
   { name: 'Copy Trading', path: '/social', color: '#f59e0b', icon: Copy },

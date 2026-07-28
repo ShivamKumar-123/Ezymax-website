@@ -20,7 +20,7 @@ from packages.common.src.models import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
     RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
     User, TradeHistory, TradingAccount,
-    Referral, VipPass,
+    Referral, VipPass, Deposit,
 )
 
 logger = logging.getLogger("rewards_service")
@@ -79,6 +79,69 @@ def _period_key(period: str, when: Optional[datetime] = None) -> str:
         # One-shot per user — single row per (user, mission) regardless of when.
         return "lifetime"
     return when.strftime("%Y-%m-%d")
+
+
+def _period_window(period: str, when: datetime) -> tuple[datetime, datetime]:
+    """(start, end) UTC datetimes for the period containing `when`. Used to
+    scope source-of-truth queries (e.g. deposits made this week)."""
+    if period == "weekly":
+        monday = (when - timedelta(days=when.weekday())).date()
+        start = datetime(monday.year, monday.month, monday.day, tzinfo=timezone.utc)
+        return start, start + timedelta(days=7)
+    # daily (and any fallback): this UTC calendar day
+    start = datetime(when.year, when.month, when.day, tzinfo=timezone.utc)
+    return start, start + timedelta(days=1)
+
+
+# Missions whose progress can't be reliably event-tracked inside the gateway
+# (e.g. deposits are often approved by the separate admin service, so a
+# mark_progress() call there is impossible). For these we derive progress from
+# the source-of-truth table at read/claim time instead.
+_COMPUTED_ACTION_KINDS = {"deposit_usd"}
+
+
+async def _sync_computed_progress(
+    db: AsyncSession, user_id, mission: RewardsMission, pkey: str, now: datetime,
+) -> RewardsUserMissionProgress:
+    """Derive a computed mission's progress from its source table and upsert the
+    progress row so both the Tasks list and the claim check stay consistent.
+    Never regresses an already-claimed row."""
+    prog = (await db.execute(
+        select(RewardsUserMissionProgress).where(
+            RewardsUserMissionProgress.user_id == user_id,
+            RewardsUserMissionProgress.mission_id == mission.id,
+            RewardsUserMissionProgress.period_key == pkey,
+        )
+    )).scalar_one_or_none()
+
+    computed = 0
+    if mission.action_kind == "deposit_usd":
+        start, end = _period_window(mission.period, now)
+        credited_at = func.coalesce(Deposit.approved_at, Deposit.created_at)
+        total = (await db.execute(
+            select(func.coalesce(func.sum(Deposit.amount), 0)).where(
+                Deposit.user_id == user_id,
+                Deposit.status.in_(["approved", "auto_approved"]),
+                credited_at >= start,
+                credited_at < end,
+            )
+        )).scalar_one()
+        computed = int(Decimal(str(total or 0)))
+
+    if prog is None:
+        prog = RewardsUserMissionProgress(
+            user_id=user_id, mission_id=mission.id, period_key=pkey,
+            progress=0, updated_at=now,
+        )
+        db.add(prog)
+
+    if prog.claimed_at is None:
+        target = int(mission.target_count)
+        prog.progress = min(computed, target)
+        prog.updated_at = now
+        if computed >= target and prog.completed_at is None:
+            prog.completed_at = now
+    return prog
 
 
 # Day 7 streak reward (per Repeatable_task.docx "REWARD DAY"): 50 XP + 20 AC.
@@ -624,7 +687,11 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
     by_mission = {p.mission_id: p for p in progress_rows}
     out = []
     for m in missions:
-        p = by_mission.get(m.id)
+        if m.action_kind in _COMPUTED_ACTION_KINDS:
+            # Derive from source-of-truth (e.g. deposits) rather than event counts.
+            p = await _sync_computed_progress(db, user_id, m, pkey, now)
+        else:
+            p = by_mission.get(m.id)
         progress = int(p.progress) if p else 0
         completed = bool(p and p.completed_at)
         claimed = bool(p and p.claimed_at)
@@ -655,6 +722,10 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
     if mission is None:
         raise HTTPException(status_code=404, detail="mission_not_found")
     pkey = _period_key(mission.period)
+    # Computed missions (e.g. deposits) materialise their progress from the
+    # source table just-in-time so the claim check below sees a current value.
+    if mission.action_kind in _COMPUTED_ACTION_KINDS:
+        await _sync_computed_progress(db, user_id, mission, pkey, datetime.now(timezone.utc))
     progress = (await db.execute(
         select(RewardsUserMissionProgress).where(
             RewardsUserMissionProgress.user_id == user_id,

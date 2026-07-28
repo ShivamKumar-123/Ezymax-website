@@ -68,7 +68,7 @@ const SECTIONS: NavSection[] = [
         children: [
           { label: 'Tasks', href: '/earn/tasks', icon: CheckSquare },
           { label: 'Leaderboard', href: '/earn/leaderboard', icon: Trophy },
-          { label: 'Play Zone', href: '/earn/play-zone', icon: Sparkles },
+          { label: 'Spin & Win', href: '/earn/play-zone/spin', icon: Sparkles },
           { label: 'Rewards Store', href: '/earn/store', icon: ShoppingBag },
           { label: 'Staking', href: '/earn/staking', icon: Coins },
         ],

@@ -2,6 +2,7 @@
 import ipaddress
 import json
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -365,6 +366,8 @@ async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str)
             await rewards_service.award_signup_referral_bonus(
                 db, referrer_user_id=ib_profile.user_id, referred_user_id=user_id,
             )
+            # "Refer a Friend" daily mission — credit the referrer.
+            await rewards_service.mark_progress(db, ib_profile.user_id, "refer_friend", 1)
         except Exception as _e:
             logger.debug("signup referral bonus failed: %s", _e)
 
@@ -484,6 +487,36 @@ async def issue_auth_json_response(
 
 # ─── Registration ─────────────────────────────────────────────────────────
 
+# Passwords the frontend also blocks — kept here as defense-in-depth so a
+# direct API call can't register with "123456" / "password" either.
+_COMMON_PASSWORDS = {
+    "123456", "1234567", "12345678", "123456789", "1234567890", "12345",
+    "password", "password1", "passw0rd", "qwerty", "qwerty123", "abc123",
+    "111111", "000000", "iloveyou", "admin", "welcome", "letmein", "monkey",
+}
+
+
+def _assert_password_strength(password: str) -> None:
+    """Reject weak passwords. Requires 8+ chars, at least two character
+    classes (lower/upper/digit/symbol), and not a well-known common password."""
+    if len(password) < 8:
+        raise AuthServiceError("Password must be at least 8 characters.")
+    if password.lower() in _COMMON_PASSWORDS:
+        raise AuthServiceError(
+            "This password is too common and easy to guess. Please choose a stronger one."
+        )
+    classes = sum([
+        bool(re.search(r"[a-z]", password)),
+        bool(re.search(r"[A-Z]", password)),
+        bool(re.search(r"[0-9]", password)),
+        bool(re.search(r"[^A-Za-z0-9]", password)),
+    ])
+    if classes < 2:
+        raise AuthServiceError(
+            "Use a mix of letters, numbers or symbols — not just one type."
+        )
+
+
 async def register_user(
     email: str,
     password: str,
@@ -505,6 +538,8 @@ async def register_user(
         )
     if not await get_bool_setting("allow_new_registrations", True):
         raise AuthServiceError("New registrations are currently disabled", 403)
+
+    _assert_password_strength(password)
 
     existing = await db.execute(select(User).where(User.email == email))
     if existing.scalar_one_or_none():

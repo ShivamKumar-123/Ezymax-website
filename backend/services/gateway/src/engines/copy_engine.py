@@ -492,6 +492,14 @@ class CopyTradeEngine:
                 investor.id, order.id, e,
             )
 
+        # "Copy a Trade" daily mission — best-effort, must never break the copy.
+        try:
+            if investor_account and investor_account.user_id:
+                from ..services import rewards_service
+                await rewards_service.mark_progress(db, investor_account.user_id, "copy_trade", 1)
+        except Exception as _e:
+            logger.warning("copy_trade mission progress failed: %s", _e)
+
         logger.info(
             "Copy opened: %s %s %s lots investor=%s master_pos=%s copy_type=%s (master %s lots)",
             instrument.symbol,

@@ -60,9 +60,9 @@ function Inner() {
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
-            href="/earn/play-zone"
+            href="/dashboard"
             className="text-text-tertiary hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-hover transition-colors"
-            aria-label="Back to Play Zone"
+            aria-label="Back to dashboard"
           >
             <ArrowLeft size={18} />
           </Link>
