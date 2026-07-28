@@ -369,18 +369,28 @@ export default function MarketingNavbar({
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
           </a>
-          {/* Direct Windows desktop-terminal installer. Same <a download>
-              pattern as the APK — the browser saves the .exe; the user then
-              runs it (SmartScreen "More info → Run anyway" for the unsigned
-              build) through the next-next Inno Setup wizard. */}
-          <a
-            href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
-            download="SwissCrestaTerminal-Setup.exe"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
-          >
-            <Monitor className="w-4 h-4 shrink-0" strokeWidth={2} />
-            Windows Terminal
-          </a>
+          {/* Direct Windows desktop-terminal installer. Icon-only button; the
+              label shows as a tooltip on hover. Same <a download> pattern as
+              the APK — the browser saves the .exe; the user then runs it
+              (SmartScreen "More info → Run anyway" for the unsigned build)
+              through the next-next Inno Setup wizard. */}
+          <div className="relative group">
+            <a
+              href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
+              download="SwissCrestaTerminal-Setup.exe"
+              title="Download Desktop Terminal"
+              aria-label="Download Desktop Terminal"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E94E1B] text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+            >
+              <Monitor className="w-4 h-4 shrink-0" strokeWidth={2} />
+            </a>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 z-50"
+            >
+              Download Desktop Terminal
+            </span>
+          </div>
           {showCta && (showAppLink ? (
             <Button
               variant="primary"
