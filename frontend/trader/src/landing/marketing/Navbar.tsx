@@ -374,7 +374,7 @@ export default function MarketingNavbar({
               runs it (SmartScreen "More info → Run anyway" for the unsigned
               build) through the next-next Inno Setup wizard. */}
           <a
-            href="/downloads/SwissCrestaTerminal-Setup.exe"
+            href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
             download="SwissCrestaTerminal-Setup.exe"
             className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
           >
@@ -522,7 +522,7 @@ export default function MarketingNavbar({
             </li>
             <li>
               <a
-                href="/downloads/SwissCrestaTerminal-Setup.exe"
+                href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
                 download="SwissCrestaTerminal-Setup.exe"
                 onClick={() => setOpen(false)}
                 className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
