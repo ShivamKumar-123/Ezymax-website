@@ -298,6 +298,8 @@ export default function MarketingNavbar({
 }: NavbarProps) {
   const [open, setOpen] = useState(false)
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
+  // Desktop-terminal download dropdown (Windows / macOS choice on click).
+  const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
   const { lang, toggleLang, t } = useLang()
 
   // Marketing pages don't live inside an auth provider, so the store
@@ -369,27 +371,69 @@ export default function MarketingNavbar({
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
           </a>
-          {/* Direct Windows desktop-terminal installer. Icon-only button; the
-              label shows as a tooltip on hover. Same <a download> pattern as
-              the APK — the browser saves the .exe; the user then runs it
-              (SmartScreen "More info → Run anyway" for the unsigned build)
-              through the next-next Inno Setup wizard. */}
-          <div className="relative group">
-            <a
-              href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
-              download="SwissCrestaTerminal-Setup.exe"
-              title="Download Desktop Terminal"
+          {/* Desktop-terminal download: icon button opens a Windows / macOS
+              picker on click. Windows ships the signed-later .exe installer;
+              macOS ships a .dmg (coming soon until a Mac build is provided). */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setTerminalMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={terminalMenuOpen}
               aria-label="Download Desktop Terminal"
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E94E1B] text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+              title="Download Desktop Terminal"
+              className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E94E1B] transition-colors ${
+                terminalMenuOpen ? 'bg-[#E94E1B] text-white' : 'text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white'
+              }`}
             >
               <Monitor className="w-4 h-4 shrink-0" strokeWidth={2} />
-            </a>
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 z-50"
-            >
-              Download Desktop Terminal
-            </span>
+            </button>
+            {terminalMenuOpen && (
+              <>
+                {/* click-outside backdrop */}
+                <button
+                  type="button"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onClick={() => setTerminalMenuOpen(false)}
+                  className="fixed inset-0 z-40 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 z-50 w-60 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+                >
+                  <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
+                    Desktop Terminal
+                  </div>
+                  {/* Windows */}
+                  <a
+                    href="/downloads/SwissCrestaTerminal-Setup-1.0.1.exe"
+                    download="SwissCrestaTerminal-Setup.exe"
+                    role="menuitem"
+                    onClick={() => setTerminalMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-[#E94E1B]/10 hover:text-[#E94E1B] transition-colors"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor" aria-hidden="true">
+                      <path d="M3 5.6 10.3 4.6v6.9H3V5.6Zm0 12.8 7.3 1v-6.8H3v5.8Zm8.2 1.1L21 21V12.4h-9.8v7.1Zm0-14.9v7.1H21V3l-9.8 1.6Z" />
+                    </svg>
+                    Download for Windows
+                  </a>
+                  {/* macOS — coming soon until a Mac-built .dmg is provided */}
+                  <div
+                    role="menuitem"
+                    aria-disabled="true"
+                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-gray-400 cursor-not-allowed"
+                    title="macOS build coming soon"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor" aria-hidden="true">
+                      <path d="M16.4 12.9c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.5 2.2 2.6 2.2 1 0 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.6 1.1 0 1.8-1 2.5-2 .8-1.2 1.1-2.3 1.1-2.3s-2.1-.8-2.1-3.2ZM14.3 6.3c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6.9.1 1.8-.5 2.5-1.2Z" />
+                    </svg>
+                    <span className="flex-1">Download for macOS</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wide rounded bg-gray-100 px-1.5 py-0.5 text-gray-400">Soon</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           {showCta && (showAppLink ? (
             <Button
@@ -532,14 +576,25 @@ export default function MarketingNavbar({
             </li>
             <li>
               <a
-                href="/downloads/SwissCrestaTerminal-Setup-1.0.0.exe"
+                href="/downloads/SwissCrestaTerminal-Setup-1.0.1.exe"
                 download="SwissCrestaTerminal-Setup.exe"
                 onClick={() => setOpen(false)}
                 className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
               >
                 <Monitor className="w-4 h-4" strokeWidth={2} />
-                Windows Terminal
+                Terminal for Windows
               </a>
+            </li>
+            <li>
+              <span
+                aria-disabled="true"
+                title="macOS build coming soon"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-gray-400 text-sm font-semibold cursor-not-allowed"
+              >
+                <Monitor className="w-4 h-4" strokeWidth={2} />
+                Terminal for macOS
+                <span className="text-[9px] font-bold uppercase tracking-wide rounded bg-gray-100 px-1.5 py-0.5">Soon</span>
+              </span>
             </li>
             {showCta && (
               <li className="flex items-center gap-3 pt-3 border-t border-gray-200">
