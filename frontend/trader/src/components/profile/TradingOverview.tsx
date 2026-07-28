@@ -437,7 +437,12 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               screen. The portal escapes all of that. */}
           {dayPopup && typeof document !== 'undefined' ? createPortal(
             <div
-              className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-0"
+              // On desktop the popup is a hover tooltip, so the overlay must
+              // NOT capture the mouse — otherwise it covers the very cell being
+              // hovered, firing pointerleave→pointerenter in a loop (the blink).
+              // pointer-events-none on sm+ lets the cursor pass through to the
+              // cell; on mobile it stays interactive so tap-to-close works.
+              className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-0 pointer-events-auto sm:pointer-events-none"
               onClick={() => setDayPopup(null)}
             >
               <div className="absolute inset-0 bg-black/40 sm:bg-transparent" />
