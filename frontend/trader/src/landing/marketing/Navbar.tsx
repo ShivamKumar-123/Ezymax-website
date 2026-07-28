@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, Globe, Menu, X, Download } from 'lucide-react'
+import { ChevronRight, Globe, Menu, X, Download, Monitor } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
 import { useLang } from '@/landing/i18n/LangProvider'
@@ -369,6 +369,18 @@ export default function MarketingNavbar({
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
           </a>
+          {/* Direct Windows desktop-terminal installer. Same <a download>
+              pattern as the APK — the browser saves the .exe; the user then
+              runs it (SmartScreen "More info → Run anyway" for the unsigned
+              build) through the next-next Inno Setup wizard. */}
+          <a
+            href="/downloads/SwissCrestaTerminal-Setup.exe"
+            download="SwissCrestaTerminal-Setup.exe"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+          >
+            <Monitor className="w-4 h-4 shrink-0" strokeWidth={2} />
+            Windows Terminal
+          </a>
           {showCta && (showAppLink ? (
             <Button
               variant="primary"
@@ -506,6 +518,17 @@ export default function MarketingNavbar({
               >
                 <Download className="w-4 h-4" strokeWidth={2} />
                 Download APK
+              </a>
+            </li>
+            <li>
+              <a
+                href="/downloads/SwissCrestaTerminal-Setup.exe"
+                download="SwissCrestaTerminal-Setup.exe"
+                onClick={() => setOpen(false)}
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+              >
+                <Monitor className="w-4 h-4" strokeWidth={2} />
+                Windows Terminal
               </a>
             </li>
             {showCta && (
