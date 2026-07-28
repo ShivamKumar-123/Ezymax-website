@@ -80,10 +80,14 @@ function BrokerHome() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // Rewards state for Level + FXArtha Coin (FXA) display.
+  // Field names mirror /rewards/state exactly (get_state in rewards_service):
+  // coins = ac_balance, next-level XP = xp_for_next_level. The old names
+  // (artha_coins / xp_next_level) don't exist on the response, so the FXA
+  // chip read undefined and always showed 0.
   const [rewardsState, setRewardsState] = useState<{
     level?: number; level_label?: string;
-    xp?: number; xp_next_level?: number;
-    artha_coins?: number;
+    xp?: number; xp_for_next_level?: number;
+    ac_balance?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -237,7 +241,7 @@ function BrokerHome() {
   const firstName = rawFirst ? rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1) : '';
   const level = rewardsState?.level ?? 1;
   const levelLabel = rewardsState?.level_label || 'New Trader';
-  const dgcCoins = rewardsState?.artha_coins ?? 0;
+  const dgcCoins = rewardsState?.ac_balance ?? 0;
 
   const goTrade = () => {
     if (accounts.length === 0) { router.push('/trading/open-account'); return; }
@@ -311,7 +315,7 @@ function BrokerHome() {
             </div>
             <ArrowRight size={18} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
           </button>
-          <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_next_level ?? 100} />
+          <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_for_next_level ?? 100} />
         </div>
       </div>
 
