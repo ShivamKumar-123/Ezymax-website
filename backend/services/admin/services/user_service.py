@@ -363,6 +363,24 @@ async def add_fund(
     old_balance = user_row.main_wallet_balance or Decimal("0")
     user_row.main_wallet_balance = old_balance + amt
 
+    # Book a real approved deposit record (mirrors a gateway deposit) so this
+    # admin credit shows in the admin deposit history and COUNTS in Deposits
+    # Today / Total Deposits / IB team-deposit stats — all of which read the
+    # deposits table. Without it an admin-funded user shows $0 deposits on the
+    # dashboard despite a funded balance.
+    deposit = Deposit(
+        user_id=user_id,
+        account_id=None,
+        amount=amt,
+        currency="USD",
+        method="manual",
+        status="approved",
+        approved_by=admin_id,
+        approved_at=datetime.utcnow(),
+    )
+    db.add(deposit)
+    await db.flush()  # obtain deposit.id to link the transaction
+
     txn = Transaction(
         user_id=user_id,
         account_id=None,  # Main wallet — no trading account
@@ -374,6 +392,10 @@ async def add_fund(
         balance_after=user_row.main_wallet_balance,
         description=body.description or "Deposit",
         created_by=admin_id,
+        # Link to the deposit row exactly like gateway deposits do, so the
+        # `reference_id IS NULL` admin-deposit fallback (see get user detail)
+        # does not double-count this.
+        reference_id=deposit.id,
     )
     db.add(txn)
 
@@ -443,6 +465,23 @@ async def deduct_fund(
     if source != "trading_account" and main_bal_check >= amt:
         # Deduct from main wallet
         user_row.main_wallet_balance = main_bal - amt
+        # Book a completed withdrawal record so this admin debit shows in the
+        # admin withdrawal history and COUNTS in Withdrawals Today / Total
+        # Withdrawals (both read the withdrawals table) — symmetric with the
+        # Add-Fund → deposit record.
+        withdrawal = Withdrawal(
+            user_id=user_id,
+            account_id=None,
+            amount=amt,
+            currency="USD",
+            method="manual",
+            status="completed",
+            approved_by=admin_id,
+            approved_at=datetime.utcnow(),
+            completed_at=datetime.utcnow(),
+        )
+        db.add(withdrawal)
+        await db.flush()  # obtain withdrawal.id to link the transaction
         txn = Transaction(
             user_id=user_id,
             account_id=None,
@@ -451,6 +490,7 @@ async def deduct_fund(
             balance_after=user_row.main_wallet_balance,
             description=body.description or "Admin fund deduction from main wallet",
             created_by=admin_id,
+            reference_id=withdrawal.id,
         )
         db.add(txn)
         await write_audit_log(
@@ -493,6 +533,21 @@ async def deduct_fund(
     account.equity = account.balance + (account.credit or Decimal("0"))
     account.free_margin = account.equity - (account.margin_used or Decimal("0"))
 
+    # Book a completed withdrawal record (see main-wallet branch) so trading-
+    # account debits also count in the admin withdrawal history and totals.
+    withdrawal = Withdrawal(
+        user_id=user_id,
+        account_id=account.id,
+        amount=amt,
+        currency="USD",
+        method="manual",
+        status="completed",
+        approved_by=admin_id,
+        approved_at=datetime.utcnow(),
+        completed_at=datetime.utcnow(),
+    )
+    db.add(withdrawal)
+    await db.flush()  # obtain withdrawal.id to link the transaction
     txn = Transaction(
         user_id=user_id,
         account_id=account.id,
@@ -501,6 +556,7 @@ async def deduct_fund(
         balance_after=account.balance,
         description=body.description or "Admin fund deduction from trading account",
         created_by=admin_id,
+        reference_id=withdrawal.id,
     )
     db.add(txn)
     await write_audit_log(
