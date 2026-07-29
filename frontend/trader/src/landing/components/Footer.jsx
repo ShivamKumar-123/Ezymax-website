@@ -138,7 +138,7 @@ export default function Footer() {
           >
             Risk Warning
           </p>
-          <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
+          <p className="text-xs md:text-[13px] leading-relaxed max-w-none" style={{ color: 'var(--fx-text-3)' }}>
             Trading forex and contracts for difference (CFDs) carries a high level of risk
             and may not be suitable for all investors. You could lose more than your initial
             investment. Past performance is not indicative of future results. Please ensure
