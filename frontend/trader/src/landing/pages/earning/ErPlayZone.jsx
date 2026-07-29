@@ -37,8 +37,8 @@ export default function ErPlayZone() {
           </ScrollReveal>
         </div>
 
-        {/* ── Bento: 3 engagement tiles (one solid gold) ────── */}
-        <div className="fx-bento grid-cols-1 md:grid-cols-3 mt-12 md:mt-16 items-stretch">
+        {/* ── Single Spin tile, centered (Lottery/Bidding removed) ────── */}
+        <div className="fx-bento grid-cols-1 max-w-lg mx-auto mt-12 md:mt-16 items-stretch">
           {features.map((f, i) => {
             const Icon = f.icon
             if (f.gold) {

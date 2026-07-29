@@ -1,4 +1,4 @@
-import { Zap, Gift, BarChart3, Dices, Trophy } from 'lucide-react'
+import { Zap, Gift, BarChart3, Dices, Trophy, ListChecks } from 'lucide-react'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
 const rewards = [
@@ -30,7 +30,9 @@ const rewards = [
 
 const engagement = [
   { icon: Dices, label: 'Spin' },
-  { icon: Trophy, label: 'Rewards' },
+  { icon: ListChecks, label: 'Tasks' },
+  { icon: Gift, label: 'Rewards' },
+  { icon: Trophy, label: 'Leaderboard' },
 ]
 
 const [xp, credits, score] = rewards

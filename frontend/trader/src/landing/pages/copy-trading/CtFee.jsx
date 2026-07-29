@@ -175,7 +175,7 @@ function Row({ icon: Icon, label, value, note, highlight = false }) {
           <Icon size={14} style={{ color: 'var(--fx-gold-light)' }} />
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-white truncate">{label}</div>
+          <div className="text-sm font-semibold text-white leading-snug">{label}</div>
           <div className="text-[11px]" style={{ color: 'var(--fx-text-3)' }}>
             {note}
           </div>

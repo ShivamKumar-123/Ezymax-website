@@ -86,8 +86,10 @@ export default function InHero() {
                 }}
               />
 
-              {/* Floating feature badges grid */}
-              <div className="relative grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md fx-fade-up fx-fade-up-d2">
+              {/* Floating feature badges grid. On lg the centre column gap is
+                  widened so the central shield sits in the gutter instead of
+                  overlapping the card text (e.g. "Automatic Coverage"). */}
+              <div className="relative grid grid-cols-2 gap-3 sm:gap-4 lg:gap-x-20 lg:gap-y-4 w-full max-w-md fx-fade-up fx-fade-up-d2">
                 {features.map(({ icon: Icon, title, sub }, idx) => (
                   <div
                     key={title}
@@ -128,7 +130,7 @@ export default function InHero() {
               {/* Central shield */}
               <div
                 aria-hidden
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden lg:flex w-24 h-24 rounded-2xl items-center justify-center"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden lg:flex w-16 h-16 rounded-2xl items-center justify-center"
                 style={{
                   background:
                     'linear-gradient(135deg, var(--fx-gold-light), var(--fx-gold))',
@@ -137,7 +139,7 @@ export default function InHero() {
                   animation: 'fxFloat 6s ease-in-out infinite',
                 }}
               >
-                <ShieldCheck size={42} style={{ color: '#1a1408' }} />
+                <ShieldCheck size={30} style={{ color: '#1a1408' }} />
               </div>
             </div>
           </div>
