@@ -485,7 +485,9 @@ async def deduct_fund(
         txn = Transaction(
             user_id=user_id,
             account_id=None,
-            type="adjustment",
+            # Show in the trader's history as a Withdrawal (symmetric with
+            # Add-Fund → Deposit), not an admin adjustment.
+            type="withdrawal",
             amount=-amt,
             balance_after=user_row.main_wallet_balance,
             description=body.description or "Admin fund deduction from main wallet",
@@ -551,7 +553,9 @@ async def deduct_fund(
     txn = Transaction(
         user_id=user_id,
         account_id=account.id,
-        type="adjustment",
+        # Show in the trader's history as a Withdrawal (symmetric with
+        # Add-Fund → Deposit), not an admin adjustment.
+        type="withdrawal",
         amount=-amt,
         balance_after=account.balance,
         description=body.description or "Admin fund deduction from trading account",
