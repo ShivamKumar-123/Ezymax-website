@@ -304,7 +304,8 @@ async def place_order(
                     continue
                 p_bid, p_ask = price_map[sym]
                 pos_side = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
-                cp = p_bid if pos_side == "buy" else p_ask
+                # Mark open positions at MID (spread split open/close) — see risk-engine.
+                cp = (p_bid + p_ask) / Decimal("2")
                 cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
                 if pos_side == "buy":
                     unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
@@ -714,7 +715,8 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
 
         if tick_data and pos_status == "open":
             tick = json.loads(tick_data)
-            current_price = float(tick["bid"]) if sv == "buy" else float(tick["ask"])
+            # Open positions mark at MID (spread split open/close) — see risk-engine.
+            current_price = (float(tick["bid"]) + float(tick["ask"])) / 2
             profit = float(calc_pnl(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size, instrument=pos.instrument))
 
         copy_trade_q = await db.execute(

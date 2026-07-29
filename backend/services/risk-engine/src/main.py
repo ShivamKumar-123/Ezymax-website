@@ -87,7 +87,12 @@ class RiskEngine:
                             if not tick_data:
                                 continue
                             tick = json.loads(tick_data)
-                            current_price = Decimal(str(tick["bid"])) if pos.side == OrderSide.BUY else Decimal(str(tick["ask"]))
+                            # Mark OPEN positions at MID so the platform spread is
+                            # split between open and close: half shows while open,
+                            # the other half realizes at close (fills/closes/SL-TP/
+                            # stop-out still execute on bid/ask). This also marks
+                            # equity at mid, so margin/stop-out use the mid value.
+                            current_price = (Decimal(str(tick["bid"])) + Decimal(str(tick["ask"]))) / Decimal("2")
 
                             if pos.side == OrderSide.BUY:
                                 pnl = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size

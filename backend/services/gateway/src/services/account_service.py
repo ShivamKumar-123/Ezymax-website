@@ -424,7 +424,8 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                 if tick_data:
                     tick = json.loads(tick_data)
                     sv = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
-                    cp = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
+                    # Open positions mark at MID (spread split open/close) — see risk-engine.
+                    cp = (Decimal(str(tick["bid"])) + Decimal(str(tick["ask"]))) / Decimal("2")
                     cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
                     if sv == "buy":
                         unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
@@ -516,7 +517,8 @@ async def get_account_summary(
         tick_data = await price_cache.get(pos.instrument.symbol)
         if tick_data:
             tick = json.loads(tick_data)
-            current_price = Decimal(str(tick["bid"])) if pos.side.value == "buy" else Decimal(str(tick["ask"]))
+            # Open positions mark at MID (spread split open/close) — see risk-engine.
+            current_price = (Decimal(str(tick["bid"])) + Decimal(str(tick["ask"]))) / Decimal("2")
             if pos.side.value == "buy":
                 pnl = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
             else:

@@ -341,7 +341,10 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       positions: state.positions.map((pos) => {
         const pSym = String(pos.symbol || '').trim().toUpperCase();
         if (pSym !== sym) return pos;
-        const cp = pos.side === 'buy' ? normalized.bid : normalized.ask;
+        // Open positions mark at MID so the platform spread is split between
+        // open and close (half shows while open, half realizes at close). The
+        // actual close still executes at bid/ask on the backend.
+        const cp = (normalized.bid + normalized.ask) / 2;
         const inst =
           state.instruments.find((i) => i.symbol === sym) ||
           state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);

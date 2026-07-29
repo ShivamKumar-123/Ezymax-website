@@ -131,7 +131,8 @@ async def get_public_share(code: str, db: AsyncSession) -> dict:
         current_price = float(position.close_price)
         is_live = False
     else:
-        current_price = (bid if side == "buy" else ask) if bid and ask else open_price
+        # Live (open) position marks at MID (spread split open/close) — see risk-engine.
+        current_price = ((bid + ask) / 2) if bid and ask else open_price
         is_live = True
 
     if side == "buy":

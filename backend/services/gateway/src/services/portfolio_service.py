@@ -98,7 +98,8 @@ async def portfolio_summary(user_id: UUID, account_id: UUID | None, db: AsyncSes
         prices = await _get_current_price(symbol)
         if prices:
             bid, ask = prices
-            cp = bid if (pos.side == OrderSide.BUY or pos.side.value == "buy") else ask
+            # Open positions mark at MID (spread split open/close) — see risk-engine.
+            cp = (bid + ask) / Decimal("2")
             pnl = _compute_pnl(pos, cp)
         else:
             pnl = pos.profit or Decimal("0")
