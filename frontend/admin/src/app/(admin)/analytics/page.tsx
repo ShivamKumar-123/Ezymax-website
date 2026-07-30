@@ -41,6 +41,7 @@ interface UserPnlRow {
   gross_loss: number;
   commission: number;
   swap: number;
+  spread: number;
   broker_fees: number;
   avg_per_trade: number;
   trades_count: number;
@@ -469,6 +470,9 @@ export default function AnalyticsPage() {
                   <SortHeader label="Gross Loss" field="gross_loss" active={pnlSortBy === 'gross_loss'} dir={pnlSortDir} onClick={toggleSort} align="right" />
                   <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Commission</th>
                   <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Swap</th>
+                  <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase" title="Estimated spread revenue — configured spread × traded volume">
+                    Spread<span className="normal-case text-[9px] opacity-60 ml-0.5">(est)</span>
+                  </th>
                   <SortHeader label="Net P&L" field="net_pnl" active={pnlSortBy === 'net_pnl'} dir={pnlSortDir} onClick={toggleSort} align="right" />
                   <th className="text-right px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase">Avg / Trade</th>
                   <SortHeader label="Last Trade" field="last_closed_at" active={pnlSortBy === 'last_closed_at'} dir={pnlSortDir} onClick={toggleSort} align="left" />
@@ -477,9 +481,9 @@ export default function AnalyticsPage() {
               </thead>
               <tbody>
                 {pnlLoading ? (
-                  <tr><td colSpan={11} className="py-12 text-center"><Loader2 size={18} className="inline-block animate-spin text-text-tertiary" /></td></tr>
+                  <tr><td colSpan={12} className="py-12 text-center"><Loader2 size={18} className="inline-block animate-spin text-text-tertiary" /></td></tr>
                 ) : pnlRows.length === 0 ? (
-                  <tr><td colSpan={11} className="py-12 text-center text-xs text-text-tertiary">No users found</td></tr>
+                  <tr><td colSpan={12} className="py-12 text-center text-xs text-text-tertiary">No users found</td></tr>
                 ) : (
                   pnlRows.map((u) => (
                     <tr
@@ -497,6 +501,7 @@ export default function AnalyticsPage() {
                       <td className="px-4 py-2 text-xs text-rose-400 text-right font-mono tabular-nums">${fmt(u.gross_loss)}</td>
                       <td className="px-4 py-2 text-xs text-text-secondary text-right font-mono tabular-nums">${fmt(u.commission)}</td>
                       <td className="px-4 py-2 text-xs text-text-secondary text-right font-mono tabular-nums">${fmt(u.swap)}</td>
+                      <td className="px-4 py-2 text-xs text-amber-400/90 text-right font-mono tabular-nums">${fmt(u.spread)}</td>
                       <td className={cn('px-4 py-2 text-xs text-right font-mono tabular-nums font-semibold', u.net_pnl >= 0 ? 'text-success' : 'text-danger')}>
                         {u.net_pnl >= 0 ? '+' : ''}${fmt(u.net_pnl)}
                       </td>
@@ -564,6 +569,10 @@ export default function AnalyticsPage() {
                     <div>
                       <p className="text-text-tertiary uppercase">Swap</p>
                       <p className="text-text-secondary font-mono">${fmt(u.swap)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary uppercase">Spread <span className="text-[9px] opacity-60">(est)</span></p>
+                      <p className="text-amber-400/90 font-mono">${fmt(u.spread)}</p>
                     </div>
                     <div>
                       <p className="text-text-tertiary uppercase">Last</p>

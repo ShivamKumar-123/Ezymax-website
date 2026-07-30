@@ -1,6 +1,7 @@
 """Admin Analytics Service — dashboard stats, exposure, profitable users."""
 import logging
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from sqlalchemy import select, func, case, text
 from sqlalchemy.exc import ProgrammingError, DBAPIError
@@ -589,6 +590,77 @@ async def list_user_pnl_breakdown(
         for u in users_res.scalars().all():
             users_map[u.id] = u
 
+    # ── Estimated spread revenue per user ──────────────────────────────
+    # Spread isn't captured per trade (it's baked into the fill price), so we
+    # estimate it: for each instrument a user traded, spread revenue ≈ (full
+    # configured spread in price units) × contract_size × lots, converted to
+    # USD. Uses the CURRENT admin spread config, so it's an estimate — see the
+    # "spread_estimate" flag in the response.
+    spread_by_user: dict = {}
+    if user_ids:
+        from packages.common.src.instrument_pricing import resolve_spread_config
+        from packages.common.src.trading_service import quote_to_account_pnl
+
+        sp_stmt = (
+            select(
+                TradingAccount.user_id,
+                TradeHistory.instrument_id,
+                func.coalesce(func.sum(func.abs(TradeHistory.lots)), 0),
+                func.coalesce(func.avg(TradeHistory.close_price), 0),
+            )
+            .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+            .where(TradingAccount.is_demo == False, TradingAccount.user_id.in_(user_ids))
+            .group_by(TradingAccount.user_id, TradeHistory.instrument_id)
+        )
+        if since is not None:
+            sp_stmt = sp_stmt.where(TradeHistory.closed_at >= since)
+        sp_rows = (await db.execute(sp_stmt)).all()
+
+        inst_ids = {r[1] for r in sp_rows if r[1]}
+        inst_map: dict = {}
+        if inst_ids:
+            inst_res = await db.execute(select(Instrument).where(Instrument.id.in_(inst_ids)))
+            for inst in inst_res.scalars().all():
+                inst_map[inst.id] = inst
+
+        # Resolve spread PER (user, instrument) so per-user overrides are
+        # reflected — a user with an admin-set override shows their own spread.
+        spread_cfg_cache: dict = {}
+        for uid, iid, lots_sum, avg_price in sp_rows:
+            inst = inst_map.get(iid)
+            if inst is None:
+                continue
+            ck = (uid, iid)
+            if ck not in spread_cfg_cache:
+                try:
+                    sv, st, imp = await resolve_spread_config(db, inst, user_id=uid)
+                    spread_cfg_cache[ck] = (Decimal(str(sv or 0)), (st or "pips"), Decimal(str(imp or 0)))
+                except Exception:
+                    spread_cfg_cache[ck] = (Decimal("0"), "pips", Decimal("0"))
+            sv, st, imp = spread_cfg_cache[ck]
+            price = Decimal(str(avg_price or 0))
+            # Full spread (ask − bid) in quote-price units, incl. price impact.
+            if st == "percentage":
+                spread_price = price * (sv / Decimal("100")) + imp
+            else:
+                spread_price = sv * Decimal(str(inst.pip_size or "0.0001")) + imp
+            if spread_price <= 0:
+                continue
+            raw_quote = (
+                spread_price
+                * Decimal(str(inst.contract_size or 100000))
+                * Decimal(str(lots_sum or 0))
+            )
+            usd = quote_to_account_pnl(
+                raw_quote,
+                getattr(inst, "base_currency", None),
+                getattr(inst, "quote_currency", None),
+                price if price > 0 else Decimal("1"),
+                "USD",
+                symbol=getattr(inst, "symbol", None),
+            )
+            spread_by_user[uid] = spread_by_user.get(uid, Decimal("0")) + Decimal(str(usd))
+
     items = []
     for r in rows:
         u = users_map.get(r.user_id)
@@ -611,11 +683,12 @@ async def list_user_pnl_breakdown(
             "gross_loss": gl,
             "commission": commission,
             "swap": swap,
-            # What the broker booked from this user's trades in the
-            # window: brokerage commission + overnight swap. (Spread is
-            # baked into the fill price, not stored per-trade, so it is
-            # not separable here.)
-            "broker_fees": commission + swap,
+            # Estimated spread revenue booked from this user (see block above):
+            # configured spread × traded volume, converted to USD. Approximate.
+            "spread": float(spread_by_user.get(r.user_id, Decimal("0"))),
+            # What the broker booked from this user's trades in the window:
+            # brokerage commission + overnight swap + estimated spread.
+            "broker_fees": commission + swap + float(spread_by_user.get(r.user_id, Decimal("0"))),
             "avg_per_trade": (net / tc) if tc > 0 else 0,
             "trades_count": tc,
             "wins": wins,
@@ -659,6 +732,9 @@ async def list_user_pnl_breakdown(
         "pages": (total + per_page - 1) // per_page if total else 0,
         "period": period or "all",
         "totals": totals,
+        # Per-user "spread" is estimated from configured spreads × volume,
+        # not captured per trade — the UI labels the column accordingly.
+        "spread_estimate": True,
     }
 
 
