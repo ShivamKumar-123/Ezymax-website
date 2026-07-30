@@ -11,12 +11,24 @@ import ProfileCompleteGate from '@/components/profile/ProfileCompleteGate';
 import OnboardingGate from '@/components/auth/OnboardingGate';
 import OnboardingTourLazy from '@/components/Onboarding/OnboardingTourLazy';
 import TopLoader from '@/components/TopLoader';
+import PWARegister from '@/components/PWARegister';
 
 export const metadata: Metadata = {
   title: 'FXArtha',
   description: 'FXArtha — professional forex and CFD trading platform',
+  applicationName: 'FXArtha',
+  manifest: '/manifest.webmanifest',
+  // Drives iOS "Add to Home Screen": standalone launch, app title, status bar.
+  appleWebApp: {
+    capable: true,
+    title: 'FXArtha',
+    // 'default' = the iOS status bar keeps its own space (does NOT overlay
+    // content), so no page's top is ever hidden under the notch/clock.
+    statusBarStyle: 'default',
+  },
   icons: {
     icon: [{ url: '/images/fxartha_icon.png', type: 'image/png' }],
+    apple: [{ url: '/images/fxartha_icon.png' }],
   },
 };
 
@@ -25,7 +37,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#ffffff',
+  // `cover` lets the app paint under the notch / home indicator; components use
+  // env(safe-area-inset-*) so nothing is hidden behind them on iPhone.
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -44,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>
+        <PWARegister />
         <ThemeProvider>
           <AuthProvider>
             <GoogleAuthProvider>

@@ -24,7 +24,9 @@ export default function DashboardShell({
   return (
     <div
       className={cn(
-        'h-[100dvh] flex overflow-hidden pb-[70px] lg:pb-0 bg-bg-base text-text-primary',
+        // pb reserves space for the fixed mobile bottom-nav PLUS the iPhone
+        // home-indicator (safe-area-inset-bottom) so content never hides behind it.
+        'h-[100dvh] flex overflow-hidden pb-[calc(70px_+_env(safe-area-inset-bottom))] lg:pb-0 bg-bg-base text-text-primary',
         className,
       )}
       
