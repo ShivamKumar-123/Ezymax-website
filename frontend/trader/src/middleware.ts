@@ -47,6 +47,13 @@ export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   if (isNeutral(pathname)) return NextResponse.next();
 
+  // PWA identity: the installable app is trade.fxartha.com. Don't serve the
+  // web manifest on the marketing apex, so "Add to Home Screen" / install
+  // resolves to the trade app rather than the marketing site.
+  if (onMarketing && pathname === '/manifest.webmanifest') {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const trade = isTradePath(pathname);
 
   // Helper: build a non-cacheable redirect. We use 307 (temporary) so a
@@ -82,7 +89,14 @@ export function middleware(req: NextRequest) {
     return noCacheRedirect(`https://${tradeHost}${pathname}${search}`);
   }
   // Trade subdomain → serve every page. We deliberately do NOT redirect
-  // back to apex anymore (see the file-level comment for context).
+  // back to apex anymore (see the file-level comment for context). Mark it
+  // noindex so search engines only index the apex (fxartha.com) — the two
+  // hosts serving the same pages must not compete as duplicate content.
+  if (onTrade) {
+    const res = NextResponse.next();
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return res;
+  }
   return NextResponse.next();
 }
 
