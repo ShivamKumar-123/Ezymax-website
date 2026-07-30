@@ -32,6 +32,65 @@ def _start_of_month():
     return today.replace(day=1)
 
 
+async def _estimate_spread_usd(db: AsyncSession, since=None) -> float:
+    """Period-wide estimated spread revenue (for the Today/Month/All cards).
+    Same method as the per-user column: for each instrument traded (closed
+    trades, non-demo), configured spread × contract_size × lots → USD. Uses
+    instrument-level spread (not per-user overrides) — a summary estimate."""
+    from packages.common.src.instrument_pricing import resolve_spread_config
+    from packages.common.src.trading_service import quote_to_account_pnl
+
+    stmt = (
+        select(
+            TradeHistory.instrument_id,
+            func.coalesce(func.sum(func.abs(TradeHistory.lots)), 0),
+            func.coalesce(func.avg(TradeHistory.close_price), 0),
+        )
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+        .group_by(TradeHistory.instrument_id)
+    )
+    if since is not None:
+        stmt = stmt.where(TradeHistory.closed_at >= since)
+    rows = (await db.execute(stmt)).all()
+
+    inst_ids = {r[0] for r in rows if r[0]}
+    inst_map: dict = {}
+    if inst_ids:
+        for inst in (await db.execute(select(Instrument).where(Instrument.id.in_(inst_ids)))).scalars().all():
+            inst_map[inst.id] = inst
+
+    total = Decimal("0")
+    for iid, lots_sum, avg_price in rows:
+        inst = inst_map.get(iid)
+        if inst is None:
+            continue
+        try:
+            sv, st, imp = await resolve_spread_config(db, inst)
+        except Exception:
+            continue
+        sv = Decimal(str(sv or 0))
+        imp = Decimal(str(imp or 0))
+        price = Decimal(str(avg_price or 0))
+        if (st or "pips").lower() == "percentage":
+            spread_price = price * (sv / Decimal("100")) + imp
+        else:
+            spread_price = sv * Decimal(str(inst.pip_size or "0.0001")) + imp
+        if spread_price <= 0:
+            continue
+        raw = spread_price * Decimal(str(inst.contract_size or 100000)) * Decimal(str(lots_sum or 0))
+        usd = quote_to_account_pnl(
+            raw,
+            getattr(inst, "base_currency", None),
+            getattr(inst, "quote_currency", None),
+            price if price > 0 else Decimal("1"),
+            "USD",
+            symbol=getattr(inst, "symbol", None),
+        )
+        total += Decimal(str(usd))
+    return float(total)
+
+
 async def _revenue_stats(db: AsyncSession, since=None):
     commission_filter = [Position.commission != 0]
     swap_filter = [Position.swap != 0]
@@ -61,11 +120,13 @@ async def _revenue_stats(db: AsyncSession, since=None):
     )
     user_pnl = float(pnl_q.scalar() or 0)
 
+    spread_est = await _estimate_spread_usd(db, since)
+
     return {
-        "total_revenue": total_commission + total_swap,
+        "total_revenue": total_commission + total_swap + spread_est,
         "commission_revenue": total_commission,
         "swap_revenue": total_swap,
-        "spread_revenue": 0,
+        "spread_revenue": spread_est,
         "net_pnl": -user_pnl,
     }
 
