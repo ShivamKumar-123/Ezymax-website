@@ -228,7 +228,12 @@ async def place_order(
     )
 
     if req.order_type == "market":
-        fill_price = ask if req.side == "buy" else bid
+        # Apply this user's per-user spread override (if admin set one) to the
+        # fill price — rebuilds bid/ask around mid with the user's spread. Users
+        # without an override fill at the normal feed price.
+        from packages.common.src.instrument_pricing import apply_user_spread_quote
+        u_bid, u_ask = await apply_user_spread_quote(db, user_id, instrument, bid, ask)
+        fill_price = u_ask if req.side == "buy" else u_bid
 
         if req.stop_loss:
             if req.side == "buy" and req.stop_loss >= fill_price:
@@ -869,7 +874,13 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
 
     tick = json.loads(tick_data)
     sv = side_val(pos.side)
-    close_price = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
+    # Apply the user's per-user spread override to the close too, so the full
+    # round-trip spread reflects their configured spread (open already did).
+    from packages.common.src.instrument_pricing import apply_user_spread_quote
+    _cb, _ca = await apply_user_spread_quote(
+        db, user_id, pos.instrument, Decimal(str(tick["bid"])), Decimal(str(tick["ask"])),
+    )
+    close_price = _cb if sv == "buy" else _ca
     contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
     close_lots = Decimal(str(req.lots)) if req.lots and Decimal(str(req.lots)) < pos.lots else pos.lots

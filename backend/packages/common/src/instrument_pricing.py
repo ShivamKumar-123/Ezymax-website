@@ -221,6 +221,60 @@ async def resolve_spread_config(
     return Decimal("0"), "pips", pimp
 
 
+async def get_user_spread_override(
+    db: AsyncSession, user_id: Optional[UUID], instrument_id,
+) -> Optional[SpreadConfig]:
+    """Return the user's explicit spread override for this instrument, if any —
+    user+instrument first, then user-global (instrument NULL). Returns None when
+    the user has no user-scope override, so callers keep the normal feed quote."""
+    if user_id is None:
+        return None
+    for iid_filter in (
+        SpreadConfig.instrument_id == instrument_id,
+        SpreadConfig.instrument_id.is_(None),
+    ):
+        row = (await db.execute(
+            select(SpreadConfig).where(
+                func.lower(SpreadConfig.scope) == "user",
+                SpreadConfig.is_enabled == True,
+                SpreadConfig.user_id == user_id,
+                iid_filter,
+            ).limit(1)
+        )).scalar_one_or_none()
+        if row is not None:
+            return row
+    return None
+
+
+async def apply_user_spread_quote(
+    db: AsyncSession, user_id: Optional[UUID], instrument: Instrument,
+    bid: Decimal, ask: Decimal,
+) -> Tuple[Decimal, Decimal]:
+    """If the user has an explicit spread override, rebuild bid/ask symmetrically
+    around mid using that spread so their FILLS reflect the admin-set per-user
+    spread. Users without an override keep the feed's bid/ask unchanged (so the
+    floating/default spread and every other user are untouched)."""
+    override = await get_user_spread_override(db, user_id, instrument.id)
+    if override is None:
+        return bid, ask
+    bid = Decimal(str(bid))
+    ask = Decimal(str(ask))
+    mid = (bid + ask) / Decimal("2")
+    st = (override.spread_type or "pips").lower()
+    val = Decimal(str(override.value or 0))
+    if st == "percentage":
+        adj = mid * (val / Decimal("100"))
+    else:
+        pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
+        adj = val * pip
+    if adj <= 0:
+        return bid, ask
+    half = adj / Decimal("2")
+    digits = int(getattr(instrument, "digits", None) or 5)
+    q = Decimal("1") / (Decimal(10) ** max(digits, 0))
+    return (mid - half).quantize(q), (mid + half).quantize(q)
+
+
 def symmetric_quote_from_mid(
     mid: Decimal,
     spread_value: Decimal,

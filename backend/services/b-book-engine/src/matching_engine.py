@@ -177,7 +177,12 @@ class MatchingEngine:
             return
 
         instrument = await db.get(Instrument, order.instrument_id)
-        # Redis quotes already include platform spread (symmetric).
+        # Redis quotes already include platform spread (symmetric). Apply this
+        # user's per-user spread override (if any) to the fill — the trigger
+        # already fired on the global price; only the fill price reflects the
+        # user's spread.
+        from packages.common.src.instrument_pricing import apply_user_spread_quote
+        bid, ask = await apply_user_spread_quote(db, account.user_id, instrument, bid, ask)
         fill_price = ask if order.side == OrderSide.BUY else bid
         margin = (order.lots * instrument.contract_size * fill_price) / Decimal(str(account.leverage))
 
