@@ -40,6 +40,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
     updatePrice,
     setInstruments,
     setActiveAccount,
+    loadSpreadOverrides,
   } = useTradingStore();
 
   const [side, setSide] = useState<OrderSide>('buy');
@@ -92,6 +93,10 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
     });
     const unsubStatus = wsManager.onStatusChange(setWsStatus);
     setWsStatus(wsManager.status);
+
+    // Load this user's per-user spread overrides so the terminal renders their
+    // own spread (fills already apply it server-side).
+    loadSpreadOverrides();
 
     // 2. Fetch instruments if empty
     if (instruments.length === 0) {

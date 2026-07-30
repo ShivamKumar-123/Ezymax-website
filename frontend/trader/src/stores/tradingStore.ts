@@ -115,6 +115,10 @@ interface TradingState {
   prevPrices: Record<string, number>;
   watchlist: string[];
   instruments: InstrumentInfo[];
+  /** Logged-in user's per-user spread overrides, keyed by symbol ("*" = all).
+      When present the terminal shows that user their own spread (fills already
+      apply it on the backend). */
+  spreadOverrides: Record<string, { value: number; type: string }>;
 
   setActiveAccount: (a: TradingAccount | null) => void;
   setAccounts: (a: TradingAccount[]) => void;
@@ -125,6 +129,7 @@ interface TradingState {
   addToWatchlist: (s: string) => void;
   removeFromWatchlist: (s: string) => void;
   setInstruments: (i: InstrumentInfo[]) => void;
+  loadSpreadOverrides: () => Promise<void>;
   removePosition: (id: string) => void;
   removePendingOrder: (id: string) => void;
   removeAccount: (id: string) => void;
@@ -175,6 +180,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   prevPrices: {},
   watchlist: DEFAULT_WATCHLIST,
   instruments: [],
+  spreadOverrides: {},
   orderFormCloneDraft: null,
 
   setActiveAccount: (a) => set({ activeAccount: a }),
@@ -186,6 +192,14 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     try { sessionStorage.setItem(SYMBOL_STORAGE_KEY, s); } catch {}
   },
   setInstruments: (i) => set({ instruments: i }),
+  loadSpreadOverrides: async () => {
+    try {
+      const o = await api.get<Record<string, { value: number; type: string }>>('/trading/my-spread-overrides');
+      set({ spreadOverrides: o || {} });
+    } catch {
+      set({ spreadOverrides: {} });
+    }
+  },
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
   removePosition: (id) => set((s) => ({ positions: s.positions.filter((p) => p.id !== id) })),
   removePendingOrder: (id) => set((s) => ({ pendingOrders: s.pendingOrders.filter((o) => o.id !== id) })),
@@ -331,7 +345,26 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   updatePrice: (tick) => set((state) => {
     const sym = String(tick.symbol || '').trim().toUpperCase();
     if (!sym) return state;
-    const normalized: TickData = { ...tick, symbol: sym };
+    let normalized: TickData = { ...tick, symbol: sym };
+    // Per-user spread override: rebuild bid/ask around mid so this user SEES
+    // (and is charged at fill) their own spread. Only when an override exists
+    // for this symbol (or a user-global "*"); otherwise the feed quote — which
+    // already carries the default/floating spread — is used unchanged.
+    const ov = state.spreadOverrides[sym] || state.spreadOverrides['*'];
+    if (ov && tick.bid && tick.ask) {
+      const inst = state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+      const pip = inst?.pip_size || 0.0001;
+      const mid = (tick.bid + tick.ask) / 2;
+      const adj = String(ov.type).toLowerCase() === 'percentage'
+        ? mid * (ov.value / 100)
+        : ov.value * pip;
+      if (adj > 0) {
+        const half = adj / 2;
+        // `spread` is stored in PRICE units (ask − bid); the UI divides it by
+        // pip_size to show pips.
+        normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: adj };
+      }
+    }
     const prev = state.prices[sym];
     return {
       prevPrices: prev

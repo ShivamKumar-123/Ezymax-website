@@ -3,11 +3,11 @@ import json
 from decimal import Decimal
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from packages.common.src.models import Instrument, InstrumentConfig, InstrumentSegment
+from packages.common.src.models import Instrument, InstrumentConfig, InstrumentSegment, SpreadConfig
 from packages.common.src.instrument_pricing import (
     resolve_spread_config,
     resolve_commission,
@@ -105,3 +105,27 @@ async def get_trading_instrument(symbol: str, db: AsyncSession) -> dict:
         "swap_short": float(ic.swap_short) if ic else None,
         "swap_free": bool(ic.swap_free) if ic else False,
     }
+
+
+async def list_user_spread_overrides(db: AsyncSession, user_id) -> dict:
+    """The logged-in user's ENABLED per-user spread overrides, so the trading
+    terminal can render that user their own spread (fills already apply it via
+    apply_user_spread_quote). Keyed by instrument symbol; a user-global override
+    (no instrument) is returned under "*". The frontend applies
+    overrides[symbol] || overrides["*"], rebuilding bid/ask around mid with the
+    instrument's own pip_size."""
+    rows = (await db.execute(
+        select(SpreadConfig.value, SpreadConfig.spread_type, Instrument.symbol)
+        .select_from(SpreadConfig)
+        .join(Instrument, Instrument.id == SpreadConfig.instrument_id, isouter=True)
+        .where(
+            func.lower(SpreadConfig.scope) == "user",
+            SpreadConfig.user_id == user_id,
+            SpreadConfig.is_enabled == True,
+        )
+    )).all()
+    out: dict = {}
+    for value, stype, symbol in rows:
+        key = symbol.upper() if symbol else "*"
+        out[key] = {"value": float(value or 0), "type": (stype or "pips")}
+    return out
