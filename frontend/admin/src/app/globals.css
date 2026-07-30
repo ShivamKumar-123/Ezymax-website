@@ -31,6 +31,17 @@
   --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+/* The sidebar logo is a single light/gold asset built for dark backgrounds; on
+   the light-mode white sidebar its white wordmark disappears. Give it a dark
+   chip only in light mode (transparent/no-op in dark mode). */
+.admin-logo-chip { display: inline-flex; align-items: center; }
+html.light .admin-logo-chip,
+[data-theme='light'] .admin-logo-chip {
+  background: #0b0d0f;
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
 /* —— Light theme —— */
 html.light, [data-theme='light'] {
   color-scheme: light;

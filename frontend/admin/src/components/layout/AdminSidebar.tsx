@@ -121,13 +121,18 @@ export default function AdminSidebar() {
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {collapsed ? (
-          <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain mx-auto" />
+          <span className="admin-logo-chip mx-auto">
+            <img src="/logo.png" alt="FXArtha" className="w-8 h-8 object-contain" />
+          </span>
         ) : (
           // Logo image only — no separate "FXArtha" text (the logo asset
           // already carries the branding). Shown larger, height-based so the
-          // horizontal logo keeps its aspect ratio.
+          // horizontal logo keeps its aspect ratio. The chip wrapper gives the
+          // light/gold mark a dark backing in light mode so it stays legible.
           <Link href="/" className="flex items-center min-w-0">
-            <img src="/logo.png" alt="FXArtha" className="h-9 w-auto object-contain" />
+            <span className="admin-logo-chip">
+              <img src="/logo.png" alt="FXArtha" className="h-9 w-auto object-contain" />
+            </span>
           </Link>
         )}
         <button
