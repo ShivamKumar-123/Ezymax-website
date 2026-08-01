@@ -143,7 +143,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
               <div className="hidden sm:flex flex-col">
                 <span className="text-xs font-semibold text-text-primary leading-tight">{admin?.full_name || 'Admin'}</span>
-                <span className="text-[9px] text-accent font-medium leading-tight">{admin?.role || 'admin'}</span>
+                {/* Employees authenticate as role="admin" users; show their
+                    actual employee role (support/finance/…) instead. */}
+                <span className="text-[9px] text-accent font-medium leading-tight">
+                  {perms?.employeeRole || admin?.role || 'admin'}
+                </span>
               </div>
             </div>
             <button
