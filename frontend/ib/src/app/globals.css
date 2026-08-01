@@ -854,3 +854,35 @@ html[data-page="accounts"] header.h-\[65px\] + div,
 html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   background: transparent !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Platform card polish (client request): soften the "white" border
+   line so it nearly blends into the surface, and give card surfaces
+   (.bg-card) a subtle 3D lift. Appended last to override defaults.
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"],
+.theme-dark,
+:root {
+  --border-primary: rgba(255, 255, 255, 0.045);
+  --border-secondary: rgba(255, 255, 255, 0.03);
+}
+[data-theme="light"],
+.theme-light {
+  --border-primary: rgba(0, 0, 0, 0.05);
+  --border-secondary: rgba(0, 0, 0, 0.04);
+}
+.bg-card,
+.bg-bg-secondary {
+  box-shadow:
+    0 10px 24px -8px rgba(0, 0, 0, 0.45),
+    0 2px 6px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+[data-theme="light"] .bg-card,
+[data-theme="light"] .bg-bg-secondary,
+.theme-light .bg-card,
+.theme-light .bg-bg-secondary {
+  box-shadow:
+    0 10px 22px -10px rgba(0, 0, 0, 0.12),
+    0 2px 6px -2px rgba(0, 0, 0, 0.08);
+}

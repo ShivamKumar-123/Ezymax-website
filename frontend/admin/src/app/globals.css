@@ -219,3 +219,33 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 .stat-glow:hover {
   box-shadow: 0 0 0 1px rgba(214,169,61,0.2), 0 4px 20px rgba(0,0,0,0.4);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Platform card polish (client request): soften the "white" border
+   line (channel-format tokens kept as R G B) + 3D lift on card
+   surfaces (.bg-card / .bg-bg-secondary). Appended last to win.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --c-border-primary: 20 20 20;
+  --c-border-secondary: 26 26 26;
+}
+html.light,
+[data-theme='light'] {
+  --c-border-primary: 244 244 244;
+  --c-border-secondary: 238 238 238;
+}
+.bg-card,
+.bg-bg-secondary {
+  box-shadow:
+    0 10px 24px -8px rgba(0, 0, 0, 0.45),
+    0 2px 6px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+html.light .bg-card,
+html.light .bg-bg-secondary,
+[data-theme='light'] .bg-card,
+[data-theme='light'] .bg-bg-secondary {
+  box-shadow:
+    0 10px 22px -10px rgba(0, 0, 0, 0.12),
+    0 2px 6px -2px rgba(0, 0, 0, 0.08);
+}

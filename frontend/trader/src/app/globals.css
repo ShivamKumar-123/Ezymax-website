@@ -897,3 +897,47 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   .hover-lift:hover { transform: none; }
   .page-fade-in { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Platform card polish (client request):
+   1) Remove the hard "white" border line — the border tokens are
+      softened so any border drawn with them nearly blends into the
+      surface (a faint edge remains so inputs/tables don't collapse).
+   2) Give every card surface (.bg-card) a subtle 3D lift.
+   Appended last so it overrides the token defaults above.
+   ═══════════════════════════════════════════════════════════════════ */
+:root,
+.theme-dark,
+[data-theme="dark"] {
+  --border-primary: rgba(255, 255, 255, 0.045);
+  --border-secondary: rgba(255, 255, 255, 0.03);
+  --border-accent: rgba(255, 255, 255, 0.055);
+  --border-glass: rgba(255, 255, 255, 0.04);
+  --border-glass-bright: rgba(255, 255, 255, 0.06);
+}
+.theme-light,
+[data-theme="light"] {
+  --border-primary: rgba(0, 0, 0, 0.05);
+  --border-secondary: rgba(0, 0, 0, 0.04);
+  --border-accent: rgba(0, 0, 0, 0.06);
+  --border-glass: rgba(0, 0, 0, 0.05);
+  --border-glass-bright: rgba(0, 0, 0, 0.07);
+}
+
+/* 3D lift on card surfaces. Cards in this app use either `bg-card` or
+   `bg-bg-secondary`, so both get the elevation. */
+.bg-card,
+.bg-bg-secondary {
+  box-shadow:
+    0 10px 24px -8px rgba(0, 0, 0, 0.45),
+    0 2px 6px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.theme-light .bg-card,
+.theme-light .bg-bg-secondary,
+[data-theme="light"] .bg-card,
+[data-theme="light"] .bg-bg-secondary {
+  box-shadow:
+    0 10px 22px -10px rgba(0, 0, 0, 0.12),
+    0 2px 6px -2px rgba(0, 0, 0, 0.08);
+}
