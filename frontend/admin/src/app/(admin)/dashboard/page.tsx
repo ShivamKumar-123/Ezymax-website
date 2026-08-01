@@ -148,8 +148,19 @@ export default function DashboardPage() {
   const [livePositions, setLivePositions] = useState<LivePosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(false);
+  // Effective permissions of the signed-in admin/employee; null until
+  // loaded. Every widget fetch + render below is gated on these so an
+  // employee's dashboard only shows (and only requests) what their
+  // role allows — no 403 error toasts for missing sections.
+  const [perms, setPerms] = useState<string[] | null>(null);
+
+  const can = useCallback(
+    (p: string) => !!perms && (perms.includes('*') || perms.includes(p)),
+    [perms],
+  );
 
   const fetchLivePositions = useCallback(async () => {
+    if (!perms || !(perms.includes('*') || perms.includes('trades.view'))) return;
     try {
       setFeedLoading(true);
       const res = await adminApi.get<{ items: LivePosition[] }>('/trades/positions', {
@@ -163,9 +174,11 @@ export default function DashboardPage() {
     } finally {
       setFeedLoading(false);
     }
-  }, []);
+  }, [perms]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (permList: string[]) => {
+    const allowed = (p: string) => permList.includes('*') || permList.includes(p);
+    const skip = Promise.resolve(null);
     try {
       setLoading(true);
       const [
@@ -175,53 +188,61 @@ export default function DashboardPage() {
         revenueRes,
         positionsRes,
       ] = await Promise.allSettled([
-        adminApi.get<DashboardStats>('/dashboard/stats'),
-        adminApi.get<{ items: Deposit[] }>('/finance/deposits', {
-          status: 'pending',
-          per_page: '5',
-          page: '1',
-        }),
-        adminApi.get<{ items: Ticket[] }>('/support/tickets', {
-          per_page: '40',
-          page: '1',
-        }),
-        adminApi.get<{ points: RevenuePoint[] }>('/dashboard/revenue', { days: '30' }),
-        adminApi.get<{ items: LivePosition[] }>('/trades/positions', {
-          status: 'open',
-          per_page: '30',
-          page: '1',
-        }),
+        allowed('analytics.view') ? adminApi.get<DashboardStats>('/dashboard/stats') : skip,
+        allowed('deposits.view')
+          ? adminApi.get<{ items: Deposit[] }>('/finance/deposits', {
+              status: 'pending',
+              per_page: '5',
+              page: '1',
+            })
+          : skip,
+        allowed('tickets.view')
+          ? adminApi.get<{ items: Ticket[] }>('/support/tickets', {
+              per_page: '40',
+              page: '1',
+            })
+          : skip,
+        allowed('analytics.view')
+          ? adminApi.get<{ points: RevenuePoint[] }>('/dashboard/revenue', { days: '30' })
+          : skip,
+        allowed('trades.view')
+          ? adminApi.get<{ items: LivePosition[] }>('/trades/positions', {
+              status: 'open',
+              per_page: '30',
+              page: '1',
+            })
+          : skip,
       ]);
 
       if (statsRes.status === 'fulfilled') {
-        setStats(statsRes.value);
+        setStats((statsRes.value as DashboardStats | null) ?? null);
       } else {
         setStats(null);
         const msg = statsRes.reason instanceof Error ? statsRes.reason.message : 'Failed to load stats';
         toast.error(msg);
       }
 
-      if (depositsRes.status === 'fulfilled') {
-        setDeposits(depositsRes.value.items || []);
+      if (depositsRes.status === 'fulfilled' && depositsRes.value) {
+        setDeposits((depositsRes.value as { items: Deposit[] }).items || []);
       } else {
         setDeposits([]);
       }
 
-      if (ticketsRes.status === 'fulfilled') {
-        const items = ticketsRes.value.items || [];
+      if (ticketsRes.status === 'fulfilled' && ticketsRes.value) {
+        const items = (ticketsRes.value as { items: Ticket[] }).items || [];
         setTickets(items.filter((t) => OPEN_TICKET_STATUSES.has(t.status)).slice(0, 5));
       } else {
         setTickets([]);
       }
 
-      if (revenueRes.status === 'fulfilled') {
-        setRevenuePoints(revenueRes.value.points || []);
+      if (revenueRes.status === 'fulfilled' && revenueRes.value) {
+        setRevenuePoints((revenueRes.value as { points: RevenuePoint[] }).points || []);
       } else {
         setRevenuePoints([]);
       }
 
-      if (positionsRes.status === 'fulfilled') {
-        setLivePositions(positionsRes.value.items || []);
+      if (positionsRes.status === 'fulfilled' && positionsRes.value) {
+        setLivePositions((positionsRes.value as { items: LivePosition[] }).items || []);
       } else {
         setLivePositions([]);
       }
@@ -231,11 +252,21 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    (async () => {
+      try {
+        const me = await adminApi.get<{ permissions: string[] }>('/auth/me');
+        const p = me.permissions || [];
+        setPerms(p);
+        await fetchData(p);
+      } catch {
+        setPerms([]);
+        setLoading(false);
+      }
+    })();
+  }, [fetchData]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -252,7 +283,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-text-primary">Dashboard</h2>
           <button
             type="button"
-            onClick={fetchData}
+            onClick={() => perms && fetchData(perms)}
             disabled={loading}
             className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary rounded-md hover:bg-bg-hover transition-fast disabled:opacity-50 w-full sm:w-auto"
           >
@@ -261,7 +292,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid — platform-wide numbers need analytics.view */}
+        {can('analytics.view') && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {STAT_CONFIG.map((s) => {
             const val = stats ? stats[s.key] : null;
@@ -308,10 +340,12 @@ export default function DashboardPage() {
             );
           })}
         </div>
+        )}
 
         {/* Two Column */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Pending Deposits */}
+          {can('deposits.view') && (
           <div className="bg-bg-secondary border border-border-primary rounded-md min-w-0">
             <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between gap-2">
               <h3 className="text-sm sm:text-md font-semibold text-text-primary">Pending Deposits</h3>
@@ -349,8 +383,10 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Open Tickets */}
+          {can('tickets.view') && (
           <div className="bg-bg-secondary border border-border-primary rounded-md min-w-0">
             <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between gap-2">
               <h3 className="text-sm sm:text-md font-semibold text-text-primary">Open Support Tickets</h3>
@@ -386,9 +422,11 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Revenue */}
+        {can('analytics.view') && (
         <div className="bg-bg-secondary border border-border-primary rounded-md min-w-0">
           <div className="px-4 py-3 border-b border-border-primary">
             <h3 className="text-sm sm:text-md font-semibold text-text-primary">Revenue (Last 30 Days)</h3>
@@ -402,8 +440,10 @@ export default function DashboardPage() {
             <RevenueChart points={revenuePoints} />
           )}
         </div>
+        )}
 
         {/* Live Trade Feed */}
+        {can('trades.view') && (
         <div className="bg-bg-secondary border border-border-primary rounded-md min-w-0">
           <div className="px-4 py-3 border-b border-border-primary flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -466,6 +506,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+        )}
       </div>
     </>
   );

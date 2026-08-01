@@ -23,11 +23,12 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "positions.view", "orders.view", "users.view",
         "social.view", "social.manage",
     },
+    # Support = support desk only. Deposits/withdrawals/KYC/audit access
+    # is NOT part of the default — grant per-employee via extra
+    # permissions (shield icon on the Employees page) when needed.
     "support": {
         "tickets.view", "tickets.reply", "tickets.assign",
-        "users.view", "deposits.view", "withdrawals.view",
-        "kyc.view", "kyc.manage",
-        "audit_logs.view",
+        "users.view",
     },
     "finance": {
         "deposits.view", "deposits.approve", "deposits.reject",
