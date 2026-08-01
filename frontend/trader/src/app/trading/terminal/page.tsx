@@ -276,7 +276,13 @@ export default function TradingTerminalPage() {
   const instrumentInfo = instruments.find((i: InstrumentInfo) => i.symbol === selectedSymbol);
   const mobileMarketStatus = getMarketStatus(selectedSymbol, (instrumentInfo as any)?.segment);
   /** Default `chart` so Trade opens chart + buy/sell (not symbol list only). Watchlist tab still passes view=watchlist. */
-  const mobileView = searchParams.get('view') || 'chart';
+  // Whitelist the view param — an unknown value (stale link/bookmark) must
+  // fall back to the chart instead of rendering a blank screen.
+  const rawMobileView = searchParams.get('view');
+  const mobileView =
+    rawMobileView && ['watchlist', 'chart', 'order', 'news'].includes(rawMobileView)
+      ? rawMobileView
+      : 'chart';
 
   useEffect(() => {
     if (accountId) setPersistedTradingAccountId(accountId);
@@ -388,7 +394,16 @@ export default function TradingTerminalPage() {
     };
 
     return (
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0 pb-[calc(64px+env(safe-area-inset-bottom,0px))] scrollbar-none bg-bg-base">
+      <div
+        className={clsx(
+          'flex-1 flex flex-col overflow-hidden min-h-0 scrollbar-none bg-bg-base',
+          // Only the chart view has the fixed Sell/Lots/Buy bar at the bottom;
+          // reserving the space in the other views just leaves a dead band.
+          mobileView === 'chart'
+            ? 'pb-[calc(64px+env(safe-area-inset-bottom,0px))]'
+            : 'pb-[env(safe-area-inset-bottom,0px)]',
+        )}
+      >
         {/* Top app navbar — provides the hamburger (three-bar) icon that
             opens the navigation sidebar drawer (close via the same toggle
             or the backdrop). Mobile terminal otherwise has no app nav. */}
@@ -576,7 +591,10 @@ export default function TradingTerminalPage() {
                 ) : null}
                 <div className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
                   <ChartErrorBoundary>
-                    <TradingViewChart />
+                    {/* The mobile terminal has its own fixed Sell/Lots/Buy bar
+                        below the chart — the on-chart quick-trade widget would
+                        duplicate it and overlap the OHLC legend at 390px. */}
+                    <TradingViewChart showTradeWidget={false} />
                   </ChartErrorBoundary>
                 </div>
               </div>
