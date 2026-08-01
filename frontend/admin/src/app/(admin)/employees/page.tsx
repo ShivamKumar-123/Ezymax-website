@@ -42,6 +42,11 @@ export default function EmployeesPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // One-time credentials popup shown after creating an employee — the
+  // generated password is never retrievable again, so this modal is the
+  // only chance to copy it.
+  const [credsModal, setCredsModal] = useState<{ email: string; password: string; role: string } | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activityModal, setActivityModal] = useState<Employee | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -149,11 +154,9 @@ export default function EmployeesPage() {
         if (form.password) body.password = form.password;
         const res = await adminApi.post<{ password?: string }>('/employees', body);
         const pwd = res.password || form.password;
-        toast.success(`Employee created!`, { duration: 8000 });
+        toast.success(`Employee created!`);
         if (pwd) {
-          setTimeout(() => {
-            alert(`Employee Login Credentials:\n\nEmail: ${form.email}\nPassword: ${pwd}\nRole: ${form.role}\n\nAdmin Login: ${window.location.origin}/login`);
-          }, 500);
+          setCredsModal({ email: form.email, password: pwd, role: form.role });
         }
       }
       setShowModal(false);
@@ -187,6 +190,16 @@ export default function EmployeesPage() {
   };
 
   const updateForm = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+
+  const copyCred = async (key: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(key);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch {
+      toast.error('Could not copy — copy manually');
+    }
+  };
 
   function roleBadgeClass(role: string) {
     switch (role) {
@@ -398,6 +411,73 @@ export default function EmployeesPage() {
             <div className="px-5 py-3 border-t border-border-primary flex justify-end gap-2">
               <button onClick={() => setDeleteConfirm(null)} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
               <button onClick={() => handleDelete(deleteConfirm)} className="px-3 py-1.5 rounded-md text-xs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-fast">Deactivate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* One-time credentials modal (replaces the old native alert()). No
+          backdrop-click dismissal — closing is deliberate because the
+          password can't be shown again. */}
+      {credsModal && (
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4">
+          <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border-primary flex items-center gap-2">
+              <ShieldCheck size={14} className="text-accent" />
+              <h3 className="text-sm font-semibold text-text-primary">Employee Login Credentials</h3>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xxs text-warning">
+                Save these now — the password will not be shown again.
+              </p>
+              {([
+                ['Email', 'email', credsModal.email],
+                ['Password', 'password', credsModal.password],
+                ['Admin Login', 'url', `${window.location.origin}/login`],
+              ] as const).map(([label, key, value]) => (
+                <div key={key}>
+                  <label className="block text-xxs text-text-tertiary mb-1">{label}</label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 min-w-0 truncate text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md font-mono text-text-primary">
+                      {value}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyCred(key, value)}
+                      className="shrink-0 p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover transition-fast"
+                      title={`Copy ${label.toLowerCase()}`}
+                    >
+                      {copiedField === key ? <Check size={13} className="text-success" /> : <Copy size={13} />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Role</label>
+                <span className="inline-block text-xs py-1 px-2 bg-bg-input border border-border-primary rounded-md font-mono text-text-secondary">{credsModal.role}</span>
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-border-primary flex justify-between gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  copyCred(
+                    'all',
+                    `Email: ${credsModal.email}\nPassword: ${credsModal.password}\nRole: ${credsModal.role}\nAdmin Login: ${window.location.origin}/login`,
+                  )
+                }
+                className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast inline-flex items-center gap-1.5"
+              >
+                {copiedField === 'all' ? <Check size={13} className="text-success" /> : <Copy size={13} />}
+                Copy all
+              </button>
+              <button
+                type="button"
+                onClick={() => setCredsModal(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium bg-accent text-white hover:opacity-90 transition-fast"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
