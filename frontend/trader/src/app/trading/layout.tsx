@@ -54,6 +54,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     refreshPositions,
     refreshPendingOrders,
     refreshAccount,
+    loadSpreadOverrides,
   } = useTradingStore();
   const accounts = useTradingStore((s) => s.accounts);
 
@@ -81,6 +82,14 @@ function TradingSession({ children }: { children: React.ReactNode }) {
         ]);
 
         if (cancelled) return;
+
+        // Load this user's per-user spread overrides so the terminal SHOWS
+        // them their own spread (updatePrice rebuilds bid/ask around mid).
+        // The fetch was only wired into AccountTradePanel, so the terminal
+        // (OrderPanel) never loaded it — a per-user admin spread applied at
+        // fill but read 0.0 on the terminal. Load it here for the whole
+        // terminal.
+        loadSpreadOverrides();
 
         const instruments = Array.isArray(instrumentsRes)
           ? instrumentsRes
@@ -182,7 +191,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       clearInterval(positionPoll);
       clearInterval(pricePoll);
     };
-  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshPendingOrders, refreshAccount]);
+  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshPendingOrders, refreshAccount, loadSpreadOverrides]);
 
   /* Picker vs terminal: active account + positions. */
   useEffect(() => {
