@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     # against Google's JWKS — no client secret stored on our infra. When empty, the
     # /auth/google endpoint returns 503 and the frontend hides the button.
     GOOGLE_CLIENT_ID: str = ""
+    # Native (Android/iOS) OAuth client IDs, comma-separated. Google's id_token
+    # keeps `aud` = the web client id (already pinned in verify_oauth2_token) but
+    # sets `azp` = the native client that requested it. These are allowed azp
+    # values so mobile Google sign-in isn't rejected. Leave empty for web-only.
+    GOOGLE_NATIVE_CLIENT_IDS: str = ""
 
     ADMIN_JWT_SECRET: str = ""
     ADMIN_JWT_ALGORITHM: str = "HS256"

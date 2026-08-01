@@ -760,10 +760,16 @@ async def google_oauth(
     if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
         raise AuthServiceError("Invalid token issuer", 401)
 
-    # Authorized party (azp) — when set, must match our client id. Belt-and-braces
-    # against a token minted for a different (sibling) client in the same project.
+    # Authorized party (azp) — the client that requested the token. On native
+    # mobile sign-in that is the Android/iOS OAuth client, not the web one,
+    # while `aud` stays the web client (already pinned by verify_oauth2_token
+    # above). Allow our web client + any configured native client ids; still
+    # belt-and-braces against a token minted for an unrelated client.
+    allowed_azp = {st.GOOGLE_CLIENT_ID, *(
+        c.strip() for c in (st.GOOGLE_NATIVE_CLIENT_IDS or "").split(",") if c.strip()
+    )}
     azp = claims.get("azp")
-    if azp and azp != st.GOOGLE_CLIENT_ID:
+    if azp and azp not in allowed_azp:
         raise AuthServiceError("Invalid authorized party", 401)
 
     if not claims.get("email_verified"):
