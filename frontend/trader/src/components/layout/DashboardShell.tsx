@@ -50,7 +50,9 @@ export default function DashboardShell({
             (e.g. /news) would otherwise let mx-auto shrink-wrap this box to
             its content's intrinsic width instead of stretching full-width.
             For default (block) pages w-full is a no-op. */}
-        <div className="mx-auto max-w-[1600px] w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        {/* Extra mobile bottom padding so the last row of buttons/cards can
+            scroll clear of the fixed support FAB instead of sitting under it. */}
+        <div className="mx-auto max-w-[1600px] w-full px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6 pb-24 sm:pb-6">
           {children}
         </div>
         <DashboardFooter />
@@ -59,7 +61,7 @@ export default function DashboardShell({
       <Link
         href="/support"
         data-tour="support"
-        className="fixed bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#E94E1B] hover:bg-[#C73E11] shadow-lg shadow-[#E94E1B]/20 flex items-center justify-center transition-colors"
+        className="fixed bottom-4 right-4 w-11 h-11 sm:bottom-6 sm:right-6 sm:w-12 sm:h-12 z-[75] rounded-full bg-[#E94E1B] hover:bg-[#C73E11] shadow-lg shadow-[#E94E1B]/20 flex items-center justify-center transition-colors"
         aria-label="Support"
       >
         <MessageSquare size={20} className="text-white" />

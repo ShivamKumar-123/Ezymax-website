@@ -124,9 +124,19 @@ export default function FeatureTour() {
 
   const storageKey = userId ? `${STORAGE_PREFIX}${userId}` : null;
 
+  // ProfileCompleteGate owns the screen until the profile is filled in —
+  // starting the tour then stacks two modals on top of each other (worst on
+  // phones). Wait for the flag to flip; refreshUser() re-runs this effect.
+  const profileGateOpen =
+    !!user &&
+    !user.is_demo &&
+    user.email_verified !== false &&
+    user.profile_complete === false;
+
   // Auto-start once, on the dashboard, for a user who hasn't seen it.
   useEffect(() => {
     if (!mounted || !storageKey) return;
+    if (profileGateOpen) return;
     // Only kick off on the dashboard so the primary nav is on screen to
     // point at. First login redirects here, so this is the natural spot.
     if (pathname !== '/dashboard') return;
@@ -143,7 +153,7 @@ export default function FeatureTour() {
       setActive(true);
     }, 700);
     return () => clearTimeout(t);
-  }, [mounted, storageKey, pathname]);
+  }, [mounted, storageKey, pathname, profileGateOpen]);
 
   const finish = useCallback(() => {
     setActive(false);
