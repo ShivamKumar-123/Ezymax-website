@@ -102,6 +102,20 @@ async def get_current_admin(
     return admin
 
 
+async def require_super_admin(
+    admin: User = Depends(get_current_admin),
+) -> User:
+    """Gate for super-admin-only surfaces (settings, employee management).
+    Employees authenticate as role="admin" users, so get_current_admin
+    alone does NOT keep them out."""
+    if admin.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin access required",
+        )
+    return admin
+
+
 def require_permission(permission: str):
     """FastAPI dependency factory that checks if the current admin has the required permission."""
     async def _check(
