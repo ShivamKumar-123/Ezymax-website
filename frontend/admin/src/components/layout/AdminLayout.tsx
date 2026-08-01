@@ -1,23 +1,50 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import AdminNotificationBell from '@/components/AdminNotificationBell';
 import { useAuthStore } from '@/stores/authStore';
-import { Search, User, LogOut, Loader2, Menu } from 'lucide-react';
+import { adminApi } from '@/lib/api';
+import { requiredPermForPath, hasPerm } from '@/lib/permissions';
+import { Search, User, LogOut, Loader2, Menu, ShieldOff } from 'lucide-react';
 import { useAuthRehydrated } from '@/hooks/useAuthRehydrated';
 
 type Gate = 'boot' | 'ready' | 'redirect';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const admin = useAuthStore((s) => s.admin);
   const authRehydrated = useAuthRehydrated();
   const [mounted, setMounted] = useState(false);
   const [gate, setGate] = useState<Gate>('boot');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // null = permissions not loaded yet
+  const [perms, setPerms] = useState<{ permissions: string[]; employeeRole: string } | null>(null);
   const runId = useRef(0);
+
+  // Load the signed-in admin's effective permissions once per mount.
+  // Used to route-guard pages the sidebar hides — a deep link (typed
+  // URL, bookmark, stale tab after impersonation) would otherwise
+  // render the page and every fetch on it would 403-toast.
+  useEffect(() => {
+    if (gate !== 'ready') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await adminApi.get<{ permissions: string[]; employee_role: string }>('/auth/me');
+        if (!cancelled) {
+          setPerms({ permissions: me.permissions || [], employeeRole: me.employee_role || '' });
+        }
+      } catch {
+        // Leave perms null — ungated pages still render; gated pages keep the spinner.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [gate]);
 
   useEffect(() => {
     setMounted(true);
@@ -129,8 +156,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
           </div>
         </div>
-        {/* Content area with page animation */}
-        <div className="flex-1 min-w-0 overflow-auto animate-page-in">{children}</div>
+        {/* Content area with page animation. Route-guard: pages whose
+            permission the user lacks show an access notice instead of
+            mounting (mounting would fire 403-toasting data fetches). */}
+        <div className="flex-1 min-w-0 overflow-auto animate-page-in">
+          {(() => {
+            const needed = requiredPermForPath(pathname || '');
+            if (!needed) return children;
+            if (perms === null) {
+              return (
+                <div className="flex items-center justify-center py-24">
+                  <Loader2 size={20} className="animate-spin text-text-tertiary" />
+                </div>
+              );
+            }
+            if (hasPerm(perms.permissions, perms.employeeRole, needed)) return children;
+            return (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
+                <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                  <ShieldOff size={22} className="text-danger" />
+                </div>
+                <h2 className="text-sm font-semibold text-text-primary">You don&apos;t have access to this section</h2>
+                <p className="text-xs text-text-tertiary max-w-sm">
+                  Your role doesn&apos;t include this permission. Ask a super admin if you need it.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => router.replace('/dashboard')}
+                  className="mt-2 px-4 py-2 rounded-md text-xs font-medium bg-accent text-white hover:opacity-90 transition-fast"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
