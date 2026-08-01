@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from dependencies import get_current_admin, EMPLOYEE_ROLE_PERMISSIONS
+from routes.auth import _set_admin_cookie
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import EmployeeIn, EmployeeUpdate
 from services import employee_service
@@ -131,10 +132,17 @@ async def update_employee_permissions(
 async def login_as_employee(
     employee_id: uuid.UUID,
     request: Request,
+    response: Response,
     admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    return await employee_service.login_as_employee(
+    result = await employee_service.login_as_employee(
         employee_id=employee_id, admin=admin,
         ip_address=request.client.host if request.client else None, db=db,
     )
+    # The admin session lives in an HttpOnly cookie and get_current_admin
+    # reads the cookie BEFORE any Bearer header — without swapping the
+    # cookie here, the caller keeps their super_admin session and the
+    # impersonation token in the JSON body is never used.
+    _set_admin_cookie(response, request, result["access_token"])
+    return {k: v for k, v in result.items() if k not in ("access_token", "token_type")}

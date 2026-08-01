@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 import { Loader2, Plus, Pencil, Trash2, RefreshCw, UserCog, Activity, LogIn, ShieldCheck, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -308,18 +307,14 @@ export default function EmployeesPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button onClick={async () => {
                             try {
-                              const res = await adminApi.post<{ access_token: string; employee_email: string; employee_role: string }>(`/employees/${emp.id}/login-as`);
+                              // The backend swaps the HttpOnly session cookie to the
+                              // employee's token on this call — a full reload is all
+                              // that's needed to become the employee.
+                              const res = await adminApi.post<{ employee_email: string; employee_role: string }>(`/employees/${emp.id}/login-as`);
                               toast.success(`Logging in as ${res.employee_email} (${res.employee_role})`);
-                              if (typeof window !== 'undefined') {
-                                adminApi.setToken(res.access_token);
-                                useAuthStore.setState({
-                                  isAuthenticated: true,
-                                  admin: null,
-                                });
-                                setTimeout(() => {
-                                  window.location.replace('/dashboard');
-                                }, 500);
-                              }
+                              setTimeout(() => {
+                                window.location.replace('/dashboard');
+                              }, 500);
                             } catch (e: any) { toast.error(e.message || 'Failed to login as employee'); }
                           }} className="px-2 py-1 rounded-md text-xxs font-medium text-buy border border-buy/30 hover:bg-buy/15 transition-fast" title="Login As Employee">
                             <LogIn size={11} className="inline mr-0.5" />Login

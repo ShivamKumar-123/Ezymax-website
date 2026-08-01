@@ -108,15 +108,22 @@ def require_permission(permission: str):
         admin: User = Depends(get_current_admin),
         db: AsyncSession = Depends(get_db),
     ) -> User:
-        # Full admins (role 'admin' or 'super_admin') bypass per-permission checks.
-        if admin.role in ("admin", "super_admin"):
+        # Only super admins bypass per-permission checks. Employees are
+        # stored as role="admin" users WITH an employees row (so they can
+        # pass admin login) — letting role "admin" bypass here would give
+        # every support/finance employee unrestricted backend access.
+        if admin.role == "super_admin":
             return admin
 
         result = await db.execute(
             select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)
         )
         employee = result.scalar_one_or_none()
-        if employee:
+        if employee is None:
+            # role="admin" user with no employee record = legacy full admin.
+            if admin.role == "admin":
+                return admin
+        else:
             role_perms = EMPLOYEE_ROLE_PERMISSIONS.get(employee.role, set())
             extra = set(employee.extra_permissions or [])
             effective = role_perms | extra
