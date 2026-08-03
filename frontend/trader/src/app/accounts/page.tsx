@@ -683,17 +683,12 @@ export default function AccountsPage() {
                     </h1>
                     <p className="mt-1 text-sm text-text-secondary">Manage your trading accounts</p>
                   </div>
-                  {user?.is_demo ? (
-                    <button type="button" onClick={() => setDemoUpgradeOpen(true)} className={newAccountCtaClass}>
-                      <span className="text-lg leading-none">+</span>
-                      New Account
-                    </button>
-                  ) : (
-                    <button type="button" onClick={handleOpenNewAccount} className={newAccountCtaClass}>
-                      <span className="text-lg leading-none">+</span>
-                      New Account
-                    </button>
-                  )}
+                  {/* Demo users open the picker too — it offers demo account
+                      types, so no "register a real account" gate. */}
+                  <button type="button" onClick={handleOpenNewAccount} className={newAccountCtaClass}>
+                    <span className="text-lg leading-none">+</span>
+                    New Account
+                  </button>
                 </div>
 
                 {loading && (
