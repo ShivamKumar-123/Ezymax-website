@@ -299,8 +299,9 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
       )}
       data-theme={useUIStore((s) => s.theme)}
     >
-      {/* Same cursor flourish as the dashboard/website — theme-aware. */}
-      <TubesCursor />
+      {/* Same cursor flourish as the dashboard/website — theme-aware. Kept
+          OFF the terminal itself: nothing competes with live charts. */}
+      {!terminalOnly && <TubesCursor />}
       {!terminalOnly && <TopBar />}
       <div className="flex-1 flex overflow-hidden min-h-0">
         <Suspense
