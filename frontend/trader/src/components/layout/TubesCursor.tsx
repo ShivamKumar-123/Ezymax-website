@@ -4,81 +4,54 @@ import { useEffect, useRef, useState } from 'react';
 import type { TubesCursorApp } from 'threejs-components/build/cursors/tubes1.min.js';
 
 /**
- * The landing site's cursor: WebGL neon tubes following the pointer. Theme-
- * aware palettes — DARK mode runs the site's void-black tubes on a screen
- * blend (black dissolves, rims glow); BRIGHT mode runs GOLDEN tubes on a
- * multiply blend (white dissolves, gold ink shows on the light UI). The
- * dashboard surfaces are opaque, so the canvas overlays the UI
- * (pointer-events-none) with the blend carrying the transparency.
+ * Theme-aware cursor flourish.
+ *
+ * DARK mode — the landing site's WebGL neon tubes (void-black palette) on a
+ * `screen` blend: the scene's opaque black background dissolves and only the
+ * lit rims glow. `screen` only works over dark UI; over the light theme the
+ * inverse (`multiply`) would multiply everything toward the scene's black
+ * background and blacked out the whole dashboard (that bug shipped once).
+ *
+ * BRIGHT mode — a GOLDEN 2D canvas trail instead: transparent by nature, so
+ * nothing can darken the page, and gold ink reads perfectly on white.
+ *
+ * Both skip touch devices and prefers-reduced-motion.
  */
-const PALETTES = {
-  dark: {
-    tubes: ['#050505', '#0d0d0d', '#161616'],
-    lights: ['#6b6b6b', '#3d3d3d', '#ffffff', '#242424'],
-    /** Random re-roll stays inside the void-black look. */
-    random: () => `hsl(0 0% ${(2 + Math.random() * 14).toFixed(0)}%)`,
-  },
-  light: {
-    tubes: ['#d6a93d', '#b9902f', '#8a6a1f'],
-    lights: ['#f0d27a', '#d6a93d', '#ffffff', '#a87f26'],
-    /** Random re-roll stays inside the golds. */
-    random: () =>
-      `hsl(${(43 + Math.random() * 6).toFixed(0)} 68% ${(35 + Math.random() * 25).toFixed(0)}%)`,
-  },
-} as const;
 
 const currentTheme = (): 'dark' | 'light' =>
   document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 
-export default function TubesCursor({
-  enableClickInteraction = true,
-}: {
-  enableClickInteraction?: boolean;
-}) {
+const motionAllowed = () =>
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+  !window.matchMedia('(pointer: coarse)').matches;
+
+/* ── dark: WebGL tubes, void-black, screen blend ── */
+const TUBES = ['#050505', '#0d0d0d', '#161616'];
+const TUBE_LIGHTS = ['#6b6b6b', '#3d3d3d', '#ffffff', '#242424'];
+const randomVoid = () => `hsl(0 0% ${(2 + Math.random() * 14).toFixed(0)}%)`;
+
+function DarkTubes({ enableClickInteraction }: { enableClickInteraction: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<TubesCursorApp | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (window.matchMedia('(pointer: coarse)').matches) return;
-
+    if (!canvas || !motionAllowed()) return;
     let disposed = false;
-    setTheme(currentTheme());
 
     import('threejs-components/build/cursors/tubes1.min.js')
       .then((module) => {
         if (disposed) return;
-        const palette = PALETTES[currentTheme()];
         appRef.current = module.default(canvas, {
-          tubes: {
-            colors: [...palette.tubes],
-            lights: { intensity: 200, colors: [...palette.lights] },
-          },
+          tubes: { colors: [...TUBES], lights: { intensity: 200, colors: [...TUBE_LIGHTS] } },
         });
       })
       .catch(() => {
         /* a missing flourish must never take the dashboard down */
       });
 
-    // Follow the dashboard theme toggle live.
-    const observer = new MutationObserver(() => {
-      const next = currentTheme();
-      setTheme(next);
-      const palette = PALETTES[next];
-      appRef.current?.tubes.setColors([...palette.tubes]);
-      appRef.current?.tubes.setLightsColors([...palette.lights]);
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
-
     return () => {
       disposed = true;
-      observer.disconnect();
       appRef.current?.dispose();
       appRef.current = null;
     };
@@ -89,35 +62,119 @@ export default function TubesCursor({
     const onClick = (event: MouseEvent) => {
       const app = appRef.current;
       if (!app) return;
-      // Ignore clicks meant for the UI — re-rolling on every button press
-      // would read as a bug, not an easter egg.
       if (
         event.target instanceof Element &&
         event.target.closest('a,button,input,textarea,select,label,[role=dialog]')
       ) {
         return;
       }
-      const { random } = PALETTES[currentTheme()];
-      app.tubes.setColors([random(), random(), random()]);
-      app.tubes.setLightsColors([random(), random(), '#ffffff', random()]);
+      app.tubes.setColors([randomVoid(), randomVoid(), randomVoid()]);
+      app.tubes.setLightsColors([randomVoid(), randomVoid(), '#ffffff', randomVoid()]);
     };
     window.addEventListener('click', onClick);
     return () => window.removeEventListener('click', onClick);
   }, [enableClickInteraction]);
 
-  // The library sizes its buffer from the canvas's PARENT — give it a
-  // viewport-sized wrapper. The tubes scene paints an OPAQUE black
-  // background, so the overlay must screen-blend: black dissolves to
-  // transparent and only the lit tube rims show over the UI. Without the
-  // blend the canvas covers the whole dashboard.
   return (
     <div
       aria-hidden
-      className={`pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden lg:block ${
-        theme === 'light' ? 'mix-blend-multiply' : 'mix-blend-screen'
-      }`}
+      className="pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden mix-blend-screen lg:block"
     >
       <canvas ref={canvasRef} className="block h-full w-full touch-none" />
     </div>
+  );
+}
+
+/* ── bright: golden 2D trail (transparent canvas — cannot darken the UI) ── */
+function GoldTrail() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !motionAllowed()) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let raf = 0;
+    let width = 0;
+    let height = 0;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const points: { x: number; y: number; life: number }[] = [];
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const onMove = (e: MouseEvent) => {
+      points.push({ x: e.clientX, y: e.clientY, life: 1 });
+      if (points.length > 28) points.shift();
+    };
+    window.addEventListener('mousemove', onMove);
+
+    const tick = () => {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 1; i < points.length; i++) {
+        const p0 = points[i - 1];
+        const p1 = points[i];
+        const alpha = p1.life * (i / points.length) * 0.55;
+        ctx.strokeStyle = `rgba(214, 169, 61, ${alpha})`;
+        ctx.lineWidth = 3 * p1.life;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = `rgba(214, 169, 61, ${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      for (const p of points) p.life *= 0.94;
+      while (points.length && points[0].life < 0.03) points.shift();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMove);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="pointer-events-none fixed inset-0 z-[60] hidden lg:block"
+    />
+  );
+}
+
+export default function TubesCursor({
+  enableClickInteraction = true,
+}: {
+  enableClickInteraction?: boolean;
+}) {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    setTheme(currentTheme());
+    const observer = new MutationObserver(() => setTheme(currentTheme()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return theme === 'light' ? (
+    <GoldTrail />
+  ) : (
+    <DarkTubes enableClickInteraction={enableClickInteraction} />
   );
 }
