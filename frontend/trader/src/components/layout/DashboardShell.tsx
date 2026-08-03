@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import AppSidebar from './AppSidebar';
 import AppHeader from './AppHeader';
 import AppTopNav from './AppTopNav';
+import CursorGlow from './CursorGlow';
 import DashboardFooter from './DashboardFooter';
 
 export default function DashboardShell({
@@ -32,6 +33,7 @@ export default function DashboardShell({
     >
       {/* Mobile: drawer sidebar (hamburger). Desktop lg+: categorised top nav. */}
       <AppSidebar />
+      <CursorGlow />
       <div className="flex min-w-0 flex-1 flex-col bg-bg-base">
         <AppHeader />
         <AppTopNav />
