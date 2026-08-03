@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
-import { useShellStore } from '@/stores/shellStore';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import AppSidebar from './AppSidebar';
 import AppHeader from './AppHeader';
+import AppTopNav from './AppTopNav';
 import DashboardFooter from './DashboardFooter';
 
 export default function DashboardShell({
@@ -18,7 +18,6 @@ export default function DashboardShell({
   className?: string;
   mainClassName?: string;
 }) {
-  const { sidebarOpen } = useShellStore();
   const pathname = usePathname();
 
   return (
@@ -31,14 +30,11 @@ export default function DashboardShell({
       )}
       
     >
+      {/* Mobile: drawer sidebar (hamburger). Desktop lg+: categorised top nav. */}
       <AppSidebar />
-      <div
-        className={cn(
-          'flex min-w-0 flex-1 flex-col bg-bg-base transition-[margin] duration-200',
-          sidebarOpen && 'lg:ml-[260px]',
-        )}
-      >
+      <div className="flex min-w-0 flex-1 flex-col bg-bg-base">
         <AppHeader />
+        <AppTopNav />
         <main
           key={pathname}
           className={cn(

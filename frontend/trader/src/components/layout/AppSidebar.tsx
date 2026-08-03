@@ -30,12 +30,12 @@ import {
   Coins,
 } from 'lucide-react';
 
-type LeafItem = { label: string; href: string; icon: any; newTab?: boolean };
-type GroupItem = { label: string; icon: any; key: string; children: LeafItem[] };
-type NavEntry = LeafItem | GroupItem;
-type NavSection = { label: string; items: NavEntry[] };
+export type LeafItem = { label: string; href: string; icon: any; newTab?: boolean };
+export type GroupItem = { label: string; icon: any; key: string; children: LeafItem[] };
+export type NavEntry = LeafItem | GroupItem;
+export type NavSection = { label: string; items: NavEntry[] };
 
-const SECTIONS: NavSection[] = [
+export const SECTIONS: NavSection[] = [
   {
     label: 'Main',
     items: [
@@ -92,7 +92,7 @@ const SECTIONS: NavSection[] = [
 // Flat list of all entries — used by the auto-expand logic below.
 const ALL_ITEMS: NavEntry[] = SECTIONS.flatMap((s) => s.items);
 
-function isGroup(e: NavEntry): e is GroupItem {
+export function isGroup(e: NavEntry): e is GroupItem {
   return (e as GroupItem).children !== undefined;
 }
 
@@ -173,7 +173,7 @@ export default function AppSidebar() {
       <aside
         className={cn(
           /* z-[70] above MobileBottomNav (z-[60]) so drawer links receive taps on small screens */
-          'fixed top-0 left-0 z-[70] h-full w-[260px] flex flex-col overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'fixed top-0 left-0 z-[70] h-full w-[260px] flex flex-col overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden',
           'bg-bg-base border-r border-border-primary',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}

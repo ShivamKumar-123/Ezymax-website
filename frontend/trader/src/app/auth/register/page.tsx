@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, Lock, Mail, Star, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
@@ -23,29 +23,22 @@ const formVariants = {
   exit: { opacity: 0, y: -16 },
 };
 
-/* ── step config ── */
-const STEPS = [
-  { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Sign up your account' },
-];
-
-const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
-  1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
-  2: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
-};
+/* ── brand-panel copy (flat split-screen design) ── */
+const TRUST_MARKS = ['NOVAQUANT', 'HELIXFX', 'MERIDIAN', 'OAKBRIDGE'];
 
 /* ── Input Field ── */
 function AuthInput({
-  label, type = 'text', placeholder, value, onChange, error, helper, rightIcon, onIconClick,
+  label, type = 'text', placeholder, value, onChange, error, helper, leftIcon, rightIcon, onIconClick,
 }: {
   label: string; type?: string; placeholder?: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  error?: string; helper?: string; rightIcon?: React.ReactNode; onIconClick?: () => void;
+  error?: string; helper?: string; leftIcon?: React.ReactNode; rightIcon?: React.ReactNode; onIconClick?: () => void;
 }) {
   return (
     <div className="auth-field">
       <label className="auth-field__label">{label}</label>
       <div className="auth-field__wrap">
+        {leftIcon && <span className="auth-field__lead">{leftIcon}</span>}
         <input
           className={`auth-field__input${rightIcon ? ' auth-field__input--has-icon' : ''}${error ? ' auth-field__input--error' : ''}`}
           type={type}
@@ -175,16 +168,8 @@ function RegisterContent() {
     if (pwd.length >= 10 && pwVariety >= 3) return 3;
     return 2;
   })();
-  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#d6a93d'];
+  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#5f7800'];
   const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
-
-  /* ── Step change ── */
-  const handleStepClick = (step: number) => {
-    if (step === 1) {
-      router.push('/auth/login');
-      return;
-    }
-  };
 
   return (
     <MotionConfig reducedMotion="always">
@@ -205,30 +190,59 @@ function RegisterContent() {
             />
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
-              <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>
-                {LEFT_CONFIG[2].title}
-              </motion.h1>
-              <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>
-                {LEFT_CONFIG[2].subtitle}
-              </motion.p>
-              <div className="auth-left__steps">
-                {STEPS.map((s, i) => (
-                  <motion.div key={s.number} {...fadeUp(0.45 + i * 0.08)}>
-                    <div
-                      className={`auth-step ${s.number === 2 ? 'auth-step--active' : 'auth-step--inactive'}`}
-                      onClick={() => handleStepClick(s.number)}
-                    >
-                      <span className="auth-step__num">{s.number}</span>
-                      <span className="auth-step__label">{s.label}</span>
-                    </div>
-                  </motion.div>
-                ))}
+              <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
+                <img src="/images/fxartha-logo.png" alt="" />
+                FXARTHA
+              </motion.a>
+
+              <div>
+                <motion.h1 className="auth-brand__headline" {...fadeUp(0.3)}>
+                  Open your account in{' '}
+                  <span className="auth-brand__uword">minutes.</span>
+                </motion.h1>
+                <motion.p className="auth-brand__support" {...fadeUp(0.4)}>
+                  Connect a wallet or an email, allocate into the trading
+                  contract, and only your margin ever locks.
+                </motion.p>
+
+                <motion.figure className="auth-quote" {...fadeUp(0.5)}>
+                  <div className="auth-quote__stars" aria-hidden="true">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Star key={i} size={14} fill="currentColor" />
+                    ))}
+                  </div>
+                  <blockquote className="auth-quote__text">
+                    &ldquo;Signed up, allocated, first trade — before my coffee
+                    went cold.&rdquo;
+                  </blockquote>
+                  <figcaption className="auth-quote__who">
+                    <span className="auth-quote__avatar">MK</span>
+                    <span>
+                      <span className="auth-quote__name">M. Kaur</span>
+                      <br />
+                      <span className="auth-quote__role">Swing trader · demo community</span>
+                    </span>
+                  </figcaption>
+                </motion.figure>
               </div>
+
+              <motion.div className="auth-trust" {...fadeUp(0.6)}>
+                <p className="auth-trust__eyebrow">Trusted by modern trading desks</p>
+                <div className="auth-trust__row">
+                  {TRUST_MARKS.map((mark) => (
+                    <span key={mark}>{mark}</span>
+                  ))}
+                </div>
+              </motion.div>
             </div>
           </motion.div>
 
           {/* ── RIGHT PANEL ── */}
           <div className="auth-right">
+            <div className="auth-topline">
+              Have an account?{' '}
+              <a onClick={() => router.push('/auth/login')}>Sign in</a>
+            </div>
             <AnimatePresence mode="wait">
               <motion.div
                 key="signup"
@@ -240,12 +254,23 @@ function RegisterContent() {
                 style={{ width: '100%', maxWidth: 380 }}
               >
                 <form className="auth-form" onSubmit={handleSubmit} noValidate>
-                  <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
-                    <img src="/images/fxartha-logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
+                  <motion.div {...fadeUp(0.25)}>
+                    <h2 className="auth-form__title">Create your account</h2>
+                    <p className="auth-form__subtitle">Start trading in minutes.</p>
                   </motion.div>
-                  <motion.div {...fadeUp(0.3)}>
-                    <h2 className="auth-form__title">Sign Up Account</h2>
-                    <p className="auth-form__subtitle">Enter your personal data to create your account.</p>
+
+                  <motion.div className="auth-sso" {...fadeUp(0.3)}>
+                    <GoogleAuthButton disabled={loading || isLoading || demoLoading} />
+                    <ConnectWalletButton
+                      variant="login"
+                      disabled={loading || isLoading || demoLoading}
+                    />
+                  </motion.div>
+
+                  <motion.div className="auth-divider" {...fadeUp(0.34)}>
+                    <span className="auth-divider__line" />
+                    <span className="auth-divider__text">or continue with email</span>
+                    <span className="auth-divider__line" />
                   </motion.div>
 
                   <motion.div className="auth-name-row" {...fadeUp(0.37)}>
@@ -267,12 +292,13 @@ function RegisterContent() {
 
                   <motion.div {...fadeUp(0.44)}>
                     <AuthInput
-                      label="Email"
+                      label="Email address"
                       type="email"
-                      placeholder=""
+                      placeholder="you@example.com"
                       value={form.email}
                       onChange={(e) => update('email', e.target.value)}
                       error={errors.email}
+                      leftIcon={<Mail size={16} />}
                     />
                   </motion.div>
 
@@ -305,6 +331,7 @@ function RegisterContent() {
                       onChange={(e) => update('password', e.target.value)}
                       error={errors.password}
                       helper={strength > 0 ? undefined : 'Use 8+ characters with a mix of letters, numbers or symbols.'}
+                      leftIcon={<Lock size={16} />}
                       rightIcon={showPass ? <Eye size={18} /> : <EyeOff size={18} />}
                       onIconClick={() => setShowPass(!showPass)}
                     />
@@ -373,23 +400,6 @@ function RegisterContent() {
                     </button>
                   </motion.div>
 
-                  <motion.div className="auth-divider" {...fadeUp(0.74)}>
-                    <span className="auth-divider__line" />
-                    <span className="auth-divider__text">or</span>
-                    <span className="auth-divider__line" />
-                  </motion.div>
-
-                  <motion.div {...fadeUp(0.75)}>
-                    <GoogleAuthButton disabled={loading || isLoading || demoLoading} />
-                  </motion.div>
-
-                  <motion.div {...fadeUp(0.755)}>
-                    <ConnectWalletButton
-                      variant="login"
-                      disabled={loading || isLoading || demoLoading}
-                    />
-                  </motion.div>
-
                   <motion.div {...fadeUp(0.76)}>
                     <button
                       type="button"
@@ -403,7 +413,13 @@ function RegisterContent() {
 
                   <motion.p className="auth-footer" {...fadeUp(0.78)}>
                     Already have an account?{' '}
-                    <a onClick={() => router.push('/auth/login')}>Log in</a>
+                    <a onClick={() => router.push('/auth/login')}>Sign in</a>
+                  </motion.p>
+
+                  <motion.p className="auth-legal" {...fadeUp(0.8)}>
+                    By creating an account, you agree to our{' '}
+                    <a href="/risk">Risk Disclosure</a> and{' '}
+                    <a href="/privacy">Privacy Policy</a>.
                   </motion.p>
                 </form>
               </motion.div>

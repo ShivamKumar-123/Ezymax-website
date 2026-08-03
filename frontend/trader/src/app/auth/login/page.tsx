@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect } from 'react';
-import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Loader2, Lock, Mail, Star } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
@@ -26,17 +26,8 @@ const formVariants = {
   exit: { opacity: 0, y: -16 },
 };
 
-/* ── step config ── */
-const STEPS = [
-  { number: 1, label: 'Sign in to your account' },
-  { number: 2, label: 'Sign up your account' },
-];
-
-const LEFT_CONFIG: Record<number, { title: string; subtitle: string }> = {
-  1: { title: 'Welcome Back', subtitle: 'Sign in to continue where you left off.' },
-  2: { title: 'Try It Out', subtitle: 'Explore the app with a demo account.' },
-  3: { title: 'Get Started with Us', subtitle: 'Complete these easy steps to register your account.' },
-};
+/* ── brand-panel copy (flat split-screen design) ── */
+const TRUST_MARKS = ['NOVAQUANT', 'HELIXFX', 'MERIDIAN', 'OAKBRIDGE'];
 
 /* ── error helper ── */
 function authErrorMessage(err: unknown, kind: 'login' | 'demo' | 'forgot'): string {
@@ -51,16 +42,17 @@ function authErrorMessage(err: unknown, kind: 'login' | 'demo' | 'forgot'): stri
 
 /* ── Input Field ── */
 function AuthInput({
-  label, type = 'text', placeholder, value, onChange, error, helper, rightIcon, onIconClick,
+  label, type = 'text', placeholder, value, onChange, error, helper, leftIcon, rightIcon, onIconClick,
 }: {
   label: string; type?: string; placeholder?: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  error?: string; helper?: string; rightIcon?: React.ReactNode; onIconClick?: () => void;
+  error?: string; helper?: string; leftIcon?: React.ReactNode; rightIcon?: React.ReactNode; onIconClick?: () => void;
 }) {
   return (
     <div className="auth-field">
       <label className="auth-field__label">{label}</label>
       <div className="auth-field__wrap">
+        {leftIcon && <span className="auth-field__lead">{leftIcon}</span>}
         <input
           className={`auth-field__input${rightIcon ? ' auth-field__input--has-icon' : ''}${error ? ' auth-field__input--error' : ''}`}
           type={type}
@@ -180,8 +172,6 @@ export default function LoginPage() {
     setActiveStep(step);
   };
 
-  const cfg = LEFT_CONFIG[activeStep];
-
   return (
     <MotionConfig reducedMotion="always">
     <div className="auth-wrapper">
@@ -226,26 +216,59 @@ export default function LoginPage() {
             />
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
-              <motion.h1 className="auth-left__title" {...fadeUp(0.3)}>{cfg.title}</motion.h1>
-              <motion.p className="auth-left__subtitle" {...fadeUp(0.4)}>{cfg.subtitle}</motion.p>
-              <div className="auth-left__steps">
-                {STEPS.map((s, i) => (
-                  <motion.div key={s.number} {...fadeUp(0.45 + i * 0.08)}>
-                    <div
-                      className={`auth-step ${activeStep === s.number ? 'auth-step--active' : 'auth-step--inactive'}`}
-                      onClick={() => handleStepClick(s.number)}
-                    >
-                      <span className="auth-step__num">{s.number}</span>
-                      <span className="auth-step__label">{s.label}</span>
-                    </div>
-                  </motion.div>
-                ))}
+              <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
+                <img src="/images/fxartha-logo.png" alt="" />
+                FXARTHA
+              </motion.a>
+
+              <div>
+                <motion.h1 className="auth-brand__headline" {...fadeUp(0.3)}>
+                  Trade with your money still{' '}
+                  <span className="auth-brand__uword">yours.</span>
+                </motion.h1>
+                <motion.p className="auth-brand__support" {...fadeUp(0.4)}>
+                  Only margin locks when you open a trade — the rest stays
+                  withdrawable, and settlement is automatic.
+                </motion.p>
+
+                <motion.figure className="auth-quote" {...fadeUp(0.5)}>
+                  <div className="auth-quote__stars" aria-hidden="true">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Star key={i} size={14} fill="currentColor" />
+                    ))}
+                  </div>
+                  <blockquote className="auth-quote__text">
+                    &ldquo;The first platform where I never wonder whether I can
+                    withdraw.&rdquo;
+                  </blockquote>
+                  <figcaption className="auth-quote__who">
+                    <span className="auth-quote__avatar">AR</span>
+                    <span>
+                      <span className="auth-quote__name">A. Rao</span>
+                      <br />
+                      <span className="auth-quote__role">Derivatives trader · demo community</span>
+                    </span>
+                  </figcaption>
+                </motion.figure>
               </div>
+
+              <motion.div className="auth-trust" {...fadeUp(0.6)}>
+                <p className="auth-trust__eyebrow">Trusted by modern trading desks</p>
+                <div className="auth-trust__row">
+                  {TRUST_MARKS.map((mark) => (
+                    <span key={mark}>{mark}</span>
+                  ))}
+                </div>
+              </motion.div>
             </div>
           </motion.div>
 
           {/* ── RIGHT PANEL ── */}
           <div className="auth-right">
+            <div className="auth-topline">
+              New here?{' '}
+              <a onClick={() => router.push('/auth/register')}>Create account</a>
+            </div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeStep}
@@ -259,26 +282,40 @@ export default function LoginPage() {
                 {/* ── SIGN IN ── */}
                 {activeStep === 1 && (
                   <form className="auth-form" onSubmit={handleSignIn} noValidate>
-                    <motion.div {...fadeUp(0.2)} className="flex justify-center mb-2">
-                      <img src="/images/fxartha-logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
-                    </motion.div>
-                    <motion.div {...fadeUp(0.3)}>
-                      <h2 className="auth-form__title">Sign In</h2>
-                      <p className="auth-form__subtitle">Enter your credentials to access your account.</p>
+                    <motion.div {...fadeUp(0.25)}>
+                      <h2 className="auth-form__title">Welcome back</h2>
+                      <p className="auth-form__subtitle">Sign in to your account to continue.</p>
                     </motion.div>
 
-                    <motion.div {...fadeUp(0.37)}>
-                      <AuthInput
-                        label="Email"
-                        type="email"
-                        placeholder=""
-                        value={email}
-                        onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })); }}
-                        error={errors.email}
+                    <motion.div className="auth-sso" {...fadeUp(0.32)}>
+                      <Suspense fallback={null}>
+                        <GoogleAuthButton disabled={loading || isLoading || demoLoading || maintenance} />
+                      </Suspense>
+                      <ConnectWalletButton
+                        variant="login"
+                        disabled={loading || isLoading || demoLoading || maintenance}
                       />
                     </motion.div>
 
-                    <motion.div {...fadeUp(0.44)}>
+                    <motion.div className="auth-divider" {...fadeUp(0.36)}>
+                      <span className="auth-divider__line" />
+                      <span className="auth-divider__text">or continue with email</span>
+                      <span className="auth-divider__line" />
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.4)}>
+                      <AuthInput
+                        label="Email address"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })); }}
+                        error={errors.email}
+                        leftIcon={<Mail size={16} />}
+                      />
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.45)}>
                       <AuthInput
                         label="Password"
                         type={showPass ? 'text' : 'password'}
@@ -286,14 +323,17 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: '' })); }}
                         error={errors.password}
-                        helper="Must be at least 8 characters."
+                        leftIcon={<Lock size={16} />}
                         rightIcon={showPass ? <Eye size={18} /> : <EyeOff size={18} />}
                         onIconClick={() => setShowPass(!showPass)}
                       />
+                    </motion.div>
+
+                    <motion.div className="auth-row" {...fadeUp(0.48)}>
+                      <span />
                       <button
                         type="button"
                         onClick={() => { setForgotEmail(email); setForgotOpen(true); }}
-                        style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '0.72rem', cursor: 'pointer', marginTop: 4 }}
                       >
                         Forgot password?
                       </button>
@@ -311,32 +351,13 @@ export default function LoginPage() {
                       </motion.div>
                     )}
 
-                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.55, duration: 0.4 }}>
+                    <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.52, duration: 0.35 }}>
                       <button type="submit" className="auth-btn" disabled={loading || isLoading || maintenance}>
-                        {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Sign In')}
+                        {(loading || isLoading) ? <Loader2 size={18} className="auth-spinner" /> : (maintenance ? 'Unavailable (Maintenance)' : 'Sign in')}
                       </button>
                     </motion.div>
 
-                    <motion.div className="auth-divider" {...fadeUp(0.58)}>
-                      <span className="auth-divider__line" />
-                      <span className="auth-divider__text">or</span>
-                      <span className="auth-divider__line" />
-                    </motion.div>
-
-                    <motion.div {...fadeUp(0.59)}>
-                      <Suspense fallback={null}>
-                        <GoogleAuthButton disabled={loading || isLoading || demoLoading || maintenance} />
-                      </Suspense>
-                    </motion.div>
-
-                    <motion.div {...fadeUp(0.595)}>
-                      <ConnectWalletButton
-                        variant="login"
-                        disabled={loading || isLoading || demoLoading || maintenance}
-                      />
-                    </motion.div>
-
-                    <motion.div {...fadeUp(0.6)}>
+                    <motion.div {...fadeUp(0.56)}>
                       <button
                         type="button"
                         onClick={handleDemo}
@@ -347,9 +368,15 @@ export default function LoginPage() {
                       </button>
                     </motion.div>
 
-                    <motion.p className="auth-footer" {...fadeUp(0.62)}>
+                    <motion.p className="auth-footer" {...fadeUp(0.6)}>
                       Don&apos;t have an account?{' '}
-                      <a onClick={() => handleStepClick(2)}>Sign Up</a>
+                      <a onClick={() => handleStepClick(2)}>Sign up</a>
+                    </motion.p>
+
+                    <motion.p className="auth-legal" {...fadeUp(0.62)}>
+                      By signing in, you agree to our{' '}
+                      <Link href="/risk">Risk Disclosure</Link> and{' '}
+                      <Link href="/privacy">Privacy Policy</Link>.
                     </motion.p>
                   </form>
                 )}
