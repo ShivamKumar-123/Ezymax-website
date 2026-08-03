@@ -9,10 +9,18 @@
  * WalletConnect-based wallets (Trust Mobile, Rainbow, etc.) won't connect.
  */
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { injectedWallet } from '@rainbow-me/rainbowkit/wallets';
 import { http } from 'wagmi';
 import { arbitrum, bsc, mainnet, polygon } from 'wagmi/chains';
 
 const PROJECT_ID = (process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '').trim();
+
+/** Dev placeholder id (see .env.local): enables the wallet UI without a real
+ * Reown project. Detected here so the config can avoid the WalletConnect
+ * cloud entirely — an unregistered origin makes cloud.reown.com log
+ * "Origin … not found on Allowlist" console errors on every modal open. */
+const DUMMY_PROJECT_ID = '00000000000000000000000000000000';
+const hasRealProjectId = PROJECT_ID.length > 0 && PROJECT_ID !== DUMMY_PROJECT_ID;
 
 /** Lazy-init so the config isn't computed during SSR / static export. */
 let _config: ReturnType<typeof getDefaultConfig> | null = null;
@@ -25,7 +33,21 @@ export function getWagmiConfig() {
     // dummy when the env var is unset so the bundle still compiles; the
     // WalletDepositModal checks isWalletConnectConfigured() before mounting
     // the provider so it won't actually try to talk to Reown without one.
-    projectId: PROJECT_ID || '00000000000000000000000000000000',
+    projectId: PROJECT_ID || DUMMY_PROJECT_ID,
+    // With only the dev placeholder id, restrict to browser-injected wallets
+    // (MetaMask etc.) so the WalletConnect/AppKit cloud layer never
+    // initialises — it would reject the unregistered origin and spam the
+    // console. A real project id restores the full default wallet list.
+    ...(hasRealProjectId
+      ? {}
+      : {
+          wallets: [
+            {
+              groupName: 'Browser wallets',
+              wallets: [injectedWallet],
+            },
+          ],
+        }),
     chains: [mainnet, bsc, polygon, arbitrum],
     // Explicit CORS-enabled RPCs. Without this, viem falls back to its default
     // public endpoints (e.g. eth.merkle.io) which DON'T send CORS headers, so
