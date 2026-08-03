@@ -310,7 +310,19 @@ const routes = {
   "GET /api/v1/rewards/missions": () => [],
   "GET /api/v1/rewards/leaderboard": () => [],
   "GET /api/v1/play/spin/recent": () => [],
-  "GET /api/v1/play/spin/prizes": () => [],
+  "GET /api/v1/play/spin/prizes": () => ({
+    cost_ac: 50,
+    prizes: [
+      { id: "pz-1", slug: "xp-100", label: "100 XP", weight: 30, probability: 0.3, payout_kind: "xp", payout_amount: 100, display_order: 1 },
+      { id: "pz-2", slug: "ac-25", label: "25 Credits", weight: 22, probability: 0.22, payout_kind: "ac", payout_amount: 25, display_order: 2 },
+      { id: "pz-3", slug: "nothing-1", label: "Spin again", weight: 18, probability: 0.18, payout_kind: "nothing", payout_amount: 0, display_order: 3 },
+      { id: "pz-4", slug: "xp-250", label: "250 XP", weight: 12, probability: 0.12, payout_kind: "xp", payout_amount: 250, display_order: 4 },
+      { id: "pz-5", slug: "cashback-5", label: "$5 Cashback", weight: 8, probability: 0.08, payout_kind: "cashback", payout_amount: 5, display_order: 5 },
+      { id: "pz-6", slug: "ac-100", label: "100 Credits", weight: 6, probability: 0.06, payout_kind: "ac", payout_amount: 100, display_order: 6 },
+      { id: "pz-7", slug: "nothing-2", label: "Better luck", weight: 3, probability: 0.03, payout_kind: "nothing", payout_amount: 0, display_order: 7 },
+      { id: "pz-8", slug: "cashback-25", label: "$25 Cashback", weight: 1, probability: 0.01, payout_kind: "cashback", payout_amount: 25, display_order: 8 },
+    ],
+  }),
 };
 
 /* ── synthetic market data ── */
