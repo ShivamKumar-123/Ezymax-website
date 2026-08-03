@@ -37,17 +37,8 @@ export default function AppTopNav() {
       className="hidden min-w-0 flex-1 lg:block"
     >
       <div className="flex items-center gap-0.5 overflow-x-auto px-3 [scrollbar-width:thin]">
-        {SECTIONS.map((section, sectionIndex) => (
+        {SECTIONS.map((section) => (
           <div key={section.label} className="flex items-center gap-0.5 shrink-0">
-            {sectionIndex > 0 && (
-              <span
-                aria-hidden
-                className="mx-2 h-5 w-px bg-border-primary shrink-0"
-              />
-            )}
-            <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-text-tertiary select-none shrink-0">
-              {section.label}
-            </span>
             {sectionLeaves(section.label).map((item) => {
               const Icon = item.icon;
               const active = leafActive(item);
