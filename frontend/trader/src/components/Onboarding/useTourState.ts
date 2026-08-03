@@ -118,6 +118,16 @@ export function useTourState(): void {
       doneBtnText: 'Done',
       overlayColor: 'rgba(2, 6, 12, 0.62)',
       steps,
+      // Explicit Skip button (the "×" alone wasn't discoverable). destroy()
+      // routes through onDestroyed → finishTour, same as Finish.
+      onPopoverRender: (popover, { driver: drv }) => {
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.innerText = 'Skip tour';
+        skip.className = 'fxartha-tour__skip';
+        skip.onclick = () => drv.destroy();
+        popover.footerButtons.prepend(skip);
+      },
       onNextClick: async (_el, _step, { driver: drv }) => {
         const i = drv.getActiveIndex() ?? 0;
         const cur = TOUR_STEPS[i];

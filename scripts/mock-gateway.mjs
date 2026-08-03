@@ -62,6 +62,18 @@ const routes = {
   // Common list endpoints the dashboard touches — empty but valid.
   "GET /api/v1/accounts": () => [],
   "GET /api/v1/notifications": () => [],
+  "GET /api/v1/portfolio/summary": () => ({
+    total_balance: 10000,
+    total_equity: 10230.5,
+    total_unrealized_pnl: 230.5,
+    pnl_breakdown: {
+      today: 42.1,
+      this_week: 118.4,
+      this_month: 230.5,
+      all_time: 230.5,
+    },
+    holdings: [],
+  }),
 };
 
 createServer((req, res) => {

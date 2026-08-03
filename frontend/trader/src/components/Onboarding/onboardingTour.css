@@ -74,3 +74,21 @@
 .driver-popover.fxartha-tour .driver-popover-arrow-side-bottom.driver-popover-arrow {
   border-bottom-color: var(--bg-secondary, #11161f);
 }
+
+/* Explicit Skip control in the popover footer (prepended via onPopoverRender). */
+.fxartha-tour .fxartha-tour__skip {
+  margin-right: auto;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.9);
+  cursor: pointer;
+  text-shadow: none;
+}
+
+.fxartha-tour .fxartha-tour__skip:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
