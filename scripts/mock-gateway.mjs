@@ -289,6 +289,16 @@ const routes = {
   "POST /api/v1/profile/onboarding/complete": () => ({ message: "ok" }),
   "POST /api/v1/profile/onboarding/reset": () => ({ message: "ok" }),
 
+  /* staking — demo plans; open/withdraw positions stateful-lite */
+  "GET /api/v1/staking/plans": () => [
+    { id: "sp-flex", slug: "flexible", label: "Flexible", description: "Withdraw any time. Earns while you wait for setups.", mode: "flexible", lock_months: null, apy_bps: 300, apy_pct: 3, min_amount: 100, trading_bonus_multiplier_bps: 0, trading_bonus_pct: 0 },
+    { id: "sp-3m", slug: "locked-3m", label: "3-Month Lock", description: "Higher rate for a short commitment.", mode: "locked", lock_months: 3, apy_bps: 600, apy_pct: 6, min_amount: 250, trading_bonus_multiplier_bps: 500, trading_bonus_pct: 5 },
+    { id: "sp-6m", slug: "locked-6m", label: "6-Month Lock", description: "Best balance of rate and flexibility.", mode: "locked", lock_months: 6, apy_bps: 900, apy_pct: 9, min_amount: 500, trading_bonus_multiplier_bps: 1000, trading_bonus_pct: 10 },
+    { id: "sp-12m", slug: "locked-12m", label: "12-Month Lock", description: "Top rate plus the biggest trading bonus.", mode: "locked", lock_months: 12, apy_bps: 1400, apy_pct: 14, min_amount: 1000, trading_bonus_multiplier_bps: 2000, trading_bonus_pct: 20 },
+  ],
+  "GET /api/v1/staking/positions": () => [],
+  "GET /api/v1/staking/referral-summary": () => ({}),
+
   /* correct-shaped empties so list pages render their empty states instead
      of crashing on the generic {} fallback */
   "GET /api/v1/wallet/transactions": () => ({ items: [] }),
