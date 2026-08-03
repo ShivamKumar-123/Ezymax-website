@@ -4,10 +4,10 @@
  *   node scripts/mock-gateway.mjs        # listens on 127.0.0.1:8000
  *
  * The trader app's server-side /api/v1 proxy already defaults to
- * http://127.0.0.1:8000, so no env changes are needed: `npm run dev` in
- * frontend/trader + this script = working login (real + demo) and /auth/me.
- * Everything unmocked returns 404 with the requested path logged, so missing
- * endpoints are easy to spot and add below.
+ * http://127.0.0.1:8000, so no env changes are needed. Stateful demo:
+ * accounts can be OPENED (demo only) and wallet↔account transfers move real
+ * numbers; deposits/withdrawals return a "demo mode" error on purpose.
+ * Everything unmocked returns 404 with the path logged.
  *
  * NEVER deploy this — it authenticates everyone as the demo user.
  */
@@ -16,6 +16,7 @@ import { createServer } from "node:http";
 
 const PORT = 8000;
 
+/* ── demo user ── */
 const user = {
   id: "u-demo-0001",
   email: "demo@fxartha.dev",
@@ -42,6 +43,8 @@ const user = {
   wallet_linked: true,
   email_verified: true,
   is_wallet_placeholder: false,
+  tour_completed: true,
+  onboarding_complete: true,
   created_at: "2026-01-01T00:00:00Z",
 };
 
@@ -53,15 +56,138 @@ const token = () => ({
   expires_at: new Date(Date.now() + 86_400_000).toISOString(),
 });
 
+/* ── stateful demo wallet + accounts ── */
+let mainWallet = 10_000;
+let accSeq = 1;
+
+const makeAccount = (leverage, balance) => ({
+  id: `acc-${accSeq}`,
+  account_number: `DEMO-1000${accSeq}`,
+  balance,
+  credit: 0,
+  equity: balance,
+  margin_used: 0,
+  free_margin: balance,
+  margin_level: 0,
+  leverage,
+  currency: "USD",
+  is_demo: true,
+  is_active: true,
+});
+
+const accounts = [makeAccount(100, 5_000)];
+
+const findAccount = (id) => accounts.find((a) => a.id === id);
+
+const err = (status, detail) => ({ __status: status, detail });
+
+const DEMO_BLOCKED =
+  "Demo mode — deposits and withdrawals are disabled. Trade with the demo balance instead.";
+
+/* ── routes: (body) => object; add __status for non-200 ── */
 const routes = {
   "POST /api/v1/auth/login": () => token(),
   "POST /api/v1/auth/demo-login": () => token(),
   "POST /api/v1/auth/refresh": () => token(),
   "POST /api/v1/auth/logout": () => ({ message: "ok" }),
   "GET /api/v1/auth/me": () => user,
-  // Common list endpoints the dashboard touches — empty but valid.
-  "GET /api/v1/accounts": () => [],
+  "GET /api/v1/auth/platform-status": () => ({
+    maintenance_mode: false,
+    allow_new_registrations: true,
+    allow_deposits: true,
+    allow_withdrawals: true,
+  }),
+
   "GET /api/v1/notifications": () => [],
+  "GET /api/v1/notifications/unread-count": () => ({ count: 0 }),
+
+  "GET /api/v1/rewards/state": () => ({
+    xp: 1250,
+    level: 3,
+    ac_balance: 240,
+    ps: 610,
+    streak_count: 4,
+    streak_checked_in_today: false,
+  }),
+
+  /* accounts — open works, demo only */
+  "GET /api/v1/accounts": () => accounts,
+  "GET /api/v1/accounts/available-groups": () => ({
+    items: [
+      {
+        id: "g-demo-standard",
+        name: "Demo Standard",
+        description: "Practice account funded with demo money.",
+        leverage_default: 100,
+        max_leverage: 200,
+        effective_max_leverage: 200,
+      },
+      {
+        id: "g-demo-pro",
+        name: "Demo Pro",
+        description: "Tighter spreads and higher leverage — demo money.",
+        leverage_default: 200,
+        max_leverage: 500,
+        effective_max_leverage: 500,
+      },
+    ],
+  }),
+  "POST /api/v1/accounts/open": (body) => {
+    accSeq += 1;
+    const account = makeAccount(Number(body?.leverage) || 100, 10_000);
+    accounts.push(account);
+    return { id: account.id, account_number: account.account_number };
+  },
+
+  /* wallet — summary + transfers work; deposit/withdraw demo-blocked */
+  "GET /api/v1/wallet/summary": () => ({
+    main_wallet_balance: mainWallet,
+    balance: mainWallet,
+  }),
+  "POST /api/v1/wallet/transfer-main-to-trading": (body) => {
+    const amount = Number(body?.amount) || 0;
+    const account = findAccount(body?.to_account_id);
+    if (!account) return err(404, "Account not found");
+    if (amount <= 0 || amount > mainWallet)
+      return err(400, "Insufficient main wallet balance");
+    mainWallet -= amount;
+    account.balance += amount;
+    account.equity += amount;
+    account.free_margin += amount;
+    return { message: "ok", main_wallet_balance: mainWallet };
+  },
+  "POST /api/v1/wallet/transfer-trading-to-main": (body) => {
+    const amount = Number(body?.amount) || 0;
+    const account = findAccount(body?.from_account_id);
+    if (!account) return err(404, "Account not found");
+    if (amount <= 0 || amount > account.free_margin)
+      return err(400, "Insufficient free margin");
+    account.balance -= amount;
+    account.equity -= amount;
+    account.free_margin -= amount;
+    mainWallet += amount;
+    return { message: "ok", main_wallet_balance: mainWallet };
+  },
+  "POST /api/v1/wallet/transfer-internal": (body) => {
+    const amount = Number(body?.amount) || 0;
+    const from = findAccount(body?.from_account_id);
+    const to = findAccount(body?.to_account_id);
+    if (!from || !to) return err(404, "Account not found");
+    if (amount <= 0 || amount > from.free_margin)
+      return err(400, "Insufficient free margin");
+    from.balance -= amount;
+    from.equity -= amount;
+    from.free_margin -= amount;
+    to.balance += amount;
+    to.equity += amount;
+    to.free_margin += amount;
+    return { message: "ok" };
+  },
+  "POST /api/v1/wallet/withdraw/onchain": () => err(400, DEMO_BLOCKED),
+  "POST /api/v1/wallet/deposit": () => err(400, DEMO_BLOCKED),
+  "GET /api/v1/wallet/deposit-address": () => err(400, DEMO_BLOCKED),
+
+  /* portfolio */
   "GET /api/v1/portfolio/trades": () => ({
     items: [
       {
@@ -117,6 +243,10 @@ const routes = {
     },
     holdings: [],
   }),
+
+  /* profile / onboarding */
+  "POST /api/v1/profile/onboarding/complete": () => ({ message: "ok" }),
+  "POST /api/v1/profile/onboarding/reset": () => ({ message: "ok" }),
 };
 
 createServer((req, res) => {
@@ -124,20 +254,34 @@ createServer((req, res) => {
   const key = `${req.method} ${path}`;
   const handler = routes[key];
 
-  // Drain the body so keep-alive connections stay clean.
-  req.resume();
+  const chunks = [];
+  req.on("data", (c) => chunks.push(c));
   req.on("end", () => {
+    let body;
+    try {
+      body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : undefined;
+    } catch {
+      body = undefined;
+    }
+
     res.setHeader("content-type", "application/json");
     if (handler) {
+      const out = handler(body) ?? {};
+      const status = Array.isArray(out) ? 200 : (out.__status ?? 200);
+      let payload = out;
+      if (!Array.isArray(out)) {
+        payload = { ...out };
+        delete payload.__status;
+      }
       if (path.includes("/auth/login") || path.includes("/auth/demo-login")) {
         res.setHeader(
           "set-cookie",
           "access_token=dev-mock-token; Path=/; SameSite=Lax",
         );
       }
-      res.writeHead(200);
-      res.end(JSON.stringify(handler()));
-      console.log(`✓ ${key}`);
+      res.writeHead(status);
+      res.end(JSON.stringify(payload));
+      console.log(`${status === 200 ? "✓" : "▲"} ${key} → ${status}`);
     } else {
       res.writeHead(404);
       res.end(JSON.stringify({ detail: `mock-gateway: ${key} not mocked` }));

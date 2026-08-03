@@ -1,23 +1,34 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TubesCursorApp } from 'threejs-components/build/cursors/tubes1.min.js';
 
 /**
- * The landing site's cursor, verbatim: WebGL neon tubes following the
- * pointer, in the same void-black "knight / black hole" palette. Unlike the
- * landing (where the canvas sits behind translucent sections), the dashboard
- * surfaces are opaque — so the canvas overlays the UI (pointer-events-none)
- * and the white rim lights carry the effect over both themes.
+ * The landing site's cursor: WebGL neon tubes following the pointer. Theme-
+ * aware palettes — DARK mode runs the site's void-black tubes on a screen
+ * blend (black dissolves, rims glow); BRIGHT mode runs GOLDEN tubes on a
+ * multiply blend (white dissolves, gold ink shows on the light UI). The
+ * dashboard surfaces are opaque, so the canvas overlays the UI
+ * (pointer-events-none) with the blend carrying the transparency.
  */
-const TUBE_COLORS = ['#050505', '#0d0d0d', '#161616'];
-const LIGHT_COLORS = ['#6b6b6b', '#3d3d3d', '#ffffff', '#242424'];
+const PALETTES = {
+  dark: {
+    tubes: ['#050505', '#0d0d0d', '#161616'],
+    lights: ['#6b6b6b', '#3d3d3d', '#ffffff', '#242424'],
+    /** Random re-roll stays inside the void-black look. */
+    random: () => `hsl(0 0% ${(2 + Math.random() * 14).toFixed(0)}%)`,
+  },
+  light: {
+    tubes: ['#d6a93d', '#b9902f', '#8a6a1f'],
+    lights: ['#f0d27a', '#d6a93d', '#ffffff', '#a87f26'],
+    /** Random re-roll stays inside the golds. */
+    random: () =>
+      `hsl(${(43 + Math.random() * 6).toFixed(0)} 68% ${(35 + Math.random() * 25).toFixed(0)}%)`,
+  },
+} as const;
 
-/** A void-black at a random depth — keeps re-rolls inside the dark look. */
-const randomVoid = () => {
-  const light = 2 + Math.random() * 14;
-  return `hsl(0 0% ${light.toFixed(0)}%)`;
-};
+const currentTheme = (): 'dark' | 'light' =>
+  document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 
 export default function TubesCursor({
   enableClickInteraction = true,
@@ -26,6 +37,7 @@ export default function TubesCursor({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<TubesCursorApp | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -34,14 +46,16 @@ export default function TubesCursor({
     if (window.matchMedia('(pointer: coarse)').matches) return;
 
     let disposed = false;
+    setTheme(currentTheme());
 
     import('threejs-components/build/cursors/tubes1.min.js')
       .then((module) => {
         if (disposed) return;
+        const palette = PALETTES[currentTheme()];
         appRef.current = module.default(canvas, {
           tubes: {
-            colors: TUBE_COLORS,
-            lights: { intensity: 200, colors: LIGHT_COLORS },
+            colors: [...palette.tubes],
+            lights: { intensity: 200, colors: [...palette.lights] },
           },
         });
       })
@@ -49,8 +63,22 @@ export default function TubesCursor({
         /* a missing flourish must never take the dashboard down */
       });
 
+    // Follow the dashboard theme toggle live.
+    const observer = new MutationObserver(() => {
+      const next = currentTheme();
+      setTheme(next);
+      const palette = PALETTES[next];
+      appRef.current?.tubes.setColors([...palette.tubes]);
+      appRef.current?.tubes.setLightsColors([...palette.lights]);
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
     return () => {
       disposed = true;
+      observer.disconnect();
       appRef.current?.dispose();
       appRef.current = null;
     };
@@ -69,8 +97,9 @@ export default function TubesCursor({
       ) {
         return;
       }
-      app.tubes.setColors([randomVoid(), randomVoid(), randomVoid()]);
-      app.tubes.setLightsColors([randomVoid(), randomVoid(), '#ffffff', randomVoid()]);
+      const { random } = PALETTES[currentTheme()];
+      app.tubes.setColors([random(), random(), random()]);
+      app.tubes.setLightsColors([random(), random(), '#ffffff', random()]);
     };
     window.addEventListener('click', onClick);
     return () => window.removeEventListener('click', onClick);
@@ -84,7 +113,9 @@ export default function TubesCursor({
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden mix-blend-screen lg:block"
+      className={`pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden lg:block ${
+        theme === 'light' ? 'mix-blend-multiply' : 'mix-blend-screen'
+      }`}
     >
       <canvas ref={canvasRef} className="block h-full w-full touch-none" />
     </div>

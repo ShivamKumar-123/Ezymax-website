@@ -20,6 +20,7 @@ import {
   Wallet as WalletIcon, Coins, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
+import TvCard from '@/components/dashboard/TvCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -299,6 +300,9 @@ function BrokerHome() {
           <MarketsTable movers={movers} series={moverBars} onTrade={goTrade} />
         </div>
         <div className="space-y-3 sm:space-y-4">
+          {/* FXArtha TV — the commercial, looping in a small set */}
+          <TvCard />
+
           {/* Copy Trading promo — carries the discovery CTA */}
           <button
             type="button"

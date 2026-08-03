@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   SECTIONS,
@@ -20,6 +21,13 @@ import {
  */
 export default function AppTopNav() {
   const pathname = usePathname();
+  /** Instant tooltip: fixed-position so the scrollable row can't clip it. */
+  const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
+
+  const showTip = (label: string) => (e: React.MouseEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ label, x: r.left + r.width / 2, y: r.bottom + 8 });
+  };
 
   const leafActive = (item: LeafItem) =>
     pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -47,8 +55,11 @@ export default function AppTopNav() {
                   key={item.href}
                   href={item.href}
                   target={item.newTab ? '_blank' : undefined}
-                  title={item.label}
                   aria-label={item.label}
+                  onMouseEnter={showTip(item.label)}
+                  onMouseLeave={() => setTip(null)}
+                  onFocus={showTip(item.label)}
+                  onBlur={() => setTip(null)}
                   className={cn(
                     'group relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors shrink-0',
                     active
@@ -75,6 +86,22 @@ export default function AppTopNav() {
           </div>
         ))}
       </div>
+
+      <AnimatePresence>
+        {tip && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none fixed z-[90] -translate-x-1/2 whitespace-nowrap rounded-lg border border-border-primary bg-bg-base px-2.5 py-1 text-[11px] font-medium text-text-primary shadow-lg"
+            style={{ left: tip.x, top: tip.y }}
+            initial={{ opacity: 0, y: -4, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+          >
+            {tip.label}
+          </motion.span>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
