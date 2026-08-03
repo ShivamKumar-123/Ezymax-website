@@ -254,10 +254,77 @@ const routes = {
     holdings: [],
   }),
 
+  "GET /api/v1/portfolio/performance": () => {
+    // 30-day equity curve drifting 10,000 → 10,230.50 with gentle noise.
+    const days = 30;
+    const points = [];
+    for (let i = 0; i < days; i++) {
+      const t = i / (days - 1);
+      const wobble = Math.sin(i * 1.7) * 28 + Math.sin(i * 0.6) * 40;
+      points.push({
+        time: new Date(Date.now() - (days - 1 - i) * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+        equity: Math.round((10_000 + t * 230.5 + wobble * t) * 100) / 100,
+      });
+    }
+    return { equity_curve: points };
+  },
+
+  "GET /api/v1/banners": () => ({ banners: [] }),
+
+  "GET /api/v1/instruments/prices/all": () =>
+    Object.entries(BASE_PRICES).map(([symbol, base]) => {
+      const drift = 1 + (Math.sin(Date.now() / 60_000 + base) * 0.002);
+      const mid = base * drift;
+      const spread = base * 0.0002;
+      return {
+        symbol,
+        bid: round5(mid - spread / 2),
+        ask: round5(mid + spread / 2),
+      };
+    }),
+
   /* profile / onboarding */
   "POST /api/v1/profile/onboarding/complete": () => ({ message: "ok" }),
   "POST /api/v1/profile/onboarding/reset": () => ({ message: "ok" }),
 };
+
+/* ── synthetic market data ── */
+const BASE_PRICES = {
+  EURUSD: 1.08,
+  GBPUSD: 1.2712,
+  XAUUSD: 2412.4,
+  NAS100: 20150,
+  BTCUSD: 64200,
+  ETHUSD: 3150,
+};
+const round5 = (n) => Math.round(n * 100000) / 100000;
+
+/** Daily bars per symbol — deterministic sin-walk, 30 days. */
+const barsFor = (symbol) => {
+  const base = BASE_PRICES[symbol] ?? 100;
+  const bars = [];
+  for (let i = 0; i < 30; i++) {
+    const w = Math.sin(i * 0.9 + base) * 0.012 + Math.sin(i * 0.31) * 0.006;
+    const open = round5(base * (1 + w));
+    const close = round5(base * (1 + w + Math.sin(i * 2.3) * 0.004));
+    bars.push({
+      time: Math.floor((Date.now() - (29 - i) * 86_400_000) / 1000),
+      open,
+      close,
+    });
+  }
+  return bars;
+};
+
+/* ── dynamic routes (path params) ── */
+const dynamicRoutes = [
+  {
+    test: /^GET \/api\/v1\/instruments\/([A-Za-z0-9]+)\/bars$/,
+    handler: (match) => barsFor(match[1].toUpperCase()),
+  },
+];
 
 createServer((req, res) => {
   const path = req.url.split("?")[0];
@@ -297,9 +364,27 @@ createServer((req, res) => {
       res.end(JSON.stringify(payload));
       console.log(`${status === 200 ? "✓" : "▲"} ${key} → ${status}`);
     } else {
-      res.writeHead(404);
-      res.end(JSON.stringify({ detail: `mock-gateway: ${key} not mocked` }));
-      console.log(`✗ ${key} (404 — add it to scripts/mock-gateway.mjs)`);
+      // Dynamic routes (path params), then smart fallbacks so unmocked
+      // endpoints never surface "not mocked" errors in the UI:
+      //   unknown GET  → 200 {}   (callers all have `|| []` style fallbacks)
+      //   unknown write → 400 with a clean demo message
+      const dyn = dynamicRoutes.find((d) => d.test.test(key));
+      if (dyn) {
+        const out = dyn.handler(key.match(dyn.test), body);
+        res.writeHead(200);
+        res.end(JSON.stringify(out));
+        console.log(`✓ ${key} (dynamic)`);
+      } else if (req.method === "GET") {
+        res.writeHead(200);
+        res.end(JSON.stringify({}));
+        console.log(`○ ${key} (empty fallback — mock properly if a screen needs data)`);
+      } else {
+        res.writeHead(400);
+        res.end(
+          JSON.stringify({ detail: "Not available in the demo yet." }),
+        );
+        console.log(`○ ${key} (demo-blocked fallback)`);
+      }
     }
   });
 }).listen(PORT, "127.0.0.1", () => {
