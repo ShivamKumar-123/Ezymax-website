@@ -230,9 +230,6 @@ export default function ProfilePage() {
     'w-full bg-bg-secondary border border-border-primary rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors placeholder:text-text-tertiary disabled:opacity-50 disabled:cursor-not-allowed';
   const labelCls = 'text-xs text-text-secondary block mb-1.5 font-medium';
 
-  const tabIndex = TABS.findIndex((t) => t.id === tab);
-  const slideIndex = tabIndex >= 0 ? tabIndex : 0;
-
   return (
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
@@ -266,49 +263,45 @@ export default function ProfilePage() {
         )}
 
         {!loading && !error && (
-          <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
-            <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
-              <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                <div
-                  className="absolute top-0 h-full w-1/5 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-                  style={{ transform: `translate3d(${slideIndex * 100}%,0,0)` }}
-                >
-                  <div
-                    className={clsx(
-                      'absolute inset-x-1 top-0 h-full rounded-t-2xl border-2 border-b-0 border-accent bg-card-nested',
-                      'animate-wallet-main-tab-glow',
-                    )}
-                  />
-                </div>
-              </div>
-              {TABS.map((t) => {
-                const active = tab === t.id;
-                const Icon = t.icon;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={clsx(
-                      'relative z-10 flex-1 min-w-0 border-0 bg-transparent py-3.5 px-1 sm:px-2 text-[11px] sm:text-xs font-semibold outline-none inline-flex items-center justify-center gap-1.5',
-                      'transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
-                      active ? 'text-accent' : 'text-text-secondary hover:text-text-primary',
-                    )}
-                  >
-                    <Icon size={14} className="shrink-0 opacity-90" />
-                    {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(214,169,61,0.6)] truncate">
-                        {t.label}
-                      </span>
-                    ) : (
-                      <span className="truncate">{t.label}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+            {/* Boxed side nav — sections list, sticky on desktop */}
+            <aside className="shrink-0 rounded-xl border border-border-primary bg-card p-2 lg:sticky lg:top-4 lg:w-60">
+              <nav
+                aria-label="Settings sections"
+                className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+              >
+                {TABS.map((t) => {
+                  const active = tab === t.id;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTab(t.id)}
+                      className={clsx(
+                        'flex w-full shrink-0 items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] font-semibold whitespace-nowrap transition-colors',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
+                        active
+                          ? 'border-accent/30 bg-accent/10 text-accent'
+                          : 'border-transparent text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+                      )}
+                    >
+                      <Icon size={15} className="shrink-0" />
+                      {t.label}
+                      {active && (
+                        <span className="ml-auto hidden h-1.5 w-1.5 rounded-full bg-accent lg:block" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </aside>
 
-            <div key={tab} className="bg-card-nested p-4 md:p-6 animate-wallet-fund-enter-lg min-h-[200px]">
+            {/* Clear boxed content area */}
+            <div
+              key={tab}
+              className="min-h-[200px] min-w-0 flex-1 rounded-xl border border-border-primary bg-card-nested p-4 animate-wallet-fund-enter-lg md:p-6"
+            >
         {/* ── Profile tab ── */}
         {tab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-5">

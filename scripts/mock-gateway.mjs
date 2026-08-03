@@ -288,6 +288,27 @@ const routes = {
   /* profile / onboarding */
   "POST /api/v1/profile/onboarding/complete": () => ({ message: "ok" }),
   "POST /api/v1/profile/onboarding/reset": () => ({ message: "ok" }),
+
+  /* correct-shaped empties so list pages render their empty states instead
+     of crashing on the generic {} fallback */
+  "GET /api/v1/wallet/transactions": () => ({ items: [] }),
+  "GET /api/v1/wallet/deposits": () => ({ items: [] }),
+  "GET /api/v1/wallet/withdrawals": () => ({ items: [] }),
+  "GET /api/v1/followers/my-followers": () => ({ items: [], total: 0 }),
+  "GET /api/v1/social/my-provider": () => ({}),
+  "GET /api/v1/social/my-copies": () => ({ items: [], total: 0 }),
+  "GET /api/v1/social/master-performance": () => ({}),
+  "GET /api/v1/social/master-investors": () => ({ investors: [] }),
+  "GET /api/v1/social/mamm-pamm": () => ({ items: [] }),
+  "GET /api/v1/social/my-allocations": () => ({ items: [], summary: {} }),
+  "GET /api/v1/social/leaderboard": () => ({ items: [] }),
+  "GET /api/v1/social/master-investors/eligibility": () => ({}),
+  "GET /api/v1/insurance/active": () => ({ items: [] }),
+  "GET /api/v1/rewards/store": () => ({ items: [] }),
+  "GET /api/v1/rewards/missions": () => [],
+  "GET /api/v1/rewards/leaderboard": () => [],
+  "GET /api/v1/play/spin/recent": () => [],
+  "GET /api/v1/play/spin/prizes": () => [],
 };
 
 /* ── synthetic market data ── */
@@ -375,8 +396,10 @@ createServer((req, res) => {
         res.end(JSON.stringify(out));
         console.log(`✓ ${key} (dynamic)`);
       } else if (req.method === "GET") {
+        // `items: []` satisfies both list pages ({items}) and pages that
+        // just read optional fields off an object.
         res.writeHead(200);
-        res.end(JSON.stringify({}));
+        res.end(JSON.stringify({ items: [] }));
         console.log(`○ ${key} (empty fallback — mock properly if a screen needs data)`);
       } else {
         res.writeHead(400);
