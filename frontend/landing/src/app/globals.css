@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   TIER 1 — PRIMITIVES  (`--raw-*`)
+   Raw literal values. The only tier allowed to contain a hex/px/ms literal.
+   Never referenced in markup, never bound into @theme. Rename freely.
+   Grammar: --raw-<category>-<name>[-<shade>]
+   See obsidian/frontend/design-system.md → "Token naming convention".
+   --------------------------------------------------------------------------- */
+:root {
+  --raw-color-white: #ffffff;
+  --raw-color-neutral-100: #ebebeb;
+  --raw-color-neutral-900: #171717;
+  --raw-color-neutral-950: #0a0a0a;
+
+  --raw-duration-fast: 150ms;
+  --raw-duration-normal: 250ms;
+
+  /* Obsidian & Lime palette — glassmorphism reference adoption (ADR-0020).
+     Obsidian base #0a0a0a with #0c0c0c surfaces, neon-lime primary accent
+     #ccff00, emerald secondary #10b981, and rgba-white glass fills/borders
+     straight from the reference spec. */
+  --raw-color-black: #000000;
+  --raw-color-ink-950: #0a0a0a;
+  --raw-color-ink-900: #0c0c0c;
+  --raw-color-ink-800: #161616;
+  --raw-color-grey-500: #8d8d8d;
+  --raw-color-grey-400: #b6b6b6;
+  --raw-color-lime-300: #deff4d;
+  --raw-color-lime-400: #ccff00;
+  --raw-color-lime-600: #9ec700;
+  --raw-color-emerald-500: #10b981;
+  --raw-color-glass-fill: rgba(255, 255, 255, 0.03);
+  --raw-color-glass-border: rgba(255, 255, 255, 0.1);
+
+  --raw-blur-glass: 16px;
+  --raw-shadow-glow: 0 0 30px rgba(204, 255, 0, 0.3);
+
+  --raw-radius-pill: 9999px;
+  --raw-radius-card: 2.5rem;
+  --raw-radius-card-sm: 1.5rem;
+  --raw-radius-control: 0.875rem;
+
+  --raw-text-watermark: 13rem;
+  --raw-container-shell: 88rem;
+}
+
+/* ---------------------------------------------------------------------------
+   TIER 2 — SEMANTIC  (role names, no namespace prefix)
+   Purpose, not appearance. Always `var(--raw-*)` — never a literal.
+   This is the themeable layer: dark mode overrides happen HERE, which is why
+   these are separate from the @theme bindings below (see the note there).
+   Grammar: --<role>[-<variant>][-<state>]
+   --------------------------------------------------------------------------- */
+:root {
+  --background: var(--raw-color-ink-950);
+  --foreground: var(--raw-color-white);
+
+  --duration-fast: var(--raw-duration-fast);
+  --duration-normal: var(--raw-duration-normal);
+
+  /* Obsidian & Lime roles. The design is a fixed DARK palette — near-white
+     type and neon-lime accents on obsidian — so there is no
+     prefers-color-scheme override; a light mode would be a different brand,
+     not a variant of this one. `--ink` is the deepest surface (below the
+     page), `--surface` / `--surface-raised` step upward from it. `--glass` +
+     `--glass-blur` are the glassmorphism pair — always used together. */
+  --ink: var(--raw-color-black);
+  --muted: var(--raw-color-grey-500);
+  --subtle: var(--raw-color-grey-400);
+  --line: var(--raw-color-glass-border);
+  --surface: var(--raw-color-ink-900);
+  --surface-raised: var(--raw-color-ink-800);
+  --accent: var(--raw-color-lime-400);
+  --accent-from: var(--raw-color-lime-300);
+  --accent-to: var(--raw-color-lime-600);
+  --accent-positive: var(--raw-color-emerald-500);
+  --glass: var(--raw-color-glass-fill);
+  --glass-blur: var(--raw-blur-glass);
+  --glow: var(--raw-shadow-glow);
+  --hero-from: var(--raw-color-black);
+  --hero-to: var(--raw-color-ink-950);
+}
+
+/* ---------------------------------------------------------------------------
+   THEME BINDINGS — map semantic tokens into Tailwind namespaces.
+   Every entry is exactly `--<tw-namespace>-<role>: var(--<role>)`.
+   `inline` is required: it inlines the var() into each utility, so the
+   dark-mode overrides on the Tier 2 tokens above cascade. Binding a literal
+   here instead would freeze the value and break theming.
+
+   Only these namespaces generate utilities (verified against tailwindcss
+   v4.3.3): --color-* --spacing-* --radius-* --leading-* --tracking-* --text-*
+   --font-* --ease-* --breakpoint-* --container-* --shadow-* --blur-* --animate-*
+   NOTE: there is NO --duration-* namespace in v4 — `duration-fast` compiles to
+   nothing. Durations stay Tier 2 only and are used as duration-[var(--duration-fast)].
+   --------------------------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-accent: var(--accent);
+  --color-accent-from: var(--accent-from);
+  --color-accent-to: var(--accent-to);
+  --color-accent-positive: var(--accent-positive);
+  --color-glass: var(--glass);
+  --color-hero-from: var(--hero-from);
+  --color-hero-to: var(--hero-to);
+
+  --blur-glass: var(--glass-blur);
+  --shadow-glow: var(--glow);
+
+  --radius-pill: var(--raw-radius-pill);
+  --radius-card: var(--raw-radius-card);
+  --radius-card-sm: var(--raw-radius-card-sm);
+  --radius-control: var(--raw-radius-control);
+
+  --text-watermark: var(--raw-text-watermark);
+  --container-shell: var(--raw-container-shell);
+
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Leading floor for clipped TextEngine reveals — see
+     obsidian/frontend/text-engine.md → "Alignment & line-height". */
+  --leading-display: 1.1;
+
+  /* Type-scale literals, following the --leading-display precedent: squeezed
+     display tracking + tracked-out mono labels (Obsidian & Lime reference). */
+  --tracking-display: -0.05em;
+  --tracking-label: 0.2em;
+
+  --ease-entrance: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The starter centres a single screen in a 100vh box; a scrolling page needs
+   the body to grow instead. */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+}
+
+@layer base {
+  /* Adaptive scaling grid — scales the root font-size with the viewport so a
+     rem-based layout stays proportional. Each breakpoint divides FONT_BASE
+     (16px) by the design base width its range was laid out at:
+       font-size: 16 * 100 / baseWidth  (vw)
+     Above 1920px the AdaptiveGrid component takes over (scale-up).
+     Keep in sync with src/components/common/grid/grid.config.ts. */
+  html {
+    font-size: 16px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 1920px) {
+    html {
+      font-size: 0.833333vw; /* 16 * 100 / 1920 */
+    }
+  }
+
+  @media (max-width: 1440px) {
+    html {
+      font-size: 1.111111vw; /* 16 * 100 / 1440 */
+    }
+  }
+
+  @media (max-width: 1024px) {
+    html {
+      font-size: 1.5625vw; /* 16 * 100 / 1024 */
+    }
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 4.444444vw; /* 16 * 100 / 360 */
+    }
+  }
+}
+
+@layer utilities {
+  /* Page gutter + max width, repeated on every section wrapper. Pure-utility
+     combo with no structure of its own, so it is a @utility, not a component
+     (design-system.md → "Where a style goes"). */
+  .shell {
+    margin-inline: auto;
+    max-width: var(--container-shell);
+  }
+}
+
+@layer components {
+  /* Anti-flat-dark-mode textures (Obsidian & Lime reference, ADR-0020):
+     a 60px grid plus grainy noise, fixed behind the content. Pseudo-elements
+     are the sanctioned @layer components case (ADR-0012). They sit at z-index
+     1 — above the tubes canvas (z-0), below every section (z-10) — so they
+     read through translucent surfaces without washing out the cards. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.25;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.15;
+  }
+}
