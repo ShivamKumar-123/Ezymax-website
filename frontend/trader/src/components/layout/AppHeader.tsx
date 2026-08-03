@@ -7,10 +7,9 @@ import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
 import AppTopNav from './AppTopNav';
-import { ChevronDown, Wallet } from 'lucide-react';
+import { Sparkles, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -94,19 +93,26 @@ export default function AppHeader() {
         {/* CENTER — full categorised nav, inline on the same line (lg+) */}
         <AppTopNav />
 
-        {/* RIGHT — XP/Coin chip + balance + bell + user */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* XP + FXA chip — links to /earn/tasks */}
-          <EarnChip />
+        {/* RIGHT — icon-only widgets: XP, wallet balance, theme, bell, user */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* XP / rewards — icon only, links to /earn/tasks */}
+          <Link
+            href="/earn/tasks"
+            title="XP & rewards"
+            aria-label="XP and rewards"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+          >
+            <Sparkles size={15} className="text-[#d6a93d]" />
+          </Link>
 
-          {/* Balance pill */}
+          {/* Wallet balance — icon only, amount in the tooltip */}
           <Link
             href="/wallet"
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+            title={`Balance: ${formatUsd(balance)}`}
+            aria-label={`Wallet — balance ${formatUsd(balance)}`}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
           >
-            <Wallet size={14} className="text-[#d6a93d] shrink-0" />
-            <span className="text-[#d6a93d] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
-            <ChevronDown size={12} className="text-[#d6a93d]/60 shrink-0 hidden sm:block" />
+            <Wallet size={15} className="text-[#d6a93d]" />
           </Link>
 
           {/* Theme toggle — lets the user flip dark/light without
@@ -124,11 +130,12 @@ export default function AppHeader() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase">
+              <div
+                title={handle}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase"
+              >
                 {initials}
               </div>
-              <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>
-              <ChevronDown size={13} className="text-text-tertiary hidden sm:inline" />
             </button>
 
             {userMenuOpen && (
