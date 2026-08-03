@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import AppSidebar from './AppSidebar';
 import AppHeader from './AppHeader';
-import AppTopNav from './AppTopNav';
 import TubesCursor from './TubesCursor';
 import DashboardFooter from './DashboardFooter';
 
@@ -36,7 +35,6 @@ export default function DashboardShell({
       <TubesCursor />
       <div className="flex min-w-0 flex-1 flex-col bg-bg-base">
         <AppHeader />
-        <AppTopNav />
         <main
           key={pathname}
           className={cn(

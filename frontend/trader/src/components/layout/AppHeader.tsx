@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
+import AppTopNav from './AppTopNav';
 import { ChevronDown, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
@@ -89,6 +90,9 @@ export default function AppHeader() {
             className="w-9 h-9 object-contain"
           />
         </button>
+
+        {/* CENTER — full categorised nav, inline on the same line (lg+) */}
+        <AppTopNav />
 
         {/* RIGHT — XP/Coin chip + balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">

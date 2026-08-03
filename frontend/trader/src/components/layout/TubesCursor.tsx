@@ -77,11 +77,14 @@ export default function TubesCursor({
   }, [enableClickInteraction]);
 
   // The library sizes its buffer from the canvas's PARENT — give it a
-  // viewport-sized wrapper. Overlay: above content, below modals/panels.
+  // viewport-sized wrapper. The tubes scene paints an OPAQUE black
+  // background, so the overlay must screen-blend: black dissolves to
+  // transparent and only the lit tube rims show over the UI. Without the
+  // blend the canvas covers the whole dashboard.
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden lg:block"
+      className="pointer-events-none fixed inset-0 z-[60] hidden h-lvh w-screen overflow-hidden mix-blend-screen lg:block"
     >
       <canvas ref={canvasRef} className="block h-full w-full touch-none" />
     </div>

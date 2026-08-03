@@ -11,12 +11,12 @@ import {
 } from './AppSidebar';
 
 /**
- * Desktop top navigation (lg+): EVERY nav item as a visible button in one
- * horizontal bar, grouped by the sidebar's categories (Main · Money ·
- * Trading · Grow · Account) with hairline separators — nothing hidden
- * behind menus. Icons spring on hover. Scrolls horizontally if the viewport
- * is narrower than the row. Mobile keeps the drawer sidebar + bottom nav.
- * Nav data lives in AppSidebar's SECTIONS — one source of truth.
+ * Desktop top navigation (lg+), INLINE in the AppHeader row — every nav item
+ * as a visible button on the same line as the coin/balance widgets, grouped
+ * by the sidebar's categories (Main · Money · Trading · Grow · Account) with
+ * hairline separators. Icons spring on hover; the row scrolls horizontally
+ * when the viewport is narrower than the buttons. Mobile keeps the drawer
+ * sidebar + bottom nav. Nav data lives in AppSidebar's SECTIONS.
  */
 export default function AppTopNav() {
   const pathname = usePathname();
@@ -34,9 +34,9 @@ export default function AppTopNav() {
   return (
     <nav
       aria-label="Primary"
-      className="hidden lg:block border-b border-border-primary bg-bg-base"
+      className="hidden min-w-0 flex-1 lg:block"
     >
-      <div className="flex items-center gap-0.5 overflow-x-auto px-3 h-12 [scrollbar-width:thin]">
+      <div className="flex items-center gap-0.5 overflow-x-auto px-3 [scrollbar-width:thin]">
         {SECTIONS.map((section, sectionIndex) => (
           <div key={section.label} className="flex items-center gap-0.5 shrink-0">
             {sectionIndex > 0 && (
