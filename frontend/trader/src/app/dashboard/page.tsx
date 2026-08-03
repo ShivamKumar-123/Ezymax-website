@@ -252,6 +252,9 @@ function BrokerHome() {
 
   return (
     <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
+      {/* ── FXArtha TV banner — the commercial, full width, slides in R→L ── */}
+      <TvCard />
+
       {/* ── Greeting bar ── */}
       <div className="dash-rise flex flex-wrap items-center justify-between gap-3" style={{ animationDelay: '0ms' }}>
         <div>
@@ -300,9 +303,6 @@ function BrokerHome() {
           <MarketsTable movers={movers} series={moverBars} onTrade={goTrade} />
         </div>
         <div className="space-y-3 sm:space-y-4">
-          {/* FXArtha TV — the commercial, looping in a small set */}
-          <TvCard />
-
           {/* Copy Trading promo — carries the discovery CTA */}
           <button
             type="button"
