@@ -48,21 +48,27 @@ export default function AppTopNav() {
                   href={item.href}
                   target={item.newTab ? '_blank' : undefined}
                   title={item.label}
+                  aria-label={item.label}
                   className={cn(
-                    'group flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] whitespace-nowrap transition-colors shrink-0',
+                    'group relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors shrink-0',
                     active
                       ? 'bg-bg-hover text-[#d6a93d]'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                   )}
                 >
                   <motion.span
-                    className="inline-flex shrink-0"
-                    whileHover={{ scale: 1.3, rotate: 10 }}
+                    className="inline-flex"
+                    whileHover={{ scale: 1.35, rotate: 10 }}
                     transition={{ type: 'spring', stiffness: 340, damping: 15 }}
                   >
-                    <Icon size={15} />
+                    <Icon size={17} />
                   </motion.span>
-                  {item.label}
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#d6a93d]"
+                    />
+                  )}
                 </Link>
               );
             })}
