@@ -9,6 +9,7 @@ import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import TopBar from '@/components/layout/TopBar';
+import TubesCursor from '@/components/layout/TubesCursor';
 import { useUIStore } from '@/stores/uiStore';
 
 function mapApiAccount(a: Record<string, unknown>): TradingAccount {
@@ -298,6 +299,8 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
       )}
       data-theme={useUIStore((s) => s.theme)}
     >
+      {/* Same cursor flourish as the dashboard/website — theme-aware. */}
+      <TubesCursor />
       {!terminalOnly && <TopBar />}
       <div className="flex-1 flex overflow-hidden min-h-0">
         <Suspense
