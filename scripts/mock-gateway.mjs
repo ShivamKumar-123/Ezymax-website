@@ -91,6 +91,16 @@ const routes = {
   "POST /api/v1/auth/refresh": () => token(),
   "POST /api/v1/auth/logout": () => ({ message: "ok" }),
   "GET /api/v1/auth/me": () => user,
+  /* SIWE wallet sign-in — permissive: any address/signature authenticates
+     the demo user (dev only; the real gateway verifies the signature). */
+  "POST /api/v1/auth/wallet/nonce": (body) => ({
+    nonce: Math.random().toString(16).slice(2, 18),
+    issued_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 600_000).toISOString(),
+    domain: "localhost:3001",
+    statement: `Sign in to FXArtha (demo) as ${body?.address ?? "0x…"}`,
+  }),
+  "POST /api/v1/auth/wallet/verify": () => token(),
   "GET /api/v1/auth/platform-status": () => ({
     maintenance_mode: false,
     allow_new_registrations: true,
@@ -273,7 +283,11 @@ createServer((req, res) => {
         payload = { ...out };
         delete payload.__status;
       }
-      if (path.includes("/auth/login") || path.includes("/auth/demo-login")) {
+      if (
+        path.includes("/auth/login") ||
+        path.includes("/auth/demo-login") ||
+        path.includes("/auth/wallet/verify")
+      ) {
         res.setHeader(
           "set-cookie",
           "access_token=dev-mock-token; Path=/; SameSite=Lax",

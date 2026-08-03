@@ -191,8 +191,7 @@ function RegisterContent() {
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
-                <img src="/images/fxartha-logo.png" alt="" />
-                FXARTHA
+                <img src="/images/fxartha-logo.png" alt="FXArtha" />
               </motion.a>
 
               <div>

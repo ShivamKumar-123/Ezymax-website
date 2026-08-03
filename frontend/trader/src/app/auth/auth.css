@@ -93,8 +93,9 @@
 }
 
 .auth-brand img {
-  width: 34px;
-  height: 34px;
+  /* The asset carries the branding — big logo, no typed wordmark. */
+  height: 56px;
+  width: auto;
   object-fit: contain;
 }
 
