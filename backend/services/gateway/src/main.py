@@ -3,11 +3,12 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
@@ -16,7 +17,8 @@ from packages.common.src.redis_client import redis_client, PriceChannel, BARS_UP
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import close_producer
 from packages.common.src.auth import decode_token, require_onboarded
-from packages.common.src.models import TradingAccount
+from packages.common.src.models import TradingAccount, SpreadConfig, Instrument
+from packages.common.src.instrument_pricing import symmetric_quote_from_mid
 from packages.common.src.instrumentation import init_sentry, add_middleware_stack
 
 from .api import (
@@ -444,21 +446,113 @@ def _check_ws_origin(websocket: WebSocket) -> bool:
     return False
 
 
+# ── Per-user display spread ─────────────────────────────────────────
+# The broadcast tick stream is shared by every client, so user-scope
+# spread_configs rows can't be baked into it by market-data. Instead the
+# gateway rewrites ticks per-connection here, so the user SEES the same
+# spread their fills use (USER_SPREAD_AT_EXECUTION).
+
+_USER_SPREAD_RELOAD_SEC = 30.0
+
+
+async def _load_user_spread_overrides(user_id: str) -> dict[str, tuple[Decimal, str, Decimal, int]]:
+    """symbol -> (spread_value, spread_type, pip_size, digits) for the
+    user's enabled user-scope spread overrides. A row without an
+    instrument applies to every active instrument (blanket override);
+    instrument-specific rows win over the blanket one."""
+    try:
+        uid = UUID(str(user_id))
+    except (ValueError, TypeError):
+        return {}
+    out: dict[str, tuple[Decimal, str, Decimal, int]] = {}
+    try:
+        async with AsyncSessionLocal() as db:
+            rows = (
+                await db.execute(
+                    select(SpreadConfig).where(
+                        func.lower(SpreadConfig.scope) == "user",
+                        SpreadConfig.is_enabled == True,  # noqa: E712
+                        SpreadConfig.user_id == uid,
+                    )
+                )
+            ).scalars().all()
+            if not rows:
+                return {}
+            blanket: tuple[Decimal, str] | None = None
+            per_inst: dict = {}
+            for cfg in rows:
+                val = Decimal(str(cfg.value or 0))
+                if val <= 0:
+                    continue
+                stype = (cfg.spread_type or "pips").lower()
+                if cfg.instrument_id is not None:
+                    per_inst[cfg.instrument_id] = (val, stype)
+                else:
+                    blanket = (val, stype)
+            if not per_inst and blanket is None:
+                return {}
+            insts = (
+                await db.execute(select(Instrument).where(Instrument.is_active == True))  # noqa: E712
+            ).scalars().all()
+            for inst in insts:
+                sym = (inst.symbol or "").strip().upper()
+                if not sym:
+                    continue
+                cfg2 = per_inst.get(inst.id) or blanket
+                if cfg2 is None:
+                    continue
+                pip = Decimal(str(inst.pip_size or "0.0001"))
+                digits = int(inst.digits or 5)
+                out[sym] = (cfg2[0], cfg2[1], pip, digits)
+    except Exception as exc:
+        logger.warning("user spread override load failed for %s: %s", user_id, exc)
+    return out
+
+
+def _rewrite_tick_with_spread(raw, overrides: dict) -> str:
+    """Re-center bid/ask around the broadcast mid using the user's spread.
+    Any parse hiccup returns the tick unchanged — never break the stream."""
+    try:
+        tick = json.loads(raw)
+        sym = str(tick.get("symbol") or "").strip().upper()
+        p = overrides.get(sym)
+        if not p:
+            return raw
+        sv, st, pip, digits = p
+        bid = float(tick["bid"])
+        ask = float(tick["ask"])
+        b, a = symmetric_quote_from_mid(
+            Decimal(str((bid + ask) / 2.0)), sv, st, pip, digits, Decimal("0"),
+        )
+        tick["bid"] = float(b)
+        tick["ask"] = float(a)
+        tick["spread"] = round(float(a) - float(b), 8)
+        return json.dumps(tick)
+    except Exception:
+        return raw
+
+
 @app.websocket("/ws/prices")
 async def price_stream(websocket: WebSocket, token: str | None = Query(default=None)):
     if not _check_ws_origin(websocket):
         await websocket.close(code=4003, reason="Origin not allowed")
         return
+    user_id: str | None = None
     effective = _ws_token_from_websocket(websocket, token)
     if effective:
         user = _verify_ws_token(effective)
         if not user:
             await websocket.close(code=4001, reason="Invalid token")
             return
+        user_id = str(user.get("user_id") or "") or None
 
     await websocket.accept()
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
+
+    # Per-user display spread (empty dict = pass-through fast path).
+    overrides = await _load_user_spread_overrides(user_id) if user_id else {}
+    last_override_reload = asyncio.get_event_loop().time()
 
     try:
         ping_interval = 30
@@ -466,12 +560,20 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
             if message and message["type"] == "message":
-                await websocket.send_text(message["data"])
+                data = message["data"]
+                if overrides:
+                    data = _rewrite_tick_with_spread(data, overrides)
+                await websocket.send_text(data)
 
             now = asyncio.get_event_loop().time()
             if now - last_ping >= ping_interval:
                 await websocket.send_json({"type": "ping"})
                 last_ping = now
+
+            # Pick up admin edits without forcing a reconnect.
+            if user_id and now - last_override_reload >= _USER_SPREAD_RELOAD_SEC:
+                overrides = await _load_user_spread_overrides(user_id)
+                last_override_reload = now
 
             await asyncio.sleep(0.01)
     except WebSocketDisconnect:
