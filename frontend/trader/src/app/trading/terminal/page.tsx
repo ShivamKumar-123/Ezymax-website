@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import { getMarketStatus } from '@/lib/marketHours';
 import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
+import { wsManager } from '@/lib/ws/wsManager';
 import Watchlist from '@/components/trading/Watchlist';
 import InstrumentsTable from '@/components/trading/InstrumentsTable';
 import DraggableOrderModal from '@/components/trading/DraggableOrderModal';
@@ -285,7 +286,12 @@ export default function TradingTerminalPage() {
       : 'chart';
 
   useEffect(() => {
-    if (accountId) setPersistedTradingAccountId(accountId);
+    if (accountId) {
+      setPersistedTradingAccountId(accountId);
+      // Pin the price stream to this account so account-specific
+      // per-user spread overrides show in the quotes.
+      wsManager.setActiveAccount(accountId);
+    }
   }, [accountId]);
 
   useEffect(() => {

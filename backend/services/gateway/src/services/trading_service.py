@@ -306,6 +306,7 @@ async def place_order(
             bid, ask = await resolve_user_quote(
                 db, instrument, bid, ask,
                 user_id=user_id, account_group_id=account.account_group_id,
+                trading_account_id=account.id,
             )
         except Exception as _uq_exc:
             logger.warning("user quote (open) failed for %s, using broadcast: %s",
@@ -983,6 +984,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             c_bid, c_ask = await resolve_user_quote(
                 db, pos.instrument, c_bid, c_ask,
                 user_id=user_id, account_group_id=account.account_group_id,
+                trading_account_id=account.id,
             )
         except Exception as _uq_exc:
             logger.warning("user quote (close) failed for %s, using broadcast: %s",

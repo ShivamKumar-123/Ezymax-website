@@ -407,6 +407,9 @@ class SpreadConfigIn(BaseModel):
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
     account_group_id: Optional[str] = None
+    # user scope only: pin the override to ONE of the user's trading
+    # accounts; None = all their accounts.
+    trading_account_id: Optional[str] = None
     spread_type: str
     value: float
     is_enabled: bool = True
@@ -419,6 +422,9 @@ class SpreadConfigOut(BaseModel):
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
     account_group_id: Optional[str] = None
+    trading_account_id: Optional[str] = None
+    # Convenience for the admin UI (account picker label).
+    trading_account_number: Optional[str] = None
     spread_type: str
     value: float
     is_enabled: bool

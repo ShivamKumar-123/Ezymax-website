@@ -455,18 +455,44 @@ def _check_ws_origin(websocket: WebSocket) -> bool:
 _USER_SPREAD_RELOAD_SEC = 30.0
 
 
-async def _load_user_spread_overrides(user_id: str) -> dict[str, tuple[Decimal, str, Decimal, int]]:
+async def _load_user_spread_overrides(
+    user_id: str,
+    trading_account_id: str | None = None,
+) -> dict[str, tuple[Decimal, str, Decimal, int]]:
     """symbol -> (spread_value, spread_type, pip_size, digits) for the
     user's enabled user-scope spread overrides. A row without an
     instrument applies to every active instrument (blanket override);
-    instrument-specific rows win over the blanket one."""
+    instrument-specific rows win over the blanket one.
+
+    Account targeting: rows pinned to a trading account apply only when
+    the client reports trading THAT account (``set_account`` control
+    message); they then beat the user-wide (NULL account) rows. Rows
+    pinned to other accounts are ignored."""
     try:
         uid = UUID(str(user_id))
     except (ValueError, TypeError):
         return {}
+    acct_uuid: UUID | None = None
+    if trading_account_id:
+        try:
+            acct_uuid = UUID(str(trading_account_id))
+        except (ValueError, TypeError):
+            acct_uuid = None
     out: dict[str, tuple[Decimal, str, Decimal, int]] = {}
     try:
         async with AsyncSessionLocal() as db:
+            if acct_uuid is not None:
+                # Never let a client claim someone else's account context.
+                owner = (
+                    await db.execute(
+                        select(TradingAccount.id).where(
+                            TradingAccount.id == acct_uuid,
+                            TradingAccount.user_id == uid,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if owner is None:
+                    acct_uuid = None
             rows = (
                 await db.execute(
                     select(SpreadConfig).where(
@@ -478,19 +504,23 @@ async def _load_user_spread_overrides(user_id: str) -> dict[str, tuple[Decimal, 
             ).scalars().all()
             if not rows:
                 return {}
-            blanket: tuple[Decimal, str] | None = None
-            per_inst: dict = {}
-            for cfg in rows:
-                val = Decimal(str(cfg.value or 0))
-                if val <= 0:
-                    continue
-                stype = (cfg.spread_type or "pips").lower()
-                if cfg.instrument_id is not None:
-                    per_inst[cfg.instrument_id] = (val, stype)
-                else:
-                    blanket = (val, stype)
-            if not per_inst and blanket is None:
+            # (instrument_id | None) -> (value, type); account-pinned rows
+            # overwrite user-wide ones for the same slot.
+            slots: dict = {}
+            for pinned in (False, True):
+                for cfg in rows:
+                    is_pinned = cfg.trading_account_id is not None
+                    if is_pinned != pinned:
+                        continue
+                    if is_pinned and (acct_uuid is None or cfg.trading_account_id != acct_uuid):
+                        continue
+                    val = Decimal(str(cfg.value or 0))
+                    if val <= 0:
+                        continue
+                    slots[cfg.instrument_id] = (val, (cfg.spread_type or "pips").lower())
+            if not slots:
                 return {}
+            blanket = slots.get(None)
             insts = (
                 await db.execute(select(Instrument).where(Instrument.is_active == True))  # noqa: E712
             ).scalars().all()
@@ -498,7 +528,7 @@ async def _load_user_spread_overrides(user_id: str) -> dict[str, tuple[Decimal, 
                 sym = (inst.symbol or "").strip().upper()
                 if not sym:
                     continue
-                cfg2 = per_inst.get(inst.id) or blanket
+                cfg2 = slots.get(inst.id) or blanket
                 if cfg2 is None:
                     continue
                 pip = Decimal(str(inst.pip_size or "0.0001"))
@@ -550,7 +580,11 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
 
-    # Per-user display spread (empty dict = pass-through fast path).
+    # Per-user display spread (empty dict = pass-through fast path). The
+    # client can pin the context to one trading account via a
+    # {"action":"set_account","account_id":...} control message so
+    # account-specific overrides apply to the active account only.
+    active_account_id: str | None = None
     overrides = await _load_user_spread_overrides(user_id) if user_id else {}
     last_override_reload = asyncio.get_event_loop().time()
 
@@ -565,6 +599,23 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
                     data = _rewrite_tick_with_spread(data, overrides)
                 await websocket.send_text(data)
 
+            # Drain client control messages without blocking the stream.
+            try:
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+            except asyncio.TimeoutError:
+                raw = None
+            if raw and user_id:
+                try:
+                    ctrl = json.loads(raw)
+                except (ValueError, TypeError):
+                    ctrl = None
+                if isinstance(ctrl, dict) and ctrl.get("action") == "set_account":
+                    acct = str(ctrl.get("account_id") or "") or None
+                    if acct != active_account_id:
+                        active_account_id = acct
+                        overrides = await _load_user_spread_overrides(user_id, active_account_id)
+                        last_override_reload = asyncio.get_event_loop().time()
+
             now = asyncio.get_event_loop().time()
             if now - last_ping >= ping_interval:
                 await websocket.send_json({"type": "ping"})
@@ -572,10 +623,8 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
 
             # Pick up admin edits without forcing a reconnect.
             if user_id and now - last_override_reload >= _USER_SPREAD_RELOAD_SEC:
-                overrides = await _load_user_spread_overrides(user_id)
+                overrides = await _load_user_spread_overrides(user_id, active_account_id)
                 last_override_reload = now
-
-            await asyncio.sleep(0.01)
     except WebSocketDisconnect:
         pass
     finally:

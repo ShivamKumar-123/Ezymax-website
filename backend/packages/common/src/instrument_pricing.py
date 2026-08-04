@@ -4,7 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Tuple
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
@@ -64,13 +64,16 @@ async def resolve_spread_config(
     instrument: Instrument,
     user_id: Optional[UUID] = None,
     account_group_id: Optional[UUID] = None,
+    trading_account_id: Optional[UUID] = None,
 ) -> Tuple[Decimal, str, Decimal]:
     """Returns (spread_value, spread_type, price_impact).
 
     Priority chain (highest → lowest), mirrors ``resolve_commission`` so admin's
     "All" + specific overrides behave the same across charges and spreads:
       1. User override for this specific instrument
-      2. User override global (user, null instrument)
+         (account-pinned row beats user-wide when the caller passes
+         ``trading_account_id``; rows pinned to OTHER accounts never match)
+      2. User override global (user, null instrument) — same account rule
       3. Account-group + this instrument         (Layer C — new scope)
       4. Account-group + any instrument          (Layer C — new scope)
       5. Per-instrument rule
@@ -100,33 +103,38 @@ async def resolve_spread_config(
         )
 
     if user_id:
-        ur = await db.execute(
-            select(SpreadConfig)
-            .where(
-                func.lower(SpreadConfig.scope) == "user",
-                SpreadConfig.is_enabled == True,
-                SpreadConfig.user_id == user_id,
-                SpreadConfig.instrument_id == instrument.id,
+        # Account filter: a row pinned to one of the user's trading
+        # accounts matches only when the caller trades THAT account. With
+        # no account context, only user-wide (NULL) rows apply.
+        if trading_account_id is not None:
+            acct_clause = or_(
+                SpreadConfig.trading_account_id == trading_account_id,
+                SpreadConfig.trading_account_id.is_(None),
             )
-            .limit(1)
-        )
-        urow = ur.scalar_one_or_none()
-        if urow:
-            return _to_tuple(urow)
+        else:
+            acct_clause = SpreadConfig.trading_account_id.is_(None)
 
-        ur2 = await db.execute(
-            select(SpreadConfig)
-            .where(
-                func.lower(SpreadConfig.scope) == "user",
-                SpreadConfig.is_enabled == True,
-                SpreadConfig.user_id == user_id,
-                SpreadConfig.instrument_id.is_(None),
+        for inst_clause in (
+            SpreadConfig.instrument_id == instrument.id,
+            SpreadConfig.instrument_id.is_(None),
+        ):
+            ur = await db.execute(
+                select(SpreadConfig)
+                .where(
+                    func.lower(SpreadConfig.scope) == "user",
+                    SpreadConfig.is_enabled == True,
+                    SpreadConfig.user_id == user_id,
+                    inst_clause,
+                    acct_clause,
+                )
+                # Account-pinned row first (NULLS LAST puts the specific
+                # account ahead of the user-wide fallback).
+                .order_by(SpreadConfig.trading_account_id.desc().nulls_last())
+                .limit(1)
             )
-            .limit(1)
-        )
-        urow2 = ur2.scalar_one_or_none()
-        if urow2:
-            return _to_tuple(urow2)
+            urow = ur.scalar_one_or_none()
+            if urow:
+                return _to_tuple(urow)
 
     # Per-account-group scope (Layer C) — only checked when the caller knows
     # the trader's group (gateway-side catalog + order fill); skipped by the
@@ -273,6 +281,7 @@ async def resolve_user_quote(
     broadcast_ask: Decimal,
     user_id: Optional[UUID] = None,
     account_group_id: Optional[UUID] = None,
+    trading_account_id: Optional[UUID] = None,
 ) -> Tuple[Decimal, Decimal]:
     """Re-derive the USER's executable bid/ask from the broadcast MID.
 
@@ -292,6 +301,7 @@ async def resolve_user_quote(
     mid = (b + a) / Decimal("2")
     spread_value, spread_type, price_impact = await resolve_spread_config(
         db, instrument, user_id=user_id, account_group_id=account_group_id,
+        trading_account_id=trading_account_id,
     )
     pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
     digits = int(getattr(instrument, "digits", None) or 5)

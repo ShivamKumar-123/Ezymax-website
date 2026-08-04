@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.models import ChargeConfig, SpreadConfig, SwapConfig
+from packages.common.src.models import ChargeConfig, SpreadConfig, SwapConfig, TradingAccount
 from packages.common.src.redis_client import publish_instrument_config_reload
 from packages.common.src.admin_schemas import (
     ChargeConfigOut, SpreadConfigOut, SwapConfigOut,
@@ -102,6 +102,17 @@ async def update_charges(
 async def list_spreads(db: AsyncSession) -> list:
     result = await db.execute(select(SpreadConfig).order_by(SpreadConfig.scope))
     configs = result.scalars().all()
+    # Resolve account numbers for account-pinned user rows so the admin
+    # UI can label them without extra requests.
+    acc_ids = [c.trading_account_id for c in configs if c.trading_account_id]
+    acc_numbers: dict = {}
+    if acc_ids:
+        accs = await db.execute(
+            select(TradingAccount.id, TradingAccount.account_number).where(
+                TradingAccount.id.in_(acc_ids)
+            )
+        )
+        acc_numbers = {row[0]: row[1] for row in accs.all()}
     return [
         SpreadConfigOut(
             id=str(c.id),
@@ -110,6 +121,8 @@ async def list_spreads(db: AsyncSession) -> list:
             instrument_id=str(c.instrument_id) if c.instrument_id else None,
             user_id=str(c.user_id) if c.user_id else None,
             account_group_id=str(c.account_group_id) if c.account_group_id else None,
+            trading_account_id=str(c.trading_account_id) if c.trading_account_id else None,
+            trading_account_number=acc_numbers.get(c.trading_account_id),
             spread_type=c.spread_type,
             value=float(c.value or 0),
             is_enabled=c.is_enabled,
@@ -134,6 +147,7 @@ async def update_spreads(
             instrument_id=uuid.UUID(cfg.instrument_id) if cfg.instrument_id else None,
             user_id=uuid.UUID(cfg.user_id) if cfg.user_id else None,
             account_group_id=uuid.UUID(cfg.account_group_id) if cfg.account_group_id else None,
+            trading_account_id=uuid.UUID(cfg.trading_account_id) if cfg.trading_account_id else None,
             spread_type=cfg.spread_type,
             value=Decimal(str(cfg.value)),
             is_enabled=cfg.is_enabled,

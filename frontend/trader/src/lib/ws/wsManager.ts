@@ -14,6 +14,7 @@ class WSManager {
   private statusCallbacks = new Set<(s: ConnectionStatus) => void>();
   private _status: ConnectionStatus = 'disconnected';
   private subscribedChannels = new Set<string>();
+  private activeAccountId: string | null = null;
 
   get status() { return this._status; }
 
@@ -40,6 +41,11 @@ class WSManager {
             action: 'subscribe',
             channels: Array.from(this.subscribedChannels),
           }));
+        }
+        // Tell the gateway which trading account is active so
+        // account-pinned per-user spread overrides apply to the stream.
+        if (this.activeAccountId) {
+          this.ws?.send(JSON.stringify({ action: 'set_account', account_id: this.activeAccountId }));
         }
       };
 
@@ -109,6 +115,14 @@ class WSManager {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
+  }
+
+  /** Pin the price stream to a trading account so account-specific
+   *  per-user spread overrides apply. Safe to call repeatedly. */
+  setActiveAccount(accountId: string | null) {
+    if (accountId === this.activeAccountId) return;
+    this.activeAccountId = accountId;
+    this.send({ action: 'set_account', account_id: accountId });
   }
 
   disconnect() {

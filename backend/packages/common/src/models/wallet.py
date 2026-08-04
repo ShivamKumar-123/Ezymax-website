@@ -225,6 +225,9 @@ class SpreadConfig(Base):
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     account_group_id = Column(UUID(as_uuid=True), ForeignKey("account_groups.id"))
+    # User-scope rows only: when set, the override applies to this one
+    # trading account of the user; NULL = all of the user's accounts.
+    trading_account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id"))
     spread_type = Column(String(20), nullable=False)
     value = Column(Numeric(18, 8), nullable=False)
     is_enabled = Column(Boolean, default=True)

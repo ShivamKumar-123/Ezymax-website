@@ -15,11 +15,15 @@ interface SpreadRow {
   segment_id: string | null;
   user_id: string | null;
   account_group_id: string | null;
+  trading_account_id: string | null;
   spread_type: string;
   value: number;
   is_enabled: boolean;
   _user_label?: string;
+  _account_label?: string;
 }
+
+interface UserAccountOpt { id: string; account_number: string; is_demo?: boolean; }
 
 const newKey = () => `row_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -32,6 +36,20 @@ export default function SpreadsPage() {
   const [userSearchKey, setUserSearchKey] = useState<string | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState<{ id: string; name: string; email: string }[]>([]);
+  // user_id -> their trading accounts, for the per-row account picker.
+  const [userAccounts, setUserAccounts] = useState<Record<string, UserAccountOpt[]>>({});
+
+  const loadUserAccounts = useCallback(async (userId: string) => {
+    if (!userId) return;
+    setUserAccounts(prev => (prev[userId] ? prev : { ...prev, [userId]: [] }));
+    try {
+      const d = await adminApi.get<{ accounts?: any[] }>(`/users/${userId}`);
+      const accs = (d.accounts || []).map((a: any) => ({
+        id: a.id, account_number: a.account_number, is_demo: a.is_demo,
+      }));
+      setUserAccounts(prev => ({ ...prev, [userId]: accs }));
+    } catch { /* picker just shows "All accounts" */ }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -48,17 +66,22 @@ export default function SpreadsPage() {
         _key: newKey(),
         scope: c.scope, instrument_id: c.instrument_id, segment_id: c.segment_id,
         user_id: c.user_id, account_group_id: c.account_group_id || null,
+        trading_account_id: c.trading_account_id || null,
         spread_type: c.spread_type, value: c.value, is_enabled: c.is_enabled,
         _user_label: c.user_id ? `User ${c.user_id.slice(0, 8)}` : undefined,
+        _account_label: c.trading_account_number || undefined,
       })));
+      // Preload account pickers for saved per-user rows.
+      const uids = Array.from(new Set((spreadRes || []).filter((c: any) => c.user_id).map((c: any) => c.user_id)));
+      uids.forEach((uid: string) => { void loadUserAccounts(uid); });
     } catch (e: any) { toast.error(e.message || 'Failed to load'); } finally { setLoading(false); }
-  }, []);
+  }, [loadUserAccounts]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const addRow = (scope: string) => setRows(prev => [...prev, {
     _key: newKey(), scope, instrument_id: null, segment_id: null, user_id: null,
-    account_group_id: null, spread_type: 'fixed', value: 1, is_enabled: true,
+    account_group_id: null, trading_account_id: null, spread_type: 'fixed', value: 1, is_enabled: true,
   }]);
   const updateRow = (key: string, field: string, val: any) => {
     setRows(prev => prev.map(r => {
@@ -91,6 +114,7 @@ export default function SpreadsPage() {
         configs: cleaned.map(r => ({
           scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
           user_id: r.user_id, account_group_id: r.account_group_id,
+          trading_account_id: r.trading_account_id,
           spread_type: r.spread_type, value: r.value, is_enabled: r.is_enabled,
         })),
       });
@@ -107,8 +131,11 @@ export default function SpreadsPage() {
     try { const d = await adminApi.get<{ users: any[] }>('/users', { search: q, per_page: '8' }); setUserSearchResults((d.users || []).map((u: any) => ({ id: u.id, name: u.name, email: u.email }))); } catch {}
   };
   const selectUser = (key: string, u: { id: string; name: string; email: string }) => {
-    setRows(prev => prev.map(r => r._key === key ? { ...r, user_id: u.id, _user_label: `${u.name} (${u.email})` } : r));
+    setRows(prev => prev.map(r => r._key === key
+      ? { ...r, user_id: u.id, _user_label: `${u.name} (${u.email})`, trading_account_id: null, _account_label: undefined }
+      : r));
     setUserSearchKey(null); setUserSearchQuery(''); setUserSearchResults([]);
+    void loadUserAccounts(u.id);
   };
 
   const saveAll = async () => {
@@ -122,6 +149,7 @@ export default function SpreadsPage() {
       await adminApi.put('/config/spreads', { configs: cleaned.map(r => ({
         scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
         user_id: r.user_id, account_group_id: r.account_group_id,
+        trading_account_id: r.trading_account_id,
         spread_type: r.spread_type, value: r.value, is_enabled: r.is_enabled,
       })) });
       toast.success('Spreads saved'); fetchData();
@@ -139,7 +167,7 @@ export default function SpreadsPage() {
     const leadingCols =
       scopeType === 'instrument' ? ['Instrument']
       : scopeType === 'account_group' ? ['Account Group', 'Instrument']
-      : scopeType === 'user' ? ['User', 'Instrument']
+      : scopeType === 'user' ? ['User', 'Account', 'Instrument']
       : [];
     const headers = leadingCols.concat(['Type', 'Value (pips)', 'On', '']);
     return (
@@ -175,7 +203,7 @@ export default function SpreadsPage() {
                     {scopeType === 'user' && (
                       <td className="px-3 py-2">
                         {r._user_label ? (
-                          <div className="flex items-center gap-1"><span className="text-xs text-text-primary truncate max-w-[140px]">{r._user_label}</span><button onClick={() => setRows(prev => prev.map(x => x._key === k ? { ...x, user_id: null, _user_label: undefined } : x))} className="text-text-tertiary hover:text-danger"><X size={10} /></button></div>
+                          <div className="flex items-center gap-1"><span className="text-xs text-text-primary truncate max-w-[140px]">{r._user_label}</span><button onClick={() => setRows(prev => prev.map(x => x._key === k ? { ...x, user_id: null, _user_label: undefined, trading_account_id: null, _account_label: undefined } : x))} className="text-text-tertiary hover:text-danger"><X size={10} /></button></div>
                         ) : (
                           <div className="relative">
                             <input type="text" value={userSearchKey === k ? userSearchQuery : ''} onChange={e => searchUsers(e.target.value, k)} onFocus={() => setUserSearchKey(k)} placeholder="Search user..." className="w-36 px-2 py-1 text-xxs bg-bg-input border border-border-primary rounded text-text-primary placeholder:text-text-tertiary" />
@@ -186,6 +214,28 @@ export default function SpreadsPage() {
                             )}
                           </div>
                         )}
+                      </td>
+                    )}
+                    {scopeType === 'user' && (
+                      <td className="px-3 py-2">
+                        <select
+                          value={r.trading_account_id || ''}
+                          onChange={e => updateRow(k, 'trading_account_id', e.target.value || null)}
+                          disabled={!r.user_id}
+                          className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-36 disabled:opacity-50"
+                          title={r.user_id ? 'Apply to one account or all' : 'Pick a user first'}
+                        >
+                          <option value="">All accounts</option>
+                          {(userAccounts[r.user_id || ''] || []).map(a => (
+                            <option key={a.id} value={a.id}>
+                              {a.account_number}{a.is_demo ? ' (demo)' : ''}
+                            </option>
+                          ))}
+                          {/* Saved row whose account list hasn't loaded yet */}
+                          {r.trading_account_id && !(userAccounts[r.user_id || ''] || []).some(a => a.id === r.trading_account_id) && (
+                            <option value={r.trading_account_id}>{r._account_label || `Acct ${r.trading_account_id.slice(0, 8)}`}</option>
+                          )}
+                        </select>
                       </td>
                     )}
                     {(scopeType === 'instrument' || scopeType === 'user' || scopeType === 'account_group') && (
