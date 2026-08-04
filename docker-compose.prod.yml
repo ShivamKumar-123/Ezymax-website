@@ -49,6 +49,9 @@ services:
       CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
       COOKIE_DOMAIN: .swisscresta.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      # Fills use the same per-user spread the /ws/prices stream shows.
+      # Overridable from .env; defaults ON in production.
+      USER_SPREAD_AT_EXECUTION: ${USER_SPREAD_AT_EXECUTION:-true}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
 
   market-data:
