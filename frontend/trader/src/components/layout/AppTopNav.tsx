@@ -24,7 +24,9 @@ export default function AppTopNav() {
   /** Instant tooltip: fixed-position so the scrollable row can't clip it. */
   const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
 
-  const showTip = (label: string) => (e: React.MouseEvent<HTMLElement>) => {
+  /* SyntheticEvent (not MouseEvent) so the same handler serves both
+     onMouseEnter and onFocus — it only reads currentTarget. */
+  const showTip = (label: string) => (e: React.SyntheticEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     setTip({ label, x: r.left + r.width / 2, y: r.bottom + 8 });
   };
