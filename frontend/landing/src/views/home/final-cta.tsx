@@ -1,9 +1,8 @@
 "use client";
 
+import { AccessCta } from "@/components/common/access-cta";
 import { Inview } from "@/components/animation/springs/in-view";
-import { PillButton } from "@/components/ui/pill-button";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { tradeConfig } from "@/lib/site";
 import type { finalCta } from "@/data/mocks/home";
 
 export interface FinalCtaProps {
@@ -31,16 +30,8 @@ export const FinalCta = ({ content }: FinalCtaProps) => {
             />
 
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <PillButton
-                variant="dark"
-                arrow="right"
-                href={tradeConfig.register}
-              >
-                {content.primaryCta}
-              </PillButton>
-              <PillButton variant="outline" href={tradeConfig.login}>
-                {content.secondaryCta}
-              </PillButton>
+              {/* Invite-only gate: Join Waitlist / pending / Log in. */}
+              <AccessCta />
             </div>
 
             <p className="mt-8 max-w-2xl text-sm leading-relaxed text-foreground/60">

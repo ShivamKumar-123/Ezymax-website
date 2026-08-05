@@ -21,7 +21,7 @@ from routes import (
     admin_audit_logs,
     insurance as insurance_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
-    admin_notifications, pricing_rules, crm, hedge,
+    admin_notifications, pricing_rules, crm, hedge, waitlist,
 )
 
 app_settings = get_settings()
@@ -46,6 +46,31 @@ async def _apply_startup_ddl():
         async with engine.begin() as conn:
             await conn.execute(text(
                 "ALTER TABLE employees ADD COLUMN IF NOT EXISTS extra_permissions JSONB DEFAULT '[]'::jsonb"
+            ))
+            # Waitlist (invite-only access gate). Mirrors migration 0061 so the
+            # admin waitlist endpoints work even where Alembic hasn't run.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS waitlist_requests (
+                    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    full_name         VARCHAR(200) NOT NULL,
+                    email             VARCHAR(255) NOT NULL,
+                    phone             VARCHAR(20),
+                    status            VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    reviewed_by       UUID,
+                    reviewed_at       TIMESTAMPTZ,
+                    rejection_reason  TEXT,
+                    created_user_id   UUID,
+                    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT waitlist_requests_status_check
+                        CHECK (status IN ('pending','approved','rejected'))
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_waitlist_requests_email ON waitlist_requests (email)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_waitlist_requests_status ON waitlist_requests (status)"
             ))
             # Book-management LP settings read/write this table. Create if the
             # baseline migration hasn't been applied so GET/PUT don't 500.
@@ -294,6 +319,7 @@ app.include_router(rms_dashboard.router, prefix=prefix)
 app.include_router(hedge.router, prefix=prefix)
 app.include_router(admin_notifications.router, prefix=prefix)
 app.include_router(pricing_rules.router, prefix=prefix)
+app.include_router(waitlist.router, prefix=prefix)
 # CRM integration API — distinct prefix (NOT the admin prefix); auth is the
 # static X-API-Key, not admin JWT. GET-only, so AdminReadOnlyMiddleware passes.
 app.include_router(crm.router, prefix="/api/v1")

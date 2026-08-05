@@ -28,6 +28,7 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "tickets.view", "tickets.reply", "tickets.assign",
         "users.view", "deposits.view", "withdrawals.view",
         "kyc.view", "kyc.manage",
+        "waitlist.view", "waitlist.manage",
         "audit_logs.view",
     },
     "finance": {
@@ -37,6 +38,7 @@ EMPLOYEE_ROLE_PERMISSIONS = {
         "banks.view", "banks.create", "banks.update",
         "ib.view",
         "kyc.view", "kyc.manage",
+        "waitlist.view", "waitlist.manage",
     },
     "risk_manager": {
         "trades.view", "positions.view", "users.view",

@@ -11,7 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Package,
-  Eye, Globe, ShieldAlert, Gauge, Radar, Scale,
+  Eye, Globe, ShieldAlert, Gauge, Radar, Scale, UserPlus,
 } from 'lucide-react';
 
 interface NavItem {
@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: ShieldCheck,
     perm: 'kyc.view',
   },
+  { label: 'Waitlist', href: '/waitlist', icon: UserPlus, perm: 'waitlist.view' },
   { label: 'Trades', href: '/trades', icon: CandlestickChart, perm: 'trades.view' },
   { label: 'Book Management', href: '/book', icon: BookOpen, perm: 'trades.view' },
   { label: 'Deposits', href: '/deposits', icon: Wallet, perm: 'deposits.view' },

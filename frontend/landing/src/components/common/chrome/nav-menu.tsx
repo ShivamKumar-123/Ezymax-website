@@ -4,13 +4,12 @@ import { animated, useSpring } from "@react-spring/web";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AccessCta } from "@/components/common/access-cta";
 import { NavPage, type NavPageKey } from "@/components/common/chrome/nav-page";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { ArrowRight, Close } from "@/components/ui/icons";
-import { PillButton } from "@/components/ui/pill-button";
 import { useClock } from "@/hooks/use-clock";
 import { useScroll } from "@/hooks/smooth-scroll/use-scroll";
-import { tradeConfig } from "@/lib/site";
 import { useUi } from "@/lib/ui-store";
 import type { navPages } from "@/data/mocks/nav-pages";
 import type { headerCta, navGroups, navLabels } from "@/data/mocks/site";
@@ -31,7 +30,7 @@ const STAGGER = 55;
  * group slides a full page panel down over the menu (`NavPage`) carrying the
  * same content the routed page renders; only `Home` navigates directly.
  */
-export const NavMenu = ({ groups, cta, labels, pages }: NavMenuProps) => {
+export const NavMenu = ({ groups, labels, pages }: NavMenuProps) => {
   const open = useUi((state) => state.menuOpen);
   const setMenuOpen = useUi((state) => state.setMenuOpen);
   const startScroll = useScroll((state) => state.start);
@@ -150,12 +149,9 @@ export const NavMenu = ({ groups, cta, labels, pages }: NavMenuProps) => {
             style={{ transitionDelay: `${groups.length * STAGGER + 160}ms` }}
             className={`mt-8 flex flex-wrap items-center gap-3 transition-all duration-500 ease-out ${cascade}`}
           >
-            <PillButton variant="dark" arrow="right" href={tradeConfig.register}>
-              {cta.openAccount}
-            </PillButton>
-            <PillButton variant="outline" href={tradeConfig.login}>
-              {cta.login}
-            </PillButton>
+            {/* Invite-only: shows Join Waitlist / pending / Log in based on
+                this visitor's approval status. */}
+            <AccessCta />
           </div>
         </nav>
 

@@ -113,4 +113,9 @@ services:
         NEXT_PUBLIC_TRADE_URL: https://trade.fxartha.com
     ports:
       - "127.0.0.1:3015:3000"
+    environment:
+      # /api/waitlist proxy → gateway over the internal docker network.
+      GATEWAY_API_URL: http://gateway:8000
+    depends_on:
+      - gateway
     restart: always

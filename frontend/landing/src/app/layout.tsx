@@ -11,6 +11,8 @@ import { LazyCookie } from "@/components/common/Cookie";
 import { Header } from "@/components/common/chrome/header";
 import { NavMenu } from "@/components/common/chrome/nav-menu";
 import { RequestModal } from "@/components/common/chrome/request-modal";
+import { WaitlistModal } from "@/components/common/chrome/waitlist-modal";
+import { WaitlistAutoOpen } from "@/components/common/waitlist-auto-open";
 import { SiteFooter } from "@/components/common/chrome/site-footer";
 import { AdaptiveGrid } from "@/components/common/grid";
 import { ReducedMotion } from "@/components/common/reduced-motion";
@@ -80,6 +82,8 @@ export default function RootLayout({
             pages={navPages}
           />
           <RequestModal content={modalContent} />
+          <WaitlistModal />
+          <WaitlistAutoOpen />
         </ScrollLayout>
       </body>
     </html>

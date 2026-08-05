@@ -32,6 +32,12 @@ const publicSchema = z.object({
 const serverSchema = z.object({
   /** Optional upstream the contact endpoint forwards leads to (CRM / webhook). */
   CONTACT_ENDPOINT: optionalUrl(),
+  /**
+   * Origin of the FX Artha gateway API (no /api/v1 suffix). The server-side
+   * /api/waitlist route forwards to it so the browser only ever calls
+   * same-origin. In prod (docker) this is the internal `http://gateway:8000`.
+   */
+  GATEWAY_API_URL: optionalUrl(),
 });
 
 /** Public env — safe to read anywhere (server or client). */
@@ -49,6 +55,7 @@ let cachedServerEnv: z.infer<typeof serverSchema> | undefined;
 export function getServerEnv() {
   cachedServerEnv ??= serverSchema.parse({
     CONTACT_ENDPOINT: process.env.CONTACT_ENDPOINT,
+    GATEWAY_API_URL: process.env.GATEWAY_API_URL,
   });
   return cachedServerEnv;
 }

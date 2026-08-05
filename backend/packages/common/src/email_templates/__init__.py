@@ -24,6 +24,7 @@ from .verification import render_verification_reminder
 from .trade_placed import render_trade_placed
 from .monthly_statement import render_monthly_statement_available
 from .email_otp import render_email_otp
+from .waitlist import render_waitlist_approved, render_waitlist_rejected
 
 __all__ = [
     "render_layout",
@@ -47,4 +48,6 @@ __all__ = [
     "render_trade_placed",
     "render_monthly_statement_available",
     "render_email_otp",
+    "render_waitlist_approved",
+    "render_waitlist_rejected",
 ]

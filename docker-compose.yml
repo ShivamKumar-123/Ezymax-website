@@ -258,6 +258,12 @@ services:
         NEXT_PUBLIC_TRADE_URL: ${LANDING_TRADE_URL:-http://localhost:3000}
     ports:
       - "3005:3000"
+    environment:
+      # Server-side /api/waitlist proxy forwards to the gateway over the
+      # internal docker network (browser only ever calls same-origin).
+      GATEWAY_API_URL: http://gateway:8000
+    depends_on:
+      - gateway
 
   # One-off migration runner — NOT started automatically.
   # Run with: docker compose --profile migrate up migrate

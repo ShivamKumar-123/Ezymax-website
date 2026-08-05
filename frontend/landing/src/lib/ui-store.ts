@@ -13,6 +13,8 @@ export interface UiState {
   setMenuOpen: (open: boolean) => void;
   modalOpen: boolean;
   setModalOpen: (open: boolean) => void;
+  waitlistOpen: boolean;
+  setWaitlistOpen: (open: boolean) => void;
 }
 
 export const useUi = create<UiState>((set) => ({
@@ -22,4 +24,6 @@ export const useUi = create<UiState>((set) => ({
   setMenuOpen: (menuOpen) => set({ menuOpen }),
   modalOpen: false,
   setModalOpen: (modalOpen) => set({ modalOpen }),
+  waitlistOpen: false,
+  setWaitlistOpen: (waitlistOpen) => set({ waitlistOpen }),
 }));

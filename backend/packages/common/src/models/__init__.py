@@ -70,6 +70,7 @@ from .staking import (
     StakingPlan, StakingPosition, StakingRewardAccrual,
 )
 from .vip import VipPass
+from .waitlist import WaitlistRequest
 from .share import SharedTrade
 from .rms import IpGeoCache, RmsAlert, AdminNotification, PricingTimeRule
 from .hedge import HedgeEpisode
@@ -113,6 +114,8 @@ __all__ = [
     "StakingPlan", "StakingPosition", "StakingRewardAccrual",
     # vip
     "VipPass",
+    # waitlist
+    "WaitlistRequest",
     # share
     "SharedTrade",
     # rms / ip-management
