@@ -26,18 +26,26 @@ export const AccessCta = ({ layout = "row" }: { layout?: "row" | "stack" }) => {
 
   const wrap = layout === "stack" ? "flex flex-col items-start gap-3" : "flex flex-wrap items-center gap-3";
 
-  // Until we know the status (and for fresh / rejected visitors) the only
-  // door in is the waitlist — no login/register shown.
+  // Log in is ALWAYS available — the platform has existing users who must be
+  // able to sign in from the landing. What changes is the "new user" door:
+  // self-serve registration is replaced by the invite-only waitlist.
+
+  // Fresh / rejected visitor: request access + log in.
   if (!hydrated || status === "none" || status === "rejected") {
     return (
       <div className={wrap}>
         <PillButton variant="dark" arrow="right" onClick={() => setWaitlistOpen(true)}>
           Join Waitlist
         </PillButton>
+        <PillButton variant="outline" href={tradeConfig.login}>
+          Log in
+        </PillButton>
       </div>
     );
   }
 
+  // Pending approval: show the badge, but still let them (or an existing
+  // user on the same browser) log in.
   if (status === "pending") {
     return (
       <div className={wrap}>
@@ -45,18 +53,21 @@ export const AccessCta = ({ layout = "row" }: { layout?: "row" | "stack" }) => {
           <span className="size-1.5 rounded-full bg-accent" />
           On the waitlist — pending approval
         </span>
+        <PillButton variant="outline" href={tradeConfig.login}>
+          Log in
+        </PillButton>
       </div>
     );
   }
 
-  // approved
+  // Approved: create the account (register) or log in.
   return (
     <div className={wrap}>
-      <PillButton variant="dark" arrow="right" href={tradeConfig.login}>
-        Log in
-      </PillButton>
-      <PillButton variant="outline" href={tradeConfig.register}>
+      <PillButton variant="dark" arrow="right" href={tradeConfig.register}>
         Open account
+      </PillButton>
+      <PillButton variant="outline" href={tradeConfig.login}>
+        Log in
       </PillButton>
     </div>
   );

@@ -200,6 +200,13 @@ export const WaitlistModal = () => {
                 </PillButton>
               </div>
             </form>
+
+            <p className="mt-5 border-t border-line pt-4 text-center text-sm text-foreground/55">
+              Already have an account?{" "}
+              <a href={tradeConfig.login} className="font-medium text-accent hover:underline">
+                Log in
+              </a>
+            </p>
           </>
         )}
       </animated.div>
