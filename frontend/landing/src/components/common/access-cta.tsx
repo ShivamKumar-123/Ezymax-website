@@ -26,26 +26,22 @@ export const AccessCta = ({ layout = "row" }: { layout?: "row" | "stack" }) => {
 
   const wrap = layout === "stack" ? "flex flex-col items-start gap-3" : "flex flex-wrap items-center gap-3";
 
-  // Log in is ALWAYS available — the platform has existing users who must be
-  // able to sign in from the landing. What changes is the "new user" door:
-  // self-serve registration is replaced by the invite-only waitlist.
+  // Invite-only: a fresh visitor sees ONLY "Join Waitlist". Existing users
+  // still get in via the "Already have an account? Log in" link inside the
+  // waitlist popup — so no standalone Log in button clutters the new-user CTA.
 
-  // Fresh / rejected visitor: request access + log in.
+  // Fresh / rejected visitor: request access only.
   if (!hydrated || status === "none" || status === "rejected") {
     return (
       <div className={wrap}>
         <PillButton variant="dark" arrow="right" onClick={() => setWaitlistOpen(true)}>
           Join Waitlist
         </PillButton>
-        <PillButton variant="outline" href={tradeConfig.login}>
-          Log in
-        </PillButton>
       </div>
     );
   }
 
-  // Pending approval: show the badge, but still let them (or an existing
-  // user on the same browser) log in.
+  // Pending approval: just the status badge.
   if (status === "pending") {
     return (
       <div className={wrap}>
@@ -53,9 +49,6 @@ export const AccessCta = ({ layout = "row" }: { layout?: "row" | "stack" }) => {
           <span className="size-1.5 rounded-full bg-accent" />
           On the waitlist — pending approval
         </span>
-        <PillButton variant="outline" href={tradeConfig.login}>
-          Log in
-        </PillButton>
       </div>
     );
   }
