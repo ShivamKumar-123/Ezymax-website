@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained `.next/standalone` server so the Docker runner
+  // stage can ship a slim image (just server.js + traced node_modules),
+  // mirroring the trader/ib/admin frontends' deploy shape.
+  output: "standalone",
+
   // Drop the `X-Powered-By: Next.js` response header.
   poweredByHeader: false,
 

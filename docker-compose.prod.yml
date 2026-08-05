@@ -98,3 +98,19 @@ services:
       INTERNAL_API_URL: http://gateway:8000/api/v1
       TRADER_API_PROXY_TARGET: http://gateway:8000
     restart: always
+
+  # Marketing landing site — nginx apex (fxartha.com) → 127.0.0.1:3015.
+  # NEXT_PUBLIC_* are baked at build time, so the production domains are
+  # passed as build args (not just runtime env). CTAs point at the trader
+  # platform on trade.fxartha.com.
+  landing-frontend:
+    build:
+      context: ./frontend/landing
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-production}
+        NEXT_PUBLIC_SITE_URL: https://fxartha.com
+        NEXT_PUBLIC_TRADE_URL: https://trade.fxartha.com
+    ports:
+      - "127.0.0.1:3015:3000"
+    restart: always

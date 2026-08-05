@@ -207,9 +207,9 @@ export const footerContent = {
     "Withdrawal of free balance is executed by the trading contract under published platform rules and applicable legal and compliance requirements.",
   legal: "© 2026 FX Artha Ltd. All rights reserved.",
   legalLinks: [
-    { label: "Privacy Policy", href: "#privacy" },
-    { label: "Terms of Service", href: "#terms" },
-    { label: "Risk Disclosure", href: "#risk" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Risk Disclosure", href: "/risk" },
   ],
 } as const;
 

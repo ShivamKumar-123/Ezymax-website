@@ -244,6 +244,21 @@ services:
     depends_on:
       - gateway
 
+  # Marketing landing site — standalone Next.js app (host 3005 → container
+  # 3000). Fully decoupled from the trader app; its only link into the
+  # platform is NEXT_PUBLIC_TRADE_URL, which points every CTA at the
+  # trader's /auth/login and /auth/register pages.
+  landing-frontend:
+    build:
+      context: ./frontend/landing
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-docker}
+        NEXT_PUBLIC_SITE_URL: ${LANDING_SITE_URL:-http://localhost:3005}
+        NEXT_PUBLIC_TRADE_URL: ${LANDING_TRADE_URL:-http://localhost:3000}
+    ports:
+      - "3005:3000"
+
   # One-off migration runner — NOT started automatically.
   # Run with: docker compose --profile migrate up migrate
   migrate:
