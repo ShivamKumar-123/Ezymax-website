@@ -275,7 +275,7 @@ function BrokerHome() {
             onClick={() => setShowLevel(true)}
             title="See your level progress"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
           <button
@@ -283,7 +283,7 @@ function BrokerHome() {
             onClick={() => setShowFxa(true)}
             title="Where your FXA come from"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
           </button>
         </div>
@@ -409,7 +409,7 @@ function PortfolioHero({
             <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}>
+                : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}>
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
             <span className="text-sm font-semibold tabular-nums text-text-primary">
@@ -426,7 +426,7 @@ function PortfolioHero({
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
                   style={{ color: 'var(--text-primary)' }}>
                   <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
-                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}>
+                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}>
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
                   <span className="font-semibold tabular-nums">#{acc.account_number}</span>
@@ -439,7 +439,7 @@ function PortfolioHero({
         <div className="flex flex-wrap gap-2">
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT} onClick={onDeposit}
             className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
-            style={{ background: '#d6a93d' }}>
+            style={{ background: '#ccff00' }}>
             <ArrowDownToLine size={14} /> Deposit
           </button>
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW} onClick={onTrade}
@@ -477,7 +477,7 @@ function PortfolioHero({
           {PERIODS.map((p) => (
             <button key={p.id} type="button" onClick={() => onPeriod(p.id)}
               className={clsx('px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors',
-                period === p.id ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}>
+                period === p.id ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}>
               {p.label}
             </button>
           ))}
@@ -566,7 +566,7 @@ function MarketsTable({ movers, series, onTrade }: {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
         <h2 className="text-sm font-bold text-text-primary">Markets</h2>
-        <button type="button" onClick={onTrade} className="text-[11px] font-semibold text-[#d6a93d] hover:underline">Open terminal →</button>
+        <button type="button" onClick={onTrade} className="text-[11px] font-semibold text-[#ccff00] hover:underline">Open terminal →</button>
       </div>
       {movers.length === 0 ? (
         <div className="p-6 text-center text-xs text-text-tertiary">Loading market data…</div>
@@ -681,7 +681,7 @@ function HeroBalanceCard({
                       className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                       style={acc.is_demo
                         ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                        : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}
+                        : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}
                     >
                       {acc.is_demo ? 'Demo' : 'Real'}
                     </span>
@@ -829,14 +829,14 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-          <BadgeCheck size={18} className="text-[#d6a93d]" /> Status program
+          <BadgeCheck size={18} className="text-[#ccff00]" /> Status program
         </h2>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setTab('challenges')}
             className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'challenges' ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}
+              tab === 'challenges' ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}
           >
             Challenges
           </button>
@@ -844,7 +844,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
             type="button"
             onClick={() => setTab('rewards')}
             className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'rewards' ? 'bg-[#d6a93d] text-black' : 'text-text-tertiary hover:text-text-primary')}
+              tab === 'rewards' ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}
           >
             My rewards
           </button>
@@ -859,7 +859,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
       <div className="h-2 rounded-full bg-bg-hover overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #f2d484, #d6a93d)' }}
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #f2d484, #ccff00)' }}
         />
       </div>
 
@@ -875,7 +875,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
             <p className="text-sm font-semibold text-text-primary">Complete your first trade</p>
             <p className="text-xs text-text-tertiary mt-0.5">Open and close any position to earn your first reward.</p>
           </div>
-          <span className="text-xs font-bold text-[#d6a93d] shrink-0">+50 XP</span>
+          <span className="text-xs font-bold text-[#ccff00] shrink-0">+50 XP</span>
         </div>
       ) : (
         <div
@@ -889,7 +889,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
             <p className="text-sm font-semibold text-text-primary">Reward balance</p>
             <p className="text-xs text-text-tertiary mt-0.5">Redeem your FXA coins in the rewards store.</p>
           </div>
-          <Link href="/rewards" className="text-xs font-semibold text-[#d6a93d] hover:underline shrink-0">Open →</Link>
+          <Link href="/rewards" className="text-xs font-semibold text-[#ccff00] hover:underline shrink-0">Open →</Link>
         </div>
       )}
     </Card>
@@ -913,7 +913,7 @@ function InviteFriendsCard() {
           </p>
           <Link
             href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#d6a93d] hover:underline"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#ccff00] hover:underline"
           >
             Learn details <ArrowRight size={12} />
           </Link>
@@ -949,7 +949,7 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
             <span
               key={i}
               className="w-1.5 h-1.5 rounded-full transition-colors"
-              style={{ background: i === index ? '#d6a93d' : 'rgba(255,255,255,0.4)' }}
+              style={{ background: i === index ? '#ccff00' : 'rgba(255,255,255,0.4)' }}
             />
           ))}
         </div>

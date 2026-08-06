@@ -42,8 +42,8 @@ export default function TvCard() {
 
       <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-white uppercase backdrop-blur-sm">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#d6a93d] opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#d6a93d]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ccff00] opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#ccff00]" />
         </span>
         FXArtha TV
       </span>
