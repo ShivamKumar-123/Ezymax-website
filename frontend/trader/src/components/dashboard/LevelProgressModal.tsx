@@ -1,33 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  X, CandlestickChart, CheckSquare, Flame, Users, ArrowRight, Sparkles, Trophy,
+  X, Lock, Check, CandlestickChart, CheckSquare, Flame, Users, ArrowRight, Sparkles,
 } from 'lucide-react';
 
 /**
- * Animated level-progress popup. Opens from the dashboard "Lvl N" badge and
- * shows where you are, the next tier, how much XP is left, and concrete ways
- * to earn it — with a ring + bar that animate in, and a counting-up number.
+ * Rank-ladder level popup. A horizontal track of every tier (Novice → Mythic):
+ * cleared tiers are gold, the current one glows with a "YOU" marker, upcoming
+ * ones are locked. A gold rail fills to your exact progress, the track
+ * auto-scrolls to centre you, and the "XP to next" counts up.
  *
- * Mirrors the backend ladder (rewards_service.LEVEL_LABELS). xpIntoLevel /
- * xpForNextLevel come straight from /rewards/state.
+ * Mirrors the backend ladder (rewards_service.LEVEL_LABELS / LEVEL_THRESHOLDS).
  */
-const LEVEL_LABELS = [
-  'Novice', 'Apprentice', 'Skilled Trader', 'Veteran', 'Expert',
-  'Master', 'Champion', 'Legend', 'Sovereign', 'Mythic',
+const LEVELS = [
+  { label: 'Novice', xp: 0 },
+  { label: 'Apprentice', xp: 500 },
+  { label: 'Skilled Trader', xp: 1500 },
+  { label: 'Veteran', xp: 3000 },
+  { label: 'Expert', xp: 5000 },
+  { label: 'Master', xp: 8000 },
+  { label: 'Champion', xp: 12000 },
+  { label: 'Legend', xp: 18000 },
+  { label: 'Sovereign', xp: 26000 },
+  { label: 'Mythic', xp: 36000 },
 ];
-const MAX_LEVEL = LEVEL_LABELS.length; // 10 = Mythic
+const MAX_LEVEL = LEVELS.length; // 10
 
 const GOLD = '#d6a93d';
 
 const WAYS = [
   { icon: CandlestickChart, title: 'Place trades', desc: 'Every trade you open earns XP.' },
   { icon: CheckSquare, title: 'Complete missions', desc: 'Daily & weekly missions give big XP.' },
-  { icon: Flame, title: 'Keep your streak', desc: 'Check in daily to stack streak bonuses.' },
+  { icon: Flame, title: 'Keep your streak', desc: 'Check in daily to stack bonuses.' },
   { icon: Users, title: 'Invite friends', desc: 'Earn XP when referrals start trading.' },
 ];
+
+function fmtXp(v: number): string {
+  if (v >= 1000) {
+    const k = v / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+  }
+  return String(v);
+}
 
 /** Ease-out count-up from 0 → value over ~900ms. */
 function useCountUp(value: number, run: boolean, ms = 900) {
@@ -64,29 +80,36 @@ export default function LevelProgressModal({
 }) {
   const router = useRouter();
   const isMax = level >= MAX_LEVEL || xpForNextLevel <= 0;
-  const pct = isMax ? 100 : Math.min(100, Math.max(0, Math.round((xpIntoLevel / xpForNextLevel) * 100)));
+  const intoPct = xpForNextLevel > 0 ? Math.min(1, Math.max(0, xpIntoLevel / xpForNextLevel)) : 1;
   const remaining = isMax ? 0 : Math.max(0, xpForNextLevel - xpIntoLevel);
-  const nextLabel = isMax ? levelLabel : (LEVEL_LABELS[level] ?? 'Mythic');
+  const nextLabel = isMax ? levelLabel : (LEVELS[level]?.label ?? 'Mythic');
 
-  // Kick the animations one tick after mount so CSS transitions run.
+  // Rail fill: full segments up to the current node + partial into the next.
+  const railPct = isMax ? 100 : ((level - 1 + intoPct) / (MAX_LEVEL - 1)) * 100;
+
   const [go, setGo] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const currentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setGo(true));
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
+    // Centre the current tier in the scroll track.
+    const t = setTimeout(() => {
+      const sc = scrollRef.current;
+      const cur = currentRef.current;
+      if (sc && cur) sc.scrollLeft = cur.offsetLeft - sc.clientWidth / 2 + cur.clientWidth / 2;
+    }, 60);
     return () => {
       cancelAnimationFrame(id);
+      clearTimeout(t);
       window.removeEventListener('keydown', onKey);
     };
   }, [onClose]);
 
   const remainingCount = useCountUp(remaining, go);
-  const pctCount = useCountUp(pct, go);
-
-  // SVG ring geometry.
-  const R = 52;
-  const C = 2 * Math.PI * R;
-  const dash = go ? C * (1 - pct / 100) : C; // full offset = empty, animates to target
+  const COL = 92; // px per tier column
 
   return (
     <div
@@ -98,7 +121,7 @@ export default function LevelProgressModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl p-6 shadow-2xl"
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl p-6 shadow-2xl"
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-primary)',
@@ -107,94 +130,138 @@ export default function LevelProgressModal({
           transition: 'transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease',
         }}
       >
-        {/* Soft gold glow backdrop */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-16 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full blur-3xl"
-          style={{ background: 'rgba(214,169,61,0.18)' }}
-        />
+        <div aria-hidden className="pointer-events-none absolute -top-16 left-1/4 h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(214,169,61,0.16)' }} />
 
         <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-3 top-3 grid size-8 place-items-center rounded-full text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary"
+          type="button" onClick={onClose} aria-label="Close"
+          className="absolute right-3 top-3 z-10 grid size-8 place-items-center rounded-full text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary"
         >
           <X size={16} />
         </button>
 
-        {/* ── Ring + level ── */}
-        <div className="relative flex flex-col items-center">
-          <div className="relative grid place-items-center">
-            <svg width="128" height="128" viewBox="0 0 128 128" className="-rotate-90">
-              <circle cx="64" cy="64" r={R} fill="none" stroke="rgba(214,169,61,0.14)" strokeWidth="8" />
-              <circle
-                cx="64" cy="64" r={R} fill="none" stroke={GOLD} strokeWidth="8" strokeLinecap="round"
-                strokeDasharray={C}
-                strokeDashoffset={dash}
-                style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)' }}
+        {/* ── Heading ── */}
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Your rank</p>
+          <h2 className="mt-0.5 text-xl font-extrabold text-text-primary">
+            Level {level} · <span style={{ color: GOLD }}>{levelLabel}</span>
+          </h2>
+          {isMax ? (
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: GOLD }}>
+              <Sparkles size={15} /> Max rank — you&apos;ve topped the ladder! 🏆
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-text-secondary">
+              <span className="font-bold tabular-nums" style={{ color: GOLD }}>{remainingCount.toLocaleString()}</span>
+              {' '}XP to reach{' '}
+              <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
+            </p>
+          )}
+        </div>
+
+        {/* ── Horizontal rank track ── */}
+        <div ref={scrollRef} className="mt-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+          <div className="relative" style={{ width: MAX_LEVEL * COL, paddingTop: 26 }}>
+            {/* Rail (dim) + gold fill, centred on the node row */}
+            <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: 26 + 18 }}>
+              <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(214,169,61,0.14)' }} />
+              <div
+                className="absolute left-0 top-0 h-[3px] rounded-full"
+                style={{
+                  width: go ? `${railPct}%` : '0%',
+                  background: `linear-gradient(90deg, ${GOLD}, #f0c869)`,
+                  boxShadow: '0 0 8px rgba(214,169,61,0.5)',
+                  transition: 'width 1200ms cubic-bezier(0.22,1,0.36,1)',
+                }}
               />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">Level</span>
-              <span className="text-3xl font-extrabold leading-none" style={{ color: GOLD }}>{level}</span>
-              <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-text-secondary">
-                <Trophy size={11} style={{ color: GOLD }} /> {levelLabel}
-              </span>
+            </div>
+
+            {/* Nodes */}
+            <div className="relative flex">
+              {LEVELS.map((lv, i) => {
+                const num = i + 1;
+                const passed = num < level;
+                const current = num === level;
+                const next = num === level + 1;
+                const locked = num > level;
+                const on = passed || current;
+                return (
+                  <div
+                    key={lv.label}
+                    ref={current ? currentRef : undefined}
+                    className="flex shrink-0 flex-col items-center"
+                    style={{ width: COL }}
+                  >
+                    {/* YOU marker above the current node */}
+                    <div className="relative flex h-6 items-end">
+                      {current && (
+                        <span
+                          className="mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                          style={{
+                            background: GOLD, color: '#1a1408',
+                            boxShadow: '0 4px 14px rgba(214,169,61,0.45)',
+                            opacity: go ? 1 : 0,
+                            transform: go ? 'translateY(0)' : 'translateY(6px)',
+                            transition: 'opacity 400ms ease 500ms, transform 400ms ease 500ms',
+                          }}
+                        >
+                          <span className="size-1.5 rounded-full bg-[#1a1408]" /> YOU
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Node circle */}
+                    <div
+                      className="grid size-9 place-items-center rounded-full"
+                      style={{
+                        background: on ? GOLD : 'var(--bg-card)',
+                        border: `2px solid ${on ? GOLD : next ? 'rgba(214,169,61,0.55)' : 'var(--border-primary)'}`,
+                        boxShadow: current ? '0 0 0 4px rgba(214,169,61,0.22), 0 0 18px rgba(214,169,61,0.55)' : 'none',
+                        transform: go ? 'scale(1)' : 'scale(0.6)',
+                        opacity: go ? 1 : 0,
+                        transition: `transform 420ms cubic-bezier(0.22,1,0.36,1) ${i * 70}ms, opacity 360ms ease ${i * 70}ms`,
+                      }}
+                    >
+                      {passed ? (
+                        <Check size={16} style={{ color: '#1a1408' }} strokeWidth={3} />
+                      ) : current ? (
+                        <Sparkles size={15} style={{ color: '#1a1408' }} />
+                      ) : (
+                        <Lock size={13} style={{ color: next ? GOLD : 'var(--text-tertiary, #8a8a8a)' }} />
+                      )}
+                    </div>
+
+                    {/* Labels */}
+                    <p
+                      className="mt-2 px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-wide"
+                      style={{ color: on ? GOLD : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}
+                    >
+                      {lv.label}
+                    </p>
+                    <p className="mt-0.5 text-center text-[10px] font-semibold tabular-nums text-text-tertiary">
+                      {fmtXp(lv.xp)} XP{next ? ' · next' : ''}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* ── Progress line: current → next ── */}
-        {isMax ? (
-          <div className="mt-5 text-center">
-            <p className="inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: GOLD }}>
-              <Sparkles size={15} /> Max level reached — you&apos;re {levelLabel}!
-            </p>
-            <p className="mt-1 text-xs text-text-tertiary">You&apos;ve climbed the entire ladder. 🏆</p>
-          </div>
-        ) : (
-          <>
-            <div className="mt-5 flex items-center justify-between text-xs">
-              <span className="font-semibold text-text-primary">Lvl {level} · {levelLabel}</span>
-              <span className="font-semibold text-text-tertiary">Lvl {level + 1} · {nextLabel}</span>
-            </div>
-            <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full" style={{ background: 'rgba(214,169,61,0.12)' }}>
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: go ? `${pct}%` : '0%',
-                  background: `linear-gradient(90deg, ${GOLD}, #f0c869)`,
-                  transition: 'width 1100ms cubic-bezier(0.22,1,0.36,1)',
-                }}
-              />
-            </div>
-            <p className="mt-3 text-center text-sm text-text-secondary">
-              <span className="font-bold tabular-nums" style={{ color: GOLD }}>{remainingCount.toLocaleString()}</span>
-              {' '}XP to reach{' '}
-              <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
-              <span className="ml-1 text-text-tertiary tabular-nums">({pctCount}% there)</span>
-            </p>
-          </>
-        )}
-
         {/* ── How to level up ── */}
         {!isMax && (
           <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
-              How to level up
-            </p>
-            <div className="grid grid-cols-1 gap-2">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">How to rank up</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {WAYS.map((w, i) => (
                 <div
                   key={w.title}
-                  className="flex items-center gap-3 rounded-xl p-2.5"
+                  className="flex items-center gap-2.5 rounded-xl p-2.5"
                   style={{
                     background: 'var(--bg-hover, rgba(255,255,255,0.03))',
                     border: '1px solid var(--border-primary)',
                     opacity: go ? 1 : 0,
                     transform: go ? 'translateY(0)' : 'translateY(6px)',
-                    transition: `opacity 400ms ease ${180 + i * 90}ms, transform 400ms ease ${180 + i * 90}ms`,
+                    transition: `opacity 400ms ease ${300 + i * 80}ms, transform 400ms ease ${300 + i * 80}ms`,
                   }}
                 >
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg" style={{ background: 'rgba(214,169,61,0.12)' }}>
