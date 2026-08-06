@@ -1,13 +1,82 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, Globe, Menu, X, Download, Monitor } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
 import { useLang } from '@/landing/i18n/LangProvider'
+import { LANGS } from '@/landing/i18n/dict'
 import { useAuthStore } from '@/stores/authStore'
+
+/** Globe dropdown listing every available language. Rendered in the
+ *  desktop action cluster AND next to the mobile hamburger — the old
+ *  FR/EN toggle lived only in the desktop-only container, so phones
+ *  had no language control at all. */
+function LangMenu({ compact = false }: { compact?: boolean }) {
+  const { lang, setLang } = useLang()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('touchstart', onDown)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('touchstart', onDown)
+    }
+  }, [menuOpen])
+
+  const current = LANGS.find((l) => l.code === lang) ?? LANGS[0]!
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        className={`inline-flex items-center gap-1 text-gray-900 rounded-full hover:bg-gray-100 transition-colors ${
+          compact ? 'text-[12px] px-1.5 py-1' : 'text-[13px] px-2 py-1'
+        }`}
+        aria-label="Change language"
+        aria-haspopup="listbox"
+        aria-expanded={menuOpen}
+      >
+        <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
+        <span className="font-semibold uppercase">{current.label}</span>
+      </button>
+      {menuOpen && (
+        <div
+          className="absolute right-0 top-full mt-2 w-36 rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/10 z-[70]"
+          role="listbox"
+          aria-label="Languages"
+        >
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              role="option"
+              aria-selected={l.code === lang}
+              onClick={() => {
+                setLang(l.code)
+                setMenuOpen(false)
+              }}
+              className={`block w-full px-3.5 py-2 text-left text-[13px] hover:bg-gray-50 transition-colors ${
+                l.code === lang ? 'font-semibold text-[#E94E1B]' : 'text-gray-900'
+              }`}
+            >
+              {l.nativeName}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * Comprehensive SwissCresta marketing Navbar, ported from the legacy
@@ -300,7 +369,7 @@ export default function MarketingNavbar({
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
   // Desktop-terminal download dropdown (Windows / macOS choice on click).
   const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
-  const { lang, toggleLang, t } = useLang()
+  const { t } = useLang()
 
   // Marketing pages don't live inside an auth provider, so the store
   // starts unauthenticated even when the cookie is present. Kick off
@@ -460,26 +529,22 @@ export default function MarketingNavbar({
               </Button>
             </>
           ))}
-          <button
-            type="button"
-            onClick={toggleLang}
-            className="inline-flex items-center gap-1 text-[13px] text-gray-900 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
-            title={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
-          >
-            <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
-            <span className="font-semibold uppercase">{lang === 'fr' ? 'FR' : 'EN'}</span>
-          </button>
+          <LangMenu />
         </div>
 
-        <button
-          type="button"
-          className="lg:hidden ml-auto p-2 -mr-2 text-gray-900"
-          aria-label="Toggle menu"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Mobile: language picker sits next to the hamburger so phones
+            aren't locked out of switching languages. */}
+        <div className="lg:hidden ml-auto flex items-center gap-0.5">
+          <LangMenu compact />
+          <button
+            type="button"
+            className="p-2 -mr-2 text-gray-900"
+            aria-label="Toggle menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </nav>
 
       {hasSubNav && (

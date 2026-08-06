@@ -1,12 +1,22 @@
-export type Lang = 'fr' | 'en'
+export type Lang = 'fr' | 'en' | 'ja' | 'zh'
 
 export const LANG_STORAGE_KEY = 'swisscresta-lang'
+
+/** Menu order + display metadata for the language picker. */
+export const LANGS: { code: Lang; label: string; nativeName: string }[] = [
+  { code: 'en', label: 'EN', nativeName: 'English' },
+  { code: 'fr', label: 'FR', nativeName: 'Français' },
+  { code: 'ja', label: 'JA', nativeName: '日本語' },
+  { code: 'zh', label: 'ZH', nativeName: '中文' },
+]
 
 type DictNode = string | { [key: string]: DictNode }
 
 interface Dict {
   fr: Record<string, DictNode>
   en: Record<string, DictNode>
+  ja: Record<string, DictNode>
+  zh: Record<string, DictNode>
 }
 
 export const dict: Dict = {
@@ -243,6 +253,242 @@ export const dict: Dict = {
         terms: 'Terms of Service',
         risk: 'Risk Disclosure',
         vuln: 'Vulnerability Disclosure',
+      },
+    },
+  },
+  ja: {
+    nav: {
+      markets: '市場',
+      platforms: 'プラットフォーム',
+      partners: 'パートナー',
+      policy: 'ポリシー',
+      about: '会社概要',
+      contact: 'お問い合わせ',
+      login: 'ログイン',
+      signup: '新規登録',
+      lang: 'JA',
+    },
+    hero: {
+      eyebrow: 'スイス精度のトレーディング',
+      headlineA: 'あなたの優位性。',
+      headlineB: 'すべての市場で。',
+      headlineC: '一切の妥協なし。',
+      sub: '200以上の通貨ペアと主要な暗号資産を、極めて狭いスプレッド、瞬時の約定、スイスのインフラによる安全性で取引 — すべてを一つの強力なプラットフォームから。',
+      ctaOpen: '口座を開設',
+      ctaDemo: 'デモを試す',
+    },
+    bank: {
+      titleA: 'SwissCresta バンキング、',
+      titleB: '銀行の枠を超えて。',
+      lead: 'あなたのお金は、ほこりをかぶった金庫よりも良い扱いを受けるべきです。SwissCrestaはスイス銀行の精密さと現代トレーディングのスピードを融合 — スーツは不要、隠れた手数料は一切許しません。',
+      sub: 'FXを取引し、暗号資産を保有し、証券を所有する。すべてを一つの口座で。スイスの規制に裏付けられ、自分のお金を本当に理解したい人のために作られました。',
+      eyebrow: '取引できる商品',
+      cards: {
+        metals: { title: '貴金属', body: '金、銀、そしてどんなニュースにも揺るがない資産。' },
+        currency: { title: '通貨ペア', body: '世界のFX市場を指先に。狭いスプレッド、クリーンな約定。' },
+        cfds: { title: 'CFD', body: 'ロングもショートも、市場の動くままに。' },
+      },
+      explore: '詳しく見る',
+    },
+    platforms: {
+      eyebrow: 'プラットフォーム',
+      titleA: '邪魔をしない',
+      titleB: 'プラットフォーム',
+      lead1: '世界クラスのツール。学習の苦労はゼロ。スプレッドは',
+      lead2: '1.1 pips から',
+      pick: 'あなたの武器を選ぶ',
+      explore: '詳しく見る',
+    },
+    pricing: {
+      from: 'スプレッドは',
+      pips: 'pips から',
+      eyebrow: '料金',
+      titleA: '身構える必要のない',
+      titleB: '料金体系',
+      lead: '謎の手数料も、細かい文字の罠もありません。稼いだお金をより多く手元に残せる、誠実で競争力のある料金だけ。',
+      sub: 'FX取引条件、口座タイプ、約定ポリシーをご覧ください — すべて公開されています。',
+      cards: {
+        c1: { t: 'FX取引条件', b: '狭いスプレッド、深い流動性、予測できる約定。' },
+        c2: { t: '口座タイプ', b: '初めての取引から機関投資家レベルまで — あなたのティアを選択。' },
+        c3: { t: '約定', b: '瞬時の約定、透明な手数料、想定外ゼロ。' },
+      },
+      explore: '詳しく見る',
+    },
+    securities: {
+      eyebrow: '証券',
+      titleA: '働くポートフォリオのための',
+      titleB: '完全な武器庫',
+      lead: '株式、ETF、債券、オプション、先物、デリバティブ。トレーディングの要となるすべてを、あなたと同じくらい働くポートフォリオのために。',
+      regulated: '',
+      explore: '詳しく見る',
+    },
+    crypto: {
+      eyebrow: '暗号資産',
+      titleA: '52種類の暗号資産。',
+      titleB: 'スイス品質のセキュリティ。',
+      lead: '自社取引所SQXで52種類の暗号資産を。ビットコインから、まだ誰も知らない銘柄まで。スイス品質のセキュリティで24時間365日取引。',
+      regulated: '',
+      explore: '詳しく見る',
+    },
+    steps: {
+      titleA: '口座開設は',
+      titleB: '3ステップ',
+      cta: '口座を開設',
+      s1: { t: 'プラットフォームを選んで申込みを記入', d: '会議ではなく数分で完了。CFXD、TradingView、MetaTrader 4、MetaTrader 5から選択。', tag: 'クイック申込み' },
+      s2: { t: '本人確認書類と住所証明をアップロード', d: 'パスポートまたは身分証と、6か月以内の住所証明。', tag: '認証済み＆安全' },
+      s3: { t: '入金して取引を開始', d: 'それだけです。面倒な手続きも待ち時間もありません。', tag: '取引を開始' },
+    },
+    about: {
+      eyebrow: '私たちについて',
+      titleA: 'スイスの銀行。上場企業。',
+      titleB: '堅苦しさゼロ。',
+      lead: '銀行システムをリバースエンジニアリングしたので、あなたが戦う必要はありません。SwissCrestaは機関投資家レベルの安定性とフィンテックの俊敏性を提供 — この二つは本来、敵同士ではないのです。',
+      learnMore: 'さらに詳しく',
+    },
+    follow: {
+      title: 'フォローする',
+    },
+    footerLinks: {
+      eyebrow: 'お問い合わせ',
+      lead: '本物の人間による、本物のサポート。尋ねる前に答えを。',
+      cols: {
+        client: { h: 'お客様になる', l1: '口座を開設', l2: '友達を紹介（FX）' },
+        partner: { h: 'パートナーになる', l1: 'FXパートナーシップ' },
+        help: { h: 'ヘルプ＆サポート', l1: 'ヘルプセンター', l2: 'カスタマーケア' },
+      },
+    },
+    disclaimer: {
+      title: 'リスク開示',
+      p1: 'レバレッジ商品（外国為替、現物貴金属、差金決済取引（CFD）を含む）の取引には重大な損失リスクが伴います。レバレッジは利益と損失の両方を拡大し、この種の取引はすべての投資家に適しているとは限りません。初回入金額を超える損失が生じる可能性があり、口座残高が必要証拠金を下回った場合には追加の支払いを求められることがあります。レバレッジポジションの保有には、ロールオーバー、ファイナンスその他の手数料が発生します。',
+      p2: 'SwissCrestaで口座を開設する前に、ご自身の経験レベル、投資目的、資金力、収入、リスク許容度を慎重に評価してください。損失は理論上、無制限になり得ます。過去の実績は将来の結果を保証するものではありません。本サイトに表示される市場データは情報提供のみを目的とし、信頼できると考えられる第三者から提供されていますが、SwissCrestaはその正確性を保証せず、予告なく配信を遅延・中断する権利を留保します。ポジションの決済はその時点の買値または売値による成行注文で執行され、特に高ボラティリティ時にはスリッページが発生する場合があります。',
+      p3: 'レバレッジ取引がご自身の状況に適しているか不明な場合は、続行する前に独立したファイナンシャルアドバイザーにご相談ください。レバレッジ、手数料、証拠金要件、取引コストの詳細については、公式文書をご参照ください。',
+      p4: '',
+      hq: '本社：',
+      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
+      copyright: '© 2026 SwissCresta. All rights reserved.',
+      links: {
+        privacy: 'プライバシーポリシー',
+        terms: '利用規約',
+        risk: 'リスク開示',
+        vuln: '脆弱性の開示',
+      },
+    },
+  },
+  zh: {
+    nav: {
+      markets: '市场',
+      platforms: '平台',
+      partners: '合作伙伴',
+      policy: '政策',
+      about: '关于我们',
+      contact: '联系我们',
+      login: '登录',
+      signup: '注册',
+      lang: 'ZH',
+    },
+    hero: {
+      eyebrow: '瑞士精准交易',
+      headlineA: '你的优势。',
+      headlineB: '每个市场。',
+      headlineC: '绝不妥协。',
+      sub: '交易200多个外汇货币对和顶级加密资产，享受极窄点差、闪电般的执行速度，以及瑞士基础设施的安全保障 — 一切尽在一个强大的平台。',
+      ctaOpen: '开设账户',
+      ctaDemo: '试用模拟账户',
+    },
+    bank: {
+      titleA: 'SwissCresta 银行服务，',
+      titleB: '超越传统银行。',
+      lead: '你的钱值得比积灰的保险柜更好的归宿。SwissCresta 将瑞士银行的精准与现代交易的速度融为一体 — 无需西装革履，绝不容忍隐藏费用。',
+      sub: '交易外汇。持有加密资产。拥有证券。全部在一个账户中完成，受瑞士监管支持，为真正想了解自己资金的人而打造。',
+      eyebrow: '可交易品种',
+      cards: {
+        metals: { title: '贵金属', body: '黄金、白银，以及经得起任何头条新闻考验的资产。' },
+        currency: { title: '货币对', body: '全球外汇市场触手可及。窄点差，干净利落的执行。' },
+        cfds: { title: '差价合约 (CFD)', body: '做多、做空，随市场而动。' },
+      },
+      explore: '了解更多',
+    },
+    platforms: {
+      eyebrow: '平台',
+      titleA: '不会拖你后腿的',
+      titleB: '交易平台',
+      lead1: '世界级工具。零学习负担。点差低至',
+      lead2: '1.1 点',
+      pick: '选择你的武器',
+      explore: '了解更多',
+    },
+    pricing: {
+      from: '点差低至',
+      pips: '点',
+      eyebrow: '定价',
+      titleA: '让你无需皱眉的',
+      titleB: '定价方式',
+      lead: '没有神秘收费，没有小字陷阱。只有诚实、有竞争力的定价，让你留住更多收益。',
+      sub: '查看我们的外汇交易条件、账户类型和执行政策 — 一切公开透明。',
+      cards: {
+        c1: { t: '外汇交易条件', b: '窄点差、深度流动性、可预期的执行。' },
+        c2: { t: '账户类型', b: '从第一笔交易到机构级交易流 — 选择你的等级。' },
+        c3: { t: '执行', b: '闪电成交、透明费用、零意外。' },
+      },
+      explore: '了解更多',
+    },
+    securities: {
+      eyebrow: '证券',
+      titleA: '为高效运转的投资组合',
+      titleB: '配备完整武器库',
+      lead: '股票、ETF、债券、期权、期货、衍生品。交易领域的每一块基石 — 为与你同样努力的投资组合触手可及。',
+      regulated: '',
+      explore: '了解更多',
+    },
+    crypto: {
+      eyebrow: '加密资产',
+      titleA: '52种加密货币。',
+      titleB: '瑞士级安全。',
+      lead: '在我们自己的SQX交易所交易52种加密货币。从比特币到你表弟都没听说过的币种。以瑞士级安全保障，全天候24/7交易。',
+      regulated: '',
+      explore: '了解更多',
+    },
+    steps: {
+      titleA: '开设账户只需',
+      titleB: '3步',
+      cta: '开设账户',
+      s1: { t: '选择平台并填写申请', d: '只需几分钟，无需开会。可选 CFXD、TradingView、MetaTrader 4 或 MetaTrader 5。', tag: '快速申请' },
+      s2: { t: '上传身份证件和居住证明', d: '护照或身份证，加上6个月内的居住证明。', tag: '已验证且安全' },
+      s3: { t: '入金并开始交易', d: '就这么简单。没有繁琐流程，无需等待。', tag: '开始交易' },
+    },
+    about: {
+      eyebrow: '我们是谁',
+      titleA: '瑞士银行。公开上市。',
+      titleB: '零古板作风。',
+      lead: '我们对银行体系进行了逆向工程，让你无需与之对抗。SwissCresta 为你提供机构级的稳定性和金融科技的敏捷性 — 因为这两者本就不该是敌人。',
+      learnMore: '了解更多',
+    },
+    follow: {
+      title: '关注我们',
+    },
+    footerLinks: {
+      eyebrow: '联系我们',
+      lead: '真实的人，真实的帮助。在你开口之前就有答案。',
+      cols: {
+        client: { h: '成为客户', l1: '开设账户', l2: '推荐朋友（外汇）' },
+        partner: { h: '成为合作伙伴', l1: '外汇合作计划' },
+        help: { h: '帮助与支持', l1: '帮助中心', l2: '客户服务' },
+      },
+    },
+    disclaimer: {
+      title: '风险披露',
+      p1: '交易杠杆产品（包括外汇、现货贵金属和差价合约 (CFD)）存在重大亏损风险。杠杆会同时放大收益和亏损，此类交易可能并不适合所有投资者。你的亏损可能超过初始入金，且当账户余额低于所需保证金时，你可能需要追加资金。持有杠杆头寸还会产生展期、融资及其他适用费用。',
+      p2: '在 SwissCresta 开户之前，请仔细评估你的经验水平、投资目标、财务资源、收入和个人风险承受能力。理论上亏损可能是无限的。过往业绩并不代表未来结果。本网站展示的市场数据仅供参考，来源于被认为可靠的第三方；SwissCresta 不保证其准确性，并保留在不事先通知的情况下延迟或中断数据传输的权利。平仓以当前买价或卖价的市价单执行；可能出现滑点，尤其是在剧烈波动期间。',
+      p3: '如果你不确定杠杆交易是否适合你的情况，请在继续之前咨询独立财务顾问。有关杠杆、费用、保证金要求和交易成本的完整详情，请参阅我们的官方文件。',
+      p4: '',
+      hq: '总部：',
+      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
+      copyright: '© 2026 SwissCresta. 保留所有权利。',
+      links: {
+        privacy: '隐私政策',
+        terms: '服务条款',
+        risk: '风险披露',
+        vuln: '漏洞披露',
       },
     },
   },

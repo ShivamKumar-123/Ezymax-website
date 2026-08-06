@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { dict, LANG_STORAGE_KEY, type Lang } from './dict'
+import { dict, LANGS, LANG_STORAGE_KEY, type Lang } from './dict'
 
 interface LangContextValue {
   lang: Lang
@@ -36,7 +36,7 @@ export function LangProvider({ children, defaultLang = 'fr' }: LangProviderProps
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LANG_STORAGE_KEY) as Lang | null
-      if (saved === 'fr' || saved === 'en') setLangState(saved)
+      if (saved && LANGS.some((l) => l.code === saved)) setLangState(saved)
     } catch {
       /* localStorage unavailable; keep default */
     }
@@ -55,8 +55,12 @@ export function LangProvider({ children, defaultLang = 'fr' }: LangProviderProps
     }
   }, [])
 
+  // Cycles through every available language in LANGS order — kept for
+  // callers that predate the 4-language dropdown.
   const toggleLang = useCallback(() => {
-    setLang(lang === 'fr' ? 'en' : 'fr')
+    const i = LANGS.findIndex((l) => l.code === lang)
+    const next = LANGS[(i + 1) % LANGS.length]
+    if (next) setLang(next.code)
   }, [lang, setLang])
 
   const t = useCallback(
