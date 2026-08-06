@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 
 /**
- * Rank-ladder level popup. A horizontal track of every tier (Novice → Mythic):
- * cleared tiers are lime, the current one glows with a "YOU" marker, upcoming
- * ones are locked. A lime rail fills to your exact progress, the track
- * auto-scrolls to centre you, and the "XP to next" counts up.
+ * Rank-ladder level popup — a horizontal track of every tier (Novice → Mythic)
+ * in the landing "Obsidian & Lime" theme: cleared tiers are glossy lime with a
+ * check, the current one glows + pulses with a floating "YOU" marker, upcoming
+ * tiers are frosted-locked. A lime rail with a moving shimmer + leading glow-dot
+ * fills to exact progress, the track auto-scrolls to centre you, and "XP to
+ * next" counts up.
  *
  * Mirrors the backend ladder (rewards_service.LEVEL_LABELS / LEVEL_THRESHOLDS).
  */
@@ -28,9 +30,15 @@ const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length; // 10
 
-// Landing "Obsidian & Lime" palette — lime accent + near-black on-accent text.
+// Landing "Obsidian & Lime" palette.
 const ACCENT = '#ccff00';
+const ACCENT_HI = '#eaff8a';
 const ON_ACCENT = '#0a0a0a';
+
+const COL = 96;      // px per tier column
+const YOU_ROW = 30;  // px reserved above nodes for the YOU marker
+const NODE = 46;     // px node diameter
+const RAIL_TOP = YOU_ROW + NODE / 2;
 
 const WAYS = [
   { icon: CandlestickChart, title: 'Place trades', desc: 'Every trade you open earns XP.' },
@@ -85,8 +93,6 @@ export default function LevelProgressModal({
   const intoPct = xpForNextLevel > 0 ? Math.min(1, Math.max(0, xpIntoLevel / xpForNextLevel)) : 1;
   const remaining = isMax ? 0 : Math.max(0, xpForNextLevel - xpIntoLevel);
   const nextLabel = isMax ? levelLabel : (LEVELS[level]?.label ?? 'Mythic');
-
-  // Rail fill: full segments up to the current node + partial into the next.
   const railPct = isMax ? 100 : ((level - 1 + intoPct) / (MAX_LEVEL - 1)) * 100;
 
   const [go, setGo] = useState(false);
@@ -97,12 +103,11 @@ export default function LevelProgressModal({
     const id = requestAnimationFrame(() => setGo(true));
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    // Centre the current tier in the scroll track.
     const t = setTimeout(() => {
       const sc = scrollRef.current;
       const cur = currentRef.current;
-      if (sc && cur) sc.scrollLeft = cur.offsetLeft - sc.clientWidth / 2 + cur.clientWidth / 2;
-    }, 60);
+      if (sc && cur) sc.scrollTo({ left: cur.offsetLeft - sc.clientWidth / 2 + cur.clientWidth / 2, behavior: 'smooth' });
+    }, 260);
     return () => {
       cancelAnimationFrame(id);
       clearTimeout(t);
@@ -111,7 +116,6 @@ export default function LevelProgressModal({
   }, [onClose]);
 
   const remainingCount = useCountUp(remaining, go);
-  const COL = 92; // px per tier column
 
   return (
     <div
@@ -119,21 +123,26 @@ export default function LevelProgressModal({
       aria-modal
       aria-label="Level progress"
       onClick={onClose}
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
     >
+      <style>{`
+        @keyframes lvlPing { 0%{transform:scale(1);opacity:.65} 80%{transform:scale(1.9);opacity:0} 100%{opacity:0} }
+        @keyframes lvlBob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+        @keyframes lvlShim { 0%{transform:translateX(-140%)} 100%{transform:translateX(360%)} }
+        @keyframes lvlHead { 0%,100%{box-shadow:0 0 8px 2px rgba(204,255,0,.7)} 50%{box-shadow:0 0 16px 5px rgba(204,255,0,.95)} }
+      `}</style>
+
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl overflow-hidden rounded-2xl p-6 shadow-2xl"
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl p-6 shadow-2xl"
         style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-primary)',
-          transform: go ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
+          background: 'radial-gradient(120% 90% at 80% -10%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+          border: '1px solid rgba(204,255,0,0.16)',
+          transform: go ? 'translateY(0) scale(1)' : 'translateY(14px) scale(0.97)',
           opacity: go ? 1 : 0,
-          transition: 'transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease',
+          transition: 'transform 340ms cubic-bezier(0.22,1,0.36,1), opacity 340ms ease',
         }}
       >
-        <div aria-hidden className="pointer-events-none absolute -top-16 left-1/4 h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.16)' }} />
-
         <button
           type="button" onClick={onClose} aria-label="Close"
           className="absolute right-3 top-3 z-10 grid size-8 place-items-center rounded-full text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary"
@@ -143,9 +152,12 @@ export default function LevelProgressModal({
 
         {/* ── Heading ── */}
         <div className="relative">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Your rank</p>
-          <h2 className="mt-0.5 text-xl font-extrabold text-text-primary">
-            Level {level} · <span style={{ color: ACCENT }}>{levelLabel}</span>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Your rank</p>
+          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-text-primary">
+            Level {level} ·{' '}
+            <span style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+              {levelLabel}
+            </span>
           </h2>
           {isMax ? (
             <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: ACCENT }}>
@@ -153,7 +165,7 @@ export default function LevelProgressModal({
             </p>
           ) : (
             <p className="mt-1 text-sm text-text-secondary">
-              <span className="font-bold tabular-nums" style={{ color: ACCENT }}>{remainingCount.toLocaleString()}</span>
+              <span className="font-extrabold tabular-nums" style={{ color: ACCENT }}>{remainingCount.toLocaleString()}</span>
               {' '}XP to reach{' '}
               <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
             </p>
@@ -161,20 +173,36 @@ export default function LevelProgressModal({
         </div>
 
         {/* ── Horizontal rank track ── */}
-        <div ref={scrollRef} className="mt-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-          <div className="relative" style={{ width: MAX_LEVEL * COL, paddingTop: 26 }}>
-            {/* Rail (dim) + gold fill, centred on the node row */}
-            <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: 26 + 18 }}>
-              <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.14)' }} />
+        <div ref={scrollRef} className="mt-6 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin]">
+          <div className="relative" style={{ width: MAX_LEVEL * COL }}>
+            {/* Rail: dim base + gold fill (with shimmer) + leading glow-head */}
+            <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: RAIL_TOP - 2.5 }}>
+              <div className="h-[5px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.12)' }} />
               <div
-                className="absolute left-0 top-0 h-[3px] rounded-full"
+                className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
                 style={{
                   width: go ? `${railPct}%` : '0%',
-                  background: `linear-gradient(90deg, ${ACCENT}, #e5ff66)`,
-                  boxShadow: '0 0 8px rgba(204,255,0,0.5)',
-                  transition: 'width 1200ms cubic-bezier(0.22,1,0.36,1)',
+                  background: `linear-gradient(90deg, #a6d600, ${ACCENT} 70%, ${ACCENT_HI})`,
+                  transition: 'width 1300ms cubic-bezier(0.22,1,0.36,1)',
                 }}
-              />
+              >
+                {/* moving shimmer */}
+                <div
+                  className="absolute inset-y-0 w-1/3"
+                  style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)', animation: 'lvlShim 2.4s linear infinite' }}
+                />
+              </div>
+              {/* glowing head at the fill tip */}
+              {!isMax && (
+                <div
+                  className="absolute size-2.5 rounded-full"
+                  style={{
+                    left: go ? `${railPct}%` : '0%', top: -1.5, marginLeft: -5,
+                    background: ACCENT_HI, animation: 'lvlHead 1.6s ease-in-out infinite',
+                    transition: 'left 1300ms cubic-bezier(0.22,1,0.36,1)',
+                  }}
+                />
+              )}
             </div>
 
             {/* Nodes */}
@@ -187,55 +215,71 @@ export default function LevelProgressModal({
                 const locked = num > level;
                 const on = passed || current;
                 return (
-                  <div
-                    key={lv.label}
-                    ref={current ? currentRef : undefined}
-                    className="flex shrink-0 flex-col items-center"
-                    style={{ width: COL }}
-                  >
-                    {/* YOU marker above the current node */}
-                    <div className="relative flex h-6 items-end">
+                  <div key={lv.label} ref={current ? currentRef : undefined} className="group flex shrink-0 flex-col items-center" style={{ width: COL }}>
+                    {/* YOU marker */}
+                    <div className="flex items-end justify-center" style={{ height: YOU_ROW }}>
                       {current && (
-                        <span
-                          className="mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
-                          style={{
-                            background: ACCENT, color: ON_ACCENT,
-                            boxShadow: '0 4px 14px rgba(204,255,0,0.45)',
-                            opacity: go ? 1 : 0,
-                            transform: go ? 'translateY(0)' : 'translateY(6px)',
-                            transition: 'opacity 400ms ease 500ms, transform 400ms ease 500ms',
-                          }}
+                        <div
+                          className="relative mb-1"
+                          style={{ opacity: go ? 1 : 0, transition: 'opacity 400ms ease 620ms', animation: go ? 'lvlBob 2.6s ease-in-out infinite 700ms' : undefined }}
                         >
-                          <span className="size-1.5 rounded-full bg-[#0a0a0a]" /> YOU
-                        </span>
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-wide"
+                            style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 6px 18px rgba(204,255,0,0.5)' }}
+                          >
+                            <span className="size-1.5 rounded-full" style={{ background: ON_ACCENT }} /> YOU
+                          </span>
+                          {/* pointer */}
+                          <span
+                            className="absolute left-1/2 top-full -translate-x-1/2"
+                            style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: `6px solid ${ACCENT}` }}
+                          />
+                        </div>
                       )}
                     </div>
 
-                    {/* Node circle */}
-                    <div
-                      className="grid size-9 place-items-center rounded-full"
-                      style={{
-                        background: on ? ACCENT : 'var(--bg-card)',
-                        border: `2px solid ${on ? ACCENT : next ? 'rgba(204,255,0,0.55)' : 'var(--border-primary)'}`,
-                        boxShadow: current ? '0 0 0 4px rgba(204,255,0,0.22), 0 0 18px rgba(204,255,0,0.55)' : 'none',
-                        transform: go ? 'scale(1)' : 'scale(0.6)',
-                        opacity: go ? 1 : 0,
-                        transition: `transform 420ms cubic-bezier(0.22,1,0.36,1) ${i * 70}ms, opacity 360ms ease ${i * 70}ms`,
-                      }}
-                    >
-                      {passed ? (
-                        <Check size={16} style={{ color: ON_ACCENT }} strokeWidth={3} />
-                      ) : current ? (
-                        <Sparkles size={15} style={{ color: ON_ACCENT }} />
-                      ) : (
-                        <Lock size={13} style={{ color: next ? ACCENT : 'var(--text-tertiary, #8a8a8a)' }} />
+                    {/* Node */}
+                    <div className="relative grid place-items-center" style={{ width: NODE, height: NODE }}>
+                      {/* pulsing ping ring for current */}
+                      {current && go && (
+                        <span
+                          className="absolute inset-0 rounded-full"
+                          style={{ border: `2px solid ${ACCENT}`, animation: 'lvlPing 1.9s ease-out infinite' }}
+                        />
                       )}
+                      <div
+                        className="grid size-full place-items-center rounded-full transition-transform duration-200 group-hover:scale-110"
+                        style={{
+                          background: on
+                            ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #a6d600)`
+                            : 'rgba(255,255,255,0.03)',
+                          border: on
+                            ? '1.5px solid rgba(255,255,255,0.35)'
+                            : `1.5px solid ${next ? 'rgba(204,255,0,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                          boxShadow: current
+                            ? '0 0 0 5px rgba(204,255,0,0.14), 0 0 26px rgba(204,255,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55)'
+                            : passed
+                              ? '0 6px 16px rgba(204,255,0,0.28), inset 0 1px 0 rgba(255,255,255,0.5)'
+                              : next ? '0 0 14px rgba(204,255,0,0.18)' : 'none',
+                          transform: go ? (current ? 'scale(1.06)' : 'scale(1)') : 'scale(0.5)',
+                          opacity: go ? 1 : 0,
+                          transition: `transform 460ms cubic-bezier(0.34,1.56,0.64,1) ${i * 70}ms, opacity 360ms ease ${i * 70}ms`,
+                        }}
+                      >
+                        {passed ? (
+                          <Check size={18} style={{ color: ON_ACCENT }} strokeWidth={3.2} />
+                        ) : current ? (
+                          <Sparkles size={17} style={{ color: ON_ACCENT }} />
+                        ) : (
+                          <Lock size={14} style={{ color: next ? ACCENT : 'rgba(255,255,255,0.35)' }} />
+                        )}
+                      </div>
                     </div>
 
                     {/* Labels */}
                     <p
-                      className="mt-2 px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-wide"
-                      style={{ color: on ? ACCENT : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}
+                      className="mt-2.5 px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-wide"
+                      style={{ color: on ? ACCENT : next ? 'rgba(204,255,0,0.75)' : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)', textShadow: current ? '0 0 12px rgba(204,255,0,0.55)' : 'none' }}
                     >
                       {lv.label}
                     </p>
@@ -252,22 +296,22 @@ export default function LevelProgressModal({
         {/* ── How to level up ── */}
         {!isMax && (
           <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">How to rank up</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">How to rank up</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {WAYS.map((w, i) => (
                 <div
                   key={w.title}
-                  className="flex items-center gap-2.5 rounded-xl p-2.5"
+                  className="flex items-center gap-2.5 rounded-2xl p-2.5 transition-colors hover:border-[rgba(204,255,0,0.35)]"
                   style={{
-                    background: 'var(--bg-hover, rgba(255,255,255,0.03))',
+                    background: 'rgba(255,255,255,0.02)',
                     border: '1px solid var(--border-primary)',
                     opacity: go ? 1 : 0,
                     transform: go ? 'translateY(0)' : 'translateY(6px)',
-                    transition: `opacity 400ms ease ${300 + i * 80}ms, transform 400ms ease ${300 + i * 80}ms`,
+                    transition: `opacity 400ms ease ${360 + i * 80}ms, transform 400ms ease ${360 + i * 80}ms`,
                   }}
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg" style={{ background: 'rgba(204,255,0,0.12)' }}>
-                    <w.icon size={15} style={{ color: ACCENT }} />
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(204,255,0,0.12)' }}>
+                    <w.icon size={16} style={{ color: ACCENT }} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-text-primary">{w.title}</p>
@@ -283,8 +327,8 @@ export default function LevelProgressModal({
         <button
           type="button"
           onClick={() => { onClose(); router.push('/rewards'); }}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-transform active:scale-[0.98]"
-          style={{ background: ACCENT, color: ON_ACCENT }}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-extrabold transition-transform hover:brightness-105 active:scale-[0.98]"
+          style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 10px 28px rgba(204,255,0,0.32)' }}
         >
           {isMax ? 'View your rewards' : 'Go to Rewards & missions'}
           <ArrowRight size={16} />
