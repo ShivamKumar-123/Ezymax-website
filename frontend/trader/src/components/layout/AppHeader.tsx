@@ -100,9 +100,9 @@ export default function AppHeader() {
             href="/earn/tasks"
             title="XP & rewards"
             aria-label="XP and rewards"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccff00]/30 bg-[#ccff00]/5 hover:bg-[#ccff00]/10 transition-colors"
           >
-            <Sparkles size={15} className="text-[#d6a93d]" />
+            <Sparkles size={15} className="text-[#ccff00]" />
           </Link>
 
           {/* Wallet balance — icon only, amount in the tooltip */}
@@ -110,9 +110,9 @@ export default function AppHeader() {
             href="/wallet"
             title={`Balance: ${formatUsd(balance)}`}
             aria-label={`Wallet — balance ${formatUsd(balance)}`}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccff00]/30 bg-[#ccff00]/5 hover:bg-[#ccff00]/10 transition-colors"
           >
-            <Wallet size={15} className="text-[#d6a93d]" />
+            <Wallet size={15} className="text-[#ccff00]" />
           </Link>
 
           {/* Theme toggle — lets the user flip dark/light without
@@ -132,7 +132,7 @@ export default function AppHeader() {
             >
               <div
                 title={handle}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#ccff00]/20 border border-[#ccff00]/30 flex items-center justify-center text-[#ccff00] text-[10px] sm:text-xs font-bold uppercase"
               >
                 {initials}
               </div>

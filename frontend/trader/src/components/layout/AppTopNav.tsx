@@ -65,7 +65,7 @@ export default function AppTopNav() {
                   className={cn(
                     'group relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors shrink-0',
                     active
-                      ? 'bg-bg-hover text-[#d6a93d]'
+                      ? 'bg-bg-hover text-[#ccff00]'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                   )}
                 >
@@ -79,7 +79,7 @@ export default function AppTopNav() {
                   {active && (
                     <span
                       aria-hidden
-                      className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#d6a93d]"
+                      className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[#ccff00]"
                     />
                   )}
                 </Link>
