@@ -22,6 +22,7 @@ import {
 import DashboardShell from '@/components/layout/DashboardShell';
 import TvCard from '@/components/dashboard/TvCard';
 import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
+import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -93,6 +94,8 @@ function BrokerHome() {
   } | null>(null);
   // Level-progress popup (opened from the "Lvl N" badge).
   const [showLevel, setShowLevel] = useState(false);
+  // FXA details popup (opened from the FXA chip).
+  const [showFxa, setShowFxa] = useState(false);
 
   useEffect(() => {
     api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
@@ -275,10 +278,14 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums"
+          <button
+            type="button"
+            onClick={() => setShowFxa(true)}
+            title="Where your FXA come from"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
-          </span>
+          </button>
         </div>
       </div>
 
@@ -341,6 +348,9 @@ function BrokerHome() {
           xpForNextLevel={rewardsState?.xp_for_next_level ?? 100}
           onClose={() => setShowLevel(false)}
         />
+      )}
+      {showFxa && (
+        <FxaDetailsModal balance={dgcCoins} onClose={() => setShowFxa(false)} />
       )}
     </div>
   );
