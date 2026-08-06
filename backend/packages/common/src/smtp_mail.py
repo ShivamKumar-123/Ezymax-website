@@ -124,6 +124,16 @@ async def _send_via_sendgrid(
         "from": {"email": _from_address(), "name": "FXArtha"},
         "subject": subject,
         "content": content,
+        # Disable SendGrid link/open tracking. By default SendGrid rewrites
+        # every href through its click-tracking domain (e.g.
+        # url3100.fxartha.com/ls/click?...), which on this account has no TLS
+        # cert — so recipients hit a "site doesn't support a secure
+        # connection" page instead of the real link. Turning it off keeps
+        # our hrefs (https://trade.fxartha.com/...) intact.
+        "tracking_settings": {
+            "click_tracking": {"enable": False, "enable_text": False},
+            "open_tracking": {"enable": False},
+        },
     }
 
     async with httpx.AsyncClient(timeout=20.0) as client:
