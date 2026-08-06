@@ -398,8 +398,11 @@ export default function UsersPage() {
       if (!data?.code) throw new Error('No redemption code returned');
       const host = typeof window !== 'undefined' ? window.location.hostname : '';
       const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+      // The trader app lives on the `trade.` subdomain (the apex now serves
+      // the marketing landing, which has no /auth/impersonate route — that was
+      // the 404). Map admin.<domain> → trade.<domain>.
       const traderUrl = process.env.NEXT_PUBLIC_TRADER_URL
-        || (host.startsWith('admin.') ? `${proto}//${host.replace(/^admin\./, '')}` : 'http://localhost:3000');
+        || (host.startsWith('admin.') ? `${proto}//${host.replace(/^admin\./, 'trade.')}` : 'http://localhost:3000');
       const url = `${traderUrl}/auth/impersonate?code=${encodeURIComponent(data.code)}`;
       if (popup && !popup.closed) {
         popup.location.href = url;
