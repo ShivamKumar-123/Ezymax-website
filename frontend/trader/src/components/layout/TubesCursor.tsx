@@ -123,11 +123,11 @@ function GoldTrail() {
         const p0 = points[i - 1];
         const p1 = points[i];
         const alpha = p1.life * (i / points.length) * 0.55;
-        ctx.strokeStyle = `rgba(214, 169, 61, ${alpha})`;
+        ctx.strokeStyle = `rgba(204, 255, 0, ${alpha})`;
         ctx.lineWidth = 3 * p1.life;
         ctx.lineCap = 'round';
         ctx.shadowBlur = 14;
-        ctx.shadowColor = `rgba(214, 169, 61, ${alpha})`;
+        ctx.shadowColor = `rgba(204, 255, 0, ${alpha})`;
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);

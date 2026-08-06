@@ -26,7 +26,7 @@ export function FXArthaWordmark({
         title="Trading home"
         className={cn(
           'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#d6a93d]',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#ccff00]',
           className,
         )}
       >
@@ -45,7 +45,7 @@ export function FXArthaWordmark({
       <img
         src="/images/fxartha-logo.png"
         alt="FXArtha"
-        className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(214,169,61,0.12)]"
+        className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(204,255,0,0.12)]"
       />
     </span>
   );
@@ -54,7 +54,7 @@ export function FXArthaWordmark({
     <Link
       href={href}
       className={cn(
-        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6a93d]/60 focus-visible:rounded-md',
+        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ccff00]/60 focus-visible:rounded-md',
         className,
       )}
     >
