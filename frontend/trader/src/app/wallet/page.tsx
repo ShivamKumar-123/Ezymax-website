@@ -1161,7 +1161,7 @@ function WalletPageContent() {
                     <p className="text-xs text-text-tertiary mb-2 font-medium uppercase tracking-wide">Deposit To</p>
                     <button
                       type="button"
-                      className="w-full py-3.5 rounded-xl bg-[#ccff00] text-white font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-xl bg-[#ccff00] text-black font-bold text-sm flex items-center justify-center gap-2"
                     >
                       <WalletIcon className="w-4 h-4" />
                       Wallet
@@ -1276,7 +1276,7 @@ function WalletPageContent() {
                           'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
                           demoFundingBlocked || depositSubmitting || !depositAmount
                             ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg'
+                            : 'bg-accent text-black hover:bg-[#5cffb8] shadow-neon-green-lg'
                         )}
                       >
                         {depositSubmitting ? 'Processing…' : 'Pay with Crypto'}
@@ -1456,7 +1456,7 @@ function WalletPageContent() {
                                 !withdrawAmount ||
                                 !addrLooksValid
                                 ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                                : 'bg-accent text-white hover:bg-[#5cffb8] shadow-neon-green-lg',
+                                : 'bg-accent text-black hover:bg-[#5cffb8] shadow-neon-green-lg',
                             )}
                           >
                             {withdrawSubmitting
@@ -1547,7 +1547,7 @@ function WalletPageContent() {
                           'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99]',
                           demoFundingBlocked || withdrawSubmitting || !withdrawAmount || (!manualWithdrawUpi.trim() && !manualWithdrawQrFile)
                             ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-                            : 'bg-accent text-white hover:brightness-110 shadow-neon-green-lg',
+                            : 'bg-accent text-black hover:brightness-110 shadow-neon-green-lg',
                         )}
                       >
                         {withdrawSubmitting

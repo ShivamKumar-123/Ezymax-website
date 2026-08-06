@@ -200,7 +200,7 @@ export default function AcademyPhasePage() {
               </div>
               <Link
                 href={`/academy/${slug}/quiz`}
-                className="px-4 py-2 rounded-lg bg-[#ccff00] hover:bg-[#a6d600] text-white text-sm font-semibold transition-colors text-center whitespace-nowrap"
+                className="px-4 py-2 rounded-lg bg-[#ccff00] hover:bg-[#a6d600] text-black text-sm font-semibold transition-colors text-center whitespace-nowrap"
               >
                 Start Quiz
               </Link>

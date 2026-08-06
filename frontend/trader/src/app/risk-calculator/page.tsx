@@ -388,7 +388,7 @@ export default function RiskCalculatorPage() {
               className={clsx(
                 'flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap',
                 tab === t.id
-                  ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                  ? 'bg-accent text-black shadow-lg shadow-accent/20'
                   : 'text-text-secondary hover:text-text-primary',
               )}
             >
@@ -541,7 +541,7 @@ export default function RiskCalculatorPage() {
                 <button
                   type="button"
                   onClick={handleCalculate}
-                  className="w-full sm:w-auto px-8 py-3 rounded-xl bg-accent/80 hover:bg-accent text-white text-sm font-bold transition-all active:scale-[0.98] shadow-lg shadow-accent/15"
+                  className="w-full sm:w-auto px-8 py-3 rounded-xl bg-accent/80 hover:bg-accent text-black text-sm font-bold transition-all active:scale-[0.98] shadow-lg shadow-accent/15"
                 >
                   Calculate
                 </button>

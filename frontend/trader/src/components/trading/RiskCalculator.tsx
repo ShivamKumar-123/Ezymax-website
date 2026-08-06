@@ -315,7 +315,7 @@ export default function RiskCalculator() {
             className={clsx(
               'flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all',
               tab === t.id
-                ? 'bg-accent text-white shadow-md shadow-accent/20'
+                ? 'bg-accent text-black shadow-md shadow-accent/20'
                 : 'text-text-tertiary hover:text-text-primary',
             )}
           >
@@ -440,7 +440,7 @@ export default function RiskCalculator() {
             onClick={() => {
               if (!entryPrice && livePrice > 0) setEntryPrice(livePrice.toFixed(digits));
             }}
-            className="w-full py-2.5 rounded-lg text-[11px] font-bold text-white bg-accent transition-all active:scale-[0.98] shadow-md shadow-accent/20"
+            className="w-full py-2.5 rounded-lg text-[11px] font-bold text-black bg-accent transition-all active:scale-[0.98] shadow-md shadow-accent/20"
           >
             Calculate
           </button>

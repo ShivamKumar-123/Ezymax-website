@@ -663,7 +663,7 @@ export default function PammPage() {
               className={clsx(
                 'flex-1 py-2 text-xs font-semibold rounded-lg transition-colors',
                 activeTab === t.id
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-black'
                   : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
               )}
             >
@@ -705,7 +705,7 @@ export default function PammPage() {
                       <button
                         type="button"
                         onClick={() => openInvest(a)}
-                        className="shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ccff00] hover:bg-[#a6d600] text-white transition-colors"
+                        className="shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ccff00] hover:bg-[#a6d600] text-black transition-colors"
                       >
                         Invest
                       </button>
@@ -774,7 +774,7 @@ export default function PammPage() {
                     <button
                       type="button"
                       onClick={() => setActiveTab('browse')}
-                      className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-white text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                      className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
                     >
                       Browse Managers
                     </button>
@@ -909,7 +909,7 @@ export default function PammPage() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('dashboard')}
-                    className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-white text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                    className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
                   >
                     View Dashboard
                   </button>
@@ -1002,7 +1002,7 @@ export default function PammPage() {
                     type="button"
                     disabled={applying || liveAccounts.length === 0}
                     onClick={submitApply}
-                    className="w-full py-3 rounded-lg bg-[#ccff00] text-white font-bold text-sm hover:bg-[#a6d600] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-3 rounded-lg bg-[#ccff00] text-black font-bold text-sm hover:bg-[#a6d600] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {applying ? 'Submitting…' : 'Submit Application'}
                   </button>
@@ -1026,7 +1026,7 @@ export default function PammPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('apply')}
-                  className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-white text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                  className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
                 >
                   Apply Now
                 </button>
@@ -1218,7 +1218,7 @@ export default function PammPage() {
                 type="button"
                 onClick={submitInvest}
                 disabled={investing}
-                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-white text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors"
+                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors"
               >
                 {investing ? 'Investing…' : 'Confirm Invest'}
               </button>
@@ -1324,7 +1324,7 @@ export default function PammPage() {
                 Cancel
               </button>
               <button type="button" onClick={submitRefill} disabled={refilling || !refillAmount}
-                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-white text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors">
                 {refilling ? 'Adding…' : 'Add Funds'}
               </button>
             </div>

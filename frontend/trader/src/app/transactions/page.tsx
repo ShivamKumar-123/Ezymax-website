@@ -287,7 +287,7 @@ export default function TransactionsPage() {
                 className={clsx(
                   'px-5 py-2 text-sm font-semibold rounded-lg transition-all',
                   mainTab === k
-                    ? 'bg-accent text-white shadow-sm'
+                    ? 'bg-accent text-black shadow-sm'
                     : 'text-text-tertiary hover:text-text-primary',
                 )}
               >

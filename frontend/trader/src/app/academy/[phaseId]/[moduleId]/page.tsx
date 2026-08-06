@@ -393,7 +393,7 @@ export default function AcademyModulePage() {
                   'px-6 py-2.5 font-semibold rounded-lg transition-colors text-sm flex items-center gap-1.5 w-fit',
                   isCompleted
                     ? 'bg-green-600/20 text-green-400 border border-green-600/40 cursor-default'
-                    : 'bg-[#ccff00] hover:bg-[#a6d600] text-white'
+                    : 'bg-[#ccff00] hover:bg-[#a6d600] text-black'
                 )}
               >
                 {isCompleted ? <><CheckCircle size={14} /> COMPLETED</> : <>MARK AS COMPLETE <ArrowRight size={14} /></>}

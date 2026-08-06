@@ -567,7 +567,7 @@ export default function AccountsPage() {
             <Link
               href="/kyc"
               onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#ccff00] text-white text-sm font-bold hover:bg-[#a6d600] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#ccff00] text-black text-sm font-bold hover:bg-[#a6d600] transition-colors text-center"
             >
               Complete KYC
             </Link>
@@ -596,7 +596,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#ccff00] text-white text-sm font-bold hover:bg-[#a6d600] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#ccff00] text-black text-sm font-bold hover:bg-[#a6d600] transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -741,15 +741,22 @@ export default function AccountsPage() {
             key="tab-transfer"
             className="w-full max-w-full animate-wallet-fund-enter-lg space-y-6"
           >
-            <div className="rounded-2xl border border-accent/20 bg-card p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-              <div className="flex items-start gap-3 mb-6">
-                <div className="w-11 h-11 rounded-xl bg-accent/15 border border-accent/35 flex items-center justify-center shrink-0 text-accent">
-                  <ArrowLeftRight size={22} strokeWidth={2.25} />
+            <div
+              className="relative overflow-hidden rounded-2xl border border-accent/25 p-5 sm:p-6"
+              style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)' }}
+            >
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden />
+              <div className="relative flex items-start gap-3 mb-6">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 60%, #a6d600)', color: '#0a0a0a', boxShadow: '0 8px 22px rgba(204,255,0,0.35)' }}
+                >
+                  <ArrowLeftRight size={22} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-text-primary tracking-tight">Internal Transfer</h1>
+                  <h1 className="text-xl font-extrabold text-text-primary tracking-tight sm:text-2xl">Internal Transfer</h1>
                   <p className="text-sm text-text-secondary mt-1 leading-relaxed max-w-prose">
-                    Move funds between your main wallet and live trading accounts, or between accounts.
+                    Move funds instantly between your main wallet and live trading accounts.
                   </p>
                 </div>
               </div>
@@ -897,16 +904,42 @@ export default function AccountsPage() {
                         Max: {fmt(uniFromBalance)}
                       </button>
                     </div>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={transferAmount}
-                      onChange={(e) => setTransferAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full px-4 py-3.5 rounded-xl border border-border-primary bg-bg-base font-mono font-semibold text-text-primary text-base placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50"
-                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-text-tertiary">$</span>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={transferAmount}
+                        onChange={(e) => setTransferAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-9 pr-4 py-4 rounded-xl border border-border-primary bg-bg-base font-mono font-bold text-text-primary text-xl placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50"
+                      />
+                    </div>
+                    {/* Quick-amount chips */}
+                    <div className="flex gap-2 pt-1">
+                      {[0.25, 0.5, 0.75, 1].map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          disabled={uniFromBalance <= 0}
+                          onClick={() => setTransferAmount((uniFromBalance * f).toFixed(2))}
+                          className="flex-1 rounded-lg border border-accent/25 bg-accent/[0.06] py-2 text-xs font-bold text-accent transition-colors hover:bg-accent/15 disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          {f === 1 ? 'Max' : `${f * 100}%`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* ── SUMMARY ── */}
+                  {transferAmount.trim() && Number(transferAmount) > 0 && uniFrom !== uniTo && (
+                    <div className="flex items-center justify-center gap-2 rounded-xl border border-accent/20 bg-accent/[0.05] px-4 py-3 text-center text-xs text-text-secondary">
+                      <span>Transferring</span>
+                      <span className="font-bold text-accent tabular-nums">{fmt(Number(transferAmount) || 0)}</span>
+                      <span>— arrives instantly</span>
+                    </div>
+                  )}
 
                   {/* ── SUBMIT ── */}
                   <button
@@ -919,7 +952,8 @@ export default function AccountsPage() {
                       uniFromBalance <= 0 ||
                       uniFrom === uniTo
                     }
-                    className="w-full py-3.5 rounded-xl bg-[#ccff00] text-white text-base font-bold hover:bg-[#a6d600] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl text-base font-extrabold disabled:opacity-45 disabled:pointer-events-none transition-transform hover:brightness-105 active:scale-[0.99] flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(90deg, #eaff8a, #ccff00)', color: '#0a0a0a', boxShadow: '0 10px 28px rgba(204,255,0,0.30)' }}
                   >
                     <ArrowLeftRight size={20} />
                     {transferSubmitting ? 'Transferring…' : 'Transfer'}
@@ -1381,7 +1415,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#ccff00] text-white text-sm font-bold hover:bg-[#a6d600] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#ccff00] text-black text-sm font-bold hover:bg-[#a6d600] transition-colors"
                 >
                   <BookOpen size={16} />
                   View Trades
@@ -1406,7 +1440,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#ccff00] text-white text-sm font-bold hover:bg-[#a6d600] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#ccff00] text-black text-sm font-bold hover:bg-[#a6d600] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
@@ -1434,7 +1468,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#ccff00] text-white text-xs sm:text-sm font-bold hover:bg-[#a6d600] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#ccff00] text-black text-xs sm:text-sm font-bold hover:bg-[#a6d600] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />
