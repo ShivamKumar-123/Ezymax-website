@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import TvCard from '@/components/dashboard/TvCard';
+import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -87,9 +88,11 @@ function BrokerHome() {
   // chip read undefined and always showed 0.
   const [rewardsState, setRewardsState] = useState<{
     level?: number; level_label?: string;
-    xp?: number; xp_for_next_level?: number;
+    xp?: number; xp_into_level?: number; xp_for_next_level?: number;
     ac_balance?: number;
   } | null>(null);
+  // Level-progress popup (opened from the "Lvl N" badge).
+  const [showLevel, setShowLevel] = useState(false);
 
   useEffect(() => {
     api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
@@ -264,10 +267,14 @@ function BrokerHome() {
           <p className="text-xs text-text-tertiary mt-0.5">Here's your portfolio at a glance.</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+          <button
+            type="button"
+            onClick={() => setShowLevel(true)}
+            title="See your level progress"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
-          </span>
+          </button>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums"
             style={{ border: '1px solid rgba(214,169,61,0.30)', background: 'rgba(214,169,61,0.07)', color: '#d6a93d' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
@@ -325,6 +332,16 @@ function BrokerHome() {
 
       <div className="dash-rise" style={{ animationDelay: '230ms' }}><InviteFriendsCard /></div>
       {banners.length > 0 && <div className="dash-rise" style={{ animationDelay: '310ms' }}><BannerStrip banners={banners} /></div>}
+
+      {showLevel && (
+        <LevelProgressModal
+          level={level}
+          levelLabel={levelLabel}
+          xpIntoLevel={rewardsState?.xp_into_level ?? 0}
+          xpForNextLevel={rewardsState?.xp_for_next_level ?? 100}
+          onClose={() => setShowLevel(false)}
+        />
+      )}
     </div>
   );
 }
