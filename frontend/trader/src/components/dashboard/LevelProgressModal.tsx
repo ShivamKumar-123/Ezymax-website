@@ -8,8 +8,8 @@ import {
 
 /**
  * Rank-ladder level popup. A horizontal track of every tier (Novice → Mythic):
- * cleared tiers are gold, the current one glows with a "YOU" marker, upcoming
- * ones are locked. A gold rail fills to your exact progress, the track
+ * cleared tiers are lime, the current one glows with a "YOU" marker, upcoming
+ * ones are locked. A lime rail fills to your exact progress, the track
  * auto-scrolls to centre you, and the "XP to next" counts up.
  *
  * Mirrors the backend ladder (rewards_service.LEVEL_LABELS / LEVEL_THRESHOLDS).
@@ -28,7 +28,9 @@ const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length; // 10
 
-const GOLD = '#d6a93d';
+// Landing "Obsidian & Lime" palette — lime accent + near-black on-accent text.
+const ACCENT = '#ccff00';
+const ON_ACCENT = '#0a0a0a';
 
 const WAYS = [
   { icon: CandlestickChart, title: 'Place trades', desc: 'Every trade you open earns XP.' },
@@ -130,7 +132,7 @@ export default function LevelProgressModal({
           transition: 'transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease',
         }}
       >
-        <div aria-hidden className="pointer-events-none absolute -top-16 left-1/4 h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(214,169,61,0.16)' }} />
+        <div aria-hidden className="pointer-events-none absolute -top-16 left-1/4 h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.16)' }} />
 
         <button
           type="button" onClick={onClose} aria-label="Close"
@@ -143,15 +145,15 @@ export default function LevelProgressModal({
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Your rank</p>
           <h2 className="mt-0.5 text-xl font-extrabold text-text-primary">
-            Level {level} · <span style={{ color: GOLD }}>{levelLabel}</span>
+            Level {level} · <span style={{ color: ACCENT }}>{levelLabel}</span>
           </h2>
           {isMax ? (
-            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: GOLD }}>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: ACCENT }}>
               <Sparkles size={15} /> Max rank — you&apos;ve topped the ladder! 🏆
             </p>
           ) : (
             <p className="mt-1 text-sm text-text-secondary">
-              <span className="font-bold tabular-nums" style={{ color: GOLD }}>{remainingCount.toLocaleString()}</span>
+              <span className="font-bold tabular-nums" style={{ color: ACCENT }}>{remainingCount.toLocaleString()}</span>
               {' '}XP to reach{' '}
               <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
             </p>
@@ -163,13 +165,13 @@ export default function LevelProgressModal({
           <div className="relative" style={{ width: MAX_LEVEL * COL, paddingTop: 26 }}>
             {/* Rail (dim) + gold fill, centred on the node row */}
             <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: 26 + 18 }}>
-              <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(214,169,61,0.14)' }} />
+              <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.14)' }} />
               <div
                 className="absolute left-0 top-0 h-[3px] rounded-full"
                 style={{
                   width: go ? `${railPct}%` : '0%',
-                  background: `linear-gradient(90deg, ${GOLD}, #f0c869)`,
-                  boxShadow: '0 0 8px rgba(214,169,61,0.5)',
+                  background: `linear-gradient(90deg, ${ACCENT}, #e5ff66)`,
+                  boxShadow: '0 0 8px rgba(204,255,0,0.5)',
                   transition: 'width 1200ms cubic-bezier(0.22,1,0.36,1)',
                 }}
               />
@@ -197,14 +199,14 @@ export default function LevelProgressModal({
                         <span
                           className="mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
                           style={{
-                            background: GOLD, color: '#1a1408',
-                            boxShadow: '0 4px 14px rgba(214,169,61,0.45)',
+                            background: ACCENT, color: ON_ACCENT,
+                            boxShadow: '0 4px 14px rgba(204,255,0,0.45)',
                             opacity: go ? 1 : 0,
                             transform: go ? 'translateY(0)' : 'translateY(6px)',
                             transition: 'opacity 400ms ease 500ms, transform 400ms ease 500ms',
                           }}
                         >
-                          <span className="size-1.5 rounded-full bg-[#1a1408]" /> YOU
+                          <span className="size-1.5 rounded-full bg-[#0a0a0a]" /> YOU
                         </span>
                       )}
                     </div>
@@ -213,27 +215,27 @@ export default function LevelProgressModal({
                     <div
                       className="grid size-9 place-items-center rounded-full"
                       style={{
-                        background: on ? GOLD : 'var(--bg-card)',
-                        border: `2px solid ${on ? GOLD : next ? 'rgba(214,169,61,0.55)' : 'var(--border-primary)'}`,
-                        boxShadow: current ? '0 0 0 4px rgba(214,169,61,0.22), 0 0 18px rgba(214,169,61,0.55)' : 'none',
+                        background: on ? ACCENT : 'var(--bg-card)',
+                        border: `2px solid ${on ? ACCENT : next ? 'rgba(204,255,0,0.55)' : 'var(--border-primary)'}`,
+                        boxShadow: current ? '0 0 0 4px rgba(204,255,0,0.22), 0 0 18px rgba(204,255,0,0.55)' : 'none',
                         transform: go ? 'scale(1)' : 'scale(0.6)',
                         opacity: go ? 1 : 0,
                         transition: `transform 420ms cubic-bezier(0.22,1,0.36,1) ${i * 70}ms, opacity 360ms ease ${i * 70}ms`,
                       }}
                     >
                       {passed ? (
-                        <Check size={16} style={{ color: '#1a1408' }} strokeWidth={3} />
+                        <Check size={16} style={{ color: ON_ACCENT }} strokeWidth={3} />
                       ) : current ? (
-                        <Sparkles size={15} style={{ color: '#1a1408' }} />
+                        <Sparkles size={15} style={{ color: ON_ACCENT }} />
                       ) : (
-                        <Lock size={13} style={{ color: next ? GOLD : 'var(--text-tertiary, #8a8a8a)' }} />
+                        <Lock size={13} style={{ color: next ? ACCENT : 'var(--text-tertiary, #8a8a8a)' }} />
                       )}
                     </div>
 
                     {/* Labels */}
                     <p
                       className="mt-2 px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-wide"
-                      style={{ color: on ? GOLD : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}
+                      style={{ color: on ? ACCENT : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}
                     >
                       {lv.label}
                     </p>
@@ -264,8 +266,8 @@ export default function LevelProgressModal({
                     transition: `opacity 400ms ease ${300 + i * 80}ms, transform 400ms ease ${300 + i * 80}ms`,
                   }}
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg" style={{ background: 'rgba(214,169,61,0.12)' }}>
-                    <w.icon size={15} style={{ color: GOLD }} />
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg" style={{ background: 'rgba(204,255,0,0.12)' }}>
+                    <w.icon size={15} style={{ color: ACCENT }} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-text-primary">{w.title}</p>
@@ -282,7 +284,7 @@ export default function LevelProgressModal({
           type="button"
           onClick={() => { onClose(); router.push('/rewards'); }}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-transform active:scale-[0.98]"
-          style={{ background: GOLD, color: '#1a1408' }}
+          style={{ background: ACCENT, color: ON_ACCENT }}
         >
           {isMax ? 'View your rewards' : 'Go to Rewards & missions'}
           <ArrowRight size={16} />
