@@ -48,7 +48,7 @@ function Inner() {
     <div className="space-y-5 pb-8">
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-          Leaderboard <Trophy size={22} className="text-[#d6a93d]" />
+          Leaderboard <Trophy size={22} className="text-[#ccff00]" />
         </h1>
         <p className="text-sm text-text-secondary mt-1">Top traders by P&amp;L over the last 30 days, and top earners by Coin balance.</p>
       </header>
@@ -63,7 +63,7 @@ function Inner() {
               className={
                 'px-4 py-2 rounded-lg text-sm font-medium transition-colors ' +
                 (tab === k
-                  ? 'bg-[#d6a93d]/15 text-text-primary border border-[#d6a93d]/40'
+                  ? 'bg-[#ccff00]/15 text-text-primary border border-[#ccff00]/40'
                   : 'text-text-secondary hover:text-text-primary border border-transparent')
               }
             >

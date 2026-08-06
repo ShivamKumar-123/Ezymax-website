@@ -23,8 +23,8 @@ export default function WalletLinkStep({
   void onLinked;
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-[#d6a93d]/20 bg-[#d6a93d]/5 px-3 py-3 flex items-start gap-2">
-        <ShieldCheck size={14} className="text-[#d6a93d] mt-0.5 shrink-0" />
+      <div className="rounded-lg border border-[#ccff00]/20 bg-[#ccff00]/5 px-3 py-3 flex items-start gap-2">
+        <ShieldCheck size={14} className="text-[#ccff00] mt-0.5 shrink-0" />
         <div className="text-[11px] text-text-secondary leading-relaxed space-y-1">
           <p>
             <strong className="text-text-primary">Why we ask:</strong>{' '}
@@ -42,7 +42,7 @@ export default function WalletLinkStep({
       </div>
 
       <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
-        <Wallet size={18} className="text-[#d6a93d] shrink-0" />
+        <Wallet size={18} className="text-[#ccff00] shrink-0" />
         <div className="flex-1 text-xs text-text-secondary leading-snug">
           Use any EVM wallet — MetaMask, Trust Wallet, Rainbow, Coinbase
           Wallet, OKX, and so on.

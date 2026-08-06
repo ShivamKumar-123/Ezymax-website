@@ -80,9 +80,9 @@ export default function WalletAccountMigrateBanner({
 
   return (
     <>
-      <div className="rounded-2xl border border-[#d6a93d]/35 bg-[#d6a93d]/5 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
-        <div className="w-10 h-10 rounded-xl bg-[#d6a93d]/15 flex items-center justify-center shrink-0">
-          <WalletIcon size={18} className="text-[#d6a93d]" />
+      <div className="rounded-2xl border border-[#ccff00]/35 bg-[#ccff00]/5 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-5">
+        <div className="w-10 h-10 rounded-xl bg-[#ccff00]/15 flex items-center justify-center shrink-0">
+          <WalletIcon size={18} className="text-[#ccff00]" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-text-primary mb-0.5">
@@ -97,7 +97,7 @@ export default function WalletAccountMigrateBanner({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#ccff00] text-bg-base text-sm font-bold hover:brightness-110 transition-colors"
         >
           Switch now <ArrowRight size={14} />
         </button>
@@ -109,11 +109,11 @@ export default function WalletAccountMigrateBanner({
           onClick={() => !busy && setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-[#d6a93d]/40 bg-bg-secondary shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-[#ccff00]/40 bg-bg-secondary shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 pt-5 pb-3 border-b border-border-primary">
-              <div className="flex items-center gap-2 text-[#d6a93d] mb-1.5">
+              <div className="flex items-center gap-2 text-[#ccff00] mb-1.5">
                 <WalletIcon size={14} />
                 <span className="text-[10px] uppercase tracking-wider font-bold">
                   Wallet Trading Migration
@@ -140,7 +140,7 @@ export default function WalletAccountMigrateBanner({
                   value={mergeFrom}
                   onChange={(e) => setMergeFrom(e.target.value)}
                   disabled={busy || liveAccounts.length === 0}
-                  className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#d6a93d] focus:outline-none disabled:opacity-60"
+                  className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#ccff00] focus:outline-none disabled:opacity-60"
                 >
                   <option value="">— Don't merge (only main wallet) —</option>
                   {liveAccounts.map((a) => (
@@ -159,11 +159,11 @@ export default function WalletAccountMigrateBanner({
                 ) : null}
               </div>
 
-              <div className="rounded-lg border border-[#d6a93d]/35 bg-[#d6a93d]/8 p-3 flex items-center justify-between">
+              <div className="rounded-lg border border-[#ccff00]/35 bg-[#ccff00]/8 p-3 flex items-center justify-between">
                 <span className="text-xs font-semibold text-text-primary">
                   New wallet account starts with
                 </span>
-                <span className="text-base font-mono font-extrabold text-[#d6a93d] tabular-nums">
+                <span className="text-base font-mono font-extrabold text-[#ccff00] tabular-nums">
                   ${projected.toFixed(2)}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function WalletAccountMigrateBanner({
                 type="button"
                 onClick={confirm}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#ccff00] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 Confirm migration

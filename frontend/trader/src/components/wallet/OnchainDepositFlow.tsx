@@ -234,8 +234,8 @@ export default function OnchainDepositFlow({
                   className={
                     'w-full text-left rounded-xl px-4 py-3 transition-all border ' +
                     (active
-                      ? 'border-[#d6a93d] bg-[#d6a93d]/8 ring-2 ring-[#d6a93d]/40'
-                      : 'border-border-primary bg-bg-secondary hover:border-[#d6a93d]/50')
+                      ? 'border-[#ccff00] bg-[#ccff00]/8 ring-2 ring-[#ccff00]/40'
+                      : 'border-border-primary bg-bg-secondary hover:border-[#ccff00]/50')
                   }
                 >
                   <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ export default function OnchainDepositFlow({
         <button
           type="button"
           onClick={() => setStep('amount')}
-          className="w-full py-3 rounded-xl font-bold text-base bg-[#d6a93d] text-bg-base hover:brightness-110 transition-all"
+          className="w-full py-3 rounded-xl font-bold text-base bg-[#ccff00] text-bg-base hover:brightness-110 transition-all"
         >
           Continue
         </button>
@@ -286,12 +286,12 @@ export default function OnchainDepositFlow({
               onChange={(e) => setAmount(e.target.value)}
               placeholder={`Min ${MIN_AMOUNT}`}
               autoFocus
-              className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#d6a93d]/50 font-mono font-bold text-lg tabular-nums"
+              className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#ccff00]/50 font-mono font-bold text-lg tabular-nums"
             />
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#d6a93d]/20 bg-[#d6a93d]/5 px-4 py-3">
+        <div className="rounded-xl border border-[#ccff00]/20 bg-[#ccff00]/5 px-4 py-3">
           <p className="text-xs text-text-secondary leading-relaxed">
             You'll send <span className="text-text-primary font-semibold">USDT</span>{' '}
             on {chosen.short} from your own wallet to FXArtha's deposit
@@ -313,7 +313,7 @@ export default function OnchainDepositFlow({
             'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99] ' +
             (creating || !amount || Number(amount) < MIN_AMOUNT
               ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-              : 'bg-[#d6a93d] text-bg-base hover:brightness-110')
+              : 'bg-[#ccff00] text-bg-base hover:brightness-110')
           }
         >
           {creating ? (
@@ -435,7 +435,7 @@ function DepositAddressCard({ deposit }: { deposit: CreateOnchainResp }) {
       .catch(() => toast.error('Copy failed'));
   };
   return (
-    <div className="rounded-xl border border-[#d6a93d]/30 bg-bg-secondary p-4 space-y-3">
+    <div className="rounded-xl border border-[#ccff00]/30 bg-bg-secondary p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-tertiary">Send exactly</p>
         <p className="text-base font-bold text-text-primary tabular-nums">
@@ -456,7 +456,7 @@ function DepositAddressCard({ deposit }: { deposit: CreateOnchainResp }) {
           <button
             type="button"
             onClick={onCopy}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#d6a93d] hover:brightness-110"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#ccff00] hover:brightness-110"
           >
             {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? 'Copied' : 'Copy'}
@@ -509,7 +509,7 @@ function TronManualSubmit({
         value={hash}
         onChange={(e) => setHash(e.target.value)}
         placeholder="Tron transaction hash (0x… or 64-hex)"
-        className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-base text-text-primary text-xs font-mono outline-none focus:border-[#d6a93d]"
+        className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-base text-text-primary text-xs font-mono outline-none focus:border-[#ccff00]"
       />
       <button
         type="button"
@@ -519,7 +519,7 @@ function TronManualSubmit({
           'w-full py-3 rounded-xl font-bold text-sm transition-all ' +
           (busy || !hash.trim()
             ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-            : 'bg-[#d6a93d] text-bg-base hover:brightness-110')
+            : 'bg-[#ccff00] text-bg-base hover:brightness-110')
         }
       >
         {busy ? (
@@ -550,8 +550,8 @@ function StatusBar({
   if (status.status === 'submitted') {
     const confs = status.confirmations ?? 0;
     return (
-      <div className="rounded-lg border border-[#d6a93d]/30 bg-[#d6a93d]/5 px-3 py-2.5 text-xs text-text-primary flex items-center gap-2">
-        <Loader2 size={12} className="animate-spin text-[#d6a93d]" />
+      <div className="rounded-lg border border-[#ccff00]/30 bg-[#ccff00]/5 px-3 py-2.5 text-xs text-text-primary flex items-center gap-2">
+        <Loader2 size={12} className="animate-spin text-[#ccff00]" />
         Verifying on chain — {confs}/{minConfirmations} confirmations
       </div>
     );

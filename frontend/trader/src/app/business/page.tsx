@@ -64,7 +64,7 @@ function IBPortalCTA({ subtitle }: { subtitle?: string }) {
         href={IB_PORTAL_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold border-2 border-accent bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(214,169,61,0.35)] transition-all"
+        className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold border-2 border-accent bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all"
       >
         Login to IB Portal ↗
       </a>
@@ -183,7 +183,7 @@ export default function BusinessPage() {
 
                     {active ? (
 
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(214,169,61,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(204,255,0,0.7)]">
 
                         {t.label}
 
@@ -372,7 +372,7 @@ function IBTab() {
 
             'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
 
-            applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(214,169,61,0.35)]',
+            applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(204,255,0,0.35)]',
 
           )}
 
@@ -855,7 +855,7 @@ function SubBrokerTab() {
 
           'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
 
-          applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(214,169,61,0.35)]',
+          applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(204,255,0,0.35)]',
 
         )}
 

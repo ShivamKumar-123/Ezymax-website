@@ -285,7 +285,7 @@ function Inner() {
         <div className="rounded-xl border border-border-primary bg-bg-secondary p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-3">
             <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
-              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#d6a93d]" /> : <Sparkles size={16} className="text-[#d6a93d]" />}
+              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#ccff00]" /> : <Sparkles size={16} className="text-[#ccff00]" />}
               Open a {selectedPlan.label} stake
             </h2>
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
@@ -298,14 +298,14 @@ function Inner() {
                   placeholder={`Min ${fmtUsd(selectedPlan.min_amount)}`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#d6a93d] focus:outline-none"
+                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#ccff00] focus:outline-none"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleOpen}
                 disabled={busy || !amount}
-                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#ccff00] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                 Stake
@@ -318,7 +318,7 @@ function Inner() {
                   type="checkbox"
                   checked={useTradingBonus}
                   onChange={(e) => setUseTradingBonus(e.target.checked)}
-                  className="mt-0.5 accent-[#d6a93d]"
+                  className="mt-0.5 accent-[#ccff00]"
                 />
                 <span>
                   Activate {selectedPlan.trading_bonus_pct.toFixed(0)}% trading bonus
@@ -374,7 +374,7 @@ function Inner() {
                       type="button"
                       onClick={() => handleClaim(p)}
                       disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#ccff00] text-bg-base hover:brightness-110 disabled:opacity-60"
                     >
                       {busyPosId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                       Claim
@@ -385,7 +385,7 @@ function Inner() {
                       type="button"
                       onClick={() => handleWithdraw(p)}
                       disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#d6a93d]/45 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#ccff00]/45 disabled:opacity-60"
                     >
                       {p.plan.mode === 'flexible' ? 'Withdraw' : 'Withdraw at unlock'}
                     </button>
@@ -470,7 +470,7 @@ function Inner() {
                   </td>
                   <td className={clsx(
                     'px-4 py-2.5 text-right font-mono tabular-nums',
-                    lvl.earnings > 0 ? 'text-[#d6a93d] font-semibold' : 'text-text-tertiary',
+                    lvl.earnings > 0 ? 'text-[#ccff00] font-semibold' : 'text-text-tertiary',
                   )}>
                     {fmt(lvl.earnings)}
                   </td>
@@ -483,7 +483,7 @@ function Inner() {
                 <tr className="border-t border-border-primary bg-bg-base/30 font-semibold">
                   <td className="px-4 py-2.5 text-text-primary">Total</td>
                   <td className="px-4 py-2.5 text-right text-text-tertiary font-mono">30%</td>
-                  <td className="px-4 py-2.5 text-right text-[#d6a93d] font-mono tabular-nums">
+                  <td className="px-4 py-2.5 text-right text-[#ccff00] font-mono tabular-nums">
                     {fmt(referralSummary.total_referral_earnings)}
                   </td>
                   <td className="px-4 py-2.5 text-right text-text-primary font-mono tabular-nums">
@@ -518,7 +518,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div>
       <p className="text-[10.5px] uppercase tracking-wider text-text-tertiary">{label}</p>
-      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#d6a93d]' : 'text-text-primary')}>
+      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#ccff00]' : 'text-text-primary')}>
         {value}
       </p>
     </div>

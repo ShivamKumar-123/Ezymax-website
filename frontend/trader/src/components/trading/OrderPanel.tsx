@@ -463,12 +463,12 @@ export default function OrderPanel() {
           <div className="flex items-center gap-1">
             <span
               className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#d6a93d' : '#f57c00' }}
+              style={{ color: marketStatus.isOpen ? '#ccff00' : '#f57c00' }}
             >
               {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
             </span>
             {isConnected ? (
-              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#d6a93d]" />
+              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#ccff00]" />
             ) : (
               <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
             )}
@@ -505,7 +505,7 @@ export default function OrderPanel() {
                   color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   borderBottom:
                     orderTab === t
-                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#d6a93d'}`
+                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#ccff00'}`
                       : '2px solid transparent',
                 }}
               >
@@ -571,7 +571,7 @@ export default function OrderPanel() {
               <div
                 onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
                 className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
-                style={{ background: tpEnabled ? '#d6a93d' : 'var(--bg-secondary)' }}
+                style={{ background: tpEnabled ? '#ccff00' : 'var(--bg-secondary)' }}
               >
                 <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: tpEnabled ? '18px' : '3px' }} />
               </div>
@@ -784,14 +784,14 @@ export default function OrderPanel() {
           {/* TP input */}
           {tpEnabled && (
             <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#d6a93d] mb-1.5 block">Take Profit</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#ccff00] mb-1.5 block">Take Profit</span>
               <input
                 type="number"
                 value={takeProfit}
                 onChange={(e) => setTakeProfit(e.target.value)}
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#d6a93d]/30 text-[#d6a93d]"
+                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#ccff00]/30 text-[#ccff00]"
               />
             </div>
           )}
@@ -819,8 +819,8 @@ export default function OrderPanel() {
                 {[
                   { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                   { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
-                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#d6a93d' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#d6a93d' : '#f57c00' },
+                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#ccff00' },
+                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#ccff00' : '#f57c00' },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
                     <span className="text-[11px] text-text-tertiary">{row.label}</span>
@@ -872,11 +872,11 @@ export default function OrderPanel() {
             </div>
             <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
               <span className="truncate">Mrgn ${marginRequired.toFixed(2)}</span>
-              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#d6a93d]' : 'text-[#ef5350]')}>
+              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#ccff00]' : 'text-[#ef5350]')}>
                 Free ${freeMargin.toFixed(2)}
               </span>
               <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#d6a93d]' : 'text-[#f57c00]')}
+                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#ccff00]' : 'text-[#f57c00]')}
                 title={isConnected ? 'Feed connected' : 'Feed disconnected'}
               >
                 {isConnected ? '●' : '○'}
@@ -1003,7 +1003,7 @@ function LeveragePicker({
                 className={clsx(
                   'w-full text-left px-2 py-1 text-[11px] font-mono transition-colors',
                   v === account.leverage
-                    ? 'bg-[#d6a93d]/15 text-[#d6a93d] font-bold'
+                    ? 'bg-[#ccff00]/15 text-[#ccff00] font-bold'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >

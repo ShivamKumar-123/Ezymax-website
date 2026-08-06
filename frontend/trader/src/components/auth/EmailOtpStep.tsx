@@ -118,7 +118,7 @@ export default function EmailOtpStep({
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') void sendCode(); }}
                 placeholder="you@example.com"
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#d6a93d] focus:outline-none"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#ccff00] focus:outline-none"
                 autoFocus
               />
             </div>
@@ -128,7 +128,7 @@ export default function EmailOtpStep({
             type="button"
             onClick={() => void sendCode()}
             disabled={busy || !email.trim()}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#ccff00] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
             Send code
@@ -152,7 +152,7 @@ export default function EmailOtpStep({
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               onKeyDown={(e) => { if (e.key === 'Enter') void verifyCode(); }}
               placeholder="••••••"
-              className="w-full px-3 py-3 rounded-lg bg-bg-base border border-border-primary text-center text-xl tracking-[0.5em] font-mono text-text-primary placeholder:text-text-tertiary focus:border-[#d6a93d] focus:outline-none"
+              className="w-full px-3 py-3 rounded-lg bg-bg-base border border-border-primary text-center text-xl tracking-[0.5em] font-mono text-text-primary placeholder:text-text-tertiary focus:border-[#ccff00] focus:outline-none"
               autoFocus
             />
           </div>
@@ -162,7 +162,7 @@ export default function EmailOtpStep({
               type="button"
               onClick={() => void verifyCode()}
               disabled={busy || otp.length !== 6}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#ccff00] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               Verify

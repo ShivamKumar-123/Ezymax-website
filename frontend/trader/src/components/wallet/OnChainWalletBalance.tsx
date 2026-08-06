@@ -159,7 +159,7 @@ function OnChainWalletBalanceInner({
     <div className="rounded-2xl border border-border-glass bg-card p-5 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <WalletIcon size={18} className="text-[#d6a93d]" />
+          <WalletIcon size={18} className="text-[#ccff00]" />
           <h2 className="text-sm font-bold uppercase tracking-wider text-text-primary">
             Your Wallet — On-chain balance
           </h2>
@@ -202,7 +202,7 @@ function OnChainWalletBalanceInner({
                   <button
                     type="button"
                     onClick={() => onDepositClick(c.depositSlug)}
-                    className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#d6a93d]/15 text-[#d6a93d] border border-[#d6a93d]/30 hover:bg-[#d6a93d]/25 transition-colors"
+                    className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30 hover:bg-[#ccff00]/25 transition-colors"
                   >
                     Deposit
                   </button>
@@ -227,7 +227,7 @@ function OnChainWalletBalanceInner({
           href={CHAINS[0].explorerTx(linkedAddress)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 hover:text-[#d6a93d]"
+          className="inline-flex items-center gap-1 hover:text-[#ccff00]"
         >
           View on explorer <ExternalLink size={9} />
         </a>

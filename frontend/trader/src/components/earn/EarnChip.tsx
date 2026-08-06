@@ -42,16 +42,16 @@ export default function EarnChip() {
   return (
     <Link
       href="/earn/tasks"
-      className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full border border-[#d6a93d]/25 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+      className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full border border-[#ccff00]/25 bg-[#ccff00]/5 hover:bg-[#ccff00]/10 transition-colors"
       title={s ? `${s.level_label} • ${s.ps_rank}` : 'Earn'}
     >
-      <Sparkles size={13} className="text-[#d6a93d] shrink-0" />
+      <Sparkles size={13} className="text-[#ccff00] shrink-0" />
       <span className="text-[12px] font-medium text-text-primary tabular-nums">
         {s ? formatCompact(s.xp) : '—'}
       </span>
       <span className="text-[11px] text-text-tertiary">XP</span>
       <span className="w-px h-3 bg-border-primary mx-0.5" />
-      <CoinIcon size={13} className="text-[#d6a93d] shrink-0" />
+      <CoinIcon size={13} className="text-[#ccff00] shrink-0" />
       <span className="text-[12px] font-medium text-text-primary tabular-nums">
         {s ? formatCompact(s.ac_balance) : '—'}
       </span>

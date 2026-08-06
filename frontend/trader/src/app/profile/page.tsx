@@ -575,7 +575,7 @@ export default function ProfilePage() {
                     <div className="flex h-[calc(100%-12px)]">
                       <div className="w-1/4 border-r" style={{ borderColor: '#2a2a2a', background: '#0d0d0d' }} />
                       <div className="flex-1 p-1.5">
-                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#d6a93d' }} />
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#ccff00' }} />
                         <div className="h-1 w-1/2 rounded-full" style={{ background: '#333' }} />
                       </div>
                     </div>

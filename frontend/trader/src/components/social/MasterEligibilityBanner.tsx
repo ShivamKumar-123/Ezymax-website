@@ -58,12 +58,12 @@ export default function MasterEligibilityBanner() {
         'rounded-xl p-4 border ' +
         (allPassed
           ? 'border-emerald-500/40 bg-emerald-500/5'
-          : 'border-[#d6a93d]/35 bg-[#d6a93d]/5')
+          : 'border-[#ccff00]/35 bg-[#ccff00]/5')
       }
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Trophy size={16} className={allPassed ? 'text-emerald-400' : 'text-[#d6a93d]'} />
+          <Trophy size={16} className={allPassed ? 'text-emerald-400' : 'text-[#ccff00]'} />
           <h3 className="text-sm font-semibold text-text-primary">
             {allPassed ? 'You qualify as a Master Trader' : 'Master Trader eligibility'}
           </h3>
@@ -73,7 +73,7 @@ export default function MasterEligibilityBanner() {
             'inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wider px-2 py-0.5 rounded-full ' +
             (allPassed
               ? 'text-emerald-400 border border-emerald-400/40 bg-emerald-400/10'
-              : 'text-[#d6a93d] border border-[#d6a93d]/40 bg-[#d6a93d]/10')
+              : 'text-[#ccff00] border border-[#ccff00]/40 bg-[#ccff00]/10')
           }
         >
           {allPassed ? <Check size={10} /> : <Clock size={10} />}

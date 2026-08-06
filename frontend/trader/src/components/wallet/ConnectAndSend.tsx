@@ -161,7 +161,7 @@ export default function ConnectAndSend({
               type="button"
               onClick={handleSend}
               disabled={sending || !!wait.data || (!isNative && !token)}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md bg-[#d6a93d] text-bg-base text-sm font-bold disabled:opacity-60"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md bg-[#ccff00] text-bg-base text-sm font-bold disabled:opacity-60"
             >
               {sending ? <Loader2 size={14} className="animate-spin" /> :
                wait.data ? <Check size={14} /> :
@@ -183,7 +183,7 @@ export default function ConnectAndSend({
               href={explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-text-tertiary hover:text-[#d6a93d]"
+              className="inline-flex items-center gap-1 text-[11px] text-text-tertiary hover:text-[#ccff00]"
             >
               View on explorer <ExternalLink size={11} />
             </a>

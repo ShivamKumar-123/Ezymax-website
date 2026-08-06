@@ -81,12 +81,12 @@ export default function OnboardingGate() {
       aria-labelledby="onboarding-gate-title"
     >
       <div
-        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#d6a93d]/40 bg-bg-secondary shadow-2xl"
+        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#ccff00]/40 bg-bg-secondary shadow-2xl"
         // Stop clicks inside the card from closing the page-level UI.
         onClick={(e) => e.stopPropagation()}
       >
         <header className="px-6 pt-6 pb-3 border-b border-border-primary">
-          <div className="flex items-center gap-2 text-[#d6a93d] mb-2">
+          <div className="flex items-center gap-2 text-[#ccff00] mb-2">
             <ShieldCheck size={16} />
             <span className="text-[10px] uppercase tracking-wider font-semibold">
               Account setup required

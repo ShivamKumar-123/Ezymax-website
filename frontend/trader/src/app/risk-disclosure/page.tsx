@@ -8,8 +8,8 @@ export default function RiskDisclosurePage() {
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-[#d6a93d]/10 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-[#d6a93d]" />
+          <div className="w-10 h-10 rounded-xl bg-[#ccff00]/10 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-[#ccff00]" />
           </div>
           <h1 className="text-3xl font-bold text-text-primary">Risk Disclosure</h1>
         </div>

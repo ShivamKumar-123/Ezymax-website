@@ -107,7 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   className: 'fxartha-hot-toast',
                   // White check on a gold disc reads as "good" instantly on
                   // dark surface without losing the brand accent.
-                  iconTheme: { primary: '#d6a93d', secondary: '#1a1408' },
+                  iconTheme: { primary: '#ccff00', secondary: '#1a1408' },
                 },
                 error: {
                   duration: 4000,
@@ -119,7 +119,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 loading: {
                   duration: Infinity,
                   className: 'fxartha-hot-toast',
-                  iconTheme: { primary: '#d6a93d', secondary: 'var(--toast-bg)' },
+                  iconTheme: { primary: '#ccff00', secondary: 'var(--toast-bg)' },
                 },
               }}
             />
