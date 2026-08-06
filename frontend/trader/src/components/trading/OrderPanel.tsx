@@ -17,7 +17,13 @@ import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker'
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
 
-export default function OrderPanel() {
+export default function OrderPanel({
+  onOrderPlaced,
+}: {
+  /** Called right after an order is dispatched (validation passed) — hosts
+   *  like the draggable window / mobile sheet close themselves on it. */
+  onOrderPlaced?: () => void;
+} = {}) {
   const pathname = usePathname();
   const isTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
   const {
@@ -334,6 +340,11 @@ export default function OrderPanel() {
       if (rollback) rollback();
       toast.error(e.message || 'Order failed');
     });
+
+    // Order is on its way (optimistic, same as the sound above) — let the
+    // hosting window/sheet close so the chart is visible again. Failure
+    // still surfaces via the global toast + optimistic-row rollback.
+    onOrderPlaced?.();
   };
 
   const isConnected = wsStatus === 'connected';

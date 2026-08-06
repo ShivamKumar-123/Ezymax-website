@@ -110,7 +110,9 @@ export default function DraggableOrderModal({ onClose }: { onClose: () => void }
       {/* The order panel sizes the window to its content (scrolls only if it
           would exceed the 88vh cap), so there's no empty gap below it. */}
       <div className="min-h-0 overflow-y-auto">
-        <OrderPanel />
+        {/* Close the window as soon as the order is dispatched — leaving it
+            open hid the chart the user wants to watch after buying. */}
+        <OrderPanel onOrderPlaced={onClose} />
       </div>
     </div>
   );

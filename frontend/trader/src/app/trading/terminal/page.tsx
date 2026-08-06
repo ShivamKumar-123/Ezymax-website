@@ -17,6 +17,7 @@ import { wsManager } from '@/lib/ws/wsManager';
 import Watchlist from '@/components/trading/Watchlist';
 import InstrumentsTable from '@/components/trading/InstrumentsTable';
 import DraggableOrderModal from '@/components/trading/DraggableOrderModal';
+import OrderPanel from '@/components/trading/OrderPanel';
 import RiskCalculator from '@/components/trading/RiskCalculator';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
@@ -262,6 +263,9 @@ export default function TradingTerminalPage() {
   const [chartTabs, setChartTabs] = useState<string[]>([]);
   // orderSubmitting removed — MT5-style: never block rapid-fire clicks
   const [mobileSymbolSearch, setMobileSymbolSearch] = useState(false);
+  // Full order ticket (market + limit/stop/stop-limit + SL/TP) as a
+  // full-screen sheet — the quick bar below only does market orders.
+  const [mobileOrderTicket, setMobileOrderTicket] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
@@ -482,8 +486,36 @@ export default function TradingTerminalPage() {
                 >
                   Trades
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileOrderTicket(true)}
+                  className="shrink-0 px-3 h-[34px] rounded-xl bg-buy/10 text-buy border border-buy/30 text-[10px] font-extrabold uppercase tracking-wide hover:bg-buy/20 transition-all active:scale-95"
+                  title="Full order ticket — market, limit, stop, SL/TP"
+                >
+                  New order
+                </button>
               </div>
               ) : null}
+
+              {/* ── Full order ticket sheet (pending orders + SL/TP) ── */}
+              {mobileOrderTicket && (
+                <div className="fixed inset-0 z-[95] flex flex-col bg-bg-base">
+                  <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border-glass bg-bg-secondary">
+                    <span className="text-xs font-bold text-text-primary uppercase tracking-wider">New order</span>
+                    <button
+                      type="button"
+                      onClick={() => setMobileOrderTicket(false)}
+                      aria-label="Close order ticket"
+                      className="p-2 -mr-1 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto pb-[env(safe-area-inset-bottom,0px)]">
+                    <OrderPanel onOrderPlaced={() => setMobileOrderTicket(false)} />
+                  </div>
+                </div>
+              )}
 
               {/* ── Mobile Symbol Search Overlay ── */}
               {mobileSymbolSearch && (
