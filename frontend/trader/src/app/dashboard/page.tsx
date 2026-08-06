@@ -28,6 +28,7 @@ interface AccountRow {
   id: string;
   account_number: string;
   balance: number;
+  credit?: number;
   equity: number;
   free_margin: number;
   margin_used?: number;
@@ -187,11 +188,15 @@ function BrokerHome() {
     [accounts, activeId],
   );
 
-  // Aggregate stats for the DAG mockup top section.
+  // Aggregate stats for the DAG mockup top section. REAL accounts only —
+  // demo balances / demo floating P&L never mix into these numbers.
   const realAccounts = accounts.filter((a) => !a.is_demo);
   const totalBalance = realAccounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  const totalCredit = realAccounts.reduce((s, a) => s + (Number(a.credit) || 0), 0);
   const totalEquity = realAccounts.reduce((s, a) => s + (Number(a.equity) || 0), 0);
-  const todaysPnl = totalEquity - totalBalance;
+  // equity = balance + credit + floating P&L, so subtract credit too —
+  // otherwise a bonus would show up as "unrealized profit".
+  const todaysPnl = totalEquity - totalBalance - totalCredit;
   const todaysPnlPct = totalBalance > 0 ? (todaysPnl / totalBalance) * 100 : 0;
   const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
 
