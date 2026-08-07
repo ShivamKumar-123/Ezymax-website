@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { ShieldCheck, Loader2, HelpCircle } from 'lucide-react';
 import { insuranceApi, type PolicyOut, type ClaimOut } from '@/lib/api/insurance';
 import InsuranceOnboardingModal from '@/components/insurance/InsuranceOnboardingModal';
+import InsureOpenTrades from '@/components/insurance/InsureOpenTrades';
 
 const STATUS_COLOR: Record<PolicyOut['status'], string> = {
   active: '#ccff00',
@@ -25,23 +26,20 @@ export default function InsurancePage() {
   const [claims, setClaims] = useState<ClaimOut[] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [p, c] = await Promise.all([
-          insuranceApi.policies(100),
-          insuranceApi.claims(100),
-        ]);
-        if (cancelled) return;
-        setPolicies(p);
-        setClaims(c);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const load = useCallback(async () => {
+    try {
+      const [p, c] = await Promise.all([
+        insuranceApi.policies(100),
+        insuranceApi.claims(100),
+      ]);
+      setPolicies(p);
+      setClaims(c);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <DashboardShell>
@@ -72,6 +70,8 @@ export default function InsurancePage() {
           </div>
         ) : (
           <>
+            <InsureOpenTrades onBought={load} />
+
             <Card title="Policies">
               {!policies || policies.length === 0 ? (
                 <Empty msg="You have no insurance policies yet. Activate insurance from the order ticket on the trading terminal." />
