@@ -19,6 +19,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import DashboardShell from '@/components/layout/DashboardShell';
 
 import TradingOverview from '@/components/profile/TradingOverview';
+import ProfileBonusCard from '@/components/profile/ProfileBonusCard';
 
 import { buildDashboardFromPortfolio } from '@/lib/trading-dashboard';
 
@@ -628,6 +629,8 @@ function PortfolioPageContent() {
             per-period stats later is a one-component change. */}
 
         {dashboardData ? <TradingOverview data={dashboardData} /> : null}
+
+        <ProfileBonusCard />
 
         <div className="emboss-divider" />
 

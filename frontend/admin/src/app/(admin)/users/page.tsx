@@ -30,6 +30,7 @@ import {
   ShieldOff,
   Trash2,
   UserRound,
+  Gift,
   X,
 } from 'lucide-react';
 
@@ -60,7 +61,7 @@ interface UsersResponse {
 
 type SortKey = keyof Pick<User, 'id' | 'name' | 'email' | 'balance' | 'equity' | 'group' | 'kyc_status' | 'status'>;
 type SortDir = 'asc' | 'desc';
-type FundAction = 'add-fund' | 'deduct-fund' | 'give-credit' | 'take-credit';
+type FundAction = 'add-fund' | 'deduct-fund' | 'give-credit' | 'take-credit' | 'give-bonus';
 
 // Sentinel select-value representing the user's main wallet for deduct-fund.
 const MAIN_WALLET_ID = '__main_wallet__';
@@ -71,6 +72,7 @@ const FUND_LABELS: Record<FundAction, string> = {
   'deduct-fund': 'Deduct Fund',
   'give-credit': 'Give Credit',
   'take-credit': 'Take Credit',
+  'give-bonus': 'Give Bonus',
 };
 
 function formatMoney(n: number) {
@@ -273,8 +275,8 @@ export default function UsersPage() {
     setOpenActionsId(null);
     setMenuPos(null);
 
-    // add-fund goes to main wallet — no account selector needed
-    if (type && isFundAction(type) && type !== 'add-fund') {
+    // add-fund and give-bonus go to a user-level wallet — no account selector.
+    if (type && isFundAction(type) && type !== 'add-fund' && type !== 'give-bonus') {
       setLoadingAccounts(true);
       try {
         const detail = await adminApi.get<{ accounts: { id: string; account_number: string; balance: number; currency: string; is_demo?: boolean }[] }>(`/users/${user.id}`);
@@ -324,7 +326,7 @@ export default function UsersPage() {
           payload.source = 'trading_account';
           payload.account_id = modalAccountId;
         }
-      } else if (modalType !== 'add-fund' && modalAccountId) {
+      } else if (modalType !== 'add-fund' && modalType !== 'give-bonus' && modalAccountId) {
         payload.account_id = modalAccountId;
       }
       await adminApi.post(`/users/${modalUser.id}/${modalType}`, payload);
@@ -642,6 +644,7 @@ export default function UsersPage() {
           { label: 'Deduct Fund', icon: Minus, action: () => openModal('deduct-fund', u) },
           { label: 'Give Credit', icon: CreditCard, action: () => openModal('give-credit', u) },
           { label: 'Take Credit', icon: DollarSign, action: () => openModal('take-credit', u) },
+          { label: 'Give Bonus', icon: Gift, action: () => openModal('give-bonus', u) },
           { divider: true },
           { label: u.status?.toLowerCase() === 'banned' ? 'Unban User' : 'Ban User', icon: Ban, action: () => openModal(u.status?.toLowerCase() === 'banned' ? 'unban' : 'ban', u), danger: true },
           { label: 'Kill Switch', icon: Power, action: () => openModal('kill-switch', u), danger: true },
@@ -784,7 +787,7 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={submitFundAction}
-              disabled={modalSubmitting || (modalType !== 'add-fund' && !modalAccountId)}
+              disabled={modalSubmitting || (modalType !== 'add-fund' && modalType !== 'give-bonus' && !modalAccountId)}
               className={cn('px-5 py-2.5 rounded-lg text-sm font-medium transition-fast inline-flex items-center gap-2', 'bg-buy text-white hover:bg-buy-light disabled:opacity-50')}
             >
               {modalSubmitting && <Loader2 size={14} className="animate-spin" />}
