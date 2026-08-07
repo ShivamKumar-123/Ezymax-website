@@ -17,7 +17,7 @@ import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight,
   ShieldCheck, BadgeCheck, ExternalLink,
-  Wallet as WalletIcon, Coins, BarChart3, Users,
+  Wallet as WalletIcon, Coins, BarChart3, Users, Zap, Gem,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import TvCard from '@/components/dashboard/TvCard';
@@ -92,6 +92,7 @@ function BrokerHome() {
     level?: number; level_label?: string;
     xp?: number; xp_into_level?: number; xp_for_next_level?: number;
     ac_balance?: number;
+    ps?: number; ps_rank?: string;
   } | null>(null);
   // Level-progress popup (opened from the "Lvl N" badge).
   const [showLevel, setShowLevel] = useState(false);
@@ -250,6 +251,9 @@ function BrokerHome() {
   const level = rewardsState?.level ?? 1;
   const levelLabel = rewardsState?.level_label || 'New Trader';
   const dgcCoins = rewardsState?.ac_balance ?? 0;
+  const xpTotal = rewardsState?.xp ?? 0;
+  const psScore = rewardsState?.ps ?? 0;
+  const psRank = rewardsState?.ps_rank ?? '';
 
   const goTrade = () => {
     if (accounts.length === 0) { router.push('/trading/open-account'); return; }
@@ -270,7 +274,7 @@ function BrokerHome() {
           </h1>
           <p className="text-xs text-text-tertiary mt-0.5">Here's your portfolio at a glance.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
           <button
             type="button"
             onClick={() => setShowLevel(true)}
@@ -279,6 +283,16 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
+          {/* XP — total experience, drives your level. Opens the ladder. */}
+          <button
+            type="button"
+            onClick={() => setShowLevel(true)}
+            title="Experience points — earn XP to level up"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            <Zap size={13} /> {xpTotal.toLocaleString()} XP
+          </button>
+          {/* FXA — reward coins. Opens the "where FXA come from" popup. */}
           <button
             type="button"
             onClick={() => setShowFxa(true)}
@@ -287,6 +301,13 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
           </button>
+          {/* PS — prestige score + rank */}
+          <span
+            title={psRank ? `Prestige score — ${psRank}` : 'Prestige score'}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums"
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            <Gem size={13} /> {psScore.toLocaleString()} PS
+          </span>
         </div>
       </div>
 
