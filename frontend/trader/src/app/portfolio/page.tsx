@@ -628,9 +628,9 @@ function PortfolioPageContent() {
             in place behind the scenes (forced to 'All') so re-introducing
             per-period stats later is a one-component change. */}
 
-        {dashboardData ? <TradingOverview data={dashboardData} /> : null}
-
         <ProfileBonusCard />
+
+        {dashboardData ? <TradingOverview data={dashboardData} /> : null}
 
         <div className="emboss-divider" />
 
