@@ -16,7 +16,7 @@ type Screen = {
 const SCREENS: Screen[] = [
   {
     icon: Shield,
-    eyebrow: 'Hook',
+    eyebrow: '',
     title: 'What if your losses were partially protected?',
     body: 'Trade with confidence. Reduce risk on every trade.',
     cta: 'Next',
@@ -137,7 +137,7 @@ export default function InsuranceOnboardingModal({ forceOpen }: { forceOpen?: bo
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 border border-[#ccff00]/35 flex items-center justify-center mb-4">
             <Icon size={28} className="text-[#ccff00]" />
           </div>
-          <p className="text-[10.5px] uppercase tracking-wider text-[#ccff00] font-semibold mb-1">{s.eyebrow}</p>
+          {s.eyebrow ? <p className="text-[10.5px] uppercase tracking-wider text-[#ccff00] font-semibold mb-1">{s.eyebrow}</p> : null}
           <h2 className="text-xl font-bold text-text-primary leading-tight">{s.title}</h2>
           <p className="text-sm text-text-secondary mt-3 whitespace-pre-line leading-relaxed">{s.body}</p>
         </div>
