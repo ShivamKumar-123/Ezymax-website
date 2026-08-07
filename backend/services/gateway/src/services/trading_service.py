@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
 from . import rewards_service, wallet_service
 from packages.common.src.database import AsyncSessionLocal
@@ -930,7 +931,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         )
         db.add(history)
 
-        account.balance += partial_profit
+        apply_realized_pnl(account, partial_profit)  # bonus credit consumed before balance on loss
         partial_margin = (close_lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
         account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - partial_margin)
 
@@ -959,7 +960,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         )
         db.add(history)
 
-        account.balance += full_profit
+        apply_realized_pnl(account, full_profit)  # bonus credit consumed before balance on loss
         margin_release = (pos.lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
         account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - margin_release)
 

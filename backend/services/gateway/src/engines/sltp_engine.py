@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.models import (
     Position, TradingAccount, Transaction, TradeHistory, Instrument, User,
@@ -200,7 +201,7 @@ class SLTPEngine:
         account = acct_result.scalar_one_or_none()
         if account:
             margin_release = (pos.lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
-            account.balance += profit
+            apply_realized_pnl(account, profit)  # bonus credit consumed before balance on loss
             account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - margin_release)
             account.equity = account.balance + (account.credit or Decimal("0"))
             account.free_margin = account.equity - account.margin_used

@@ -17,6 +17,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
+from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.models import (
     Position, PositionStatus, TradingAccount, Instrument,
     OrderSide, SwapConfig, Notification, Transaction, User,
@@ -195,7 +196,7 @@ class RiskEngine:
             pos.profit = profit
             pos.closed_at = datetime.now(timezone.utc)
 
-            account.balance += profit
+            apply_realized_pnl(account, profit)  # bonus credit consumed before balance on loss
             margin_release = (pos.lots * pos.instrument.contract_size * pos.open_price) / Decimal(str(account.leverage))
             account.margin_used = max(Decimal("0"), account.margin_used - margin_release)
             account.equity = account.balance + account.credit
