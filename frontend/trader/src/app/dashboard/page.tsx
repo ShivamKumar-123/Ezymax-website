@@ -23,6 +23,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import TvCard from '@/components/dashboard/TvCard';
 import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
 import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
+import LevelLadderCard from '@/components/dashboard/LevelLadderCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -308,6 +309,16 @@ function BrokerHome() {
           onDeposit={() => router.push('/wallet')}
           onWithdraw={() => router.push('/wallet?action=withdraw')}
           onDetails={() => router.push('/accounts')}
+        />
+      </div>
+
+      {/* ── Rank ladder (shown directly, not behind the badge popup) ── */}
+      <div className="dash-rise" style={{ animationDelay: '110ms' }}>
+        <LevelLadderCard
+          level={level}
+          levelLabel={levelLabel}
+          xpIntoLevel={rewardsState?.xp_into_level ?? 0}
+          xpForNextLevel={rewardsState?.xp_for_next_level ?? 100}
         />
       </div>
 
