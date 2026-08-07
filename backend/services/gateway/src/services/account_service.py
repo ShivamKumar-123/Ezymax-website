@@ -147,6 +147,26 @@ async def open_live_account(
 
     new_balance = Decimal("0")
     if user_is_demo:
+        # One demo account per user (self-service). Deactivated ("deleted")
+        # demo accounts don't count, so a user who removed theirs can open a
+        # fresh one; the admin back office can still provision extras.
+        existing_demo = await db.execute(
+            select(TradingAccount.id)
+            .where(
+                TradingAccount.user_id == user_id,
+                TradingAccount.is_demo == True,  # noqa: E712
+                TradingAccount.is_active.isnot(False),
+            )
+            .limit(1)
+        )
+        if existing_demo.scalars().first() is not None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "You already have a demo account — switch to it from the "
+                    "account picker. Contact support if you need another one."
+                ),
+            )
         # Demo users get a starter virtual balance; use min_deposit if set, else $10,000.
         new_balance = min_d if min_d > 0 else Decimal("10000")
     else:
