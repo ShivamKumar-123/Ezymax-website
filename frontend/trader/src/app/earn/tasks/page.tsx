@@ -1,11 +1,27 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Clock, Loader2, Sparkles, Trophy } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Check, Clock, Loader2, Sparkles, Trophy, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import StreakStrip from '@/components/earn/StreakStrip';
 import api from '@/lib/api/client';
+
+/** Where a task sends you to make progress, based on its action kind. */
+function taskRoute(kind: string): string | null {
+  const k = (kind || '').toLowerCase();
+  if (k.includes('deposit')) return '/wallet';
+  if (k.includes('withdraw')) return '/wallet';
+  if (k.includes('kyc') || k.includes('verify') || k.includes('profile')) return '/profile';
+  if (k.includes('refer') || k.includes('invite') || k.includes('friend')) return '/business';
+  if (k.includes('stake') || k.includes('staking')) return '/earn/staking';
+  if (k.includes('copy') || k.includes('social') || k.includes('follow')) return '/social';
+  if (k.includes('insur')) return '/insurance';
+  if (k.includes('login') || k.includes('streak') || k.includes('checkin') || k.includes('check_in')) return null;
+  // trades, volume, lots, positions, and anything else → the trading terminal.
+  return '/trading';
+}
 
 type Period = 'daily' | 'weekly' | 'bonus' | 'achievement';
 
@@ -40,6 +56,7 @@ export default function EarnTasksPage() {
 }
 
 function Inner() {
+  const router = useRouter();
   const [tab, setTab] = useState<Period>('daily');
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +130,13 @@ function Inner() {
             </div>
           ) : (
             missions.map((m) => (
-              <MissionRow key={m.id} m={m} busyId={busyId} onClaim={() => claim(m)} />
+              <MissionRow
+                key={m.id}
+                m={m}
+                busyId={busyId}
+                onClaim={() => claim(m)}
+                onOpen={() => { const r = taskRoute(m.action_kind); if (r) router.push(r); }}
+              />
             ))
           )}
         </div>
@@ -122,13 +145,22 @@ function Inner() {
   );
 }
 
-function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null; onClaim: () => void }) {
+function MissionRow({ m, busyId, onClaim, onOpen }: { m: Mission; busyId: string | null; onClaim: () => void; onOpen: () => void }) {
   const pct = Math.min(100, Math.round((m.progress / Math.max(1, m.target)) * 100));
   const isBusy = busyId === m.id;
   const expiresIn = m.expires_at ? formatExpiry(m.expires_at) : null;
+  // A not-yet-done task with a place to go is clickable — it opens the page
+  // where the user can make progress.
+  const clickable = !m.claimed && !m.completed && taskRoute(m.action_kind) !== null;
 
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg border border-border-primary bg-bg-base">
+    <div
+      className={
+        'flex items-start gap-3 p-3 rounded-lg border border-border-primary bg-bg-base' +
+        (clickable ? ' cursor-pointer transition-colors hover:bg-bg-hover hover:border-[#ccff00]/40' : '')
+      }
+      onClick={clickable ? onOpen : undefined}
+      role={clickable ? 'button' : undefined}>
       <div className="w-10 h-10 rounded-lg bg-[#ccff00]/12 border border-[#ccff00]/25 flex items-center justify-center shrink-0">
         {m.claimed ? (
           <Check size={18} className="text-emerald-400" />
@@ -168,12 +200,20 @@ function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null;
         ) : m.completed ? (
           <button
             type="button"
-            onClick={onClaim}
+            onClick={(e) => { e.stopPropagation(); onClaim(); }}
             disabled={isBusy}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#ccff00] text-bg-base hover:brightness-110 disabled:opacity-60"
           >
             {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             Claim
+          </button>
+        ) : clickable ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpen(); }}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#ccff00]/15 border border-[#ccff00]/40 text-[#ccff00] hover:bg-[#ccff00]/25 transition-colors"
+          >
+            Start <ArrowRight size={12} />
           </button>
         ) : (
           <button
