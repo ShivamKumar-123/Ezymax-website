@@ -258,24 +258,37 @@ export default function MobileBottomNav() {
       {/* ── More Bottom Sheet ─── */}
       {showMore && (
         <div className="fixed inset-0 z-[80] lg:hidden flex flex-col justify-end" onClick={() => setShowMore(false)}>
-          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
+          <style>{`
+            @keyframes qaFade { from{opacity:0} to{opacity:1} }
+            @keyframes qaUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+            @keyframes qaPop { from{opacity:0;transform:translateY(10px) scale(0.9)} to{opacity:1;transform:translateY(0) scale(1)} }
+            @keyframes qaAurora { 0%,100%{transform:translate(0,0) scale(1);opacity:.55} 50%{transform:translate(24px,-18px) scale(1.25);opacity:.85} }
+          `}</style>
+          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" style={{ animation: 'qaFade 280ms ease' }} />
           <div
-            className="relative rounded-t-3xl border-t border-border-primary shadow-2xl bg-bg-primary"
-            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
+            className="relative overflow-hidden rounded-t-3xl border-t border-accent/25 shadow-2xl bg-bg-primary"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))', animation: 'qaUp 400ms cubic-bezier(0.22,1,0.36,1)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-3 pb-1">
+            {/* Landing-style animated lime aurora behind the grid */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+              <div className="absolute -top-10 left-[10%] h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.18)', animation: 'qaAurora 7s ease-in-out infinite' }} />
+              <div className="absolute top-1/3 right-[8%] h-44 w-44 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.12)', animation: 'qaAurora 9s ease-in-out infinite 1.5s' }} />
+              <div className="absolute -top-px inset-x-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+            </div>
+
+            <div className="relative flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-text-tertiary/30" />
             </div>
-            <div className="flex items-center justify-between px-5 pt-2 pb-4">
+            <div className="relative flex items-center justify-between px-5 pt-2 pb-4">
               <span className="text-text-primary font-bold text-base">Quick Access</span>
               <button onClick={() => setShowMore(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-bg-hover text-text-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             </div>
 
-            <div className="grid grid-cols-5 gap-y-5 gap-x-2 px-4 pb-5">
-              {SHEET_ITEMS.map((item) => {
+            <div className="relative grid grid-cols-5 gap-y-5 gap-x-2 px-4 pb-5">
+              {SHEET_ITEMS.map((item, i) => {
                 const Icon = item.icon;
                 return (
                   <Link
@@ -284,12 +297,13 @@ export default function MobileBottomNav() {
                     prefetch={false}
                     onClick={() => setShowMore(false)}
                     className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                    style={{ animation: `qaPop 360ms cubic-bezier(0.22,1,0.36,1) ${i * 28}ms both` }}
                   >
                     <div
                       className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                      style={{ background: `${item.color}15`, boxShadow: `0 0 0 1px ${item.color}22` }}
+                      style={{ background: 'rgba(204,255,0,0.10)', boxShadow: '0 0 0 1px rgba(204,255,0,0.22)' }}
                     >
-                      <Icon size={22} strokeWidth={1.75} style={{ color: item.color }} />
+                      <Icon size={22} strokeWidth={1.75} style={{ color: '#ccff00' }} />
                     </div>
                     <span className="text-[10px] text-text-secondary font-medium text-center">{item.name}</span>
                   </Link>
