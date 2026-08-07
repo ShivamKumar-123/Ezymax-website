@@ -10,6 +10,7 @@ import {
   Home,
   LayoutGrid,
   Wallet,
+  ArrowLeftRight,
   History,
   TrendingUp,
   Copy,
@@ -48,6 +49,7 @@ export const SECTIONS: NavSection[] = [
     label: 'Money',
     items: [
       { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
+      { label: 'Internal Transfer', href: '/transfer', icon: ArrowLeftRight },
       { label: 'Transactions', href: '/transactions', icon: History },
     ],
   },
