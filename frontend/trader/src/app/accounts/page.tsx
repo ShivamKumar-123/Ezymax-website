@@ -619,67 +619,6 @@ export default function AccountsPage() {
           </div>
         </div>
       </Modal>
-      {/* Accounts / Internal Transfer — full-width edge-to-edge, straight top line
-          meeting the sidebar's right border; only the active-tab indicator curves. */}
-      <div className="relative -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-8">
-        <div className="overflow-hidden border-b border-accent/40 bg-card">
-          <div className="relative flex min-h-[64px] sm:min-h-[100px] border-t border-accent/40 bg-card">
-              <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                <div
-                  className="absolute top-0 h-full w-1/2 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-                  style={{
-                    transform: tab === 'accounts' ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)',
-                  }}
-                >
-                  {/* Only the inner edge (facing the other tab) curves; the outer edge
-                      drops flush with the panel's left/right border. */}
-                  <div
-                    className={clsx(
-                      'absolute top-0 h-full border-t-2 border-b-0 border-accent bg-card-nested',
-                      'animate-wallet-main-tab-glow',
-                      tab === 'accounts'
-                        ? 'left-0 right-1.5 rounded-tr-2xl border-r-2'
-                        : 'left-1.5 right-0 rounded-tl-2xl border-l-2',
-                    )}
-                  />
-                </div>
-              </div>
-              {(
-                [
-                  { id: 'accounts' as const, label: 'Accounts' },
-                  { id: 'transfer' as const, label: 'Internal Transfer' },
-                ] as const
-              ).map((t) => {
-                const active = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setTab(t.id)}
-                    className={clsx(
-                      'relative z-10 flex-1 border-0 bg-transparent px-4 py-5 text-center text-sm font-semibold outline-none sm:py-7 sm:text-lg',
-                      'transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
-                      active ? 'text-accent' : 'text-text-secondary hover:text-text-primary',
-                    )}
-                  >
-                    {active ? (
-                      <span
-                        key={tab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(204,255,0,0.7)]"
-                      >
-                        {t.label}
-                      </span>
-                    ) : (
-                      <span className="relative inline-block">{t.label}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
 
       <div className="page-main w-full space-y-6">
         {tab === 'accounts' && (
