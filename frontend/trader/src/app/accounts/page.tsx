@@ -125,6 +125,7 @@ export default function AccountsPage() {
   const [fromKind, setFromKind] = useState<TransferEndKind>('trading');
   const [toKind, setToKind] = useState<TransferEndKind>('trading');
   const [mainWalletBalance, setMainWalletBalance] = useState(0);
+  const [bonusBalance, setBonusBalance] = useState(0);
   const [transferKindsInitialized, setTransferKindsInitialized] = useState(false);
 
   /** Unified transfer source/dest ID: 'wallet' or account UUID. */
@@ -134,10 +135,12 @@ export default function AccountsPage() {
 
   const fetchWalletSummary = useCallback(async () => {
     try {
-      const s = await api.get<{ main_wallet_balance?: number }>('/wallet/summary');
+      const s = await api.get<{ main_wallet_balance?: number; bonus_balance?: number }>('/wallet/summary');
       setMainWalletBalance(Number(s.main_wallet_balance) || 0);
+      setBonusBalance(Number(s.bonus_balance) || 0);
     } catch {
       setMainWalletBalance(0);
+      setBonusBalance(0);
     }
   }, []);
 
@@ -354,6 +357,11 @@ export default function AccountsPage() {
     const opts: Array<{ id: string; label: string; sublabel: string; balance: number }> = [
       { id: 'wallet', label: 'Main Wallet', sublabel: 'Wallet', balance: mainWalletBalance },
     ];
+    // Bonus wallet — a source only (goes into a trading account as credit).
+    // Shown when the user actually has a bonus balance.
+    if (bonusBalance > 0) {
+      opts.push({ id: 'bonus', label: 'Bonus Wallet', sublabel: 'Credit only · not withdrawable', balance: bonusBalance });
+    }
     for (const a of liveAccounts) {
       opts.push({
         id: a.id,
@@ -363,13 +371,14 @@ export default function AccountsPage() {
       });
     }
     return opts;
-  }, [liveAccounts, mainWalletBalance]);
+  }, [liveAccounts, mainWalletBalance, bonusBalance]);
 
   const uniFromBalance = useMemo(() => {
     if (uniFrom === 'wallet') return mainWalletBalance;
+    if (uniFrom === 'bonus') return bonusBalance;
     const a = liveAccounts.find((x) => x.id === uniFrom);
     return a ? Math.max(0, Number(a.free_margin ?? 0)) : 0;
-  }, [uniFrom, liveAccounts, mainWalletBalance]);
+  }, [uniFrom, liveAccounts, mainWalletBalance, bonusBalance]);
 
   const swapFromTo = () => {
     const prev = uniFrom;
@@ -391,13 +400,21 @@ export default function AccountsPage() {
 
     if (from === to) { toast.error('Select different source and destination'); return; }
     if (from === 'wallet' && to === 'wallet') { toast.error('Cannot transfer wallet to wallet'); return; }
-    if (from !== 'wallet' && !isUuid(from)) { toast.error('Select a valid source account'); return; }
+    // Bonus is a source only, and can only fund a trading account (as credit).
+    if (from === 'bonus' && (to === 'wallet' || to === 'bonus' || !isUuid(to))) {
+      toast.error('Bonus can only be moved into a trading account'); return;
+    }
+    if (from !== 'wallet' && from !== 'bonus' && !isUuid(from)) { toast.error('Select a valid source account'); return; }
     if (to !== 'wallet' && !isUuid(to)) { toast.error('Select a valid destination account'); return; }
     if (amt > uniFromBalance + 1e-9) { toast.error('Insufficient balance'); return; }
 
     setTransferSubmitting(true);
     try {
-      if (from === 'wallet') {
+      if (from === 'bonus') {
+        await api.post('/wallet/transfer-bonus-to-trading', { to_account_id: to, amount: amt });
+        const num = liveAccounts.find((a) => a.id === to)?.account_number ?? '';
+        toast.success(`Moved ${fmt(amt)} bonus to account ${num} as credit`);
+      } else if (from === 'wallet') {
         await api.post('/wallet/transfer-main-to-trading', { to_account_id: to, amount: amt });
         const num = liveAccounts.find((a) => a.id === to)?.account_number ?? '';
         toast.success(`Sent ${fmt(amt)} to account ${num}`);
@@ -793,8 +810,15 @@ export default function AccountsPage() {
                       onChange={(e) => {
                         const v = e.target.value;
                         setUniFrom(v);
-                        if (uniTo === v) {
-                          const alt = transferOptions.find((o) => o.id !== v);
+                        // Bonus can only fund a trading account — if the current
+                        // destination is the wallet/bonus, jump to a live account.
+                        if (v === 'bonus') {
+                          if (uniTo === 'wallet' || uniTo === 'bonus' || !uniTo) {
+                            const acc = liveAccounts[0];
+                            if (acc) setUniTo(acc.id);
+                          }
+                        } else if (uniTo === v) {
+                          const alt = transferOptions.find((o) => o.id !== v && o.id !== 'bonus');
                           if (alt) setUniTo(alt.id);
                         }
                       }}
@@ -858,7 +882,7 @@ export default function AccountsPage() {
                       className="accounts-native-select w-full px-4 py-3 rounded-xl text-sm font-semibold"
                     >
                       {transferOptions
-                        .filter((o) => o.id !== uniFrom)
+                        .filter((o) => o.id !== uniFrom && o.id !== 'bonus' && !(uniFrom === 'bonus' && o.id === 'wallet'))
                         .map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.label} — {o.sublabel} — {fmt(o.balance)}
@@ -1237,9 +1261,11 @@ function AccountCard({
   }, [initialExpanded]);
 
   const alias = readAlias(row.id);
-  const pnl = row.equity - row.balance;
-  const pct =
-    row.balance > 0 && Number.isFinite(row.equity) ? (row.equity / row.balance - 1) * 100 : 0;
+  // True floating P&L = equity − balance − credit. Bonus lives in `credit`
+  // (it counts toward equity/margin) but must NOT show as trading profit.
+  const pnl = row.equity - row.balance - (row.credit || 0);
+  const denom = row.balance + (row.credit || 0);
+  const pct = denom > 0 && Number.isFinite(row.equity) ? (pnl / denom) * 100 : 0;
   const pnlPositive = pnl >= 0;
   const idLabel = row.is_demo ? `#D#${row.account_number}` : `#L#${row.account_number}`;
 

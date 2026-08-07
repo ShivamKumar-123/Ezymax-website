@@ -59,6 +59,11 @@ class User(Base):
     book_type = Column(String(1), default="B", server_default="B")  # 'A' (LP routed) or 'B' (internal)
     trading_blocked_until = Column(DateTime(timezone=True))
     main_wallet_balance = Column(Numeric(18, 8), nullable=False, default=0)
+    # Non-withdrawable bonus wallet. Bonuses land here; the user transfers
+    # them into a trading account as `credit` (TradingAccount.credit), which
+    # counts toward margin and is consumed before real balance on losses.
+    # Never withdrawable and never counted as withdrawable/free cash.
+    bonus_balance = Column(Numeric(18, 8), nullable=False, default=0, server_default="0")
     # Lowercased EVM address (0x + 40 hex). Unique via the partial index
     # ix_users_wallet_address_lower (migration 0034). Set on first SIWE
     # sign-in or after a manual link from /profile/wallet/link.

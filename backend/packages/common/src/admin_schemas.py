@@ -154,6 +154,13 @@ class CreditRequest(BaseModel):
     description: Optional[str] = None
 
 
+class BonusGrantRequest(BaseModel):
+    # Grant to the user's non-withdrawable bonus wallet (users.bonus_balance).
+    # No account_id — the user later transfers it into a trading account.
+    amount: float = Field(gt=0)
+    description: Optional[str] = None
+
+
 class PositionOut(BaseModel):
     id: str
     account_id: str

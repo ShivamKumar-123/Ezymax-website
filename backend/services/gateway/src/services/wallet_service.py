@@ -1610,6 +1610,61 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
     }
 
 
+async def transfer_bonus_to_trading(req, user_id: UUID, db: AsyncSession) -> dict:
+    """Move funds from the non-withdrawable bonus wallet into a live trading
+    account as `credit` (NOT balance). Credit counts toward margin and is
+    consumed before real balance on losses; it can never be withdrawn."""
+    amt = Decimal(str(req.amount))
+    if amt <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive.")
+
+    user_q = await db.execute(select(User).where(User.id == user_id))
+    user_row = user_q.scalar_one_or_none()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    bonus_bal = user_row.bonus_balance or Decimal("0")
+    if bonus_bal < amt:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient bonus balance. Available: ${float(bonus_bal):.2f}",
+        )
+
+    acc_q = await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.id == req.to_account_id,
+            TradingAccount.user_id == user_id,
+            TradingAccount.is_demo == False,
+        )
+    )
+    account = acc_q.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Trading account not found")
+
+    user_row.bonus_balance = bonus_bal - amt
+    account.credit = (account.credit or Decimal("0")) + amt
+    account.equity = (account.balance or Decimal("0")) + account.credit
+    account.free_margin = account.equity - (account.margin_used or Decimal("0"))
+
+    db.add(Transaction(
+        user_id=user_id, account_id=None, type="bonus_transfer",
+        amount=-amt, balance_after=user_row.bonus_balance,
+        description=f"Bonus to trading account {account.account_number}",
+    ))
+    db.add(Transaction(
+        user_id=user_id, account_id=account.id, type="credit",
+        amount=amt, balance_after=account.credit,
+        description="Bonus credit from bonus wallet",
+    ))
+    await db.commit()
+
+    return {
+        "message": "Bonus moved to trading account as credit.",
+        "bonus_balance": float(user_row.bonus_balance),
+        "trading_credit": float(account.credit),
+    }
+
+
 # ─── Queries ──────────────────────────────────────────────────────────────
 
 async def list_deposits(user_id: UUID, db: AsyncSession) -> dict:
@@ -1797,17 +1852,17 @@ async def wallet_summary(user_id: UUID, account_id: UUID | None, db: AsyncSessio
     total_deposited += float(adj_main_in.scalar() or 0)
     total_withdrawn += abs(float(adj_main_out.scalar() or 0))
 
-    # Real "bonus balance" = sum of active user_bonuses still under wagering.
-    # Once a bonus is released (lots_traded >= lots_required), it merges into
-    # main_wallet_balance via the wallet_service.release_bonus path. So this
-    # number is the locked, unwithdrawable portion only.
+    # Bonus wallet = the non-withdrawable users.bonus_balance the user can
+    # transfer into a trading account as credit. We also add any legacy active
+    # wagering UserBonus (no code grants those today, so it's usually 0).
     bonus_q = await db.execute(
         select(func.coalesce(func.sum(UserBonus.amount), 0)).where(
             UserBonus.user_id == user_id,
             UserBonus.status == "active",
         )
     )
-    bonus_balance = float(bonus_q.scalar() or 0)
+    bw_q = await db.execute(select(User.bonus_balance).where(User.id == user_id))
+    bonus_balance = float(bw_q.scalar() or 0) + float(bonus_q.scalar() or 0)
 
     acct_q = await db.execute(
         select(TradingAccount)

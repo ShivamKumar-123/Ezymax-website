@@ -374,6 +374,18 @@ async def transfer_main_to_trading(
     )
 
 
+@router.post("/transfer-bonus-to-trading", status_code=200)
+async def transfer_bonus_to_trading(
+    req: TransferMainToTradingRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Move bonus-wallet funds into a live trading account as non-withdrawable credit."""
+    return await wallet_service.transfer_bonus_to_trading(
+        req=req, user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.get("/deposits")
 async def list_deposits(
     current_user: dict = Depends(get_current_user),

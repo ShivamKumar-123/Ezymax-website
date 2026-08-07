@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import get_db
 from dependencies import require_permission
 from packages.common.src.models import User
-from packages.common.src.admin_schemas import FundRequest, CreditRequest
+from packages.common.src.admin_schemas import FundRequest, CreditRequest, BonusGrantRequest
 from services import user_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -88,6 +88,20 @@ async def give_credit(
     db: AsyncSession = Depends(get_db),
 ):
     return await user_service.give_credit(
+        user_id=user_id, body=body, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.post("/{user_id}/give-bonus")
+async def give_bonus(
+    user_id: uuid.UUID,
+    body: BonusGrantRequest,
+    request: Request,
+    admin: User = Depends(require_permission("users.add_fund")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await user_service.give_bonus(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )

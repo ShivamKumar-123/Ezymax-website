@@ -47,6 +47,10 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "ALTER TABLE employees ADD COLUMN IF NOT EXISTS extra_permissions JSONB DEFAULT '[]'::jsonb"
             ))
+            # Non-withdrawable bonus wallet (migration 0062).
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS bonus_balance NUMERIC(18,8) NOT NULL DEFAULT 0"
+            ))
             # Waitlist (invite-only access gate). Mirrors migration 0061 so the
             # admin waitlist endpoints work even where Alembic hasn't run.
             await conn.execute(text("""

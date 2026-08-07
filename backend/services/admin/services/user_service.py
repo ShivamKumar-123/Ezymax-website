@@ -612,6 +612,39 @@ async def give_credit(
     return {"message": "Credit added successfully", "new_credit": float(account.credit)}
 
 
+async def give_bonus(
+    user_id: uuid.UUID, body,
+    admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Grant to the user's non-withdrawable bonus wallet (users.bonus_balance).
+    The user later transfers it into a trading account as credit."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    old_bonus = float(user.bonus_balance or 0)
+    user.bonus_balance = Decimal(str(old_bonus)) + Decimal(str(body.amount))
+
+    db.add(Transaction(
+        user_id=user_id,
+        account_id=None,
+        type="bonus_grant",
+        amount=Decimal(str(body.amount)),
+        balance_after=user.bonus_balance,
+        description=body.description or "Admin bonus grant",
+        created_by=admin_id,
+    ))
+    await write_audit_log(
+        db, admin_id, "give_bonus", "user", user_id,
+        old_values={"bonus_balance": old_bonus},
+        new_values={"bonus_balance": float(user.bonus_balance), "amount": body.amount},
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return {"message": "Bonus granted", "new_bonus_balance": float(user.bonus_balance)}
+
+
 async def take_credit(
     user_id: uuid.UUID, body: CreditRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
