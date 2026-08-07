@@ -8,6 +8,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
 import LinkedWalletCard from '@/components/profile/LinkedWalletCard';
+import ProfileBonusCard from '@/components/profile/ProfileBonusCard';
 import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
 import api from '@/lib/api/client';
 
@@ -503,6 +504,8 @@ export default function ProfilePage() {
               isPlaceholder={Boolean(profile?.is_wallet_placeholder)}
               onChanged={() => void fetchProfile()}
             />
+
+            <ProfileBonusCard />
 
             <LinkedWalletCard />
           </div>
