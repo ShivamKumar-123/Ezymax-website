@@ -860,7 +860,8 @@ function WalletPageContent() {
                   </div>
                 )}
 
-                {/* Bonus Balance — green (locked/unwagered bonuses; merges into main on release) */}
+                {/* Bonus Balance — non-withdrawable bonus wallet. Transfer it into
+                    a trading account as credit (consumed before real balance on loss). */}
                 <div
                   className="rounded-2xl p-4 border flex flex-col"
                   style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}
@@ -879,10 +880,10 @@ function WalletPageContent() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.push('/rewards')}
+                    onClick={() => router.push('/accounts')}
                     className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
                   >
-                    View Details
+                    Transfer to Account
                   </button>
                 </div>
               </div>
