@@ -358,10 +358,9 @@ export default function AccountsPage() {
       { id: 'wallet', label: 'Main Wallet', sublabel: 'Wallet', balance: mainWalletBalance },
     ];
     // Bonus wallet — a source only (goes into a trading account as credit).
-    // Shown when the user actually has a bonus balance.
-    if (bonusBalance > 0) {
-      opts.push({ id: 'bonus', label: 'Bonus Wallet', sublabel: 'Credit only · not withdrawable', balance: bonusBalance });
-    }
+    // Always shown so the option is discoverable; transferring is blocked
+    // by the balance check when it's $0.
+    opts.push({ id: 'bonus', label: 'Bonus Wallet', sublabel: 'Credit only · not withdrawable', balance: bonusBalance });
     for (const a of liveAccounts) {
       opts.push({
         id: a.id,
