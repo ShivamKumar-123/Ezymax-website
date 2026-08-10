@@ -2,20 +2,29 @@
 
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { ArrowRight } from 'lucide-react';
+import {
+  ArrowRight,
+  GraduationCap,
+  Layers,
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Lock,
+  PlayCircle,
+} from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { phases } from '@/data/academy';
 
-const phaseMeta = [
-  { icon: '◆', border: 'border-[#ccff00]/30', bg: 'bg-[#ccff00]/10' },
-  { icon: '●', border: 'border-[#ccff00]/30', bg: 'bg-[#ccff00]/10' },
-  { icon: '◉', border: 'border-[#ccff00]/30', bg: 'bg-[#ccff00]/10' },
-  { icon: '■', border: 'border-teal-400/30', bg: 'bg-teal-500/10' },
-  { icon: '◆', border: 'border-amber-500/30', bg: 'bg-amber-500/10' },
-  { icon: '▲', border: 'border-blue-500/30', bg: 'bg-blue-500/10' },
-  { icon: '◇', border: 'border-purple-500/30', bg: 'bg-purple-500/10' },
-  { icon: '★', border: 'border-yellow-500/30', bg: 'bg-yellow-500/10' },
-];
+const PREMIUM_CARD =
+  'rounded-2xl border relative overflow-hidden transition-all duration-300 hover:-translate-y-1';
+const PREMIUM_STYLE = {
+  background:
+    'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(204,255,0,0.16)',
+  boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+} as const;
+
+const phaseGlyph = ['◆', '●', '◉', '■', '◆', '▲', '◇', '★'];
 
 const displayModuleCount = (i: number) => {
   const n = phases[i]?.modules.length ?? 0;
@@ -27,117 +36,164 @@ export default function AcademyPage() {
   const pct = 0;
   const studyTime = '21h';
 
+  const stats = [
+    { icon: Layers, value: String(phases.length), label: 'Phases' },
+    { icon: BookOpen, value: '44', label: 'Modules' },
+    { icon: CheckCircle2, value: String(done), label: 'Done' },
+    { icon: Clock, value: studyTime, label: 'Study Time' },
+  ];
+
   return (
     <DashboardShell>
-      <div className="page-main max-w-6xl mx-auto w-full pb-8">
-        <div className="text-center mb-8">
-          <div className="inline-block px-4 py-1.5 rounded-full border border-[#ccff00]/30 text-[#ccff00] text-xs font-medium tracking-wider uppercase mb-4">
-            ● CURRICULUM
+      <div className="page-main max-w-6xl mx-auto w-full pb-10 space-y-5">
+        {/* Premium header */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          >
+            <GraduationCap className="w-5 h-5 text-[#ccff00]" />
           </div>
-          <h1 className="text-3xl font-light text-text-primary tracking-wider mb-1">
-            FXARTHA <span className="font-bold italic">FOREX</span> ACADEMY
-          </h1>
-          <p className="text-[#ccff00] text-sm tracking-widest uppercase">MASTER FOREX TRADING FROM BEGINNER TO PROFESSIONAL</p>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary">FXArtha Forex Academy</h1>
+            <p className="text-sm text-text-tertiary">Master forex trading from beginner to professional</p>
+          </div>
+        </div>
 
-          <div className="flex items-center justify-center gap-8 mt-6 mb-4">
-            {[
-              { value: String(phases.length), label: 'PHASES' },
-              { value: '44', label: 'MODULES' },
-              { value: String(done), label: 'DONE' },
-              { value: studyTime, label: 'STUDY TIME' },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{s.value}</p>
-                <p className="text-[10px] uppercase tracking-wider text-text-tertiary">{s.label}</p>
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {stats.map((s) => (
+            <div key={s.label} className={clsx(PREMIUM_CARD, 'p-4')} style={PREMIUM_STYLE}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                <s.icon className="w-4 h-4 text-[#ccff00]" />
               </div>
-            ))}
-          </div>
+              <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{s.label}</p>
+              <p className="text-2xl font-bold tabular-nums text-text-primary mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
 
-          <div className="text-center mb-4">
-            <p className="text-[10px] uppercase tracking-widest text-text-tertiary mb-1">Overall Progress</p>
-            <p className="text-sm text-[#ccff00] font-medium">
+        {/* Overall progress — hero card with accent bar */}
+        <div className={clsx(PREMIUM_CARD, 'p-5 pl-6')} style={PREMIUM_STYLE}>
+          <div
+            className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+            style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+          />
+          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+            <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Overall Progress</p>
+            <p className="text-sm font-semibold text-[#ccff00] tabular-nums">
               {pct}% Complete ({done}/44)
             </p>
-            <div className="h-2 max-w-md mx-auto mt-3 rounded-full bg-bg-secondary overflow-hidden border border-border-primary">
-              <div className="h-full bg-[#ccff00] rounded-full transition-all" style={{ width: `${pct}%` }} />
-            </div>
+          </div>
+          <div className="h-2.5 rounded-full bg-bg-secondary overflow-hidden border border-border-primary">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #eaff8a, #ccff00 60%, #a6d600)' }}
+            />
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
+          {/* Phase stepper */}
+          <div className="flex items-center gap-3 mt-5 flex-wrap">
             {phases.map((phase, i) => (
               <div key={phase.id} className="text-center">
                 <div
                   className={clsx(
-                    'w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold mb-1',
-                    i === 0 ? 'border-[#ccff00] text-[#ccff00]' : 'border-border-secondary text-text-tertiary',
+                    'w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold mb-1 transition-colors',
+                    i === 0 ? 'border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10' : 'border-border-secondary text-text-tertiary',
                   )}
                 >
                   {i + 1}
                 </div>
-                <p className="text-[9px] text-text-tertiary">
-                  0/{displayModuleCount(i)}
-                </p>
+                <p className="text-[9px] text-text-tertiary tabular-nums">0/{displayModuleCount(i)}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-3">
+        {/* Phase grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {phases.map((phase, i) => {
-            const meta = phaseMeta[i] ?? phaseMeta[0];
             const locked = i > 0;
             const modCount = phase.modules.length || displayModuleCount(i);
+            const glyph = phaseGlyph[i] ?? '◆';
             return (
               <Link
                 key={phase.id}
                 href={`/academy/phase-${i + 1}`}
-                className={clsx(
-                  'block rounded-xl p-5 hover:border-text-tertiary transition-colors group border bg-bg-secondary',
-                  i === phases.length - 2 ? clsx(meta.border, 'bg-purple-500/5') : i === phases.length - 1 ? clsx(meta.border, 'bg-yellow-500/5') : 'border-border-glass',
-                )}
+                className={clsx(PREMIUM_CARD, 'group flex flex-col')}
+                style={PREMIUM_STYLE}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-4 min-w-0">
+                {/* Thumbnail band */}
+                <div
+                  className="relative h-24 flex items-center justify-between px-5 overflow-hidden"
+                  style={{ background: 'radial-gradient(120% 140% at 85% -20%, rgba(204,255,0,0.18), transparent 60%)' }}
+                >
+                  <div
+                    className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+                    style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                  />
+                  <div className="flex items-center gap-3">
                     <div
-                      className={clsx('w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0', meta.bg)}
-                      style={{ color: phase.color }}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                      style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: phase.color }}
                     >
-                      {meta.icon}
+                      {glyph}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-xs font-bold tracking-wider" style={{ color: phase.color }}>
-                          PHASE {phase.num}
-                        </span>
-                        <span className="text-[10px] text-text-tertiary">{phase.duration}</span>
-                        {locked && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-bg-tertiary border border-border-glass text-text-tertiary uppercase tracking-wider">
-                            Locked
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-text-primary font-bold text-lg">{phase.title}</h3>
-                      <p className="text-xs text-text-secondary italic">{phase.subtitle}</p>
-                    </div>
+                    <span className="text-3xl font-black tracking-tight text-text-primary/90">{phase.num}</span>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm text-text-tertiary">
-                      0/{modCount}
+                  {locked ? (
+                    <span className="inline-flex items-center gap-1 text-[9px] px-2 py-1 rounded-full bg-bg-tertiary/80 border border-border-glass text-text-tertiary uppercase tracking-wider">
+                      <Lock className="w-3 h-3" /> Locked
                     </span>
-                    <ArrowRight size={16} className="text-text-tertiary group-hover:text-[#ccff00] transition-colors" />
-                  </div>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[9px] px-2 py-1 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[#ccff00] uppercase tracking-wider font-bold">
+                      <PlayCircle className="w-3 h-3" /> Active
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 mt-2 ml-14">
-                  <span className="text-[10px] text-text-tertiary">0%</span>
+
+                {/* Body */}
+                <div className="flex-1 flex flex-col p-5 pt-4">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold tracking-wider text-[#ccff00] uppercase">Phase {phase.num}</span>
+                    <span className="w-1 h-1 rounded-full bg-border-secondary" />
+                    <span className="text-[10px] text-text-tertiary">{phase.duration}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-bg-secondary border border-border-glass text-text-tertiary uppercase tracking-wider">
+                      {phase.level}
+                    </span>
+                  </div>
+                  <h3 className="text-text-primary font-bold text-lg leading-tight">{phase.title}</h3>
+                  <p className="text-xs text-text-secondary italic mt-0.5">{phase.subtitle}</p>
+
+                  {/* Progress bar */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] text-text-tertiary tabular-nums">0/{modCount} modules</span>
+                      <span className="text-[10px] text-text-tertiary tabular-nums">0%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-bg-secondary overflow-hidden border border-border-primary">
+                      <div className="h-full rounded-full bg-[#ccff00]" style={{ width: '0%' }} />
+                    </div>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="mt-4 pt-3 border-t border-border-primary/60 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-text-secondary group-hover:text-[#ccff00] transition-colors">
+                      {locked ? 'Preview phase' : 'Start learning'}
+                    </span>
+                    <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#ccff00]/10 group-hover:bg-[#ccff00] transition-colors">
+                      <ArrowRight size={16} className="text-[#ccff00] group-hover:text-[#0a0a0a] transition-colors" />
+                    </span>
+                  </div>
                 </div>
               </Link>
             );
           })}
         </div>
 
-        <div className="flex items-center justify-between mt-8 text-[10px] uppercase tracking-widest text-text-tertiary">
-          <span>FXARTHA FOREX ACADEMY</span>
-          <span>8 PHASES · 44 MODULES</span>
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-text-tertiary pt-2">
+          <span>FXArtha Forex Academy</span>
+          <span>8 Phases · 44 Modules</span>
         </div>
       </div>
     </DashboardShell>

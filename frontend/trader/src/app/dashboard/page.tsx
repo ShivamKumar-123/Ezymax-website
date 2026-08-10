@@ -67,6 +67,70 @@ const tradeUrl = (accountId: string) => {
   return host ? `https://${host}${path}` : path;
 };
 
+/* ─────────────────────────────────────────────────────────────────────
+   Shared "Obsidian & Lime" premium primitives — kept consistent with the
+   already-redesigned accounts/portfolio/wallet pages.
+   ───────────────────────────────────────────────────────────────────── */
+type IconType = React.ComponentType<{ className?: string; size?: number | string }>;
+
+const PREMIUM_CARD_STYLE: React.CSSProperties = {
+  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(204,255,0,0.16)',
+  boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+};
+
+function AccentBar() {
+  return (
+    <div
+      className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+      style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+    />
+  );
+}
+
+function SectionHeader({ icon: Icon, title, subtitle, action }: {
+  icon: IconType; title: string; subtitle?: string; action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+        >
+          <Icon className="w-5 h-5 text-[#ccff00]" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-text-primary truncate">{title}</h2>
+          {subtitle && <p className="text-[11px] text-text-tertiary truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function StatTile({ icon: Icon, label, value, negative }: {
+  icon: IconType; label: string; value: string; negative?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-xl p-3.5 transition-colors hover:border-[rgba(204,255,0,0.3)]"
+      style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+          <Icon className="w-4 h-4 text-[#ccff00]" />
+        </div>
+        <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="text-2xl font-bold tabular-nums leading-none" style={{ color: negative ? '#f87171' : 'var(--text-primary)' }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <DashboardShell>
@@ -353,17 +417,17 @@ function BrokerHome() {
           <button
             type="button"
             onClick={() => router.push('/social')}
-            className="hover-lift group w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-colors hover:bg-bg-hover"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+            className="group relative w-full rounded-2xl border p-4 flex items-center gap-3 text-left overflow-hidden transition-all duration-300 hover:-translate-y-1"
+            style={PREMIUM_CARD_STYLE}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <Users size={18} className="text-blue-400" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
+              <Users className="w-5 h-5 text-[#ccff00]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-text-primary">Copy Trading</p>
               <p className="text-[11px] text-text-tertiary mt-0.5">Mirror top traders automatically</p>
             </div>
-            <ArrowRight size={18} className="text-text-tertiary group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight size={18} className="text-[#ccff00] group-hover:translate-x-1 transition-transform shrink-0" />
           </button>
           <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_for_next_level ?? 100} />
         </div>
@@ -426,9 +490,10 @@ function PortfolioHero({
   return (
     <div
       data-tour={TOUR_TARGETS.DASHBOARD_BALANCE}
-      className="rounded-2xl overflow-hidden"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+      className="group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 pl-5"
+      style={PREMIUM_CARD_STYLE}
     >
+      <AccentBar />
       {/* Top bar: account picker + actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5">
         <div className="relative">
@@ -470,24 +535,23 @@ function PortfolioHero({
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT} onClick={onDeposit}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold text-black transition-all hover:brightness-110"
-            style={{ background: '#ccff00' }}>
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-[#0a0a0a] bg-[#ccff00] hover:bg-[#a6d600] transition-all hover:-translate-y-0.5">
             <ArrowDownToLine size={14} /> Deposit
           </button>
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW} onClick={onTrade}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
             <BarChart3 size={14} /> Trade
           </button>
           <button type="button" onClick={onWithdraw}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
             <ArrowUpFromLine size={14} /> Withdraw
           </button>
           <button type="button" onClick={onDetails}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}>
-            Details
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
+            <ExternalLink size={14} /> Details
           </button>
         </div>
       </div>
@@ -521,19 +585,12 @@ function PortfolioHero({
         <EquityChart points={equityCurve} loading={chartLoading} up={up} />
       </div>
 
-      {/* Per-account stat bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px mt-2" style={{ background: 'var(--border-primary)' }}>
-        {[
-          { label: 'Balance', value: fmtUsd(a?.balance ?? 0) },
-          { label: 'Equity', value: fmtUsd(a?.equity ?? 0) },
-          { label: 'Free margin', value: fmtUsd(a?.free_margin ?? 0), neg: (a?.free_margin ?? 0) < 0 },
-          { label: 'Leverage', value: a ? `1:${a.leverage}` : '—' },
-        ].map((s) => (
-          <div key={s.label} className="p-3 sm:p-4" style={{ background: 'var(--bg-card)' }}>
-            <p className="text-[10px] uppercase tracking-[0.12em] font-semibold text-text-tertiary">{s.label}</p>
-            <p className="mt-1 text-sm md:text-base font-bold tabular-nums" style={{ color: s.neg ? '#f87171' : 'var(--text-primary)' }}>{s.value}</p>
-          </div>
-        ))}
+      {/* Per-account stat tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 px-4 sm:px-5 pb-5 pt-3">
+        <StatTile icon={WalletIcon} label="Balance" value={fmtUsd(a?.balance ?? 0)} />
+        <StatTile icon={BarChart3} label="Equity" value={fmtUsd(a?.equity ?? 0)} />
+        <StatTile icon={Coins} label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} negative={(a?.free_margin ?? 0) < 0} />
+        <StatTile icon={Zap} label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
       </div>
     </div>
   );
@@ -595,10 +652,19 @@ function MarketsTable({ movers, series, onTrade }: {
   onTrade: () => void;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}>
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-        <h2 className="text-sm font-bold text-text-primary">Markets</h2>
-        <button type="button" onClick={onTrade} className="text-[11px] font-semibold text-[#ccff00] hover:underline">Open terminal →</button>
+    <div className="relative rounded-2xl border overflow-hidden transition-all duration-300" style={PREMIUM_CARD_STYLE}>
+      <div className="px-4 py-3.5 border-b" style={{ borderColor: 'var(--border-primary)' }}>
+        <SectionHeader
+          icon={BarChart3}
+          title="Markets"
+          subtitle="Top daily movers"
+          action={
+            <button type="button" onClick={onTrade}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#ccff00] hover:gap-1.5 transition-all">
+              Open terminal <ArrowRight size={12} />
+            </button>
+          }
+        />
       </div>
       {movers.length === 0 ? (
         <div className="p-6 text-center text-xs text-text-tertiary">Loading market data…</div>
@@ -608,13 +674,16 @@ function MarketsTable({ movers, series, onTrade }: {
             const upTick = m.pct >= 0;
             const hasPrice = Number.isFinite(m.price) && m.price > 0;
             return (
-              <li key={m.symbol} className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0" style={{ borderColor: 'var(--border-primary)' }}>
-                <span className="w-20 text-sm font-semibold text-text-primary">{m.symbol}</span>
+              <li key={m.symbol} className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0 transition-colors hover:bg-[rgba(204,255,0,0.04)]" style={{ borderColor: 'var(--border-primary)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.18)' }}>
+                  <span className="text-[10px] font-bold text-[#ccff00]">{m.symbol.slice(0, 3)}</span>
+                </div>
+                <span className="w-16 text-sm font-semibold text-text-primary">{m.symbol}</span>
                 <div className="flex-1 hidden sm:block"><Sparkline data={series[i] || []} up={upTick} /></div>
                 <span className="text-sm font-mono tabular-nums text-text-secondary w-24 text-right">
                   {hasPrice ? fmtNum(m.price, m.symbol === 'BTCUSD' ? 0 : 4) : '—'}
                 </span>
-                <span className={clsx('inline-flex items-center justify-end gap-1 text-xs font-bold tabular-nums w-20 text-right', upTick ? 'text-green-400' : 'text-red-400')}>
+                <span className={clsx('inline-flex items-center justify-end gap-1 text-xs font-bold tabular-nums w-20 text-right px-2 py-1 rounded-md', upTick ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10')}>
                   {upTick ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{upTick ? '+' : ''}{m.pct.toFixed(2)}%
                 </span>
               </li>
@@ -859,28 +928,26 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
   const pct = xpNext > 0 ? Math.min(100, Math.round((xp / xpNext) * 100)) : 0;
   return (
     <Card>
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-          <BadgeCheck size={18} className="text-[#ccff00]" /> Status program
-        </h2>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setTab('challenges')}
-            className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'challenges' ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}
-          >
-            Challenges
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('rewards')}
-            className={clsx('px-3 py-1.5 text-xs font-semibold rounded-full transition-colors',
-              tab === 'rewards' ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}
-          >
-            My rewards
-          </button>
-        </div>
+      <div className="mb-4">
+        <SectionHeader icon={BadgeCheck} title="Status program" subtitle="Challenges & rewards" />
+      </div>
+      <div className="flex items-center gap-1.5 mb-4 p-0.5 rounded-lg w-fit" style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}>
+        <button
+          type="button"
+          onClick={() => setTab('challenges')}
+          className={clsx('px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+            tab === 'challenges' ? 'bg-[#ccff00] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
+        >
+          Challenges
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('rewards')}
+          className={clsx('px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+            tab === 'rewards' ? 'bg-[#ccff00] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
+        >
+          My rewards
+        </button>
       </div>
 
       {/* XP progress toward the next level */}
@@ -891,17 +958,17 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
       <div className="h-2 rounded-full bg-bg-hover overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #f2d484, #ccff00)' }}
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 10px rgba(204,255,0,0.5)' }}
         />
       </div>
 
       {tab === 'challenges' ? (
         <div
-          className="mt-4 rounded-xl p-4 flex items-center gap-3"
+          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(204,255,0,0.3)]"
           style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-            <BarChart3 size={18} className="text-blue-400" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.2)' }}>
+            <BarChart3 size={18} className="text-[#ccff00]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-text-primary">Complete your first trade</p>
@@ -911,11 +978,11 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
         </div>
       ) : (
         <div
-          className="mt-4 rounded-xl p-4 flex items-center gap-3"
+          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(204,255,0,0.3)]"
           style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Coins size={18} className="text-amber-400" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.2)' }}>
+            <Coins size={18} className="text-[#ccff00]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-text-primary">Reward balance</p>
@@ -930,13 +997,17 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
 
 function InviteFriendsCard() {
   return (
-    <Card>
+    <div
+      className="group relative rounded-2xl border p-4 md:p-5 pl-5 overflow-hidden transition-all duration-300 hover:-translate-y-1"
+      style={PREMIUM_CARD_STYLE}
+    >
+      <AccentBar />
       <div className="flex items-center gap-4">
         <div
           className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}
+          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
         >
-          <ShieldCheck size={26} className="text-green-500" />
+          <ShieldCheck size={26} className="text-[#ccff00]" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-text-primary">Invite friends, earn together</h3>
@@ -945,13 +1016,13 @@ function InviteFriendsCard() {
           </p>
           <Link
             href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#ccff00] hover:underline"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#ccff00] hover:gap-2 transition-all"
           >
             Learn details <ArrowRight size={12} />
           </Link>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -993,8 +1064,8 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <div
-      className="rounded-2xl p-4 md:p-5"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+      className="relative rounded-2xl border p-4 md:p-5 overflow-hidden transition-all duration-300 hover:-translate-y-1"
+      style={PREMIUM_CARD_STYLE}
     >
       {title && <h2 className="text-base font-bold text-text-primary mb-3">{title}</h2>}
       {children}

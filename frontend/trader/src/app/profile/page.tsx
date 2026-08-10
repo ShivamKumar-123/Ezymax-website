@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette } from 'lucide-react';
+import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette, Settings, Lock, Wallet } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -61,6 +61,31 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n || 0);
+}
+
+// Shared "Obsidian & Lime" premium card surface used across settings sections.
+const PREMIUM_CARD = 'relative overflow-hidden rounded-2xl border';
+const PREMIUM_CARD_STYLE: React.CSSProperties = {
+  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.07), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(204,255,0,0.16)',
+  boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+};
+
+function SectionHeader({ icon: Icon, title, sub }: { icon: React.ElementType; title: string; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+      >
+        <Icon size={18} className="text-[#ccff00]" />
+      </div>
+      <div className="min-w-0">
+        <h3 className="text-sm font-bold text-text-primary tracking-tight">{title}</h3>
+        {sub && <p className="text-xs text-text-tertiary mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -235,18 +260,20 @@ export default function ProfilePage() {
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 space-y-5">
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card">
+          <div className="flex items-center gap-3 mb-1">
             <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
-              aria-hidden
-            />
-            <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
-              <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
-              <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Profile, security, notifications, and active sessions — aligned with FXArtha.
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+            >
+              <Settings className="w-5 h-5 text-[#ccff00]" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
+              <p className="text-sm text-text-tertiary mt-0.5">
+                Profile, security, notifications, and active sessions
               </p>
             </div>
-          </section>
+          </div>
 
         {loading && (
           <div className="rounded-xl border border-border-primary bg-card flex flex-col items-center gap-3 py-20">
@@ -306,22 +333,32 @@ export default function ProfilePage() {
         {/* ── Profile tab ── */}
         {tab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-5">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h2 className="text-sm font-semibold text-text-primary mb-5">Profile Information</h2>
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={User} title="Profile Information" sub="Your personal and contact details" />
 
               {/* Avatar row */}
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-6 rounded-2xl border border-border-primary bg-bg-secondary/40 p-4">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-xl font-bold text-accent">
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-[#0a0a0a]"
+                    style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 8px 20px rgba(204,255,0,0.28)' }}
+                  >
                     {initials}
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">{profile?.first_name} {profile?.last_name}</p>
-                  <p className="text-xs text-text-tertiary">{profile?.email}</p>
-                  <p className={clsx('text-[10px] mt-0.5', profile?.kyc_status === 'verified' ? 'text-accent' : 'text-warning')}>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-text-primary truncate">{profile?.first_name} {profile?.last_name}</p>
+                  <p className="text-xs text-text-tertiary truncate">{profile?.email}</p>
+                  <span
+                    className={clsx(
+                      'inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                      profile?.kyc_status === 'verified'
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-warning/15 text-warning border-warning/30',
+                    )}
+                  >
                     {profile?.kyc_status === 'verified' ? 'Verified Account' : `KYC: ${profile?.kyc_status ?? 'not started'}`}
-                  </p>
+                  </span>
                 </div>
               </div>
 
@@ -400,19 +437,27 @@ export default function ProfilePage() {
 
             {/* Trading Accounts section */}
             {accounts.length > 0 && (
-              <div className="rounded-xl border border-border-primary bg-card overflow-hidden noise-texture">
-                <div className="px-5 py-3.5 border-b border-border-primary">
-                  <h3 className="text-sm font-semibold text-text-primary">Trading Accounts</h3>
-                </div>
-                <ul className="divide-y divide-border-primary">
+              <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+                <SectionHeader icon={Wallet} title="Trading Accounts" sub={`${accounts.length} account${accounts.length === 1 ? '' : 's'} linked`} />
+                <ul className="space-y-2.5">
                   {accounts.map((acc) => (
-                    <li key={acc.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
+                    <li
+                      key={acc.id}
+                      className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3.5 flex items-center justify-between gap-3 transition-colors hover:border-[#ccff00]/30"
+                    >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-bg-secondary border border-border-primary flex items-center justify-center text-xs font-bold text-text-tertiary shrink-0">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 border"
+                          style={
+                            acc.is_demo
+                              ? { background: 'rgba(255,255,255,0.04)', borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }
+                              : { background: 'rgba(204,255,0,0.12)', borderColor: 'rgba(204,255,0,0.25)', color: '#ccff00' }
+                          }
+                        >
                           {acc.is_demo ? 'D' : 'L'}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-text-primary truncate">{acc.account_number}</p>
+                          <p className="text-sm font-semibold text-text-primary truncate">{acc.account_number}</p>
                           <p className="text-xs text-text-tertiary">
                             {acc.is_demo ? 'Demo Account' : 'Live Account'}
                             {acc.leverage ? ` • 1:${acc.leverage}` : ''}
@@ -421,12 +466,14 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-text-primary">{fmt(acc.balance)}</p>
-                          <p className="text-[10px] text-text-tertiary">Balance</p>
+                          <p className="text-sm font-bold text-text-primary tabular-nums">{fmt(acc.balance)}</p>
+                          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Balance</p>
                         </div>
                         <span className={clsx(
-                          'px-2 py-0.5 rounded-full text-[10px] font-semibold',
-                          acc.status === 'active' ? 'bg-accent/15 text-accent' : 'bg-bg-secondary text-text-tertiary',
+                          'px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                          acc.status === 'active'
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : 'bg-bg-secondary text-text-tertiary border-border-primary',
                         )}>
                           {acc.status ?? 'active'}
                         </span>
@@ -443,8 +490,8 @@ export default function ProfilePage() {
         {/* ── Security tab ── */}
         {tab === 'security' && (
           <div className="max-w-lg mx-auto space-y-6">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h3 className="text-base font-semibold text-text-primary mb-4">Change Password</h3>
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={Lock} title="Change Password" sub="Update the password used to sign in" />
               <div className="space-y-3">
                 <div>
                   <label className={labelCls}>Current Password</label>
@@ -464,9 +511,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h3 className="text-base font-semibold text-text-primary mb-1">Two-Factor Authentication</h3>
-              <p className="text-sm text-text-secondary mb-4">Add an extra layer of security to your account.</p>
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={Shield} title="Two-Factor Authentication" sub="Add an extra layer of security to your account" />
 
               {showTwoFaSetup ? (
                 <div className="space-y-4">
@@ -484,8 +530,18 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className="text-sm text-text-primary">{profile?.two_factor_enabled ? '2FA is enabled' : '2FA is disabled'}</span>
+                <div className="flex items-center justify-between gap-3 flex-wrap rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3">
+                  <span
+                    className={clsx(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border',
+                      profile?.two_factor_enabled
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-bg-secondary text-text-tertiary border-border-primary',
+                    )}
+                  >
+                    <span className={clsx('w-1.5 h-1.5 rounded-full', profile?.two_factor_enabled ? 'bg-emerald-400' : 'bg-text-tertiary')} />
+                    {profile?.two_factor_enabled ? '2FA is enabled' : '2FA is disabled'}
+                  </span>
                   <Button
                     variant={profile?.two_factor_enabled ? 'danger' : 'primary'}
                     size="sm"
@@ -513,50 +569,55 @@ export default function ProfilePage() {
 
         {/* ── Notifications tab ── */}
         {tab === 'notifications' && (
-          <div className="max-w-lg mx-auto space-y-2">
-            {[
-              { label: 'Trade Executed',   desc: 'When a trade is placed or closed',          key: 'trade_executed' },
-              { label: 'Deposit Approved', desc: 'When a deposit is processed',               key: 'deposit_approved' },
-              { label: 'Margin Warning',   desc: 'When margin level drops below threshold',   key: 'margin_warning' },
-              { label: 'Price Alerts',     desc: 'Custom price level notifications',          key: 'price_alerts' },
-              { label: 'Copy Trading',     desc: 'When a copied trader opens a position',     key: 'copy_trading' },
-              { label: 'Newsletter',       desc: 'Weekly market analysis and updates',        key: 'newsletter' },
-            ].map((n) => (
-              <div
-                key={n.key}
-                className="rounded-xl border border-border-primary bg-card px-4 py-3 flex items-center justify-between gap-3 noise-texture"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm text-text-primary">{n.label}</div>
-                  <div className="text-[10px] text-text-tertiary mt-0.5">{n.desc}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleNotifPref(n.key)}
-                  className={clsx(
-                    'relative w-9 h-5 rounded-full transition-all flex-shrink-0 border',
-                    notifPrefs[n.key] ? 'bg-accent border-accent' : 'bg-bg-secondary border-border-primary',
-                  )}
-                  aria-pressed={!!notifPrefs[n.key]}
-                >
+          <div className="max-w-lg mx-auto">
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={Bell} title="Notifications" sub="Choose which alerts you want to receive" />
+              <div className="space-y-2">
+                {[
+                  { label: 'Trade Executed',   desc: 'When a trade is placed or closed',          key: 'trade_executed' },
+                  { label: 'Deposit Approved', desc: 'When a deposit is processed',               key: 'deposit_approved' },
+                  { label: 'Margin Warning',   desc: 'When margin level drops below threshold',   key: 'margin_warning' },
+                  { label: 'Price Alerts',     desc: 'Custom price level notifications',          key: 'price_alerts' },
+                  { label: 'Copy Trading',     desc: 'When a copied trader opens a position',     key: 'copy_trading' },
+                  { label: 'Newsletter',       desc: 'Weekly market analysis and updates',        key: 'newsletter' },
+                ].map((n) => (
                   <div
-                    className={clsx(
-                      'absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm',
-                      notifPrefs[n.key] ? 'left-[18px] bg-black' : 'left-0.5 bg-text-primary',
-                    )}
-                  />
-                </button>
+                    key={n.key}
+                    className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3 flex items-center justify-between gap-3 transition-colors hover:border-[#ccff00]/25"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-text-primary">{n.label}</div>
+                      <div className="text-[11px] text-text-tertiary mt-0.5">{n.desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleNotifPref(n.key)}
+                      className={clsx(
+                        'relative w-10 h-5 rounded-full transition-all flex-shrink-0 border',
+                        notifPrefs[n.key] ? 'bg-[#ccff00] border-[#ccff00]' : 'bg-bg-secondary border-border-primary',
+                      )}
+                      style={notifPrefs[n.key] ? { boxShadow: '0 0 12px rgba(204,255,0,0.4)' } : undefined}
+                      aria-pressed={!!notifPrefs[n.key]}
+                    >
+                      <div
+                        className={clsx(
+                          'absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm',
+                          notifPrefs[n.key] ? 'left-[20px] bg-[#0a0a0a]' : 'left-0.5 bg-text-primary',
+                        )}
+                      />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         )}
 
         {/* ── Theme tab ── */}
         {tab === 'theme' && (
           <div className="max-w-lg mx-auto space-y-5">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h3 className="text-base font-semibold text-text-primary mb-1">Theme Settings</h3>
-              <p className="text-sm text-text-secondary mb-5">Choose your preferred appearance.</p>
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={Palette} title="Theme Settings" sub="Choose your preferred appearance" />
               <div className="grid grid-cols-2 gap-4">
                 {/* Dark Blue */}
                 <button
@@ -589,8 +650,8 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Dark background with blue accents</p>
                   {theme === 'dark' && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#ccff00] flex items-center justify-center">
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
                 </button>
@@ -626,8 +687,8 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Clean white with black text</p>
                   {theme === 'light' && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#ccff00] flex items-center justify-center">
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
                 </button>
@@ -639,21 +700,29 @@ export default function ProfilePage() {
         {/* ── Sessions tab ── */}
         {tab === 'sessions' && (
           <div className="max-w-2xl mx-auto">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h3 className="text-base font-semibold text-text-primary mb-4">Active Sessions</h3>
+            <div className={`${PREMIUM_CARD} p-5 sm:p-6`} style={PREMIUM_CARD_STYLE}>
+              <SectionHeader icon={Monitor} title="Active Sessions" sub="Devices currently signed in to your account" />
               {sessions.length === 0 ? (
-                <p className="text-sm text-text-tertiary text-center py-4">No active sessions</p>
+                <p className="text-sm text-text-tertiary text-center py-8">No active sessions</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {sessions.map((s) => (
                     <div
                       key={s.id}
-                      className="bg-bg-secondary border border-border-primary rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap"
+                      className="bg-bg-secondary/40 border border-border-primary rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap transition-colors hover:border-[#ccff00]/25"
                     >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-text-primary">{s.device_info || s.user_agent || 'Unknown Device'}</div>
-                        <div className="text-xs text-text-tertiary mt-0.5">
-                          IP: {s.ip_address} • {new Date(s.created_at).toLocaleString()}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: 'rgba(204,255,0,0.10)' }}
+                        >
+                          <Monitor size={16} className="text-[#ccff00]" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-text-primary truncate">{s.device_info || s.user_agent || 'Unknown Device'}</div>
+                          <div className="text-xs text-text-tertiary mt-0.5">
+                            IP: {s.ip_address} • {new Date(s.created_at).toLocaleString()}
+                          </div>
                         </div>
                       </div>
                       <Button variant="danger" size="sm" onClick={() => handleTerminateSession(s.id)} loading={terminatingSession === s.id}>

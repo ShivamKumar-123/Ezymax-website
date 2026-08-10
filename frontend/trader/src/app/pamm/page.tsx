@@ -11,7 +11,7 @@ import api from '@/lib/api/client';
 import { formatNumber as fmt } from '@/lib/formatters';
 import {
   TrendingUp, Users, DollarSign, AlertCircle, BarChart2,
-  Wallet, Clock, CheckCircle, Info,
+  Wallet, Clock, CheckCircle, Info, Landmark, Percent,
 } from 'lucide-react';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -469,10 +469,18 @@ export default function PammPage() {
     <DashboardShell>
       <div className="space-y-6">
 
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">PAM Accounts</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Choose a PAM account to copy trade and grow your profits.</p>
+        {/* Premium header — lime icon chip + title + subtitle */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          >
+            <Landmark className="w-5 h-5 text-[#ccff00]" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary leading-tight">PAM Accounts</h1>
+            <p className="text-sm text-text-tertiary">Choose a managed PAM account to invest in and grow your profits.</p>
+          </div>
         </div>
 
         {/* ── Top stat cards (purple/DAG aesthetic per client mockup) ── */}
@@ -685,58 +693,103 @@ export default function PammPage() {
               </div>
             )}
             {!browseLoading && !browseError && accounts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border-primary flex items-center justify-center mb-4">
-                  <TrendingUp size={24} className="text-text-tertiary" />
+              <div
+                className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
+                style={{
+                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(204,255,0,0.16)',
+                }}
+              >
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
+                  <Landmark size={24} className="text-[#ccff00]" />
                 </div>
-                <p className="text-text-primary font-medium">No managed accounts available</p>
-                <p className="text-sm text-text-tertiary mt-1">PAMM managers will appear here once approved</p>
+                <p className="text-text-primary font-semibold text-lg">No managed accounts available</p>
+                <p className="text-sm text-text-tertiary mt-1">PAMM managers will appear here once approved. Check back soon.</p>
               </div>
             )}
             {!browseLoading && !browseError && accounts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {accounts.map((a) => (
-                  <div key={a.id} className="bg-card border border-border-primary rounded-xl p-5 flex flex-col hover:border-accent/30 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-colors">
-                    <div className="flex items-start justify-between gap-2 mb-4">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-text-primary truncate">{a.manager_name}</p>
-                        <div className="mt-1"><TypeBadge type={a.master_type} /></div>
+                {accounts.map((a) => {
+                  const initials = a.manager_name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+                  const roiPositive = a.total_return_pct >= 0;
+                  return (
+                  <div
+                    key={a.id}
+                    className="group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col"
+                    style={{
+                      background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+                      borderColor: 'rgba(204,255,0,0.16)',
+                      boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+                    }}
+                  >
+                    <div
+                      className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+                      style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                    />
+                    <div className="relative z-10 p-5 pl-6 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-[#0a0a0a] shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 4px 14px rgba(204,255,0,0.28)' }}
+                          >
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-text-primary truncate">{a.manager_name}</p>
+                            <div className="mt-1"><TypeBadge type={a.master_type} /></div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openInvest(a)}
+                          className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-colors"
+                        >
+                          Invest
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => openInvest(a)}
-                        className="shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ccff00] hover:bg-[#a6d600] text-black transition-colors"
-                      >
-                        Invest
-                      </button>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-[10px] text-text-tertiary uppercase tracking-wide mb-0.5">Total ROI</p>
-                      <p className={clsx('text-2xl font-bold font-mono tabular-nums', a.total_return_pct >= 0 ? 'text-[#ccff00]' : 'text-red-400')}>
-                        {a.total_return_pct >= 0 ? '+' : ''}{a.total_return_pct.toFixed(2)}%
-                      </p>
-                    </div>
-                    {a.description && <p className="text-[11px] text-text-tertiary mb-4 line-clamp-2">{a.description}</p>}
-                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border-primary mt-auto">
-                      <div>
-                        <p className="text-[10px] text-text-tertiary">Drawdown</p>
-                        <p className="text-xs font-semibold tabular-nums text-red-400">{a.max_drawdown_pct.toFixed(2)}%</p>
+
+                      {/* Hero ROI stat */}
+                      <div className="rounded-xl border p-3 mb-3" style={{ background: 'rgba(204,255,0,0.05)', borderColor: 'rgba(204,255,0,0.14)' }}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                              <TrendingUp className="w-4 h-4 text-[#ccff00]" />
+                            </div>
+                            <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Total ROI</span>
+                          </div>
+                          <p className={clsx('text-2xl font-bold font-mono tabular-nums', roiPositive ? 'text-[#ccff00]' : 'text-red-400')}>
+                            {roiPositive ? '+' : ''}{a.total_return_pct.toFixed(2)}%
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-text-tertiary">Investors</p>
-                        <p className="text-xs font-semibold tabular-nums text-text-primary">{a.active_investors}</p>
+
+                      {a.description && <p className="text-[11px] text-text-tertiary mb-3 line-clamp-2">{a.description}</p>}
+
+                      {/* Mini stat tiles */}
+                      <div className="grid grid-cols-3 gap-2 mt-auto">
+                        <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+                          <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Drawdown</div>
+                          <div className="text-sm font-bold tabular-nums text-red-400 mt-0.5">{a.max_drawdown_pct.toFixed(2)}%</div>
+                        </div>
+                        <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+                          <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Investors</div>
+                          <div className="text-sm font-bold tabular-nums text-text-primary mt-0.5">{a.active_investors}</div>
+                        </div>
+                        <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+                          <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Slots</div>
+                          <div className="text-sm font-bold tabular-nums text-text-primary mt-0.5">{a.slots_available}</div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-text-tertiary">Slots</p>
-                        <p className="text-xs font-semibold tabular-nums text-text-primary">{a.slots_available}</p>
+
+                      <div className="flex items-center justify-between mt-2.5 text-[10px] text-text-tertiary">
+                        <span className="flex items-center gap-1"><Percent className="w-3 h-3 text-[#ccff00]" /> Fee {a.performance_fee_pct}%</span>
+                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#ccff00]" /> Min ${a.min_investment.toLocaleString()}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-3 text-[10px] text-text-tertiary">
-                      <span className="flex items-center gap-1"><TrendingUp size={10} /> Fee: {a.performance_fee_pct}%</span>
-                      <span className="flex items-center gap-1"><DollarSign size={10} /> Min: ${a.min_investment.toLocaleString()}</span>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -765,16 +818,22 @@ export default function PammPage() {
                 )}
 
                 {allocations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-24 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border-primary flex items-center justify-center mb-4">
-                      <Wallet size={24} className="text-text-tertiary" />
+                  <div
+                    className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
+                    style={{
+                      background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+                      borderColor: 'rgba(204,255,0,0.16)',
+                    }}
+                  >
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
+                      <Wallet size={24} className="text-[#ccff00]" />
                     </div>
-                    <p className="text-text-primary font-medium">No active investments</p>
+                    <p className="text-text-primary font-semibold text-lg">No active investments</p>
                     <p className="text-sm text-text-tertiary mt-1">Browse managers and invest to get started</p>
                     <button
                       type="button"
                       onClick={() => setActiveTab('browse')}
-                      className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                      className="mt-4 px-4 py-2 rounded-xl bg-[#ccff00] text-[#0a0a0a] text-xs font-semibold hover:bg-[#a6d600] transition-colors"
                     >
                       Browse Managers
                     </button>
@@ -1017,16 +1076,22 @@ export default function PammPage() {
           <>
             {dashLoading && <div className="flex items-center justify-center py-20"><Spinner /></div>}
             {!dashLoading && !performance && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border-primary flex items-center justify-center mb-4">
-                  <BarChart2 size={24} className="text-text-tertiary" />
+              <div
+                className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
+                style={{
+                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(204,255,0,0.16)',
+                }}
+              >
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
+                  <BarChart2 size={24} className="text-[#ccff00]" />
                 </div>
-                <p className="text-text-primary font-medium">No manager dashboard available</p>
+                <p className="text-text-primary font-semibold text-lg">No manager dashboard available</p>
                 <p className="text-sm text-text-tertiary mt-1">Apply as a PAMM manager to access this tab</p>
                 <button
                   type="button"
                   onClick={() => setActiveTab('apply')}
-                  className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#ccff00] text-[#0a0a0a] text-xs font-semibold hover:bg-[#a6d600] transition-colors"
                 >
                   Apply Now
                 </button>

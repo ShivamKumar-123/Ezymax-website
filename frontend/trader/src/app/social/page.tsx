@@ -21,6 +21,7 @@ import {
   BarChart2,
   Search,
   ArrowRight,
+  Copy,
 } from 'lucide-react';
 
 type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard';
@@ -100,11 +101,21 @@ function Spinner() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-text-tertiary">
-      <svg className="w-12 h-12 mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 11.625l2.25-2.25M12 11.625l-2.25 2.25" />
-      </svg>
-      <p className="text-sm">{message}</p>
+    <div
+      className="flex flex-col items-center justify-center text-center rounded-2xl border py-16 px-6"
+      style={{
+        background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(204,255,0,0.16)',
+      }}
+    >
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+        style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+      >
+        <Users className="w-5 h-5 text-[#ccff00]" />
+      </div>
+      <p className="text-sm font-semibold text-text-primary">{message}</p>
+      <p className="text-xs text-text-tertiary mt-1">Check back soon as new master traders join.</p>
     </div>
   );
 }
@@ -169,41 +180,42 @@ function TraderCard({
     .slice(0, 2)
     .toUpperCase();
 
+  const roiPositive = provider.total_return_pct >= 0;
+
   return (
     <div
       onClick={onClick}
-      className={clsx(
-        'relative rounded-xl overflow-hidden border transition-all min-h-[200px] flex flex-col cursor-pointer group',
-        'border-border-primary bg-bg-secondary hover:border-accent/45',
-        '[data-theme="light"]:bg-bg-tertiary [data-theme="light"]:border-black'
-      )}
+      className="group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 min-h-[220px] flex flex-col cursor-pointer"
+      style={{
+        background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(204,255,0,0.16)',
+        boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+      }}
     >
-      <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
-        <svg className="absolute bottom-0 left-0 w-full h-20" viewBox="0 0 400 80" preserveAspectRatio="none">
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            d="M0 40 Q100 10 200 40 T400 40 L400 80 L0 80 Z"
-            className="text-[var(--text-tertiary)]"
-          />
-        </svg>
-      </div>
+      {/* Left accent bar (hero-card treatment) */}
+      <div
+        className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+        style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+      />
 
-      <div className="relative z-10 p-4 flex flex-col flex-1">
-        <div className="flex items-start justify-between gap-2 mb-3">
+      <div className="relative z-10 p-4 pl-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-2 mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-bg-tertiary border border-border-glass flex items-center justify-center text-sm font-bold text-text-primary shrink-0 [data-theme='light']:border-black">
+            <div
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm font-bold text-[#0a0a0a] shrink-0"
+              style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 4px 14px rgba(204,255,0,0.28)' }}
+            >
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm font-semibold text-text-primary truncate">{provider.provider_name}</span>
-                <span className="px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-bold uppercase shrink-0">Master</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0" style={{ background: 'rgba(204,255,0,0.14)', color: '#ccff00' }}>Master</span>
                 {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
               </div>
-              <div className="text-xxs text-text-tertiary mt-0.5">
-                Fee: {provider.performance_fee_pct}% · Min: <span className="text-text-secondary font-semibold">${Number(provider.min_investment).toLocaleString()}</span> · {provider.followers_count} followers
+              <div className="text-[11px] text-text-tertiary mt-1 flex items-center gap-1.5">
+                <Users className="w-3 h-3 text-[#ccff00]" />
+                <span className="tabular-nums">{provider.followers_count.toLocaleString()} followers</span>
               </div>
             </div>
           </div>
@@ -212,14 +224,14 @@ function TraderCard({
               <button
                 type="button"
                 onClick={onViewFollowers}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-buy/40 text-buy hover:bg-buy/15 transition-all"
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-buy/40 text-buy hover:bg-buy/15 transition-all"
               >
                 {provider.followers_count} Followers
               </button>
               {provider.is_copying && (
                 <a
                   href="/social?tab=my-copies"
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-danger/40 text-danger hover:bg-danger/15 transition-all"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-danger/40 text-danger hover:bg-danger/15 transition-all"
                   title="You're mirroring your own master — click to stop"
                 >
                   Stop Self-Follow
@@ -228,13 +240,13 @@ function TraderCard({
             </div>
           ) : provider.is_copying ? (
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-success/40 text-success bg-success/10">
+              <span className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-success/40 text-success bg-success/10">
                 Following
               </span>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onUnfollow?.(e); }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-sell/40 text-sell hover:bg-sell hover:text-white transition-all"
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-sell/40 text-sell hover:bg-sell hover:text-white transition-all"
               >
                 Unfollow
               </button>
@@ -243,28 +255,35 @@ function TraderCard({
             <button
               type="button"
               onClick={onCopy}
-              className={clsx(
-                'shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all',
-                'border-accent text-accent hover:bg-accent hover:text-black',
-                '[data-theme="light"]:border-black [data-theme="light"]:text-black [data-theme="light"]:hover:bg-black [data-theme="light"]:hover:text-[#F2EFE9]'
-              )}
+              className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-all"
             >
-              Follow
+              Copy
             </button>
           )}
         </div>
 
-        <div className="mb-4">
-          <div className="text-xxs text-text-tertiary mb-0.5">Total ROI</div>
-          <div className={clsx('text-xl sm:text-2xl font-bold tabular-nums font-mono', provider.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>
-            {provider.total_return_pct >= 0 ? '+' : ''}{provider.total_return_pct.toFixed(2)}%
+        {/* Hero ROI stat */}
+        <div
+          className="rounded-xl border p-3 mb-3"
+          style={{ background: 'rgba(204,255,0,0.05)', borderColor: 'rgba(204,255,0,0.14)' }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                <TrendingUp className="w-4 h-4 text-[#ccff00]" />
+              </div>
+              <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Total ROI</span>
+            </div>
+            <div className={clsx('text-2xl font-bold tabular-nums', roiPositive ? 'text-[#ccff00]' : 'text-sell')}>
+              {roiPositive ? '+' : ''}{provider.total_return_pct.toFixed(2)}%
+            </div>
           </div>
         </div>
 
         {provider.strategy_info?.strategy_name && (
           <div className="mb-3 flex flex-wrap gap-1.5">
             {provider.strategy_info.market && (
-              <span className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-medium text-accent">{provider.strategy_info.market}</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/25 text-[10px] font-medium text-[#ccff00]">{provider.strategy_info.market}</span>
             )}
             {provider.strategy_info.risk_profile && (
               <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-medium',
@@ -279,19 +298,25 @@ function TraderCard({
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2 mt-auto pt-3 border-t border-border-glass [data-theme='light']:border-black">
-          <div>
-            <div className="text-xxs text-text-tertiary">Drawdown</div>
-            <div className="text-xs font-semibold tabular-nums text-sell">{provider.max_drawdown_pct.toFixed(2)}%</div>
+        {/* Mini stat tiles */}
+        <div className="grid grid-cols-3 gap-2 mt-auto">
+          <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+            <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Drawdown</div>
+            <div className="text-sm font-bold tabular-nums text-sell mt-0.5">{provider.max_drawdown_pct.toFixed(2)}%</div>
           </div>
-          <div>
-            <div className="text-xxs text-text-tertiary">Sharpe</div>
-            <div className="text-xs font-semibold tabular-nums text-text-primary">{provider.sharpe_ratio.toFixed(2)}</div>
+          <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+            <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Sharpe</div>
+            <div className="text-sm font-bold tabular-nums text-text-primary mt-0.5">{provider.sharpe_ratio.toFixed(2)}</div>
           </div>
-          <div>
-            <div className="text-xxs text-text-tertiary">Followers</div>
-            <div className="text-xs font-semibold tabular-nums text-text-primary">{provider.followers_count.toLocaleString()}</div>
+          <div className="rounded-lg bg-bg-secondary border border-border-primary px-2.5 py-2">
+            <div className="text-[9px] font-bold text-text-tertiary uppercase tracking-wider">Fee</div>
+            <div className="text-sm font-bold tabular-nums text-text-primary mt-0.5">{provider.performance_fee_pct}%</div>
           </div>
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-between text-[10px] text-text-tertiary">
+          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#ccff00]" /> Min ${Number(provider.min_investment).toLocaleString()}</span>
+          <span className="text-[#ccff00] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View details →</span>
         </div>
       </div>
     </div>
@@ -1305,22 +1330,22 @@ function SocialPageInner() {
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-10 py-4 sm:py-6">
-          {/* Hero — compact on mobile */}
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-3 sm:mb-5">
+          {/* Premium header — lime icon chip + title + subtitle */}
+          <div className="flex items-center gap-3 mb-3 sm:mb-5">
             <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
-              aria-hidden
-            />
-            <div className="relative z-10 px-3 sm:px-6 py-3 sm:py-8">
-              <h1 className="text-base sm:text-3xl font-bold text-text-primary mb-1 sm:mb-2 leading-tight">
-                Copy Trading
-              </h1>
-              <p className="text-xs sm:text-sm text-text-secondary max-w-2xl hidden sm:block">
-                Follow top traders and earn by copying their trades. For pooled accounts, use{' '}
-                <span className="text-accent font-medium">PAMM</span> in the sidebar.
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+            >
+              <Copy className="w-5 h-5 text-[#ccff00]" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-text-primary leading-tight">Copy Trading</h1>
+              <p className="text-sm text-text-tertiary hidden sm:block">
+                Follow top traders and earn by copying their trades. For pooled funds, use{' '}
+                <span className="text-[#ccff00] font-medium">PAMM</span> in the sidebar.
               </p>
             </div>
-          </section>
+          </div>
 
           {/* ── 4 Stat Cards (DAG aesthetic per client mockup) ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-5">

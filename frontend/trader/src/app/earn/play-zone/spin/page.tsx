@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Coins, Loader2 } from 'lucide-react';
+import { ArrowLeft, Coins, Loader2, Sparkles, History, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import SpinWheel from '@/components/earn/SpinWheel';
@@ -57,23 +57,33 @@ function Inner() {
 
   return (
     <div className="space-y-6 pb-8">
+      {/* Premium page header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="text-text-tertiary hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-hover transition-colors"
+            className="text-text-tertiary hover:text-text-primary p-2 rounded-lg border border-border-primary hover:bg-bg-hover transition-colors"
             aria-label="Back to dashboard"
           >
             <ArrowLeft size={18} />
           </Link>
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          >
+            <Sparkles className="w-5 h-5 text-[#ccff00]" />
+          </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">Spin &amp; Win</h1>
-            <p className="text-sm text-text-secondary mt-0.5">Spend FXArtha Coins to spin the wheel and win cashback or bonus FXA.</p>
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary">Spin &amp; Win</h1>
+            <p className="text-sm text-text-tertiary">Spend FXArtha Coins to spin the wheel and win cashback or bonus FXA.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/5">
-          <Coins size={14} className="text-[#ccff00]" />
-          <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} FXA</span>
+        <div
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl shrink-0"
+          style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.25)' }}
+        >
+          <Coins size={16} className="text-[#ccff00]" />
+          <span className="text-sm font-bold text-text-primary tabular-nums">{fmt(acBalance)} <span className="text-text-tertiary font-medium">FXA</span></span>
         </div>
       </header>
 
@@ -83,42 +93,90 @@ function Inner() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 rounded-xl border border-border-primary bg-bg-secondary p-6 sm:p-10">
-            <SpinWheel
-              acBalance={acBalance}
-              onResult={() => { void loadRecent(); }}
-              onAcChange={(b) => setAcBalance(b)}
+          {/* Wheel — hero premium card with lime accent bar */}
+          <div
+            className="lg:col-span-2 rounded-2xl border relative overflow-hidden transition-all duration-300 pl-5"
+            style={{
+              background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(204,255,0,0.16)',
+              boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+            }}
+          >
+            <div
+              className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+              style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
             />
+            <div className="p-6 sm:p-10">
+              <SpinWheel
+                acBalance={acBalance}
+                onResult={() => { void loadRecent(); }}
+                onAcChange={(b) => setAcBalance(b)}
+              />
+            </div>
           </div>
 
-          <aside className="rounded-xl border border-border-primary bg-bg-secondary p-4">
-            <h2 className="text-sm font-semibold text-text-primary mb-3">Your recent spins</h2>
-            {recent.length === 0 ? (
-              <p className="text-xs text-text-tertiary">No spins yet — give the wheel a turn!</p>
-            ) : (
-              <ul className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                {recent.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between text-xs px-3 py-2 rounded-md border border-border-primary bg-bg-base">
-                    <div>
-                      <p className="text-text-primary font-medium">{r.label}</p>
-                      <p className="text-text-tertiary text-[10.5px] mt-0.5">
-                        {new Date(r.awarded_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
-                      </p>
-                    </div>
-                    <span
-                      className={
-                        'tabular-nums font-semibold ' +
-                        (r.payout_kind === 'nothing' ? 'text-text-tertiary' : 'text-emerald-400')
-                      }
-                    >
-                      {r.payout_kind === 'nothing'
-                        ? '—'
-                        : `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'FXA'}`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          {/* Recent spins — premium card */}
+          <aside
+            className="rounded-2xl border relative overflow-hidden"
+            style={{
+              background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(204,255,0,0.16)',
+              boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+            }}
+          >
+            <div className="p-4">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)' }}
+                >
+                  <History className="w-4 h-4 text-[#ccff00]" />
+                </div>
+                <h2 className="text-sm font-bold text-text-primary">Your recent spins</h2>
+              </div>
+              {recent.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'rgba(204,255,0,0.08)', border: '1px solid rgba(204,255,0,0.18)' }}
+                  >
+                    <Gift className="w-6 h-6 text-[#ccff00]" />
+                  </div>
+                  <p className="text-xs text-text-tertiary">No spins yet — give the wheel a turn!</p>
+                </div>
+              ) : (
+                <ul className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                  {recent.map((r) => {
+                    const won = r.payout_kind !== 'nothing';
+                    return (
+                      <li
+                        key={r.id}
+                        className="flex items-center justify-between gap-2 text-xs px-3 py-2.5 rounded-xl border transition-colors"
+                        style={{
+                          background: won ? 'rgba(204,255,0,0.06)' : 'var(--bg-secondary)',
+                          borderColor: won ? 'rgba(204,255,0,0.18)' : 'var(--border-primary)',
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-text-primary font-semibold truncate">{r.label}</p>
+                          <p className="text-text-tertiary text-[10.5px] mt-0.5">
+                            {new Date(r.awarded_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                          </p>
+                        </div>
+                        <span
+                          className={
+                            'tabular-nums font-bold shrink-0 ' +
+                            (won ? 'text-[#ccff00]' : 'text-text-tertiary')
+                          }
+                        >
+                          {won ? `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'FXA'}` : '—'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </aside>
         </div>
       )}

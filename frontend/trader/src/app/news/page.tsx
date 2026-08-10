@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardShell from '@/components/layout/DashboardShell';
-import { Calendar, ChevronLeft, Loader2, Radio } from 'lucide-react';
+import { Calendar, ChevronLeft, Loader2, Radio, Newspaper } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const TradingViewNewsTimeline = dynamic(
@@ -62,13 +62,21 @@ export default function EconomicNewsPage() {
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 text-text-primary">
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-4 sm:mb-5">
+          <section
+            className="relative overflow-hidden rounded-2xl border mb-4 sm:mb-5"
+            style={{
+              background:
+                'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(204,255,0,0.16)',
+              boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+            }}
+          >
             <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
-              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+              style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
             />
-            <div className="relative z-10 px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="relative z-10 px-4 sm:px-6 py-4 sm:py-6 pl-5 sm:pl-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
                   onClick={() => router.back()}
@@ -77,12 +85,28 @@ export default function EconomicNewsPage() {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="min-w-0">
-                  <h1 className="text-lg sm:text-2xl font-bold text-text-primary tracking-tight">Economic News</h1>
-                  <p className="text-xs sm:text-sm text-text-secondary mt-0.5">
-                    Live calendar &amp; headlines via TradingView
-                  </p>
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+                >
+                  <Newspaper className="w-5 h-5 text-[#ccff00]" />
                 </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-bold text-text-primary">Economic News</h1>
+                  <p className="text-sm text-text-tertiary">Live calendar &amp; headlines via TradingView</p>
+                </div>
+              </div>
+              {/* Impact legend chips */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-500/12 text-red-400 border border-red-500/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> High
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-400 border border-amber-500/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Medium
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#ccff00]/12 text-[#ccff00] border border-[#ccff00]/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]" /> Low
+                </span>
               </div>
             </div>
           </section>
@@ -188,7 +212,10 @@ export default function EconomicNewsPage() {
 
               {mainTab === 'calendar' ? (
                 <div className="overflow-hidden border-t border-border-primary">
-                  <div className="px-4 py-3 border-b border-border-primary bg-card">
+                  <div className="flex items-start gap-3 px-4 py-3 border-b border-border-primary bg-card">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                      <Calendar className="w-4 h-4 text-[#ccff00]" />
+                    </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Live economic events from TradingView. Use the widget&apos;s built-in filters to pick
                       timezone, importance, and date range.

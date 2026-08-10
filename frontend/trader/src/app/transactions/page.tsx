@@ -246,15 +246,23 @@ export default function TransactionsPage() {
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-10 py-4 sm:py-6 pb-24 space-y-5 sm:space-y-6">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
-                {mainTab === 'transactions' ? 'Transaction History' : 'Trade History'}
-              </h1>
-              <p className="text-text-secondary text-xs sm:text-sm mt-1">
-                {mainTab === 'transactions'
-                  ? 'View all your deposits, withdrawals, transfers, and credits'
-                  : 'View all your open, pending, and closed trades with full details'}
-              </p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+              >
+                <History className="w-5 h-5 text-[#ccff00]" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">
+                  {mainTab === 'transactions' ? 'Transaction History' : 'Trade History'}
+                </h1>
+                <p className="text-sm text-text-tertiary mt-0.5">
+                  {mainTab === 'transactions'
+                    ? 'View all your deposits, withdrawals, transfers, and credits'
+                    : 'View all your open, pending, and closed trades with full details'}
+                </p>
+              </div>
             </div>
             {mainTab === 'transactions' && (
               <button
@@ -307,122 +315,102 @@ export default function TransactionsPage() {
           )}
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-            {/* Total Deposits */}
+            {/* Total Deposits — hero tile with lime accent bar */}
             <div
-              className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
+              className="relative overflow-hidden rounded-2xl border pl-5 p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
+                borderColor: 'rgba(204,255,0,0.16)',
+                boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#ccff00]/[0.04] pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#ccff00]/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(204,255,0,0.2) 0%, rgba(204,255,0,0.06) 100%)' }}
-                >
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#ccff00]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(204,255,0,0.5))' }} />
+              <div
+                className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+                style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                aria-hidden
+              />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                  <TrendingUp className="w-4 h-4 text-[#ccff00]" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#ccff00]/60">Total Deposits</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
-                    {fmt(totalDeposited)}
-                  </p>
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Total Deposits</p>
               </div>
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">{fmt(totalDeposited)}</p>
             </div>
 
             {/* Total Withdrawals */}
             <div
-              className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
+              className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.06), transparent 55%), var(--bg-card)',
+                borderColor: 'rgba(204,255,0,0.14)',
+                boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-red-500/[0.04] pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-red-500/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.06) 100%)' }}
-                >
-                  <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.5))' }} />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
+                  <TrendingDown className="w-4 h-4 text-red-400" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-red-400/60">Withdrawals</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
-                    {fmt(totalWithdrawn)}
-                  </p>
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Withdrawals</p>
               </div>
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">{fmt(totalWithdrawn)}</p>
             </div>
 
             {/* Affiliate Commissions */}
             <div
-              className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
+              className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.06), transparent 55%), var(--bg-card)',
+                borderColor: 'rgba(204,255,0,0.14)',
+                boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#ccff00]/[0.03] pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#ccff00]/20"
-                  style={{ background: 'linear-gradient(135deg, rgba(204,255,0,0.15) 0%, rgba(204,255,0,0.04) 100%)' }}
-                >
-                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#ccff00]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(204,255,0,0.4))' }} />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                  <DollarSign className="w-4 h-4 text-[#ccff00]" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#ccff00]/50">IB Commissions</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
-                    {fmt(0)}
-                  </p>
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">IB Commissions</p>
               </div>
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">{fmt(0)}</p>
             </div>
 
             {/* Pending */}
             <div
-              className="relative group rounded-2xl overflow-hidden p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02]"
+              className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.06), transparent 55%), var(--bg-card)',
+                borderColor: 'rgba(204,255,0,0.14)',
+                boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-amber-500/[0.04] pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-amber-500/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.06) 100%)' }}
-                >
-                  <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' }} />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.12)' }}>
+                  <Hourglass className="w-4 h-4 text-amber-400" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-400/60">Pending</p>
-                  <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5">
-                    {pendingTxCount} <span className="text-sm font-semibold text-text-tertiary">transactions</span>
-                  </p>
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Pending</p>
               </div>
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary">
+                {pendingTxCount} <span className="text-sm font-semibold text-text-tertiary">txns</span>
+              </p>
             </div>
           </div>
 
           <div
-            className="rounded-2xl overflow-hidden"
+            className="relative rounded-2xl border overflow-hidden"
             style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-primary)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.06), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(204,255,0,0.16)',
+              boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
             }}
           >
             {/* Header with title + type tabs */}
             <div className="px-4 sm:px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-lg font-bold text-text-primary">Transactions</h2>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-text-primary">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                  <ArrowLeftRight className="w-4 h-4 text-[#ccff00]" />
+                </span>
+                Transactions
+              </h2>
               <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
@@ -552,14 +540,14 @@ export default function TransactionsPage() {
                   const signed = tx.signedAmount;
                   const isIn = signed >= 0;
                   const iconWrap = clsx(
-                    'w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 border border-border-primary',
-                    tx.type === 'deposit' && 'bg-buy/15 text-buy',
-                    tx.type === 'withdrawal' && 'bg-sell/15 text-sell',
-                    tx.type === 'transfer' && 'bg-accent/10 text-accent',
+                    'w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 border',
+                    tx.type === 'deposit' && 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+                    tx.type === 'withdrawal' && 'bg-sell/15 text-sell border-sell/25',
+                    tx.type === 'transfer' && 'bg-[#ccff00]/12 text-[#ccff00] border-[#ccff00]/25',
                     (tx.type === 'profit' || tx.type === 'credit' || tx.type === 'bonus') &&
-                      'bg-buy/15 text-buy',
-                    (tx.type === 'loss' || tx.type === 'correction') && 'bg-sell/15 text-sell',
-                    tx.type === 'adjustment' && 'bg-bg-tertiary/40 text-text-secondary',
+                      'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+                    (tx.type === 'loss' || tx.type === 'correction') && 'bg-sell/15 text-sell border-sell/25',
+                    tx.type === 'adjustment' && 'bg-bg-tertiary/40 text-text-secondary border-border-primary',
                   );
                   const after = typeof tx.balance_after === 'number' ? tx.balance_after : undefined;
                   // Ledger stores the balance AFTER the entry; the balance
@@ -619,7 +607,7 @@ export default function TransactionsPage() {
                                 <p
                                   className={clsx(
                                     'text-xs sm:text-sm font-bold font-mono tabular-nums',
-                                    isIn ? 'text-buy' : 'text-sell',
+                                    isIn ? 'text-emerald-400' : 'text-sell',
                                   )}
                                 >
                                   {isIn ? '+' : '-'}
@@ -628,7 +616,7 @@ export default function TransactionsPage() {
                                 <p
                                   className={clsx(
                                     'text-[9px] font-bold uppercase tracking-wide mt-1 inline-block px-1.5 py-0.5 rounded border',
-                                    tx.status === 'completed' && 'bg-buy/15 text-buy border-buy/30',
+                                    tx.status === 'completed' && 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
                                     tx.status === 'pending' && 'bg-warning/15 text-warning border-warning/30',
                                     tx.status === 'failed' && 'bg-sell/15 text-sell border-sell/30',
                                     tx.status === 'cancelled' && 'bg-bg-tertiary/50 text-text-tertiary border-border-primary',
@@ -690,7 +678,7 @@ export default function TransactionsPage() {
                                   <span
                                     className={clsx(
                                       'text-[11px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded shrink-0',
-                                      isIn ? 'text-buy bg-buy/10' : 'text-sell bg-sell/10',
+                                      isIn ? 'text-emerald-400 bg-emerald-500/10' : 'text-sell bg-sell/10',
                                     )}
                                   >
                                     {isIn ? '+' : '−'}{fmt(Math.abs(signed))}
@@ -725,7 +713,7 @@ export default function TransactionsPage() {
                             <DetailField
                               label={tx.type === 'loss' ? 'Realized loss' : tx.type === 'profit' ? 'Realized profit' : 'Amount'}
                               value={`${isIn ? '+' : '−'}${fmt(Math.abs(signed))}`}
-                              valueClass={isIn ? 'text-buy' : 'text-sell'}
+                              valueClass={isIn ? 'text-emerald-400' : 'text-sell'}
                             />
                             <DetailField
                               label="Date & time"
