@@ -11,7 +11,7 @@
  *              into the in-progress candle for the active resolution.
  */
 import { getApiBase } from '@/lib/api/client';
-import { priceSocket, type TickData } from '@/lib/ws/priceSocket';
+import { useTradingStore } from '@/stores/tradingStore';
 import { getDigits } from '@/lib/utils';
 
 type Bar = { time: number; open: number; high: number; low: number; close: number; volume?: number };
@@ -64,7 +64,11 @@ function segmentToType(segment?: string | null): string {
 }
 
 // ── Realtime streaming ─────────────────────────────────────────────────────
-// One priceSocket subscription fans ticks out to every chart subscriber.
+// Ticks come from the SAME source the rest of the trading UI uses — the
+// tradingStore `prices` map (fed by wsManager on the trading pages). Reading
+// the store (instead of a separate socket) guarantees the chart streams the
+// exact live quotes shown elsewhere. One store subscription fans out to every
+// chart subscriber, building the in-progress candle for its resolution.
 type Subscriber = {
   symbol: string;
   sec: number;
@@ -75,34 +79,38 @@ const subscribers = new Map<string, Subscriber>();
 // Last bar seen per `${symbol}|${sec}` (seeded by getBars) so the first tick
 // continues the correct in-progress candle instead of starting a fresh one.
 const lastBarCache = new Map<string, Bar>();
-let socketUnsub: (() => void) | null = null;
+let storeUnsub: (() => void) | null = null;
 
-function ensureSocket() {
-  if (socketUnsub) return;
-  socketUnsub = priceSocket.subscribe((tick: TickData) => {
-    const sym = (tick.symbol || '').toUpperCase();
-    const price = (Number(tick.bid) + Number(tick.ask)) / 2;
-    if (!Number.isFinite(price) || price <= 0) return;
-    const nowSec = Math.floor(Date.now() / 1000);
+function applyPrice(sub: Subscriber, price: number) {
+  if (!Number.isFinite(price) || price <= 0) return;
+  const barStartMs = Math.floor(Math.floor(Date.now() / 1000) / sub.sec) * sub.sec * 1000;
+  const prev = sub.lastBar;
+  let bar: Bar;
+  if (prev && prev.time === barStartMs) {
+    // Same candle → extend it.
+    bar = { ...prev, high: Math.max(prev.high, price), low: Math.min(prev.low, price), close: price };
+  } else if (prev && barStartMs < prev.time) {
+    // Late tick for an already-closed bucket — ignore.
+    return;
+  } else {
+    // New candle opens at the previous close (gapless) or this price.
+    const open = prev ? prev.close : price;
+    bar = { time: barStartMs, open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0 };
+  }
+  sub.lastBar = bar;
+  lastBarCache.set(`${sub.symbol}|${sub.sec}`, bar);
+  sub.onTick(bar);
+}
+
+function ensureStream() {
+  if (storeUnsub) return;
+  storeUnsub = useTradingStore.subscribe((state, prev) => {
+    if (subscribers.size === 0) return;
     subscribers.forEach((sub) => {
-      if (sub.symbol !== sym) return;
-      const barStartMs = Math.floor(nowSec / sub.sec) * sub.sec * 1000;
-      const prev = sub.lastBar;
-      let bar: Bar;
-      if (prev && prev.time === barStartMs) {
-        // Same candle → extend it.
-        bar = { ...prev, high: Math.max(prev.high, price), low: Math.min(prev.low, price), close: price };
-      } else if (prev && barStartMs < prev.time) {
-        // Late tick for an already-closed bucket — ignore.
-        return;
-      } else {
-        // New candle opens at the previous close (gapless) or this price.
-        const open = prev ? prev.close : price;
-        bar = { time: barStartMs, open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0 };
-      }
-      sub.lastBar = bar;
-      lastBarCache.set(`${sub.symbol}|${sub.sec}`, bar);
-      sub.onTick(bar);
+      const tick = state.prices[sub.symbol];
+      // Only react when THIS symbol's tick actually changed.
+      if (!tick || tick === prev.prices[sub.symbol]) return;
+      applyPrice(sub, (Number(tick.bid) + Number(tick.ask)) / 2);
     });
   });
 }
@@ -239,13 +247,18 @@ export function createDatafeed() {
     ) => {
       const sym = symbolInfo.name.toUpperCase();
       const sec = resolutionToSeconds(resolution);
-      subscribers.set(listenerGuid, {
+      const sub: Subscriber = {
         symbol: sym,
         sec,
         lastBar: lastBarCache.get(`${sym}|${sec}`) || null,
         onTick,
-      });
-      ensureSocket();
+      };
+      subscribers.set(listenerGuid, sub);
+      ensureStream();
+      // Prime immediately from the store's current tick so the candle updates
+      // right away instead of waiting for the next incoming price change.
+      const cur = useTradingStore.getState().prices[sym];
+      if (cur) applyPrice(sub, (Number(cur.bid) + Number(cur.ask)) / 2);
     },
 
     unsubscribeBars: (listenerGuid: string) => {
