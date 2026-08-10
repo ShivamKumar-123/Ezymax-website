@@ -23,6 +23,8 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import TvCard from '@/components/dashboard/TvCard';
 import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
 import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
+import XpDetailsModal from '@/components/dashboard/XpDetailsModal';
+import PsDetailsModal from '@/components/dashboard/PsDetailsModal';
 import LevelLadderCard from '@/components/dashboard/LevelLadderCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
@@ -162,6 +164,10 @@ function BrokerHome() {
   const [showLevel, setShowLevel] = useState(false);
   // FXA details popup (opened from the FXA chip).
   const [showFxa, setShowFxa] = useState(false);
+  // XP details popup (opened from the XP chip).
+  const [showXp, setShowXp] = useState(false);
+  // Prestige-score details popup (opened from the PS chip).
+  const [showPs, setShowPs] = useState(false);
 
   useEffect(() => {
     api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
@@ -347,10 +353,10 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
-          {/* XP — total experience, drives your level. Opens the ladder. */}
+          {/* XP — total experience, drives your level. Opens the XP details popup. */}
           <button
             type="button"
-            onClick={() => setShowLevel(true)}
+            onClick={() => setShowXp(true)}
             title="Experience points — earn XP to level up"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
@@ -365,13 +371,15 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
           </button>
-          {/* PS — prestige score + rank */}
-          <span
+          {/* PS — prestige score + rank. Opens the PS details popup. */}
+          <button
+            type="button"
+            onClick={() => setShowPs(true)}
             title={psRank ? `Prestige score — ${psRank}` : 'Prestige score'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
             <Gem size={13} /> {psScore.toLocaleString()} PS
-          </span>
+          </button>
         </div>
       </div>
 
@@ -447,6 +455,20 @@ function BrokerHome() {
       )}
       {showFxa && (
         <FxaDetailsModal balance={dgcCoins} onClose={() => setShowFxa(false)} />
+      )}
+      {showXp && (
+        <XpDetailsModal
+          total={xpTotal}
+          level={level}
+          levelLabel={levelLabel}
+          xpIntoLevel={rewardsState?.xp_into_level ?? 0}
+          xpForNextLevel={rewardsState?.xp_for_next_level ?? 100}
+          onViewLadder={() => setShowLevel(true)}
+          onClose={() => setShowXp(false)}
+        />
+      )}
+      {showPs && (
+        <PsDetailsModal score={psScore} rank={psRank} onClose={() => setShowPs(false)} />
       )}
     </div>
   );
