@@ -1241,13 +1241,18 @@ function AccountCard({
   return (
     <li
       id={`account-card-${row.id}`}
-      className="relative overflow-hidden rounded-2xl transition-all duration-300"
+      className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
       style={{
-        background: 'var(--bg-card)',
-        border: open ? '1px solid var(--border-accent)' : '1px solid var(--border-primary)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+        background: 'radial-gradient(130% 100% at 92% -20%, rgba(204,255,0,0.07), transparent 55%), var(--bg-card)',
+        border: open ? '1px solid rgba(204,255,0,0.40)' : '1px solid var(--border-primary)',
+        boxShadow: open ? '0 12px 34px rgba(204,255,0,0.12)' : '0 4px 18px rgba(0,0,0,0.28)',
       }}
     >
+      {/* Top hairline — brightens on hover for a premium lift. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden
+      />
       {/* ── Header Row — always visible ── */}
       <div
         className="flex w-full items-start gap-2 sm:gap-3 px-3 sm:px-5 md:px-6 py-4 sm:py-5 cursor-pointer transition-colors hover:bg-bg-hover"
@@ -1308,9 +1313,12 @@ function AccountCard({
             </div>
             <div className="min-w-0">
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                {pnlPositive
+                  ? <TrendingUp size={14} className="shrink-0 text-[#ccff00]" />
+                  : <TrendingDown size={14} className="shrink-0 text-red-400" />}
                 <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#ccff00]' : 'text-red-400')}>
-                  ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
+                  {pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
               <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#ccff00]/70' : 'text-red-400/70')}>
@@ -1319,7 +1327,12 @@ function AccountCard({
             </div>
             <div className="min-w-0">
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Leverage</p>
-              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono">1:{row.leverage}</p>
+              <span
+                className="inline-flex items-center rounded-md px-2 py-0.5 text-sm sm:text-base font-bold tabular-nums font-mono"
+                style={{ background: 'rgba(204,255,0,0.10)', color: '#ccff00', border: '1px solid rgba(204,255,0,0.25)' }}
+              >
+                1:{row.leverage}
+              </span>
             </div>
           </div>
         </div>
