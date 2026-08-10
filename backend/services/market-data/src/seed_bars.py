@@ -141,6 +141,22 @@ def _generate_bars(base_price: float, segment: str, tf_seconds: int, count: int)
 
         price = close_p + change * 0.3
 
+    # Anchor the MOST-RECENT close to the live price. The random walk drifts
+    # away from base_price over `count` steps, so without this the newest
+    # simulated candle sits far from the current quote and the live candle
+    # joins history with an ugly vertical gap. Scaling the whole series keeps
+    # its shape while pinning bars[-1].close exactly to base_price, so the
+    # seeded history flows smoothly into the live-streamed candle.
+    if bars:
+        last_close = bars[-1]["close"]
+        if last_close > 0:
+            ratio = base_price / last_close
+            for b in bars:
+                b["open"] = round(b["open"] * ratio, 6)
+                b["high"] = round(b["high"] * ratio, 6)
+                b["low"] = round(b["low"] * ratio, 6)
+                b["close"] = round(b["close"] * ratio, 6)
+
     return bars
 
 
