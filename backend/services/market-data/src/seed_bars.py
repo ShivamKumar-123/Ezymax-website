@@ -247,4 +247,10 @@ async def seed(force: bool = False):
 
 
 if __name__ == "__main__":
-    asyncio.run(seed())
+    import sys
+
+    # `--force` re-seeds every timeframe even if it already has bars — use it
+    # to refresh chart history on demand. Without it, timeframes that already
+    # hold ≥100 bars are left untouched.
+    force = "--force" in sys.argv or "-f" in sys.argv
+    asyncio.run(seed(force=force))
