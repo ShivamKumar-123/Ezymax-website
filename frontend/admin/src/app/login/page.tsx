@@ -3,15 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck, Users, Wallet, CandlestickChart, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthRehydrated } from '@/hooks/useAuthRehydrated';
 import './auth.css';
-
-const STEPS = [
-  { number: 1, label: 'Sign in to admin' },
-  { number: 2, label: 'Broker dashboard' },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,30 +57,31 @@ export default function LoginPage() {
             <div className="auth-left__bg" />
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
-              <h1 className="auth-left__title">Admin Console</h1>
+              <div>
+                <h1 className="auth-left__title">Admin Console</h1>
+                <p className="admin-console__lead">One secure panel for the whole brokerage.</p>
+              </div>
+
+              <ul className="admin-highlights">
+                <li className="admin-highlight"><span className="admin-highlight__ic"><Users size={18} /></span> Users &amp; identity verification</li>
+                <li className="admin-highlight"><span className="admin-highlight__ic"><Wallet size={18} /></span> Deposits, withdrawals &amp; wallets</li>
+                <li className="admin-highlight"><span className="admin-highlight__ic"><CandlestickChart size={18} /></span> Trading book &amp; risk</li>
+                <li className="admin-highlight"><span className="admin-highlight__ic"><Shield size={18} /></span> Insurance &amp; compliance</li>
+              </ul>
+
               <p className="auth-left__subtitle">
                 Manage users, KYC, deposits, the trading book, and the
                 insurance engine from one secure panel.
               </p>
-              <div className="auth-left__steps">
-                {STEPS.map((s) => (
-                  <div
-                    key={s.number}
-                    className={`auth-step ${s.number === 1 ? 'auth-step--active' : 'auth-step--inactive'}`}
-                  >
-                    <span className="auth-step__num">{s.number}</span>
-                    <span className="auth-step__label">{s.label}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 
           {/* ── RIGHT PANEL ── */}
           <div className="auth-right">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
-              <div className="flex justify-center mb-2">
-                <img src="/logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
+              <div className="flex flex-col items-center gap-2 mb-1">
+                <img src="/logo.png" alt="FXArtha" className="w-24 h-24 object-contain" />
+                <span className="admin-wordmark">FX<span className="admin-wordmark__accent">Artha</span></span>
               </div>
               <div>
                 <h2 className="auth-form__title">FXArtha Admin</h2>
