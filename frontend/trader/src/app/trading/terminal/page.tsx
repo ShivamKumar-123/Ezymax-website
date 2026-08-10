@@ -24,7 +24,9 @@ import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/Ter
 import TerminalTicker from '@/components/trading/TerminalTicker';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
-const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
+// Self-hosted TradingView Advanced Charts (charting_library) fed by our own
+// broker datafeed. Replaces the previous third-party iframe embed.
+const TradingViewChart = dynamic(() => import('@/components/charts/AdvancedChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
   ssr: false,
 });
