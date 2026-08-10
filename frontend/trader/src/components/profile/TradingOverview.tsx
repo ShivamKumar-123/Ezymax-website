@@ -34,6 +34,7 @@ const RED = '#FF4D4D';
 const CARD = 'var(--bg-card)';
 const BORDER = 'var(--border-primary)';
 void RED;
+void CARD;
 
 function fmtUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -72,10 +73,11 @@ function ScoreDonut({ score }: { score: number }) {
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="#FFAA00"
+          stroke="#ccff00"
           strokeWidth={10}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${c}`}
+          style={{ filter: 'drop-shadow(0 0 6px rgba(204,255,0,0.55))' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
@@ -275,7 +277,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div
           className="xl:col-span-2 rounded-xl border overflow-hidden"
-          style={{ backgroundColor: CARD, borderColor: BORDER }}
+          style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}
         >
           <div className="p-3 md:p-4 border-b border-border-primary flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -514,7 +516,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               </select>
             </label>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+          <div className="rounded-xl p-4 border" style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
             <div className="flex items-center gap-2 text-sm font-semibold mb-3">
               <Target className="w-4 h-4 text-[#ccff00]" />
               Trade win %
@@ -533,7 +535,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               <span className="text-red-400">{j.losses} lost</span>
             </div>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+          <div className="rounded-xl p-4 border" style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
             <div className="flex items-center gap-2 text-sm font-semibold mb-3">
               <BarChart3 className="w-4 h-4 text-[#ccff00]" />
               Performance
@@ -558,7 +560,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
 
       {/* —— Equity + stats + score —— */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+        <div className="lg:col-span-2 rounded-xl p-4 border" style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
           <div className="flex items-center gap-2 mb-3">
             <LineChart className="w-5 h-5 text-[#ccff00]" />
             <h3 className="font-bold text-text-primary">Equity growth</h3>
@@ -566,7 +568,7 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
           <EquityChart points={d.equity} />
         </div>
         <div className="space-y-3">
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+          <div className="rounded-xl p-4 border" style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
             <h4 className="text-sm font-semibold text-text-primary mb-3">Trading statistics</h4>
             <ul className="space-y-2.5 text-sm">
               {[
@@ -584,9 +586,9 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
               ))}
             </ul>
           </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+          <div className="rounded-xl p-4 border" style={{ background: 'radial-gradient(130% 110% at 93% -20%, rgba(204,255,0,0.055), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
             <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-              <Activity className="w-4 h-4 text-orange-400" />
+              <Activity className="w-4 h-4 text-[#ccff00]" />
               Crucial score
             </div>
             <ScoreDonut score={d.crucialScore} />
