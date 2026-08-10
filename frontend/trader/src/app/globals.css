@@ -392,6 +392,16 @@ html {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+/* App-wide premium touch: layer a faint lime glow onto every card surface
+   (`bg-card` is used on ~all cards). `background-color` from the Tailwind
+   utility stays the dark base; this only adds the gradient sheen on top. */
+.bg-card {
+  background-image: radial-gradient(120% 100% at 93% -12%, rgba(204, 255, 0, 0.05), transparent 55%);
+}
+.bg-card:hover {
+  background-image: radial-gradient(120% 100% at 93% -12%, rgba(204, 255, 0, 0.08), transparent 58%);
+}
+
 .glass-panel {
   background: var(--bg-glass);
   backdrop-filter: blur(20px) saturate(180%);
