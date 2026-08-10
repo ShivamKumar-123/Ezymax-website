@@ -780,26 +780,28 @@ function WalletPageContent() {
                     still receive deposits here by picking "Main Wallet"
                     at deposit time). */}
                 <div
-                  className="rounded-2xl p-4 border flex flex-col"
-                  style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
+                  className="group relative overflow-hidden rounded-2xl p-4 pl-5 border flex flex-col transition-all duration-300 hover:-translate-y-1"
+                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.13), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
                 >
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
                   <div className="flex items-center gap-2.5 mb-3">
                     <div
-                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
-                      style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
                     >
-                      <WalletIcon size={18} style={{ color: 'var(--card-blue-icon)' }} />
+                      <WalletIcon size={18} style={{ color: '#ccff00' }} />
                     </div>
-                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Main Balance</p>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Main Balance</p>
                   </div>
-                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
-                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-blue-text-faint)' }}>USD</span>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-text-primary">
+                    ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-text-tertiary">USD</span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => { setFundMainTab('deposit'); setFundTargetPreference('main'); scrollToFundPanel(); }}
-                      className="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+                      className="py-2 rounded-lg text-xs font-bold transition-transform hover:brightness-105 active:scale-[0.98]"
+                      style={{ background: '#ccff00', color: '#0a0a0a' }}
                     >
                       Deposit
                     </button>
@@ -863,25 +865,27 @@ function WalletPageContent() {
                 {/* Bonus Balance — non-withdrawable bonus wallet. Transfer it into
                     a trading account as credit (consumed before real balance on loss). */}
                 <div
-                  className="rounded-2xl p-4 border flex flex-col"
-                  style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}
+                  className="group relative overflow-hidden rounded-2xl p-4 pl-5 border flex flex-col transition-all duration-300 hover:-translate-y-1"
+                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
                 >
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
                   <div className="flex items-center gap-2.5 mb-3">
                     <div
-                      className="w-10 h-10 rounded-xl border flex items-center justify-center"
-                      style={{ background: 'var(--card-green-icon-bg)', borderColor: 'var(--card-green-icon-border)' }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
                     >
-                      <Gift size={18} style={{ color: 'var(--card-green-icon)' }} />
+                      <Gift size={18} style={{ color: '#ccff00' }} />
                     </div>
-                    <p className="text-xs uppercase tracking-wide font-medium" style={{ color: 'var(--card-green-text-muted)' }}>Bonus Balance</p>
+                    <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Bonus Balance</p>
                   </div>
-                  <p className="text-xl font-bold font-mono tabular-nums" style={{ color: 'var(--card-green-text-strong)' }}>
-                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium" style={{ color: 'var(--card-green-text-faint)' }}>USD</span>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-text-primary">
+                    ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-text-tertiary">USD</span>
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.push('/accounts')}
-                    className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
+                    onClick={() => router.push('/transfer')}
+                    className="mt-3 w-full py-2 rounded-lg text-xs font-bold transition-transform hover:brightness-105 active:scale-[0.98]"
+                    style={{ background: '#ccff00', color: '#0a0a0a' }}
                   >
                     Transfer to Account
                   </button>
@@ -1564,28 +1568,28 @@ function WalletPageContent() {
 
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <Card variant="glass" className="flex flex-col gap-1 border-border-glass/30 relative overflow-hidden group">
-              <div className="flex items-center gap-2 text-success text-[10px] md:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-[#ccff00] text-[10px] md:text-xs font-bold uppercase tracking-wider">
                 <ArrowDownLeft className="w-3 h-3" /> Total Deposits
               </div>
               <div className="text-base md:text-xl font-bold text-text-primary tabular-nums font-mono">
                 {fmt(wallet?.total_deposited || 0)}
               </div>
-              <div className="absolute top-0 right-0 w-12 h-12 bg-success/5 rounded-bl-full group-hover:bg-success/10 transition-colors" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-[#ccff00]/5 rounded-bl-full group-hover:bg-[#ccff00]/10 transition-colors" />
             </Card>
             <Card variant="glass" className="flex flex-col gap-1 border-border-glass/30 relative overflow-hidden group">
-              <div className="flex items-center gap-2 text-buy text-[10px] md:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-[#ccff00] text-[10px] md:text-xs font-bold uppercase tracking-wider">
                 <ArrowUpRight className="w-3 h-3" /> Total Withdrawals
               </div>
               <div className="text-base md:text-xl font-bold text-text-primary tabular-nums font-mono">
                 {fmt(wallet?.total_withdrawn || 0)}
               </div>
-              <div className="absolute top-0 right-0 w-12 h-12 bg-buy/5 rounded-bl-full group-hover:bg-buy/10 transition-colors" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-[#ccff00]/5 rounded-bl-full group-hover:bg-[#ccff00]/10 transition-colors" />
             </Card>
           </div>
 
           <div className="bg-bg-secondary/50 border border-border-glass/20 rounded-xl p-4 flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-buy/10 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4 text-buy" />
+            <div className="w-8 h-8 rounded-lg bg-[#ccff00]/10 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-[#ccff00]" />
             </div>
             <div>
               <h5 className="text-text-primary font-bold text-xs uppercase tracking-wide">Processing Time</h5>
