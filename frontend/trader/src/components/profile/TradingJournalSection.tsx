@@ -84,8 +84,9 @@ export default function TradingJournalSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <div className="group rounded-2xl p-4 border relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5" style={{ background: 'radial-gradient(130% 100% at 90% -20%, rgba(204,255,0,0.09), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.18)', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent opacity-60 transition-opacity group-hover:opacity-100" aria-hidden />
+        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
@@ -99,8 +100,9 @@ export default function TradingJournalSection({
             </div>
           </div>
         </div>
-        <div className="group rounded-2xl p-4 border relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5" style={{ background: 'radial-gradient(130% 100% at 90% -20%, rgba(204,255,0,0.09), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.18)', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent opacity-60 transition-opacity group-hover:opacity-100" aria-hidden />
+        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">

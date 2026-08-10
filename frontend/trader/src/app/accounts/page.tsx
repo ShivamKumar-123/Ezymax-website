@@ -1241,16 +1241,22 @@ function AccountCard({
   return (
     <li
       id={`account-card-${row.id}`}
-      className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
+      className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1"
       style={{
-        background: 'radial-gradient(130% 100% at 92% -20%, rgba(204,255,0,0.07), transparent 55%), var(--bg-card)',
-        border: open ? '1px solid rgba(204,255,0,0.40)' : '1px solid var(--border-primary)',
-        boxShadow: open ? '0 12px 34px rgba(204,255,0,0.12)' : '0 4px 18px rgba(0,0,0,0.28)',
+        background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)',
+        border: open ? '1px solid rgba(204,255,0,0.45)' : '1px solid rgba(204,255,0,0.16)',
+        boxShadow: open ? '0 16px 40px rgba(204,255,0,0.16)' : '0 6px 22px rgba(0,0,0,0.32)',
       }}
     >
+      {/* Left accent bar — a clear lime edge that brightens on hover. */}
+      <div
+        className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
+        style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+        aria-hidden
+      />
       {/* Top hairline — brightens on hover for a premium lift. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-100"
         aria-hidden
       />
       {/* ── Header Row — always visible ── */}
