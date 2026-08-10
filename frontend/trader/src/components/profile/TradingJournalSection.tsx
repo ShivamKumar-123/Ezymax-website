@@ -84,7 +84,8 @@ export default function TradingJournalSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <div className="rounded-xl p-4 border relative overflow-hidden" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+        <div className="group rounded-2xl p-4 border relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5" style={{ background: 'radial-gradient(130% 100% at 90% -20%, rgba(204,255,0,0.09), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.18)', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent opacity-60 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
@@ -93,12 +94,13 @@ export default function TradingJournalSection({
               </p>
               <p className="text-2xl md:text-3xl font-bold mt-1 tabular-nums">{fmtUsd(j.balance)}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}>
               <Wallet className="w-5 h-5 text-[#ccff00]" />
             </div>
           </div>
         </div>
-        <div className="rounded-xl p-4 border relative overflow-hidden" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+        <div className="group rounded-2xl p-4 border relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5" style={{ background: 'radial-gradient(130% 100% at 90% -20%, rgba(204,255,0,0.09), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.18)', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent opacity-60 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
@@ -107,7 +109,7 @@ export default function TradingJournalSection({
               </p>
               <p className="text-2xl md:text-3xl font-bold mt-1 tabular-nums">{fmtUsd(j.equity)}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}>
               <DollarSign className="w-5 h-5 text-[#ccff00]" />
             </div>
           </div>
@@ -145,19 +147,21 @@ export default function TradingJournalSection({
             sub: `${j.wins} win, ${j.losses} losses`,
           },
         ].map((m) => (
-          <div key={m.label} className="rounded-xl p-3 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-tertiary uppercase tracking-wide mb-1">
-              <m.icon className="w-3.5 h-3.5 text-text-tertiary" />
+          <div key={m.label} className="group rounded-2xl p-3.5 border transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ccff00]/30" style={{ background: 'radial-gradient(130% 100% at 90% -25%, rgba(204,255,0,0.05), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-tertiary uppercase tracking-wide mb-1.5">
+              <span className="grid place-items-center w-6 h-6 rounded-lg" style={{ background: 'rgba(204,255,0,0.10)' }}>
+                <m.icon className="w-3.5 h-3.5 text-[#ccff00]" />
+              </span>
               {m.label}
             </div>
-            <p className={clsx('text-xl font-bold tabular-nums', m.valueClass)}>{m.value}</p>
+            <p className={clsx('text-xl md:text-2xl font-extrabold tabular-nums', m.valueClass)}>{m.value}</p>
             <p className="text-[11px] text-text-tertiary mt-0.5">{m.sub}</p>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+        <div className="lg:col-span-2 rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(204,255,0,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
           <div className="flex items-center gap-2 text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-4">
             Current streak
             <Info className="w-3.5 h-3.5 text-text-tertiary" />
@@ -172,7 +176,7 @@ export default function TradingJournalSection({
             />
           </div>
         </div>
-        <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+        <div className="rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(204,255,0,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
           <div className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-3">
             <PieChart className="w-4 h-4 text-[#ccff00]" />
             Account stats
