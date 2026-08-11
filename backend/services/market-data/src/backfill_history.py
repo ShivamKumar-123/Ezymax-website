@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import text
 
+from packages.common.src.config import get_settings
 from packages.common.src.database import TimescaleSessionLocal
 from packages.common.src.infoway_rest import fetch_klines
 from packages.common.src.redis_client import redis_client
@@ -264,9 +265,9 @@ async def backfill(
     replace: bool,
     dry_run: bool,
 ) -> None:
-    token = (usable_infoway_api_key() or "").strip()
-    if not token:
-        logger.error("InfoWay API key not configured — nothing to fetch.")
+    token = (get_settings().INFOWAY_API_KEY or "").strip()
+    if not usable_infoway_api_key(token):
+        logger.error("InfoWay API key not configured / not usable — nothing to fetch.")
         return
 
     store = OHLCStore()
