@@ -124,6 +124,7 @@ interface TradingState {
   removeFromWatchlist: (s: string) => void;
   setInstruments: (i: InstrumentInfo[]) => void;
   removePosition: (id: string) => void;
+  updatePosition: (id: string, patch: Partial<Position>) => void;
   removeAccount: (id: string) => void;
   refreshPositions: () => Promise<void>;
   refreshAccount: () => Promise<void>;
@@ -276,6 +277,11 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   setInstruments: (i) => set({ instruments: i }),
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
   removePosition: (id) => set((s) => ({ positions: s.positions.filter((p) => p.id !== id) })),
+  // Optimistically patch one position (e.g. SL/TP just set from the chart) so
+  // the chart line + positions row update instantly, before the PUT round-trips.
+  updatePosition: (id, patch) => set((s) => ({
+    positions: s.positions.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+  })),
 
   removeAccount: (id) =>
     set((s) => ({

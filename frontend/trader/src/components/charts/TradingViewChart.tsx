@@ -875,25 +875,31 @@ function TradingViewChartInner({
           const proj = Number.isFinite(projGross)
             ? projGross - (Number(p.commission) || 0) + (Number(p.swap) || 0)
             : NaN;
-          const projTxt = Number.isFinite(proj) ? ` → ${proj >= 0 ? 'profit' : 'loss'} ${proj >= 0 ? '+' : '−'}$${Math.abs(proj).toFixed(2)}` : '';
-          const applyBracket = async () => {
+          const projTxt = Number.isFinite(proj) ? ` (${proj >= 0 ? 'profit' : 'loss'} ${proj >= 0 ? '+' : '−'}$${Math.abs(proj).toFixed(2)})` : '';
+          // Commit on release — MT5-style, NO confirmation dialog. The old
+          // confirm step was the reason SL/TP "didn't stick": users dragged,
+          // released, and never completed the popup (easy to miss, especially
+          // in the app WebView), so the PUT never fired and the level was gone
+          // on refresh. Optimistically reflect the new bracket in the store so
+          // the persistent chart line + positions row update instantly, then
+          // PUT; on failure we reload to snap back to the server's truth.
+          void (async () => {
             try {
+              const st = useTradingStore.getState();
+              const patch = kind === 'sl' ? { stop_loss: price } : { take_profit: price };
+              try { st.updatePosition?.(p.id, patch); } catch { /* store may lack helper */ }
               // Only the dragged bracket — the backend partial-update keeps
               // the other intact (see setBracket note; `p` is a stale closure).
-              await api.put(`/positions/${p.id}`,
-                kind === 'sl' ? { stop_loss: price } : { take_profit: price });
-              toast.success(`${label} set @ ${price.toFixed(digits)}`);
+              await api.put(`/positions/${p.id}`, patch);
+              toast.success(`${label} set @ ${price.toFixed(digits)}${projTxt}`);
               await useTradingStore.getState().refreshPositions();
             } catch (err) {
+              // Rejected (e.g. level on the wrong side of the market) — reload
+              // so the optimistic line snaps back and the user sees why.
               toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
+              try { await useTradingStore.getState().refreshPositions(); } catch { /* ignore */ }
             }
-          };
-          openDialogRef.current({
-            title: `Set ${label} @ ${price.toFixed(digits)}`,
-            body: `${String(p.side).toUpperCase()} ${p.lots} ${sym}${projTxt}`,
-            confirmLabel: `Set ${kind.toUpperCase()}`,
-            onConfirm: () => { void applyBracket(); },
-          });
+          })();
         };
         b.onpointerup = (ev) => endDrag(ev, false);
         b.onpointercancel = (ev) => endDrag(ev, true);
