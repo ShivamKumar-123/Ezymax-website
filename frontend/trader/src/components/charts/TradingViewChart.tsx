@@ -907,29 +907,37 @@ function TradingViewChartInner({
       return b;
     };
 
-    // One button GROUP per open position: [SL] [TP] [✕], pinned to the entry
-    // line. Copied (MAM) positions get only ✕ — SL/TP is master-controlled.
+    // Per open position: independent [SL] [TP] [✕] buttons. Each has its OWN
+    // absolutely-positioned wrapper so a SET bracket's button rides its OWN
+    // price line (SL button on the SL line, TP button on the TP line), while
+    // an UNSET SL/TP button and ✕ stay grouped on the entry line. Copied (MAM)
+    // positions get only ✕ — SL/TP is master-controlled. Positions set each
+    // frame in the sync loop below.
     const myPos = useTradingStore.getState().positions.filter(
       (p) => String(p.symbol).toUpperCase() === sym,
     );
+    // Approx button footprint for stacking unset SL/TP to the left of ✕.
+    const BTN_W = 24, BTN_GAP = 4;
+    const mkSlot = (btnEl: HTMLButtonElement): HTMLDivElement => {
+      const w = document.createElement('div');
+      w.style.cssText = `position:absolute;transform:translateY(-50%);pointer-events:none;visibility:hidden;z-index:6;`;
+      w.appendChild(btnEl); // the button keeps pointer-events:auto → clickable
+      overlay.appendChild(w);
+      return w;
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const btns: { p: any; entry: number; el: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
+    const btns: { p: any; entry: number; slEl: HTMLDivElement | null; tpEl: HTMLDivElement | null; closeEl: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
     for (const p of myPos) {
       const side = String(p.side).toUpperCase();
       const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
       const isCopy = p.trade_type === 'copy_trade';
-      // Clamp the right offset on narrow (mobile) charts so the ~70px-wide
-      // group never slides off the left edge; desktop keeps the Swisdex 268px.
-      const rightPx = Math.min(CLOSE_BTN_RIGHT_PX, Math.max(8, container.clientWidth - 78));
-      const root = document.createElement('div');
-      root.style.cssText =
-        `position:absolute;right:${rightPx}px;transform:translateY(-50%);`
-        + `display:flex;align-items:center;gap:3px;pointer-events:none;visibility:hidden;z-index:6;`;
+      let slEl: HTMLDivElement | null = null;
+      let tpEl: HTMLDivElement | null = null;
       if (!isCopy) {
-        root.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
-        root.appendChild(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
+        slEl = mkSlot(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
+        tpEl = mkSlot(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
       }
-      root.appendChild(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
+      const closeEl = mkSlot(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
         closePositionFromChart(p.id);
       }));
       // Persistent shaded zones (entry → SL red, entry → TP teal), positioned
@@ -939,8 +947,7 @@ function TradingViewChartInner({
       const tpZone = document.createElement('div');
       tpZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(20,184,166,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
       overlay.appendChild(slZone); overlay.appendChild(tpZone);
-      overlay.appendChild(root);
-      btns.push({ p, entry: Number(p.open_price) || 0, el: root, slZone, tpZone });
+      btns.push({ p, entry: Number(p.open_price) || 0, slEl, tpEl, closeEl, slZone, tpZone });
     }
 
     let raf = 0;
@@ -951,8 +958,13 @@ function TradingViewChartInner({
       // through zoom/pan; the DOM-measured pane top stays exact throughout.
       const g = geom();
       const top = g ? paneTopOf(g) : null;
+      const rightPx = Math.min(CLOSE_BTN_RIGHT_PX, Math.max(8, container.clientWidth - 78));
       if (!g || top == null) {
-        for (const b of btns) { b.el.style.visibility = 'hidden'; b.slZone.style.visibility = 'hidden'; b.tpZone.style.visibility = 'hidden'; }
+        for (const b of btns) {
+          for (const el of [b.slEl, b.tpEl, b.closeEl, b.slZone, b.tpZone]) {
+            if (el) el.style.visibility = 'hidden';
+          }
+        }
         return;
       }
       const h = container.clientHeight || g.h;
@@ -965,13 +977,41 @@ function TradingViewChartInner({
         if (ht < 1) { el.style.visibility = 'hidden'; return; }
         el.style.top = `${zTop}px`; el.style.height = `${ht}px`; el.style.visibility = 'visible';
       };
+      // Place a button wrapper at a price-line Y and right offset (hidden when
+      // its line is off the visible pane).
+      const place = (el: HTMLDivElement | null, y: number, rightOffset: number) => {
+        if (!el) return;
+        if (!(y > 8) || y > h - 8) { el.style.visibility = 'hidden'; return; }
+        el.style.top = `${y}px`;
+        el.style.right = `${rightOffset}px`;
+        el.style.visibility = 'visible';
+      };
       for (const b of btns) {
-        const y = paneY(b.entry, g) + top;
-        if (!(y > 8) || y > h - 8) { b.el.style.visibility = 'hidden'; }
-        else { b.el.style.top = `${y}px`; b.el.style.visibility = 'visible'; }
+        const entryY = paneY(b.entry, g) + top;
         const lp = live.find((x) => x.id === b.p.id);
-        drawZone(b.slZone, y, lp?.stop_loss);
-        drawZone(b.tpZone, y, lp?.take_profit);
+        const slPrice = Number(lp?.stop_loss);
+        const tpPrice = Number(lp?.take_profit);
+        const slSet = slPrice > 0;
+        const tpSet = tpPrice > 0;
+
+        // ✕ always on the entry line, rightmost slot.
+        place(b.closeEl, entryY, rightPx);
+
+        // A SET bracket's button rides its OWN line (alone at the rightmost
+        // slot). An UNSET one stacks to the LEFT of ✕ on the entry line so the
+        // user can still grab it to add a bracket.
+        let entrySlot = 1; // slot 0 is ✕
+        if (b.slEl) {
+          if (slSet) place(b.slEl, paneY(slPrice, g) + top, rightPx);
+          else { place(b.slEl, entryY, rightPx + entrySlot * (BTN_W + BTN_GAP)); entrySlot++; }
+        }
+        if (b.tpEl) {
+          if (tpSet) place(b.tpEl, paneY(tpPrice, g) + top, rightPx);
+          else { place(b.tpEl, entryY, rightPx + entrySlot * (BTN_W + BTN_GAP)); entrySlot++; }
+        }
+
+        drawZone(b.slZone, entryY, lp?.stop_loss);
+        drawZone(b.tpZone, entryY, lp?.take_profit);
       }
     };
     raf = requestAnimationFrame(sync);
@@ -980,7 +1020,7 @@ function TradingViewChartInner({
       cancelAnimationFrame(raf);
       container.removeEventListener('mousemove', onMouseMove);
       try { crossSub?.unsubscribe?.(null, onCross); } catch { /* ignore */ }
-      for (const b of btns) { for (const el of [b.el, b.slZone, b.tpZone]) { try { overlay.removeChild(el); } catch { /* ignore */ } } }
+      for (const b of btns) { for (const el of [b.slEl, b.tpEl, b.closeEl, b.slZone, b.tpZone]) { if (el) { try { overlay.removeChild(el); } catch { /* ignore */ } } } }
     };
   }, [chartReady, selectedSymbol, positionsKey, computePnlAt, closePositionFromChart]);
 
