@@ -7,15 +7,31 @@ import contextlib
 import json
 import logging
 import secrets
+import time
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import websockets
 
+from packages.common.src.infoway_rest import fetch_klines
+from packages.common.src.redis_client import redis_client
+from .store import ohlc_store
+
 logger = logging.getLogger("market-data.infoway")
 
 INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
+
+# Data-silence watchdog: TCP + protocol pings can keep a socket "healthy" while
+# the provider's push subscription silently dies — so at the next market open
+# nothing streams and nobody reconnects (the classic zombie-subscription bug).
+# If no DATA frame (not a heartbeat) arrives for this long, force-reconnect.
+SILENT_RECONNECT_SEC = 900       # 15 min
+SILENCE_CHECK_SEC = 60           # watchdog cadence
+BACKFILL_CLAMP_SEC = 6 * 3600    # cap the reconnect blind-window backfill at 6h
+BACKFILL_TFS = ("1m", "5m")      # higher TFs heal via history serving / reconcile
+BACKFILL_SPACING = 1.0           # space REST calls ≥1s
+_BACKFILL_TF_SEC = {"1m": 60, "5m": 300}
 
 # Platform symbol -> Infoway product code (crypto uses *USDT on Infoway).
 CRYPTO_INFOWAY_CODES: Dict[str, str] = {
@@ -63,6 +79,9 @@ class InfowayFeed:
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
+        # Data-silence watchdog state (per business socket).
+        self._last_data_ts: Dict[str, float] = {}  # set ONLY on real data frames
+        self._ws_ref: Dict[str, object] = {}        # live socket per business
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -104,6 +123,12 @@ class InfowayFeed:
         if not self._tasks:
             logger.error("No instruments configured for Infoway")
             return
+
+        # Data-silence watchdog — force-reconnects a socket whose subscription
+        # went zombie (healthy TCP, no data). Keeps market-open streaming alive.
+        self._tasks.append(
+            asyncio.create_task(self._silence_monitor(), name="infoway-silence")
+        )
 
         await asyncio.gather(*self._tasks, return_exceptions=True)
 
@@ -252,6 +277,13 @@ class InfowayFeed:
                     # Healthy subscribe — reset the backoff counter so the
                     # next failure starts at 2s, not wherever we ended up.
                     reconnect_attempts = 0
+                    self._ws_ref[business] = ws
+
+                    # A reconnect (we had data before) → backfill the blind
+                    # window from the SAME provider's REST so the chart has no
+                    # hole. Fire-and-forget so it never delays resubscription.
+                    if self._last_data_ts.get(business, 0.0) > 0:
+                        asyncio.create_task(self._backfill_gap(business, list(codes)))
 
                     hb_task = asyncio.create_task(self._heartbeat_loop(ws))
 
@@ -264,6 +296,9 @@ class InfowayFeed:
                             continue
                         code = msg.get("code")
                         if code == 10005:
+                            # Arm the silence watchdog ONLY on real data frames
+                            # (never on heartbeat acks) — that's the whole point.
+                            self._last_data_ts[business] = time.time()
                             self._emit_depth(msg.get("data") or {})
                         elif code in (10004, 10001):
                             logger.debug("Infoway [%s] ack: %s", business, msg.get("msg"))
@@ -290,9 +325,113 @@ class InfowayFeed:
                     )
                 await asyncio.sleep(delay)
             finally:
+                self._ws_ref.pop(business, None)
                 if hb_task:
                     hb_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
                         await hb_task
 
         logger.info("Infoway [%s] task ended", business)
+
+    async def _silence_monitor(self) -> None:
+        """Force-reconnect a socket that has gone DATA-silent (no data frame for
+        SILENT_RECONNECT_SEC) even though TCP/pings look healthy. Closing the
+        socket makes _run_socket loop back and resubscribe fresh."""
+        while self._running:
+            await asyncio.sleep(SILENCE_CHECK_SEC)
+            now = time.time()
+            for business, ws in list(self._ws_ref.items()):
+                last = self._last_data_ts.get(business, 0.0)
+                if last <= 0:
+                    continue  # never received data yet (boot / market closed)
+                silent = now - last
+                if silent > SILENT_RECONNECT_SEC:
+                    logger.warning(
+                        "Infoway [%s] DATA-silent %.0fs (>%ds) — forcing reconnect",
+                        business, silent, SILENT_RECONNECT_SEC,
+                    )
+                    with contextlib.suppress(Exception):
+                        await ws.close()
+
+    async def _backfill_gap(self, business: str, codes: List[str]) -> None:
+        """After a reconnect, heal the blind window from InfoWay REST klines
+        (same provider → no price-basis seam). Best-effort: never raises into
+        the feed loop. Only 1m + 5m, closed bars only, clamped to 6h."""
+        token = self._api_key
+        if not token:
+            return
+        last = self._last_data_ts.get(business, 0.0)
+        gap = time.time() - last if last > 0 else 0.0
+        if 0 < gap < 90:
+            return  # tiny blip — not worth REST calls
+        if gap > BACKFILL_CLAMP_SEC:
+            gap = BACKFILL_CLAMP_SEC  # don't try to refill a whole weekend
+
+        syms: List[str] = []
+        seen: set = set()
+        for code in set(codes):
+            plat = self._platform_symbol(code)
+            if plat and plat not in seen:
+                seen.add(plat)
+                syms.append(plat)
+        if not syms:
+            return
+
+        logger.info(
+            "Infoway [%s] backfilling %d symbols after %.0fs gap",
+            business, len(syms), gap,
+        )
+        now = int(time.time())
+        for sym in syms:
+            if not self._running:
+                break
+            for tf in BACKFILL_TFS:
+                try:
+                    bars = await fetch_klines(sym, tf, count=500, token=token)
+                except Exception:
+                    bars = []
+                await asyncio.sleep(BACKFILL_SPACING)
+                if not bars:
+                    continue
+                tf_sec = _BACKFILL_TF_SEC.get(tf, 60)
+                cutoff = (now // tf_sec) * tf_sec  # exclude the forming bar
+                closed = [b for b in bars if int(b.get("time", 0)) < cutoff]
+                if not closed:
+                    continue
+                with contextlib.suppress(Exception):
+                    await ohlc_store.upsert_many(
+                        sym, tf, [{**b, "tick_count": 0} for b in closed]
+                    )
+                with contextlib.suppress(Exception):
+                    await self._merge_redis_bars(sym, tf, closed)
+
+    async def _merge_redis_bars(self, sym: str, tf: str, official: List[dict]) -> None:
+        """Overlay official bars onto the Redis list (official wins on collision;
+        newer live bars survive). Newest at index 0, capped at 1000 — same
+        convention as the aggregator."""
+        tf_sec = _BACKFILL_TF_SEC.get(tf, 60)
+        list_key = f"bars:{sym}:{tf}"
+        by_time: Dict[int, dict] = {}
+        for raw in await redis_client.lrange(list_key, 0, 999):
+            try:
+                b = json.loads(raw)
+                t = int(b["time"])
+                if t % tf_sec != 0:
+                    continue
+                by_time[t] = b
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                continue
+        for b in official:
+            t = int(b["time"])
+            by_time[t] = {
+                "symbol": sym, "timeframe": tf, "time": t,
+                "open": b["open"], "high": b["high"], "low": b["low"],
+                "close": b["close"], "volume": b.get("volume", 0),
+            }
+        merged = sorted(by_time.values(), key=lambda x: int(x["time"]))[-1000:]
+        pipe = redis_client.pipeline()
+        pipe.delete(list_key)
+        for b in merged:
+            pipe.lpush(list_key, json.dumps(b))
+        pipe.ltrim(list_key, 0, 999)
+        await pipe.execute()
