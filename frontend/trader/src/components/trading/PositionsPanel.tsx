@@ -1342,13 +1342,17 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                     sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
                                     tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
                                   })}
-                                  className="text-left group cursor-pointer"
-                                  title="Click to edit SL/TP"
+                                  className="group flex items-center gap-1.5 rounded-md -mx-1 px-1.5 py-1 text-left cursor-pointer border border-transparent hover:border-[#ccff00]/30 hover:bg-[#ccff00]/[0.06] transition-colors"
+                                  title="Edit SL / TP — updates the chart lines too"
                                 >
-                                  <span className="text-text-tertiary">SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'}</span>
-                                  <br />
-                                  <span className="text-text-tertiary">TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}</span>
-                                  <Pencil className="w-2.5 h-2.5 inline ml-1 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
+                                  <span className="leading-tight">
+                                    <span className="text-text-secondary">SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'}</span>
+                                    <br />
+                                    <span className="text-text-secondary">TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}</span>
+                                  </span>
+                                  <span className="grid place-items-center w-5 h-5 rounded shrink-0 bg-[#ccff00]/12 border border-[#ccff00]/25 group-hover:bg-[#ccff00]/20 transition-colors" aria-hidden>
+                                    <Pencil className="w-2.5 h-2.5 text-[#ccff00]" />
+                                  </span>
                                 </button>
                               )}
                             </td>
