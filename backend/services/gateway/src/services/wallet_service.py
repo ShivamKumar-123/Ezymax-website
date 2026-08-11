@@ -764,9 +764,9 @@ async def create_local_banking_request(
     marks the deposit 'approved' with the actual paid amount, crediting
     the main wallet through the standard manual-approval flow.
 
-    KYC is required: card / UPI / bank rails contractually need a verified
-    identity behind every payout. The same gate that used to sit on the
-    Razorpay popup now sits here.
+    No KYC gate here — platform policy is deposit/trade freely, verify
+    identity at withdrawal time (assert_kyc_approved_for_withdrawal).
+    Admin still reviews each request manually before sharing payment rails.
     """
     from packages.common.src.settings_store import get_bool_setting
 
@@ -780,15 +780,11 @@ async def create_local_banking_request(
     if amount < 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
-    # KYC gate — same semantics as the old Razorpay path.
     user_row = (
         await db.execute(select(User).where(User.id == user_id))
     ).scalar_one_or_none()
     if user_row is None:
         raise HTTPException(status_code=404, detail="User not found")
-    kyc = (user_row.kyc_status or "").lower()
-    if kyc not in ("approved", "verified"):
-        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
 
     deposit = Deposit(
         user_id=user_id,
@@ -1080,18 +1076,13 @@ async def create_razorpay_deposit(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
-    # KYC gate (Razorpay-only). Verified identity is contractually required to
-    # process card / UPI payments, so this is the one path where we hard-block
-    # unverified users. Every other deposit / withdraw / trade method runs
-    # without this check.
+    # No KYC gate on deposits — platform policy is deposit/trade freely,
+    # verify identity at withdrawal time (assert_kyc_approved_for_withdrawal).
     user_row = (
         await db.execute(select(User).where(User.id == user_id))
     ).scalar_one_or_none()
     if user_row is None:
         raise HTTPException(status_code=404, detail="User not found")
-    kyc = (user_row.kyc_status or "").lower()
-    if kyc not in ("approved", "verified"):
-        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
 
     # Honour the user's chosen credit target (wallet-bound account vs main
     # wallet). Stored on the row so the webhook/verify path credits the
@@ -1442,6 +1433,24 @@ async def release_bonuses_after_trade(
 
 # ─── Withdrawals ──────────────────────────────────────────────────────────
 
+async def assert_kyc_approved_for_withdrawal(db: AsyncSession, user_id: UUID) -> None:
+    """Withdrawal-time KYC gate — the ONLY hard KYC block on the platform.
+
+    Policy: users can register, deposit, and trade without KYC; identity is
+    verified the moment money leaves the platform. Every withdrawal-creation
+    path (standard, manual UPI/QR, on-chain) must call this before touching
+    balances. 403 detail "KYC_REQUIRED" is a contract with the trader UI,
+    which routes the user to /kyc on that exact string.
+    """
+    row = (
+        await db.execute(select(User.kyc_status).where(User.id == user_id))
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if (row or "").lower() not in ("approved", "verified"):
+        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
+
+
 async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     from packages.common.src.settings_store import get_bool_setting
     if await get_bool_setting("maintenance_mode", False):
@@ -1453,6 +1462,8 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     user_row = user_q.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
+    if (user_row.kyc_status or "").lower() not in ("approved", "verified"):
+        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
 
     # Resolve debit source — honor explicit user choice if provided
     # (`req.source`), else auto-route (wallet-bound when present, else
@@ -1553,6 +1564,8 @@ async def create_manual_withdrawal(
     from packages.common.src.settings_store import get_bool_setting
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
+
+    await assert_kyc_approved_for_withdrawal(db, user_id)
 
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")

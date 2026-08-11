@@ -219,8 +219,9 @@ function WalletPageContent() {
   // Prefill the Razorpay Checkout email field.
   const userEmail = useAuthStore((s) => s.user?.email || '');
   const userFullName = useAuthStore((s) => [s.user?.first_name, s.user?.last_name].filter(Boolean).join(' '));
-  // KYC gate (Card / UPI only). Read here so we can both block submit and
-  // surface an inline notice in the Card / UPI panel.
+  // KYC status — used for the inline notice in the withdraw panel. The
+  // authoritative check happens server-side when a withdrawal is created
+  // (403 KYC_REQUIRED); deposits and trading run without KYC.
   const kycStatus = useAuthStore((s) => (s.user?.kyc_status || '').toLowerCase());
   const kycApproved = kycStatus === 'approved' || kycStatus === 'verified';
   const router = useRouter();
@@ -892,7 +893,14 @@ function WalletPageContent() {
         setWithdrawCryptoAddress('');
         void fetchData(true);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+        // Withdrawal-time KYC check — the backend 403s with this exact
+        // string when the user's identity isn't verified yet.
+        if (err instanceof Error && err.message === 'KYC_REQUIRED') {
+          toast.error('Complete KYC verification to withdraw funds.');
+          router.push('/kyc');
+        } else {
+          toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+        }
       } finally {
         setWithdrawSubmitting(false);
       }
@@ -943,7 +951,14 @@ function WalletPageContent() {
       toast.success(`Manual withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
       void fetchData(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+      // Withdrawal-time KYC check — the backend 403s with this exact
+      // string when the user's identity isn't verified yet.
+      if (err instanceof Error && err.message === 'KYC_REQUIRED') {
+        toast.error('Complete KYC verification to withdraw funds.');
+        router.push('/kyc');
+      } else {
+        toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+      }
     } finally {
       setWithdrawSubmitting(false);
     }
@@ -1035,13 +1050,9 @@ function WalletPageContent() {
     }
 
     // ── Local Banking channel: user just submits an amount. Admin
-    //   reviews KYC and pushes back a payment link out of band (via the
-    //   new /wallet/deposit/local-banking endpoint). KYC-gated.
-    if (!kycApproved) {
-      toast.error('Complete KYC verification to use Local Banking deposits.');
-      router.push('/kyc');
-      return;
-    }
+    //   pushes back a payment link out of band (via the
+    //   /wallet/deposit/local-banking endpoint). No KYC gate — identity
+    //   is verified at withdrawal time instead.
     setDepositSubmitting(true);
     try {
       const fd = new FormData();
@@ -1225,8 +1236,8 @@ function WalletPageContent() {
     !demoFundingBlocked &&
     !depositSubmitting &&
     !!depositAccountId &&
-    // Crypto needs amount; LB is KYC-gated and amount is optional.
-    (depositUiSection === 'local_banking' ? kycApproved : depositAmountValid);
+    // Crypto needs amount; LB amount is optional (admin sets it later).
+    (depositUiSection === 'local_banking' ? true : depositAmountValid);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1555,20 +1566,6 @@ function WalletPageContent() {
           </>
         ) : (
           <div className="space-y-2">
-            {!kycApproved && (
-              <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-[#0A0A0A] flex flex-wrap items-center justify-between gap-3">
-                <span className="leading-relaxed">
-                  Local Banking requires <span className="font-semibold">verified KYC</span>.
-                </span>
-                <button
-                  type="button"
-                  onClick={() => router.push('/kyc')}
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
-                >
-                  Complete KYC
-                </button>
-              </div>
-            )}
             <div className="rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A]">
               <p className="leading-relaxed">
                 Submit this request and our team will share a payment link (Razorpay, bank transfer, or UPI) with you shortly. Your wallet is credited the USD amount once payment is confirmed.
@@ -1832,6 +1829,24 @@ function WalletPageContent() {
             className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
           />
         </div>
+
+        {/* Withdrawals are the platform's one hard KYC gate — warn before
+            the user fills in the whole form. The backend enforces this
+            regardless (403 KYC_REQUIRED on submit). */}
+        {!kycApproved && (
+          <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-[#0A0A0A] flex flex-wrap items-center justify-between gap-3">
+            <span className="leading-relaxed">
+              Withdrawals require <span className="font-semibold">verified KYC</span>. Your KYC status is checked when you submit a request.
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push('/kyc')}
+              className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+            >
+              Complete KYC
+            </button>
+          </div>
+        )}
 
         {/* Payment-method chips */}
         <div className="space-y-1.5">

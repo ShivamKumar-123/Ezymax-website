@@ -89,6 +89,10 @@ async def create_onchain_withdrawal(
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
 
+    # Withdrawal-time KYC gate — the platform's only hard KYC block.
+    from .wallet_service import assert_kyc_approved_for_withdrawal
+    await assert_kyc_approved_for_withdrawal(db, user_id)
+
     net = (network or "").lower().strip()
     if net not in ALLOWED_NETWORKS:
         raise HTTPException(
