@@ -443,13 +443,14 @@ function AccountBalanceCard({
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+      {/* Server + No-swap stats removed: the platform runs a single server
+          (nothing to show) and any swap charged shows up per-trade in the
+          history, so a static account-level "No swap: No" label added noise. */}
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
         <Stat label="Balance" value={fmtUsd(a?.balance ?? 0)} highlight />
         <Stat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} />
         <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
         <Stat label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
-        <Stat label="Server" value="—" />
-        <Stat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
       </div>
     </div>
   );
