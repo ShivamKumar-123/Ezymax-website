@@ -557,17 +557,26 @@ function AdvancedChartInner() {
       (p) => (p.symbol || '').toUpperCase() === sym,
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const btns: { p: any; entry: number; el: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
+    // Each control is its OWN wrapper so it can sit on a DIFFERENT price line:
+    // SL rides the stop-loss line, TP rides the take-profit line, ✕ stays on the
+    // entry line. When a bracket isn't set yet, its button falls back next to ✕
+    // on the entry line as a [SL][TP][✕] row (so you can set it).
+    const mkWrap = (): HTMLDivElement => {
+      const d = document.createElement('div');
+      d.style.cssText = `position:absolute;transform:translateY(-50%);display:flex;align-items:center;pointer-events:none;visibility:hidden;z-index:6;`;
+      return d;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const btns: { p: any; entry: number; slWrap: HTMLDivElement; tpWrap: HTMLDivElement; closeWrap: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
     for (const p of myPos) {
       const side = String(p.side).toUpperCase();
       const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
-      const root = document.createElement('div');
-      root.style.cssText =
-        `position:absolute;right:${CLOSE_BTN_RIGHT_PX}px;transform:translateY(-50%);`
-        + `display:flex;align-items:center;gap:3px;pointer-events:none;visibility:hidden;z-index:6;`;
-      root.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
-      root.appendChild(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
-      root.appendChild(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
+      const slWrap = mkWrap();
+      slWrap.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
+      const tpWrap = mkWrap();
+      tpWrap.appendChild(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
+      const closeWrap = mkWrap();
+      closeWrap.appendChild(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
         const sid = resolveSid(p.id);
         if (!sid) { toast.error('Position not ready yet'); return; }
         openDialog({
@@ -576,7 +585,7 @@ function AdvancedChartInner() {
           confirmLabel: 'Close position',
           danger: true,
           onConfirm: () => {
-            root.style.visibility = 'hidden';
+            closeWrap.style.visibility = 'hidden';
             try { useTradingStore.getState().removePosition(p.id); } catch { /* noop */ }
             (async () => {
               try {
@@ -602,25 +611,30 @@ function AdvancedChartInner() {
       const tpZone = document.createElement('div');
       tpZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(20,184,166,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
       overlay.appendChild(slZone); overlay.appendChild(tpZone);
-      overlay.appendChild(root);
-      btns.push({ p, entry: Number(p.open_price) || 0, el: root, slZone, tpZone });
+      overlay.appendChild(slWrap); overlay.appendChild(tpWrap); overlay.appendChild(closeWrap);
+      btns.push({ p, entry: Number(p.open_price) || 0, slWrap, tpWrap, closeWrap, slZone, tpZone });
     }
     if (btns.length === 0) {
       try { crossSub?.unsubscribe?.(null, onCross); } catch { /* noop */ }
       return () => {};
     }
 
+    const R = CLOSE_BTN_RIGHT_PX;
     let raf = 0;
     const sync = () => {
       raf = requestAnimationFrame(sync);
       const g = geom();
       if (!g || calibOffset == null) {
-        for (const b of btns) { b.el.style.visibility = 'hidden'; b.slZone.style.visibility = 'hidden'; b.tpZone.style.visibility = 'hidden'; }
+        for (const b of btns) { for (const el of [b.slWrap, b.tpWrap, b.closeWrap, b.slZone, b.tpZone]) el.style.visibility = 'hidden'; }
         return;
       }
       const off = calibOffset;
       const h = containerRef.current?.clientHeight || g.h;
       const live = useTradingStore.getState().positions;
+      const place = (el: HTMLDivElement, y: number, rightPx: number) => {
+        if (!(y > 8) || y > h - 8) { el.style.visibility = 'hidden'; return; }
+        el.style.top = `${y}px`; el.style.right = `${rightPx}px`; el.style.visibility = 'visible';
+      };
       const drawZone = (el: HTMLDivElement, entryYpx: number, price: unknown) => {
         const pr = Number(price);
         if (!(pr > 0)) { el.style.visibility = 'hidden'; return; }
@@ -630,12 +644,19 @@ function AdvancedChartInner() {
         el.style.top = `${top}px`; el.style.height = `${ht}px`; el.style.visibility = 'visible';
       };
       for (const b of btns) {
-        const y = paneY(b.entry, g) + off;
-        if (!(y > 8) || y > h - 8) { b.el.style.visibility = 'hidden'; }
-        else { b.el.style.top = `${y}px`; b.el.style.visibility = 'visible'; }
         const lp = live.find((x) => x.id === b.p.id);
-        drawZone(b.slZone, y, lp?.stop_loss);
-        drawZone(b.tpZone, y, lp?.take_profit);
+        const entryY = paneY(b.entry, g) + off;
+        const slP = Number(lp?.stop_loss);
+        const tpP = Number(lp?.take_profit);
+        const slSet = slP > 0;
+        const tpSet = tpP > 0;
+        // ✕ pinned to the entry line. SL/TP ride their own lines when set; when
+        // unset they tuck next to ✕ on the entry line (row [SL][TP][✕]).
+        place(b.closeWrap, entryY, R);
+        place(b.slWrap, slSet ? paneY(slP, g) + off : entryY, slSet ? R : R + 52);
+        place(b.tpWrap, tpSet ? paneY(tpP, g) + off : entryY, tpSet ? R : R + 26);
+        drawZone(b.slZone, entryY, lp?.stop_loss);
+        drawZone(b.tpZone, entryY, lp?.take_profit);
       }
     };
     raf = requestAnimationFrame(sync);
@@ -643,7 +664,7 @@ function AdvancedChartInner() {
     return () => {
       cancelAnimationFrame(raf);
       try { crossSub?.unsubscribe?.(null, onCross); } catch { /* noop */ }
-      for (const b of btns) { for (const el of [b.el, b.slZone, b.tpZone]) { try { overlay.removeChild(el); } catch { /* noop */ } } }
+      for (const b of btns) { for (const el of [b.slWrap, b.tpWrap, b.closeWrap, b.slZone, b.tpZone]) { try { overlay.removeChild(el); } catch { /* noop */ } } }
     };
   }, [status, selectedSymbol, positionsKey, openDialog]);
 
