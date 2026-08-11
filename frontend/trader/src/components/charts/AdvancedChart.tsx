@@ -8,6 +8,7 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { getDigits } from '@/lib/utils';
 import { createDatafeed } from '@/lib/charting/datafeed';
+import { createBroker, BROKER_CONFIG } from '@/lib/charting/broker';
 
 /**
  * Self-hosted TradingView Advanced Charts (charting_library). Replaces the old
@@ -126,6 +127,10 @@ function AdvancedChartInner() {
             'symbol_search_hot_key',
             'header_compare',
             'popup_hints',
+            // We keep our own right-side order panel + bottom positions table,
+            // so hide TV's built-in account-manager panel. The broker still
+            // draws the on-chart position/SL/TP LINES — that's what we want.
+            'trading_account_manager',
           ],
           enabled_features: ['side_toolbar_in_fullscreen_mode', 'hide_left_toolbar_by_default'],
           loading_screen: {
@@ -134,6 +139,14 @@ function AdvancedChartInner() {
           },
           overrides: buildOverrides(startTheme),
           custom_font_family: "'Inter', sans-serif",
+          // ── Trading Terminal broker ──────────────────────────────────────
+          // Renders each open position as an entry line (live P&L + ✕ close)
+          // with draggable STOP-LOSS / TAKE-PROFIT lines. Dragging a bracket
+          // line calls PUT /positions/{id} on our backend; a rejected level
+          // snaps back. See lib/charting/broker.ts.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          broker_factory: (h: any) => createBroker(h),
+          broker_config: BROKER_CONFIG,
         });
         widget.onChartReady(() => {
           if (cancelled) return;
