@@ -203,6 +203,14 @@ async def seed(force: bool = False):
         segment = _guess_segment(sym)
         is_crypto = sym in BINANCE_PAIRS
 
+        # Spec: NEVER inject simulated prices ("an empty chart is better than
+        # believable lies"). Only crypto is auto-seeded, from REAL Binance
+        # klines. Forex / metals / indices history now comes from InfoWay —
+        # the durable ohlcv_<tf> store filled by `backfill_history` (one-off)
+        # + the bars API's on-demand InfoWay REST fetch + live aggregation.
+        if not is_crypto:
+            continue
+
         # Get current price for non-crypto simulation
         mid = 0.0
         if not is_crypto:
