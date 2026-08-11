@@ -618,9 +618,11 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       // Optimistically patch the store so the chart SL/TP line moves / appears
       // / disappears the instant Save is pressed, before the PUT round-trips.
       // The chart draws its lines from these same position fields.
+      // Store Position uses number|undefined; a removed bracket becomes
+      // undefined (the chart's `!= null` check hides the line either way).
       updatePosition(positionId, {
-        stop_loss: body.stop_loss as number | null,
-        take_profit: body.take_profit as number | null,
+        stop_loss: body.stop_loss == null ? undefined : (body.stop_loss as number),
+        take_profit: body.take_profit == null ? undefined : (body.take_profit as number),
       });
       await api.put(`/positions/${positionId}`, body);
       toast.success('SL/TP updated');
