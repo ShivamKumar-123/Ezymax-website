@@ -21,12 +21,6 @@ const TP_COLOR = '#14b8a6';          // teal
 // of the right-axis price/P&L label.
 const CLOSE_BTN_RIGHT_PX = 268;
 
-/** Resolve a position's real server UUID (Position.id may be an optim key). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function serverId(p: any): string | null {
-  return p?.server_id ?? null;
-}
-
 /** Projected P&L if the position were closed at `price` (account currency,
  *  mirrors the store's tick math — accurate enough for the SL/TP preview). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -419,11 +413,18 @@ function AdvancedChartInner() {
     const insts: any[] = useTradingStore.getState().instruments || [];
     const digits = insts.find((i) => String(i.symbol).toUpperCase() === sym)?.digits ?? getDigits(sym);
 
+    // Resolve the position's server UUID LIVE from the store at click time. The
+    // captured `p` can be a stale optimistic copy (positionsKey keys on the
+    // stable optim id, which doesn't change when server_id later lands), so
+    // reading p.server_id directly showed "position not ready" forever.
+    const resolveSid = (pid: string): string | null =>
+      useTradingStore.getState().positions.find((x) => x.id === pid)?.server_id ?? null;
+
     // Set / clear a bracket by typing a price. Sends ONLY the changed bracket —
     // the backend partial-update leaves the other untouched.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setBracket = (p: any, kind: 'sl' | 'tp') => {
-      const sid = serverId(p);
+      const sid = resolveSid(p.id);
       if (!sid) { toast.error('Position not ready yet'); return; }
       const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
       const tk = useTradingStore.getState().prices[sym];
@@ -526,7 +527,7 @@ function AdvancedChartInner() {
           const r = containerRef.current?.getBoundingClientRect();
           const price = r ? priceForY(ev.clientY - r.top) : null;
           if (!price || !(price > 0)) { toast.error('Could not read price'); return; }
-          const sid = serverId(p);
+          const sid = resolveSid(p.id);
           if (!sid) { toast.error('Position not ready yet'); return; }
           const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
           const pnl = projPnl(p, price, insts, sym);
@@ -567,7 +568,7 @@ function AdvancedChartInner() {
       root.appendChild(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
       root.appendChild(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
       root.appendChild(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
-        const sid = serverId(p);
+        const sid = resolveSid(p.id);
         if (!sid) { toast.error('Position not ready yet'); return; }
         openDialog({
           title: 'Close position',
