@@ -1347,67 +1347,67 @@ function SocialPageInner() {
             </div>
           </div>
 
-          {/* ── 4 Stat Cards (DAG aesthetic per client mockup) ── */}
+          {/* ── 4 Stat Cards (Obsidian & Lime — matches landing theme) ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-5">
-            {/* Total Invested */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
-                  <DollarSign size={18} className="text-blue-300" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">Total Invested (All Masters)</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
-                    ${copySummary.totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+            {[
+              {
+                label: 'Total Invested (All Masters)',
+                icon: DollarSign,
+                node: (
+                  <>${copySummary.totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                ),
+              },
+              {
+                label: 'Total Profit (All Masters)',
+                icon: TrendingUp,
+                node: (
+                  <>${copySummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                ),
+              },
+              {
+                label: 'Profit This Month',
+                icon: ArrowDownToLine,
+                node: (
+                  <>${copySummary.profitThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                ),
+              },
+              {
+                label: 'Active Copy Trades',
+                icon: Users,
+                node: (
+                  <>{copySummary.activeCopies} <span className="text-xs font-medium text-text-tertiary">/ 10</span></>
+                ),
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="group relative overflow-hidden rounded-2xl p-4 pl-5 border transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.12), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(204,255,0,0.16)',
+                  boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
+                }}
+              >
+                {/* left lime accent bar */}
+                <div
+                  className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
+                  style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                  aria-hidden
+                />
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+                  >
+                    <s.icon size={18} className="text-[#ccff00]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">{s.label}</p>
+                    <p className="text-lg font-bold text-text-primary mt-1 font-mono tabular-nums truncate">{s.node}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Total Profit */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
-                  <TrendingUp size={18} className="text-emerald-300" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Profit (All Masters)</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
-                    ${copySummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Profit This Month */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
-                  <ArrowDownToLine size={18} className="text-purple-300" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Profit This Month</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
-                    ${copySummary.profitThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Copy Trades */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
-                  <Users size={18} className="text-amber-300" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">Active Copy Trades</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums">
-                    {copySummary.activeCopies} <span className="text-xs font-medium text-amber-200/60">/ 10</span>
-                  </p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
           <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
