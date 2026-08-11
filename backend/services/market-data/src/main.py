@@ -22,7 +22,7 @@ from .corecen_lp_feed import CorecenLPFeed
 from .bar_aggregator import BarAggregator
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
-from .store import TickStore
+from .store import TickStore, ohlc_store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("market-data")
@@ -86,6 +86,10 @@ class MarketDataService:
         signal.signal(signal.SIGTERM, lambda *_: setattr(self, "running", False))
 
         await self.store.init()
+        # Durable OHLC store — closed bars persist to ohlcv_<tf> so chart
+        # history is deep and survives restarts (replaces the Redis-only cache
+        # + simulated seed as the source of truth for history).
+        await ohlc_store.init()
 
         await self.spread_cache.reload_if_stale(force=True)
         await self._seed_last_mid_from_redis()

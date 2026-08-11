@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 
 from packages.common.src.redis_client import redis_client
+from .store import ohlc_store
 
 logger = logging.getLogger("market-data.aggregator")
 
@@ -91,6 +92,19 @@ class BarAggregator:
         list_key = f"bars:{symbol}:{timeframe}"
         await redis_client.lpush(list_key, json.dumps(bar_data))
         await redis_client.ltrim(list_key, 0, 999)
+
+        # Durable persistence — every CLOSED bar is upserted into ohlcv_<tf> so
+        # chart history is deep and survives restarts. Redis is just a 1000-bar
+        # cache on top; the durable store is the real history the bars API reads
+        # first. Guarded internally (no-op until ohlc_store.init() ran).
+        try:
+            await ohlc_store.upsert(
+                symbol, timeframe, int(bar_start),
+                bar.open, bar.high, bar.low, bar.close,
+                bar.volume, bar.tick_count,
+            )
+        except Exception as exc:
+            logger.debug("durable OHLC upsert failed %s %s: %s", symbol, timeframe, exc)
 
         # ATR(14) — used by trade insurance pricing. Computed only on 1m bars
         # because that's the timeframe insurance quotes care about.
