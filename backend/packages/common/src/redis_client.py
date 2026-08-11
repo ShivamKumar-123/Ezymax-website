@@ -30,15 +30,24 @@ async def get_redis():
     return redis_client
 
 
-async def publish_price(symbol: str, bid: float, ask: float, timestamp: str):
+async def publish_price(
+    symbol: str, bid: float, ask: float, timestamp: str,
+    market_spread: float | None = None,
+):
     import json
-    data = json.dumps({
+    payload = {
         "symbol": symbol,
         "bid": bid,
         "ask": ask,
         "timestamp": timestamp,
         "spread": round(ask - bid, 8),
-    })
+    }
+    # Provider's LIVE market spread (raw InfoWay ask−bid, in price units) — the
+    # signal a per-user FLOATING spread needs downstream (frontend re-spread +
+    # b-book execution). Purely additive; consumers that don't know it ignore it.
+    if market_spread is not None and market_spread > 0:
+        payload["market_spread"] = round(float(market_spread), 8)
+    data = json.dumps(payload)
     # 120 s TTL: if market-data dies, stale prices clear themselves
     # within 2 min instead of persisting forever. Live feed refreshes
     # the key on every tick (sub-second cadence), so the TTL never

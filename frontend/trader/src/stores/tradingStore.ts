@@ -8,6 +8,9 @@ export interface TickData {
   ask: number;
   timestamp: string;
   spread: number;
+  /** Provider's live market spread (price units) — drives a per-user FLOATING
+   *  override's live spread. Present on ticks from the /ws/prices feed. */
+  market_spread?: number;
 }
 
 export interface Position {
@@ -119,6 +122,9 @@ interface TradingState {
       When present the terminal shows that user their own spread (fills already
       apply it on the backend). */
   spreadOverrides: Record<string, { value: number; type: string }>;
+  /** Global floating-spread knobs (markup %, max mult), used when a per-user
+   *  override is type "floating" to compute the live spread from the tick. */
+  floatingParams: { markup: number; max_mult: number };
 
   setActiveAccount: (a: TradingAccount | null) => void;
   setAccounts: (a: TradingAccount[]) => void;
@@ -181,6 +187,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   watchlist: DEFAULT_WATCHLIST,
   instruments: [],
   spreadOverrides: {},
+  floatingParams: { markup: 15, max_mult: 4 },
   orderFormCloneDraft: null,
 
   setActiveAccount: (a) => set({ activeAccount: a }),
@@ -194,8 +201,18 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   setInstruments: (i) => set({ instruments: i }),
   loadSpreadOverrides: async () => {
     try {
-      const o = await api.get<Record<string, { value: number; type: string }>>('/trading/my-spread-overrides');
-      set({ spreadOverrides: o || {} });
+      const o = await api.get<Record<string, any>>('/trading/my-spread-overrides');
+      const map = { ...(o || {}) };
+      // `_floating` is a reserved key carrying the global floating knobs, not a
+      // symbol override — pull it out into floatingParams.
+      const fp = map['_floating'];
+      delete map['_floating'];
+      set({
+        spreadOverrides: map,
+        floatingParams: fp
+          ? { markup: Number(fp.markup) || 15, max_mult: Number(fp.max_mult) || 4 }
+          : { markup: 15, max_mult: 4 },
+      });
     } catch {
       set({ spreadOverrides: {} });
     }
@@ -355,9 +372,26 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const inst = state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
       const pip = inst?.pip_size || 0.0001;
       const mid = (tick.bid + tick.ask) / 2;
-      const adj = String(ov.type).toLowerCase() === 'percentage'
-        ? mid * (ov.value / 100)
-        : ov.value * pip;
+      const ovType = String(ov.type).toLowerCase();
+      let adj: number;
+      if (ovType === 'floating') {
+        // Live market spread × (1 + markup), clamped to [floor, floor × cap].
+        // floor = the override's value in price units. No market signal → keep
+        // the feed quote (matches the backend fallback in apply_user_spread_quote).
+        const floor = ov.value * pip;
+        const ms = Number(tick.market_spread) || 0;
+        if (ms > 0 && floor > 0) {
+          const { markup, max_mult } = state.floatingParams;
+          const target = ms * (1 + (markup || 0) / 100);
+          adj = Math.min(Math.max(target, floor), floor * Math.max(1, max_mult || 1));
+        } else {
+          adj = 0; // fall through to the feed quote unchanged
+        }
+      } else if (ovType === 'percentage') {
+        adj = mid * (ov.value / 100);
+      } else {
+        adj = ov.value * pip;
+      }
       if (adj > 0) {
         const half = adj / 2;
         // `spread` is stored in PRICE units (ask − bid); the UI divides it by

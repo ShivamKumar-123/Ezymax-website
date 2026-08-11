@@ -204,11 +204,14 @@ class MarketDataService:
             raw_spread = ask - bid
             self._last_mid[symbol] = mid
             self._last_live_mono[symbol] = time.monotonic()
+            _mkt_spread = raw_spread if raw_spread > 0 else None
             bid, ask = self.spread_cache.widen(
-                symbol, mid, raw_spread=raw_spread if raw_spread > 0 else None,
+                symbol, mid, raw_spread=_mkt_spread,
             )
 
-            await publish_price(symbol, bid, ask, ts)
+            # Carry the provider's live market spread so a per-user FLOATING
+            # spread can be computed downstream (frontend + execution).
+            await publish_price(symbol, bid, ask, ts, market_spread=_mkt_spread)
 
             await self.store.insert_tick(symbol, bid, ask, ts)
 

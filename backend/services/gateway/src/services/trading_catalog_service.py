@@ -128,4 +128,11 @@ async def list_user_spread_overrides(db: AsyncSession, user_id) -> dict:
     for value, stype, symbol in rows:
         key = symbol.upper() if symbol else "*"
         out[key] = {"value": float(value or 0), "type": (stype or "pips")}
+    # If any override is FLOATING, include the global floating knobs so the
+    # terminal can compute the live spread (tick.market_spread × (1+markup),
+    # capped). Stored under a reserved key that can't collide with a symbol.
+    if any((v or {}).get("type") == "floating" for v in out.values()):
+        from packages.common.src.instrument_pricing import get_floating_params
+        fp = await get_floating_params(db)
+        out["_floating"] = {"markup": fp["markup"], "max_mult": fp["max_mult"]}
     return out

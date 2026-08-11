@@ -1,10 +1,12 @@
 """Resolve spread / commission / price impact for order execution (gateway, engines)."""
 
+import json
+import time as _time
 from decimal import Decimal
 from typing import Optional, Tuple
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
@@ -246,6 +248,71 @@ async def get_user_spread_override(
     return None
 
 
+# ─── Floating spread (per-user) ─────────────────────────────────────────────
+# A per-user spread override of type "floating" tracks the provider's LIVE
+# market spread (broadcast in the tick as `market_spread`) instead of a fixed
+# value: published spread = clamp(market × (1 + markup%), floor=row.value,
+# cap=floor × max_mult). markup% / max_mult are the global system_settings
+# knobs (same ones the admin Floating card writes). This applies to BOTH the
+# user's display (my-spread-overrides) and their FILLS/closes (apply_user_spread_quote).
+_FLOAT_PARAMS = {"ts": 0.0, "markup": 15.0, "max_mult": 4.0, "enabled": False}
+
+
+async def get_floating_params(db: AsyncSession) -> dict:
+    """Global floating knobs from system_settings, cached ~30s in-process."""
+    now = _time.monotonic()
+    if now - _FLOAT_PARAMS["ts"] < 30.0:
+        return _FLOAT_PARAMS
+    try:
+        rows = (await db.execute(text(
+            "SELECT key, value FROM system_settings WHERE key IN "
+            "('floating_spread_enabled','floating_spread_markup_pct','floating_spread_max_mult')"
+        ))).all()
+        for k, v in rows:
+            raw = v if not isinstance(v, str) else v.strip('"')
+            if k == "floating_spread_enabled":
+                _FLOAT_PARAMS["enabled"] = str(raw).lower() in ("true", "1", "yes")
+            elif k == "floating_spread_markup_pct":
+                _FLOAT_PARAMS["markup"] = max(0.0, min(100.0, float(raw)))
+            elif k == "floating_spread_max_mult":
+                _FLOAT_PARAMS["max_mult"] = max(1.0, min(10.0, float(raw)))
+        _FLOAT_PARAMS["ts"] = now
+    except Exception:
+        pass
+    return _FLOAT_PARAMS
+
+
+def floating_adj_price(market_spread, floor_adj, markup_pct, max_mult) -> Decimal:
+    """Floating spread in PRICE units: clamp(market × (1+markup), floor, floor×cap)."""
+    try:
+        ms = Decimal(str(market_spread))
+        floor = Decimal(str(floor_adj))
+        if ms <= 0 or floor <= 0:
+            return floor if floor > 0 else Decimal("0")
+        target = ms * (Decimal("1") + Decimal(str(markup_pct)) / Decimal("100"))
+        cap = floor * Decimal(str(max(1.0, float(max_mult))))
+        return min(max(target, floor), cap)
+    except Exception:
+        try:
+            return Decimal(str(floor_adj))
+        except Exception:
+            return Decimal("0")
+
+
+async def _tick_market_spread(symbol: str):
+    """Provider's live market spread (price units) from the latest tick, or None."""
+    try:
+        from packages.common.src.redis_client import redis_client, PriceChannel
+        raw = await redis_client.get(PriceChannel.tick_key((symbol or "").upper()))
+        if not raw:
+            return None
+        d = json.loads(raw)
+        ms = d.get("market_spread")
+        return Decimal(str(ms)) if ms and float(ms) > 0 else None
+    except Exception:
+        return None
+
+
 async def apply_user_spread_quote(
     db: AsyncSession, user_id: Optional[UUID], instrument: Instrument,
     bid: Decimal, ask: Decimal,
@@ -253,7 +320,8 @@ async def apply_user_spread_quote(
     """If the user has an explicit spread override, rebuild bid/ask symmetrically
     around mid using that spread so their FILLS reflect the admin-set per-user
     spread. Users without an override keep the feed's bid/ask unchanged (so the
-    floating/default spread and every other user are untouched)."""
+    floating/default spread and every other user are untouched). A "floating"
+    override tracks the live market spread × markup (capped)."""
     override = await get_user_spread_override(db, user_id, instrument.id)
     if override is None:
         return bid, ask
@@ -262,10 +330,17 @@ async def apply_user_spread_quote(
     mid = (bid + ask) / Decimal("2")
     st = (override.spread_type or "pips").lower()
     val = Decimal(str(override.value or 0))
-    if st == "percentage":
+    pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
+    if st == "floating":
+        floor_adj = val * pip
+        ms = await _tick_market_spread(getattr(instrument, "symbol", ""))
+        if ms is None or floor_adj <= 0:
+            return bid, ask  # no market signal / no floor → feed quote (safe)
+        params = await get_floating_params(db)
+        adj = floating_adj_price(ms, floor_adj, params["markup"], params["max_mult"])
+    elif st == "percentage":
         adj = mid * (val / Decimal("100"))
     else:
-        pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
         adj = val * pip
     if adj <= 0:
         return bid, ask
