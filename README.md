@@ -2,6 +2,22 @@
 
 A premium multi-page Forex brokerage website by SwissCresta, built with React, Vite, Tailwind CSS, and Framer Motion.
 
+## Monorepo layout
+
+| Path | What it is |
+|---|---|
+| `backend/` | Python microservices (gateway, admin, b-book, risk, market-data) + shared package + contracts + migrations |
+| `frontend/trader/` | Next.js trader web app (swisscresta.com / trade.swisscresta.com) |
+| `frontend/admin/` | Next.js admin panel (admin.swisscresta.com) |
+| `mobile/` | Expo / React Native APK (merged from the former `swisscresta_apk` repo, history preserved) |
+| `deploy/`, `scripts/` | nginx config, backup/restore, server deploy tooling |
+
+`deploy.sh` on the server only rebuilds services whose paths changed — commits
+touching only `mobile/` deploy nothing on the VPS. Mobile releases ship
+separately: JS-only changes via `cd mobile && npx eas-cli update --channel
+production`; native changes need `eas build`. The old standalone
+`swisscresta_apk` repo is deprecated — work on the app here.
+
 ## Setup
 
 ```bash
