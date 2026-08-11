@@ -159,6 +159,8 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
+  // Per-user FLOATING spread state (user ids with an active floating override).
+  const [floatingUserIds, setFloatingUserIds] = useState<Set<string>>(new Set());
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -200,6 +202,28 @@ export default function UsersPage() {
   }, [page, debouncedSearch, statusFilter, kycFilter]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  // Which users currently have floating spread on.
+  useEffect(() => {
+    adminApi.get<{ user_ids?: string[] }>('/config/floating-users')
+      .then(d => setFloatingUserIds(new Set(d.user_ids || [])))
+      .catch(() => {});
+  }, []);
+
+  const toggleUserFloating = useCallback(async (userId: string) => {
+    const on = !floatingUserIds.has(userId);
+    try {
+      await adminApi.post('/config/user-floating', { user_id: userId, enabled: on });
+      setFloatingUserIds(prev => {
+        const n = new Set(prev);
+        if (on) n.add(userId); else n.delete(userId);
+        return n;
+      });
+      toast.success(on ? 'Floating spread ON for this user' : 'Floating spread OFF for this user');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to toggle floating');
+    }
+  }, [floatingUserIds]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -645,6 +669,8 @@ export default function UsersPage() {
           { label: 'Give Credit', icon: CreditCard, action: () => openModal('give-credit', u) },
           { label: 'Take Credit', icon: DollarSign, action: () => openModal('take-credit', u) },
           { label: 'Give Bonus', icon: Gift, action: () => openModal('give-bonus', u) },
+          { divider: true },
+          { label: floatingUserIds.has(u.id) ? 'Floating Spread: ON' : 'Floating Spread: OFF', icon: DollarSign, action: () => { closeMenu(); void toggleUserFloating(u.id); } },
           { divider: true },
           { label: u.status?.toLowerCase() === 'banned' ? 'Unban User' : 'Ban User', icon: Ban, action: () => openModal(u.status?.toLowerCase() === 'banned' ? 'unban' : 'ban', u), danger: true },
           { label: 'Kill Switch', icon: Power, action: () => openModal('kill-switch', u), danger: true },

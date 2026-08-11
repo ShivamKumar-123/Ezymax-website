@@ -160,6 +160,9 @@ export default function TradesPage() {
   const [posPages, setPosPages] = useState(1);
   const [posTotal, setPosTotal] = useState(0);
   const [posLoading, setPosLoading] = useState(true);
+  // Per-user FLOATING spread state (emails with an active floating override).
+  const [floatingEmails, setFloatingEmails] = useState<Set<string>>(new Set());
+  const [floatingBusy, setFloatingBusy] = useState<string | null>(null);
 
   const [orders, setOrders] = useState<PendingOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -337,6 +340,31 @@ export default function TradesPage() {
     else if (activeTab === 'pending') fetchOrders(false);
     else fetchHistory(false);
   }, [activeTab, fetchPositions, fetchOrders, fetchHistory]);
+
+  // Which users currently have floating spread on (by email).
+  useEffect(() => {
+    adminApi.get<{ emails?: string[] }>('/config/floating-users')
+      .then(d => setFloatingEmails(new Set((d.emails || []).map(e => e.toLowerCase()))))
+      .catch(() => {});
+  }, []);
+
+  const toggleFloating = useCallback(async (email?: string) => {
+    const em = (email || '').toLowerCase();
+    if (!em) { toast.error('No user email on this trade'); return; }
+    const on = !floatingEmails.has(em);
+    setFloatingBusy(em);
+    try {
+      await adminApi.post('/config/user-floating', { user_email: em, enabled: on });
+      setFloatingEmails(prev => {
+        const n = new Set(prev);
+        if (on) n.add(em); else n.delete(em);
+        return n;
+      });
+      toast.success(on ? `Floating spread ON — ${em}` : `Floating spread OFF — ${em}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to toggle floating');
+    } finally { setFloatingBusy(null); }
+  }, [floatingEmails]);
 
   /** Silent background poll every 5 s. Polls the ACTIVE tab on its own
    * interval AND the other two tabs at half-frequency, so the tab
@@ -712,6 +740,19 @@ export default function TradesPage() {
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleFloating(p.user_email)}
+                              disabled={floatingBusy === (p.user_email || '').toLowerCase()}
+                              title="Floating spread for this user (applies to ALL their trades — live market width × markup)"
+                              className={cn(
+                                'px-2 py-1 text-xxs font-bold uppercase tracking-wide rounded border transition-fast disabled:opacity-50',
+                                floatingEmails.has((p.user_email || '').toLowerCase())
+                                  ? 'text-buy bg-buy/12 border-buy/40'
+                                  : 'text-text-tertiary bg-bg-hover border-border-primary hover:text-buy hover:border-buy/30',
+                              )}
+                            >
+                              Float {floatingEmails.has((p.user_email || '').toLowerCase()) ? 'ON' : 'OFF'}
+                            </button>
                             {p.is_lp_forwarded ? (
                               <span
                                 className="px-2 py-1 text-xxs font-bold uppercase tracking-wide text-info bg-info/10 border border-info/30 rounded"

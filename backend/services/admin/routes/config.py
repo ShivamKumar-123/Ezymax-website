@@ -1,19 +1,101 @@
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from dependencies import require_permission
-from packages.common.src.models import User, SystemSetting
+from packages.common.src.models import User, SystemSetting, SpreadConfig
 from packages.common.src.admin_schemas import BulkChargeUpdate, BulkSpreadUpdate, BulkSwapUpdate
 from services import config_service
 
 router = APIRouter(prefix="/config", tags=["Configuration"])
+
+# Default floor (pips) applied when floating is toggled on for a user from the
+# Users / Trades pages. Admin can fine-tune per-instrument in the Spreads page.
+_DEFAULT_FLOATING_FLOOR_PIPS = 15.0
+
+
+@router.get("/floating-users")
+async def list_floating_users(
+    admin: User = Depends(require_permission("config.view")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Users with an ENABLED per-user floating override — returns both ids and
+    emails so the Users (has id) and Trades (has email) tables can show each
+    user's floating toggle state."""
+    rows = (await db.execute(
+        select(SpreadConfig.user_id, User.email)
+        .join(User, User.id == SpreadConfig.user_id)
+        .where(
+            func.lower(SpreadConfig.scope) == "user",
+            func.lower(SpreadConfig.spread_type) == "floating",
+            SpreadConfig.is_enabled == True,  # noqa: E712
+        ).distinct()
+    )).all()
+    return {
+        "user_ids": [str(r[0]) for r in rows if r[0]],
+        "emails": [str(r[1]).lower() for r in rows if r[1]],
+    }
+
+
+class UserFloatingToggle(BaseModel):
+    user_id: str | None = None
+    user_email: str | None = None
+    enabled: bool
+    floor_pips: float | None = None
+
+
+@router.post("/user-floating")
+async def set_user_floating(
+    body: UserFloatingToggle,
+    admin: User = Depends(require_permission("config.update")),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Turn a user's FLOATING spread on/off (a user-global override). On = the
+    user's spread tracks the live market width × markup (capped); off = removes
+    the row so they fall back to the normal per-instrument / default spread.
+    Accepts either user_id or user_email (Trades table only has the email)."""
+    uid: uuid.UUID | None = None
+    if body.user_id:
+        try:
+            uid = uuid.UUID(body.user_id)
+        except (ValueError, TypeError):
+            uid = None
+    if uid is None and body.user_email:
+        row = (await db.execute(
+            select(User.id).where(func.lower(User.email) == body.user_email.strip().lower()).limit(1)
+        )).scalar_one_or_none()
+        uid = row
+    if uid is None:
+        return {"error": "user not found"}
+    existing = (await db.execute(
+        select(SpreadConfig).where(
+            func.lower(SpreadConfig.scope) == "user",
+            SpreadConfig.user_id == uid,
+            SpreadConfig.instrument_id.is_(None),
+            func.lower(SpreadConfig.spread_type) == "floating",
+        ).limit(1)
+    )).scalar_one_or_none()
+    if body.enabled:
+        floor = body.floor_pips if (body.floor_pips and body.floor_pips > 0) else _DEFAULT_FLOATING_FLOOR_PIPS
+        if existing:
+            existing.is_enabled = True
+            existing.value = Decimal(str(floor))
+        else:
+            db.add(SpreadConfig(
+                scope="user", user_id=uid, instrument_id=None, segment_id=None,
+                spread_type="floating", value=Decimal(str(floor)), is_enabled=True,
+            ))
+    elif existing:
+        await db.delete(existing)
+    await db.commit()
+    return {"user_id": body.user_id, "enabled": body.enabled}
 
 
 # ── Floating spread (global) ─────────────────────────────────────────────────
