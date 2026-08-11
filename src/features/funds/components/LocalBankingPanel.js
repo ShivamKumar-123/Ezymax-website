@@ -139,7 +139,7 @@ export default function LocalBankingPanel({ amount = '' }) {
       <Card style={styles.infoCard}>
         <Ionicons name="information-circle-outline" size={20} color={vantage.accent} />
         <Text style={styles.infoTxt}>
-          Submit this request and our team will share a payment link (Razorpay, bank transfer or UPI) with you shortly. Your wallet is credited once payment is confirmed. Requires verified KYC.
+          Submit this request and our team will share a payment link (Razorpay, bank transfer or UPI) with you shortly. Your wallet is credited once payment is confirmed.
         </Text>
       </Card>
 

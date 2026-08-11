@@ -7,6 +7,7 @@ import { Screen, PillButton, IconButton, showToast } from '../../../components/v
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
+import { showWithdrawKycGate } from '../../../utils/kycGate';
 
 // Mirrors WITHDRAW_NETWORK_OPTIONS on the website. Backend expects
 // network ∈ {tron, bsc, eth} and destination_address (NOT chain/address).
@@ -39,7 +40,10 @@ export default function WithdrawCrypto() {
       nav.goBack();
     } catch (e) {
       const msg = e?.message || 'Submit failed';
-      if (/step.?up|2fa|otp/i.test(msg)) {
+      if (msg === 'KYC_REQUIRED') {
+        // Withdrawal-time KYC check — backend rejects until KYC is approved.
+        showWithdrawKycGate(nav);
+      } else if (/step.?up|2fa|otp/i.test(msg)) {
         showToast({ kind: 'warn', message: 'Email OTP / 2FA required — coming soon' });
       } else {
         showToast({ kind: 'error', message: msg });

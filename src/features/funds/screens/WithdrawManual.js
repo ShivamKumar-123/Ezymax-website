@@ -8,6 +8,7 @@ import { Screen, PillButton, IconButton, showToast } from '../../../components/v
 import { vantage, space, sizes, weights, fontFamily, radius } from '../../../theme/vantageTheme';
 import { BOTTOM_NAV_PILL_HEIGHT } from '../../../components/vantage/BottomNavPill';
 import ApiService from '../../../services/api/ApiService';
+import { showWithdrawKycGate } from '../../../utils/kycGate';
 
 export default function WithdrawManual() {
   const nav = useNavigation();
@@ -44,7 +45,13 @@ export default function WithdrawManual() {
       showToast({ kind: 'success', message: 'Withdrawal submitted for review' });
       nav.goBack();
     } catch (e) {
-      showToast({ kind: 'error', message: e?.message || 'Submit failed' });
+      const msg = e?.message || 'Submit failed';
+      if (msg === 'KYC_REQUIRED') {
+        // Withdrawal-time KYC check — backend rejects until KYC is approved.
+        showWithdrawKycGate(nav);
+      } else {
+        showToast({ kind: 'error', message: msg });
+      }
     } finally {
       setSubmitting(false);
     }

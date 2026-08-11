@@ -154,8 +154,8 @@ class ApiService {
     });
   }
 
-  // Local banking — Stage 1: submit a request (amount optional). KYC-gated;
-  // backend 403s with detail "KYC_REQUIRED" if not verified.
+  // Local banking — Stage 1: submit a request (amount optional). No KYC
+  // gate — deposits are open to everyone; KYC is checked at withdrawal time.
   async createLocalBankingRequest(amount) {
     const token = await SecureStore.getItemAsync('token');
     const fd = new FormData();

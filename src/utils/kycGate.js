@@ -1,9 +1,11 @@
 import { Alert } from 'react-native';
 import { authedFetch } from '../services/api/authedFetch';
 
-// Mirrors the web trader app: a user can sign in and browse, but cannot open
-// a new live trading account until their KYC is approved/verified. Pending,
-// rejected, or unsubmitted users are shown a gate dialog instead.
+// Mirrors the web trader app: everything (registering, depositing, trading,
+// opening live accounts) works without KYC. Identity is verified at
+// WITHDRAWAL time only — the backend 403s with detail "KYC_REQUIRED" when a
+// withdrawal is requested by an unverified user, and the withdraw screens
+// show the gate dialog below.
 
 export function isKycApproved(status) {
   const v = String(status || '').toLowerCase();
@@ -33,32 +35,21 @@ export async function fetchKycStatus() {
   }
 }
 
-// Show the standard KYC-required dialog with a "Complete KYC" CTA that
-// navigates to the Kyc screen. Use this anywhere you would otherwise let the
-// user open a live trading account.
-export function showKycGate(navigation, status) {
-  const label = kycStatusLabel(status);
-  const message =
-    `Live trading accounts are only available after your identity verification is approved.\n\n` +
-    `Current KYC status: ${label}.\n\n` +
-    `Complete your KYC documents and wait for review to continue.`;
+// Withdrawal-time KYC dialog. Shown when a withdrawal request comes back
+// with the backend's 403 "KYC_REQUIRED". The Kyc screen lives in the
+// HomeTab stack, so navigate cross-tab from the Funds screens.
+export function showWithdrawKycGate(navigation) {
   Alert.alert(
-    'Complete KYC to open a live account',
-    message,
+    'Complete KYC to withdraw',
+    'Deposits and trading work without verification, but withdrawals require ' +
+      'approved KYC. Complete your identity verification and your withdrawal ' +
+      'will go through once it is approved.',
     [
       { text: 'Later', style: 'cancel' },
-      { text: 'Complete KYC', onPress: () => navigation?.navigate?.('Kyc') },
+      {
+        text: 'Complete KYC',
+        onPress: () => navigation?.navigate?.('HomeTab', { screen: 'Kyc' }),
+      },
     ],
   );
-}
-
-// Convenience: fetch status, gate if not approved, otherwise call onApproved.
-export async function gateOpenLiveAccount(navigation, onApproved) {
-  const status = await fetchKycStatus();
-  if (!isKycApproved(status)) {
-    showKycGate(navigation, status);
-    return false;
-  }
-  await onApproved?.();
-  return true;
 }

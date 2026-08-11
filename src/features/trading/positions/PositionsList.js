@@ -942,10 +942,10 @@ function AccountSummaryCard({ account, summary, openCount, closedCount }) {
   const fmt2 = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const ccy = account?.currency || 'USD';
   const balance = num(summary?.balance) ?? num(account?.balance);
+  const credit = num(summary?.credit) ?? num(account?.credit) ?? 0;
   const equity = num(summary?.equity) ?? balance;
   const usedMargin = num(summary?.margin) ?? num(summary?.used_margin) ?? num(summary?.margin_used);
   const freeMargin = num(summary?.free_margin) ?? (equity != null && usedMargin != null ? equity - usedMargin : equity);
-  const marginLevel = num(summary?.margin_level);
   const label = account ? `${account.is_demo ? 'Demo' : 'Live'} ${account.account_number || account.id || ''}`.trim() : 'No account';
   return (
     <Card style={styles.summary}>
@@ -953,12 +953,14 @@ function AccountSummaryCard({ account, summary, openCount, closedCount }) {
         <Text style={styles.sumAcct} numberOfLines={1}>{label}</Text>
         <Text style={styles.sumCounts}>{openCount} open · {closedCount} closed</Text>
       </View>
+      {/* MT5-style order, mirrors the web terminal bar. Margin Level was
+          removed there too — keep the two in sync. */}
       <View style={styles.sumGrid}>
         <SumCell label="Balance" value={`${fmt2(balance)} ${ccy}`} />
+        <SumCell label="Credit" value={fmt2(credit)} />
         <SumCell label="Equity" value={`${fmt2(equity)} ${ccy}`} />
         <SumCell label="Used Margin" value={fmt2(usedMargin)} />
         <SumCell label="Free Margin" value={fmt2(freeMargin)} />
-        {marginLevel != null ? <SumCell label="Margin Level" value={`${fmt2(marginLevel)}%`} /> : null}
       </View>
     </Card>
   );
