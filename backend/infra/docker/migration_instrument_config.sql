@@ -6,7 +6,7 @@ ALTER TABLE charge_configs ADD CONSTRAINT charge_configs_charge_type_check
 
 ALTER TABLE spread_configs DROP CONSTRAINT IF EXISTS spread_configs_spread_type_check;
 ALTER TABLE spread_configs ADD CONSTRAINT spread_configs_spread_type_check
-    CHECK (spread_type IN ('fixed', 'variable', 'pips', 'percentage'));
+    CHECK (spread_type IN ('fixed', 'variable', 'pips', 'percentage', 'floating'));
 -- Adds instrument_configs, audit table, energies segment, extra instruments.
 
 INSERT INTO instrument_segments (name, display_name)

@@ -379,7 +379,7 @@ CREATE TABLE spread_configs (
     segment_id UUID REFERENCES instrument_segments(id),
     instrument_id UUID REFERENCES instruments(id),
     user_id UUID REFERENCES users(id),
-    spread_type VARCHAR(20) NOT NULL CHECK (spread_type IN ('fixed', 'variable', 'pips', 'percentage')),
+    spread_type VARCHAR(20) NOT NULL CHECK (spread_type IN ('fixed', 'variable', 'pips', 'percentage', 'floating')),
     value DECIMAL(18,8) NOT NULL,
     is_enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),

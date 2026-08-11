@@ -51,6 +51,16 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS bonus_balance NUMERIC(18,8) NOT NULL DEFAULT 0"
             ))
+            # Allow spread_type='floating' (per-user floating spread). The old
+            # check constraint only permitted fixed/variable/pips/percentage, so
+            # inserting a floating override failed. Re-create it with 'floating'.
+            await conn.execute(text(
+                "ALTER TABLE spread_configs DROP CONSTRAINT IF EXISTS spread_configs_spread_type_check"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE spread_configs ADD CONSTRAINT spread_configs_spread_type_check "
+                "CHECK (spread_type IN ('fixed','variable','pips','percentage','floating'))"
+            ))
             # Waitlist (invite-only access gate). Mirrors migration 0061 so the
             # admin waitlist endpoints work even where Alembic hasn't run.
             await conn.execute(text("""
