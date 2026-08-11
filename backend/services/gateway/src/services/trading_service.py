@@ -223,16 +223,12 @@ async def place_order(
         # access) triggers an async lazy-load and raises MissingGreenlet.
         account = locked
 
-    if not account.is_demo and account.account_group:
-        min_bal = account.account_group.minimum_deposit or Decimal("0")
-        if min_bal > 0 and (account.balance or Decimal("0")) < min_bal:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Account balance must be at least ${float(min_bal):.2f} for this account type "
-                    "before you can trade. Please deposit funds."
-                ),
-            )
+    # NOTE: the account-group minimum_deposit is an ACCOUNT-OPENING
+    # requirement only. It is deliberately NOT re-checked here — once the
+    # account exists, the user may trade with whatever balance remains
+    # (margin checks below are the only funding gate). A previous version
+    # blocked trading when balance dipped under the tier minimum, which
+    # locked users out of their own funded accounts.
 
     instrument = await get_instrument(req.symbol, db)
 

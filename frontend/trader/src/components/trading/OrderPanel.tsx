@@ -89,14 +89,10 @@ export default function OrderPanel({
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
 
-  // Account-tier minimum-balance gate (Micro $10 / Standard $100 /
-  // Pro $500 / Elite $1000). Server rejects trades when
-  // account.balance < group.minimum_deposit; mirror it client-side so
-  // the Buy/Sell button visibly disables and the user reads the
-  // requirement up-front instead of after tapping.
-  const minDepositGate = activeAccount?.account_group?.minimum_deposit ?? 0;
-  const accountBalance = activeAccount?.balance ?? 0;
-  const meetsMinBalance = minDepositGate <= 0 || accountBalance >= minDepositGate;
+  // The account-group minimum deposit applies at ACCOUNT OPENING only —
+  // trading is never blocked by it (margin checks are the only funding
+  // gate). The old client-side minimum-balance gate was removed together
+  // with its server-side counterpart in trading_service.py.
 
   /** Pending tab requires a positive trigger price. Stop-limit also
    *  requires the second (limit/target) price. Side-vs-mid validity is
@@ -200,16 +196,6 @@ export default function OrderPanel({
     }
     if (!hasEnoughMargin) {
       toast.error(`Insufficient margin`);
-      return;
-    }
-    // Preflight the server-side "Account balance must be ≥ min_deposit
-    // for this account type" gate (trading_service.py:141-150). Catching
-    // it client-side means the user gets a clean toast IMMEDIATELY,
-    // without the optimistic UI / "orderPlaced" sound / success message
-    // racing the rejection.
-    const minDeposit = activeAccount.account_group?.minimum_deposit ?? 0;
-    if (minDeposit > 0 && (activeAccount.balance ?? 0) < minDeposit) {
-      toast.error(`Minimum $${minDeposit.toFixed(0)} balance required for this account. Deposit funds first.`);
       return;
     }
     // Pending orders require a trigger price + must be on the correct
@@ -843,17 +829,12 @@ export default function OrderPanel({
                     ⚠ Insufficient margin
                   </div>
                 )}
-                {hasEnoughMargin && !meetsMinBalance && (
-                  <div className="text-[11px] text-red-500 font-bold text-center pt-2 mt-2 leading-snug" style={{ borderTop: '1px solid rgba(239,83,80,0.15)' }}>
-                    ⚠ Minimum ${minDepositGate.toFixed(0)} balance required
-                  </div>
-                )}
               </div>
               <div className="py-2" />
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!recentlyClicked && (!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
+                disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
                 style={{
                   background: side === 'buy' ? '#2962FF' : '#ef5350',
@@ -904,12 +885,7 @@ export default function OrderPanel({
             {!hasEnoughMargin && (
               <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">Insufficient margin</div>
             )}
-            {hasEnoughMargin && !meetsMinBalance && (
-              <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">
-                Min ${minDepositGate.toFixed(0)} balance required
-              </div>
-            )}
-            {orderTab === 'pending' && !pendingTriggerValid && hasEnoughMargin && meetsMinBalance && (
+            {orderTab === 'pending' && !pendingTriggerValid && hasEnoughMargin && (
               <div className="text-[10px] text-warning font-semibold text-center leading-tight">
                 Enter a trigger price to place the order
               </div>
@@ -917,7 +893,7 @@ export default function OrderPanel({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!recentlyClicked && (!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
+              disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
               className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
               style={{
                 background: side === 'buy' ? '#2962FF' : '#ef5350',
