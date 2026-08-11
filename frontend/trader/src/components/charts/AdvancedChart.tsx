@@ -671,6 +671,18 @@ function AdvancedChartInner() {
       {/* The library renders its own iframe into this container. */}
       <div ref={containerRef} className="absolute inset-0" />
 
+      {/* FXArtha logo watermark — faint, centered, non-interactive. Sits over
+          the chart canvas but under the SL/TP overlay (DOM order). */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+        <img
+          src="/images/fxartha_icon.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="w-40 h-40 md:w-56 md:h-56 object-contain opacity-[0.06] select-none"
+        />
+      </div>
+
       {/* HTML overlay for the on-chart [SL][TP][✕] buttons + shaded zones. */}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 overflow-hidden" />
 
