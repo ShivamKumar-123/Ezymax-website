@@ -29,15 +29,30 @@ export default function SpreadsPage() {
   const [userSearchKey, setUserSearchKey] = useState<string | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState<{ id: string; name: string; email: string }[]>([]);
+  // Global floating-spread settings (live market width × markup, capped).
+  const [floating, setFloating] = useState({
+    floating_spread_enabled: false,
+    floating_spread_markup_pct: 15,
+    floating_spread_max_mult: 4,
+    floating_spread_ema_sec: 5,
+  });
+  const [floatingSaving, setFloatingSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [instRes, spreadRes] = await Promise.all([
+      const [instRes, spreadRes, floatRes] = await Promise.all([
         adminApi.get<{ items: Instrument[] }>('/config/instruments'),
         adminApi.get<any[]>('/config/spreads'),
+        adminApi.get<any>('/config/floating-spread').catch(() => null),
       ]);
       setInstruments(instRes.items || []);
+      if (floatRes) setFloating({
+        floating_spread_enabled: !!floatRes.floating_spread_enabled,
+        floating_spread_markup_pct: Number(floatRes.floating_spread_markup_pct ?? 15),
+        floating_spread_max_mult: Number(floatRes.floating_spread_max_mult ?? 4),
+        floating_spread_ema_sec: Number(floatRes.floating_spread_ema_sec ?? 5),
+      });
       setRows((spreadRes || []).map((c: any) => ({
         _key: newKey(),
         scope: c.scope, instrument_id: c.instrument_id, segment_id: c.segment_id,
@@ -103,6 +118,14 @@ export default function SpreadsPage() {
       await adminApi.put('/config/spreads', { configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, spread_type: r.spread_type, value: r.value, is_enabled: r.is_enabled })) });
       toast.success('Spreads saved'); fetchData();
     } catch (e: any) { toast.error(e.message || 'Save failed'); } finally { setSaving(false); }
+  };
+
+  const saveFloating = async () => {
+    setFloatingSaving(true);
+    try {
+      await adminApi.put('/config/floating-spread', { updates: floating });
+      toast.success(floating.floating_spread_enabled ? 'Floating spread ON — live within ~30s' : 'Floating spread saved (OFF)');
+    } catch (e: any) { toast.error(e.message || 'Save failed'); } finally { setFloatingSaving(false); }
   };
 
   if (loading) return <><div className="flex items-center justify-center h-96"><Loader2 size={20} className="animate-spin text-text-tertiary" /></div></>;
@@ -178,6 +201,46 @@ export default function SpreadsPage() {
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save All
           </button>
         </div>
+        {/* Floating spread — live market width × markup, capped. */}
+        <div className="bg-bg-secondary border border-border-primary rounded-md">
+          <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-text-primary">Floating Spread (Live Market)</h3>
+              <span className={cn('text-xxs px-1.5 py-0.5 rounded font-medium', floating.floating_spread_enabled ? 'bg-buy/15 text-buy' : 'bg-bg-hover text-text-tertiary')}>
+                {floating.floating_spread_enabled ? 'ON' : 'OFF'}
+              </span>
+            </div>
+            <button onClick={saveFloating} disabled={floatingSaving} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xxs font-medium text-white bg-buy rounded hover:bg-buy-light disabled:opacity-50 transition-fast">
+              {floatingSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
+            </button>
+          </div>
+          <div className="p-4 space-y-3">
+            <p className="text-xxs text-text-tertiary leading-relaxed">
+              Spread follows the provider&apos;s <strong className="text-text-secondary">live market width</strong> (InfoWay bid/ask, EMA-smoothed) × (1 + markup). The <strong className="text-text-secondary">Fixed</strong> per-instrument spread above stays the FLOOR — floating only widens from there, capped at <strong className="text-text-secondary">Floor × Max mult</strong>. Tight market → tight spread; news/volatility → auto-wide. Mid stays centered (P&amp;L not whipped). Applies within ~30s. Only runs on instruments that have a Fixed base configured.
+            </p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+              <label className="flex items-center gap-2">
+                <span className="text-xs text-text-secondary">Enabled</span>
+                <button type="button" onClick={() => setFloating(f => ({ ...f, floating_spread_enabled: !f.floating_spread_enabled }))} className={cn('w-8 h-4 rounded-full transition-fast relative', floating.floating_spread_enabled ? 'bg-buy' : 'bg-bg-hover border border-border-primary')}>
+                  <span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-fast', floating.floating_spread_enabled ? 'left-[16px]' : 'left-0.5')} />
+                </button>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-xxs text-text-tertiary uppercase tracking-wide">Markup %</span>
+                <input type="number" step="1" min="0" max="100" value={floating.floating_spread_markup_pct} onChange={e => setFloating(f => ({ ...f, floating_spread_markup_pct: parseFloat(e.target.value) || 0 }))} className="w-20 px-2 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-xxs text-text-tertiary uppercase tracking-wide">Max mult (× floor)</span>
+                <input type="number" step="0.5" min="1" max="10" value={floating.floating_spread_max_mult} onChange={e => setFloating(f => ({ ...f, floating_spread_max_mult: parseFloat(e.target.value) || 1 }))} className="w-20 px-2 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-xxs text-text-tertiary uppercase tracking-wide">Smoothing (sec)</span>
+                <input type="number" step="1" min="1" max="60" value={floating.floating_spread_ema_sec} onChange={e => setFloating(f => ({ ...f, floating_spread_ema_sec: parseFloat(e.target.value) || 1 }))} className="w-20 px-2 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" />
+              </label>
+            </div>
+          </div>
+        </div>
+
         {renderTable('Default (All Instruments)', globalRows, 'default')}
         {renderTable('Per Instrument', instrumentRows, 'instrument')}
         {renderTable('Per User (Override)', userRows, 'user')}
