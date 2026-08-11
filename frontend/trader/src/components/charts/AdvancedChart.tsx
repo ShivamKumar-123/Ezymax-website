@@ -8,7 +8,6 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { getDigits } from '@/lib/utils';
 import { createDatafeed } from '@/lib/charting/datafeed';
-import { createBroker, BROKER_CONFIG } from '@/lib/charting/broker';
 
 /**
  * Self-hosted TradingView Advanced Charts (charting_library). Replaces the old
@@ -77,6 +76,8 @@ function AdvancedChartInner() {
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const theme = useUIStore((s) => s.theme);
   const tick = useTradingStore((s) => s.prices[(selectedSymbol ?? 'EURUSD').toUpperCase()]);
+  // Open positions drive the on-chart entry / SL / TP lines (drawn as shapes).
+  const positions = useTradingStore((s) => s.positions);
 
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
   const tvTheme: 'dark' | 'light' = theme === 'light' ? 'light' : 'dark';
@@ -85,6 +86,9 @@ function AdvancedChartInner() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const widgetRef = useRef<any>(null);
+  // key -> { id, price, text, color, textColor, creating } for each drawn line.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linesRef = useRef<Map<string, any>>(new Map());
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadNonce, setReloadNonce] = useState(0);
   const reloadChart = useCallback(() => setReloadNonce((n) => n + 1), []);
@@ -139,14 +143,6 @@ function AdvancedChartInner() {
           },
           overrides: buildOverrides(startTheme),
           custom_font_family: "'Inter', sans-serif",
-          // ── Trading Terminal broker ──────────────────────────────────────
-          // Renders each open position as an entry line (live P&L + ✕ close)
-          // with draggable STOP-LOSS / TAKE-PROFIT lines. Dragging a bracket
-          // line calls PUT /positions/{id} on our backend; a rejected level
-          // snaps back. See lib/charting/broker.ts.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          broker_factory: (h: any) => createBroker(h),
-          broker_config: BROKER_CONFIG,
         });
         widget.onChartReady(() => {
           if (cancelled) return;
@@ -166,6 +162,7 @@ function AdvancedChartInner() {
         /* widget already gone */
       }
       widgetRef.current = null;
+      linesRef.current.clear(); // shapes died with the widget
     };
     // interval is constant per page; symbol/theme handled via refs + effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,6 +188,105 @@ function AdvancedChartInner() {
       /* older lib without changeTheme — reload picks it up */
     }
   }, [tvTheme, status]);
+
+  // ── On-chart position / SL / TP lines ──────────────────────────────────
+  // Drawn with createShape('horizontal_line') — the CORE Charting Library API.
+  // createPositionLine / the Trading-Terminal broker render NOTHING in this
+  // standalone build, so shapes are how the lines actually appear. A position
+  // shows: a solid entry line (BUY blue / SELL red) labelled with its LIVE P&L,
+  // a dashed amber SL line, and a dashed teal TP line. Lines are created once,
+  // slid with setPoints when a price changes, and removed when the position
+  // closes / the symbol changes. They are static (not drag-to-modify) — SL/TP
+  // is edited from the order panel; p.profit is the same value the positions
+  // table uses, so the label can never disagree with it.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const w = widgetRef.current;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let chart: any;
+    try { chart = w?.activeChart?.(); } catch { return; }
+    if (!chart?.createShape) return;
+
+    const sym = (selectedSymbol || '').toUpperCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insts: any[] = useTradingStore.getState().instruments || [];
+    const inst = insts.find((i) => String(i.symbol).toUpperCase() === sym);
+    const digitsN = inst?.digits ?? getDigits(sym);
+    const cs = Number(inst?.contract_size) || 100000;
+    const fp = (n: number) => Number(n).toFixed(digitsN);
+    const myPos = positions.filter((p) => (p.symbol || '').toUpperCase() === sym);
+
+    type Desired = { key: string; price: number; color: string; textColor?: string; text: string; dashed: boolean };
+    const desired: Desired[] = [];
+    for (const p of myPos) {
+      const pnl = Number(p.profit || 0);
+      const lots = Number(p.lots || 0);
+      const entry = Number(p.open_price || 0);
+      const notional = entry * lots * cs;
+      const pct = notional > 0 ? (pnl / notional) * 100 : 0;
+      const pnlStr = `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`;
+      const pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+      const sideColor = p.side.toUpperCase() === 'BUY' ? '#3b82f6' : '#ef4444';
+      const pnlColor = Math.abs(pnl) < 0.1 ? '#9ca3af' : pnl > 0 ? '#22c55e' : '#ef4444';
+      desired.push({
+        key: p.id, price: entry, color: sideColor, textColor: pnlColor,
+        text: `${p.side.toUpperCase()} ${lots}  ${pnlStr} (${pctStr})`, dashed: false,
+      });
+      if (p.stop_loss && Number(p.stop_loss) > 0)
+        desired.push({ key: `${p.id}-sl`, price: Number(p.stop_loss), color: '#f59e0b', text: `SL ${fp(Number(p.stop_loss))}`, dashed: true });
+      if (p.take_profit && Number(p.take_profit) > 0)
+        desired.push({ key: `${p.id}-tp`, price: Number(p.take_profit), color: '#14b8a6', text: `TP ${fp(Number(p.take_profit))}`, dashed: true });
+    }
+
+    const shapeOpts = (text: string, lineColor: string, textColor: string, dashed: boolean) => ({
+      shape: 'horizontal_line', text,
+      lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+      overrides: {
+        linecolor: lineColor, linestyle: dashed ? 2 : 0, linewidth: dashed ? 1 : 2,
+        showLabel: true, textcolor: textColor, fontsize: 11, bold: true,
+        horzLabelsAlign: 'right', vertLabelsAlign: 'middle',
+      },
+    });
+
+    const t = Math.floor(Date.now() / 1000);
+    const wanted = new Set(desired.map((d) => d.key));
+    for (const d of desired) {
+      const existing = linesRef.current.get(d.key);
+      if (!existing) {
+        // createShape is async — reserve the key so a re-render mid-create
+        // doesn't spawn a duplicate line.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rec: any = { id: null, price: d.price, creating: true, text: d.text, color: d.color, textColor: d.textColor ?? d.color };
+        linesRef.current.set(d.key, rec);
+        chart.createShape({ time: t, price: d.price }, shapeOpts(d.text, d.color, d.textColor ?? d.color, d.dashed))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then((id: any) => {
+            if (linesRef.current.get(d.key) === rec) { rec.id = id; rec.creating = false; }
+            else { try { chart.removeEntity(id); } catch { /* closed mid-create */ } }
+          })
+          .catch(() => { if (linesRef.current.get(d.key) === rec) linesRef.current.delete(d.key); });
+      } else if (existing.id != null) {
+        if (existing.price !== d.price) {
+          try { chart.getShapeById(existing.id)?.setPoints([{ time: t, price: d.price }]); } catch { /* noop */ }
+          existing.price = d.price;
+        }
+        const nextTextColor = d.textColor ?? d.color;
+        if (d.text !== existing.text || d.color !== existing.color || nextTextColor !== existing.textColor) {
+          try {
+            chart.getShapeById(existing.id)?.setProperties({ text: d.text, linecolor: d.color, textcolor: nextTextColor });
+          } catch { /* keep last-known label */ }
+          existing.text = d.text; existing.color = d.color; existing.textColor = nextTextColor;
+        }
+      }
+    }
+    // Remove lines whose position / SL / TP is gone (or the symbol changed).
+    for (const [key, rec] of linesRef.current) {
+      if (!wanted.has(key)) {
+        if (rec && rec.id != null) { try { chart.removeEntity(rec.id); } catch { /* noop */ } }
+        linesRef.current.delete(key);
+      }
+    }
+  }, [positions, selectedSymbol, status]);
 
   const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
   const digits = getDigits(selectedSymbol ?? 'EURUSD');
