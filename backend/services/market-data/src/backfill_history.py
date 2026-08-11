@@ -185,12 +185,17 @@ async def _write_db(
     if not bars:
         return
     lo, hi = bars[0]["time"], bars[-1]["time"]
-    upsert = text(
+    # No ON CONFLICT: prod ohlcv_<tf> are compressed hypertables without a
+    # UNIQUE(symbol,time) index. We DELETE the covered window first (purges
+    # stale/duplicate rows) then plain-INSERT — so no unique index is needed.
+    # `--no-replace` (replace=False) falls back to UPDATE-then-INSERT per bar.
+    insert = text(
         f"INSERT INTO ohlcv_{tf} (time, symbol, open, high, low, close, volume, tick_count) "
-        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, 0) "
-        "ON CONFLICT (symbol, time) DO UPDATE SET "
-        "open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, "
-        "close=EXCLUDED.close, volume=EXCLUDED.volume"
+        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, 0)"
+    )
+    update = text(
+        f"UPDATE ohlcv_{tf} SET open=:o, high=:h, low=:l, close=:c, volume=:v "
+        "WHERE symbol=:sym AND time=to_timestamp(:t)"
     )
     async with TimescaleSessionLocal() as session:
         if replace:
@@ -202,12 +207,18 @@ async def _write_db(
                 {"sym": sym, "lo": lo, "hi": hi},
             )
         for b in bars:
-            await session.execute(upsert, {
+            params = {
                 "t": int(b["time"]), "sym": sym,
                 "o": float(b["open"]), "h": float(b["high"]),
                 "l": float(b["low"]), "c": float(b["close"]),
                 "v": float(b.get("volume", 0) or 0),
-            })
+            }
+            if replace:
+                await session.execute(insert, params)
+            else:
+                res = await session.execute(update, params)
+                if (res.rowcount or 0) == 0:
+                    await session.execute(insert, params)
         await session.commit()
 
 

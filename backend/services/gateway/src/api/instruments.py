@@ -175,11 +175,15 @@ async def _fetch_ohlc_db(sym: str, tf: str, to_time: int, limit: int = 1000) -> 
             rows = (await s.execute(_sql_text(q), params)).all()
     except Exception:
         return []
-    bars = [{
-        "time": int(r[0]), "open": float(r[1]), "high": float(r[2]),
-        "low": float(r[3]), "close": float(r[4]), "volume": float(r[5] or 0),
-    } for r in rows]
-    bars.sort(key=lambda b: b["time"])
+    # Dedup by bar time (defensive — the non-unique-index upsert path could in
+    # theory leave two rows for one slot under a race; keep one per time).
+    by_time: dict = {}
+    for r in rows:
+        by_time[int(r[0])] = {
+            "time": int(r[0]), "open": float(r[1]), "high": float(r[2]),
+            "low": float(r[3]), "close": float(r[4]), "volume": float(r[5] or 0),
+        }
+    bars = sorted(by_time.values(), key=lambda b: b["time"])
     return bars
 
 
@@ -220,20 +224,28 @@ async def _persist_ohlc_db(sym: str, tf: str, bars: list[dict]) -> None:
     permanently extends history. Best effort (fire-and-forget)."""
     if tf not in _TF_SECONDS or not bars:
         return
-    stmt = _sql_text(
+    # UPDATE-then-INSERT (no ON CONFLICT): prod ohlcv_<tf> are compressed
+    # hypertables without a UNIQUE(symbol,time) index, so ON CONFLICT can't be
+    # used. Single-writer-ish, best-effort.
+    upd = _sql_text(
+        f"UPDATE ohlcv_{tf} SET open=:o, high=:h, low=:l, close=:c, volume=:v "
+        "WHERE symbol=:sym AND time=to_timestamp(:t)"
+    )
+    ins = _sql_text(
         f"INSERT INTO ohlcv_{tf} (time, symbol, open, high, low, close, volume, tick_count) "
-        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, 0) "
-        "ON CONFLICT (symbol, time) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, "
-        "low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"
+        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, 0)"
     )
     try:
         async with TimescaleSessionLocal() as s:
             for b in bars:
-                await s.execute(stmt, {
+                params = {
                     "t": int(b["time"]), "sym": sym, "o": float(b["open"]),
                     "h": float(b["high"]), "l": float(b["low"]),
                     "c": float(b["close"]), "v": float(b.get("volume", 0) or 0),
-                })
+                }
+                res = await s.execute(upd, params)
+                if (res.rowcount or 0) == 0:
+                    await s.execute(ins, params)
             await s.commit()
     except Exception:
         pass

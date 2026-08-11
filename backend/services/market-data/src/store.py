@@ -92,10 +92,6 @@ class OHLCStore:
                         "  low DOUBLE PRECISION NOT NULL, close DOUBLE PRECISION NOT NULL,"
                         "  volume DOUBLE PRECISION DEFAULT 0, tick_count INTEGER DEFAULT 0)"
                     ))
-                    await session.execute(text(
-                        f"CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_{tf}_sym_time "
-                        f"ON ohlcv_{tf} (symbol, time)"
-                    ))
                 await session.commit()
             self._ready = True
             logger.info("OHLC store initialized (%d timeframes)", len(OHLC_TIMEFRAMES))
@@ -103,13 +99,26 @@ class OHLCStore:
             # Non-fatal: if the DB is unreachable the chart still works off Redis.
             logger.error(f"OHLC store init failed (chart falls back to Redis): {e}")
 
-    _UPSERT = (
-        "INSERT INTO {table} (time, symbol, open, high, low, close, volume, tick_count) "
-        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, :tc) "
-        "ON CONFLICT (symbol, time) DO UPDATE SET "
-        "open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, "
-        "close=EXCLUDED.close, volume=EXCLUDED.volume, tick_count=EXCLUDED.tick_count"
+    # We intentionally do NOT use `ON CONFLICT (symbol, time)`: in prod the
+    # ohlcv_<tf> tables are COMPRESSED TimescaleDB hypertables that (a) have no
+    # UNIQUE(symbol, time) index and (b) can't get one while compression is
+    # enabled (CREATE UNIQUE INDEX is blocked). So we upsert with UPDATE-then-
+    # INSERT, which needs no unique index. The aggregator is a single writer per
+    # (symbol, tf, window) so the race window is negligible, and recent bars
+    # land in uncompressed chunks where UPDATE/INSERT are fully supported.
+    _UPDATE = (
+        "UPDATE {table} SET open=:o, high=:h, low=:l, close=:c, volume=:v, tick_count=:tc "
+        "WHERE symbol=:sym AND time=to_timestamp(:t)"
     )
+    _INSERT = (
+        "INSERT INTO {table} (time, symbol, open, high, low, close, volume, tick_count) "
+        "VALUES (to_timestamp(:t), :sym, :o, :h, :l, :c, :v, :tc)"
+    )
+
+    async def _upsert_one(self, session, tf: str, params: dict) -> None:
+        res = await session.execute(text(self._UPDATE.format(table=f"ohlcv_{tf}")), params)
+        if (res.rowcount or 0) == 0:
+            await session.execute(text(self._INSERT.format(table=f"ohlcv_{tf}")), params)
 
     async def upsert(self, symbol: str, tf: str, bar_start: int,
                      o: float, h: float, l: float, c: float,
@@ -119,11 +128,10 @@ class OHLCStore:
             return
         try:
             async with TimescaleSessionLocal() as session:
-                await session.execute(
-                    text(self._UPSERT.format(table=f"ohlcv_{tf}")),
-                    {"t": int(bar_start), "sym": symbol, "o": float(o), "h": float(h),
-                     "l": float(l), "c": float(c), "v": float(volume), "tc": int(tick_count)},
-                )
+                await self._upsert_one(session, tf, {
+                    "t": int(bar_start), "sym": symbol, "o": float(o), "h": float(h),
+                    "l": float(l), "c": float(c), "v": float(volume), "tc": int(tick_count),
+                })
                 await session.commit()
         except Exception as exc:
             logger.debug("OHLC upsert %s %s failed: %s", symbol, tf, exc)
@@ -134,10 +142,9 @@ class OHLCStore:
         if not self._ready or tf not in OHLC_TIMEFRAMES or not bars:
             return
         try:
-            stmt = text(self._UPSERT.format(table=f"ohlcv_{tf}"))
             async with TimescaleSessionLocal() as session:
                 for b in bars:
-                    await session.execute(stmt, {
+                    await self._upsert_one(session, tf, {
                         "t": int(b.get("time", 0)), "sym": symbol,
                         "o": float(b["open"]), "h": float(b["high"]),
                         "l": float(b["low"]), "c": float(b["close"]),
