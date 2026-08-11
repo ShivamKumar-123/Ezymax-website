@@ -31,7 +31,6 @@ import dynamic from 'next/dynamic';
 // when the user actually opens the share dialog — keep it out of the
 // terminal's initial bundle.
 const ShareTradeModal = dynamic(() => import('@/components/trading/ShareTradeModal'), { ssr: false });
-import MarginRing from '@/components/trading/MarginRing';
 
 interface ClosedTrade {
   id: string;
@@ -894,13 +893,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         {netTotalPnl >= 0 ? '+' : ''}${netTotalPnl.toFixed(2)}
                       </span>
                     </div>
-                    {activeAccount.margin_used > 0 && (
-                      <MarginRing
-                        marginLevel={Number(activeAccount.margin_level) || 0}
-                        size={56}
-                        className="shrink-0"
-                      />
-                    )}
                   </>
                 ) : null}
                 {isTerminal && activeTab === 'open' && (
