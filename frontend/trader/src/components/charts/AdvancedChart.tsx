@@ -530,24 +530,17 @@ function AdvancedChartInner() {
           const sid = resolveSid(p.id);
           if (!sid) { toast.error('Position not ready yet'); return; }
           const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
-          const pnl = projPnl(p, price, insts, sym);
-          const projTxt = ` → ${pnl >= 0 ? 'profit' : 'loss'} ${pnl >= 0 ? '+' : '−'}$${Math.abs(pnl).toFixed(2)}`;
-          openDialog({
-            title: `Set ${label} @ ${price.toFixed(digits)}`,
-            body: `${String(p.side).toUpperCase()} ${p.lots} ${sym}${projTxt}`,
-            confirmLabel: `Set ${kind.toUpperCase()}`,
-            onConfirm: () => {
-              (async () => {
-                try {
-                  await api.put(`/positions/${sid}`, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
-                  toast.success(`${label} set @ ${price.toFixed(digits)}`);
-                  await useTradingStore.getState().refreshPositions();
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
-                }
-              })();
-            },
-          });
+          // Drag-and-drop = the gesture IS the confirmation — apply immediately,
+          // no popup. (A plain click still opens the type-a-price dialog above.)
+          (async () => {
+            try {
+              await api.put(`/positions/${sid}`, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
+              toast.success(`${label} set @ ${price.toFixed(digits)}`);
+              await useTradingStore.getState().refreshPositions();
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
+            }
+          })();
         };
       };
       return b;
