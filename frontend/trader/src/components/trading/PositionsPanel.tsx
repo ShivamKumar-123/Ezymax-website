@@ -19,7 +19,6 @@ import {
   TrendingUp,
   TrendingDown,
   Layers,
-  Info,
   LayoutGrid,
   LayoutList,
   ArrowRight,
@@ -745,8 +744,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const accountMetrics = activeAccount
     ? [
         { label: 'Balance', value: activeAccount.balance as number },
-        { label: 'Equity', value: activeAccount.balance + (activeAccount.credit || 0) + totalPnl },
         { label: 'Credit', value: activeAccount.credit || 0 },
+        { label: 'Equity', value: activeAccount.balance + (activeAccount.credit || 0) + totalPnl },
         { label: 'Used Margin', value: activeAccount.margin_used },
         {
           label: 'Free Margin',
@@ -779,10 +778,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       : 0;
   const freeMarginCalc =
     activeAccount != null ? equity - activeAccount.margin_used : 0;
-  const marginLevelDisplay =
-    activeAccount != null && activeAccount.margin_level > 0
-      ? `${activeAccount.margin_level % 1 === 0 ? activeAccount.margin_level.toFixed(0) : activeAccount.margin_level.toFixed(2)}%`
-      : '—';
 
   return (
     <div className={clsx('h-full w-full min-w-0 flex flex-col min-h-0', isTerminal ? 'bg-bg-base' : 'bg-bg-primary')}>
@@ -856,15 +851,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
                       <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Floating P&amp;L
+                        Credit
                       </span>
-                      <span
-                        className={clsx(
-                          'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          netTotalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
-                        )}
-                      >
-                        {netTotalPnl >= 0 ? '+' : ''}${netTotalPnl.toFixed(2)}
+                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
+                        ${(activeAccount.credit || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
@@ -892,12 +882,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none inline-flex items-center gap-0.5">
-                        Margin Level
-                        <Info className="w-3 h-3 text-text-tertiary" aria-label="Margin level info" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
+                        Floating P&amp;L
                       </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        {marginLevelDisplay}
+                      <span
+                        className={clsx(
+                          'text-xs font-mono font-semibold tabular-nums leading-tight',
+                          netTotalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
+                        )}
+                      >
+                        {netTotalPnl >= 0 ? '+' : ''}${netTotalPnl.toFixed(2)}
                       </span>
                     </div>
                     {activeAccount.margin_used > 0 && (
