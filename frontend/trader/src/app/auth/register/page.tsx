@@ -2,9 +2,9 @@
 
 /**
  * Sign-up page (SwissCresta) — thin wrapper around the shared
- * FullScreenSignup card. ProfileCompleteGate prompts for first/last
- * name + phone + country the first time the new user hits the dashboard,
- * so we only collect email + password here.
+ * FullScreenSignup card. Only email + password are collected here;
+ * personal details (name, phone, country, address, DOB) are asked for
+ * later, on the /kyc page, when the user applies for verification.
  */
 
 import { FullScreenSignup } from '@/components/ui/full-screen-signup';

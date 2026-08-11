@@ -1,18 +1,21 @@
 'use client';
 
 /**
- * Blocks the trader UI with a one-time profile completion modal whenever
- * the signed-in user is missing required fields (first/last name, phone,
- * country, date of birth).
+ * Profile completion modal shown when the signed-in user is missing
+ * required fields (first/last name, phone, country, date of birth).
+ *
+ * Mounted ONLY on the /kyc page (it used to be a global gate in the root
+ * layout that popped up right after registration — deliberately changed:
+ * users now fill in personal details when they apply for KYC, not before).
  *
  * Behaviour:
  *  - Only renders when `isAuthenticated` AND `user.profile_complete === false`.
  *  - Demo, staff, and unauthenticated routes bypass the gate (the backend
  *    already auto-passes those in /auth/me).
- *  - The modal cannot be dismissed — there is no close button. The user
- *    must finish the profile before they can use deposits, trading, or
- *    rewards. This is intentional: incomplete profiles cause downstream
- *    KYC / fraud / payout problems.
+ *  - The modal cannot be dismissed — on the KYC page the details are a
+ *    hard prerequisite: incomplete profiles cause downstream KYC / fraud /
+ *    payout problems. Users who don't want to fill it can simply navigate
+ *    away from /kyc.
  *  - On submit we PUT /profile, then refreshUser() so the flag flips and
  *    the modal unmounts itself.
  */
@@ -206,7 +209,7 @@ export default function ProfileCompleteGate() {
                 Complete your profile
               </h2>
               <p className="text-text-tertiary text-xs mt-0.5">
-                Required before you can deposit or trade
+                Required to submit your KYC application
               </p>
             </div>
           </div>

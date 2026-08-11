@@ -124,19 +124,18 @@ export default function FeatureTour() {
 
   const storageKey = userId ? `${STORAGE_PREFIX}${userId}` : null;
 
-  // ProfileCompleteGate owns the screen until the profile is filled in —
-  // starting the tour then stacks two modals on top of each other (worst on
-  // phones). Wait for the flag to flip; refreshUser() re-runs this effect.
-  const profileGateOpen =
-    !!user &&
-    !user.is_demo &&
-    user.email_verified !== false &&
-    user.profile_complete === false;
+  // OnboardingGate owns the screen while the email is unverified — starting
+  // the tour then stacks two modals on top of each other (worst on phones).
+  // Wait for the flag to flip; refreshUser() re-runs this effect.
+  // (ProfileCompleteGate no longer renders globally — it lives on /kyc —
+  // so profile_complete is deliberately NOT part of this check.)
+  const onboardingGateOpen =
+    !!user && !user.is_demo && user.email_verified === false;
 
   // Auto-start once, on the dashboard, for a user who hasn't seen it.
   useEffect(() => {
     if (!mounted || !storageKey) return;
-    if (profileGateOpen) return;
+    if (onboardingGateOpen) return;
     // Only kick off on the dashboard so the primary nav is on screen to
     // point at. First login redirects here, so this is the natural spot.
     if (pathname !== '/dashboard') return;
@@ -153,7 +152,7 @@ export default function FeatureTour() {
       setActive(true);
     }, 700);
     return () => clearTimeout(t);
-  }, [mounted, storageKey, pathname, profileGateOpen]);
+  }, [mounted, storageKey, pathname, onboardingGateOpen]);
 
   const finish = useCallback(() => {
     setActive(false);

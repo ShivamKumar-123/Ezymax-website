@@ -31,7 +31,8 @@ interface User {
   two_factor_enabled: boolean;
   theme: string;
   /** True when first_name, last_name, phone, country, and DOB are all set.
-   * The ProfileCompleteGate modal blocks the app until this flips true. */
+   * The ProfileCompleteGate modal on /kyc blocks the KYC flow until this
+   * flips true (it no longer gates the whole app after registration). */
   profile_complete?: boolean;
   /** Sign-in methods the user has on record. Used so /profile knows
    * which auth methods to allow unlinking. */

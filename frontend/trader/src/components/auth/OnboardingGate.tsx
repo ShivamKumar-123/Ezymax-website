@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * Multi-step onboarding gate that runs AFTER ProfileCompleteGate.
+ * Post-signup onboarding gate — email verification only.
  *
  * Current sequence (post wallet-integration purge):
- *   1. profile_complete  →  ProfileCompleteGate handles this. If still
- *      false we render nothing here and let that gate own the screen.
- *   2. email_verified    →  email/password users who never went through
+ *   1. email_verified    →  email/password users who never went through
  *      the post-signup OTP must do so before they can use the platform.
+ *   2. profile details   →  NOT handled here anymore. ProfileCompleteGate
+ *      mounts on the /kyc page and only asks for personal details when
+ *      the user applies for KYC.
  *
  * The wallet-link step is gone — `WalletLinkStep` was deleted with the
  * rest of the SIWE / wallet-connect UX. Backend's

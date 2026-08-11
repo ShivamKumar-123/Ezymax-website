@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
+import ProfileCompleteGate from '@/components/profile/ProfileCompleteGate';
 import api, { getApiBase } from '@/lib/api/client';
 import {
   ShieldCheck,
@@ -215,6 +216,10 @@ export default function KycPage() {
 
   return (
     <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
+      {/* Profile-details form. Used to be a global post-registration gate;
+          now it only appears here, when the user actually applies for KYC
+          and their profile is still missing required fields. */}
+      <ProfileCompleteGate />
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 space-y-5 sm:space-y-6">
           <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card">
@@ -225,8 +230,8 @@ export default function KycPage() {
             <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">KYC Verification</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Complete identity verification to unlock deposits, withdrawals, and live trading — same secure styling as
-                the rest of SwissCresta.
+                Deposits and trading work right away — identity verification is only required to withdraw funds.
+                Complete it here so your withdrawals are approved without delay.
               </p>
             </div>
           </section>
