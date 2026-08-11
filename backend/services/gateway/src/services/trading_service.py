@@ -863,12 +863,20 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
 
     check_sltp_levels(is_buy, req.stop_loss, req.take_profit, Decimal(str(ref)), ref_label)
 
+    # Distinguish "field omitted" from "field explicitly null". Pydantic's
+    # model_fields_set holds only the keys the client actually sent, so:
+    #   - chart drag sends ONE key   → only that bracket changes
+    #   - positions-panel Save sends BOTH keys → each is set, or REMOVED when
+    #     the client sends null (an empty SL/TP field = "clear this bracket")
+    # A plain `is not None` check made removal impossible — clearing a field
+    # left the old level in place, so the chart line never disappeared.
+    fields_set = req.model_fields_set
     updated = False
-    if req.stop_loss is not None:
-        pos.stop_loss = req.stop_loss
+    if "stop_loss" in fields_set:
+        pos.stop_loss = req.stop_loss  # None clears it
         updated = True
-    if req.take_profit is not None:
-        pos.take_profit = req.take_profit
+    if "take_profit" in fields_set:
+        pos.take_profit = req.take_profit  # None clears it
         updated = True
 
     if updated:

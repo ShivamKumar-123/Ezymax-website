@@ -317,6 +317,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const activeAccount = useTradingStore((s) => s.activeAccount);
   const accounts = useTradingStore((s) => s.accounts);
   const removePosition = useTradingStore((s) => s.removePosition);
+  const updatePosition = useTradingStore((s) => s.updatePosition);
   const refreshPositions = useTradingStore((s) => s.refreshPositions);
   const refreshAccount = useTradingStore((s) => s.refreshAccount);
   const instruments = useTradingStore((s) => s.instruments);
@@ -603,19 +604,33 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
 
   const saveSltpEdit = async () => {
     if (!sltpEdit) return;
+    const positionId = sltpEdit.positionId;
     setSltpSaving(true);
     try {
-      const body: Record<string, unknown> = {};
+      // An empty field means "remove this bracket" → send null so the backend
+      // clears it (and the chart line disappears). A filled field sets it.
       const slVal = sltpEdit.sl.trim();
       const tpVal = sltpEdit.tp.trim();
-      if (slVal !== '' && slVal !== '—') body.stop_loss = parseFloat(slVal);
-      if (tpVal !== '' && tpVal !== '—') body.take_profit = parseFloat(tpVal);
-      await api.put(`/positions/${sltpEdit.positionId}`, body);
+      const body: Record<string, unknown> = {
+        stop_loss: slVal === '' || slVal === '—' ? null : parseFloat(slVal),
+        take_profit: tpVal === '' || tpVal === '—' ? null : parseFloat(tpVal),
+      };
+      // Optimistically patch the store so the chart SL/TP line moves / appears
+      // / disappears the instant Save is pressed, before the PUT round-trips.
+      // The chart draws its lines from these same position fields.
+      updatePosition(positionId, {
+        stop_loss: body.stop_loss as number | null,
+        take_profit: body.take_profit as number | null,
+      });
+      await api.put(`/positions/${positionId}`, body);
       toast.success('SL/TP updated');
       setSltpEdit(null);
-      refreshPositions();
+      await refreshPositions();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to update SL/TP');
+      // Rejected (e.g. level on wrong side) — reload so the optimistic line
+      // snaps back to the server's truth.
+      refreshPositions().catch(() => {});
     } finally {
       setSltpSaving(false);
     }
