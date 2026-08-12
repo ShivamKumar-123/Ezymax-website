@@ -40,6 +40,7 @@ function isPublicPath(pathname: string | null | undefined): boolean {
   // /auth/login — that showed a login page inside the app's chart. Exempt it
   // like the public share pages; the page guards its own data with the token.
   if (pathname.startsWith('/chart')) return true;
+  if (pathname.startsWith('/app-chart')) return true; // APK's dedicated chart
   if (pathname.startsWith('/company')) return true;  // legacy company/* tree
   if (pathname.startsWith('/education')) return true;
   return PUBLIC_EXACT_PATHS.has(pathname);
