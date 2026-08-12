@@ -257,7 +257,7 @@ export default function AdminInsurancePage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
