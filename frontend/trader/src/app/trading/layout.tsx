@@ -194,6 +194,23 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     };
   }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshPendingOrders, refreshAccount, loadSpreadOverrides]);
 
+  /* Auto-sync admin-side changes without a manual refresh. A per-user spread
+     override (incl. floating on/off) is otherwise only fetched on mount, so an
+     admin change wouldn't show until the trader reloaded. Re-pull it every 20s,
+     and immediately whenever the tab regains focus. (Global spread changes are
+     already carried live in the tick, so this is only for per-user overrides.) */
+  useEffect(() => {
+    const id = setInterval(() => { loadSpreadOverrides(); }, 20000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadSpreadOverrides();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadSpreadOverrides]);
+
   /* Picker vs terminal: active account + positions. */
   useEffect(() => {
     let cancelled = false;
