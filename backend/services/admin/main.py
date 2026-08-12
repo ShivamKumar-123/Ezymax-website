@@ -62,6 +62,20 @@ async def _apply_startup_ddl():
                 "ALTER TABLE spread_configs ADD CONSTRAINT spread_configs_spread_type_check "
                 "CHECK (spread_type IN ('fixed','variable','pips','percentage','floating'))"
             ))
+            # Allow insurance transaction types. The transactions_type_check
+            # constraint predates the insurance products, so 'insurance_fee'
+            # (premium charge) and 'insurance_payout' (claim credit) were
+            # rejected — breaking both per-trade insurance and Shield purchases.
+            # Re-create the constraint with them included (superset of the old).
+            await conn.execute(text(
+                "ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE transactions ADD CONSTRAINT transactions_type_check CHECK ("
+                "type IN ('deposit','withdrawal','commission','swap','bonus','credit',"
+                "'adjustment','ib_commission','profit','loss','transfer','admin_commission',"
+                "'performance_fee','master_commission','refund','insurance_fee','insurance_payout'))"
+            ))
             # Waitlist (invite-only access gate). Mirrors migration 0061 so the
             # admin waitlist endpoints work even where Alembic hasn't run.
             await conn.execute(text("""
