@@ -6,6 +6,7 @@ import { ShieldCheck, Loader2, HelpCircle } from 'lucide-react';
 import { insuranceApi, type PolicyOut, type ClaimOut } from '@/lib/api/insurance';
 import InsuranceOnboardingModal from '@/components/insurance/InsuranceOnboardingModal';
 import InsureOpenTrades from '@/components/insurance/InsureOpenTrades';
+import ShieldPanel from '@/components/insurance/ShieldPanel';
 
 const STATUS_COLOR: Record<PolicyOut['status'], string> = {
   active: '#ccff00',
@@ -21,7 +22,10 @@ const TIER_LABEL: Record<PolicyOut['tier'], string> = {
   elite: 'Elite',
 };
 
+type InsuranceTab = 'per-trade' | 'shield';
+
 export default function InsurancePage() {
+  const [tab, setTab] = useState<InsuranceTab>('per-trade');
   const [policies, setPolicies] = useState<PolicyOut[] | null>(null);
   const [claims, setClaims] = useState<ClaimOut[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,10 +65,33 @@ export default function InsurancePage() {
           </button>
         </div>
         <p className="text-sm text-text-secondary -mt-1">
-          Per-trade protection. Pay a small fee to recover part of any loss on insured trades.
+          {tab === 'per-trade'
+            ? 'Per-trade protection. Pay a small fee to recover part of any loss on insured trades.'
+            : 'Shield period plans. Buy one plan (Daily / Weekly / Monthly) that covers a share of your cumulative loss over the whole window.'}
         </p>
 
-        {loading ? (
+        {/* Product switch: per-trade micro-insurance vs Shield period plans. */}
+        <div className="inline-flex rounded-xl p-1 gap-1" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
+          {([['per-trade', 'Per-Trade'], ['shield', 'Shield · Period Plans']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className="text-xs font-bold px-3.5 py-1.5 rounded-lg transition-colors"
+              style={
+                tab === key
+                  ? { color: '#0a0a0a', background: '#ccff00' }
+                  : { color: 'var(--text-secondary)', background: 'transparent' }
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'shield' ? (
+          <ShieldPanel />
+        ) : loading ? (
           <div className="flex items-center gap-2 text-sm text-text-secondary py-10 justify-center">
             <Loader2 size={14} className="animate-spin" /> Loading…
           </div>

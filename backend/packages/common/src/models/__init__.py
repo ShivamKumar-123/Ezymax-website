@@ -57,6 +57,10 @@ from .system import (
 from .insurance import (
     InsurancePolicy, InsuranceClaim,
 )
+from .insurance_shield import (
+    InsuranceShieldPlan, UserInsuranceShield,
+    InsuranceShieldClaim, InsuranceShieldEvent,
+)
 from .rewards import (
     RewardsUserState, RewardsMission, RewardsUserMissionProgress,
     RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
@@ -103,6 +107,9 @@ __all__ = [
     "SystemSetting", "BonusOffer", "UserBonus",
     # insurance
     "InsurancePolicy", "InsuranceClaim",
+    # insurance — Shield (aggregate period plans)
+    "InsuranceShieldPlan", "UserInsuranceShield",
+    "InsuranceShieldClaim", "InsuranceShieldEvent",
     # rewards
     "RewardsUserState", "RewardsMission", "RewardsUserMissionProgress",
     "RewardStoreItem", "RewardsTransaction", "LifestyleFulfillment",

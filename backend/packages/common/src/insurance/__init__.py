@@ -10,6 +10,9 @@ Math is documented in `Trade Insurance.docx` at the repo root.
 from .pricing import quote_all_tiers, TIERS
 from .claims import maybe_pay, evaluate_claim
 from .config import load_config, InsuranceConfig
+from .shield import (
+    settle_shield_on_close, SHIELD_PLAN_DEFAULTS, PERIOD_DAYS,
+)
 
 __all__ = [
     "quote_all_tiers",
@@ -18,4 +21,8 @@ __all__ = [
     "evaluate_claim",
     "load_config",
     "InsuranceConfig",
+    # Shield — aggregate period plans
+    "settle_shield_on_close",
+    "SHIELD_PLAN_DEFAULTS",
+    "PERIOD_DAYS",
 ]

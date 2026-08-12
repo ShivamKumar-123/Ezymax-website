@@ -19,6 +19,7 @@ from packages.common.src.models import (
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
+from packages.common.src.insurance.shield import settle_shield_on_close as insurance_shield_settle
 from . import rewards_service, wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
@@ -987,6 +988,12 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     # `history.profit` reflects only the partial lots; the policy's
     # remaining cap is enforced inside evaluate_claim.
     await insurance_maybe_pay(db=db, position=pos, history=history)
+
+    # FXArtha Shield — aggregate period-plan insurance (separate product from the
+    # per-trade micro-insurance above). Accumulates this trade's realized loss
+    # into the user's active plan and credits the incremental capped payout.
+    # Swallows its own exceptions so it can never block the close.
+    await insurance_shield_settle(db=db, position=pos, history=history)
 
     # Rewards — bump every mission whose action_kind matches this event,
     # AND credit XP/AC/PS for trade volume (own + 10-level referral chain).

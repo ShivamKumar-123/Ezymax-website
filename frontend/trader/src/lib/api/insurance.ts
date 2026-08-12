@@ -66,3 +66,56 @@ export const insuranceApi = {
   policies: (limit = 50) => api.get<PolicyOut[]>(`/insurance/policies?limit=${limit}`),
   claims: (limit = 50) => api.get<ClaimOut[]>(`/insurance/claims?limit=${limit}`),
 };
+
+/* ─────────────────────────────────────────────────────────────────────
+ * FXArtha Shield — aggregate period-plan insurance (separate product).
+ * Backed by /api/v1/insurance/shield/* (backend/services/gateway/src/api/shield.py).
+ * Unlike per-trade insurance, the user buys ONE period plan (Daily/Weekly/
+ * Monthly) that covers a share of their cumulative loss over that window.
+ * ──────────────────────────────────────────────────────────────────── */
+
+export type ShieldPeriod = 'daily' | 'weekly' | 'monthly';
+export type ShieldTier = 'basic' | 'plus' | 'pro' | 'elite';
+
+export interface ShieldPlan {
+  id: string;
+  code: string;
+  period: ShieldPeriod;
+  tier: ShieldTier;
+  coverage_pct: number;
+  max_payout: number;
+  premium: number;
+}
+
+export interface ShieldState {
+  id: string;
+  period: ShieldPeriod;
+  tier: ShieldTier;
+  coverage_pct: number;
+  max_payout: number;
+  premium_paid: number;
+  cumulative_eligible_loss: number;
+  coverage_used: number;
+  coverage_remaining: number;
+  status: 'active' | 'expired' | 'cancelled' | 'replaced' | 'exhausted';
+  activated_at: string | null;
+  expires_at: string | null;
+}
+
+export interface ShieldClaim {
+  id: string;
+  position_id: string | null;
+  trade_loss: number;
+  cumulative_eligible_loss: number;
+  payout_amount: number;
+  status: string;
+  created_at: string | null;
+}
+
+export const shieldApi = {
+  plans: () => api.get<{ plans: ShieldPlan[] }>('/insurance/shield/plans'),
+  status: () => api.get<{ active: ShieldState | null; history: ShieldState[] }>('/insurance/shield/status'),
+  purchase: (planId: string, replace = false) =>
+    api.post<{ shield: ShieldState }>('/insurance/shield/purchase', { plan_id: planId, replace }),
+  claims: (limit = 50) => api.get<{ claims: ShieldClaim[] }>(`/insurance/shield/claims?limit=${limit}`),
+};

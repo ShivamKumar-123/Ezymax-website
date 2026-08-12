@@ -20,6 +20,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
+import ShieldAdminSection from './ShieldAdminSection';
 
 type Tier = 'basic' | 'advanced' | 'pro' | 'elite';
 const TIERS: Tier[] = ['basic', 'advanced', 'pro', 'elite'];
@@ -591,6 +592,9 @@ export default function AdminInsurancePage() {
           </p>
         </Section>
       )}
+
+      {/* FXArtha Shield — aggregate period-plan insurance (separate product). */}
+      <ShieldAdminSection />
     </div>
   );
 }
