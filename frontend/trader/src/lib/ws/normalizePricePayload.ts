@@ -39,6 +39,12 @@ function pushIfTick(row: unknown, out: TickData[]) {
       ? Number(spreadRaw)
       : ask - bid;
 
+  // Provider's live market spread (price units) — needed by a per-user FLOATING
+  // override to compute the live spread. Dropping it here made floating fall
+  // back to the fixed feed quote (spread never moved).
+  const msRaw = r.market_spread;
+  const marketSpread = msRaw != null && msRaw !== '' ? Number(msRaw) : NaN;
+
   out.push({
     symbol,
     bid,
@@ -48,5 +54,6 @@ function pushIfTick(row: unknown, out: TickData[]) {
       (typeof r.ts === 'string' && r.ts) ||
       new Date().toISOString(),
     spread: Number.isFinite(spread) ? spread : ask - bid,
+    ...(Number.isFinite(marketSpread) && marketSpread > 0 ? { market_spread: marketSpread } : {}),
   });
 }
