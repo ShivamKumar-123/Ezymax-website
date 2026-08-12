@@ -34,6 +34,12 @@ function isPublicPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   if (pathname.startsWith('/auth')) return true;
   if (pathname.startsWith('/s/')) return true;       // public share-trade short links
+  // Chrome-free chart embed for the mobile app's WebView. It authenticates via
+  // a ?token= query param (the WebView has NO session cookie), so the cookie-
+  // based AuthProvider must NEVER treat it as "logged out" and bounce it to
+  // /auth/login — that showed a login page inside the app's chart. Exempt it
+  // like the public share pages; the page guards its own data with the token.
+  if (pathname.startsWith('/chart')) return true;
   if (pathname.startsWith('/company')) return true;  // legacy company/* tree
   if (pathname.startsWith('/education')) return true;
   return PUBLIC_EXACT_PATHS.has(pathname);
