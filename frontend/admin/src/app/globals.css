@@ -97,16 +97,16 @@ input, select, textarea {
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(214, 169, 61, 0.5);
-  box-shadow: 0 0 0 3px rgba(214, 169, 61, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: rgba(204, 255, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-::selection { background-color: rgba(214, 169, 61, 0.2); }
+::selection { background-color: rgba(204, 255, 0, 0.2); }
 
 /* ── Utility ── */
 .transition-fast { transition: all 150ms ease; }
-.focus-ring:focus { outline: 1px solid #d6a93d; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #ccff00; outline-offset: -1px; }
 
 /* ═══════════════════════════════════════════════════════════
    Glassmorphism
@@ -139,16 +139,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .skeu-btn-accent {
-  background: linear-gradient(180deg, #ecc657 0%, #d6a93d 40%, #9b7d3a 100%);
-  border: 1px solid rgba(214,169,61,0.5);
-  box-shadow: 0 2px 8px rgba(214,169,61,0.3), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-  color: #1a1408;
+  background: linear-gradient(180deg, #deff4d 0%, #ccff00 40%, #9ec700 100%);
+  border: 1px solid rgba(204,255,0,0.5);
+  box-shadow: 0 2px 8px rgba(204,255,0,0.3), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  color: #0a0a0a;
   font-weight: 700;
   border-radius: 10px;
   transition: all 200ms ease;
 }
 .skeu-btn-accent:hover {
-  box-shadow: 0 4px 16px rgba(214,169,61,0.4), 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(204,255,0,0.4), 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
   transform: translateY(-1px);
 }
 .skeu-btn-danger {
@@ -172,8 +172,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(214,169,61,0.15); }
-  50%      { box-shadow: 0 0 20px rgba(214,169,61,0.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(204,255,0,0.15); }
+  50%      { box-shadow: 0 0 20px rgba(204,255,0,0.3); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -193,10 +193,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Sidebar nav glow for active item
    ═══════════════════════════════════════════════════════════ */
 .nav-active {
-  background: rgba(214,169,61,0.08);
-  border-left: 2px solid #d6a93d;
-  color: #d6a93d;
-  box-shadow: inset 3px 0 12px rgba(214,169,61,0.06);
+  background: rgba(204,255,0,0.08);
+  border-left: 2px solid #ccff00;
+  color: #ccff00;
+  box-shadow: inset 3px 0 12px rgba(204,255,0,0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -214,10 +214,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Stat glow badge
    ═══════════════════════════════════════════════════════════ */
 .stat-glow {
-  box-shadow: 0 0 0 1px rgba(214,169,61,0.1), 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 1px rgba(204,255,0,0.1), 0 2px 12px rgba(0,0,0,0.3);
 }
 .stat-glow:hover {
-  box-shadow: 0 0 0 1px rgba(214,169,61,0.2), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 1px rgba(204,255,0,0.2), 0 4px 20px rgba(0,0,0,0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -248,4 +248,34 @@ html.light .bg-bg-secondary,
   box-shadow:
     0 10px 22px -10px rgba(0, 0, 0, 0.12),
     0 2px 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Landing-page "Obsidian & Lime" texture — a faint grid + film grain
+   behind the whole app, plus a soft lime aura at the top. Dark mode
+   only (light mode stays clean). Sits at z-index -1: above the body
+   background, below every opaque card/sidebar, so it only reads through
+   gaps and never washes out data tables. Requires the app shell to be
+   transparent (AdminLayout root drops its bg so this shows through).
+   ═══════════════════════════════════════════════════════════════════ */
+html.dark body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, rgba(204, 255, 0, 0.06), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 56px 56px, 56px 56px;
+}
+html.dark body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }

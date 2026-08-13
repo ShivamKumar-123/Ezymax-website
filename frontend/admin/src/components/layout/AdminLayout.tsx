@@ -80,7 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isDemoAdmin = admin?.role === 'demo_admin';
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-bg-page">
+    <div className="flex h-screen w-screen overflow-hidden bg-bg-page dark:bg-transparent">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Read-only viewer banner — visible to every page so the user

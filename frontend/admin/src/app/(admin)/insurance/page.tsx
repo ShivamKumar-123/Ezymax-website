@@ -261,8 +261,8 @@ export default function AdminInsurancePage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#d6a93d]/10 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-[#d6a93d]" />
+          <div className="w-10 h-10 rounded-xl bg-[#ccff00]/10 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-[#ccff00]" />
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Trade Insurance</h1>
@@ -284,7 +284,7 @@ export default function AdminInsurancePage() {
             type="button"
             onClick={() => void save()}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d6a93d] text-bg-base text-xs font-bold hover:brightness-110 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#ccff00] text-bg-base text-xs font-bold hover:brightness-110 disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save changes
@@ -540,7 +540,7 @@ export default function AdminInsurancePage() {
               value={form.insurance_disable_atr_ceiling}
               onChange={(e) => setForm((f) => ({ ...f, insurance_disable_atr_ceiling: e.target.value }))}
               placeholder="e.g. 0.005"
-              className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#d6a93d] focus:outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#ccff00] focus:outline-none"
             />
             <p className="text-[10px] text-text-tertiary leading-relaxed">
               Above this ATR the market is 'too volatile' — refuse to quote. Blank = no ceiling.
@@ -557,7 +557,7 @@ export default function AdminInsurancePage() {
               type="datetime-local"
               value={form.insurance_news_blackout_until?.slice(0, 16) || ''}
               onChange={(e) => setForm((f) => ({ ...f, insurance_news_blackout_until: e.target.value ? `${e.target.value}:00Z` : '' }))}
-              className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#d6a93d] focus:outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#ccff00] focus:outline-none"
             />
             <p className="text-[10px] text-text-tertiary leading-relaxed">
               While set in the future, /insurance/quote returns no plans (used during CPI/NFP release windows).
@@ -641,7 +641,7 @@ function Num({
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className={`w-full ${prefix ? 'pl-7' : 'pl-3'} ${suffix ? 'pr-12' : 'pr-3'} py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#d6a93d] focus:outline-none`}
+          className={`w-full ${prefix ? 'pl-7' : 'pl-3'} ${suffix ? 'pr-12' : 'pr-3'} py-2 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary focus:border-[#ccff00] focus:outline-none`}
         />
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary text-xs pointer-events-none">
@@ -671,7 +671,7 @@ function InlineNum({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className={`w-full ${prefix ? 'pl-5' : 'pl-2'} ${suffix ? 'pr-7' : 'pr-2'} py-1 rounded bg-bg-base border border-border-primary text-xs text-text-primary text-right tabular-nums font-mono focus:border-[#d6a93d] focus:outline-none`}
+        className={`w-full ${prefix ? 'pl-5' : 'pl-2'} ${suffix ? 'pr-7' : 'pr-2'} py-1 rounded bg-bg-base border border-border-primary text-xs text-text-primary text-right tabular-nums font-mono focus:border-[#ccff00] focus:outline-none`}
       />
       {suffix && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary text-[10px] pointer-events-none">{suffix}</span>}
     </div>
@@ -698,7 +698,7 @@ function Toggle({
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`shrink-0 w-11 h-6 rounded-full relative transition-colors border ${
-          value ? 'bg-[#d6a93d] border-[#d6a93d]' : 'bg-bg-base border-border-primary'
+          value ? 'bg-[#ccff00] border-[#ccff00]' : 'bg-bg-base border-border-primary'
         }`}
       >
         <span
