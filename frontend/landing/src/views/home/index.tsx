@@ -1,4 +1,5 @@
 import { SectionCards } from "@/components/common/sections/section-cards";
+import { ParticleBackground } from "@/views/home/particle-bg/particle-background";
 import { CopyTrading } from "@/views/home/copy-trading";
 import { FinalCta } from "@/views/home/final-cta";
 import { Hero } from "@/views/home/hero";
@@ -38,6 +39,11 @@ import {
 export const HomeView = () => {
   return (
     <>
+      {/* Fixed WebGL particle backdrop behind the whole home (from the "New Era"
+          structure, recoloured to Obsidian & Lime). Every section below sits on
+          top as translucent glass, so the aurora + particles read softly behind
+          them and morph with scroll. */}
+      <ParticleBackground />
       <IntroVideo content={introContent} />
       <main id="main">
         <Hero content={heroContent} />
