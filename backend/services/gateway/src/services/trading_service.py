@@ -342,6 +342,11 @@ async def place_order(
         required_margin = calc_margin(req.lots, fill_price, contract_size, account.leverage)
 
         unrealized_pnl = Decimal("0")
+        # Margin actually in use = sum of OPEN positions' margin, RECOMPUTED here
+        # (never trust the stored account.margin_used — a close that didn't
+        # release correctly leaves it stuck/inflated, which wrongly rejected new
+        # orders with "Insufficient margin" even on a nearly-empty account).
+        open_margin = Decimal("0")
         open_pos_result = await db.execute(
             select(Position).where(
                 Position.account_id == account.id,
@@ -370,19 +375,24 @@ async def place_order(
                         pass
 
             for pos in open_positions:
+                cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
+                # Count this open position's margin toward the (recomputed) total.
+                open_margin += (pos.lots * cs * pos.open_price) / Decimal(str(account.leverage))
                 sym = pos.instrument.symbol if pos.instrument else None
                 if not sym or sym not in price_map:
                     continue
                 p_bid, p_ask = price_map[sym]
                 pos_side = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
                 cp = p_bid if pos_side == "buy" else p_ask
-                cs = pos.instrument.contract_size if pos.instrument else Decimal("100000")
                 if pos_side == "buy":
                     unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
                 else:
                     unrealized_pnl += (pos.open_price - cp) * pos.lots * cs
         real_equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
-        real_free_margin = real_equity - (account.margin_used or Decimal("0"))
+        # Use the RECOMPUTED open-position margin, not the (possibly stuck) stored
+        # account.margin_used — this both fixes the check AND self-heals the
+        # stored value on the next order.
+        real_free_margin = real_equity - open_margin
 
         account.equity = real_equity
         account.free_margin = real_free_margin
@@ -409,7 +419,9 @@ async def place_order(
         )
         db.add(position)
 
-        account.margin_used = (account.margin_used or Decimal("0")) + required_margin
+        # Recomputed total = existing open-position margin + this new one (never
+        # increment the stored value, which can drift/stick over many trades).
+        account.margin_used = open_margin + required_margin
         account.balance -= commission
         account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
         account.free_margin = account.equity - account.margin_used
@@ -1079,6 +1091,20 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         result_msg = "Position closed"
         result_profit = full_profit
 
+    # Recompute margin_used from the REMAINING open positions instead of trusting
+    # the incremental subtraction above — over many trades the running value can
+    # drift/stick, which then wrongly blocks new orders with "Insufficient
+    # margin" on an account that actually has plenty free. This self-heals it.
+    _rem = await db.execute(
+        select(Position).options(selectinload(Position.instrument)).where(
+            Position.account_id == account.id, Position.status == "open",
+        )
+    )
+    _om = Decimal("0")
+    for _p in _rem.scalars().all():
+        _cs = (_p.instrument.contract_size if _p.instrument else None) or Decimal("100000")
+        _om += (_p.lots * _cs * _p.open_price) / Decimal(str(account.leverage))
+    account.margin_used = _om
     account.equity = account.balance + (account.credit or Decimal("0"))
     account.free_margin = account.equity - (account.margin_used or Decimal("0"))
 
