@@ -12,8 +12,9 @@ import {
   Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck,
   TrendingUp, Users, LineChart, ArrowRight,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const FEATURES: [React.ComponentType<{ size?: number; className?: string }>, string][] = [
+const FEATURES: [LucideIcon, string][] = [
   [TrendingUp, 'Real-time commissions & rebates'],
   [Users, 'Your full referral network'],
   [LineChart, 'Trade on your clients’ behalf'],
