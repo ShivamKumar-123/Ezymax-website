@@ -224,8 +224,9 @@ export default function AdminIbRebatePage() {
       )}
 
       <style jsx>{`
-        .inp { width: 100%; padding: 6px 8px; border-radius: 8px; background: var(--bg-base, #0a0a0a); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; outline: none; }
-        .inp:focus { border-color: ${LIME}; }
+        .inp { width: 100%; padding: 7px 10px; border-radius: 8px; background: var(--bg-tertiary, #181818); border: 1px solid var(--border-secondary, #2f2f2f); color: var(--text-primary); font-size: 12px; outline: none; transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease; }
+        .inp:hover { border-color: ${LIME}66; }
+        .inp:focus { border-color: ${LIME}; background: var(--bg-base); box-shadow: 0 0 0 2px ${LIME}22; }
       `}</style>
     </div>
   );

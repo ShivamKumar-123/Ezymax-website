@@ -149,7 +149,7 @@ export default function AdminRewardStorePage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Reward Store</h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Edit every item traders see under Earn → Store: label, category, FXA price, PS requirement and more.
+              Click any field below to edit inline (label, category, FXA price, PS, order), then <b className="text-text-primary">Save changes</b>.
             </p>
           </div>
         </div>
@@ -262,15 +262,17 @@ export default function AdminRewardStorePage() {
       <style jsx>{`
         .inp {
           width: 100%;
-          padding: 6px 8px;
+          padding: 7px 10px;
           border-radius: 8px;
-          background: var(--bg-base, #0a0a0a);
-          border: 1px solid var(--border-primary);
+          background: var(--bg-tertiary, #181818);
+          border: 1px solid var(--border-secondary, #2f2f2f);
           color: var(--text-primary);
           font-size: 12px;
           outline: none;
+          transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
         }
-        .inp:focus { border-color: ${LIME}; }
+        .inp:hover { border-color: ${LIME}66; }
+        .inp:focus { border-color: ${LIME}; background: var(--bg-base); box-shadow: 0 0 0 2px ${LIME}22; }
       `}</style>
     </div>
   );

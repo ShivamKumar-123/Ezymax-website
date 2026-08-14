@@ -149,7 +149,7 @@ export default function AdminSpinWheelPage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Spin &amp; Win</h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Edit every wheel slot: label, win chance (weight), payout and cost per spin.
+              Click any field to edit a wheel slot (label, payout, weight/win-chance) or the cost per spin, then Save changes.
             </p>
           </div>
         </div>
@@ -280,15 +280,17 @@ export default function AdminSpinWheelPage() {
       <style jsx>{`
         .inp {
           width: 100%;
-          padding: 6px 8px;
+          padding: 7px 10px;
           border-radius: 8px;
-          background: var(--bg-base, #0a0a0a);
-          border: 1px solid var(--border-primary);
+          background: var(--bg-tertiary, #181818);
+          border: 1px solid var(--border-secondary, #2f2f2f);
           color: var(--text-primary);
           font-size: 12px;
           outline: none;
+          transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
         }
-        .inp:focus { border-color: ${LIME}; }
+        .inp:hover { border-color: ${LIME}66; }
+        .inp:focus { border-color: ${LIME}; background: var(--bg-base); box-shadow: 0 0 0 2px ${LIME}22; }
       `}</style>
     </div>
   );
