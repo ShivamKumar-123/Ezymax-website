@@ -23,6 +23,7 @@ from routes import (
     shield_insurance as shield_insurance_admin,
     reward_store as reward_store_admin,
     spin_wheel as spin_wheel_admin,
+    ib_rebate as ib_rebate_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
     admin_notifications, pricing_rules, crm, hedge, waitlist,
 )
@@ -328,6 +329,67 @@ async def _apply_startup_ddl():
                     ('monthly_elite', 'monthly', 'elite', 50, 15000, 999, 23)
                 ON CONFLICT (code) DO NOTHING
             """))
+
+            # ── IB rebate (Milele-style tiered per-lot accrual) ───────────────
+            # Two tables + seeded config. The model stays 'instant' (legacy flat
+            # per-lot at fill) until an admin flips ib_commission_model to
+            # 'accrual', so switching on the new engine is a deliberate action.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ib_rebate_periods (
+                    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    ib_id             UUID NOT NULL REFERENCES ib_profiles(id) ON DELETE CASCADE,
+                    period            VARCHAR(7) NOT NULL,
+                    eligible_lots     NUMERIC(18,4) NOT NULL DEFAULT 0,
+                    active_clients    INTEGER NOT NULL DEFAULT 0,
+                    tier              VARCHAR(20) NOT NULL DEFAULT 'starter',
+                    rate_per_lot      NUMERIC(18,8) NOT NULL DEFAULT 0,
+                    own_target        NUMERIC(18,8) NOT NULL DEFAULT 0,
+                    own_settled       NUMERIC(18,8) NOT NULL DEFAULT 0,
+                    override_settled  NUMERIC(18,8) NOT NULL DEFAULT 0,
+                    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT uq_ib_rebate_period UNIQUE (ib_id, period)
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_ib_rebate_period_period ON ib_rebate_periods (period)"
+            ))
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ib_rebate_settlements (
+                    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    ib_id          UUID NOT NULL REFERENCES ib_profiles(id) ON DELETE CASCADE,
+                    period         VARCHAR(7) NOT NULL,
+                    kind           VARCHAR(12) NOT NULL,
+                    level          INTEGER NOT NULL DEFAULT 0,
+                    source_ib_id   UUID REFERENCES ib_profiles(id) ON DELETE SET NULL,
+                    amount         NUMERIC(18,8) NOT NULL,
+                    transaction_id UUID REFERENCES transactions(id),
+                    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_ib_rebate_settle_ib_period ON ib_rebate_settlements (ib_id, period)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_ib_rebate_settle_created ON ib_rebate_settlements (created_at)"
+            ))
+            # Seed the Milele default config (JSONB values). ON CONFLICT keeps
+            # any admin edits.
+            await conn.execute(text("""
+                INSERT INTO system_settings (key, value, description) VALUES
+                    ('ib_commission_model', '"instant"'::jsonb, 'IB payout model: instant (legacy flat per-lot) or accrual (Milele tiered)'),
+                    ('ib_rebate_tiers',
+                      '[{"tier":"starter","min_lots":0,"min_clients":0,"rate":3},{"tier":"builder","min_lots":200,"min_clients":3,"rate":5},{"tier":"pro","min_lots":500,"min_clients":10,"rate":7}]'::jsonb,
+                      'IB rebate tier ladder (per closed lot)'),
+                    ('ib_override_pcts', '[10,5,2.5]'::jsonb, 'Upline override % by depth (halves beyond the list)'),
+                    ('ib_override_cap_pct', '20'::jsonb, 'Max total override on top of any rebate (%)'),
+                    ('ib_override_max_levels', '8'::jsonb, 'Max upline depth that earns override'),
+                    ('ib_active_client_min_lots', '0.5'::jsonb, 'Closed lots/month for a client to count as active'),
+                    ('ib_active_require_kyc', 'true'::jsonb, 'Active client must be KYC-verified'),
+                    ('ib_active_require_deposit', 'true'::jsonb, 'Active client must have deposited'),
+                    ('ib_rebate_all_instruments', 'true'::jsonb, 'Count all instruments'' closed lots as eligible')
+                ON CONFLICT (key) DO NOTHING
+            """))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 
@@ -454,6 +516,7 @@ app.include_router(insurance_admin.router, prefix=prefix)
 app.include_router(shield_insurance_admin.router, prefix=prefix)
 app.include_router(reward_store_admin.router, prefix=prefix)
 app.include_router(spin_wheel_admin.router, prefix=prefix)
+app.include_router(ib_rebate_admin.router, prefix=prefix)
 app.include_router(lifestyle_admin.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)

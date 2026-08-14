@@ -78,6 +78,7 @@ from .waitlist import WaitlistRequest
 from .share import SharedTrade
 from .rms import IpGeoCache, RmsAlert, AdminNotification, PricingTimeRule
 from .hedge import HedgeEpisode
+from .ib_rebate import IbRebatePeriod, IbRebateSettlement
 
 
 __all__ = [
@@ -129,4 +130,6 @@ __all__ = [
     "IpGeoCache", "RmsAlert", "AdminNotification", "PricingTimeRule",
     # hedge history
     "HedgeEpisode",
+    # IB rebate (Milele-style tiered accrual)
+    "IbRebatePeriod", "IbRebateSettlement",
 ]

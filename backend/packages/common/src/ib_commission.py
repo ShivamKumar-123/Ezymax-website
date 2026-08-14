@@ -62,7 +62,19 @@ async def distribute_ib_commission(
     instrument_symbol: str,
 ):
     """Distribute IB commission for one filled order. Idempotency is the
-    caller's responsibility (call once per fill)."""
+    caller's responsibility (call once per fill).
+
+    Gated off when the platform runs the Milele-style *accrual* rebate model
+    (`ib_commission_model` = 'accrual'): in that mode rebates are settled by the
+    monthly/daily job in `ib_rebate.engine`, not instantly at fill, so this
+    legacy instant path must not also pay.
+    """
+    from .settings_store import get_system_setting
+
+    model = str(await get_system_setting("ib_commission_model", "instant") or "instant")
+    if model == "accrual":
+        return
+
     referral_q = await db.execute(
         select(Referral).where(Referral.referred_id == trader_user_id)
     )

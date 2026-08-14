@@ -60,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Copy Masters', href: '/business/masters' },
       { label: 'Copy Commissions', href: '/business/copy-commissions' },
       { label: 'MLM Config', href: '/business/mlm' },
+      { label: 'IB Rebate (tiers)', href: '/ib-rebate' },
     ],
   },
   { label: 'Analytics', href: '/analytics', icon: BarChart3, perm: 'analytics.view' },
