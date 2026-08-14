@@ -1,25 +1,27 @@
 'use client';
 
 /**
- * IB Partner Portal — standalone login (its own app, port :3002). An approved
- * IB signs in with the separate login ID + password emailed on approval; on
- * success we stash the returned access token in sessionStorage and hand off
- * to the portal. Two-panel layout shared with the admin console (auth.css).
+ * IB Partner Portal — standalone login (its own app). Signs in with the user's
+ * OWN trader email + password (IBs are auto-promoted); legacy portal login-IDs
+ * still work server-side. Modern obsidian + lime glass layout.
  */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
-import './auth.css';
+import {
+  Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck,
+  TrendingUp, Users, LineChart, ArrowRight,
+} from 'lucide-react';
 
-const STEPS = [
-  { number: 1, label: 'Sign in to portal' },
-  { number: 2, label: 'Partner dashboard' },
+const FEATURES: [React.ComponentType<{ size?: number; className?: string }>, string][] = [
+  [TrendingUp, 'Real-time commissions & rebates'],
+  [Users, 'Your full referral network'],
+  [LineChart, 'Trade on your clients’ behalf'],
 ];
 
 export default function IBPortalLoginPage() {
   const router = useRouter();
-  const [loginId, setLoginId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,14 +35,14 @@ export default function IBPortalLoginPage() {
       const res = await fetch('/api/v1/business/ib-portal/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login_id: loginId.trim(), password }),
+        body: JSON.stringify({ login_id: email.trim(), password }),
       });
       const raw = await res.text();
       let json: { access_token?: string; name?: string; detail?: unknown } = {};
       try { json = raw ? JSON.parse(raw) : {}; } catch { /* non-JSON */ }
       if (!res.ok || !json.access_token) {
         const d = json.detail;
-        throw new Error(typeof d === 'string' ? d : 'Invalid login ID or password');
+        throw new Error(typeof d === 'string' ? d : 'Invalid email or password');
       }
       sessionStorage.setItem('ib_portal_token', json.access_token);
       sessionStorage.setItem('ib_portal_name', json.name || '');
@@ -52,148 +54,147 @@ export default function IBPortalLoginPage() {
     }
   };
 
-  const disabled = submitting || !loginId.trim() || !password;
+  const disabled = submitting || !email.trim() || !password;
 
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card-wrapper">
-        <div className="auth-card">
-          {/* ── LEFT PANEL ── */}
-          <div className="auth-left">
-            <div className="auth-left__bg" />
-            <div className="auth-left__mandala" aria-hidden="true" />
-            <div className="auth-left__content">
-              <h1 className="auth-left__title">IB Partner Portal</h1>
-              <p className="auth-left__subtitle">
-                Track your referrals and commissions, drill into every client,
-                and trade on their behalf — all from one partner console.
-              </p>
-              <div className="auth-left__steps">
-                {STEPS.map((s) => (
-                  <div
-                    key={s.number}
-                    className={`auth-step ${s.number === 1 ? 'auth-step--active' : 'auth-step--inactive'}`}
-                  >
-                    <span className="auth-step__num">{s.number}</span>
-                    <span className="auth-step__label">{s.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <div className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-[#070707] p-4 text-white sm:p-6">
+      {/* Background — grid + lime aura, matching the landing/portal */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            'radial-gradient(80% 55% at 50% -10%, rgba(204,255,0,0.10), transparent 60%),' +
+            'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),' +
+            'linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+          backgroundSize: '100% 100%, 54px 54px, 54px 54px',
+        }}
+        aria-hidden
+      />
+      <div className="pointer-events-none absolute -left-40 top-1/4 h-96 w-96 rounded-full bg-[#ccff00]/10 blur-[130px]" aria-hidden />
+      <div className="pointer-events-none absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-[#ccff00]/[0.06] blur-[130px]" aria-hidden />
+
+      {/* Card */}
+      <div
+        className="relative grid w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] lg:grid-cols-2"
+        style={{ background: 'linear-gradient(180deg, rgba(18,18,18,0.92), rgba(10,10,10,0.96))', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+      >
+        {/* ── Left showcase ── */}
+        <div
+          className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex"
+          style={{ background: 'radial-gradient(120% 90% at 0% 0%, rgba(204,255,0,0.13), transparent 55%)', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 translate-x-1/3 rounded-full bg-[#ccff00]/15 blur-[100px]" aria-hidden />
+          <div className="relative flex items-center gap-2.5">
+            <img src="/fxartha_icon.png" alt="" className="h-10 w-10 object-contain drop-shadow-[0_0_16px_rgba(214,169,61,0.5)]" />
+            <span className="text-lg font-bold tracking-tight"><span className="text-[#ccff00]">FX</span>Artha</span>
           </div>
 
-          {/* ── RIGHT PANEL ── */}
-          <div className="auth-right">
-            <form className="auth-form" onSubmit={submit} noValidate>
-              <div className="flex justify-center mb-1">
-                <img
-                  src="/fxartha_icon.png"
-                  alt="FXArtha"
-                  className="w-14 h-14 object-contain drop-shadow-[0_0_18px_rgba(214,169,61,0.4)]"
+          <div className="relative">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#ccff00]/25 bg-[#ccff00]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-[#ccff00]">
+              Partner Program
+            </span>
+            <h1 className="mt-4 text-4xl font-bold leading-[1.1] tracking-tight">IB Partner<br />Portal</h1>
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/55">
+              Track referrals &amp; commissions, drill into every client, and trade on their behalf — all from one console.
+            </p>
+            <ul className="mt-8 space-y-3.5">
+              {FEATURES.map(([Icon, label]) => (
+                <li key={label} className="flex items-center gap-3 text-sm font-medium text-white/85">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#ccff00]/25 bg-[#ccff00]/10">
+                    <Icon size={15} className="text-[#ccff00]" />
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="relative text-xs text-white/40">FX Artha — Introducing Broker Program</p>
+        </div>
+
+        {/* ── Right form ── */}
+        <div className="relative p-8 sm:p-10">
+          <div className="mb-6 flex items-center gap-2.5 lg:hidden">
+            <img src="/fxartha_icon.png" alt="" className="h-9 w-9 object-contain drop-shadow-[0_0_14px_rgba(214,169,61,0.45)]" />
+            <span className="text-lg font-bold tracking-tight"><span className="text-[#ccff00]">FX</span>Artha</span>
+          </div>
+
+          <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+          <p className="mt-1.5 text-sm text-white/55">Sign in with your FX Artha trader email &amp; password.</p>
+
+          <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#ccff00]/25 bg-[#ccff00]/[0.07] px-3 py-2 text-xs font-semibold text-[#ccff00]">
+            <ShieldCheck size={13} /> Same login as your trading account
+          </div>
+
+          <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-white/70">Email</label>
+              <div className="relative">
+                <Mail size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoFocus
+                  autoComplete="email"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-[#ccff00]/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_rgba(204,255,0,0.12)]"
                 />
               </div>
-              <div>
-                <h2 className="auth-form__title">FXArtha IB</h2>
-                <p className="auth-form__subtitle">Sign in with the same email &amp; password as your trading account.</p>
-              </div>
+            </div>
 
-              <div className="auth-demo-badge">
-                <ShieldCheck size={14} />
-                <span>Same login as your trading account</span>
-              </div>
-
-              <div className="auth-field">
-                <label className="auth-field__label">Email</label>
-                <div className="auth-field__wrap">
-                  <input
-                    type="email"
-                    value={loginId}
-                    onChange={(e) => setLoginId(e.target.value)}
-                    placeholder="you@example.com"
-                    autoFocus
-                    autoCapitalize="off"
-                    autoComplete="email"
-                    spellCheck={false}
-                    required
-                    className="auth-field__input"
-                    style={{ paddingLeft: '2.5rem' }}
-                  />
-                  <Mail
-                    size={14}
-                    style={{
-                      position: 'absolute',
-                      left: '0.875rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--auth-muted)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="auth-field">
-                <label className="auth-field__label">Password</label>
-                <div className="auth-field__wrap">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    required
-                    autoComplete="current-password"
-                    className="auth-field__input auth-field__input--has-icon"
-                    style={{ paddingLeft: '2.5rem' }}
-                  />
-                  <Lock
-                    size={14}
-                    style={{
-                      position: 'absolute',
-                      left: '0.875rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--auth-muted)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="auth-field__icon"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div
-                  className="flex items-center gap-2"
-                  style={{
-                    fontSize: '0.78rem',
-                    color: '#f87171',
-                    background: 'rgba(248,113,113,0.08)',
-                    border: '1px solid rgba(248,113,113,0.25)',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                  }}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-white/70">Password</label>
+              <div className="relative">
+                <Lock size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-10 pr-11 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-[#ccff00]/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_rgba(204,255,0,0.12)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition-colors hover:text-white/70"
                 >
-                  <AlertCircle size={14} />
-                  <span>{error}</span>
-                </div>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-xs text-rose-300">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={disabled}
+              className="group flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-black transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ background: 'linear-gradient(90deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 10px 30px -8px rgba(204,255,0,0.5)' }}
+            >
+              {submitting ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <>Sign In <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" /></>
               )}
+            </button>
+          </form>
 
-              <button type="submit" className="auth-btn" disabled={disabled}>
-                {submitting ? <Loader2 size={18} className="auth-spinner" /> : 'Sign In'}
-              </button>
-
-              <p className="auth-footer" style={{ marginTop: '0.5rem' }}>
-                No separate login — use your FX Artha trader email &amp; password. Refer one
-                trader to unlock your partner portal.
-              </p>
-            </form>
-          </div>
+          <p className="mt-5 text-center text-xs leading-relaxed text-white/45">
+            No separate login — use your FX Artha trader email &amp; password.
+            <br className="hidden sm:block" /> Refer one trader to unlock your partner portal.
+          </p>
         </div>
       </div>
     </div>
