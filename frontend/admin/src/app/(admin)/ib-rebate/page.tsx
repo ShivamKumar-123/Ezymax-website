@@ -120,7 +120,7 @@ export default function AdminIbRebatePage() {
       </div>
 
       {/* Model switch */}
-      <div className="rounded-xl border p-4" style={{ borderColor: cfg.model === 'accrual' ? `${LIME}55` : 'var(--border-primary)' }}>
+      <div className="rounded-xl border p-4" style={{ borderColor: cfg.model === 'accrual' ? `${LIME}55` : 'rgb(var(--c-border-primary) / 1)' }}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-text-primary">Payout model</h2>
@@ -128,11 +128,11 @@ export default function AdminIbRebatePage() {
               <b>instant</b> = legacy flat per-lot credited at trade fill. <b>accrual</b> = this tiered model, settled by the run job.
             </p>
           </div>
-          <div className="inline-flex rounded-lg p-1 gap-1" style={{ background: 'var(--bg-base)', border: '1px solid var(--border-primary)' }}>
+          <div className="inline-flex rounded-lg p-1 gap-1" style={{ background: 'rgb(var(--c-bg-tertiary) / 1)', border: '1px solid rgb(var(--c-border-primary) / 1)' }}>
             {(['instant', 'accrual'] as const).map((m) => (
               <button key={m} type="button" onClick={() => setCfg({ ...cfg, model: m })}
                 className="text-xs font-bold px-4 py-1.5 rounded-md"
-                style={cfg.model === m ? { color: '#0a0a0a', background: LIME } : { color: 'var(--text-secondary)', background: 'transparent' }}>
+                style={cfg.model === m ? { color: '#0a0a0a', background: LIME } : { color: 'rgb(var(--c-text-secondary) / 1)', background: 'transparent' }}>
                 {m}
               </button>
             ))}
@@ -224,9 +224,10 @@ export default function AdminIbRebatePage() {
       )}
 
       <style jsx>{`
-        .inp { width: 100%; padding: 7px 10px; border-radius: 8px; background: var(--bg-tertiary, #181818); border: 1px solid var(--border-secondary, #2f2f2f); color: var(--text-primary); font-size: 12px; outline: none; transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease; }
+        .inp { width: 100%; padding: 7px 10px; border-radius: 8px; background: rgb(var(--c-bg-input) / 1); border: 1px solid rgb(var(--c-border-secondary) / 1); color: rgb(var(--c-text-primary) / 1); font-size: 12px; outline: none; transition: border-color 120ms ease, box-shadow 120ms ease; }
+        .inp::placeholder { color: rgb(var(--c-text-tertiary) / 1); }
         .inp:hover { border-color: ${LIME}66; }
-        .inp:focus { border-color: ${LIME}; background: var(--bg-base); box-shadow: 0 0 0 2px ${LIME}22; }
+        .inp:focus { border-color: ${LIME}; box-shadow: 0 0 0 2px ${LIME}22; }
       `}</style>
     </div>
   );
@@ -239,13 +240,13 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return <label className="block space-y-1"><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-bold">{label}</span>{children}</label>;
 }
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return <div className="rounded-lg border border-border-primary bg-bg-base p-3"><p className="text-[10px] uppercase tracking-wider text-text-tertiary">{label}</p><p className="text-base font-bold font-mono tabular-nums" style={{ color: accent || 'var(--text-primary)' }}>{value}</p></div>;
+  return <div className="rounded-lg border border-border-primary bg-bg-base p-3"><p className="text-[10px] uppercase tracking-wider text-text-tertiary">{label}</p><p className="text-base font-bold font-mono tabular-nums" style={{ color: accent || 'rgb(var(--c-text-primary) / 1)' }}>{value}</p></div>;
 }
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs text-text-secondary">{label}</span>
-      <button type="button" role="switch" aria-checked={value} onClick={() => onChange(!value)} className="w-10 h-5 rounded-full relative transition-colors border shrink-0" style={value ? { background: LIME, borderColor: LIME } : { background: 'var(--bg-base)', borderColor: 'var(--border-primary)' }}>
+      <button type="button" role="switch" aria-checked={value} onClick={() => onChange(!value)} className="w-10 h-5 rounded-full relative transition-colors border shrink-0" style={value ? { background: LIME, borderColor: LIME } : { background: 'rgb(var(--c-bg-tertiary) / 1)', borderColor: 'rgb(var(--c-border-secondary) / 1)' }}>
         <span className="absolute top-[1px] w-[16px] h-[16px] rounded-full bg-white transition-all" style={{ left: value ? '19px' : '2px' }} />
       </button>
     </div>

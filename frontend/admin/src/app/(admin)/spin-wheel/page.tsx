@@ -243,7 +243,7 @@ export default function AdminSpinWheelPage() {
                 <td className="py-2.5 px-2 w-20">
                   <input type="number" className="inp text-right tabular-nums font-mono" value={p.weight} onChange={(e) => edit(p.id, 'weight', Number(e.target.value))} />
                 </td>
-                <td className="py-2.5 px-2 w-16 text-right font-mono tabular-nums" style={{ color: p.is_active ? LIME : 'var(--text-tertiary)' }}>
+                <td className="py-2.5 px-2 w-16 text-right font-mono tabular-nums" style={{ color: p.is_active ? LIME : 'rgb(var(--c-text-tertiary) / 1)' }}>
                   {liveWinPct(p).toFixed(1)}%
                 </td>
                 <td className="py-2.5 px-2 w-16">
@@ -252,7 +252,7 @@ export default function AdminSpinWheelPage() {
                 <td className="py-2.5 px-2 text-center">
                   <button type="button" role="switch" aria-checked={p.is_active} onClick={() => edit(p.id, 'is_active', !p.is_active)}
                     className="inline-block w-10 h-5 rounded-full relative transition-colors border align-middle"
-                    style={p.is_active ? { background: LIME, borderColor: LIME } : { background: 'var(--bg-base)', borderColor: 'var(--border-primary)' }}>
+                    style={p.is_active ? { background: LIME, borderColor: LIME } : { background: 'rgb(var(--c-bg-tertiary) / 1)', borderColor: 'rgb(var(--c-border-secondary) / 1)' }}>
                     <span className="absolute top-[1px] w-[16px] h-[16px] rounded-full bg-white transition-all" style={{ left: p.is_active ? '19px' : '2px' }} />
                   </button>
                 </td>
@@ -282,15 +282,16 @@ export default function AdminSpinWheelPage() {
           width: 100%;
           padding: 7px 10px;
           border-radius: 8px;
-          background: var(--bg-tertiary, #181818);
-          border: 1px solid var(--border-secondary, #2f2f2f);
-          color: var(--text-primary);
+          background: rgb(var(--c-bg-input) / 1);
+          border: 1px solid rgb(var(--c-border-secondary) / 1);
+          color: rgb(var(--c-text-primary) / 1);
           font-size: 12px;
           outline: none;
-          transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+          transition: border-color 120ms ease, box-shadow 120ms ease;
         }
+        .inp::placeholder { color: rgb(var(--c-text-tertiary) / 1); }
         .inp:hover { border-color: ${LIME}66; }
-        .inp:focus { border-color: ${LIME}; background: var(--bg-base); box-shadow: 0 0 0 2px ${LIME}22; }
+        .inp:focus { border-color: ${LIME}; box-shadow: 0 0 0 2px ${LIME}22; }
       `}</style>
     </div>
   );
