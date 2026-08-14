@@ -375,7 +375,10 @@ async def _apply_startup_ddl():
             ))
             # Seed the Milele default config (JSONB values). ON CONFLICT keeps
             # any admin edits.
-            await conn.execute(text("""
+            # exec_driver_sql (not text()) — the tiers JSON contains `:0`, `:3`
+            # etc. which SQLAlchemy's text() would parse as bind parameters and
+            # blow up the whole DDL transaction ("bind parameter '0'").
+            await conn.exec_driver_sql("""
                 INSERT INTO system_settings (key, value, description) VALUES
                     ('ib_commission_model', '"instant"'::jsonb, 'IB payout model: instant (legacy flat per-lot) or accrual (Milele tiered)'),
                     ('ib_rebate_tiers',
@@ -389,7 +392,7 @@ async def _apply_startup_ddl():
                     ('ib_active_require_deposit', 'true'::jsonb, 'Active client must have deposited'),
                     ('ib_rebate_all_instruments', 'true'::jsonb, 'Count all instruments'' closed lots as eligible')
                 ON CONFLICT (key) DO NOTHING
-            """))
+            """)
 
             # ── Every user gets a referral code + auto-IB threshold ───────────
             # No IB application: any user can refer, and once they bring enough
