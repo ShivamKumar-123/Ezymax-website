@@ -8,7 +8,6 @@ import {
   DollarSign,
   Clock,
   Users,
-  UserMinus,
   Network,
   Award,
   Copy,
@@ -141,6 +140,44 @@ function IBPortalCTA({ subtitle }: { subtitle?: string }) {
   );
 }
 
+// Every user's own referral link — shown page-level (PipHigh-style), since every
+// user can refer and is auto-promoted to IB once they bring one in.
+function ReferralLinkCard() {
+  const [data, setData] = useState<{ code: string; path: string; referred_count: number; is_ib: boolean } | null>(null);
+  useEffect(() => {
+    (async () => {
+      try { setData(await api.get('/business/referral/me')); } catch { /* ignore */ }
+    })();
+  }, []);
+  if (!data) return null;
+  const link = `${typeof window !== 'undefined' ? window.location.origin : ''}${data.path}`;
+  return (
+    <div className={clsx(PREMIUM_CARD, 'p-4 pl-5')} style={PREMIUM_STYLE}>
+      {ACCENT_BAR}
+      <div className="flex items-center gap-2 mb-2.5">
+        <Link2 className="w-4 h-4 text-[#ccff00]" />
+        <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Your Referral Link</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          readOnly
+          value={link}
+          className="flex-1 min-w-0 text-xs font-mono bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-text-primary focus:outline-none focus:border-[#ccff00]/40"
+        />
+        <button
+          type="button"
+          onClick={() => { navigator.clipboard.writeText(link); toast.success('Copied!'); }}
+          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-colors"
+        >
+          <Copy className="w-3.5 h-3.5" /> Copy
+        </button>
+      </div>
+      <p className="text-[11px] text-text-tertiary mt-2.5">Code: <span className="text-[#ccff00] font-mono font-bold">{data.code}</span></p>
+    </div>
+  );
+}
+
 export default function BusinessPage() {
   const isDemo = useAuthStore((s) => s.user?.is_demo);
   const [tab, setTab] = useState<TabId>('ib');
@@ -176,6 +213,11 @@ export default function BusinessPage() {
               <h1 className="text-xl md:text-2xl font-bold text-text-primary">Affiliates &amp; IB Program</h1>
               <p className="text-sm text-text-tertiary">Refer, build your network and earn commissions</p>
             </div>
+          </div>
+
+          {/* Referral link — every user has one (PipHigh-style, page-level). */}
+          <div className="mb-4 sm:mb-5">
+            <ReferralLinkCard />
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border-primary bg-card">
@@ -231,148 +273,73 @@ export default function BusinessPage() {
 }
 
 function IBTab() {
-  const [status, setStatus] = useState<any>(null);
+  const [referral, setReferral] = useState<{ is_ib: boolean; referred_count: number } | null>(null);
   const [dashboard, setDashboard] = useState<any>(null);
   const [referrals, setReferrals] = useState<any[]>([]);
-  const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const s = await api.get<any>('/business/status');
-        setStatus(s);
-        if (s.is_ib) {
-          const [d, r, c] = await Promise.all([
-            api.get<any>('/business/ib/dashboard'),
-            api.get<any>('/business/ib/referrals'),
-            api.get<any>('/business/ib/commissions'),
+        const ref = await api.get<any>('/business/referral/me');
+        setReferral(ref);
+        if (ref.is_ib) {
+          const [d, r] = await Promise.all([
+            api.get<any>('/business/ib/dashboard').catch(() => null),
+            api.get<any>('/business/ib/referrals').catch(() => ({ items: [] })),
           ]);
           setDashboard(d);
           setReferrals(r.items || []);
-          setCommissions(c.items || []);
         }
-      } catch {} finally { setLoading(false); }
+      } catch { /* ignore */ } finally { setLoading(false); }
     })();
   }, []);
 
-  const handleApply = async () => {
-    setApplying(true);
-    try {
-      await api.post('/business/apply', {});
-      toast.success('IB application submitted!');
-      const s = await api.get<any>('/business/status');
-      setStatus(s);
-    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setApplying(false); }
-  };
-
   if (loading) return <Spinner />;
+  const isIb = !!referral?.is_ib;
 
-  // Approved IB → send them to the dedicated portal, no inline dashboard.
-  if (status?.is_ib) return <IBPortalCTA />;
-
-  if (!status?.is_ib && status?.application_status === 'pending') {
-    return (
-      <div className={clsx(PREMIUM_CARD, 'p-6 sm:p-8 pl-7 text-center max-w-lg mx-auto space-y-3')} style={PREMIUM_STYLE}>
+  return (
+    <div className="space-y-4">
+      {/* Partner dashboard banner — no application. Every user auto-becomes an
+          IB once they refer someone; the full dashboard is the IB portal. */}
+      <div className={clsx(PREMIUM_CARD, 'p-4 sm:p-5 pl-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between')} style={PREMIUM_STYLE}>
         {ACCENT_BAR}
-        <div className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-          <Hourglass className="w-6 h-6 text-[#ccff00]" />
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-[#ccff00]" /> Your IB Partner Dashboard
+          </h3>
+          <p className="text-[11px] text-text-tertiary mt-0.5 max-w-xl">
+            {isIb
+              ? 'Manage referrals, commissions, your network and client trading in your dedicated IB portal.'
+              : 'Share your link above. Refer at least one trader and you automatically become an IB partner — no application needed.'}
+          </p>
         </div>
-        <h3 className="text-base font-bold text-text-primary">Application Pending</h3>
-        <p className="text-xs text-text-tertiary max-w-sm mx-auto leading-relaxed">Your IB application is under review by the admin team. Once approved, your IB Portal login ID and password are emailed to you.</p>
-        <a
-          href={IB_PORTAL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1.5 mt-2 px-6 py-2.5 rounded-xl text-xs font-bold border-2 border-border-primary text-text-primary hover:border-[#ccff00] hover:text-[#ccff00] transition-all"
-        >
-          Login to IB Portal <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
-    );
-  }
-
-  if (!status?.is_ib) {
-    return (
-      <div className={clsx(PREMIUM_CARD, 'p-6 sm:p-10 pl-7 text-center space-y-5 max-w-2xl mx-auto')} style={PREMIUM_STYLE}>
-        {ACCENT_BAR}
-        <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-          <Handshake className="w-7 h-7 text-[#ccff00]" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
-        <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Apply once — after admin approval you&apos;ll get your IB Portal login ID and password by email.</p>
-        <p className="text-[11px] text-text-tertiary max-w-md mx-auto leading-relaxed">
-          Note: IB registration requires an introduction from a <span className="text-text-secondary font-semibold">Master IB</span> —
-          your account must have been created through a Master IB&apos;s referral link.
-        </p>
-        <button
-          type="button"
-          onClick={handleApply}
-          disabled={applying}
-          className={clsx(
-            'inline-flex items-center justify-center w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-semibold transition-all',
-            applying ? 'opacity-50 cursor-not-allowed bg-[#ccff00] text-[#0a0a0a]' : 'bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] shadow-[0_0_24px_rgba(204,255,0,0.35)]',
-          )}
-        >
-          {applying ? 'Submitting...' : 'Apply Now'}
-        </button>
-        <div className="pt-1">
-          <p className="text-[11px] text-text-tertiary mb-2">Already an approved IB?</p>
+        {isIb ? (
           <a
             href={IB_PORTAL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3 rounded-xl text-sm font-bold border-2 border-border-primary text-text-primary hover:border-[#ccff00] hover:text-[#ccff00] transition-all"
+            className="shrink-0 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-all"
           >
-            Login to IB Portal <ExternalLink className="w-4 h-4" />
+            Go to IB Dashboard <ExternalLink className="w-4 h-4" />
           </a>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs text-text-secondary">You&apos;re an approved IB. Open your full partner portal in a new tab.</p>
-        <a
-          href={IB_PORTAL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-all"
-        >
-          Login to IB Portal <ExternalLink className="w-3.5 h-3.5" />
-        </a>
+        ) : (
+          <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-text-secondary px-4 py-2.5 rounded-xl border border-dashed border-border-primary">
+            {referral?.referred_count || 0} / 1 referral to unlock
+          </span>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatTile icon={DollarSign} label="Total Commission" value={`$${fmt(dashboard?.total_commission || 0)}`} valueColor="text-success" />
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatTile icon={DollarSign} label="Total Earned" value={`$${fmt(dashboard?.total_commission || 0)}`} valueColor="text-success" />
         <StatTile icon={Clock} label="Pending Payout" value={`$${fmt(dashboard?.pending_payout || 0)}`} valueColor="text-warning" />
-        <StatTile icon={Users} label="Referrals" value={String(dashboard?.total_referrals || 0)} />
-        <StatTile icon={UserMinus} label="No Trade Yet" value={String(dashboard?.registered_no_trade || 0)} valueColor="text-text-secondary" />
-        <StatTile icon={Network} label="Sub-IBs" value={String(dashboard?.sub_ib_count || 0)} />
+        <StatTile icon={Users} label="Referrals" value={String(dashboard?.total_referrals ?? referral?.referred_count ?? 0)} />
         <StatTile icon={Award} label="Level" value={`L${dashboard?.level || 1}`} />
       </div>
 
-      {dashboard?.referral_link && (
-        <div className={clsx(PREMIUM_CARD, 'p-4 pl-5')} style={PREMIUM_STYLE}>
-          {ACCENT_BAR}
-          <div className="flex items-center gap-2 mb-2.5">
-            <Link2 className="w-4 h-4 text-[#ccff00]" />
-            <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Your Referral Link</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="text" readOnly value={dashboard.referral_link} className="flex-1 min-w-0 text-xs font-mono bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-text-primary focus:outline-none focus:border-[#ccff00]/40" />
-            <button type="button" onClick={() => { navigator.clipboard.writeText(dashboard.referral_link); toast.success('Copied!'); }} className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-colors">
-              <Copy className="w-3.5 h-3.5" /> Copy
-            </button>
-          </div>
-          <p className="text-[11px] text-text-tertiary mt-2.5">Code: <span className="text-[#ccff00] font-mono font-bold">{dashboard.referral_code}</span></p>
-        </div>
-      )}
-
-      {referrals.length > 0 && (
+      {/* My Referrals */}
+      {referrals.length > 0 ? (
         <TableCard title="My Referrals" icon={Users}>
           <table className="w-full text-xs">
             <thead><tr className="border-b border-border-primary">
@@ -396,47 +363,10 @@ function IBTab() {
             </tbody>
           </table>
         </TableCard>
-      )}
-
-      {dashboard?.sub_ibs?.length > 0 && (
-        <TableCard title="Your Sub-IBs" subtitle="Referrals who became IBs themselves" icon={Network}>
-          <table className="w-full text-xs">
-            <thead><tr className="border-b border-border-primary">
-              <th className={clsx(TH, 'text-left')}>Name</th><th className={clsx(TH, 'text-left')}>Code</th><th className={clsx(TH, 'text-center')}>Level</th><th className={clsx(TH, 'text-right')}>Earned</th>
-            </tr></thead>
-            <tbody>
-              {dashboard.sub_ibs.map((s: any) => (
-                <tr key={s.referral_code} className={ROW}>
-                  <td className="px-4 py-2.5"><p className="text-text-primary font-medium">{s.name}</p><p className="text-[11px] text-text-tertiary">{s.email}</p></td>
-                  <td className="px-4 py-2.5 font-mono text-[#ccff00]">{s.referral_code}</td>
-                  <td className="px-4 py-2.5 text-center text-text-secondary">L{s.level}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-success">${fmt(s.total_earned || 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableCard>
-      )}
-
-      {commissions.length > 0 && (
-        <TableCard title="Commission History" icon={DollarSign}>
-          <table className="w-full text-xs">
-            <thead><tr className="border-b border-border-primary">
-              <th className={clsx(TH, 'text-left')}>From</th><th className={clsx(TH, 'text-left')}>Type</th><th className={clsx(TH, 'text-left')}>Level</th><th className={clsx(TH, 'text-right')}>Amount</th><th className={clsx(TH, 'text-right')}>Status</th>
-            </tr></thead>
-            <tbody>
-              {commissions.map((c: any) => (
-                <tr key={c.id} className={ROW}>
-                  <td className="px-4 py-2.5"><p className="text-text-primary font-medium">{c.source_user?.name}</p></td>
-                  <td className="px-4 py-2.5 text-text-secondary capitalize">{c.commission_type?.replace('_', ' ')}</td>
-                  <td className="px-4 py-2.5 text-text-secondary">L{c.mlm_level}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-success">${fmt(c.amount || 0)}</td>
-                  <td className="px-4 py-2.5 text-right"><span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', c.status === 'paid' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning')}>{c.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableCard>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-border-primary bg-bg-secondary/40 py-10 px-4 text-center text-xs text-text-tertiary">
+          No referrals yet. Copy your link above and share it — everyone who signs up through it is tracked to you.
+        </div>
       )}
     </div>
   );
