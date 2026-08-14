@@ -10,7 +10,7 @@ import {
   Settings, Sliders, BarChart3, Gift, Image, HeadphonesIcon,
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
-  Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Package, Store,
+  Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Package, Store, Sparkles,
   Eye, Globe, ShieldAlert, Gauge, Radar, Scale, UserPlus,
 } from 'lucide-react';
 
@@ -73,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
   { label: 'Trade Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
   { label: 'Reward Store', href: '/reward-store', icon: Store, perm: '*' },
+  { label: 'Spin & Win', href: '/spin-wheel', icon: Sparkles, perm: '*' },
   { label: 'Lifestyle Queue', href: '/lifestyle', icon: Package, perm: '*' },
   { label: 'Banners', href: '/banners', icon: Image, perm: 'banners.view' },
   { label: 'Support', href: '/support', icon: HeadphonesIcon, perm: 'tickets.view' },

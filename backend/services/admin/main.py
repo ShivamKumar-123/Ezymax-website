@@ -22,6 +22,7 @@ from routes import (
     insurance as insurance_admin,
     shield_insurance as shield_insurance_admin,
     reward_store as reward_store_admin,
+    spin_wheel as spin_wheel_admin,
     lifestyle as lifestyle_admin, deposit_wallets, demo_admins, rms, trade_risk, rms_dashboard,
     admin_notifications, pricing_rules, crm, hedge, waitlist,
 )
@@ -452,6 +453,7 @@ app.include_router(admin_audit_logs.router, prefix=prefix)
 app.include_router(insurance_admin.router, prefix=prefix)
 app.include_router(shield_insurance_admin.router, prefix=prefix)
 app.include_router(reward_store_admin.router, prefix=prefix)
+app.include_router(spin_wheel_admin.router, prefix=prefix)
 app.include_router(lifestyle_admin.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(demo_admins.router, prefix=prefix)

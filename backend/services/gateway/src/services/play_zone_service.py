@@ -24,9 +24,19 @@ from packages.common.src.models import (
 
 logger = logging.getLogger("play_zone_service")
 
-# Fixed cost per spin, in Artha Coins. Surface in the UI; matches the
-# XP_Reward_mechanism doc (30 ARTC).
+# Default cost per spin, in Artha Coins (XP_Reward_mechanism doc = 30 ARTC).
+# The live value is the `play_spin_cost_ac` system setting so admins can retune
+# it without a deploy; this constant is only the fallback.
 SPIN_COST_AC = Decimal("30")
+
+
+async def get_spin_cost() -> Decimal:
+    """Live per-spin AC cost — admin-editable via the `play_spin_cost_ac`
+    system setting, falling back to SPIN_COST_AC."""
+    from packages.common.src.settings_store import get_float_setting
+
+    val = await get_float_setting("play_spin_cost_ac", float(SPIN_COST_AC))
+    return Decimal(str(val))
 
 
 # ─── Catalogue ───────────────────────────────────────────────────────
@@ -84,8 +94,9 @@ async def spin(db: AsyncSession, user_id) -> dict:
         state = RewardsUserState(user_id=user_id)
         db.add(state)
         await db.flush()
+    spin_cost = await get_spin_cost()
     bal = Decimal(str(state.ac_balance or 0))
-    if bal < SPIN_COST_AC:
+    if bal < spin_cost:
         raise HTTPException(status_code=402, detail="insufficient_ac")
 
     prizes = (await db.execute(
@@ -98,25 +109,25 @@ async def spin(db: AsyncSession, user_id) -> dict:
 
     # Debit cost first, then credit payout — keeping this in one transaction
     # so a partial failure can't leave the user paying without a result row.
-    state.ac_balance = bal - SPIN_COST_AC
+    state.ac_balance = bal - spin_cost
     payout_amount = Decimal(str(chosen.payout_amount or 0))
     if chosen.payout_kind == "xp":
         state.xp = int(state.xp or 0) + int(payout_amount)
         xp_delta = int(payout_amount)
-        ac_delta = -SPIN_COST_AC
+        ac_delta = -spin_cost
     elif chosen.payout_kind in ("ac", "cashback"):
         state.ac_balance = Decimal(str(state.ac_balance)) + payout_amount
         xp_delta = 0
-        ac_delta = -SPIN_COST_AC + payout_amount
+        ac_delta = -spin_cost + payout_amount
     else:  # nothing
         xp_delta = 0
-        ac_delta = -SPIN_COST_AC
+        ac_delta = -spin_cost
     state.last_updated = datetime.now(timezone.utc)
 
     db.add(SpinResult(
         user_id=user_id,
         prize_id=chosen.id,
-        ac_cost=SPIN_COST_AC,
+        ac_cost=spin_cost,
         payout_kind=chosen.payout_kind,
         payout_amount=payout_amount,
     ))
@@ -131,7 +142,7 @@ async def spin(db: AsyncSession, user_id) -> dict:
         "label": chosen.label,
         "payout_kind": chosen.payout_kind,
         "payout_amount": float(payout_amount),
-        "ac_cost": float(SPIN_COST_AC),
+        "ac_cost": float(spin_cost),
         "new_xp": int(state.xp or 0),
         "new_ac_balance": float(state.ac_balance or 0),
     }

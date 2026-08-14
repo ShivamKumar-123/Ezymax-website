@@ -26,7 +26,7 @@ async def list_spin_prizes(
 ) -> dict[str, Any]:
     prizes = await play_zone_service.list_spin_prizes(db)
     return {
-        "cost_ac": float(play_zone_service.SPIN_COST_AC),
+        "cost_ac": float(await play_zone_service.get_spin_cost()),
         "prizes": prizes,
     }
 
