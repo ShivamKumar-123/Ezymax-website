@@ -25,6 +25,10 @@ class User(Base):
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     phone = Column(String(20))
     password_hash = Column(String(255), nullable=True)  # nullable for OAuth-only users
+    # Every user's own share/referral code — used to attribute signups and to
+    # auto-promote the user to IB once they bring enough referrals. Generated at
+    # signup; backfilled for existing users.
+    referral_code = Column(String(16), unique=True, index=True)
     google_id = Column(String(64), nullable=True, index=True)  # Google `sub` claim if signed in via Google
     first_name = Column(String(100))
     last_name = Column(String(100))

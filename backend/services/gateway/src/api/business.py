@@ -39,6 +39,17 @@ async def ib_status(
     return await business_service.ib_status(user_id=current_user["user_id"], db=db)
 
 
+@router.get("/referral/me")
+async def my_referral(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Any logged-in user's own referral code + link path + referred count.
+    Every user can refer; once they cross the auto-IB threshold they also become
+    an IB automatically."""
+    return await business_service.get_my_referral(user_id=current_user["user_id"], db=db)
+
+
 @router.post("/apply", status_code=201)
 async def apply_ib(
     application_data: dict = None,

@@ -390,6 +390,26 @@ async def _apply_startup_ddl():
                     ('ib_rebate_all_instruments', 'true'::jsonb, 'Count all instruments'' closed lots as eligible')
                 ON CONFLICT (key) DO NOTHING
             """))
+
+            # ── Every user gets a referral code + auto-IB threshold ───────────
+            # No IB application: any user can refer, and once they bring enough
+            # referrals they're auto-promoted to IB (see gateway auth_service).
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(16)"
+            ))
+            # Backfill a deterministic, unique code for existing users.
+            await conn.execute(text(
+                "UPDATE users SET referral_code = upper(substr(md5(id::text || 'fxa'), 1, 8)) "
+                "WHERE referral_code IS NULL"
+            ))
+            await conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code)"
+            ))
+            await conn.execute(text("""
+                INSERT INTO system_settings (key, value, description) VALUES
+                    ('ib_auto_min_referrals', '1'::jsonb, 'Referrals a user needs to be auto-promoted to IB')
+                ON CONFLICT (key) DO NOTHING
+            """))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 

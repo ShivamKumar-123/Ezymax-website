@@ -91,33 +91,85 @@ def _account_dict(a: TradingAccount, book_type: str | None = None) -> dict:
 
 
 async def ib_portal_login(login_id: str | None, password: str | None, db: AsyncSession) -> dict:
-    """Authenticate against the standalone IB partner-portal credentials
-    (separate login ID + password issued on approval). On success returns a
-    normal user access token for the underlying account so the IB dashboard
-    APIs work with a Bearer header — the portal keeps its own session,
-    independent of the trader app's cookie."""
+    """Authenticate the IB partner portal. Two accepted credential forms:
+
+      1. The user's OWN trader credentials — email + account password. If that
+         user has an active IBProfile (auto-earned by referrals, or manual),
+         they're in. This is the primary path now that IBs are auto-promoted.
+      2. Legacy separate portal login-ID + portal password (kept working for
+         IBs issued creds before the switch).
+
+    Returns a user access token for the underlying account so the IB dashboard
+    APIs work with a Bearer header."""
     from packages.common.src.auth import verify_password, create_access_token
+    from sqlalchemy import func
 
-    lid = (login_id or "").strip()
+    ident = (login_id or "").strip()
     pwd = password or ""
-    if not lid or not pwd:
-        raise HTTPException(status_code=400, detail="Login ID and password are required")
+    if not ident or not pwd:
+        raise HTTPException(status_code=400, detail="Login and password are required")
 
-    result = await db.execute(
-        select(IBProfile).where(
-            IBProfile.portal_login_id == lid,
-            IBProfile.is_active == True,
-        )
-    )
-    profile = result.scalar_one_or_none()
-    if not profile or not profile.portal_password_hash or not verify_password(pwd, profile.portal_password_hash):
-        raise HTTPException(status_code=401, detail="Invalid IB login ID or password")
+    profile = None
+    user = None
 
-    user_q = await db.execute(select(User).where(User.id == profile.user_id))
-    user = user_q.scalar_one_or_none()
+    # 1) Trader credentials (email + account password).
+    if "@" in ident:
+        u = (await db.execute(
+            select(User).where(func.lower(User.email) == ident.lower())
+        )).scalar_one_or_none()
+        if u and u.password_hash and verify_password(pwd, u.password_hash):
+            profile = (await db.execute(
+                select(IBProfile).where(IBProfile.user_id == u.id, IBProfile.is_active == True)
+            )).scalar_one_or_none()
+            if profile is None:
+                raise HTTPException(
+                    status_code=403,
+                    detail="This account isn't an IB yet — refer at least one user to unlock the partner portal.",
+                )
+            user = u
+
+    # 2) Legacy portal login-ID + portal password.
+    if profile is None:
+        p = (await db.execute(
+            select(IBProfile).where(IBProfile.portal_login_id == ident, IBProfile.is_active == True)
+        )).scalar_one_or_none()
+        if p and p.portal_password_hash and verify_password(pwd, p.portal_password_hash):
+            profile = p
+            user = (await db.execute(select(User).where(User.id == p.user_id))).scalar_one_or_none()
+
+    if profile is None or user is None:
+        raise HTTPException(status_code=401, detail="Invalid IB login or password")
+
     token, _ = create_access_token(str(profile.user_id), "user")
-    name = f"{(user.first_name if user else '') or ''} {(user.last_name if user else '') or ''}".strip()
+    name = f"{(user.first_name or '')} {(user.last_name or '')}".strip()
     return {"access_token": token, "referral_code": profile.referral_code, "name": name}
+
+
+async def get_my_referral(user_id: UUID, db: AsyncSession) -> dict:
+    """Any logged-in user's own referral code + stats. Generates a code on the
+    fly if the user somehow lacks one (pre-backfill), so the share link always
+    works."""
+    from sqlalchemy import func
+    from .auth_service import gen_referral_code
+
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.referral_code:
+        user.referral_code = await gen_referral_code(db)
+        await db.commit()
+    count = (await db.execute(
+        select(func.count(Referral.id)).where(Referral.referrer_id == user_id)
+    )).scalar_one() or 0
+    ib = (await db.execute(
+        select(IBProfile).where(IBProfile.user_id == user_id, IBProfile.is_active == True)
+    )).scalar_one_or_none()
+    return {
+        "code": user.referral_code,
+        "path": f"/auth/register?ref={user.referral_code}",
+        "referred_count": int(count),
+        "is_ib": ib is not None,
+    }
 
 
 async def ib_status(user_id: UUID, db: AsyncSession) -> dict:

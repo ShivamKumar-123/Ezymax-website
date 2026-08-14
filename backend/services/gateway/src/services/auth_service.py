@@ -346,30 +346,149 @@ def generate_account_number() -> str:
 
 # ─── Utility: referral attribution ───────────────────────────────────────
 
+async def gen_referral_code(db: AsyncSession) -> str:
+    """A unique 8-char share code for a new user."""
+    import secrets
+    import string as _string
+
+    alphabet = _string.ascii_uppercase + _string.digits
+    for _ in range(6):
+        code = "".join(secrets.choice(alphabet) for _ in range(8))
+        exists = await db.execute(select(User.id).where(User.referral_code == code))
+        if exists.scalar_one_or_none() is None:
+            return code
+    return "".join(secrets.choice(alphabet) for _ in range(10))
+
+
 async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str) -> None:
-    """Attach a new user to the IB whose referral_code they used. Silent no-op if the code
-    is missing, expired, or owned by an inactive IB — we don't want to block signup over it.
-    On a successful link, also credits the IB referrer the signup bonus (XP/AC/PS)
-    per XP_Reward_mechanism slide 4."""
+    """Attach a new user to whoever referred them. The code may belong to an IB
+    (IBProfile.referral_code — legacy) OR to any ordinary user (User.referral_code),
+    since every user can now refer. Silent no-op if the code is unknown/inactive —
+    we never block a signup over a bad referral code.
+
+    On a successful link, credits the referrer the signup bonus, and — if the
+    referrer has now reached the auto-IB threshold — promotes them to an IB
+    (no application needed) so they appear in the admin IB dashboard.
+    """
     code = (referral_code or "").strip()
     if not code:
         return
+
+    referrer_user_id = None
+    ib_profile = None
+
+    # 1) Legacy IB code.
     ib_q = await db.execute(
         select(IBProfile).where(IBProfile.referral_code == code, IBProfile.is_active == True)
     )
     ib_profile = ib_q.scalar_one_or_none()
     if ib_profile:
-        db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user_id, ib_profile_id=ib_profile.id))
-        # Best-effort: a rewards-side failure must not block the signup itself.
-        try:
-            from . import rewards_service
-            await rewards_service.award_signup_referral_bonus(
-                db, referrer_user_id=ib_profile.user_id, referred_user_id=user_id,
+        referrer_user_id = ib_profile.user_id
+    else:
+        # 2) Any user's own code.
+        u_q = await db.execute(select(User).where(User.referral_code == code))
+        referrer = u_q.scalar_one_or_none()
+        if referrer and referrer.id != user_id:
+            referrer_user_id = referrer.id
+            # If that user already happens to be an IB, link the referral to it.
+            ibp_q = await db.execute(
+                select(IBProfile).where(IBProfile.user_id == referrer.id, IBProfile.is_active == True)
             )
-            # "Refer a Friend" daily mission — credit the referrer.
-            await rewards_service.mark_progress(db, ib_profile.user_id, "refer_friend", 1)
-        except Exception as _e:
-            logger.debug("signup referral bonus failed: %s", _e)
+            ib_profile = ibp_q.scalar_one_or_none()
+
+    if referrer_user_id is None:
+        return
+
+    db.add(Referral(
+        referrer_id=referrer_user_id,
+        referred_id=user_id,
+        ib_profile_id=ib_profile.id if ib_profile else None,
+    ))
+    await db.flush()
+
+    # Best-effort rewards — never block signup.
+    try:
+        from . import rewards_service
+        await rewards_service.award_signup_referral_bonus(
+            db, referrer_user_id=referrer_user_id, referred_user_id=user_id,
+        )
+        await rewards_service.mark_progress(db, referrer_user_id, "refer_friend", 1)
+    except Exception as _e:
+        logger.debug("signup referral bonus failed: %s", _e)
+
+    # Auto-promote the referrer to IB once they hit the minimum referral count.
+    try:
+        await _maybe_auto_ib(db, referrer_user_id)
+    except Exception as _e:
+        logger.warning("auto-IB promotion failed for %s: %s", referrer_user_id, _e)
+
+
+async def _maybe_auto_ib(db: AsyncSession, referrer_user_id: UUID) -> None:
+    """If `referrer_user_id` has >= the configured minimum referrals and no active
+    IBProfile yet, create one (reusing their own referral_code) and backfill
+    ib_profile_id on their existing referrals so commissions attribute correctly."""
+    from packages.common.src.settings_store import get_int_setting
+    from sqlalchemy import func
+
+    existing = (await db.execute(
+        select(IBProfile).where(IBProfile.user_id == referrer_user_id)
+    )).scalar_one_or_none()
+    if existing is not None and existing.is_active:
+        return
+
+    min_refs = await get_int_setting("ib_auto_min_referrals", 1)
+    count = (await db.execute(
+        select(func.count(Referral.id)).where(Referral.referrer_id == referrer_user_id)
+    )).scalar_one() or 0
+    if int(count) < max(1, int(min_refs)):
+        return
+
+    user = (await db.execute(select(User).where(User.id == referrer_user_id))).scalar_one_or_none()
+    if user is None:
+        return
+
+    # The referrer's own upline (if they were themselves referred by an IB) becomes
+    # this new IB's parent, so the multi-level chain forms naturally.
+    parent_ib_id = None
+    own_ref = (await db.execute(
+        select(Referral).where(Referral.referred_id == referrer_user_id, Referral.ib_profile_id.isnot(None))
+    )).scalars().first()
+    if own_ref is not None:
+        parent_ib_id = own_ref.ib_profile_id
+
+    # Default commission plan (if any).
+    from packages.common.src.models import IBCommissionPlan
+    default_plan = (await db.execute(
+        select(IBCommissionPlan).where(IBCommissionPlan.is_default.is_(True))
+    )).scalar_one_or_none()
+
+    if not user.referral_code:
+        user.referral_code = await gen_referral_code(db)
+
+    if existing is not None:
+        # Re-activate a previously deactivated profile rather than duplicate.
+        existing.is_active = True
+        new_ib = existing
+    else:
+        new_ib = IBProfile(
+            user_id=referrer_user_id,
+            referral_code=user.referral_code,   # same code — their link never changes
+            parent_ib_id=parent_ib_id,
+            level=1,
+            commission_plan_id=default_plan.id if default_plan else None,
+            is_active=True,
+        )
+        db.add(new_ib)
+    await db.flush()
+
+    # Backfill: point this user's past referrals at the new IB profile.
+    from sqlalchemy import update as _update
+    await db.execute(
+        _update(Referral)
+        .where(Referral.referrer_id == referrer_user_id, Referral.ib_profile_id.is_(None))
+        .values(ib_profile_id=new_ib.id)
+    )
+    logger.info("Auto-promoted user %s to IB (profile %s)", referrer_user_id, new_ib.id)
 
 
 # ─── Core: issue auth response ───────────────────────────────────────────
@@ -555,6 +674,7 @@ async def register_user(
         role="user",
         status="active",
         kyc_status="pending",
+        referral_code=await gen_referral_code(db),
     )
     db.add(user)
     await db.flush()
@@ -835,6 +955,7 @@ async def google_oauth(
                 # going to Google signups" UX bug.
                 email_verified=True,
                 email_verified_at=datetime.utcnow(),
+                referral_code=await gen_referral_code(db),
             )
             db.add(user)
             await db.flush()

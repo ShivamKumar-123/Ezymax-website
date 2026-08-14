@@ -69,6 +69,7 @@ export const SECTIONS: NavSection[] = [
         icon: Gift,
         key: 'earn',
         children: [
+          { label: 'Refer & Earn', href: '/earn/referral', icon: Users },
           { label: 'Tasks', href: '/earn/tasks', icon: CheckSquare },
           { label: 'Leaderboard', href: '/earn/leaderboard', icon: Trophy },
           { label: 'Spin & Win', href: '/earn/play-zone/spin', icon: Sparkles },
