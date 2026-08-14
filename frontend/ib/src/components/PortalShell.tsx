@@ -19,7 +19,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="min-h-[100dvh] bg-bg-base text-text-primary lg:grid lg:grid-cols-[240px_1fr]">
+    <div className="min-h-[100dvh] bg-transparent text-text-primary lg:grid lg:grid-cols-[240px_1fr]">
       {/* Sidebar — fixed on desktop, off-canvas drawer on mobile */}
       <aside className="hidden border-r border-border-primary bg-bg-base/60 lg:block">
         <div className="sticky top-0 h-[100dvh] overflow-y-auto">
