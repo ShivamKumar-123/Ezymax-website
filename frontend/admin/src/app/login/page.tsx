@@ -80,7 +80,7 @@ export default function LoginPage() {
           <div className="auth-right">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <div className="flex flex-col items-center gap-2 mb-1">
-                <img src="/logo.png" alt="FXArtha" className="w-24 h-24 object-contain" />
+                <img src="/fxartha_icon.png" alt="FXArtha" className="w-20 h-20 object-contain drop-shadow-[0_2px_10px_rgba(214,169,61,0.35)]" />
                 <span className="admin-wordmark">FX<span className="admin-wordmark__accent">Artha</span></span>
               </div>
               <div>
