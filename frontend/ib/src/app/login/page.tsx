@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { KeyRound, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import './auth.css';
 
 const STEPS = [
@@ -85,35 +85,40 @@ export default function IBPortalLoginPage() {
           {/* ── RIGHT PANEL ── */}
           <div className="auth-right">
             <form className="auth-form" onSubmit={submit} noValidate>
-              <div className="flex justify-center mb-2">
-                <img src="/logo.png" alt="FXArtha" className="w-16 h-16 object-contain" />
+              <div className="flex justify-center mb-1">
+                <img
+                  src="/fxartha_icon.png"
+                  alt="FXArtha"
+                  className="w-14 h-14 object-contain drop-shadow-[0_0_18px_rgba(214,169,61,0.4)]"
+                />
               </div>
               <div>
                 <h2 className="auth-form__title">FXArtha IB</h2>
-                <p className="auth-form__subtitle">Introducing Broker portal — approved partners only.</p>
+                <p className="auth-form__subtitle">Sign in with the same email &amp; password as your trading account.</p>
               </div>
 
               <div className="auth-demo-badge">
                 <ShieldCheck size={14} />
-                <span>Approved partners only</span>
+                <span>Same login as your trading account</span>
               </div>
 
               <div className="auth-field">
-                <label className="auth-field__label">Login ID</label>
+                <label className="auth-field__label">Email</label>
                 <div className="auth-field__wrap">
                   <input
-                    type="text"
+                    type="email"
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
-                    placeholder="IBXXXXXX"
+                    placeholder="you@example.com"
                     autoFocus
                     autoCapitalize="off"
+                    autoComplete="email"
                     spellCheck={false}
                     required
                     className="auth-field__input"
                     style={{ paddingLeft: '2.5rem' }}
                   />
-                  <KeyRound
+                  <Mail
                     size={14}
                     style={{
                       position: 'absolute',
@@ -184,7 +189,8 @@ export default function IBPortalLoginPage() {
               </button>
 
               <p className="auth-footer" style={{ marginTop: '0.5rem' }}>
-                Use the credentials emailed after your IB application was approved.
+                No separate login — use your FX Artha trader email &amp; password. Refer one
+                trader to unlock your partner portal.
               </p>
             </form>
           </div>
