@@ -3,8 +3,8 @@ import { create } from "zustand";
 /**
  * Cross-section UI state: the intro loader gate plus the two overlays.
  *
- * `ready` flips when the loader finishes its exit — every above-the-fold
- * reveal is gated on it so nothing plays behind the loader.
+ * `ready` gates every above-the-fold reveal. The opening intro film was removed,
+ * so it now starts `true` — reveals play on mount instead of waiting for a loader.
  */
 export interface UiState {
   ready: boolean;
@@ -18,7 +18,7 @@ export interface UiState {
 }
 
 export const useUi = create<UiState>((set) => ({
-  ready: false,
+  ready: true,
   setReady: () => set({ ready: true }),
   menuOpen: false,
   setMenuOpen: (menuOpen) => set({ menuOpen }),

@@ -226,3 +226,86 @@ body {
     opacity: 0.15;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   New Era intro-experience tokens (ported).
+   The experience components in src/views/home/experience/ use a viewport-fluid
+   type scale + frosted-glass surfaces from the source project. Added here so
+   they render correctly. The display font is mapped to Space Grotesk (FX
+   Artha's display face) instead of the source's Assistant.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --accent-warm: #ffa091;
+  --accent-cool: #8da9fc;
+}
+
+@theme {
+  --font-display: var(--font-space-grotesk);
+
+  --text-display: clamp(34px, 5.4vw, 80px);
+  --text-display-sm: clamp(30px, 4.6vw, 64px);
+  --text-stat: clamp(44px, 4.8vw, 72px);
+  --text-lead: clamp(15px, 1.25vw, 18px);
+  --text-eyebrow: clamp(13px, 0.95vw, 14px);
+  --text-kicker: clamp(12px, 0.9vw, 13px);
+  --text-button: clamp(15px, 1.1vw, 16px);
+
+  --leading-title: 1.2;
+  --tracking-title: -0.03em;
+
+  --container-title: 62.5rem;
+  --container-title-sm: 50rem;
+  --container-lead: 37.5rem;
+  --container-lead-sm: 31.25rem;
+
+  --color-surface-glass: rgba(255, 255, 255, 0.04);
+  --color-surface-glass-strong: rgba(255, 255, 255, 0.05);
+  --color-surface-glass-hover: rgba(255, 255, 255, 0.08);
+  --color-surface-icon: rgba(255, 255, 255, 0.02);
+  --color-surface-card: rgba(12, 14, 22, 0.55);
+  --color-border-glass-strong: rgba(255, 255, 255, 0.15);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-cool: var(--accent-cool);
+}
+
+@utility text-gradient-accent {
+  background-image: linear-gradient(90deg, var(--accent-warm), var(--accent-cool));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility text-fade-trailing {
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 100%);
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+@utility shadow-glass-btn {
+  box-shadow:
+    inset 0 2px 10px rgba(255, 255, 255, 0.35),
+    inset 0 -6px 16px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+@utility shadow-glass-btn-hover {
+  box-shadow:
+    inset 0 3px 14px rgba(255, 255, 255, 0.45),
+    inset 0 -6px 16px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+@utility shadow-glass-btn-secondary {
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@utility shadow-glass-eyebrow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+@utility shadow-glass-card {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}

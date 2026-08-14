@@ -318,8 +318,8 @@ export const particleVertexShader = /* glsl */ `
 
         // --- COLORS ---
         // Original, pure blue-to-orange gradient exactly as it is on the wave and sphere
-        vec3 cBottom = vec3(0.06, 0.72, 0.5); // FXArtha emerald #10b981
-        vec3 cTop = vec3(0.80, 1.0, 0.0);     // FXArtha lime #ccff00
+        vec3 cBottom = vec3(0.2, 0.4, 1.0); // Deep Blue
+        vec3 cTop = vec3(1.0, 0.3, 0.2);    // Blazing Orange
 
         // 1. Base color mix (used for sphere, DNA, wave)
         float baseColorMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);

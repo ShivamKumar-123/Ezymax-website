@@ -11,39 +11,43 @@ import { subscribeToTicker } from "@/lib/animation/ticker";
 import {
   backgroundFragmentShader,
   backgroundVertexShader,
-} from "./background";
+} from "./shaders/background";
 import {
   particleFragmentShader,
   particleVertexShader,
-} from "./particles";
+} from "./shaders/particles";
+import { experienceProgress, useExperiencePhase } from "./experience";
+
+/** How many viewport-heights the intro experience spans. The wrapper's scroll
+ *  driver + stage fade use the same value so the morph resolves within it. */
+export const EXPERIENCE_SCREENS = 8;
 
 /**
- * Fixed WebGL particle backdrop for the whole home page — ported from the
- * "New Era" scroll experience and decoupled from its overlay sections. It reads
- * the page's own scroll progress (0→1) each frame, so the aurora + particle
- * cloud morph as the visitor scrolls through the existing FXArtha sections,
- * which sit on top as translucent glass.
+ * The fixed WebGL backdrop: an aurora shader + the scroll-driven particle morph
+ * + UnrealBloom, ported from script.js.
  *
- * Adaptations for use as an ambient background (vs. a standalone experience):
- *  - Aurora + particles recoloured to FXArtha Obsidian & Lime (lime + emerald).
- *  - The source "big-bang" white flash overlay is dropped (it belonged to the
- *    original staged reveal, not a background).
- *  - Softened: lower bloom + a dimmed container so overlay text stays readable.
- *  - Skipped on small screens and when the visitor prefers reduced motion —
- *    the sections fall back to the plain obsidian background there.
+ * Smoothing lives in Lenis (the shared scroll layer), so reading `scrollY` each
+ * frame already yields a smoothed value — this is the single source of scroll
+ * progress that also feeds the overlay phases, keeping morph and UI locked
+ * together. The render loop runs on the shared ticker (the supported extension
+ * point for loop-based animation; see animation-system.md).
  */
-export const ParticleBackground = () => {
+export const ParticleCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    const glow = glowRef.current;
+    if (!container || !glow) return;
 
-    // Respect reduced-motion + skip the heavy WebGL loop on small screens.
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReduced || window.innerWidth < 768) return;
+    // Skip the WebGL loop on small screens / reduced-motion — the experience is
+    // a desktop-only flourish (the wrapper hides the whole stage there).
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.innerWidth < 768
+    )
+      return;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -62,7 +66,7 @@ export const ParticleBackground = () => {
     renderer.autoClear = false;
     container.appendChild(renderer.domElement);
 
-    // --- AURORA BACKGROUND (recoloured to lime + emerald) ---
+    // --- AURORA BACKGROUND SETUP ---
     const bgScene = new THREE.Scene();
     const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
     const bgGeometry = new THREE.PlaneGeometry(2, 2);
@@ -73,8 +77,8 @@ export const ParticleBackground = () => {
         uResolution: {
           value: new THREE.Vector2(window.innerWidth, window.innerHeight),
         },
-        color1: { value: new THREE.Color("#ccff00") }, // lime
-        color2: { value: new THREE.Color("#10b981") }, // emerald
+        color1: { value: new THREE.Color("#ff4c33") },
+        color2: { value: new THREE.Color("#3366ff") },
       },
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
@@ -99,26 +103,34 @@ export const ParticleBackground = () => {
     });
 
     const particles = new THREE.Points(geometry, material);
+    // Keep visible when stretched far below the original bounding sphere.
     particles.frustumCulled = false;
     scene.add(particles);
 
-    // --- POST-PROCESSING (BLOOM) — softened for a background ---
+    // --- POST-PROCESSING (BLOOM) ---
     const composer = new EffectComposer(renderer);
+
     const renderBg = new RenderPass(bgScene, bgCamera);
     composer.addPass(renderBg);
+
     const renderFg = new RenderPass(scene, camera);
     renderFg.clear = false;
     renderFg.clearDepth = true;
     composer.addPass(renderFg);
+
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.0, // strength (source 1.5 — dimmed behind content)
+      1.5, // strength
       0.5, // radius
       0.05, // threshold
     );
     composer.addPass(bloomPass);
 
     let time = 0;
+
+    // On-load intro: the sphere appears filled and close, then dollies back to
+    // its resting position while the centre hollows into the ring. Time-driven
+    // (not scroll), starting on the first rendered frame.
     const INTRO_MS = 2600;
     let introStart = 0;
 
@@ -137,32 +149,38 @@ export const ParticleBackground = () => {
     const render = (now: number) => {
       time += 0.005;
 
+      // Intro progress (eased), driven by wall-clock since the first frame.
       if (introStart === 0) introStart = now;
       const introRaw = Math.min((now - introStart) / INTRO_MS, 1);
-      const introEased = 1 - Math.pow(1 - introRaw, 3);
+      const introEased = 1 - Math.pow(1 - introRaw, 3); // easeOutCubic
       material.uniforms.uIntro.value = introEased;
 
-      const maxScroll =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
+      // Progress is scoped to the experience height (EXPERIENCE_SCREENS), not
+      // the whole page, so the full morph resolves within the intro block and
+      // the FX Artha content sections below scroll normally afterwards.
       const scrollTop =
         document.documentElement.scrollTop || document.body.scrollTop;
-      const currentScroll = maxScroll > 0 ? scrollTop / maxScroll : 0;
+      const expHeight = window.innerHeight * EXPERIENCE_SCREENS;
+      const currentScroll = expHeight > 0 ? Math.min(scrollTop / expHeight, 1) : 0;
 
       material.uniforms.uTime.value = time;
       material.uniforms.uScroll.value = currentScroll;
       bgMaterial.uniforms.uTime.value = time;
       bgMaterial.uniforms.uScroll.value = currentScroll;
 
-      // --- CAMERA & ROTATION LOGIC (source choreography) ---
+      // --- CAMERA & ROTATION LOGIC ---
       const panProgress = Math.min(currentScroll / 0.5, 1.0);
       const smoothPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
 
       const flyPhase =
-        currentScroll < 0.5 ? 0.0 : Math.min((currentScroll - 0.5) / 0.35, 1.0);
+        currentScroll < 0.5
+          ? 0.0
+          : Math.min((currentScroll - 0.5) / 0.35, 1.0);
 
       const blackHoleDive =
-        currentScroll < 0.8 ? 0.0 : Math.min((currentScroll - 0.8) / 0.12, 1.0);
+        currentScroll < 0.8
+          ? 0.0
+          : Math.min((currentScroll - 0.8) / 0.12, 1.0);
 
       camera.position.y = -38.0 * smoothPan + 5.0 * Math.pow(blackHoleDive, 2.0);
       camera.position.z = 8.0 - 4.0 * smoothPan - 55.0 * flyPhase;
@@ -195,6 +213,10 @@ export const ParticleBackground = () => {
         smoothPullback,
       );
 
+      // Intro dolly — start ~3 units closer (sphere fills the view) and ease
+      // back to the resting z. Faded out past the top so scrolling mid-intro
+      // doesn't fight the scroll-driven camera. Applied after lookZ is derived,
+      // so the focal point stays put and the eye simply dollies in.
       const introZoom =
         (1 - introEased) * -3.0 * (1 - Math.min(currentScroll / 0.05, 1));
       camera.position.z += introZoom;
@@ -204,6 +226,22 @@ export const ParticleBackground = () => {
       particles.rotation.y = smoothPan * Math.PI * 2.0;
       particles.rotation.x = Math.sin(smoothPan * Math.PI) * 0.15;
       camera.rotation.z = 0.0;
+
+      // --- BIG BANG FLASH (0.90 → 0.95) ---
+      const glowScaleProgress =
+        currentScroll < 0.9 ? 0.0 : Math.min((currentScroll - 0.9) / 0.03, 1.0);
+      const glowScale = Math.pow(glowScaleProgress, 4.0) * 400.0;
+      const hideGlow =
+        currentScroll < 0.93
+          ? 0.0
+          : Math.min((currentScroll - 0.93) / 0.02, 1.0);
+      glow.style.transform = `translate(-50%, -50%) scale(${glowScale})`;
+      glow.style.opacity = `${1.0 - hideGlow}`;
+
+      // Publish progress for overlays (module value for per-frame card motion,
+      // store for phase-boundary re-renders).
+      experienceProgress.current = currentScroll;
+      useExperiencePhase.getState().sync(currentScroll);
 
       composer.render();
     };
@@ -225,10 +263,22 @@ export const ParticleBackground = () => {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 opacity-60"
-    />
+    <>
+      <div
+        ref={containerRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+      />
+      {/* Big-bang white flash that scales out of the singularity. */}
+      <div
+        ref={glowRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-10 size-25 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,255,255,1) 40%, rgba(255,255,255,0) 80%)",
+        }}
+      />
+    </>
   );
 };

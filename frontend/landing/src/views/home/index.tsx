@@ -1,10 +1,8 @@
 import { SectionCards } from "@/components/common/sections/section-cards";
-import { ParticleBackground } from "@/views/home/particle-bg/particle-background";
+import { NewEraExperience } from "@/views/home/experience";
 import { CopyTrading } from "@/views/home/copy-trading";
 import { FinalCta } from "@/views/home/final-cta";
-import { Hero } from "@/views/home/hero";
 import { HowItWorks } from "@/views/home/how-it-works";
-import { IntroVideo } from "@/views/home/intro-video";
 import { MarginCalculator } from "@/views/home/margin-calculator";
 import { ProblemSolution } from "@/views/home/problem-solution";
 import { Referral } from "@/views/home/referral";
@@ -18,9 +16,7 @@ import {
   automaticPnl,
   copyTrading,
   finalCta,
-  heroContent,
   howItWorks,
-  introContent,
   marginCalculator,
   problemSolution,
   referral,
@@ -39,14 +35,10 @@ import {
 export const HomeView = () => {
   return (
     <>
-      {/* Fixed WebGL particle backdrop behind the whole home (from the "New Era"
-          structure, recoloured to Obsidian & Lime). Every section below sits on
-          top as translucent glass, so the aurora + particles read softly behind
-          them and morph with scroll. */}
-      <ParticleBackground />
-      <IntroVideo content={introContent} />
       <main id="main">
-        <Hero content={heroContent} />
+        {/* Ported "New Era" intro experience (replaces the old hero). The FX
+            Artha content sections below scroll in after it. */}
+        <NewEraExperience />
         <ProblemSolution content={problemSolution} />
         <TickerBand content={tickerBand} />
         <MarginCalculator content={marginCalculator} />
