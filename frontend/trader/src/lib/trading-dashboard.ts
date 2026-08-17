@@ -1,6 +1,11 @@
 /**
- * Trading dashboard snapshot — swap `getTradingDashboardMock()` for a fetch
- * to your API returning the same shape.
+ * Trading dashboard snapshot — types + builders that derive the dashboard
+ * from real backend portfolio data.
+ *
+ * NOTE: the old `getTradingDashboardMock()` (hardcoded fake balances / P&L)
+ * has been deleted — invented numbers must never be renderable in production.
+ * Consumers must pass real data (see buildDashboardFromPortfolio) or render
+ * an empty/loading state instead.
  */
 
 export interface TradingJournalBlock {
@@ -132,70 +137,6 @@ export function buildTradingJournalFromPortfolio(input: {
     usedMargin: 0,
     marginLevel: null,
     currency: 'USD',
-  };
-}
-
-export function getTradingDashboardMock(): TradingDashboardData {
-  return {
-    journal: {
-      balance: 8264.82,
-      equity: 12281.62,
-      netPl: 2705.22,
-      netPlTradeCount: 3,
-      profitFactor: 2.96,
-      profitFactorNote: 'Strong',
-      lotsTraded: 0,
-      totalTrades: 3,
-      wins: 1,
-      losses: 2,
-      streakDays: 1,
-      streakDaysNote: '1 win',
-      streakTrades: 1,
-      streakTradesNote: '1 win',
-      freeMargin: 10000,
-      usedMargin: 0,
-      marginLevel: null,
-      currency: 'USD',
-    },
-    calendar: {
-      defaultMonth: '2026-04',
-      summary: {
-        monthlyPnlUsd: 2800,
-        activeDays: 2,
-        trades: 2,
-        lots: 0,
-        wins: 1,
-        losses: 1,
-      },
-      days: [
-        { date: '2026-04-01', kind: 'win', pnlUsd: 4100, trades: 2, rMultiple: 2.1 },
-        { date: '2026-04-03', kind: 'loss', pnlUsd: -1300, trades: 1 },
-      ],
-    },
-    equity: [
-      { date: '2026-03-28', equityUsd: 8200 },
-      { date: '2026-03-30', equityUsd: 9100 },
-      { date: '2026-04-01', equityUsd: 10500 },
-      { date: '2026-04-02', equityUsd: 9800 },
-      { date: '2026-04-03', equityUsd: 10200 },
-      { date: '2026-04-04', equityUsd: 11800 },
-      { date: '2026-04-05', equityUsd: 11200 },
-    ],
-    stats: {
-      tradeWinPct: 33.3,
-      profitFactor: 2.96,
-      avgWinUsd: 4082.5,
-      avgLossUsd: 688.64,
-      periodPnlUsd: 2705.22,
-      totalTrades: 3,
-      riskReward: '1:5.93',
-      bestStreak: '3 wins',
-      worstStreak: '6 losses',
-      bestTradeUsd: 624,
-      worstTradeUsd: -1035,
-      expectancyUsd: -194.61,
-    },
-    crucialScore: 64,
   };
 }
 

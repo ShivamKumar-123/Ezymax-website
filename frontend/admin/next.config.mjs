@@ -62,7 +62,36 @@ const nextConfig = {
         },
       ];
     }
-    /* Stale-deploy / ChunkLoadError prevention (production).
+    /* Production hardening — mirrors the trader app's baseline
+     * (trader/next.config.mjs headers()).
+     *
+     * CSP starts in REPORT-ONLY mode: the admin's confirmed origins are all
+     * same-origin (API via the /api rewrite, Inter self-hosted through
+     * next/font, local images) plus a cross-origin price WebSocket
+     * (NEXT_PUBLIC_WS_URL, e.g. wss://api.swisscresta.com — hence the bare
+     * wss: in connect-src). 'unsafe-inline'/'unsafe-eval' stay because the
+     * beforeInteractive ThemeInitScript is an inline <script> and the Next.js
+     * client runtime needs them (same rationale as the trader config).
+     * After ~1 week of monitoring with zero unexpected violations, promote by
+     * changing the key 'Content-Security-Policy-Report-Only' →
+     * 'Content-Security-Policy'. */
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      // data:/blob: for inline previews (KYC docs / deposit proofs fetched
+      // via the same-origin API and rendered as object URLs).
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      // wss: for the live price feed (NEXT_PUBLIC_WS_URL may be cross-origin).
+      "connect-src 'self' wss:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join('; ');
+
+    /* Second block: stale-deploy / ChunkLoadError prevention.
      *
      * Next.js stamps statically-rendered pages with a one-year shared-cache
      * `Cache-Control: s-maxage=31536000`, so a browser/CDN keeps serving old
@@ -71,6 +100,23 @@ const nextConfig = {
      * revalidate every request; the negative lookahead leaves the immutable
      * `/_next/static/*` chunks and `/_next/image` caching intact. */
     return [
+      {
+        source: '/(.*)',
+        headers: [
+          // 1 year HSTS + subdomain coverage + preload eligibility.
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+          // Block MIME-type sniffing.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Don't leak full admin URLs (user ids, etc.) cross-origin.
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // The admin panel must never be framed — DENY, not SAMEORIGIN.
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // The admin uses no powerful browser features — lock them all down.
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+          // CSP in monitoring mode. See comment above for promotion path.
+          { key: 'Content-Security-Policy-Report-Only', value: cspDirectives },
+        ],
+      },
       {
         source: '/((?!_next/static/|_next/image).*)',
         headers: [

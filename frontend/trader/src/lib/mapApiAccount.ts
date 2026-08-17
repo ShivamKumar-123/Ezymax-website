@@ -16,6 +16,10 @@ export function mapApiAccount(a: Record<string, unknown>): TradingAccount {
     leverage: Number(a.leverage) || 100,
     currency: String(a.currency ?? 'USD'),
     is_demo: Boolean(a.is_demo),
+    // Declared on TradingAccount but historically unmapped — map it
+    // defensively so wallet-bound accounts are recognisable everywhere
+    // (rows without the field coerce to false).
+    is_wallet_account: Boolean(a.is_wallet_account),
     account_group: g
       ? {
           id: String(g.id),

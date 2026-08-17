@@ -169,6 +169,11 @@ class AdminDepositWallet(Base):
     address = Column(String(64), nullable=False)
     min_confirmations = Column(Integer, nullable=False, default=12)
     is_active = Column(Boolean, default=True, nullable=False)
+    # Added by migration 0044 but historically missing from the ORM — which
+    # meant no query could filter on it, and with a mainnet + testnet row both
+    # active for the same (network, asset) the LIMIT-1 lookups picked an
+    # arbitrary row. User-facing deposit flows MUST filter is_testnet=False.
+    is_testnet = Column(Boolean, default=False, nullable=False)
 
     # Smart-contract integration (nullable until Phase 2 ships).
     contract_address = Column(String(64), nullable=True)

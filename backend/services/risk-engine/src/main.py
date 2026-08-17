@@ -4,7 +4,13 @@ Continuously monitors all open positions and accounts for:
 - Margin level breaches (margin call at 80%, stop-out at 50%)
 - Stop-out execution (close positions if margin level drops below threshold)
 - Exposure monitoring (admin's B-book risk per instrument)
-- Swap calculation (daily rollover charges)
+
+Rollover/swap charging does NOT live here. The gateway's overnight_fee_engine
+is the single authority: it resolves the same SwapConfig chain via
+resolve_swap_rate, is idempotent (positions.last_swap_at), leader-locked, and
+writes Transaction audit rows. A second SwapConfig-based calculator used to run
+in this service at 21:00 UTC with none of those guards — the same position
+could be charged by both engines in one night — so it was removed.
 """
 import asyncio
 import json
@@ -19,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Position, PositionStatus, TradingAccount, Instrument,
-    OrderSide, SwapConfig, Notification, Transaction, User,
+    OrderSide, Notification, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -50,7 +56,6 @@ class RiskEngine:
         await asyncio.gather(
             self._margin_monitor(),
             self._exposure_monitor(),
-            self._swap_calculator(),
         )
 
     async def stop(self):
@@ -203,12 +208,59 @@ class RiskEngine:
             pos.close_price = close_price
             pos.profit = profit
             pos.closed_at = datetime.now(timezone.utc)
+            pos.comment = "Auto-closed by STOP OUT"
 
             account.balance += profit
             margin_release = (pos.lots * pos.instrument.contract_size * pos.open_price) / Decimal(str(account.leverage))
             account.margin_used = max(Decimal("0"), account.margin_used - margin_release)
             account.equity = account.balance + account.credit
             account.free_margin = account.equity - account.margin_used
+
+            # Durable audit trail — every close path MUST write TradeHistory +
+            # Transaction in the same session as the balance mutation. This
+            # path used to write neither, which is exactly the hole the
+            # gateway's _heal_missing_trade_history() loop was papering over
+            # (it fabricated rows minutes later with a WARNING).
+            db.add(TradeHistory(
+                position_id=pos.id,
+                account_id=pos.account_id,
+                instrument_id=pos.instrument_id,
+                side=pos.side,
+                lots=pos.lots,
+                open_price=pos.open_price,
+                close_price=close_price,
+                swap=pos.swap or Decimal("0"),
+                commission=pos.commission or Decimal("0"),
+                profit=profit,
+                close_reason="stop_out",
+                opened_at=pos.created_at,
+                closed_at=pos.closed_at,
+            ))
+            db.add(Transaction(
+                user_id=account.user_id,
+                account_id=pos.account_id,
+                type="profit" if profit >= 0 else "loss",
+                amount=profit,
+                balance_after=account.balance,
+                reference_id=pos.id,
+                description=(
+                    f"Stop-out: {pos.instrument.symbol} "
+                    f"{pos.side.value if hasattr(pos.side, 'value') else pos.side} "
+                    f"{pos.lots} lots @ {close_price}"
+                ),
+            ))
+            db.add(Notification(
+                user_id=account.user_id,
+                title=f"Stop Out — {pos.instrument.symbol}",
+                message=(
+                    f"Position closed by stop-out at {close_price} | "
+                    f"P&L: {'+' if profit >= 0 else ''}{float(profit):.2f}"
+                ),
+                type="margin_call",
+            ))
+            # NOTE: bonus wagering release (wallet_service.release_bonuses_after_trade)
+            # lives in the gateway package and is not importable from this service;
+            # stop-out lots therefore don't feed the bonus FIFO. Known gap.
 
             closed_count += 1
             realized_pnl += profit
@@ -386,73 +438,6 @@ class RiskEngine:
                 logger.error(f"Exposure monitor error: {e}")
 
             await asyncio.sleep(5)
-
-    async def _swap_calculator(self):
-        """Calculate and apply swap charges at rollover time (daily at 21:00 UTC)."""
-        logger.info("Swap calculator started")
-        while self._running:
-            now = datetime.now(timezone.utc)
-            if now.hour == 21 and now.minute == 0:
-                try:
-                    async with AsyncSessionLocal() as db:
-                        result = await db.execute(
-                            select(Position).where(Position.status == PositionStatus.OPEN)
-                        )
-                        positions = result.scalars().all()
-
-                        for pos in positions:
-                            swap_query = select(SwapConfig).where(
-                                SwapConfig.scope == "instrument",
-                                SwapConfig.instrument_id == pos.instrument_id,
-                                SwapConfig.is_enabled == True,
-                            )
-                            swap_result = await db.execute(swap_query)
-                            swap_config = swap_result.scalar_one_or_none()
-
-                            if not swap_config:
-                                inst = pos.instrument
-                                if inst and inst.segment_id:
-                                    swap_query = select(SwapConfig).where(
-                                        SwapConfig.scope == "segment",
-                                        SwapConfig.segment_id == inst.segment_id,
-                                        SwapConfig.is_enabled == True,
-                                    )
-                                    swap_result = await db.execute(swap_query)
-                                    swap_config = swap_result.scalar_one_or_none()
-                            if not swap_config:
-                                swap_query = select(SwapConfig).where(
-                                    SwapConfig.scope == "default",
-                                    SwapConfig.is_enabled == True,
-                                )
-                                swap_result = await db.execute(swap_query)
-                                swap_config = swap_result.scalar_one_or_none()
-
-                            if not swap_config or swap_config.swap_free:
-                                continue
-
-                            swap_rate = swap_config.swap_long if pos.side == OrderSide.BUY else swap_config.swap_short
-                            swap_amount = swap_rate * pos.lots
-
-                            triple_day = swap_config.triple_swap_day if swap_config.triple_swap_day is not None else 2
-                            if now.weekday() == triple_day:
-                                swap_amount *= 3
-
-                            pos.swap += swap_amount
-
-                            account = await db.get(TradingAccount, pos.account_id)
-                            if account:
-                                account.balance += swap_amount
-
-                        await db.commit()
-                        logger.info(f"Swap calculated for {len(positions)} positions")
-
-                except Exception as e:
-                    logger.error(f"Swap calculation error: {e}")
-
-                await asyncio.sleep(60)
-            else:
-                await asyncio.sleep(30)
-
 
 async def main():
     engine = RiskEngine()

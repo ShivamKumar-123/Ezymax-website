@@ -105,6 +105,69 @@ jobs:
               print(f'  - {t}')
           PY
 
+  migrations:
+    name: Migrations — alembic upgrade head on throwaway Postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: swisscresta
+          POSTGRES_PASSWORD: swisscresta_ci
+          POSTGRES_DB: swisscresta
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U swisscresta -d swisscresta"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install migration deps
+        # Mirrors the compose `migrate` one-off runner: the common package
+        # (env.py imports packages.common.src.models for target_metadata)
+        # plus alembic + the async driver.
+        working-directory: backend
+        run: |
+          pip install -e packages/common
+          pip install 'alembic>=1.13.0' 'sqlalchemy[asyncio]>=2.0.30' 'asyncpg>=0.29.0'
+
+      - name: Run every migration against the throwaway DB
+        # env.py requires DATABASE_URL (async driver — it builds an
+        # AsyncEngine, so the +asyncpg scheme is mandatory). alembic.ini
+        # lives at infra/migrations/ and expects to run from backend/.
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+        run: alembic -c infra/migrations/alembic.ini upgrade head
+
+  contracts:
+    name: Contracts — forge test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Solidity dependencies
+        # lib/ is not vendored in the repo (deps live on the deploy machine).
+        # remappings.txt maps @openzeppelin/contracts/ -> lib/openzeppelin-contracts/contracts/
+        # and forge-std/ -> lib/forge-std/src/, so install exactly those two.
+        # Source imports use the OZ v5 layout (utils/Pausable.sol), hence v5.x.
+        working-directory: backend/contracts
+        run: forge install foundry-rs/forge-std@v1.9.6 OpenZeppelin/openzeppelin-contracts@v5.2.0
+
+      - name: forge test
+        working-directory: backend/contracts
+        run: forge test -vvv
+
   frontend:
     name: Frontend — typecheck + lint + build
     runs-on: ubuntu-latest

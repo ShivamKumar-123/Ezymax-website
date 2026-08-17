@@ -3,41 +3,14 @@
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
+import { useTradingStore } from '@/stores/tradingStore';
 import { wsManager } from '@/lib/ws/wsManager';
 import { tradeSocket } from '@/lib/ws/tradeSocket';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
+import { mapApiAccount } from '@/lib/mapApiAccount';
 import api from '@/lib/api/client';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import DashboardShell from '@/components/layout/DashboardShell';
-
-function mapApiAccount(a: Record<string, unknown>): TradingAccount {
-  const g = a.account_group as Record<string, unknown> | null | undefined;
-  return {
-    id: String(a.id),
-    account_number: String(a.account_number ?? ''),
-    balance: Number(a.balance) || 0,
-    credit: Number(a.credit) || 0,
-    equity: Number(a.equity ?? a.balance) || 0,
-    margin_used: Number(a.margin_used) || 0,
-    free_margin: Number(a.free_margin ?? a.balance) || 0,
-    margin_level: Number(a.margin_level) || 0,
-    leverage: Number(a.leverage) || 100,
-    currency: String(a.currency ?? 'USD'),
-    is_demo: Boolean(a.is_demo),
-    account_group: g
-      ? {
-          id: String(g.id),
-          name: String(g.name ?? 'Account'),
-          spread_markup: Number(g.spread_markup) || 0,
-          commission_per_lot: Number(g.commission_per_lot) || 0,
-          minimum_deposit: Number(g.minimum_deposit) || 0,
-          swap_free: Boolean(g.swap_free),
-          leverage_default: Number(g.leverage_default) || 100,
-        }
-      : null,
-  };
-}
 
 function TradingSession({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

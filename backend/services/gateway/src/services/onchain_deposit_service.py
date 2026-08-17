@@ -45,12 +45,18 @@ def _is_placeholder(address: str) -> bool:
 
 
 async def _get_active_wallet(db: AsyncSession, network: str) -> AdminDepositWallet:
+    # is_testnet=False is load-bearing: since migration 0044 relaxed the
+    # unique index, a mainnet AND a testnet row can both be active for the
+    # same (network, asset). Without the filter (and with no ORDER BY) this
+    # LIMIT-1 could hand a real user the testnet address. ORDER BY makes the
+    # pick deterministic even if data drifts.
     row = (await db.execute(
         select(AdminDepositWallet).where(
             AdminDepositWallet.network == network,
             AdminDepositWallet.asset == "USDT",
             AdminDepositWallet.is_active == True,  # noqa: E712
-        ).limit(1)
+            AdminDepositWallet.is_testnet == False,  # noqa: E712
+        ).order_by(AdminDepositWallet.created_at.desc()).limit(1)
     )).scalar_one_or_none()
     if not row:
         raise HTTPException(

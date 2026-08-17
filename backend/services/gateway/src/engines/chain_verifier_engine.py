@@ -112,8 +112,14 @@ async def _verify_one(deposit_id) -> None:
     """Each deposit gets its own DB session so a failure on one doesn't
     poison the rest of the batch."""
     async with AsyncSessionLocal() as db:
+        # FOR UPDATE is the AUTHORITATIVE double-credit guard. The Redis
+        # SETNX lock above is best-effort only: Redis runs with an LRU
+        # eviction policy and a lock key can be evicted under memory
+        # pressure, letting both workers reach this point. With the row
+        # lock, the loser blocks here until the winner commits, then the
+        # status recheck sees 'auto_approved' and bails.
         deposit = (await db.execute(
-            select(Deposit).where(Deposit.id == deposit_id)
+            select(Deposit).where(Deposit.id == deposit_id).with_for_update()
         )).scalar_one_or_none()
         if not deposit or deposit.status != "submitted":
             return  # something else moved it already
@@ -125,17 +131,35 @@ async def _verify_one(deposit_id) -> None:
             logger.warning("no verifier for network=%s deposit=%s", net, deposit.id)
             return
 
-        wallet = (await db.execute(
-            select(AdminDepositWallet).where(
-                AdminDepositWallet.network == net,
-                AdminDepositWallet.asset == "USDT",
-                AdminDepositWallet.is_active == True,  # noqa: E712
-            ).limit(1)
-        )).scalar_one_or_none()
+        # Verify against the wallet the user was actually told to pay:
+        # the deposit row stored crypto_address at creation time. Matching
+        # by address (not a LIMIT-1 re-derive) means a later wallet
+        # rotation — or a testnet row activated alongside the mainnet one
+        # (possible since migration 0044) — can't redirect verification to
+        # the wrong address.
+        wallet = None
+        if deposit.crypto_address:
+            wallet = (await db.execute(
+                select(AdminDepositWallet).where(
+                    AdminDepositWallet.network == net,
+                    AdminDepositWallet.asset == "USDT",
+                    AdminDepositWallet.address == deposit.crypto_address,
+                ).order_by(AdminDepositWallet.created_at.desc()).limit(1)
+            )).scalar_one_or_none()
+        if not wallet:
+            # Legacy deposits without a stored address: mainnet rows only.
+            wallet = (await db.execute(
+                select(AdminDepositWallet).where(
+                    AdminDepositWallet.network == net,
+                    AdminDepositWallet.asset == "USDT",
+                    AdminDepositWallet.is_active == True,  # noqa: E712
+                    AdminDepositWallet.is_testnet == False,  # noqa: E712
+                ).order_by(AdminDepositWallet.created_at.desc()).limit(1)
+            )).scalar_one_or_none()
         if not wallet:
             logger.warning(
-                "no active admin wallet for network=%s deposit=%s — flagging",
-                net, deposit.id,
+                "no admin wallet matching network=%s addr=%s deposit=%s — flagging",
+                net, deposit.crypto_address, deposit.id,
             )
             return
 

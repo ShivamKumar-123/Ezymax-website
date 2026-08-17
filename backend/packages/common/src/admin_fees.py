@@ -20,16 +20,21 @@ async def credit_admin_fee(
     if amount <= 0:
         return
 
-    # Find the first super_admin
+    # Deterministic recipient: the OLDEST super_admin (the seeded platform
+    # account). A bare LIMIT 1 with no ORDER BY let Postgres pick an
+    # arbitrary row, so revenue attribution could silently shift between
+    # super_admin accounts across plans/restarts.
     admin_q = await db.execute(
-        select(User).where(User.role == "super_admin").limit(1)
+        select(User).where(User.role == "super_admin")
+        .order_by(User.created_at.asc()).limit(1)
     )
     admin_user = admin_q.scalar_one_or_none()
 
     if not admin_user:
-        # Fallback: find any admin
+        # Fallback: oldest plain admin (same determinism rule).
         admin_q2 = await db.execute(
-            select(User).where(User.role == "admin").limit(1)
+            select(User).where(User.role == "admin")
+            .order_by(User.created_at.asc()).limit(1)
         )
         admin_user = admin_q2.scalar_one_or_none()
 

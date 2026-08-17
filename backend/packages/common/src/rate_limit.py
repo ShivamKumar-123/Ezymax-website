@@ -55,6 +55,26 @@ def client_ip_for_inet(request: Request) -> str | None:
 
 _LOCAL_RATE_BUCKETS: dict[str, list[float]] = {}
 
+# The bucket dict is keyed by (bucket, client IP) and grows with every
+# distinct IP that ever hits a rate-limited endpoint — an unbounded,
+# never-GC'd leak. Sweep expired buckets opportunistically: cheap (a dict
+# scan), amortized over many requests, and safe because an empty/expired
+# bucket carries no rate-limit state worth keeping.
+_GC_EVERY = 2048  # sweep once per this many rate_limit_http calls
+_gc_counter = 0
+_MAX_WINDOW_HINT = 3600.0  # longest window currently used (register: 1h)
+
+
+def _maybe_gc(now: float) -> None:
+    global _gc_counter
+    _gc_counter += 1
+    if _gc_counter % _GC_EVERY:
+        return
+    stale_floor = now - _MAX_WINDOW_HINT
+    for k in [k for k, arr in _LOCAL_RATE_BUCKETS.items()
+              if not arr or arr[-1] < stale_floor]:
+        _LOCAL_RATE_BUCKETS.pop(k, None)
+
 
 def rate_limit_http(
     request: Request,
@@ -72,6 +92,7 @@ def rate_limit_http(
     key = f"rl:{bucket}:{ip}"
     now = monotonic()
     floor = now - window_sec
+    _maybe_gc(now)
 
     # Local fallback path. Trim, count, decide. Cheap.
     arr = _LOCAL_RATE_BUCKETS.setdefault(key, [])

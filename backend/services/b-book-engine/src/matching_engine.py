@@ -20,11 +20,13 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.ib_commission import distribute_ib_commission
+from packages.common.src.market_hours import is_market_open
+from packages.common.src.settings_store import get_bool_setting
+from packages.common.src.trading_service import quote_to_account_pnl, cross_rate_for
 
 logger = logging.getLogger("b-book-engine")
 
@@ -61,32 +63,6 @@ class MatchingEngine:
         if is_tick_stale(tick):
             return None
         return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
-
-    async def _get_spread_markup(self, instrument_id, user_id, segment_id, db: AsyncSession) -> Decimal:
-        """Resolve spread markup using the config hierarchy: user > instrument > segment > default."""
-        for scope, sid, iid, uid in [
-            ("user", None, None, user_id),
-            ("instrument", None, instrument_id, None),
-            ("segment", segment_id, None, None),
-            ("default", None, None, None),
-        ]:
-            query = select(SpreadConfig).where(
-                SpreadConfig.scope == scope,
-                SpreadConfig.is_enabled == True,
-            )
-            if uid:
-                query = query.where(SpreadConfig.user_id == uid)
-            if iid:
-                query = query.where(SpreadConfig.instrument_id == iid)
-            if sid:
-                query = query.where(SpreadConfig.segment_id == sid)
-
-            result = await db.execute(query)
-            config = result.scalar_one_or_none()
-            if config:
-                return config.value
-
-        return Decimal("0")
 
     async def _monitor_pending_orders(self):
         """Monitor and trigger pending orders when price conditions are met."""
@@ -143,17 +119,87 @@ class MatchingEngine:
             await asyncio.sleep(0.1)
 
     async def _execute_pending_order(self, order: Order, bid: Decimal, ask: Decimal, db: AsyncSession):
-        account = await db.get(TradingAccount, order.account_id)
+        # Maintenance mode blocks pending fills exactly like it blocks
+        # market orders in the gateway. The order stays pending and will
+        # fill on the first tick after maintenance ends (if still valid).
+        if await get_bool_setting("maintenance_mode", False):
+            return
+
+        # Lock the account row: a pending fill races concurrent gateway
+        # market orders on the same account, and both paths read + rewrite
+        # margin_used/balance. The gateway's place_order takes the same
+        # FOR UPDATE lock, so the two serialize instead of double-spending
+        # the margin pool. Released at the outer loop's commit.
+        locked_q = await db.execute(
+            select(TradingAccount)
+            .where(TradingAccount.id == order.account_id)
+            .with_for_update()
+        )
+        account = locked_q.scalar_one_or_none()
         if not account or not account.is_active:
             order.status = OrderStatus.REJECTED
             return
 
         instrument = await db.get(Instrument, order.instrument_id)
+
+        # Never fill into a closed market (mirrors the gateway's market-order
+        # check). Ticks shouldn't arrive while closed, but the stale-quote
+        # refresher and crypto side-feeds make this worth an explicit guard.
+        segment_name = instrument.segment.name if instrument.segment else ""
+        market_open, _closed_reason = is_market_open(
+            instrument.symbol, segment_name, instrument.trading_hours
+        )
+        if not market_open:
+            return
+
         # Redis quotes already include platform spread (symmetric).
         fill_price = ask if order.side == OrderSide.BUY else bid
         margin = (order.lots * instrument.contract_size * fill_price) / Decimal(str(account.leverage))
 
-        if margin > account.free_margin:
+        # Margin check against RECOMPUTED values, not the stored
+        # account.free_margin — the exact figure the gateway's place_order
+        # deliberately distrusts (it drifts/sticks over many trades). Same
+        # recipe: open margin re-summed from open positions, unrealized P&L
+        # from live ticks with cross-rate conversion.
+        open_pos_q = await db.execute(
+            select(Position).where(
+                Position.account_id == account.id,
+                Position.status == PositionStatus.OPEN,
+            )
+        )
+        open_positions = open_pos_q.scalars().all()
+        open_margin = Decimal("0")
+        unrealized_pnl = Decimal("0")
+        for pos in open_positions:
+            p_inst = pos.instrument
+            cs = (p_inst.contract_size if p_inst else None) or Decimal("100000")
+            open_margin += (pos.lots * cs * pos.open_price) / Decimal(str(account.leverage))
+            if not p_inst:
+                continue
+            tick_data = await redis_client.get(PriceChannel.tick_key(p_inst.symbol))
+            if not tick_data:
+                continue
+            tick = json.loads(tick_data)
+            if is_tick_stale(tick):
+                continue
+            sv = pos.side.value if hasattr(pos.side, "value") else str(pos.side)
+            cp = Decimal(str(tick["bid"])) if sv == "buy" else Decimal(str(tick["ask"]))
+            if sv == "buy":
+                pos_pnl = (cp - pos.open_price) * pos.lots * cs
+            else:
+                pos_pnl = (pos.open_price - cp) * pos.lots * cs
+            unrealized_pnl += quote_to_account_pnl(
+                pos_pnl,
+                getattr(p_inst, "base_currency", None),
+                getattr(p_inst, "quote_currency", None),
+                cp,
+                symbol=p_inst.symbol,
+                cross_rate=await cross_rate_for(p_inst),
+            )
+
+        real_equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
+        real_free_margin = real_equity - open_margin
+        if margin > real_free_margin:
             order.status = OrderStatus.REJECTED
             return
 

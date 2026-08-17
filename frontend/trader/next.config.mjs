@@ -97,7 +97,15 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'https', hostname: '**' },
+      // Own domain + subdomains only. The previous `hostname: '**'` let the
+      // /_next/image optimizer proxy-fetch ANY https host (open-proxy /
+      // SSRF-ish surface). No next/image call site in src/ passes a remote
+      // https URL today — the external icons (flagcdn.com, cdn.jsdelivr.net,
+      // api.qrserver.com) all render through plain <img>, which bypasses the
+      // optimizer — so own-domain coverage is sufficient. Add specific hosts
+      // here if a next/image ever needs a third-party origin.
+      { protocol: 'https', hostname: 'swisscresta.com' },
+      { protocol: 'https', hostname: '**.swisscresta.com' },
     ],
   },
   async headers() {
@@ -114,13 +122,11 @@ const nextConfig = {
     }
     /* Production hardening. Order matters for readability, not for HTTP.
      *
-     * CSP is in REPORT-ONLY mode initially — the header logs violations
-     * to the browser console + (once Sentry is wired in D.2) a report
-     * endpoint, but does NOT block anything. After ~1 week of monitoring
-     * with zero unexpected violations, promote by changing the key
-     * 'Content-Security-Policy-Report-Only' → 'Content-Security-Policy'.
+     * CSP is now ENFORCED (promoted from Content-Security-Policy-Report-Only
+     * after the monitoring period; the stale verify.walletconnect.* entries
+     * were dropped at promotion time — the wallet UI was purged).
      *
-     * Then in a follow-up: drop 'unsafe-inline' from script-src by
+     * Still open as a follow-up: drop 'unsafe-inline' from script-src by
      * adding a per-request nonce in middleware.ts and passing it to
      * the inline localStorage-migration <script> in app/layout.tsx. */
     const cspDirectives = [
@@ -132,7 +138,7 @@ const nextConfig = {
       // *.razorpay.com covers checkout.js + the cdn.razorpay.com risk script.
       // blob: required by the self-hosted TradingView Charting Library, which
       // spins up Web Workers (and loads some code) from blob: URLs.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://verify.walletconnect.com https://verify.walletconnect.org https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
       // Charting Library workers.
       "worker-src 'self' blob:",
       "child-src 'self' blob:",
@@ -141,7 +147,7 @@ const nextConfig = {
       "font-src 'self' data: https://fonts.gstatic.com",
       // wss: for the WebSocket price feed, https: covers gateway + 3rd party.
       "connect-src 'self' https: wss:",
-      "frame-src 'self' blob: https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.razorpay.com",
+      "frame-src 'self' blob: https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://*.razorpay.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -165,8 +171,8 @@ const nextConfig = {
           // Camera left open (KYC selfie flows may add it later). Microphone
           // and geolocation should never fire — block them.
           { key: 'Permissions-Policy', value: 'microphone=(), geolocation=(), payment=*' },
-          // CSP in monitoring mode. See comment above for promotion path.
-          { key: 'Content-Security-Policy-Report-Only', value: cspDirectives },
+          // CSP enforced. See comment above for the nonce follow-up.
+          { key: 'Content-Security-Policy', value: cspDirectives },
         ],
       },
       {

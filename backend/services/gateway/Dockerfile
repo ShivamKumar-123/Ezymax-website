@@ -23,4 +23,7 @@ USER swisscresta
 
 EXPOSE 8000
 
-CMD ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Production default: no --reload (dev hot-reload is added by
+# docker-compose.override.yml). Single worker by default — prod compose
+# passes --workers 2 explicitly.
+CMD ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000"]

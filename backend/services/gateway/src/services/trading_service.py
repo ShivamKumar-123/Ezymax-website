@@ -385,9 +385,21 @@ async def place_order(
                 pos_side = pos.side.value if hasattr(pos.side, 'value') else str(pos.side)
                 cp = p_bid if pos_side == "buy" else p_ask
                 if pos_side == "buy":
-                    unrealized_pnl += (cp - pos.open_price) * pos.lots * cs
+                    pos_pnl = (cp - pos.open_price) * pos.lots * cs
                 else:
-                    unrealized_pnl += (pos.open_price - cp) * pos.lots * cs
+                    pos_pnl = (pos.open_price - cp) * pos.lots * cs
+                # Convert quote-currency P&L into the account currency like every
+                # other P&L site (risk engine, close path, SL/TP). Without this,
+                # a JPY-quoted position inflated/deflated equity ~150× in the
+                # margin-sufficiency check below.
+                unrealized_pnl += quote_to_account_pnl(
+                    pos_pnl,
+                    getattr(pos.instrument, "base_currency", None),
+                    getattr(pos.instrument, "quote_currency", None),
+                    cp,
+                    symbol=sym,
+                    cross_rate=await cross_rate_for(pos.instrument),
+                )
         real_equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
         # Use the RECOMPUTED open-position margin, not the (possibly stuck) stored
         # account.margin_used — this both fixes the check AND self-heals the
@@ -939,7 +951,10 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     }
 
 
-async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession) -> dict:
+async def close_position(
+    position_id: UUID, req, user_id: UUID, db: AsyncSession,
+    close_reason_override: str | None = None,
+) -> dict:
     result = await db.execute(select(Position).where(Position.id == position_id))
     pos = result.scalar_one_or_none()
     if not pos:
@@ -1029,6 +1044,10 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
             detected_reason = "tp"
         elif sv == "sell" and close_price <= tp:
             detected_reason = "tp"
+    # Caller-supplied audit label (e.g. "algo_close") — only replaces the
+    # default "manual"; a detected SL/TP crossing always wins.
+    if close_reason_override and detected_reason == "manual":
+        detected_reason = close_reason_override
 
     if is_partial:
         ratio = close_lots / pos.lots

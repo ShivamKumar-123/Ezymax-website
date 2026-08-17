@@ -22,6 +22,11 @@ services:
     ports:
       - "127.0.0.1:8003:8001"
     restart: always
+    # Prod runs the code baked into the image — drop the dev source bind
+    # mounts from the base file. Keep ONLY the uploads data mount (KYC docs,
+    # deposit proofs, banners must persist across deploys).
+    volumes: !override
+      - ./backend/uploads:/app/uploads
     environment:
       # Admin API is reached exclusively from the admin SPA — never from
       # the trader or marketing domain. Lock CORS to admin.swisscresta.com
@@ -53,15 +58,25 @@ services:
       # Overridable from .env; defaults ON in production.
       USER_SPREAD_AT_EXECUTION: ${USER_SPREAD_AT_EXECUTION:-true}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    # Prod runs the code baked into the image — drop the dev source bind
+    # mounts from the base file. Keep ONLY the uploads data mount.
+    volumes: !override
+      - ./backend/uploads:/app/uploads
 
   market-data:
     restart: always
+    # No data volumes — run purely from the image (drop dev source mounts).
+    volumes: !reset []
 
   b-book-engine:
     restart: always
+    # No data volumes — run purely from the image (drop dev source mounts).
+    volumes: !reset []
 
   risk-engine:
     restart: always
+    # No data volumes — run purely from the image (drop dev source mounts).
+    volumes: !reset []
 
   # ── Frontends — build with production domain + restart ──────
   trader-frontend:

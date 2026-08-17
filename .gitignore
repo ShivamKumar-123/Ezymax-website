@@ -38,9 +38,13 @@ admin_logs.txt
 npm-debug.log*
 yarn-debug.log*
 
-# Upload storage (use object storage in production)
+# Upload storage (use object storage in production).
+# backend/uploads/ holds real KYC documents + deposit proofs — NEVER commit.
+# (Already covered by **/uploads/ below; listed explicitly for clarity.
+# backend/uploads/banners/.gitkeep stays tracked — it predates the ignore.)
 /uploads/
 **/uploads/
+backend/uploads/
 
 # Database backups
 /backups/

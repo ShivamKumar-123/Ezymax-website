@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { CalendarDayCell, TradingDashboardData } from '@/lib/trading-dashboard';
-import { getTradingDashboardMock } from '@/lib/trading-dashboard';
 import TradingJournalSection from '@/components/profile/TradingJournalSection';
 
 const NEON = '#E94E1B';
@@ -198,8 +197,13 @@ function EquityChart({ points }: { points: { date: string; equityUsd: number }[]
   );
 }
 
-export default function TradingOverview({ data }: { data?: TradingDashboardData }) {
-  const d = data ?? getTradingDashboardMock();
+/* `data` is REQUIRED — the old optional prop fell back to
+ * getTradingDashboardMock()'s hardcoded fake balances, which was one careless
+ * render away from showing invented P&L in production. The sole call site
+ * (portfolio/page.tsx) already guards with `dashboardData ? ... : null`, so
+ * callers must keep handling the no-data case with an empty/loading state. */
+export default function TradingOverview({ data }: { data: TradingDashboardData }) {
+  const d = data;
   const j = d.journal;
   const [calMonth, setCalMonth] = useState(() => parseISO(`${d.calendar.defaultMonth}-01`));
   const [calView, setCalView] = useState<'usd' | 'pct' | 'r' | 'trades'>('usd');

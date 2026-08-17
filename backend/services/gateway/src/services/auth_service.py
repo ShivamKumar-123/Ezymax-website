@@ -336,14 +336,22 @@ async def issue_auth_json_response(
         except Exception:
             pass
 
-    display_token = token if st.JWT_INCLUDE_LEGACY_JSON_TOKEN else ""
+    # Cookie-less clients (the mobile app) opt into JSON token delivery with an
+    # explicit request header. Web clients never send it, so browser responses
+    # keep the cookie-only contract (no refresh token in JSON).
+    json_delivery = (request.headers.get("x-token-delivery") or "").strip().lower() == "json"
+    display_token = token if (st.JWT_INCLUDE_LEGACY_JSON_TOKEN or json_delivery) else ""
     body = TokenResponse(
         access_token=display_token,
         user_id=str(user.id),
         role=user.role,
         expires_at=expires,
     )
-    resp = JSONResponse(content=body.model_dump(mode="json"), status_code=status_code)
+    content = body.model_dump(mode="json")
+    if json_delivery:
+        content["refresh_token"] = raw_refresh
+        content["refresh_expires_at"] = ref_exp.isoformat()
+    resp = JSONResponse(content=content, status_code=status_code)
     attach_auth_cookies(
         resp, request,
         access_token=token,
@@ -752,6 +760,13 @@ async def refresh_token(request: Request, db: AsyncSession) -> JSONResponse:
     rate_limit_http(request, "auth-refresh", 60, 60.0)
     st = get_settings()
     raw = request.cookies.get(st.REFRESH_TOKEN_COOKIE_NAME)
+    if not raw or not raw.strip():
+        # Cookie-less clients (mobile) send the refresh token in the JSON body.
+        try:
+            payload = await request.json()
+            raw = str(payload.get("refresh_token") or "")
+        except Exception:
+            raw = ""
     if not raw or not raw.strip():
         raise AuthServiceError("Not authenticated", 401)
     th = hash_token(raw.strip())

@@ -19,6 +19,9 @@ services:
   gateway:
     ports: !override
       - "8002:8000"
+    # Dev hot-reload. The image's CMD is the production form (no --reload);
+    # the reload flag lives here so prod images never ship with it.
+    command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       <<: *dev-cookie-env
       # The trader app is published on host port 3010 locally (not 3000), so

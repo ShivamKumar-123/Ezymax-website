@@ -49,7 +49,11 @@ services:
   redis:
     image: redis:7-alpine
     # No host port binding — all services connect via Docker network (redis:6379)
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    # volatile-lru (NOT allkeys-lru): critical non-TTL keys (last_price:*) are
+    # never evicted; keys with TTLs (ticks, locks, rate-limit windows) remain
+    # evictable under pressure, and the deposit-credit path now also holds a
+    # DB row lock (being added separately) as the authoritative guard.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-lru
     volumes:
       - redis_data:/data
     healthcheck:
