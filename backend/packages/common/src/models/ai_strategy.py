@@ -34,6 +34,9 @@ class AIStrategy(Base):
     # The natural-language prompt the user gave the AI (audit trail; nullable
     # for strategies built purely in the JSON editor).
     prompt = Column(Text)
+    # The AI's plain-English explanation of how the strategy works
+    # (shown on the detail page; from the chat reply that produced the rules).
+    explanation = Column(Text)
     dsl = Column(JSONB, nullable=False)
     status = Column(String(16), nullable=False, default="draft")  # draft | active | archived
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

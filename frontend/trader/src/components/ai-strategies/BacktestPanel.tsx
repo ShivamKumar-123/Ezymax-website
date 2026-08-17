@@ -14,7 +14,7 @@ const PAD_R = 10;
 const PAD_T = 14;
 const PAD_B = 26;
 
-function EquityCurve({ curve }: { curve: EquityPoint[] }) {
+export function EquityCurve({ curve }: { curve: EquityPoint[] }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
@@ -179,13 +179,20 @@ export default function BacktestPanel({
         <EquityCurve curve={curve} />
       </div>
 
-      {trades && trades.length > 0 && (
-        <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
-          <div className="px-3 py-2 border-b border-border-primary">
-            <p className="text-[11px] font-semibold text-text-secondary">Trades (last {trades.length})</p>
-          </div>
-          <div className="max-h-72 overflow-y-auto overflow-x-auto">
-            <table className="w-full min-w-[640px] text-xs">
+      {trades && trades.length > 0 && <BacktestTradesTable trades={trades} />}
+    </div>
+  );
+}
+
+/** Simulated fills from a backtest run — reused by the strategy detail page. */
+export function BacktestTradesTable({ trades }: { trades: BacktestTrade[] }) {
+  return (
+    <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
+      <div className="px-3 py-2 border-b border-border-primary">
+        <p className="text-[11px] font-semibold text-text-secondary">Trades (last {trades.length})</p>
+      </div>
+      <div className="max-h-72 overflow-y-auto overflow-x-auto">
+        <table className="w-full min-w-[640px] text-xs">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border-primary text-text-tertiary text-left">
                   <th className="px-3 py-2 font-medium">Side</th>
@@ -223,10 +230,8 @@ export default function BacktestPanel({
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        </table>
+      </div>
     </div>
   );
 }

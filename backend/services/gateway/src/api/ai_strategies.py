@@ -20,14 +20,25 @@ from ..services import ai_strategy_service as svc
 router = APIRouter()
 
 
+class ChatTurn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(max_length=4000)
+
+
 class GenerateRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=4000)
+    # Refinement support (tradezini-style chat maker): the running
+    # conversation plus the config being refined. Both optional — a bare
+    # prompt is a fresh generation.
+    previous_dsl: Optional[dict] = None
+    history: Optional[list[ChatTurn]] = Field(default=None, max_length=40)
 
 
 class CreateStrategyRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: Optional[str] = Field(default=None, max_length=2000)
     prompt: Optional[str] = Field(default=None, max_length=4000)
+    explanation: Optional[str] = Field(default=None, max_length=8000)
     dsl: dict
 
 
@@ -54,8 +65,12 @@ async def generate(
     db: AsyncSession = Depends(get_db),
 ):
     # LLM calls are the expensive path — keep the bucket tight.
-    rate_limit_http(request, "ai-strategy-generate", 10, 60.0)
-    return await svc.generate_from_prompt(body.prompt, db)
+    rate_limit_http(request, "ai-strategy-generate", 15, 60.0)
+    return await svc.generate_from_prompt(
+        body.prompt, db,
+        previous_dsl=body.previous_dsl,
+        history=[t.model_dump() for t in body.history] if body.history else None,
+    )
 
 
 @router.post("/", status_code=201)
@@ -69,6 +84,7 @@ async def create_strategy(
     return await svc.create_strategy(
         current_user["user_id"], body.name, body.dsl,
         body.description, body.prompt, db,
+        explanation=body.explanation,
     )
 
 

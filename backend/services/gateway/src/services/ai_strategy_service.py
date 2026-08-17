@@ -68,10 +68,25 @@ async def _validate_symbol(db: AsyncSession, symbol: str) -> Instrument:
 # ─── AI generation (Claude structured output) ─────────────────────────────
 
 class GeneratedStrategy(BaseModel):
-    """Structured output the model must produce — nothing else is accepted."""
-    name: str = Field(description="Short strategy name, max 60 chars")
-    description: str = Field(description="1-2 sentence plain-English summary of the rules")
-    dsl: StrategyDSL
+    """Structured output the model must produce — nothing else is accepted.
+
+    `dsl` is optional so the model can answer a question or ask for a
+    clarification without being forced to invent rules; `reply` is the
+    conversational text shown in the chat.
+    """
+    reply: str = Field(description=(
+        "Conversational reply to the trader: explain what the strategy does "
+        "(or what you changed on a refinement) in 2-5 plain sentences. "
+        "No JSON here."
+    ))
+    name: Optional[str] = Field(default=None, description="Short strategy name, max 60 chars")
+    description: Optional[str] = Field(
+        default=None, description="1-2 sentence plain-English summary of the rules")
+    dsl: Optional[StrategyDSL] = Field(default=None, description=(
+        "The strategy configuration. Emit it whenever the user's message "
+        "describes or refines a strategy; omit only when you are asking a "
+        "clarifying question instead."
+    ))
 
 
 _DSL_GUIDE = """You translate a trader's natural-language idea into a strict JSON strategy DSL.
@@ -104,7 +119,20 @@ Rules:
 - Default max_open_positions 1 and max_trades_per_day 10 unless asked."""
 
 
-async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
+MAX_CHAT_HISTORY = 20
+
+
+async def generate_from_prompt(
+    prompt: str, db: AsyncSession,
+    previous_dsl: Optional[dict] = None,
+    history: Optional[list[dict]] = None,
+) -> dict:
+    """One chat turn of the AI Strategy Maker.
+
+    First call: `previous_dsl`/`history` empty → fresh generation.
+    Refinement: the client passes the running conversation plus the current
+    config; the model edits that config instead of starting over.
+    """
     st = get_settings()
     if not st.ANTHROPIC_API_KEY:
         raise HTTPException(
@@ -116,7 +144,7 @@ async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
             ),
         )
     prompt = (prompt or "").strip()
-    if len(prompt) < 10:
+    if len(prompt) < 3:
         raise HTTPException(status_code=400, detail="Describe your strategy in a bit more detail")
     if len(prompt) > 4000:
         raise HTTPException(status_code=400, detail="Prompt too long (max 4000 characters)")
@@ -125,6 +153,36 @@ async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
         select(Instrument.symbol).where(Instrument.is_active == True)  # noqa: E712
         .order_by(Instrument.symbol)
     )).scalars().all()
+
+    # Rebuild the conversation: prior turns (text only, capped), then — on a
+    # refinement — the current config injected right before the new prompt so
+    # the model edits rather than reinvents.
+    messages: list[dict] = []
+    for turn in (history or [])[-MAX_CHAT_HISTORY:]:
+        role = turn.get("role")
+        content = str(turn.get("content") or "").strip()[:4000]
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+    # The API requires the first message to be a user turn.
+    while messages and messages[0]["role"] != "user":
+        messages.pop(0)
+
+    user_content = prompt
+    if previous_dsl is not None:
+        try:
+            current = parse_dsl(previous_dsl)  # never feed the model an invalid config
+            import json as _json
+            user_content = (
+                "Current strategy configuration:\n"
+                f"{_json.dumps(current.model_dump(exclude_none=True), indent=1)}\n\n"
+                f"Refinement request: {prompt}\n"
+                "Apply the request to the configuration above — change only "
+                "what the request implies, keep everything else as-is, and "
+                "return the full updated configuration."
+            )
+        except HTTPException:
+            pass  # invalid previous config → treat as a fresh generation
+    messages.append({"role": "user", "content": user_content})
 
     import anthropic
 
@@ -137,7 +195,7 @@ async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
                 {"type": "text", "text": _DSL_GUIDE, "cache_control": {"type": "ephemeral"}},
                 {"type": "text", "text": "Available instruments: " + ", ".join(symbols)},
             ],
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             output_format=GeneratedStrategy,
         )
     except anthropic.RateLimitError:
@@ -157,13 +215,17 @@ async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
         )
 
     generated: GeneratedStrategy = response.parsed_output
-    # Server-side re-validation: symbol must be tradeable here.
-    await _validate_symbol(db, generated.dsl.symbol)
-    return {
-        "name": generated.name[:120],
+    out: dict = {
+        "reply": generated.reply,
+        "name": (generated.name or "")[:120] or None,
         "description": generated.description,
-        "dsl": generated.dsl.model_dump(exclude_none=True),
+        "dsl": None,
     }
+    if generated.dsl is not None:
+        # Server-side re-validation: symbol must be tradeable here.
+        await _validate_symbol(db, generated.dsl.symbol)
+        out["dsl"] = generated.dsl.model_dump(exclude_none=True)
+    return out
 
 
 # ─── CRUD ─────────────────────────────────────────────────────────────────
@@ -185,6 +247,7 @@ def _strategy_out(s: AIStrategy, running: int = 0) -> dict:
 async def create_strategy(
     user_id: UUID, name: str, dsl_raw: dict,
     description: Optional[str], prompt: Optional[str], db: AsyncSession,
+    explanation: Optional[str] = None,
 ) -> dict:
     dsl = parse_dsl(dsl_raw)
     await _validate_symbol(db, dsl.symbol)
@@ -198,7 +261,8 @@ async def create_strategy(
         raise HTTPException(status_code=400, detail="Name is required")
     s = AIStrategy(
         user_id=user_id, name=name[:120], description=description,
-        prompt=prompt, dsl=dsl.model_dump(exclude_none=True), status="draft",
+        prompt=prompt, explanation=explanation,
+        dsl=dsl.model_dump(exclude_none=True), status="draft",
     )
     db.add(s)
     await db.commit()
@@ -242,6 +306,7 @@ async def get_strategy(strategy_id: UUID, user_id: UUID, db: AsyncSession) -> di
     )).scalar() or 0
     out = _strategy_out(s, running)
     out["prompt"] = s.prompt
+    out["explanation"] = s.explanation
     out["dsl"] = s.dsl
     out["latest_backtest"] = None
     if latest_bt:
@@ -392,6 +457,18 @@ async def deploy_strategy(
     dsl = parse_dsl(s.dsl)  # re-validate before anything goes live
     await _validate_symbol(db, dsl.symbol)
 
+    # Reference-app discipline: never deploy rules that were never tested.
+    has_backtest = (await db.execute(
+        select(func.count(AIStrategyBacktest.id)).where(
+            AIStrategyBacktest.strategy_id == s.id,
+        )
+    )).scalar() or 0
+    if not has_backtest:
+        raise HTTPException(
+            status_code=400,
+            detail="Run a backtest before deploying this strategy",
+        )
+
     account = (await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == account_id, TradingAccount.user_id == user_id,
@@ -505,6 +582,7 @@ async def list_ai_trades(user_id: UUID, status: str, db: AsyncSession) -> list[d
         out.append({
             "position_id": str(pos.id),
             "instance_id": str(link.instance_id),
+            "strategy_id": str(link.strategy_id),
             "strategy_name": strat_name,
             "symbol": pos.instrument.symbol if pos.instrument else None,
             "side": pos.side.value if hasattr(pos.side, "value") else str(pos.side),

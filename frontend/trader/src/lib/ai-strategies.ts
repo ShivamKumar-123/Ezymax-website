@@ -51,10 +51,22 @@ export interface StrategyDsl {
 
 // ─── API shapes ───────────────────────────────────────────────────────────────
 
-export interface GeneratedStrategy {
-  name: string;
-  description: string;
-  dsl: StrategyDsl;
+/** One prior conversation turn passed back to /generate on refinements. */
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Conversational generate response. `dsl` is null when the AI asked a
+ * clarifying question instead of producing a config; `reply` is always the
+ * text to show in the conversation.
+ */
+export interface GenerateResponse {
+  reply: string;
+  name: string | null;
+  description: string | null;
+  dsl: StrategyDsl | null;
 }
 
 export interface AiStrategySummary {
@@ -77,7 +89,8 @@ export interface BacktestStats {
   gross_profit: number;
   gross_loss: number;
   net_profit: number;
-  profit_factor: number;
+  /** Null when there were no losing trades (rendered as ∞). */
+  profit_factor: number | null;
   max_drawdown_pct: number;
   return_pct: number;
   start_ts: number;
@@ -114,6 +127,8 @@ export interface AiStrategyDetail {
   name: string;
   description: string | null;
   prompt: string | null;
+  /** The assistant reply that produced the saved config ("How this strategy works"). */
+  explanation: string | null;
   dsl: StrategyDsl;
   status: string;
   created_at: string;
@@ -165,12 +180,31 @@ export interface AiClosedTrade {
 
 // ─── API wrappers ─────────────────────────────────────────────────────────────
 
-export const aiApi = {
-  generate: (prompt: string) =>
-    api.post<GeneratedStrategy>('/ai-strategies/generate', { prompt }),
+/** Server limits on the chat history passed to /generate. */
+const HISTORY_MAX_TURNS = 40;
+const HISTORY_MAX_CHARS = 4000;
 
-  create: (body: { name: string; description?: string; prompt?: string; dsl: StrategyDsl }) =>
-    api.post<AiStrategySummary>('/ai-strategies', body),
+export const aiApi = {
+  /**
+   * Conversational generation. Pass `previous_dsl` + the prior text history
+   * on refinement turns; the server replies with text and (maybe) a new DSL.
+   */
+  generate: (body: { prompt: string; previous_dsl?: StrategyDsl | null; history?: ChatTurn[] }) =>
+    api.post<GenerateResponse>('/ai-strategies/generate', {
+      prompt: body.prompt,
+      previous_dsl: body.previous_dsl ?? null,
+      history: (body.history ?? [])
+        .slice(-HISTORY_MAX_TURNS)
+        .map((t) => ({ role: t.role, content: t.content.slice(0, HISTORY_MAX_CHARS) })),
+    }),
+
+  create: (body: {
+    name: string;
+    description?: string;
+    prompt?: string;
+    explanation?: string;
+    dsl: StrategyDsl;
+  }) => api.post<AiStrategySummary>('/ai-strategies', body),
 
   list: () => api.get<AiStrategySummary[]>('/ai-strategies'),
 
@@ -289,6 +323,101 @@ export function describeDsl(dsl: StrategyDsl | null | undefined): DslDescription
   const header = [d.symbol || '—', d.timeframe || '—', dir].join(' · ');
 
   return { header, sections, risk };
+}
+
+// ─── Chat sessions (Strategy Maker, persisted in localStorage) ────────────────
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  /** Config the assistant produced with this turn, if any. */
+  dsl?: StrategyDsl | null;
+  /** True for locally-generated failure bubbles (styled as errors). */
+  error?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  /** First prompt, truncated — the list label. */
+  title: string;
+  messages: ChatMessage[];
+  /** Last config the conversation produced (restored on reopen). */
+  config: StrategyDsl | null;
+  updatedAt: string;
+}
+
+const CHAT_SESSIONS_KEY = 'sc.ai.chatSessions';
+const CHAT_SESSIONS_CAP = 20;
+
+export function loadChatSessions(): ChatSession[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CHAT_SESSIONS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as ChatSession[]).filter(
+      (s) => s && typeof s.id === 'string' && Array.isArray(s.messages),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function persistChatSessions(sessions: ChatSession[]): ChatSession[] {
+  const sorted = [...sessions]
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+    .slice(0, CHAT_SESSIONS_CAP);
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sorted));
+    } catch {
+      /* quota / private mode — keep going with in-memory state */
+    }
+  }
+  return sorted;
+}
+
+/** Upsert one session; returns the new full list (newest first, capped). */
+export function saveChatSession(session: ChatSession): ChatSession[] {
+  const rest = loadChatSessions().filter((s) => s.id !== session.id);
+  return persistChatSessions([session, ...rest]);
+}
+
+export function deleteChatSession(id: string): ChatSession[] {
+  return persistChatSessions(loadChatSessions().filter((s) => s.id !== id));
+}
+
+// ─── Naming helper ────────────────────────────────────────────────────────────
+
+/** Every indicator name referenced anywhere in the DSL's rule groups. */
+function collectIndicatorNames(dsl: StrategyDsl): Set<string> {
+  const names = new Set<string>();
+  const groups = [dsl.entry_long, dsl.entry_short, dsl.exit_long, dsl.exit_short];
+  for (const g of groups) {
+    if (!g || typeof g !== 'object') continue;
+    const conds = Array.isArray(g.all) ? g.all : Array.isArray(g.any) ? g.any : [];
+    for (const c of conds) {
+      for (const side of [c?.left, c?.right]) {
+        if (side && side.type === 'indicator' && typeof side.name === 'string') {
+          names.add(side.name.toLowerCase());
+        }
+      }
+    }
+  }
+  return names;
+}
+
+/** A reasonable default strategy name derived from the config, e.g. "EURUSD Trend 1h". */
+export function suggestName(dsl: StrategyDsl | null | undefined): string {
+  if (!dsl || typeof dsl !== 'object') return '';
+  const names = collectIndicatorNames(dsl);
+  const flavour = names.has('rsi')
+    ? 'Mean Reversion'
+    : names.has('bb_upper') || names.has('bb_lower')
+      ? 'Breakout'
+      : 'Trend';
+  return [dsl.symbol, flavour, dsl.timeframe].filter(Boolean).join(' ');
 }
 
 // ─── Example template (manual-editing starting point) ─────────────────────────
