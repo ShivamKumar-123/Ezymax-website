@@ -1,0 +1,518 @@
+"""AI Strategy Builder — service layer.
+
+Natural-language prompt → Claude (structured output, validated Pydantic DSL)
+→ save → backtest against ohlc_bars history → deploy onto any of the user's
+trading accounts. The LLM can only ever emit the declarative DSL — it never
+generates code, and live execution goes through the canonical
+trading_service paths (see engines/ai_strategy_engine.py).
+"""
+from __future__ import annotations
+
+import logging
+import math
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+from uuid import UUID
+
+from fastapi import HTTPException
+from pydantic import BaseModel, Field, ValidationError
+from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from packages.common.src.config import get_settings
+from packages.common.src.models import (
+    AIStrategy, AIStrategyBacktest, AIStrategyInstance, AIStrategyTrade,
+    Instrument, Position, TradingAccount,
+)
+from packages.common.src.bars_store import TF_SECONDS, read_bars
+from packages.common.src.strategy_dsl import StrategyDSL
+from packages.common.src.strategy_backtest import run_backtest
+
+logger = logging.getLogger("ai_strategy")
+
+MAX_STRATEGIES_PER_USER = 50
+MAX_RUNNING_INSTANCES_PER_USER = 10
+EQUITY_CURVE_MAX_POINTS = 1000
+BACKTEST_TRADES_MAX = 200
+
+
+# ─── DSL validation helper ───────────────────────────────────────────────
+
+def parse_dsl(raw: dict) -> StrategyDSL:
+    try:
+        return StrategyDSL.model_validate(raw)
+    except ValidationError as e:
+        first = e.errors()[0] if e.errors() else {}
+        loc = ".".join(str(p) for p in first.get("loc", ()))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid strategy DSL at '{loc}': {first.get('msg', 'invalid')}",
+        )
+
+
+async def _validate_symbol(db: AsyncSession, symbol: str) -> Instrument:
+    inst = (await db.execute(
+        select(Instrument).where(
+            Instrument.symbol == symbol.upper(), Instrument.is_active == True,  # noqa: E712
+        )
+    )).scalar_one_or_none()
+    if not inst:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown or inactive instrument '{symbol}' in strategy DSL",
+        )
+    return inst
+
+
+# ─── AI generation (Claude structured output) ─────────────────────────────
+
+class GeneratedStrategy(BaseModel):
+    """Structured output the model must produce — nothing else is accepted."""
+    name: str = Field(description="Short strategy name, max 60 chars")
+    description: str = Field(description="1-2 sentence plain-English summary of the rules")
+    dsl: StrategyDSL
+
+
+_DSL_GUIDE = """You translate a trader's natural-language idea into a strict JSON strategy DSL.
+
+DSL semantics:
+- timeframe: one of 5m, 15m, 30m, 1h, 4h, 1d. Signals evaluate on bar CLOSE.
+- direction: "long", "short", or "both". Provide entry_long and/or entry_short accordingly.
+- Condition groups: {"all": [...]} means AND, {"any": [...]} means OR.
+- A condition is {"left": operand, "op": op, "right": operand}.
+  Ops: ">", "<", "crosses_above", "crosses_below".
+  Operands:
+    {"type": "indicator", "name": "...", "period": N, "source": "close|open|high|low"}
+      names: sma, ema, rsi, macd, macd_signal, atr, bb_upper, bb_lower
+      (macd/macd_signal use standard 12/26/9 regardless of period; bb uses 2 std dev)
+    {"type": "price", "field": "close|open|high|low"}
+    {"type": "const", "value": number}
+- risk: {"lots", "stop_loss_pct", "take_profit_pct", "max_open_positions", "max_trades_per_day"}.
+  stop_loss_pct / take_profit_pct are PERCENT OF ENTRY PRICE (e.g. 0.5 = 0.5%).
+  If the user speaks in pips, convert sensibly (for a typical FX pair ~1.1000,
+  30 pips ≈ 0.27%; for XAUUSD ~2400, $10 ≈ 0.42%). Always set a stop_loss_pct
+  unless the user gives explicit exit conditions AND refuses a stop.
+- exit_long / exit_short are optional rule-based exits on top of SL/TP.
+
+Rules:
+- Pick the symbol from the available instruments list; if the user's asset
+  isn't listed, choose the closest match and say so in the description.
+- Be faithful to the user's idea; where the idea is vague, choose standard
+  parameter values (e.g. RSI 14 with 30/70, EMA 20/50) and keep risk modest
+  (lots 0.01-0.1, stop 0.5-2%).
+- Default max_open_positions 1 and max_trades_per_day 10 unless asked."""
+
+
+async def generate_from_prompt(prompt: str, db: AsyncSession) -> dict:
+    st = get_settings()
+    if not st.ANTHROPIC_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "AI generation is not configured on this server "
+                "(ANTHROPIC_API_KEY is unset). You can still build the "
+                "strategy manually in the JSON editor and backtest it."
+            ),
+        )
+    prompt = (prompt or "").strip()
+    if len(prompt) < 10:
+        raise HTTPException(status_code=400, detail="Describe your strategy in a bit more detail")
+    if len(prompt) > 4000:
+        raise HTTPException(status_code=400, detail="Prompt too long (max 4000 characters)")
+
+    symbols = (await db.execute(
+        select(Instrument.symbol).where(Instrument.is_active == True)  # noqa: E712
+        .order_by(Instrument.symbol)
+    )).scalars().all()
+
+    import anthropic
+
+    client = anthropic.AsyncAnthropic(api_key=st.ANTHROPIC_API_KEY)
+    try:
+        response = await client.messages.parse(
+            model=st.AI_STRATEGY_MODEL,
+            max_tokens=16000,
+            system=[
+                {"type": "text", "text": _DSL_GUIDE, "cache_control": {"type": "ephemeral"}},
+                {"type": "text", "text": "Available instruments: " + ", ".join(symbols)},
+            ],
+            messages=[{"role": "user", "content": prompt}],
+            output_format=GeneratedStrategy,
+        )
+    except anthropic.RateLimitError:
+        raise HTTPException(status_code=503, detail="AI service is busy — try again in a minute")
+    except anthropic.APIStatusError as e:
+        logger.error("AI generation failed (%s): %s", e.status_code, e.message)
+        raise HTTPException(status_code=502, detail="AI generation failed — try again")
+    except anthropic.APIConnectionError:
+        raise HTTPException(status_code=503, detail="AI service unreachable — try again")
+    finally:
+        await client.close()
+
+    if response.stop_reason == "refusal" or response.parsed_output is None:
+        raise HTTPException(
+            status_code=400,
+            detail="The AI couldn't turn that into a strategy — rephrase your idea",
+        )
+
+    generated: GeneratedStrategy = response.parsed_output
+    # Server-side re-validation: symbol must be tradeable here.
+    await _validate_symbol(db, generated.dsl.symbol)
+    return {
+        "name": generated.name[:120],
+        "description": generated.description,
+        "dsl": generated.dsl.model_dump(exclude_none=True),
+    }
+
+
+# ─── CRUD ─────────────────────────────────────────────────────────────────
+
+def _strategy_out(s: AIStrategy, running: int = 0) -> dict:
+    return {
+        "id": str(s.id),
+        "name": s.name,
+        "description": s.description,
+        "symbol": (s.dsl or {}).get("symbol"),
+        "timeframe": (s.dsl or {}).get("timeframe"),
+        "status": s.status,
+        "running_instances": running,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+    }
+
+
+async def create_strategy(
+    user_id: UUID, name: str, dsl_raw: dict,
+    description: Optional[str], prompt: Optional[str], db: AsyncSession,
+) -> dict:
+    dsl = parse_dsl(dsl_raw)
+    await _validate_symbol(db, dsl.symbol)
+    count = (await db.execute(
+        select(func.count(AIStrategy.id)).where(AIStrategy.user_id == user_id)
+    )).scalar() or 0
+    if count >= MAX_STRATEGIES_PER_USER:
+        raise HTTPException(status_code=400, detail=f"Strategy limit reached ({MAX_STRATEGIES_PER_USER})")
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    s = AIStrategy(
+        user_id=user_id, name=name[:120], description=description,
+        prompt=prompt, dsl=dsl.model_dump(exclude_none=True), status="draft",
+    )
+    db.add(s)
+    await db.commit()
+    await db.refresh(s)
+    return _strategy_out(s)
+
+
+async def _get_owned(strategy_id: UUID, user_id: UUID, db: AsyncSession) -> AIStrategy:
+    s = (await db.execute(
+        select(AIStrategy).where(AIStrategy.id == strategy_id, AIStrategy.user_id == user_id)
+    )).scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+    return s
+
+
+async def list_strategies(user_id: UUID, db: AsyncSession) -> list[dict]:
+    rows = (await db.execute(
+        select(AIStrategy).where(AIStrategy.user_id == user_id)
+        .order_by(AIStrategy.updated_at.desc())
+    )).scalars().all()
+    counts = dict((await db.execute(
+        select(AIStrategyInstance.strategy_id, func.count(AIStrategyInstance.id))
+        .where(AIStrategyInstance.user_id == user_id, AIStrategyInstance.status == "running")
+        .group_by(AIStrategyInstance.strategy_id)
+    )).all())
+    return [_strategy_out(s, counts.get(s.id, 0)) for s in rows]
+
+
+async def get_strategy(strategy_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    s = await _get_owned(strategy_id, user_id, db)
+    latest_bt = (await db.execute(
+        select(AIStrategyBacktest).where(AIStrategyBacktest.strategy_id == s.id)
+        .order_by(AIStrategyBacktest.created_at.desc()).limit(1)
+    )).scalar_one_or_none()
+    running = (await db.execute(
+        select(func.count(AIStrategyInstance.id)).where(
+            AIStrategyInstance.strategy_id == s.id,
+            AIStrategyInstance.status == "running",
+        )
+    )).scalar() or 0
+    out = _strategy_out(s, running)
+    out["prompt"] = s.prompt
+    out["dsl"] = s.dsl
+    out["latest_backtest"] = None
+    if latest_bt:
+        out["latest_backtest"] = {
+            "stats": latest_bt.stats,
+            "equity_curve": latest_bt.equity_curve,
+            "created_at": latest_bt.created_at.isoformat() if latest_bt.created_at else None,
+        }
+    return out
+
+
+async def update_strategy(
+    strategy_id: UUID, user_id: UUID, db: AsyncSession,
+    name: Optional[str] = None, description: Optional[str] = None,
+    dsl_raw: Optional[dict] = None,
+) -> dict:
+    s = await _get_owned(strategy_id, user_id, db)
+    if dsl_raw is not None:
+        dsl = parse_dsl(dsl_raw)
+        await _validate_symbol(db, dsl.symbol)
+        running = (await db.execute(
+            select(func.count(AIStrategyInstance.id)).where(
+                AIStrategyInstance.strategy_id == s.id,
+                AIStrategyInstance.status == "running",
+            )
+        )).scalar() or 0
+        if running:
+            raise HTTPException(
+                status_code=400,
+                detail="Stop running instances before editing the rules "
+                       "(instances keep trading their deployed snapshot)",
+            )
+        s.dsl = dsl.model_dump(exclude_none=True)
+    if name is not None and name.strip():
+        s.name = name.strip()[:120]
+    if description is not None:
+        s.description = description
+    await db.commit()
+    await db.refresh(s)
+    return _strategy_out(s)
+
+
+async def delete_strategy(strategy_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    s = await _get_owned(strategy_id, user_id, db)
+    running = (await db.execute(
+        select(func.count(AIStrategyInstance.id)).where(
+            AIStrategyInstance.strategy_id == s.id,
+            AIStrategyInstance.status == "running",
+        )
+    )).scalar() or 0
+    if running:
+        raise HTTPException(status_code=400, detail="Stop running instances first")
+    await db.delete(s)
+    await db.commit()
+    return {"message": "Strategy deleted"}
+
+
+# ─── Backtest ─────────────────────────────────────────────────────────────
+
+def _downsample(curve: list[dict], max_points: int) -> list[dict]:
+    if len(curve) <= max_points:
+        return curve
+    step = math.ceil(len(curve) / max_points)
+    sampled = curve[::step]
+    if sampled[-1] is not curve[-1]:
+        sampled.append(curve[-1])
+    return sampled
+
+
+async def backtest_strategy(
+    strategy_id: UUID, user_id: UUID, db: AsyncSession,
+    days: int = 90, commission_per_lot: float = 0.0,
+) -> dict:
+    if not 7 <= days <= 365:
+        raise HTTPException(status_code=400, detail="days must be between 7 and 365")
+    if not 0 <= commission_per_lot <= 1000:
+        raise HTTPException(status_code=400, detail="commission_per_lot out of range")
+
+    s = await _get_owned(strategy_id, user_id, db)
+    dsl = parse_dsl(s.dsl)
+    inst = await _validate_symbol(db, dsl.symbol)
+
+    tf_seconds = TF_SECONDS[dsl.timeframe]
+    now = int(datetime.now(timezone.utc).timestamp())
+    from_ts = now - days * 86400
+    want = days * 86400 // tf_seconds + dsl.warmup_bars() + 10
+    raw_bars = await read_bars(
+        db, dsl.symbol, dsl.timeframe,
+        from_ts=from_ts, to_ts=now, limit=min(want, 25000),
+    )
+    if len(raw_bars) < dsl.warmup_bars() + 10:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Not enough {dsl.timeframe} history for {dsl.symbol} "
+                f"({len(raw_bars)} bars stored). Open the chart on this "
+                f"symbol/timeframe once to backfill history, or pick a "
+                f"shorter-period strategy."
+            ),
+        )
+
+    try:
+        result = run_backtest(
+            dsl, raw_bars,
+            contract_size=float(inst.contract_size or 100000),
+            commission_per_lot=commission_per_lot,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    curve = _downsample(result.equity_curve, EQUITY_CURVE_MAX_POINTS)
+    trades = result.trades[-BACKTEST_TRADES_MAX:]
+
+    bt = AIStrategyBacktest(
+        strategy_id=s.id, user_id=user_id,
+        params={"days": days, "commission_per_lot": commission_per_lot},
+        dsl_snapshot=s.dsl, stats=result.stats,
+        equity_curve=curve, trades=trades,
+    )
+    db.add(bt)
+    await db.commit()
+
+    return {"stats": result.stats, "equity_curve": curve, "trades": trades}
+
+
+# ─── Deploy / stop instances ─────────────────────────────────────────────
+
+def _instance_out(i: AIStrategyInstance, strategy_name: str = "",
+                  account_number: str = "") -> dict:
+    return {
+        "id": str(i.id),
+        "strategy_id": str(i.strategy_id),
+        "strategy_name": strategy_name,
+        "account_id": str(i.account_id),
+        "account_number": account_number,
+        "status": i.status,
+        "trades_count": i.trades_count,
+        "last_error": i.last_error,
+        "started_at": i.started_at.isoformat() if i.started_at else None,
+        "stopped_at": i.stopped_at.isoformat() if i.stopped_at else None,
+    }
+
+
+async def deploy_strategy(
+    strategy_id: UUID, user_id: UUID, account_id: UUID, db: AsyncSession,
+) -> dict:
+    s = await _get_owned(strategy_id, user_id, db)
+    dsl = parse_dsl(s.dsl)  # re-validate before anything goes live
+    await _validate_symbol(db, dsl.symbol)
+
+    account = (await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.id == account_id, TradingAccount.user_id == user_id,
+        )
+    )).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Trading account not found")
+    if not account.is_active:
+        raise HTTPException(status_code=400, detail="Trading account is not active")
+
+    running = (await db.execute(
+        select(func.count(AIStrategyInstance.id)).where(
+            AIStrategyInstance.user_id == user_id,
+            AIStrategyInstance.status == "running",
+        )
+    )).scalar() or 0
+    if running >= MAX_RUNNING_INSTANCES_PER_USER:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Running-instance limit reached ({MAX_RUNNING_INSTANCES_PER_USER})",
+        )
+
+    instance = AIStrategyInstance(
+        strategy_id=s.id, user_id=user_id, account_id=account.id,
+        dsl_snapshot=s.dsl, status="running",
+    )
+    db.add(instance)
+    s.status = "active"
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="This strategy is already running on that account",
+        )
+    await db.refresh(instance)
+    return _instance_out(instance, s.name, account.account_number)
+
+
+async def stop_instance(instance_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    instance = (await db.execute(
+        select(AIStrategyInstance).where(
+            AIStrategyInstance.id == instance_id,
+            AIStrategyInstance.user_id == user_id,
+        )
+    )).scalar_one_or_none()
+    if not instance:
+        raise HTTPException(status_code=404, detail="Instance not found")
+    if instance.status == "running":
+        instance.status = "stopped"
+        instance.stopped_at = datetime.now(timezone.utc)
+    # Strategy drops back to draft when nothing is running anymore.
+    still_running = (await db.execute(
+        select(func.count(AIStrategyInstance.id)).where(
+            AIStrategyInstance.strategy_id == instance.strategy_id,
+            AIStrategyInstance.status == "running",
+            AIStrategyInstance.id != instance.id,
+        )
+    )).scalar() or 0
+    if not still_running:
+        strategy = await db.get(AIStrategy, instance.strategy_id)
+        if strategy and strategy.status == "active":
+            strategy.status = "draft"
+    await db.commit()
+    await db.refresh(instance)
+    return _instance_out(instance)
+
+
+async def list_instances(user_id: UUID, db: AsyncSession) -> list[dict]:
+    rows = (await db.execute(
+        select(AIStrategyInstance, AIStrategy.name, TradingAccount.account_number)
+        .join(AIStrategy, AIStrategy.id == AIStrategyInstance.strategy_id)
+        .join(TradingAccount, TradingAccount.id == AIStrategyInstance.account_id)
+        .where(AIStrategyInstance.user_id == user_id)
+        .order_by(AIStrategyInstance.started_at.desc())
+        .limit(100)
+    )).all()
+    return [_instance_out(i, name, acct) for i, name, acct in rows]
+
+
+# ─── AI trade views (the "displayed separately" surface) ─────────────────
+
+async def list_ai_position_ids(user_id: UUID, db: AsyncSession) -> dict:
+    ids = (await db.execute(
+        select(AIStrategyTrade.position_id)
+        .where(AIStrategyTrade.user_id == user_id,
+               AIStrategyTrade.position_id.isnot(None))
+        .order_by(AIStrategyTrade.created_at.desc())
+        .limit(500)
+    )).scalars().all()
+    return {"position_ids": [str(p) for p in ids]}
+
+
+async def list_ai_trades(user_id: UUID, status: str, db: AsyncSession) -> list[dict]:
+    if status not in ("open", "closed"):
+        raise HTTPException(status_code=400, detail="status must be open or closed")
+    pos_status = "open" if status == "open" else "closed"
+    from sqlalchemy.orm import selectinload
+    rows = (await db.execute(
+        select(AIStrategyTrade, Position, AIStrategy.name)
+        .join(Position, Position.id == AIStrategyTrade.position_id)
+        .join(AIStrategy, AIStrategy.id == AIStrategyTrade.strategy_id)
+        .options(selectinload(Position.instrument))
+        .where(AIStrategyTrade.user_id == user_id, Position.status == pos_status)
+        .order_by(AIStrategyTrade.created_at.desc())
+        .limit(200)
+    )).all()
+    out = []
+    for link, pos, strat_name in rows:
+        out.append({
+            "position_id": str(pos.id),
+            "instance_id": str(link.instance_id),
+            "strategy_name": strat_name,
+            "symbol": pos.instrument.symbol if pos.instrument else None,
+            "side": pos.side.value if hasattr(pos.side, "value") else str(pos.side),
+            "lots": float(pos.lots),
+            "open_price": float(pos.open_price),
+            "close_price": float(pos.close_price) if pos.close_price else None,
+            "profit": float(pos.profit) if pos.profit is not None else None,
+            "opened_at": pos.created_at.isoformat() if pos.created_at else None,
+            "closed_at": pos.closed_at.isoformat() if pos.closed_at else None,
+        })
+    return out

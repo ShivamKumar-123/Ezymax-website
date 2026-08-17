@@ -102,6 +102,16 @@ type PositionsPanelProps = {
   variant?: 'default' | 'terminal';
 };
 
+/** Tiny "AI" tag shown next to the symbol for positions opened by an AI
+ *  strategy instance (ids come from /ai-strategies/position-ids). */
+function AiBadge() {
+  return (
+    <span className="rounded px-1 text-[10px] font-semibold bg-violet-100 text-violet-700 leading-4 shrink-0">
+      AI
+    </span>
+  );
+}
+
 function estimatePositionMargin(
   pos: Position,
   instruments: { symbol: string; contract_size: number }[],
@@ -175,6 +185,7 @@ function TerminalPositionStaticCard({
   swapsFeeLine,
   onCloseFull,
   onPartialClose,
+  isAi,
 }: {
   pos: Position;
   digits: number;
@@ -182,6 +193,7 @@ function TerminalPositionStaticCard({
   swapsFeeLine: string;
   onCloseFull: () => void;
   onPartialClose: () => void;
+  isAi?: boolean;
 }) {
   // NET P&L (profit − commission + swap; swap stored negative) so the card
   // matches the position rows and the mobile app.
@@ -195,6 +207,7 @@ function TerminalPositionStaticCard({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-text-primary font-mono tracking-tight">{pos.symbol}</span>
+            {isAi && <AiBadge />}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <span
@@ -337,6 +350,25 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
+
+  // Position ids opened by AI strategy instances — used only to render the
+  // small "AI" badge next to the symbol. Fails silently (empty set) so a
+  // missing/erroring endpoint can never break the terminal.
+  const [aiPositionIds, setAiPositionIds] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await api.get<{ position_ids?: string[] }>('/ai-strategies/position-ids');
+        if (!cancelled) setAiPositionIds(new Set(res?.position_ids ?? []));
+      } catch {
+        /* cosmetic — keep last known set */
+      }
+    };
+    void load();
+    const t = setInterval(() => { void load(); }, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
 
   // GROSS floating P&L — used for Equity / Free Margin only. Commission was
   // already deducted from balance at open, and swap when charged, so equity
@@ -1042,6 +1074,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               digits={d}
                               marginExposureLine={marginExposureLine}
                               swapsFeeLine={swapsFeeLine}
+                              isAi={aiPositionIds.has(pos.id)}
                               onCloseFull={() =>
                                 setCloseModal({
                                   id: pos.id,
@@ -1088,6 +1121,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-bold text-text-primary">{pos.symbol}</span>
+                              {aiPositionIds.has(pos.id) && <AiBadge />}
                               <span className={clsx('text-[10px] font-bold uppercase', pos.side === 'buy' ? 'text-buy' : 'text-sell')}>{pos.side}</span>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
                                 {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
@@ -1179,6 +1213,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>
                               <span className="inline-flex items-center gap-1.5">
                                 {pos.symbol}
+                                {aiPositionIds.has(pos.id) && <AiBadge />}
                               </span>
                             </td>
                             <td className={td}>

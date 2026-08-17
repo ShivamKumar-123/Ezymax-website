@@ -80,6 +80,12 @@ class Settings(BaseSettings):
     INFOWAY_API_KEY: str = ""
     INFOWAY_API_URL: str = "https://api.infoway.io"
 
+    # AI Strategy Builder — Claude API for natural-language → strategy DSL.
+    # Unset key: /ai-strategies/generate returns 503; everything else (manual
+    # DSL editing, backtesting, deploying) still works.
+    ANTHROPIC_API_KEY: str = ""
+    AI_STRATEGY_MODEL: str = "claude-opus-5"
+
     # When True, order fills and closes re-derive the user's bid/ask from the
     # broadcast MID using the user's resolved spread config (per-user / per-tier),
     # instead of trusting the single global broadcast spread — so the admin

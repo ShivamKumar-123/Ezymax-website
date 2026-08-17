@@ -23,6 +23,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Bell,
   Bitcoin,
+  Bot,
   ChevronDown,
   Copy,
   FileText,
@@ -91,6 +92,7 @@ const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },
   { label: 'Algo Connector', href: '/algo-connector', icon: Plug, isNew: true },
+  { label: 'AI Strategies', href: '/ai-strategies', icon: Bot, isNew: true },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
   { label: 'Terms', href: '/terms', icon: FileText },
   { label: 'Download Android App', href: APK_DOWNLOAD_PATH, icon: Smartphone, isNew: true, download: true },

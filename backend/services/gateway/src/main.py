@@ -25,7 +25,7 @@ from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers, lp_receiver,
-    share, algo_connector, algo_keys, algo_market_data,
+    share, algo_connector, algo_keys, algo_market_data, ai_strategies,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
@@ -36,6 +36,7 @@ from .engines.monthly_statement_engine import monthly_statement_engine
 from .engines.chain_verifier_engine import chain_verifier_engine
 from .engines.bars_persist_engine import bars_persist_engine
 from .engines.reconcile_engine import reconcile_engine
+from .engines.ai_strategy_engine import ai_strategy_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -240,7 +241,9 @@ async def lifespan(app: FastAPI):
     await chain_verifier_engine.start()
     await bars_persist_engine.start()
     await reconcile_engine.start()
+    await ai_strategy_engine.start()
     yield
+    await ai_strategy_engine.stop()
     healer_task.cancel()
     try:
         await healer_task
@@ -329,6 +332,8 @@ app.include_router(share.public_router, prefix="/api/v1/public", tags=["Public S
 app.include_router(algo_keys.router, prefix="/api/v1/algo", tags=["Algo Keys"])
 app.include_router(algo_connector.router, prefix="/api/algo", tags=["Algo Connector"])
 app.include_router(algo_market_data.router, prefix="/api/algo", tags=["Algo Market Data"])
+# AI Strategy Builder — natural-language strategies, backtests, deployments.
+app.include_router(ai_strategies.router, prefix="/api/v1/ai-strategies", tags=["AI Strategies"])
 
 
 @app.get("/health")

@@ -54,6 +54,9 @@ from .system import (
 )
 from .vip import VipPass
 from .share import SharedTrade
+from .ai_strategy import (
+    AIStrategy, AIStrategyBacktest, AIStrategyInstance, AIStrategyTrade,
+)
 
 
 __all__ = [
@@ -81,6 +84,8 @@ __all__ = [
     "SupportTicket", "TicketMessage", "Notification", "Banner",
     # system
     "SystemSetting", "BonusOffer", "UserBonus",
+    # ai strategy builder
+    "AIStrategy", "AIStrategyBacktest", "AIStrategyInstance", "AIStrategyTrade",
     # vip
     "VipPass",
     # share
