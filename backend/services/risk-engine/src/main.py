@@ -43,6 +43,11 @@ except Exception:
 
 settings = get_settings()
 
+# Demo accounts are practice money — they auto-refill back to the standard
+# balance once they're flat and below the floor (see the NBP sweep).
+DEMO_REFILL_BALANCE = Decimal("10000")
+DEMO_REFILL_FLOOR = Decimal("100")
+
 
 class RiskEngine:
     def __init__(self):
@@ -446,6 +451,60 @@ class RiskEngine:
                         logger.warning(
                             "NBP: account %s deficit %.2f written off",
                             account.account_number, float(deficit),
+                        )
+                    await db.commit()
+
+                # ── Demo auto-refill ──────────────────────────────────
+                # A practice account should never stay broke: once a demo
+                # account is flat and its balance has fallen below the
+                # refill floor, top it back up to the standard demo
+                # balance — with a ledger row, like every balance change.
+                async with AsyncSessionLocal() as db:
+                    demo_rows = (await db.execute(
+                        select(TradingAccount).where(
+                            TradingAccount.is_demo == True,  # noqa: E712
+                            TradingAccount.is_active == True,  # noqa: E712
+                            TradingAccount.balance < DEMO_REFILL_FLOOR,
+                        ).with_for_update(skip_locked=True)
+                    )).scalars().all()
+                    for account in demo_rows:
+                        open_count = (await db.execute(
+                            select(func.count(Position.id)).where(
+                                Position.account_id == account.id,
+                                Position.status == PositionStatus.OPEN,
+                            )
+                        )).scalar() or 0
+                        if open_count:
+                            continue
+                        top_up = DEMO_REFILL_BALANCE - account.balance
+                        if top_up <= 0:
+                            continue
+                        account.balance = DEMO_REFILL_BALANCE
+                        account.equity = DEMO_REFILL_BALANCE + (account.credit or Decimal("0"))
+                        account.margin_used = Decimal("0")
+                        account.free_margin = account.equity
+                        db.add(Transaction(
+                            user_id=account.user_id,
+                            account_id=account.id,
+                            type="adjustment",
+                            amount=top_up,
+                            balance_after=account.balance,
+                            description="Demo auto-refill: practice balance restored",
+                        ))
+                        db.add(Notification(
+                            user_id=account.user_id,
+                            title="Demo balance refilled",
+                            message=(
+                                f"Demo account {account.account_number} was "
+                                f"topped back up to "
+                                f"${float(DEMO_REFILL_BALANCE):,.0f} so you "
+                                f"can keep practicing."
+                            ),
+                            type="margin_call",
+                        ))
+                        logger.info(
+                            "Demo refill: account %s topped up by %.2f",
+                            account.account_number, float(top_up),
                         )
                     await db.commit()
             except Exception as e:
