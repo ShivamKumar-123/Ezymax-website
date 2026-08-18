@@ -220,35 +220,31 @@ function BrokerHome() {
               globals.css) so the cards work in both dark and light
               mode without per-component `dark:` overrides. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {/* Total Balance — label left, value right */}
+        {/* Total Balance — icon + label/value grouped together on the left */}
         <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
-                <WalletIcon size={20} className="text-[#E94E1B]" />
-              </div>
-              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Balance</p>
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+              <WalletIcon size={20} className="text-[#E94E1B]" />
             </div>
-            <div className="text-right min-w-0">
-              <p className="text-2xl font-bold font-mono tabular-nums truncate text-text-primary">{fmtUsd(totalBalance)}</p>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Balance</p>
+              <p className="mt-0.5 text-2xl font-bold font-mono tabular-nums truncate text-text-primary">{fmtUsd(totalBalance)}</p>
               <p className="text-xs mt-0.5 text-text-secondary">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
             </div>
           </div>
         </div>
 
-        {/* Open P/L — value stays green/up red/down; icon tile is brand orange */}
+        {/* Open P/L — icon + label/value grouped together on the left */}
         <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
-                {todaysPnl >= 0
-                  ? <TrendingUp size={20} className="text-[#E94E1B]" />
-                  : <TrendingDown size={20} className="text-[#E94E1B]" />}
-              </div>
-              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Open P/L</p>
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+              {todaysPnl >= 0
+                ? <TrendingUp size={20} className="text-[#E94E1B]" />
+                : <TrendingDown size={20} className="text-[#E94E1B]" />}
             </div>
-            <div className="text-right min-w-0">
-              <p className={clsx('text-2xl font-bold font-mono tabular-nums truncate', todaysPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Open P/L</p>
+              <p className={clsx('mt-0.5 text-2xl font-bold font-mono tabular-nums truncate', todaysPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
               </p>
               <p className="text-xs mt-0.5 text-text-secondary">
