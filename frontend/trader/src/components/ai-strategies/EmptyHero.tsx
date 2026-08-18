@@ -9,46 +9,40 @@
  */
 
 import { motion, type Variants } from 'framer-motion';
-import { CandlestickChart, Rocket, ShieldCheck, Sparkles, Waves, type LucideIcon } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface Suggestion {
-  icon: LucideIcon;
+  emoji: string;
   label: string;
   prompt: string;
-  /** Soft tint for the icon chip at rest. */
-  chipBg: string;
-  /** Saturated icon / hover-fill color. */
+  /** Hover border color per card. */
   accent: string;
 }
 
 const SUGGESTIONS: Suggestion[] = [
   {
-    icon: CandlestickChart,
+    emoji: '📈',
     label: 'Trend following',
     prompt:
       'A trend-following strategy on EURUSD 1h using EMA crossovers, only when the trend is strong',
-    chipBg: '#D1FAE5',
     accent: '#059669',
   },
   {
-    icon: Waves,
+    emoji: '🌊',
     label: 'Mean reversion',
     prompt: 'Mean reversion on XAUUSD 15m that fades RSI oversold extremes',
-    chipBg: '#DBEAFE',
     accent: '#2563EB',
   },
   {
-    icon: ShieldCheck,
+    emoji: '🛡️',
     label: 'Conservative risk',
     prompt: 'A conservative BTCUSD strategy with tight risk — 0.5% stop loss, 1% take profit',
-    chipBg: '#FEF3C7',
     accent: '#D97706',
   },
   {
-    icon: Rocket,
+    emoji: '🚀',
     label: 'Breakout',
     prompt: 'Breakout trades on GBPUSD 4h when price closes above the upper Bollinger band',
-    chipBg: '#EDE9FE',
     accent: '#7C3AED',
   },
 ];
@@ -103,7 +97,7 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
         variants={container}
         className="mt-8 grid w-full max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-2"
       >
-        {SUGGESTIONS.map(({ icon: Icon, label, prompt, chipBg, accent }) => (
+        {SUGGESTIONS.map(({ emoji, label, prompt, accent }) => (
           <motion.button
             key={label}
             variants={item}
@@ -114,10 +108,10 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ''; }}
           >
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] transition-transform duration-150 group-hover:scale-110"
-              style={{ backgroundColor: chipBg, color: accent }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center text-[22px] leading-none transition-transform duration-150 group-hover:scale-125"
+              aria-hidden
             >
-              <Icon size={16} strokeWidth={2.2} aria-hidden />
+              {emoji}
             </span>
             <span className="min-w-0">
               <span className="block text-xs font-bold text-text-primary">{label}</span>
