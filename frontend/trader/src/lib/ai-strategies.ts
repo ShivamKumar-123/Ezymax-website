@@ -190,13 +190,15 @@ export const aiApi = {
    * on refinement turns; the server replies with text and (maybe) a new DSL.
    */
   generate: (body: { prompt: string; previous_dsl?: StrategyDsl | null; history?: ChatTurn[] }) =>
+    // AI generation legitimately takes 15-60s (model thinking + a possible
+    // server-side repair round) — give it far more than the 60s default.
     api.post<GenerateResponse>('/ai-strategies/generate', {
       prompt: body.prompt,
       previous_dsl: body.previous_dsl ?? null,
       history: (body.history ?? [])
         .slice(-HISTORY_MAX_TURNS)
         .map((t) => ({ role: t.role, content: t.content.slice(0, HISTORY_MAX_CHARS) })),
-    }),
+    }, { timeoutMs: 150_000 }),
 
   create: (body: {
     name: string;

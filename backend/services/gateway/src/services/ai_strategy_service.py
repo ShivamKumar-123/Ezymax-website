@@ -70,9 +70,12 @@ async def _validate_symbol(db: AsyncSession, symbol: str) -> Instrument:
 class GeneratedStrategy(BaseModel):
     """Structured output the model must produce — nothing else is accepted.
 
-    `dsl` is optional so the model can answer a question or ask for a
-    clarification without being forced to invent rules; `reply` is the
-    conversational text shown in the chat.
+    The DSL travels as a JSON-encoded STRING, not a typed sub-schema: the
+    full StrategyDSL schema (nested operand unions) exceeds the structured-
+    outputs complexity limit ("Schema is too complex", after a ~3-minute
+    server-side compile attempt). The string is parsed and validated against
+    StrategyDSL server-side, with one automatic repair round on failure —
+    same guarantees, none of the schema-compile pathology.
     """
     reply: str = Field(description=(
         "Conversational reply to the trader: explain what the strategy does "
@@ -82,10 +85,11 @@ class GeneratedStrategy(BaseModel):
     name: Optional[str] = Field(default=None, description="Short strategy name, max 60 chars")
     description: Optional[str] = Field(
         default=None, description="1-2 sentence plain-English summary of the rules")
-    dsl: Optional[StrategyDSL] = Field(default=None, description=(
-        "The strategy configuration. Emit it whenever the user's message "
-        "describes or refines a strategy; omit only when you are asking a "
-        "clarifying question instead."
+    dsl_json: Optional[str] = Field(default=None, description=(
+        "The full strategy configuration as ONE JSON object serialized to a "
+        "string, exactly following the DSL semantics from the system prompt. "
+        "Provide it whenever the user's message describes or refines a "
+        "strategy; omit only when you are asking a clarifying question."
     ))
 
 
@@ -116,7 +120,9 @@ Rules:
 - Be faithful to the user's idea; where the idea is vague, choose standard
   parameter values (e.g. RSI 14 with 30/70, EMA 20/50) and keep risk modest
   (lots 0.01-0.1, stop 0.5-2%).
-- Default max_open_positions 1 and max_trades_per_day 10 unless asked."""
+- Default max_open_positions 1 and max_trades_per_day 10 unless asked.
+- Output: put the configuration in the dsl_json field as ONE JSON object
+  serialized to a string (no markdown fences, no comments)."""
 
 
 MAX_CHAT_HISTORY = 20
@@ -184,52 +190,96 @@ async def generate_from_prompt(
             pass  # invalid previous config → treat as a fresh generation
     messages.append({"role": "user", "content": user_content})
 
+    import json as _json
+
     import anthropic
+
+    system = [
+        {"type": "text", "text": _DSL_GUIDE, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": "Available instruments: " + ", ".join(symbols)},
+    ]
+
+    async def _one_turn(client, msgs):
+        try:
+            return await client.messages.parse(
+                model=st.AI_STRATEGY_MODEL,
+                max_tokens=10000,
+                # Keep p95 inside the browser's request window — DSL
+                # generation is a well-specified task; medium is plenty.
+                output_config={"effort": "medium"},
+                system=system,
+                messages=msgs,
+                output_format=GeneratedStrategy,
+            )
+        except anthropic.RateLimitError:
+            raise HTTPException(status_code=503, detail="AI service is busy — try again in a minute")
+        except anthropic.APIStatusError as e:
+            logger.error("AI generation failed (%s): %s", e.status_code, e.message)
+            raise HTTPException(status_code=502, detail="AI generation failed — try again")
+        except anthropic.APIConnectionError:
+            raise HTTPException(status_code=503, detail="AI service unreachable — try again")
+
+    def _try_parse_dsl(raw_json: Optional[str]):
+        """Returns (StrategyDSL|None, error_message|None)."""
+        if not raw_json:
+            return None, None
+        try:
+            data = _json.loads(raw_json)
+        except ValueError as e:
+            return None, f"dsl_json is not valid JSON: {e}"
+        try:
+            return StrategyDSL.model_validate(data), None
+        except ValidationError as e:
+            lines = [
+                f"- {'.'.join(str(p) for p in err.get('loc', ()))}: {err.get('msg')}"
+                for err in e.errors()[:5]
+            ]
+            return None, "dsl_json failed validation:\n" + "\n".join(lines)
 
     client = anthropic.AsyncAnthropic(api_key=st.ANTHROPIC_API_KEY)
     try:
-        response = await client.messages.parse(
-            model=st.AI_STRATEGY_MODEL,
-            max_tokens=10000,
-            # The web proxy and browser client both cap requests at ~60s.
-            # DSL generation is a well-specified structured task — medium
-            # effort keeps p95 comfortably inside that window with no
-            # observable quality loss; high effort was overrunning it.
-            output_config={"effort": "medium"},
-            system=[
-                {"type": "text", "text": _DSL_GUIDE, "cache_control": {"type": "ephemeral"}},
-                {"type": "text", "text": "Available instruments: " + ", ".join(symbols)},
-            ],
-            messages=messages,
-            output_format=GeneratedStrategy,
-        )
-    except anthropic.RateLimitError:
-        raise HTTPException(status_code=503, detail="AI service is busy — try again in a minute")
-    except anthropic.APIStatusError as e:
-        logger.error("AI generation failed (%s): %s", e.status_code, e.message)
-        raise HTTPException(status_code=502, detail="AI generation failed — try again")
-    except anthropic.APIConnectionError:
-        raise HTTPException(status_code=503, detail="AI service unreachable — try again")
+        response = await _one_turn(client, messages)
+        if response.stop_reason == "refusal" or response.parsed_output is None:
+            raise HTTPException(
+                status_code=400,
+                detail="The AI couldn't turn that into a strategy — rephrase your idea",
+            )
+        generated: GeneratedStrategy = response.parsed_output
+        dsl, err = _try_parse_dsl(generated.dsl_json)
+
+        # One automatic repair round: feed the validation errors back so the
+        # model corrects its own output instead of surfacing them to the user.
+        if err is not None:
+            logger.warning("AI dsl_json invalid, repairing: %s", err.splitlines()[0])
+            repair_messages = messages + [
+                {"role": "assistant", "content": generated.reply},
+                {"role": "user", "content": (
+                    f"Your dsl_json had problems:\n{err}\n"
+                    "Return the corrected full configuration in dsl_json."
+                )},
+            ]
+            response = await _one_turn(client, repair_messages)
+            if response.parsed_output is not None:
+                generated = response.parsed_output
+                dsl, err = _try_parse_dsl(generated.dsl_json)
+            if err is not None or dsl is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="The AI couldn't produce a valid strategy — rephrase your idea",
+                )
     finally:
         await client.close()
 
-    if response.stop_reason == "refusal" or response.parsed_output is None:
-        raise HTTPException(
-            status_code=400,
-            detail="The AI couldn't turn that into a strategy — rephrase your idea",
-        )
-
-    generated: GeneratedStrategy = response.parsed_output
     out: dict = {
         "reply": generated.reply,
         "name": (generated.name or "")[:120] or None,
         "description": generated.description,
         "dsl": None,
     }
-    if generated.dsl is not None:
+    if dsl is not None:
         # Server-side re-validation: symbol must be tradeable here.
-        await _validate_symbol(db, generated.dsl.symbol)
-        out["dsl"] = generated.dsl.model_dump(exclude_none=True)
+        await _validate_symbol(db, dsl.symbol)
+        out["dsl"] = dsl.model_dump(exclude_none=True)
     return out
 
 
