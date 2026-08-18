@@ -151,7 +151,6 @@ export default function AiStrategyMakerPage() {
     setName('');
     setDescription('');
     setAiUnavailable(null);
-    setJsonOpen(false);
   }, [applyConfig]);
 
   const selectSession = useCallback(
