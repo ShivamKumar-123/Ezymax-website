@@ -2,28 +2,30 @@
 
 /**
  * Strategy Maker composer — auto-growing textarea, Enter to send /
- * Shift+Enter for a newline, optional suggestion chips shown while the
- * transcript is empty. Ported from the tradezini `chat-composer` pattern.
+ * Shift+Enter for a newline. Ported from the tradezini `chat-composer`
+ * pattern. Suggestion chips live in the page's empty state and prefill the
+ * input through the imperative `ChatComposerHandle`.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import { CornerDownLeft, Send } from 'lucide-react';
+
+export interface ChatComposerHandle {
+  /** Put text into the input (without sending) and focus it. */
+  prefill: (text: string) => void;
+}
 
 interface ChatComposerProps {
   onSubmit: (value: string) => void;
   isSubmitting?: boolean;
   placeholder?: string;
-  /** Shown above the input when the transcript is empty. */
-  suggestions?: string[];
 }
 
-export default function ChatComposer({
-  onSubmit,
-  isSubmitting,
-  placeholder = 'Describe the strategy you want…',
-  suggestions,
-}: ChatComposerProps) {
+const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function ChatComposer(
+  { onSubmit, isSubmitting, placeholder = 'Describe the strategy you want…' },
+  ref,
+) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -35,6 +37,17 @@ export default function ChatComposer({
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [value]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      prefill: (text: string) => {
+        setValue(text);
+        textareaRef.current?.focus();
+      },
+    }),
+    [],
+  );
+
   const submit = () => {
     const trimmed = value.trim();
     if (!trimmed || isSubmitting) return;
@@ -43,26 +56,7 @@ export default function ChatComposer({
   };
 
   return (
-    <div className="space-y-2.5">
-      {suggestions && suggestions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => {
-                setValue(s);
-                textareaRef.current?.focus();
-              }}
-              className="rounded-full border border-border-primary bg-card px-3 py-1.5 text-left text-xs text-text-secondary transition-colors hover:border-[#E94E1B]/40 hover:text-text-primary disabled:opacity-50"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
+    <div className="space-y-2">
       <div className="relative rounded-lg border border-border-primary bg-bg-secondary focus-within:border-accent/50">
         <textarea
           ref={textareaRef}
@@ -104,4 +98,6 @@ export default function ChatComposer({
       </p>
     </div>
   );
-}
+});
+
+export default ChatComposer;

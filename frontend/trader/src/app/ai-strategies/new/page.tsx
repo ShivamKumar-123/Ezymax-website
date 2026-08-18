@@ -1,11 +1,17 @@
 'use client';
 
 /**
- * AI Strategy Maker — a three-column chat experience:
- *   left    · past conversations (localStorage, `sc.ai.chatSessions`)
- *   center  · the conversation with the AI (refinement-aware)
- *   right   · sticky live preview of the current config + save-as-draft,
- *             with a collapsible manual-JSON editor as the no-AI fallback.
+ * AI Strategy Maker — a full-height, three-pane workbench:
+ *   left    · past conversations (localStorage, `sc.ai.chatSessions`), lg+
+ *   center  · the conversation with the AI (refinement-aware), composer
+ *             pinned to the bottom
+ *   right   · live preview of the current config + save-as-draft, xl+
+ *             (slide-over behind a "Preview" toggle below xl)
+ *
+ * The three panes are joined inside a single bordered container separated by
+ * 1px dividers — the page itself never scrolls; each pane scrolls internally.
+ * Renders AppNavbar directly (instead of DashboardShell) so the workbench can
+ * own the full viewport height below the navbar.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,19 +21,18 @@ import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
-  Info,
-  RefreshCw,
-  Save,
+  Eye,
+  History,
   Sparkles,
-  TrendingUp,
   User as UserIcon,
 } from 'lucide-react';
-import DashboardShell from '@/components/layout/DashboardShell';
+import AppNavbar from '@/components/layout/AppNavbar';
 import Modal from '@/components/ui/Modal';
 import RuleCard from '@/components/ai-strategies/RuleCard';
-import ChatComposer from '@/components/ai-strategies/ChatComposer';
+import ChatComposer, { type ChatComposerHandle } from '@/components/ai-strategies/ChatComposer';
 import ChatHistoryPanel from '@/components/ai-strategies/ChatHistoryPanel';
-import { EmptyState, PageHeader, inputCls } from '@/components/ai-strategies/shared';
+import StrategyPreviewPane from '@/components/ai-strategies/StrategyPreviewPane';
+import { inputCls } from '@/components/ai-strategies/shared';
 import {
   aiApi,
   deleteChatSession,
@@ -51,6 +56,41 @@ const makeId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** Compact header-strip toggle (History below lg, Preview below xl). */
+function PaneToggle({
+  icon: Icon,
+  label,
+  active,
+  dot,
+  onClick,
+  className,
+}: {
+  icon: typeof History;
+  label: string;
+  active: boolean;
+  dot?: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        'inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] font-semibold transition-colors',
+        active
+          ? 'border-[#E94E1B]/40 bg-[#FCE6DD] text-[#E94E1B]'
+          : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+        className,
+      )}
+    >
+      <Icon size={12} /> {label}
+      {dot && <span className="h-1.5 w-1.5 rounded-full bg-[#E94E1B]" aria-hidden />}
+    </button>
+  );
+}
 
 function Avatar({ role }: { role: 'user' | 'assistant' }) {
   if (role === 'user') {
@@ -106,6 +146,10 @@ export default function AiStrategyMakerPage() {
   const [pending, setPending] = useState(false);
   const [aiUnavailable, setAiUnavailable] = useState<string | null>(null);
 
+  // Small-screen pane toggles (history below lg, preview below xl).
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   // Save dialog
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState('');
@@ -113,6 +157,7 @@ export default function AiStrategyMakerPage() {
   const [saving, setSaving] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<ChatComposerHandle>(null);
 
   useEffect(() => {
     setSessions(loadChatSessions());
@@ -243,7 +288,6 @@ export default function AiStrategyMakerPage() {
     [sessionId, messages, activeConfig, applyConfig, persistSession],
   );
 
-
   const openSave = () => {
     if (!activeConfig) return;
     setName((prev) => prev || suggestName(activeConfig));
@@ -275,24 +319,33 @@ export default function AiStrategyMakerPage() {
     }
   };
 
+  const showReset = Boolean(activeConfig || messages.length > 0);
+
   return (
-    <DashboardShell>
-      <div className="space-y-4">
-        <Link
-          href="/ai-strategies"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-tertiary hover:text-text-primary transition-colors"
-        >
-          <ArrowLeft size={13} /> All strategies
-        </Link>
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg-secondary text-text-primary">
+      <AppNavbar />
 
-        <PageHeader
-          title="AI Strategy Maker"
-          description="Describe a strategy in plain language. The AI returns rules you can inspect, refine, backtest and save."
-        />
+      <main className="page-fade-in mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 lg:px-6">
+        {/* Compact page header — the workbench below owns the rest of the height. */}
+        <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <Link
+            href="/ai-strategies"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary"
+          >
+            <ArrowLeft size={13} /> All strategies
+          </Link>
+          <span className="hidden h-3.5 w-px bg-border-primary sm:block" aria-hidden />
+          <h1 className="text-lg font-bold text-text-primary">AI Strategy Maker</h1>
+          <p className="hidden text-xs text-text-secondary md:block">
+            Describe a strategy in plain language — the AI returns rules you can inspect, refine,
+            backtest and save.
+          </p>
+        </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,400px)]">
-          {/* History — below lg it sits above the conversation, height-capped. */}
-          <div className="flex max-h-[16rem] flex-col overflow-hidden rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)] lg:max-h-[calc(100svh-16rem)]">
+        {/* Workbench — three joined panes in one bordered container. */}
+        <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+          {/* Left — history rail (lg+) */}
+          <aside className="hidden w-[260px] shrink-0 border-r border-border-primary lg:block">
             <ChatHistoryPanel
               sessions={sessions}
               activeId={sessionId}
@@ -300,43 +353,102 @@ export default function AiStrategyMakerPage() {
               onDelete={removeSession}
               onNew={resetAll}
             />
-          </div>
+          </aside>
 
-          {/* Conversation */}
-          <div className="flex h-[calc(100svh-16rem)] min-h-[520px] flex-col rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-            <div className="border-b border-border-primary px-4 py-3">
-              <p className="text-sm font-semibold text-text-primary">Conversation</p>
-            </div>
-
-            <div ref={scrollRef} className="flex-1 overflow-y-auto">
-              <div className="space-y-5 p-4">
-                {messages.length === 0 && !pending && (
-                  <EmptyState
-                    icon={Sparkles}
-                    title="Describe your strategy"
-                    description="Tell the AI what you want to trade, on what timeframe, and what should trigger an entry. It will produce rules you can review one by one."
-                    className="border-0"
-                  />
-                )}
-
-                {messages.map((m) => (
-                  <MessageBubble key={m.id} message={m} />
-                ))}
-
-                {pending && (
-                  <div className="flex items-start gap-3">
-                    <Avatar role="assistant" />
-                    <div className="flex items-center gap-2 pt-1.5 text-sm text-text-tertiary">
-                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
-                      Designing the strategy…
-                    </div>
-                  </div>
-                )}
+          {/* Center — conversation */}
+          <section className="flex min-w-0 flex-1 flex-col">
+            <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border-primary px-3 sm:px-4">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+                Conversation
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="hidden items-center gap-1.5 text-[10px] text-text-tertiary md:flex">
+                  <Sparkles size={11} className="text-[#E94E1B]" aria-hidden />
+                  Powered by SwissCresta AI
+                </span>
+                <PaneToggle
+                  icon={History}
+                  label="History"
+                  active={historyOpen}
+                  onClick={() => setHistoryOpen((v) => !v)}
+                  className="lg:hidden"
+                />
+                <PaneToggle
+                  icon={Eye}
+                  label="Preview"
+                  active={previewOpen}
+                  dot={Boolean(activeConfig)}
+                  onClick={() => setPreviewOpen((v) => !v)}
+                  className="xl:hidden"
+                />
               </div>
             </div>
 
-            <div className="border-t border-border-primary p-4">
+            {/* Below lg the history rail collapses into this expandable strip. */}
+            {historyOpen && (
+              <div className="h-56 shrink-0 border-b border-border-primary lg:hidden">
+                <ChatHistoryPanel
+                  sessions={sessions}
+                  activeId={sessionId}
+                  onSelect={(s) => {
+                    selectSession(s);
+                    setHistoryOpen(false);
+                  }}
+                  onDelete={removeSession}
+                  onNew={() => {
+                    resetAll();
+                    setHistoryOpen(false);
+                  }}
+                />
+              </div>
+            )}
+
+            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+              {messages.length === 0 && !pending ? (
+                <div className="flex min-h-full flex-col items-center justify-center px-6 py-8">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-border-primary bg-bg-secondary">
+                    <Sparkles size={22} className="text-[#E94E1B]" aria-hidden />
+                  </div>
+                  <p className="font-semibold text-text-primary">Describe your strategy</p>
+                  <p className="mt-1 max-w-md text-center text-sm leading-relaxed text-text-tertiary">
+                    Tell the AI what you want to trade, on what timeframe, and what should trigger
+                    an entry. It will produce rules you can review one by one.
+                  </p>
+                  <div className="mt-6 flex max-w-xl flex-wrap justify-center gap-2">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => composerRef.current?.prefill(s)}
+                        className="rounded-full border border-border-primary bg-card px-3 py-1.5 text-left text-xs text-text-secondary transition-colors hover:border-[#E94E1B]/50 hover:text-text-primary"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5 p-3 sm:p-4">
+                  {messages.map((m) => (
+                    <MessageBubble key={m.id} message={m} />
+                  ))}
+
+                  {pending && (
+                    <div className="flex items-start gap-3">
+                      <Avatar role="assistant" />
+                      <div className="flex items-center gap-2 pt-1.5 text-sm text-text-tertiary">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
+                        Designing the strategy…
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0 border-t border-border-primary p-3 sm:p-4">
               <ChatComposer
+                ref={composerRef}
                 onSubmit={(v) => void send(v)}
                 isSubmitting={pending}
                 placeholder={
@@ -344,74 +456,36 @@ export default function AiStrategyMakerPage() {
                     ? "Refine it — e.g. 'use a tighter stop' or 'switch to GBPUSD'…"
                     : 'Describe the strategy you want…'
                 }
-                suggestions={messages.length === 0 ? SUGGESTIONS : undefined}
               />
             </div>
-          </div>
+          </section>
 
-          {/* Live preview of the current config */}
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)] lg:sticky lg:top-20">
-              <div className="flex items-center justify-between border-b border-border-primary px-4 py-3">
-                <p className="text-sm font-semibold text-text-primary">Strategy preview</p>
-                {(activeConfig || messages.length > 0) && (
-                  <button
-                    type="button"
-                    onClick={resetAll}
-                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
-                  >
-                    <RefreshCw size={11} /> Start over
-                  </button>
-                )}
-              </div>
+          {/* Right — strategy preview (xl+) */}
+          <aside className="hidden w-[380px] shrink-0 border-l border-border-primary xl:block">
+            <StrategyPreviewPane
+              config={activeConfig}
+              aiUnavailable={aiUnavailable}
+              showReset={showReset}
+              onReset={resetAll}
+              onSave={openSave}
+            />
+          </aside>
 
-              <div className="p-4">
-                {aiUnavailable && (
-                  <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#E94E1B]/25 bg-[#FCE6DD] px-3 py-2.5 text-[12px] text-[#0A0A0A]">
-                    <Info size={14} className="mt-0.5 shrink-0 text-[#E94E1B]" />
-                    <div>
-                      <p className="font-semibold text-[#E94E1B]">AI generation unavailable</p>
-                      <p className="mt-0.5">{aiUnavailable}</p>
-                      <p className="mt-0.5 text-text-secondary">
-                        A ready-made example strategy has been loaded in the preview — you can
-                        save it and adjust its risk settings, or try the AI again later.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {activeConfig ? (
-                  <>
-                    <RuleCard dsl={activeConfig} />
-
-                    <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-xs text-text-secondary">
-                      <TrendingUp size={14} className="mt-0.5 shrink-0 text-[#E94E1B]" />
-                      <p>
-                        <span className="font-semibold text-text-primary">Not tested yet.</span>{' '}
-                        These rules have not been run against historical data. Save the strategy,
-                        then backtest it before deploying it anywhere.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={openSave}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#E94E1B] py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#C73E11]"
-                    >
-                      <Save size={13} /> Save as draft
-                    </button>
-                  </>
-                ) : (
-                  <p className="py-10 text-center text-sm text-text-tertiary">
-                    Your strategy rules will appear here as soon as the AI produces them.
-                  </p>
-                )}
-              </div>
+          {/* Below xl the preview becomes a slide-over on the workbench. */}
+          {previewOpen && (
+            <div className="absolute inset-y-0 right-0 z-20 w-full max-w-[380px] border-l border-border-primary bg-card shadow-[-8px_0_24px_rgba(0,0,0,0.08)] xl:hidden">
+              <StrategyPreviewPane
+                config={activeConfig}
+                aiUnavailable={aiUnavailable}
+                showReset={showReset}
+                onReset={resetAll}
+                onSave={openSave}
+                onClose={() => setPreviewOpen(false)}
+              />
             </div>
-
-          </div>
+          )}
         </div>
-      </div>
+      </main>
 
       {/* Save dialog */}
       <Modal
@@ -472,6 +546,6 @@ export default function AiStrategyMakerPage() {
           </div>
         </div>
       </Modal>
-    </DashboardShell>
+    </div>
   );
 }

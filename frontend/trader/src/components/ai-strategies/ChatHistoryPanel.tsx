@@ -4,10 +4,13 @@
  * Past Strategy Maker conversations, persisted in localStorage
  * (`sc.ai.chatSessions`). Picking one restores the transcript and the last
  * config it produced, so refinement can continue instead of restarting.
+ *
+ * Styled as a joined workbench pane: uniform pane header, full-width rows,
+ * active row marked with a left accent bar + subtle brand background.
  */
 
 import { clsx } from 'clsx';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { formatDateTime } from '@/lib/formatters';
 import type { ChatSession } from '@/lib/ai-strategies';
 
@@ -27,49 +30,51 @@ export default function ChatHistoryPanel({
   onNew,
 }: ChatHistoryPanelProps) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-border-primary px-3 py-2.5">
-        <span className="text-xs font-semibold text-text-secondary">History</span>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border-primary px-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+          History
+        </span>
         <button
           type="button"
           onClick={onNew}
-          className="inline-flex items-center gap-1 rounded-md border border-border-primary px-2 py-1 text-[10px] font-bold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+          className="inline-flex items-center gap-1 rounded-md border border-border-primary px-2 py-1 text-[10px] font-bold text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
         >
           <Plus size={11} /> New chat
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto">
         {sessions.length === 0 ? (
-          <p className="px-2 py-6 text-center text-xs leading-relaxed text-text-tertiary">
+          <p className="px-4 py-8 text-center text-xs leading-relaxed text-text-tertiary">
             Conversations are saved on this device as you have them. Nothing to show yet.
           </p>
         ) : (
-          <ul className="space-y-0.5">
+          <ul>
             {sessions.map((session) => {
               const isActive = session.id === activeId;
               return (
-                <li key={session.id} className="group relative">
+                <li key={session.id} className="group relative border-b border-border-primary/60">
                   <button
                     type="button"
                     onClick={() => onSelect(session)}
                     aria-current={isActive ? 'true' : undefined}
                     className={clsx(
-                      'w-full rounded-lg px-2.5 py-2 pr-8 text-left transition-colors',
-                      isActive ? 'bg-[#FCE6DD]' : 'hover:bg-bg-hover',
+                      'relative block w-full px-3 py-2.5 pr-9 text-left transition-colors',
+                      isActive ? 'bg-[#FCE6DD]/60' : 'hover:bg-bg-hover',
                     )}
                   >
-                    <span className="flex items-start gap-2">
-                      <MessageSquare
-                        size={13}
-                        className={clsx('mt-0.5 shrink-0', isActive ? 'text-[#E94E1B]' : 'text-text-tertiary')}
+                    {/* Active-row accent bar */}
+                    {isActive && (
+                      <span
+                        className="absolute inset-y-0 left-0 w-[3px] bg-[#E94E1B]"
                         aria-hidden
                       />
-                      <span className="line-clamp-2 break-words text-xs font-medium leading-snug text-text-primary">
-                        {session.title || 'Untitled strategy chat'}
-                      </span>
+                    )}
+                    <span className="line-clamp-2 break-words text-xs font-medium leading-snug text-text-primary">
+                      {session.title || 'Untitled strategy chat'}
                     </span>
-                    <span className="mt-1 block pl-[21px] text-[10px] text-text-tertiary">
+                    <span className="mt-1 block text-[10px] text-text-tertiary">
                       {session.messages.length} messages · {formatDateTime(session.updatedAt)}
                     </span>
                   </button>
@@ -80,7 +85,7 @@ export default function ChatHistoryPanel({
                     onClick={() => onDelete(session.id)}
                     // Visible on hover with a mouse, always on touch — a
                     // hover-only control is unreachable on a phone.
-                    className="absolute right-1 top-1.5 flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary hover:text-red-600 hover:bg-red-500/10 transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
+                    className="absolute right-1.5 top-2 flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
                   >
                     <Trash2 size={12} aria-hidden />
                   </button>
