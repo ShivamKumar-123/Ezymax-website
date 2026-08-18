@@ -190,7 +190,12 @@ async def generate_from_prompt(
     try:
         response = await client.messages.parse(
             model=st.AI_STRATEGY_MODEL,
-            max_tokens=16000,
+            max_tokens=10000,
+            # The web proxy and browser client both cap requests at ~60s.
+            # DSL generation is a well-specified structured task — medium
+            # effort keeps p95 comfortably inside that window with no
+            # observable quality loss; high effort was overrunning it.
+            output_config={"effort": "medium"},
             system=[
                 {"type": "text", "text": _DSL_GUIDE, "cache_control": {"type": "ephemeral"}},
                 {"type": "text", "text": "Available instruments: " + ", ".join(symbols)},
