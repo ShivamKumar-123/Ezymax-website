@@ -56,6 +56,7 @@ class RiskEngine:
         await asyncio.gather(
             self._margin_monitor(),
             self._exposure_monitor(),
+            self._negative_balance_protection(),
         )
 
     async def stop(self):
@@ -388,6 +389,68 @@ class RiskEngine:
             fire_and_forget(send_email(user.email, subject, html, text=text))
         except Exception as e:
             logger.debug("stop-out email failed acct=%s: %s", account.account_number, e)
+
+    async def _negative_balance_protection(self):
+        """Zero out negative balances once an account is flat (standard
+        retail-broker NBP). A stop-out at the 50% margin level can still
+        overshoot below zero — price gaps, fast moves, or (historically) a
+        feed-stale window where the guard rightly refused to close at dead
+        prices. Once every position is closed and the balance is negative,
+        the deficit is written off with a proper `adjustment` Transaction so
+        the ledger explains the correction instead of the balance silently
+        changing. Runs for demo and live alike; the B-book house absorbs
+        the live-side deficit (that's what NBP means)."""
+        logger.info("Negative balance protection started")
+        while self._running:
+            try:
+                async with AsyncSessionLocal() as db:
+                    rows = (await db.execute(
+                        select(TradingAccount).where(
+                            TradingAccount.balance < 0,
+                            TradingAccount.is_active == True,  # noqa: E712
+                        ).with_for_update(skip_locked=True)
+                    )).scalars().all()
+                    for account in rows:
+                        open_count = (await db.execute(
+                            select(func.count(Position.id)).where(
+                                Position.account_id == account.id,
+                                Position.status == PositionStatus.OPEN,
+                            )
+                        )).scalar() or 0
+                        if open_count:
+                            continue  # still has exposure — wait until flat
+                        deficit = -account.balance
+                        account.balance = Decimal("0")
+                        account.equity = account.credit or Decimal("0")
+                        account.margin_used = Decimal("0")
+                        account.free_margin = account.equity
+                        account.margin_level = Decimal("0")
+                        db.add(Transaction(
+                            user_id=account.user_id,
+                            account_id=account.id,
+                            type="adjustment",
+                            amount=deficit,
+                            balance_after=Decimal("0"),
+                            description="Negative balance protection: deficit written off",
+                        ))
+                        db.add(Notification(
+                            user_id=account.user_id,
+                            title="Negative balance corrected",
+                            message=(
+                                f"Account {account.account_number}: a negative "
+                                f"balance of {float(-deficit):.2f} was reset to "
+                                f"0.00 under negative balance protection."
+                            ),
+                            type="margin_call",
+                        ))
+                        logger.warning(
+                            "NBP: account %s deficit %.2f written off",
+                            account.account_number, float(deficit),
+                        )
+                    await db.commit()
+            except Exception as e:
+                logger.error(f"NBP sweep error: {e}")
+            await asyncio.sleep(60)
 
     async def _exposure_monitor(self):
         """Track the admin's net exposure per instrument (B-book risk)."""
