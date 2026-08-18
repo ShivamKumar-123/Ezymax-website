@@ -9,13 +9,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
   ArrowLeft,
-  ChevronDown,
-  ChevronUp,
   History,
   Rocket,
   Square,
@@ -139,9 +136,8 @@ export default function AiStrategyDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Configuration tab JSON editor
-  const [configOpen, setConfigOpen] = useState(false);
-  const [configJson, setConfigJson] = useState('');
+  // Configuration tab — simple risk-settings form (no raw JSON for users)
+  const [risk, setRisk] = useState({ lots: '', sl: '', tp: '', maxPos: '', maxDay: '' });
   const [configError, setConfigError] = useState<string | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
 
@@ -149,7 +145,14 @@ export default function AiStrategyDetailPage() {
     try {
       const res = await aiApi.get(id);
       setDetail(res);
-      setConfigJson(JSON.stringify(res.dsl ?? {}, null, 2));
+      const r = (res.dsl?.risk ?? {}) as Record<string, unknown>;
+      setRisk({
+        lots: r.lots != null ? String(r.lots) : '0.01',
+        sl: r.stop_loss_pct != null ? String(r.stop_loss_pct) : '',
+        tp: r.take_profit_pct != null ? String(r.take_profit_pct) : '',
+        maxPos: r.max_open_positions != null ? String(r.max_open_positions) : '1',
+        maxDay: r.max_trades_per_day != null ? String(r.max_trades_per_day) : '10',
+      });
     } catch (e: unknown) {
       const status = (e as { status?: number })?.status;
       if (status === 404) setNotFound(true);
@@ -219,25 +222,34 @@ export default function AiStrategyDetailPage() {
     }
   };
 
-  const saveConfig = async () => {
-    if (!detail) return;
-    let dsl: StrategyDsl;
-    try {
-      dsl = JSON.parse(configJson) as StrategyDsl;
-      if (!dsl || typeof dsl !== 'object' || Array.isArray(dsl)) {
-        throw new Error('Strategy JSON must be an object');
-      }
-    } catch (e: unknown) {
-      setConfigError(e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON');
-      return;
-    }
+  const saveRisk = async () => {
+    if (!detail?.dsl) return;
+    const lots = Number(risk.lots);
+    const sl = risk.sl.trim() === '' ? null : Number(risk.sl);
+    const tp = risk.tp.trim() === '' ? null : Number(risk.tp);
+    const maxPos = Number(risk.maxPos);
+    const maxDay = Number(risk.maxDay);
+    if (!Number.isFinite(lots) || lots <= 0) { setConfigError('Trade size must be a positive number'); return; }
+    if (sl !== null && (!Number.isFinite(sl) || sl <= 0)) { setConfigError('Stop loss must be a positive number (or empty)'); return; }
+    if (tp !== null && (!Number.isFinite(tp) || tp <= 0)) { setConfigError('Take profit must be a positive number (or empty)'); return; }
+    if (!Number.isInteger(maxPos) || maxPos < 1) { setConfigError('Max open positions must be at least 1'); return; }
+    if (!Number.isInteger(maxDay) || maxDay < 1) { setConfigError('Max trades per day must be at least 1'); return; }
+    const dsl: StrategyDsl = {
+      ...detail.dsl,
+      risk: {
+        lots,
+        ...(sl !== null ? { stop_loss_pct: sl } : {}),
+        ...(tp !== null ? { take_profit_pct: tp } : {}),
+        max_open_positions: maxPos,
+        max_trades_per_day: maxDay,
+      },
+    };
     setConfigSaving(true);
     try {
       const res = await aiApi.update(detail.id, { dsl });
       setDetail(res);
-      setConfigJson(JSON.stringify(res.dsl ?? {}, null, 2));
       setConfigError(null);
-      toast.success('Configuration updated');
+      toast.success('Risk settings updated');
     } catch (e: unknown) {
       // 400 while instances are running — surface the backend detail.
       toast.error(e instanceof Error ? e.message : 'Update failed');
@@ -450,45 +462,58 @@ export default function AiStrategyDetailPage() {
           <div className="space-y-4">
             <RuleCard dsl={detail.dsl} />
 
-            <div className="overflow-hidden rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+            <div className="rounded-xl border border-border-primary bg-card p-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+              <h3 className="text-sm font-semibold text-text-primary">Risk settings</h3>
+              <p className="mt-0.5 text-xs text-text-secondary">
+                Adjust how much this strategy trades. To change the entry/exit rules
+                themselves, create a new strategy in the AI Strategy Maker.
+              </p>
+              {running.length > 0 && (
+                <p className="mt-2 text-[11px] text-warning">
+                  This strategy has running instances — stop them before changing settings.
+                </p>
+              )}
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <label className="space-y-1 text-xs font-medium text-text-secondary">
+                  <span>Trade size (lots)</span>
+                  <input type="number" step="0.01" min="0.01" value={risk.lots}
+                    onChange={(e) => { setRisk((r) => ({ ...r, lots: e.target.value })); setConfigError(null); }}
+                    className={inputCls} />
+                </label>
+                <label className="space-y-1 text-xs font-medium text-text-secondary">
+                  <span>Stop loss (% of entry)</span>
+                  <input type="number" step="0.1" min="0" placeholder="e.g. 0.5" value={risk.sl}
+                    onChange={(e) => { setRisk((r) => ({ ...r, sl: e.target.value })); setConfigError(null); }}
+                    className={inputCls} />
+                </label>
+                <label className="space-y-1 text-xs font-medium text-text-secondary">
+                  <span>Take profit (% of entry)</span>
+                  <input type="number" step="0.1" min="0" placeholder="e.g. 1.0" value={risk.tp}
+                    onChange={(e) => { setRisk((r) => ({ ...r, tp: e.target.value })); setConfigError(null); }}
+                    className={inputCls} />
+                </label>
+                <label className="space-y-1 text-xs font-medium text-text-secondary">
+                  <span>Max open positions</span>
+                  <input type="number" step="1" min="1" value={risk.maxPos}
+                    onChange={(e) => { setRisk((r) => ({ ...r, maxPos: e.target.value })); setConfigError(null); }}
+                    className={inputCls} />
+                </label>
+                <label className="space-y-1 text-xs font-medium text-text-secondary">
+                  <span>Max trades per day</span>
+                  <input type="number" step="1" min="1" value={risk.maxDay}
+                    onChange={(e) => { setRisk((r) => ({ ...r, maxDay: e.target.value })); setConfigError(null); }}
+                    className={inputCls} />
+                </label>
+              </div>
+              {configError && <p className="mt-2 text-[11px] text-red-600">{configError}</p>}
               <button
                 type="button"
-                onClick={() => setConfigOpen((v) => !v)}
-                aria-expanded={configOpen}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary transition-colors hover:bg-bg-hover"
+                onClick={() => void saveRisk()}
+                disabled={configSaving}
+                className="mt-3 px-3.5 py-2 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors disabled:opacity-50"
               >
-                <span>Advanced: edit strategy JSON</span>
-                {configOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {configSaving ? 'Saving…' : 'Save changes'}
               </button>
-              {configOpen && (
-                <div className="space-y-2 border-t border-border-primary p-3">
-                  {running.length > 0 && (
-                    <p className="text-[11px] text-warning">
-                      This strategy has running instances — the server will refuse edits until
-                      they are stopped.
-                    </p>
-                  )}
-                  <textarea
-                    rows={16}
-                    value={configJson}
-                    onChange={(e) => {
-                      setConfigJson(e.target.value);
-                      setConfigError(null);
-                    }}
-                    spellCheck={false}
-                    className={clsx(inputCls, 'resize-y font-mono text-[11px] leading-relaxed')}
-                  />
-                  {configError && <p className="text-[11px] text-red-600">{configError}</p>}
-                  <button
-                    type="button"
-                    onClick={() => void saveConfig()}
-                    disabled={configSaving}
-                    className="px-3.5 py-2 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors disabled:opacity-50"
-                  >
-                    {configSaving ? 'Saving…' : 'Save changes'}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}

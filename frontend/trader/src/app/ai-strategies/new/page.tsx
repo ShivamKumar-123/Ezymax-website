@@ -15,8 +15,6 @@ import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronUp,
   Info,
   RefreshCw,
   Save,
@@ -114,11 +112,6 @@ export default function AiStrategyMakerPage() {
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Manual JSON editor (also the 503 fallback path)
-  const [jsonOpen, setJsonOpen] = useState(false);
-  const [jsonText, setJsonText] = useState('');
-  const [jsonError, setJsonError] = useState<string | null>(null);
-
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -132,8 +125,6 @@ export default function AiStrategyMakerPage() {
 
   const applyConfig = useCallback((dsl: StrategyDsl | null) => {
     setActiveConfig(dsl);
-    setJsonText(dsl ? JSON.stringify(dsl, null, 2) : '');
-    setJsonError(null);
   }, []);
 
   /** Upsert the current conversation into localStorage (cap 20 sessions). */
@@ -224,13 +215,12 @@ export default function AiStrategyMakerPage() {
         const msg = e instanceof Error ? e.message : 'Generation failed';
         if (status === 503) {
           setAiUnavailable(msg);
-          setJsonOpen(true);
           if (!activeConfig) applyConfig(EXAMPLE_DSL);
           const note: ChatMessage = {
             id: `e-${makeId()}`,
             role: 'assistant',
             content:
-              'AI generation is unavailable right now. A starter template has been loaded in the preview — you can still build the strategy by editing the JSON under "Advanced" and saving it.',
+              'AI generation is unavailable right now. A ready-made example strategy has been loaded in the preview — you can save it and adjust its risk settings, or try again later.',
             error: true,
           };
           const next = [...base, note];
@@ -254,20 +244,6 @@ export default function AiStrategyMakerPage() {
     [sessionId, messages, activeConfig, applyConfig, persistSession],
   );
 
-  const applyJson = () => {
-    try {
-      const parsed = JSON.parse(jsonText) as StrategyDsl;
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        setJsonError('Strategy JSON must be an object');
-        return;
-      }
-      setActiveConfig(parsed);
-      setJsonError(null);
-      toast.success('JSON applied to the preview');
-    } catch (e: unknown) {
-      setJsonError(e instanceof Error ? `Invalid JSON: ${e.message}` : 'Invalid JSON');
-    }
-  };
 
   const openSave = () => {
     if (!activeConfig) return;
@@ -398,7 +374,8 @@ export default function AiStrategyMakerPage() {
                       <p className="font-semibold text-[#E94E1B]">AI generation unavailable</p>
                       <p className="mt-0.5">{aiUnavailable}</p>
                       <p className="mt-0.5 text-text-secondary">
-                        You can still build the strategy manually with the JSON editor below.
+                        A ready-made example strategy has been loaded in the preview — you can
+                        save it and adjust its risk settings, or try the AI again later.
                       </p>
                     </div>
                   </div>
@@ -433,53 +410,6 @@ export default function AiStrategyMakerPage() {
               </div>
             </div>
 
-            {/* Manual JSON — always available; the only path when AI is down. */}
-            <div className="overflow-hidden rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-              <button
-                type="button"
-                onClick={() => setJsonOpen((v) => !v)}
-                aria-expanded={jsonOpen}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-text-secondary transition-colors hover:bg-bg-hover"
-              >
-                <span>Advanced: edit JSON manually</span>
-                {jsonOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-              {jsonOpen && (
-                <div className="space-y-2 border-t border-border-primary p-3">
-                  <textarea
-                    rows={12}
-                    value={jsonText}
-                    onChange={(e) => {
-                      setJsonText(e.target.value);
-                      setJsonError(null);
-                    }}
-                    spellCheck={false}
-                    placeholder="Paste or write the strategy DSL JSON here…"
-                    className={clsx(inputCls, 'resize-y font-mono text-[11px] leading-relaxed')}
-                  />
-                  {jsonError && <p className="text-[11px] text-red-600">{jsonError}</p>}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={applyJson}
-                      disabled={!jsonText.trim()}
-                      className="rounded-lg border border-[#E94E1B]/40 px-3 py-1.5 text-xs font-semibold text-[#E94E1B] transition-colors hover:bg-[#E94E1B]/10 disabled:opacity-50"
-                    >
-                      Apply JSON
-                    </button>
-                    {!activeConfig && (
-                      <button
-                        type="button"
-                        onClick={() => applyConfig(EXAMPLE_DSL)}
-                        className="text-xs font-semibold text-[#E94E1B] hover:underline"
-                      >
-                        Load a template
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
