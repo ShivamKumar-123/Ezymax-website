@@ -9,35 +9,47 @@
  */
 
 import { motion, type Variants } from 'framer-motion';
-import { Activity, Shield, Sparkles, TrendingUp, Zap, type LucideIcon } from 'lucide-react';
+import { CandlestickChart, Rocket, ShieldCheck, Sparkles, Waves, type LucideIcon } from 'lucide-react';
 
 interface Suggestion {
   icon: LucideIcon;
   label: string;
   prompt: string;
+  /** Soft tint for the icon chip at rest. */
+  chipBg: string;
+  /** Saturated icon / hover-fill color. */
+  accent: string;
 }
 
 const SUGGESTIONS: Suggestion[] = [
   {
-    icon: TrendingUp,
+    icon: CandlestickChart,
     label: 'Trend following',
     prompt:
       'A trend-following strategy on EURUSD 1h using EMA crossovers, only when the trend is strong',
+    chipBg: '#D1FAE5',
+    accent: '#059669',
   },
   {
-    icon: Activity,
+    icon: Waves,
     label: 'Mean reversion',
     prompt: 'Mean reversion on XAUUSD 15m that fades RSI oversold extremes',
+    chipBg: '#DBEAFE',
+    accent: '#2563EB',
   },
   {
-    icon: Shield,
+    icon: ShieldCheck,
     label: 'Conservative risk',
     prompt: 'A conservative BTCUSD strategy with tight risk — 0.5% stop loss, 1% take profit',
+    chipBg: '#FEF3C7',
+    accent: '#D97706',
   },
   {
-    icon: Zap,
+    icon: Rocket,
     label: 'Breakout',
     prompt: 'Breakout trades on GBPUSD 4h when price closes above the upper Bollinger band',
+    chipBg: '#EDE9FE',
+    accent: '#7C3AED',
   },
 ];
 
@@ -91,16 +103,21 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
         variants={container}
         className="mt-8 grid w-full max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-2"
       >
-        {SUGGESTIONS.map(({ icon: Icon, label, prompt }) => (
+        {SUGGESTIONS.map(({ icon: Icon, label, prompt, chipBg, accent }) => (
           <motion.button
             key={label}
             variants={item}
             type="button"
             onClick={() => onPick(prompt)}
-            className="group flex items-start gap-3 rounded-xl border border-border-primary bg-card p-3.5 text-left transition-[transform,border-color,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-[#E94E1B]/40 hover:shadow-[0_6px_18px_rgba(0,0,0,0.07)] active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+            className="group flex items-start gap-3 rounded-xl border border-border-primary bg-card p-3.5 text-left transition-[transform,border-color,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.07)] active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = accent; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ''; }}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FCE6DD] text-[#E94E1B] transition-colors group-hover:bg-[#E94E1B] group-hover:text-white">
-              <Icon size={14} aria-hidden />
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] transition-transform duration-150 group-hover:scale-110"
+              style={{ backgroundColor: chipBg, color: accent }}
+            >
+              <Icon size={16} strokeWidth={2.2} aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block text-xs font-bold text-text-primary">{label}</span>
