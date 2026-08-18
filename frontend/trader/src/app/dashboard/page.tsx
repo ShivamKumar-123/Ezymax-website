@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
+  Bot,
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight,
   ExternalLink, Loader2,
@@ -295,8 +296,24 @@ function BrokerHome() {
         </button>
 
         {/* Add Funds tile is meaningless for try-with-demo users — demo
-            accounts are pre-funded with play money. */}
-        {!user?.is_demo && (
+            accounts are pre-funded with play money; they get the AI
+            Strategies tile instead so the 3-column grid never has a hole. */}
+        {user?.is_demo ? (
+          <button
+            type="button"
+            onClick={() => router.push('/ai-strategies')}
+            className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+              <Bot size={22} className="text-[#E94E1B]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold text-text-primary truncate">AI Strategies</p>
+              <p className="text-xs text-text-secondary mt-0.5">Build &amp; Automate</p>
+            </div>
+            <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
+          </button>
+        ) : (
           <button
             type="button"
             onClick={() => router.push('/wallet')}
