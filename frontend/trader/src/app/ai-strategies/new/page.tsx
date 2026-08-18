@@ -4,7 +4,8 @@
  * AI Strategy Maker — a full-height, three-pane workbench:
  *   left    · past conversations (localStorage, `sc.ai.chatSessions`) —
  *             collapsible to an icon-only rail on lg+, a slide-in drawer below
- *   center  · the conversation (760px column) with progressive-reveal replies,
+ *   center  · the conversation (flex-1, content centered in a max-w-3xl column)
+ *             with progressive-reveal replies,
  *             inline strategy cards and the composer pinned to the bottom
  *   right   · live preview of the current config — collapsible on xl+, slides
  *             in when a strategy is generated, a right-hand sheet below xl
@@ -417,9 +418,9 @@ export default function AiStrategyMakerPage() {
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg-secondary text-text-primary">
       <AppNavbar />
 
-      <main className="page-fade-in mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 lg:px-6">
+      <main className="page-fade-in flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         {/* Compact page header — the workbench below owns the rest of the height. */}
-        <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border-primary px-3 py-2 sm:px-4 lg:px-6">
           <Link
             href="/ai-strategies"
             className="inline-flex items-center gap-1.5 rounded-md text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
@@ -434,8 +435,8 @@ export default function AiStrategyMakerPage() {
           </p>
         </div>
 
-        {/* Workbench — three joined panes in one bordered container. */}
-        <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-border-primary bg-card shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+        {/* Workbench — three joined panes, full-bleed edge to edge. */}
+        <div className="relative flex min-h-0 w-full flex-1 overflow-hidden bg-card">
           {/* Left — history rail (lg+), collapsible to an icon-only rail */}
           <motion.aside
             initial={false}
@@ -492,9 +493,11 @@ export default function AiStrategyMakerPage() {
                 className="h-full overflow-y-auto"
               >
                 {messages.length === 0 && !pending ? (
-                  <EmptyHero onPick={(p) => void send(p)} />
+                  <div className="grid min-h-full w-full place-items-center">
+                    <EmptyHero onPick={(p) => void send(p)} />
+                  </div>
                 ) : (
-                  <div className="mx-auto w-full max-w-[760px] space-y-5 px-4 py-5 sm:px-6">
+                  <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-5 sm:px-6">
                     {rows}
                     {pending && <TypingIndicator />}
                     {/* Reserve a little space so the last turn clears the composer shadow. */}
@@ -525,9 +528,9 @@ export default function AiStrategyMakerPage() {
               </AnimatePresence>
             </div>
 
-            {/* Composer — pinned at the bottom, inside the 760px column */}
+            {/* Composer — pinned at the bottom, same centered column as the messages */}
             <div className="shrink-0 px-3 pb-2.5 pt-1 sm:px-6">
-              <div className="mx-auto w-full max-w-[760px]">
+              <div className="mx-auto w-full max-w-3xl">
                 <ChatComposer
                   ref={composerRef}
                   onSubmit={(v) => void send(v)}
@@ -543,44 +546,38 @@ export default function AiStrategyMakerPage() {
             </div>
           </section>
 
-          {/* Right — strategy preview (xl+), slides in when a config exists */}
-          <AnimatePresence initial={false}>
-            {!previewCollapsed && (
-              <motion.aside
-                key="preview"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 380, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
-                className="hidden shrink-0 overflow-hidden border-l border-border-primary xl:block"
-              >
-                <div className="h-full w-[380px]">
-                  {previewPane(() => setPreviewCollapsed(true))}
-                </div>
-              </motion.aside>
+          {/* Right — strategy preview (xl+), animates between icon rail and pane
+              (like the left side) so the conversation's flex-1 absorbs the width */}
+          <motion.aside
+            initial={false}
+            animate={{ width: previewCollapsed ? 44 : 380 }}
+            transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+            className="hidden shrink-0 overflow-hidden border-l border-border-primary xl:block"
+          >
+            {previewCollapsed ? (
+              <div className="flex h-full w-11 flex-col items-center bg-bg-secondary/40 py-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewCollapsed(false)}
+                  aria-label="Show strategy preview"
+                  title="Show strategy preview"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+                >
+                  <PanelRightOpen size={15} aria-hidden />
+                  {activeConfig && (
+                    <span
+                      className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#E94E1B]"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="h-full w-[380px]">
+                {previewPane(() => setPreviewCollapsed(true))}
+              </div>
             )}
-          </AnimatePresence>
-
-          {/* Collapsed preview rail (xl+) */}
-          {previewCollapsed && (
-            <div className="hidden w-11 shrink-0 flex-col items-center border-l border-border-primary bg-bg-secondary/40 py-2 xl:flex">
-              <button
-                type="button"
-                onClick={() => setPreviewCollapsed(false)}
-                aria-label="Show strategy preview"
-                title="Show strategy preview"
-                className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
-              >
-                <PanelRightOpen size={15} aria-hidden />
-                {activeConfig && (
-                  <span
-                    className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#E94E1B]"
-                    aria-hidden
-                  />
-                )}
-              </button>
-            </div>
-          )}
+          </motion.aside>
         </div>
       </main>
 

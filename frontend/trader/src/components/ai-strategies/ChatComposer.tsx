@@ -2,9 +2,10 @@
 
 /**
  * Strategy Maker composer — rounded-2xl card pinned at the bottom of the
- * conversation column. Auto-growing textarea (1 → 6 rows), circular send
- * button inside on the right that morphs into a Stop (abort) button while
- * the AI is responding. Enter sends, Shift+Enter inserts a newline.
+ * conversation column. Auto-growing textarea (1 → 6 rows) and a circular
+ * send button laid out as flex siblings inside the same border (the button
+ * never overflows the card); the button morphs into a Stop (abort) button
+ * while the AI is responding. Enter sends, Shift+Enter inserts a newline.
  * Suggestion cards in the page's empty state prefill/send through the
  * imperative `ChatComposerHandle`.
  */
@@ -26,8 +27,8 @@ interface ChatComposerProps {
   placeholder?: string;
 }
 
-/** 1 row → 6 rows (~20px line-height + vertical padding). */
-const MAX_TEXTAREA_HEIGHT = 6 * 20 + 20;
+/** 1 row → 6 rows (6 × 20px line-height + py-2 vertical padding). */
+const MAX_TEXTAREA_HEIGHT = 6 * 20 + 16;
 
 const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function ChatComposer(
   { onSubmit, isSubmitting, onStop, placeholder = 'Describe the strategy you want…' },
@@ -68,7 +69,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
     <div className="space-y-1.5">
       <div
         className={clsx(
-          'relative flex items-center rounded-2xl border border-border-primary bg-card',
+          'relative flex items-end gap-2 rounded-2xl border border-border-primary bg-card p-2 pl-4',
           'shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-150',
           'focus-within:border-[#E94E1B]/50 focus-within:shadow-[0_0_0_3px_rgba(233,78,27,0.10),0_2px_10px_rgba(0,0,0,0.05)]',
         )}
@@ -89,11 +90,12 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
           rows={1}
           aria-label="Message the AI"
           // Neutralise the global `@layer base` textarea chrome (border,
-          // inner shadow, focus ring) — the wrapper card owns all of that.
+          // padding, inner shadow, focus ring) — the wrapper card owns all
+          // of that. flex-1 min-w-0 keeps it inside the rounded border.
           className={clsx(
-            'w-full resize-none border-0 bg-transparent shadow-none outline-none',
-            'py-3 pl-4 pr-14 text-md leading-[20px] text-text-primary',
-            'placeholder:text-text-tertiary focus:border-0 focus:shadow-none focus:outline-none',
+            'min-w-0 flex-1 resize-none border-0 bg-transparent shadow-none outline-none ring-0',
+            'px-0 py-2 text-md leading-[20px] text-text-primary',
+            'placeholder:text-text-tertiary focus:border-0 focus:shadow-none focus:outline-none focus:ring-0',
             'disabled:opacity-60',
           )}
         />
@@ -106,7 +108,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
             aria-label="Stop generating"
             title="Stop generating"
             className={clsx(
-              'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
               'bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)]',
               'transition-transform duration-100 hover:bg-[#C73E11] active:scale-90',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
@@ -123,7 +125,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
             aria-label="Send"
             title="Send"
             className={clsx(
-              'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
               'transition-[background-color,color,transform,box-shadow] duration-150',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
               hasText

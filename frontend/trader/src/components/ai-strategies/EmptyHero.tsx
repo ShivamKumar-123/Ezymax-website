@@ -1,9 +1,11 @@
 'use client';
 
 /**
- * Strategy Maker empty state — centered hero with a softly pulsing brand orb
- * and a 2×2 grid of suggestion cards. Clicking a card fills the composer AND
- * sends immediately. Gentle staggered fade/slide-in on load (framer-motion).
+ * Strategy Maker empty state — hero with a softly pulsing brand orb and a
+ * 2×2 grid of suggestion cards. The page centers it vertically in the
+ * conversation panel (grid place-items-center). Clicking a card fills the
+ * composer AND sends immediately. Gentle staggered fade/slide-in on load
+ * (framer-motion).
  */
 
 import { motion, type Variants } from 'framer-motion';
@@ -55,7 +57,7 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
       variants={container}
       initial="hidden"
       animate="show"
-      className="flex min-h-full flex-col items-center justify-center px-5 py-10"
+      className="flex w-full flex-col items-center px-5 py-10"
     >
       {/* Orb — layered brand gradient with a slow, professional pulse */}
       <motion.div variants={item} className="relative mb-6" aria-hidden>
