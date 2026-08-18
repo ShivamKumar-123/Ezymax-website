@@ -2,41 +2,49 @@
 
 /**
  * AI Strategy Maker — a full-height, three-pane workbench:
- *   left    · past conversations (localStorage, `sc.ai.chatSessions`), lg+
- *   center  · the conversation with the AI (refinement-aware), composer
- *             pinned to the bottom
- *   right   · live preview of the current config + save-as-draft, xl+
- *             (slide-over behind a "Preview" toggle below xl)
+ *   left    · past conversations (localStorage, `sc.ai.chatSessions`) —
+ *             collapsible to an icon-only rail on lg+, a slide-in drawer below
+ *   center  · the conversation (760px column) with progressive-reveal replies,
+ *             inline strategy cards and the composer pinned to the bottom
+ *   right   · live preview of the current config — collapsible on xl+, slides
+ *             in when a strategy is generated, a right-hand sheet below xl
  *
- * The three panes are joined inside a single bordered container separated by
- * 1px dividers — the page itself never scrolls; each pane scrolls internally.
- * Renders AppNavbar directly (instead of DashboardShell) so the workbench can
- * own the full viewport height below the navbar.
+ * The page itself never scrolls; each pane scrolls internally. Renders
+ * AppNavbar directly (instead of DashboardShell) so the workbench can own the
+ * full viewport height below the navbar.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  ArrowDown,
   ArrowLeft,
   Eye,
   History,
+  PanelRightOpen,
   Sparkles,
-  User as UserIcon,
+  X,
 } from 'lucide-react';
 import AppNavbar from '@/components/layout/AppNavbar';
-import Modal from '@/components/ui/Modal';
-import RuleCard from '@/components/ai-strategies/RuleCard';
 import ChatComposer, { type ChatComposerHandle } from '@/components/ai-strategies/ChatComposer';
 import ChatHistoryPanel from '@/components/ai-strategies/ChatHistoryPanel';
 import StrategyPreviewPane from '@/components/ai-strategies/StrategyPreviewPane';
-import { inputCls } from '@/components/ai-strategies/shared';
+import EmptyHero from '@/components/ai-strategies/EmptyHero';
+import SaveStrategyDialog from '@/components/ai-strategies/SaveStrategyDialog';
+import {
+  MessageItem,
+  TimeDivider,
+  TypingIndicator,
+} from '@/components/ai-strategies/ChatMessages';
 import {
   aiApi,
   deleteChatSession,
   loadChatSessions,
+  renameChatSession,
   saveChatSession,
   suggestName,
   EXAMPLE_DSL,
@@ -45,17 +53,16 @@ import {
   type StrategyDsl,
 } from '@/lib/ai-strategies';
 
-const SUGGESTIONS = [
-  'A trend-following strategy on EURUSD 1h using EMA crossovers, only when the trend is strong',
-  'Mean reversion on XAUUSD 15m that fades RSI oversold extremes',
-  'A conservative BTCUSD strategy with tight risk — 0.5% stop loss, 1% take profit',
-  'Breakout trades on GBPUSD 4h when price closes above the upper Bollinger band',
-];
-
 const makeId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** New timestamp burst after 5 minutes of silence. */
+const BURST_GAP_MS = 5 * 60_000;
+
+const clock = (ms: number) =>
+  new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
 /** Compact header-strip toggle (History below lg, Preview below xl). */
 function PaneToggle({
@@ -79,60 +86,17 @@ function PaneToggle({
       onClick={onClick}
       aria-pressed={active}
       className={clsx(
-        'inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[11px] font-semibold transition-colors',
+        'inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold transition-colors',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
         active
           ? 'border-[#E94E1B]/40 bg-[#FCE6DD] text-[#E94E1B]'
-          : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+          : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary active:bg-bg-active',
         className,
       )}
     >
-      <Icon size={12} /> {label}
+      <Icon size={12} aria-hidden /> {label}
       {dot && <span className="h-1.5 w-1.5 rounded-full bg-[#E94E1B]" aria-hidden />}
     </button>
-  );
-}
-
-function Avatar({ role }: { role: 'user' | 'assistant' }) {
-  if (role === 'user') {
-    return (
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-secondary text-text-tertiary" aria-hidden>
-        <UserIcon size={13} />
-      </span>
-    );
-  }
-  return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FCE6DD] text-[#E94E1B]" aria-hidden>
-      <Sparkles size={14} />
-    </span>
-  );
-}
-
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.role === 'user';
-  return (
-    <div className="flex items-start gap-3">
-      <Avatar role={message.role} />
-      <div className="min-w-0 flex-1">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-          {isUser ? 'You' : 'SwissCresta AI'}
-        </p>
-        <div
-          className={clsx(
-            'whitespace-pre-wrap break-words text-sm leading-relaxed',
-            message.error
-              ? 'rounded-lg border border-red-500/25 bg-red-500/5 px-3 py-2 text-red-600'
-              : 'text-text-primary',
-          )}
-        >
-          {message.content}
-        </div>
-        {message.dsl && (
-          <div className="mt-2.5">
-            <RuleCard dsl={message.dsl} />
-          </div>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -145,10 +109,20 @@ export default function AiStrategyMakerPage() {
   const [activeConfig, setActiveConfig] = useState<StrategyDsl | null>(null);
   const [pending, setPending] = useState(false);
   const [aiUnavailable, setAiUnavailable] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Small-screen pane toggles (history below lg, preview below xl).
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Pane visibility: rail collapse on lg+/xl+, sheet drawers below.
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [previewCollapsed, setPreviewCollapsed] = useState(true);
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
+
+  // Progressive reveal of the newest assistant reply.
+  const [revealId, setRevealId] = useState<string | null>(null);
+
+  // Scroll position bookkeeping (auto-follow + "scroll to bottom" pill).
+  const [showScrollPill, setShowScrollPill] = useState(false);
+  const atBottomRef = useRef(true);
 
   // Save dialog
   const [saveOpen, setSaveOpen] = useState(false);
@@ -158,15 +132,46 @@ export default function AiStrategyMakerPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<ChatComposerHandle>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
+  /** In-memory birth times for messages created this visit (per-burst stamps). */
+  const msgTimesRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     setSessions(loadChatSessions());
+    setHydrated(true);
   }, []);
 
-  // Keep the newest turn in view as the conversation grows.
+  // Abort any in-flight generation when leaving the page.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    atBottomRef.current = dist < 120;
+    setShowScrollPill(dist > 280);
+  }, []);
+
+  // Keep the newest turn in view as the conversation grows — but never yank
+  // the view down while the user is reading something further up.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, pending]);
+    if (atBottomRef.current) scrollToBottom();
+  }, [messages, pending, scrollToBottom]);
+
+  // Follow the progressive reveal as the reply text grows.
+  useEffect(() => {
+    if (!revealId) return;
+    const iv = window.setInterval(() => {
+      if (atBottomRef.current) scrollToBottom('auto');
+    }, 250);
+    return () => window.clearInterval(iv);
+  }, [revealId, scrollToBottom]);
 
   const applyConfig = useCallback((dsl: StrategyDsl | null) => {
     setActiveConfig(dsl);
@@ -196,6 +201,8 @@ export default function AiStrategyMakerPage() {
     setName('');
     setDescription('');
     setAiUnavailable(null);
+    setRevealId(null);
+    setPreviewCollapsed(true);
   }, [applyConfig]);
 
   const selectSession = useCallback(
@@ -206,8 +213,12 @@ export default function AiStrategyMakerPage() {
       setName(s.config ? suggestName(s.config) : '');
       setDescription('');
       setAiUnavailable(null);
+      setRevealId(null);
+      setPreviewCollapsed(!s.config);
+      atBottomRef.current = true;
+      requestAnimationFrame(() => scrollToBottom('auto'));
     },
-    [applyConfig],
+    [applyConfig, scrollToBottom],
   );
 
   const removeSession = useCallback(
@@ -218,26 +229,39 @@ export default function AiStrategyMakerPage() {
     [sessionId, resetAll],
   );
 
+  const renameSession = useCallback((id: string, title: string) => {
+    setSessions(renameChatSession(id, title));
+  }, []);
+
   const send = useCallback(
     async (prompt: string) => {
       const id = sessionId ?? makeId();
       if (!sessionId) setSessionId(id);
 
       const userMessage: ChatMessage = { id: `u-${makeId()}`, role: 'user', content: prompt };
+      msgTimesRef.current[userMessage.id] = Date.now();
       const base = [...messages, userMessage];
+      atBottomRef.current = true; // sending always follows to the bottom
       setMessages(base);
       setPending(true);
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+      stoppedRef.current = false;
+
       try {
-        const res = await aiApi.generate({
-          prompt,
-          // Passing the current config turns this into a refinement.
-          previous_dsl: activeConfig,
-          // Text-only prior turns; locally-generated error bubbles excluded.
-          history: messages
-            .filter((m) => !m.error)
-            .map((m) => ({ role: m.role, content: m.content })),
-        });
+        const res = await aiApi.generate(
+          {
+            prompt,
+            // Passing the current config turns this into a refinement.
+            previous_dsl: activeConfig,
+            // Text-only prior turns; locally-generated error bubbles excluded.
+            history: messages
+              .filter((m) => !m.error)
+              .map((m) => ({ role: m.role, content: m.content })),
+          },
+          { signal: controller.signal },
+        );
         setAiUnavailable(null);
         const assistant: ChatMessage = {
           id: `a-${makeId()}`,
@@ -245,21 +269,39 @@ export default function AiStrategyMakerPage() {
           content: res.reply,
           dsl: res.dsl,
         };
+        msgTimesRef.current[assistant.id] = Date.now();
         const next = [...base, assistant];
         setMessages(next);
+        setRevealId(assistant.id);
         const config = res.dsl ?? activeConfig;
         if (res.dsl) {
           applyConfig(res.dsl);
+          setPreviewCollapsed(false); // slide the preview in on xl+
           setName((prev) => prev || res.name || suggestName(res.dsl));
           if (res.description) setDescription((prev) => prev || res.description || '');
         }
         persistSession(id, next, config);
       } catch (e: unknown) {
+        const cancelled =
+          stoppedRef.current || (e instanceof Error && e.name === 'ApiRequestCancelledError');
         const status = (e as { status?: number })?.status;
         const msg = e instanceof Error ? e.message : 'Generation failed';
-        if (status === 503) {
+        if (cancelled) {
+          // User pressed Stop — a muted note, no error styling, no toast.
+          const note: ChatMessage = {
+            id: `stop-${makeId()}`,
+            role: 'assistant',
+            content: 'Generation stopped',
+            error: true, // excluded from future /generate history like other local notes
+          };
+          msgTimesRef.current[note.id] = Date.now();
+          const next = [...base, note];
+          setMessages(next);
+          persistSession(id, next, activeConfig);
+        } else if (status === 503) {
           setAiUnavailable(msg);
           if (!activeConfig) applyConfig(EXAMPLE_DSL);
+          setPreviewCollapsed(false);
           const note: ChatMessage = {
             id: `e-${makeId()}`,
             role: 'assistant',
@@ -267,6 +309,7 @@ export default function AiStrategyMakerPage() {
               'AI generation is unavailable right now. A ready-made example strategy has been loaded in the preview — you can save it and adjust its risk settings, or try again later.',
             error: true,
           };
+          msgTimesRef.current[note.id] = Date.now();
           const next = [...base, note];
           setMessages(next);
           persistSession(id, next, activeConfig ?? EXAMPLE_DSL);
@@ -277,22 +320,38 @@ export default function AiStrategyMakerPage() {
             content: msg,
             error: true,
           };
+          msgTimesRef.current[bubble.id] = Date.now();
           const next = [...base, bubble];
           setMessages(next);
           persistSession(id, next, activeConfig);
         }
       } finally {
+        abortRef.current = null;
         setPending(false);
       }
     },
     [sessionId, messages, activeConfig, applyConfig, persistSession],
   );
 
-  const openSave = () => {
+  const stopGeneration = useCallback(() => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
+  }, []);
+
+  /** "View in panel" — expand the xl rail, or open the sheet below xl. */
+  const focusPreview = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1280px)').matches) {
+      setPreviewCollapsed(false);
+    } else {
+      setPreviewDrawerOpen(true);
+    }
+  }, []);
+
+  const openSave = useCallback(() => {
     if (!activeConfig) return;
     setName((prev) => prev || suggestName(activeConfig));
     setSaveOpen(true);
-  };
+  }, [activeConfig]);
 
   const handleSave = async () => {
     if (!activeConfig) return;
@@ -321,6 +380,39 @@ export default function AiStrategyMakerPage() {
 
   const showReset = Boolean(activeConfig || messages.length > 0);
 
+  // Message rows with per-burst time dividers (times exist only for messages
+  // created this visit — restored transcripts render without stamps).
+  const rows: ReactNode[] = [];
+  let lastTime: number | null = null;
+  for (const m of messages) {
+    const t = msgTimesRef.current[m.id];
+    if (t != null && (lastTime == null || t - lastTime > BURST_GAP_MS)) {
+      rows.push(<TimeDivider key={`t-${m.id}`} label={clock(t)} />);
+    }
+    if (t != null) lastTime = t;
+    rows.push(
+      <MessageItem
+        key={m.id}
+        message={m}
+        reveal={m.id === revealId}
+        onRevealDone={() => setRevealId((cur) => (cur === m.id ? null : cur))}
+        onViewConfig={focusPreview}
+        onSaveDraft={openSave}
+      />,
+    );
+  }
+
+  const previewPane = (onClose?: () => void) => (
+    <StrategyPreviewPane
+      config={activeConfig}
+      aiUnavailable={aiUnavailable}
+      showReset={showReset}
+      onReset={resetAll}
+      onSave={openSave}
+      onClose={onClose}
+    />
+  );
+
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg-secondary text-text-primary">
       <AppNavbar />
@@ -330,9 +422,9 @@ export default function AiStrategyMakerPage() {
         <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
           <Link
             href="/ai-strategies"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary"
+            className="inline-flex items-center gap-1.5 rounded-md text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
           >
-            <ArrowLeft size={13} /> All strategies
+            <ArrowLeft size={13} aria-hidden /> All strategies
           </Link>
           <span className="hidden h-3.5 w-px bg-border-primary sm:block" aria-hidden />
           <h1 className="text-lg font-bold text-text-primary">AI Strategy Maker</h1>
@@ -343,209 +435,251 @@ export default function AiStrategyMakerPage() {
         </div>
 
         {/* Workbench — three joined panes in one bordered container. */}
-        <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl border border-border-primary bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-          {/* Left — history rail (lg+) */}
-          <aside className="hidden w-[260px] shrink-0 border-r border-border-primary lg:block">
-            <ChatHistoryPanel
-              sessions={sessions}
-              activeId={sessionId}
-              onSelect={selectSession}
-              onDelete={removeSession}
-              onNew={resetAll}
-            />
-          </aside>
+        <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-border-primary bg-card shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+          {/* Left — history rail (lg+), collapsible to an icon-only rail */}
+          <motion.aside
+            initial={false}
+            animate={{ width: historyCollapsed ? 52 : 264 }}
+            transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+            className="hidden shrink-0 overflow-hidden border-r border-border-primary bg-bg-secondary/40 lg:block"
+          >
+            <div className={clsx('h-full', !historyCollapsed && 'w-[264px]')}>
+              <ChatHistoryPanel
+                sessions={sessions}
+                activeId={sessionId}
+                onSelect={selectSession}
+                onDelete={removeSession}
+                onRename={renameSession}
+                onNew={resetAll}
+                loading={!hydrated}
+                collapsed={historyCollapsed}
+                onToggleCollapse={() => setHistoryCollapsed((v) => !v)}
+              />
+            </div>
+          </motion.aside>
 
           {/* Center — conversation */}
           <section className="flex min-w-0 flex-1 flex-col">
             <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border-primary px-3 sm:px-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-                Conversation
+              <span className="flex items-center gap-1.5 text-[10px] text-text-tertiary">
+                <Sparkles size={11} className="text-[#E94E1B]" aria-hidden />
+                Powered by SwissCresta AI
               </span>
               <div className="flex items-center gap-2">
-                <span className="hidden items-center gap-1.5 text-[10px] text-text-tertiary md:flex">
-                  <Sparkles size={11} className="text-[#E94E1B]" aria-hidden />
-                  Powered by SwissCresta AI
-                </span>
                 <PaneToggle
                   icon={History}
                   label="History"
-                  active={historyOpen}
-                  onClick={() => setHistoryOpen((v) => !v)}
+                  active={historyDrawerOpen}
+                  onClick={() => setHistoryDrawerOpen(true)}
                   className="lg:hidden"
                 />
                 <PaneToggle
                   icon={Eye}
                   label="Preview"
-                  active={previewOpen}
+                  active={previewDrawerOpen}
                   dot={Boolean(activeConfig)}
-                  onClick={() => setPreviewOpen((v) => !v)}
+                  onClick={() => setPreviewDrawerOpen(true)}
                   className="xl:hidden"
                 />
               </div>
             </div>
 
-            {/* Below lg the history rail collapses into this expandable strip. */}
-            {historyOpen && (
-              <div className="h-56 shrink-0 border-b border-border-primary lg:hidden">
-                <ChatHistoryPanel
-                  sessions={sessions}
-                  activeId={sessionId}
-                  onSelect={(s) => {
-                    selectSession(s);
-                    setHistoryOpen(false);
-                  }}
-                  onDelete={removeSession}
-                  onNew={() => {
-                    resetAll();
-                    setHistoryOpen(false);
-                  }}
-                />
+            {/* Scroll area (relative so the scroll-to-bottom pill can float) */}
+            <div className="relative min-h-0 flex-1">
+              <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="h-full overflow-y-auto"
+              >
+                {messages.length === 0 && !pending ? (
+                  <EmptyHero onPick={(p) => void send(p)} />
+                ) : (
+                  <div className="mx-auto w-full max-w-[760px] space-y-5 px-4 py-5 sm:px-6">
+                    {rows}
+                    {pending && <TypingIndicator />}
+                    {/* Reserve a little space so the last turn clears the composer shadow. */}
+                    <div className="h-1" aria-hidden />
+                  </div>
+                )}
               </div>
-            )}
 
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-              {messages.length === 0 && !pending ? (
-                <div className="flex min-h-full flex-col items-center justify-center px-6 py-8">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-border-primary bg-bg-secondary">
-                    <Sparkles size={22} className="text-[#E94E1B]" aria-hidden />
-                  </div>
-                  <p className="font-semibold text-text-primary">Describe your strategy</p>
-                  <p className="mt-1 max-w-md text-center text-sm leading-relaxed text-text-tertiary">
-                    Tell the AI what you want to trade, on what timeframe, and what should trigger
-                    an entry. It will produce rules you can review one by one.
-                  </p>
-                  <div className="mt-6 flex max-w-xl flex-wrap justify-center gap-2">
-                    {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => composerRef.current?.prefill(s)}
-                        className="rounded-full border border-border-primary bg-card px-3 py-1.5 text-left text-xs text-text-secondary transition-colors hover:border-[#E94E1B]/50 hover:text-text-primary"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-5 p-3 sm:p-4">
-                  {messages.map((m) => (
-                    <MessageBubble key={m.id} message={m} />
-                  ))}
-
-                  {pending && (
-                    <div className="flex items-start gap-3">
-                      <Avatar role="assistant" />
-                      <div className="flex items-center gap-2 pt-1.5 text-sm text-text-tertiary">
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
-                        Designing the strategy…
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <AnimatePresence>
+                {showScrollPill && (
+                  <motion.button
+                    key="scroll-pill"
+                    type="button"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => {
+                      atBottomRef.current = true;
+                      scrollToBottom();
+                    }}
+                    aria-label="Scroll to bottom"
+                    className="absolute bottom-3 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-border-primary bg-card text-text-secondary shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-colors hover:text-text-primary active:bg-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+                  >
+                    <ArrowDown size={14} aria-hidden />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="shrink-0 border-t border-border-primary p-3 sm:p-4">
-              <ChatComposer
-                ref={composerRef}
-                onSubmit={(v) => void send(v)}
-                isSubmitting={pending}
-                placeholder={
-                  activeConfig
-                    ? "Refine it — e.g. 'use a tighter stop' or 'switch to GBPUSD'…"
-                    : 'Describe the strategy you want…'
-                }
-              />
+            {/* Composer — pinned at the bottom, inside the 760px column */}
+            <div className="shrink-0 px-3 pb-2.5 pt-1 sm:px-6">
+              <div className="mx-auto w-full max-w-[760px]">
+                <ChatComposer
+                  ref={composerRef}
+                  onSubmit={(v) => void send(v)}
+                  isSubmitting={pending}
+                  onStop={stopGeneration}
+                  placeholder={
+                    activeConfig
+                      ? "Refine it — e.g. 'use a tighter stop' or 'switch to GBPUSD'…"
+                      : 'Describe the strategy you want…'
+                  }
+                />
+              </div>
             </div>
           </section>
 
-          {/* Right — strategy preview (xl+) */}
-          <aside className="hidden w-[380px] shrink-0 border-l border-border-primary xl:block">
-            <StrategyPreviewPane
-              config={activeConfig}
-              aiUnavailable={aiUnavailable}
-              showReset={showReset}
-              onReset={resetAll}
-              onSave={openSave}
-            />
-          </aside>
+          {/* Right — strategy preview (xl+), slides in when a config exists */}
+          <AnimatePresence initial={false}>
+            {!previewCollapsed && (
+              <motion.aside
+                key="preview"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 380, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+                className="hidden shrink-0 overflow-hidden border-l border-border-primary xl:block"
+              >
+                <div className="h-full w-[380px]">
+                  {previewPane(() => setPreviewCollapsed(true))}
+                </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>
 
-          {/* Below xl the preview becomes a slide-over on the workbench. */}
-          {previewOpen && (
-            <div className="absolute inset-y-0 right-0 z-20 w-full max-w-[380px] border-l border-border-primary bg-card shadow-[-8px_0_24px_rgba(0,0,0,0.08)] xl:hidden">
-              <StrategyPreviewPane
-                config={activeConfig}
-                aiUnavailable={aiUnavailable}
-                showReset={showReset}
-                onReset={resetAll}
-                onSave={openSave}
-                onClose={() => setPreviewOpen(false)}
-              />
+          {/* Collapsed preview rail (xl+) */}
+          {previewCollapsed && (
+            <div className="hidden w-11 shrink-0 flex-col items-center border-l border-border-primary bg-bg-secondary/40 py-2 xl:flex">
+              <button
+                type="button"
+                onClick={() => setPreviewCollapsed(false)}
+                aria-label="Show strategy preview"
+                title="Show strategy preview"
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+              >
+                <PanelRightOpen size={15} aria-hidden />
+                {activeConfig && (
+                  <span
+                    className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#E94E1B]"
+                    aria-hidden
+                  />
+                )}
+              </button>
             </div>
           )}
         </div>
       </main>
 
-      {/* Save dialog */}
-      <Modal
+      {/* Below lg — history as a left sheet */}
+      <AnimatePresence>
+        {historyDrawerOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="absolute inset-0 bg-black/30"
+              onClick={() => setHistoryDrawerOpen(false)}
+              aria-hidden
+            />
+            <motion.div
+              initial={{ x: -320 }}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+              className="absolute inset-y-0 left-0 flex w-[300px] max-w-[85vw] flex-col bg-card shadow-[8px_0_32px_rgba(0,0,0,0.14)]"
+              role="dialog"
+              aria-label="Conversation history"
+            >
+              <div className="flex h-11 shrink-0 items-center justify-between border-b border-border-primary pl-3 pr-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+                  Conversations
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setHistoryDrawerOpen(false)}
+                  aria-label="Close history"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+                >
+                  <X size={14} aria-hidden />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <ChatHistoryPanel
+                  sessions={sessions}
+                  activeId={sessionId}
+                  onSelect={(s) => {
+                    selectSession(s);
+                    setHistoryDrawerOpen(false);
+                  }}
+                  onDelete={removeSession}
+                  onRename={renameSession}
+                  onNew={() => {
+                    resetAll();
+                    setHistoryDrawerOpen(false);
+                  }}
+                  loading={!hydrated}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Below xl — preview as a right sheet */}
+      <AnimatePresence>
+        {previewDrawerOpen && (
+          <div className="fixed inset-0 z-40 xl:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="absolute inset-0 bg-black/30"
+              onClick={() => setPreviewDrawerOpen(false)}
+              aria-hidden
+            />
+            <motion.div
+              initial={{ x: 420 }}
+              animate={{ x: 0 }}
+              exit={{ x: 420 }}
+              transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+              className="absolute inset-y-0 right-0 w-[400px] max-w-[92vw] bg-card shadow-[-8px_0_32px_rgba(0,0,0,0.14)]"
+              role="dialog"
+              aria-label="Strategy preview"
+            >
+              {previewPane(() => setPreviewDrawerOpen(false))}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Save dialog — the existing save flow (aiApi.create → router.push) */}
+      <SaveStrategyDialog
         open={saveOpen}
-        onClose={() => {
-          if (!saving) setSaveOpen(false);
-        }}
-        title="Save strategy"
-        width="md"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-text-secondary">
-            It will be saved as a draft. Nothing trades until you deploy it to an account.
-          </p>
-          <div>
-            <label htmlFor="strategy-name" className="mb-1.5 block text-xs text-text-secondary">
-              Name
-            </label>
-            <input
-              id="strategy-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. EURUSD Trend 1h"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label htmlFor="strategy-desc" className="mb-1.5 block text-xs text-text-secondary">
-              Description (optional)
-            </label>
-            <textarea
-              id="strategy-desc"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="A one-line summary you will recognise in a list of twenty."
-              className={clsx(inputCls, 'resize-none')}
-            />
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setSaveOpen(false)}
-              disabled={saving}
-              className="flex-1 rounded-lg border border-border-primary py-2.5 text-xs text-text-secondary transition-colors hover:border-border-secondary hover:text-text-primary disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving || !name.trim()}
-              className="flex-1 rounded-lg bg-[#E94E1B] py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#C73E11] disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save draft'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+        saving={saving}
+        name={name}
+        description={description}
+        onNameChange={setName}
+        onDescriptionChange={setDescription}
+        onClose={() => setSaveOpen(false)}
+        onSave={() => void handleSave()}
+      />
     </div>
   );
 }

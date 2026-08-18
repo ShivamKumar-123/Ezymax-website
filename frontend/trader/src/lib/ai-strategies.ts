@@ -7,7 +7,7 @@
  * rule text for the Builder / detail views.
  */
 
-import api from '@/lib/api/client';
+import api, { type ApiRequestOptions } from '@/lib/api/client';
 
 // ─── DSL types ────────────────────────────────────────────────────────────────
 
@@ -189,7 +189,12 @@ export const aiApi = {
    * Conversational generation. Pass `previous_dsl` + the prior text history
    * on refinement turns; the server replies with text and (maybe) a new DSL.
    */
-  generate: (body: { prompt: string; previous_dsl?: StrategyDsl | null; history?: ChatTurn[] }) =>
+  generate: (
+    body: { prompt: string; previous_dsl?: StrategyDsl | null; history?: ChatTurn[] },
+    // Optional AbortSignal so the composer's Stop button can cancel an
+    // in-flight generation (UI plumbing only — request shape is unchanged).
+    options?: Pick<ApiRequestOptions, 'signal'>,
+  ) =>
     // AI generation legitimately takes 15-60s (model thinking + a possible
     // server-side repair round) — give it far more than the 60s default.
     api.post<GenerateResponse>('/ai-strategies/generate', {
@@ -198,7 +203,7 @@ export const aiApi = {
       history: (body.history ?? [])
         .slice(-HISTORY_MAX_TURNS)
         .map((t) => ({ role: t.role, content: t.content.slice(0, HISTORY_MAX_CHARS) })),
-    }, { timeoutMs: 150_000 }),
+    }, { timeoutMs: 150_000, signal: options?.signal }),
 
   create: (body: {
     name: string;
@@ -388,6 +393,13 @@ export function saveChatSession(session: ChatSession): ChatSession[] {
 
 export function deleteChatSession(id: string): ChatSession[] {
   return persistChatSessions(loadChatSessions().filter((s) => s.id !== id));
+}
+
+/** Rename one session in place (purely client-side; keeps its updatedAt/order). */
+export function renameChatSession(id: string, title: string): ChatSession[] {
+  return persistChatSessions(
+    loadChatSessions().map((s) => (s.id === id ? { ...s, title } : s)),
+  );
 }
 
 // ─── Naming helper ────────────────────────────────────────────────────────────

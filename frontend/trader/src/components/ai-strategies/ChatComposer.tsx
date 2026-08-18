@@ -1,15 +1,17 @@
 'use client';
 
 /**
- * Strategy Maker composer — auto-growing textarea, Enter to send /
- * Shift+Enter for a newline. Ported from the tradezini `chat-composer`
- * pattern. Suggestion chips live in the page's empty state and prefill the
- * input through the imperative `ChatComposerHandle`.
+ * Strategy Maker composer — rounded-2xl card pinned at the bottom of the
+ * conversation column. Auto-growing textarea (1 → 6 rows), circular send
+ * button inside on the right that morphs into a Stop (abort) button while
+ * the AI is responding. Enter sends, Shift+Enter inserts a newline.
+ * Suggestion cards in the page's empty state prefill/send through the
+ * imperative `ChatComposerHandle`.
  */
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { clsx } from 'clsx';
-import { CornerDownLeft, Send } from 'lucide-react';
+import { CornerDownLeft, Send, Square } from 'lucide-react';
 
 export interface ChatComposerHandle {
   /** Put text into the input (without sending) and focus it. */
@@ -19,22 +21,27 @@ export interface ChatComposerHandle {
 interface ChatComposerProps {
   onSubmit: (value: string) => void;
   isSubmitting?: boolean;
+  /** Abort the in-flight generation (renders the Stop button while submitting). */
+  onStop?: () => void;
   placeholder?: string;
 }
 
+/** 1 row → 6 rows (~20px line-height + vertical padding). */
+const MAX_TEXTAREA_HEIGHT = 6 * 20 + 20;
+
 const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function ChatComposer(
-  { onSubmit, isSubmitting, placeholder = 'Describe the strategy you want…' },
+  { onSubmit, isSubmitting, onStop, placeholder = 'Describe the strategy you want…' },
   ref,
 ) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Grow with the content up to a ceiling, then scroll.
+  // Grow with the content up to a ceiling, then scroll inside.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
   }, [value]);
 
   useImperativeHandle(
@@ -48,6 +55,8 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
     [],
   );
 
+  const hasText = value.trim().length > 0;
+
   const submit = () => {
     const trimmed = value.trim();
     if (!trimmed || isSubmitting) return;
@@ -56,8 +65,14 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
   };
 
   return (
-    <div className="space-y-2">
-      <div className="relative rounded-lg border border-border-primary bg-bg-secondary focus-within:border-accent/50">
+    <div className="space-y-1.5">
+      <div
+        className={clsx(
+          'relative flex items-center rounded-2xl border border-border-primary bg-card',
+          'shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-[#E94E1B]/50 focus-within:shadow-[0_0_0_3px_rgba(233,78,27,0.10),0_2px_10px_rgba(0,0,0,0.05)]',
+        )}
+      >
         <textarea
           ref={textareaRef}
           value={value}
@@ -71,28 +86,57 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
           }}
           placeholder={placeholder}
           disabled={isSubmitting}
-          rows={2}
-          className="w-full resize-none bg-transparent px-3 py-2.5 pr-12 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none disabled:opacity-60"
-        />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!value.trim() || isSubmitting}
-          aria-label="Send"
+          rows={1}
+          aria-label="Message the AI"
+          // Neutralise the global `@layer base` textarea chrome (border,
+          // inner shadow, focus ring) — the wrapper card owns all of that.
           className={clsx(
-            'absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-            'bg-[#E94E1B] text-white hover:bg-[#C73E11] disabled:opacity-40 disabled:cursor-not-allowed',
+            'w-full resize-none border-0 bg-transparent shadow-none outline-none',
+            'py-3 pl-4 pr-14 text-md leading-[20px] text-text-primary',
+            'placeholder:text-text-tertiary focus:border-0 focus:shadow-none focus:outline-none',
+            'disabled:opacity-60',
           )}
-        >
-          {isSubmitting ? (
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <Send size={14} />
-          )}
-        </button>
+        />
+
+        {isSubmitting ? (
+          <button
+            type="button"
+            onClick={onStop}
+            disabled={!onStop}
+            aria-label="Stop generating"
+            title="Stop generating"
+            className={clsx(
+              'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
+              'bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)]',
+              'transition-transform duration-100 hover:bg-[#C73E11] active:scale-90',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+          >
+            <Square size={12} fill="currentColor" aria-hidden />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!hasText}
+            aria-label="Send"
+            title="Send"
+            className={clsx(
+              'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
+              'transition-[background-color,color,transform,box-shadow] duration-150',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
+              hasText
+                ? 'bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)] hover:bg-[#C73E11] active:scale-90'
+                : 'cursor-not-allowed bg-bg-active text-text-tertiary',
+            )}
+          >
+            <Send size={15} className="-translate-x-px" aria-hidden />
+          </button>
+        )}
       </div>
 
-      <p className="flex items-center gap-1 text-[10px] text-text-tertiary">
+      <p className="flex items-center gap-1 px-1 text-[10px] text-text-tertiary">
         <CornerDownLeft size={11} aria-hidden />
         Enter to send, Shift + Enter for a new line
       </p>
