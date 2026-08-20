@@ -253,7 +253,7 @@ export default function SpinWheel({
               boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 5px rgba(204,255,0,0.15), 0 0 16px rgba(204,255,0,0.4)',
             }}
           >
-            <Sparkles size={26} style={{ color: '#ccff00' }} />
+            <Sparkles size={26} style={{ color: 'var(--accent-ink)' }} />
           </div>
         </div>
 

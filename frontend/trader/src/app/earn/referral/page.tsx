@@ -93,7 +93,7 @@ export default function ReferralPage() {
               <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ background: 'var(--bg-card)', border: `1px solid ${data.is_ib ? '#ccff0055' : 'var(--border-primary)'}` }}>
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-bold">Partner status</p>
                 {data.is_ib ? (
-                  <p className="text-lg font-bold mt-1 flex items-center gap-1.5" style={{ color: '#ccff00' }}>
+                  <p className="text-lg font-bold mt-1 flex items-center gap-1.5" style={{ color: 'var(--accent-ink)' }}>
                     <BadgeCheck size={18} /> IB Partner
                   </p>
                 ) : (

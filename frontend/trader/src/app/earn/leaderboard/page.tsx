@@ -195,7 +195,7 @@ function Inner() {
                         style={{
                           background: isFirst ? 'rgba(204,255,0,0.14)' : 'rgba(204,255,0,0.08)',
                           border: '1px solid rgba(204,255,0,0.22)',
-                          color: '#ccff00',
+                          color: 'var(--accent-ink)',
                         }}
                       >
                         {scoreOf(r)}
@@ -228,7 +228,7 @@ function Inner() {
                     <span className="flex-1 text-sm text-text-primary truncate">{r.name}</span>
                     <span
                       className="text-sm font-semibold tabular-nums px-2.5 py-1 rounded-lg"
-                      style={{ background: 'rgba(204,255,0,0.07)', border: '1px solid rgba(204,255,0,0.16)', color: '#ccff00' }}
+                      style={{ background: 'rgba(204,255,0,0.07)', border: '1px solid rgba(204,255,0,0.16)', color: 'var(--accent-ink)' }}
                     >
                       {scoreOf(r)}
                     </span>

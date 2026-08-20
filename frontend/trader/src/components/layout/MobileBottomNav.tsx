@@ -84,10 +84,10 @@ const IconMore = ({ active }: { active: boolean }) => (
    users can land on the section they want in one tap. Desktop
    sidebar still shows them under the collapsed Earn group. */
 const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon }[] = [
-  { name: 'Deposit', path: '/wallet', color: '#ccff00', icon: ArrowDownToLine },
+  { name: 'Deposit', path: '/wallet', color: 'var(--accent-ink)', icon: ArrowDownToLine },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
-  { name: 'Rewards', path: '/earn/store', color: '#ccff00', icon: ShoppingBag },
+  { name: 'Rewards', path: '/earn/store', color: 'var(--accent-ink)', icon: ShoppingBag },
   { name: 'Tasks', path: '/earn/tasks', color: '#10b981', icon: CheckSquare },
   { name: 'Leaderboard', path: '/earn/leaderboard', color: '#f59e0b', icon: Trophy },
   { name: 'Spin & Win', path: '/earn/play-zone/spin', color: '#ec4899', icon: Sparkles },
@@ -303,7 +303,7 @@ export default function MobileBottomNav() {
                       className="w-12 h-12 rounded-2xl flex items-center justify-center"
                       style={{ background: 'rgba(204,255,0,0.10)', boxShadow: '0 0 0 1px rgba(204,255,0,0.22)' }}
                     >
-                      <Icon size={22} strokeWidth={1.75} style={{ color: '#ccff00' }} />
+                      <Icon size={22} strokeWidth={1.75} style={{ color: 'var(--accent-ink)' }} />
                     </div>
                     <span className="text-[10px] text-text-secondary font-medium text-center">{item.name}</span>
                   </Link>

@@ -350,7 +350,7 @@ function BrokerHome() {
             onClick={() => setShowLevel(true)}
             title="See your level progress"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
           {/* XP — total experience, drives your level. Opens the XP details popup. */}
@@ -359,7 +359,7 @@ function BrokerHome() {
             onClick={() => setShowXp(true)}
             title="Experience points — earn XP to level up"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
             <Zap size={13} /> {xpTotal.toLocaleString()} XP
           </button>
           {/* FXA — reward coins. Opens the "where FXA come from" popup. */}
@@ -368,7 +368,7 @@ function BrokerHome() {
             onClick={() => setShowFxa(true)}
             title="Where your FXA come from"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
           </button>
           {/* PS — prestige score + rank. Opens the PS details popup. */}
@@ -377,7 +377,7 @@ function BrokerHome() {
             onClick={() => setShowPs(true)}
             title={psRank ? `Prestige score — ${psRank}` : 'Prestige score'}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: '#ccff00' }}>
+            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
             <Gem size={13} /> {psScore.toLocaleString()} PS
           </button>
         </div>
@@ -528,7 +528,7 @@ function PortfolioHero({
             <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}>
+                : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}>
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
             <span className="text-sm font-semibold tabular-nums text-text-primary">
@@ -545,7 +545,7 @@ function PortfolioHero({
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
                   style={{ color: 'var(--text-primary)' }}>
                   <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
-                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}>
+                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}>
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
                   <span className="font-semibold tabular-nums">#{acc.account_number}</span>
@@ -804,7 +804,7 @@ function HeroBalanceCard({
                       className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                       style={acc.is_demo
                         ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                        : { color: '#ccff00', background: 'rgba(204,255,0,0.12)' }}
+                        : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}
                     >
                       {acc.is_demo ? 'Demo' : 'Real'}
                     </span>

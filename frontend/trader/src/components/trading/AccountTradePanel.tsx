@@ -466,7 +466,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   step={execPrice > 100 ? 0.01 : 0.00001}
                   placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
                   className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none"
-                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(204,255,0,0.25)', color: '#ccff00' }}
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(204,255,0,0.25)', color: 'var(--accent-ink)' }}
                 />
               </div>
             )}
@@ -583,7 +583,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               { label: 'Balance', value: `$${account.balance.toFixed(2)}` },
               { label: 'Equity', value: `$${account.equity.toFixed(2)}` },
               { label: 'Margin Used', value: `$${account.margin_used.toFixed(2)}` },
-              { label: 'Free Margin', value: `$${account.free_margin.toFixed(2)}`, color: '#ccff00' },
+              { label: 'Free Margin', value: `$${account.free_margin.toFixed(2)}`, color: 'var(--accent-ink)' },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between">
                 <span className="text-[9px] text-text-tertiary">{r.label}</span>

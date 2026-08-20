@@ -1335,7 +1335,7 @@ function AccountCard({
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Leverage</p>
               <span
                 className="inline-flex items-center rounded-md px-2 py-0.5 text-sm sm:text-base font-bold tabular-nums font-mono"
-                style={{ background: 'rgba(204,255,0,0.10)', color: '#ccff00', border: '1px solid rgba(204,255,0,0.25)' }}
+                style={{ background: 'rgba(204,255,0,0.10)', color: 'var(--accent-ink)', border: '1px solid rgba(204,255,0,0.25)' }}
               >
                 1:{row.leverage}
               </span>

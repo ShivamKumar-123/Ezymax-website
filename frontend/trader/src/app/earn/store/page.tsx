@@ -239,7 +239,7 @@ function Inner() {
                     <h3 className="text-sm font-semibold text-text-primary leading-snug">{it.label}</h3>
                     <span
                       className="shrink-0 inline-flex items-center gap-1 text-xs font-bold tabular-nums px-2 py-1 rounded-lg"
-                      style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: '#ccff00' }}
+                      style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: 'var(--accent-ink)' }}
                     >
                       <Coins className="w-3 h-3" />
                       {formatInteger(it.ac_price)}

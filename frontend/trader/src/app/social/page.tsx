@@ -210,7 +210,7 @@ function TraderCard({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm font-semibold text-text-primary truncate">{provider.provider_name}</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0" style={{ background: 'rgba(204,255,0,0.14)', color: '#ccff00' }}>Master</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0" style={{ background: 'rgba(204,255,0,0.14)', color: 'var(--accent-ink)' }}>Master</span>
                 {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
               </div>
               <div className="text-[11px] text-text-tertiary mt-1 flex items-center gap-1.5">

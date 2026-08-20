@@ -951,3 +951,52 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
     0 10px 22px -10px rgba(0, 0, 0, 0.12),
     0 2px 6px -2px rgba(0, 0, 0, 0.08);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT-MODE ACCENT-TEXT LEGIBILITY (client bug fix)
+   The brand accent is lime #ccff00 — perfect on the dark theme, but as a
+   TEXT / ICON color it is nearly invisible on the white light-mode
+   surfaces (labels, account ids, pill text disappeared). We darken lime
+   ONLY when it is used as a foreground color in light mode, via a single
+   theme-aware token so lime BACKGROUNDS/buttons stay bright lime.
+     --accent-ink : lime on dark, dark olive-lime (5.2:1 on white) on light.
+   Covers the Tailwind text utilities (text-accent / text-[#ccff00] and
+   their opacity variants); inline `color: '#ccff00'` spots are swapped to
+   var(--accent-ink) in the components so they inherit the same behaviour.
+   ═══════════════════════════════════════════════════════════════════ */
+:root,
+.theme-dark,
+[data-theme="dark"] {
+  --accent-ink: #ccff00;
+}
+.theme-light,
+[data-theme="light"] {
+  --accent-ink: #4f6d00;
+}
+
+.theme-light .text-accent,
+.theme-light .text-accent\/80,
+.theme-light .text-accent\/70,
+.theme-light .text-accent\/60,
+.theme-light .text-\[\#ccff00\],
+.theme-light .text-\[\#ccff00\]\/85,
+.theme-light .text-\[\#ccff00\]\/70,
+.theme-light .text-\[\#ccff00\]\/60,
+[data-theme="light"] .text-accent,
+[data-theme="light"] .text-accent\/80,
+[data-theme="light"] .text-accent\/70,
+[data-theme="light"] .text-accent\/60,
+[data-theme="light"] .text-\[\#ccff00\],
+[data-theme="light"] .text-\[\#ccff00\]\/85,
+[data-theme="light"] .text-\[\#ccff00\]\/70,
+[data-theme="light"] .text-\[\#ccff00\]\/60 {
+  color: var(--accent-ink) !important;
+}
+
+/* Same treatment for hover states that flip text to lime. */
+.theme-light .hover\:text-accent:hover,
+.theme-light .hover\:text-\[\#ccff00\]:hover,
+[data-theme="light"] .hover\:text-accent:hover,
+[data-theme="light"] .hover\:text-\[\#ccff00\]:hover {
+  color: var(--accent-ink) !important;
+}

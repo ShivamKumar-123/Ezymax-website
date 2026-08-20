@@ -789,7 +789,7 @@ function WalletPageContent() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
                       style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
                     >
-                      <WalletIcon size={18} style={{ color: '#ccff00' }} />
+                      <WalletIcon size={18} style={{ color: 'var(--accent-ink)' }} />
                     </div>
                     <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Main Balance</p>
                   </div>
@@ -830,10 +830,10 @@ function WalletPageContent() {
                         className="w-10 h-10 rounded-xl border flex items-center justify-center"
                         style={{ background: 'rgba(204,255,0,0.15)', borderColor: 'rgba(204,255,0,0.35)' }}
                       >
-                        <WalletIcon size={18} style={{ color: '#ccff00' }} />
+                        <WalletIcon size={18} style={{ color: 'var(--accent-ink)' }} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs uppercase tracking-wide font-bold" style={{ color: '#ccff00' }}>Wallet Account</p>
+                        <p className="text-xs uppercase tracking-wide font-bold" style={{ color: 'var(--accent-ink)' }}>Wallet Account</p>
                         <p className="text-[10px] font-mono text-text-tertiary truncate">
                           #{wallet.wallet_account.account_number}
                         </p>
@@ -874,7 +874,7 @@ function WalletPageContent() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
                       style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
                     >
-                      <Gift size={18} style={{ color: '#ccff00' }} />
+                      <Gift size={18} style={{ color: 'var(--accent-ink)' }} />
                     </div>
                     <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Bonus Balance</p>
                   </div>
@@ -976,7 +976,10 @@ function WalletPageContent() {
                   : num.startsWith('PM') ? 'PAMM Master Pool'
                   : num.startsWith('CT') ? 'Master Trader Pool'
                   : num;
-                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7' } : { r: '204,255,0', hex: '#ccff00' };
+                // `ink` = the on-white-readable foreground. Lime is invisible as
+                // text/icon in light mode, so it maps to the theme-aware token
+                // (lime on dark, dark olive-lime on light); amber/purple read fine.
+                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b', ink: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7', ink: '#a855f7' } : { r: '204,255,0', hex: '#ccff00', ink: 'var(--accent-ink)' };
 
                 return (
                   <div
@@ -1005,11 +1008,11 @@ function WalletPageContent() {
                           className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center"
                           style={{ background: `linear-gradient(135deg, rgba(${ac.r},0.18) 0%, rgba(${ac.r},0.05) 100%)`, border: `1px solid rgba(${ac.r},0.22)` }}
                         >
-                          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} style={{ color: ac.hex, filter: `drop-shadow(0 0 6px rgba(${ac.r},0.5))` }} />
+                          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} style={{ color: ac.ink, filter: `drop-shadow(0 0 6px rgba(${ac.r},0.5))` }} />
                         </div>
                       </div>
                       <div>
-                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate" style={{ color: `rgba(${ac.r},0.6)` }}>
+                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate" style={{ color: ac.ink }}>
                           {cardLabel}
                         </p>
                         <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">{line}</p>

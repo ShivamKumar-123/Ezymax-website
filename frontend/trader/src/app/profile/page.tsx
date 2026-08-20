@@ -451,7 +451,7 @@ export default function ProfilePage() {
                           style={
                             acc.is_demo
                               ? { background: 'rgba(255,255,255,0.04)', borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }
-                              : { background: 'rgba(204,255,0,0.12)', borderColor: 'rgba(204,255,0,0.25)', color: '#ccff00' }
+                              : { background: 'rgba(204,255,0,0.12)', borderColor: 'rgba(204,255,0,0.25)', color: 'var(--accent-ink)' }
                           }
                         >
                           {acc.is_demo ? 'D' : 'L'}

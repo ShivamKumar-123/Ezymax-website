@@ -209,7 +209,7 @@ export default function InsureOpenTrades({ onBought }: { onBought?: () => void }
                 <button key={d.id} type="button" onClick={() => setDuration(d.id)}
                   className="flex-1 rounded-lg border py-1.5 text-xs font-bold transition-colors"
                   style={duration === d.id
-                    ? { borderColor: '#ccff00', background: 'rgba(204,255,0,0.12)', color: '#ccff00' }
+                    ? { borderColor: '#ccff00', background: 'rgba(204,255,0,0.12)', color: 'var(--accent-ink)' }
                     : { borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}>
                   {d.label}
                 </button>
@@ -234,7 +234,7 @@ export default function InsureOpenTrades({ onBought }: { onBought?: () => void }
                       <p className="text-[11px] text-text-tertiary">{q.coverage_pct}% covered · max ${q.max_cap.toFixed(0)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-mono text-sm font-bold" style={{ color: '#ccff00' }}>${q.fee.toFixed(2)}</p>
+                      <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-ink)' }}>${q.fee.toFixed(2)}</p>
                       <p className="text-[10px] text-text-tertiary">fee</p>
                     </div>
                   </button>

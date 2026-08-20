@@ -250,7 +250,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         className="flex h-10 w-10 items-center justify-center rounded-xl"
                         style={{
                           background: 'rgba(204,255,0,0.12)',
-                          color: '#ccff00',
+                          color: 'var(--accent-ink)',
                           border: '1px solid rgba(204,255,0,0.3)',
                         }}
                         whileHover={{ scale: 1.15, rotate: 8 }}
@@ -269,7 +269,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       {sel && (
                         <span
                           className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                          style={{ background: 'rgba(204,255,0,0.16)', color: '#ccff00' }}
+                          style={{ background: 'rgba(204,255,0,0.16)', color: 'var(--accent-ink)' }}
                         >
                           Selected
                         </span>
