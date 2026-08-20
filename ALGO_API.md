@@ -8,6 +8,7 @@ Connect any algo bot / EA / script / trading dashboard to a SwissCresta trading 
 |--------|--------------------------------------------|----------------------------------------------|
 | POST   | `https://api.swisscresta.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
 | GET    | `https://api.swisscresta.com/api/algo/account` | Read balance, equity, margin                 |
+| GET    | `https://api.swisscresta.com/api/algo/positions`| List every open position                     |
 | GET    | `https://api.swisscresta.com/api/algo/symbols` | List every supported instrument              |
 | GET    | `https://api.swisscresta.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
 | GET    | `https://api.swisscresta.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
@@ -83,9 +84,45 @@ Opens a market order instantly at the current price.
 
 ## 3. Close Positions (CLOSE)
 
-Closes **all open positions** for the given symbol on the linked account.
+Closes one position, or every open position on a symbol.
 
-### Request body
+### Close one position
+
+Pass `position_id` — from the `/trade` response that opened it, or from
+`/positions`. Everything else on that symbol is left alone, which is what lets
+two bots share one account without closing each other out.
+
+```json
+{
+  "action": "CLOSE",
+  "symbol": "XAUUSD",
+  "position_id": "c0a8..."
+}
+```
+
+Response:
+
+```json
+{
+  "status": "closed",
+  "symbol": "XAUUSD",
+  "account": "100245",
+  "position_id": "c0a8...",
+  "closed_count": 1,
+  "close_price": 4820.50,
+  "total_profit": 37.80
+}
+```
+
+A `position_id` that is unknown, already closed, or on a different account
+comes back as `status: "no_positions"` rather than an error — the question
+"is this still open on my account" is answered with no, and a bot told the
+close *failed* would retry forever against a position that no longer exists.
+
+### Close every position on a symbol
+
+Omit `position_id` and the original behaviour applies — every open position on
+that symbol is closed.
 
 ```json
 {
@@ -160,6 +197,53 @@ No request body. Just send the auth headers. Returns the current state of the tr
 | `margin_level`   | number  | `(equity / margin_used) * 100` — `0` when no positions open   |
 | `is_demo`        | boolean | `true` for demo accounts                                      |
 | `open_positions` | number  | Count of currently open positions on the account              |
+
+---
+
+## 4b. Open Positions
+
+```
+GET https://api.swisscresta.com/api/algo/positions
+```
+
+No body — just the auth headers. Every open position on the trading account
+the key is bound to, with live prices and floating P/L from the same feed the
+web platform's own positions table uses.
+
+`/account` gives you a count; this gives you the positions. A bot that has
+restarted, missed a response, or never saw a stop fire needs this to check its
+own records against the account rather than trust them.
+
+### Success response (200)
+
+```json
+{
+  "positions": [
+    {
+      "position_id": "c0a8...",
+      "symbol": "XAUUSD",
+      "side": "buy",
+      "lots": 0.1,
+      "open_price": 4800.00,
+      "current_price": 4812.45,
+      "stop_loss": 4750.00,
+      "take_profit": 4850.00,
+      "swap": 0.00,
+      "commission": 0.70,
+      "profit": 124.50,
+      "comment": "My EA v1",
+      "opened_at": "2026-08-20T10:15:00Z"
+    }
+  ],
+  "count": 1,
+  "account": "100245"
+}
+```
+
+`current_price` is `null` until the feed ticks after the position opens — fall
+back to `open_price`, not to zero. `comment` is whatever opened the position,
+which is how a bot tells its own positions from ones the trader opened by hand
+on the same account.
 
 ---
 
@@ -488,7 +572,7 @@ asyncio.run(stream())
 - **Symbol** is case-insensitive (`xauusd` = `XAUUSD`).
 - **Minimum lot**: `0.01`.
 - **Margin check**: a BUY/SELL is rejected if free margin is not enough — check `/account` first if you want to size trades dynamically.
-- **CLOSE** closes every open position for that symbol on the account — partial close is not supported on this endpoint.
+- **CLOSE** closes one position when given a `position_id`, or every open position on the symbol when not. Partial close is not supported on this endpoint.
 - **SL / TP** are optional; you can add/modify them from the dashboard later.
 - **`/account`** is read-only and safe to poll, but don't hammer it — once every few seconds is more than enough.
 - **Market data endpoints** (`/symbols`, `/price`, `/prices`, `/bars`) share the same auth headers as the trading endpoints — one key, everything.

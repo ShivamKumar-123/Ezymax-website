@@ -822,6 +822,10 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
             "status": pos_status_val,
             "contract_size": float(contract_size),
             "trade_type": trade_type,
+            # Whatever opened the position wrote this. A bot reconciling its
+            # own book needs it to tell its positions from the ones the trader
+            # opened by hand on the same account.
+            "comment": pos.comment or "",
             "created_at": pos.created_at.isoformat() if pos.created_at else None,
             "closed_at": pos.closed_at.isoformat() if getattr(pos, 'closed_at', None) else None,
         })
