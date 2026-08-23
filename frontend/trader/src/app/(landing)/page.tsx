@@ -26,7 +26,7 @@ import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export default function LandingHomePage() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-tx-bg text-tx-ink">
       <main>
         <Hero />
         <DifferentBank />

@@ -1,0 +1,13 @@
+/* Loaded INSIDE the charting-library iframe via `custom_css_url`.
+   SwissCresta terminal: Vantablack canvas + hide the library's own logo
+   link (the SwissCresta mark is overlaid by TradingViewChart.tsx). */
+html, body { background: #000 !important; }
+a[href*="tradingview.com"],
+[class*="tv-logo"],
+[class*="logoWrapper"],
+[class*="logo-"][class*="pane"] { display: none !important; visibility: hidden !important; }
+
+/* Our position / TP / SL lines are managed from the sidebar Exits panel —
+   hide the library's floating drawing toolbar that pops up when one is
+   selected (colour / style / lock / delete would desync the levels). */
+[class*="floating-toolbar-react-widgets"] { display: none !important; }

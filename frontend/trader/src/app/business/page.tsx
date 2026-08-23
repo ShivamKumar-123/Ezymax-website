@@ -42,7 +42,7 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16">
       <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#E94E1B] border-t-transparent" />
-      <span className="text-xs font-medium text-[#6B7280]">Loading…</span>
+      <span className="text-xs font-medium text-text-tertiary">Loading…</span>
     </div>
   );
 }
@@ -54,20 +54,20 @@ function StatCard({ label, value, icon: Icon, tone = 'default' }: {
   tone?: 'default' | 'success' | 'warning' | 'accent';
 }) {
   const toneClasses = {
-    default: { bg: 'bg-[#F5F5F5]', icon: 'text-[#0A0A0A]' },
+    default: { bg: 'bg-bg-input', icon: 'text-text-primary' },
     success: { bg: 'bg-emerald-50', icon: 'text-emerald-600' },
     warning: { bg: 'bg-amber-50', icon: 'text-amber-600' },
     accent: { bg: 'bg-[#FCE6DD]', icon: 'text-[#E94E1B]' },
   }[tone];
   return (
-    <div className="rounded-2xl border border-[#E5E5E5] bg-white p-4">
+    <div className="rounded-2xl border border-border-primary bg-bg-card p-4">
       <div className="flex items-center gap-3">
         <div className={clsx('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', toneClasses.bg)}>
           <Icon size={18} className={toneClasses.icon} strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-[#9CA3AF]">{label}</p>
-          <p className="mt-0.5 truncate text-lg font-bold tabular-nums text-[#0A0A0A]">{value}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">{label}</p>
+          <p className="mt-0.5 truncate text-lg font-bold tabular-nums text-text-primary">{value}</p>
         </div>
       </div>
     </div>
@@ -106,7 +106,7 @@ export default function BusinessPage() {
     <DashboardShell>
       <div className="space-y-6">
         {/* Hero header */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white p-6 sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-border-primary bg-bg-card p-6 sm:p-8">
           <div
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#FCE6DD] via-white to-white"
             aria-hidden
@@ -117,7 +117,7 @@ export default function BusinessPage() {
                 <Award size={12} strokeWidth={2.5} />
                 Partner Programs
               </span>
-              <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]">
+              <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                 Grow with SwissCresta
               </h1>
               <p className="mt-2 text-sm text-[#4B5563] leading-relaxed">
@@ -128,8 +128,8 @@ export default function BusinessPage() {
         </div>
 
         {/* Tabs strip */}
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white">
-          <div className="flex border-b border-[#E5E5E5] px-2 sm:px-4">
+        <div className="rounded-2xl border border-border-primary bg-bg-card">
+          <div className="flex border-b border-border-primary px-2 sm:px-4">
             {TABS.map((t) => {
               const active = tab === t.id;
               const Icon = t.icon;
@@ -140,7 +140,7 @@ export default function BusinessPage() {
                   onClick={() => setTab(t.id)}
                   className={clsx(
                     'relative flex flex-1 items-center justify-center gap-2 px-2 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold transition-colors',
-                    active ? 'text-[#E94E1B]' : 'text-[#6B7280] hover:text-[#0A0A0A]',
+                    active ? 'text-[#E94E1B]' : 'text-text-tertiary hover:text-text-primary',
                   )}
                 >
                   <Icon size={15} strokeWidth={2.2} />
@@ -246,17 +246,17 @@ function IBTab() {
       </div>
 
       {dashboard?.referral_link && (
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+        <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
             <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
-            <p className="text-sm font-semibold text-[#0A0A0A]">Your Referral Link</p>
+            <p className="text-sm font-semibold text-text-primary">Your Referral Link</p>
           </div>
           <div className="flex items-center gap-2">
             <input
               type="text"
               readOnly
               value={dashboard.referral_link}
-              className="flex-1 rounded-lg border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none"
+              className="flex-1 rounded-lg border border-border-primary bg-bg-input px-3 py-2.5 text-xs font-mono text-text-primary focus:outline-none"
             />
             <button
               type="button"
@@ -267,7 +267,7 @@ function IBTab() {
               Copy
             </button>
           </div>
-          <p className="mt-2 text-xs text-[#6B7280]">
+          <p className="mt-2 text-xs text-text-tertiary">
             Code: <span className="font-mono font-bold text-[#E94E1B]">{dashboard.referral_code}</span>
           </p>
         </div>
@@ -280,12 +280,12 @@ function IBTab() {
           rows={referrals.map((r: any) => [
             (
               <div key={`u-${r.id}`}>
-                <p className="text-[#0A0A0A] font-medium">{r.referred_user?.name}</p>
-                <p className="text-[11px] text-[#9CA3AF]">{r.referred_user?.email}</p>
+                <p className="text-text-primary font-medium">{r.referred_user?.name}</p>
+                <p className="text-[11px] text-text-tertiary">{r.referred_user?.email}</p>
               </div>
             ),
-            <span key={`d-${r.id}`} className="text-[#6B7280]">{r.referred_user?.joined_at ? fmtDate(r.referred_user.joined_at) : '—'}</span>,
-            <span key={`b-${r.id}`} className="font-mono tabular-nums text-[#0A0A0A]">${fmt(r.total_deposit || 0)}</span>,
+            <span key={`d-${r.id}`} className="text-text-tertiary">{r.referred_user?.joined_at ? fmtDate(r.referred_user.joined_at) : '—'}</span>,
+            <span key={`b-${r.id}`} className="font-mono tabular-nums text-text-primary">${fmt(r.total_deposit || 0)}</span>,
           ])}
           align={['left', 'left', 'right']}
         />
@@ -296,9 +296,9 @@ function IBTab() {
           title="Commission History"
           headers={['From', 'Type', 'Level', 'Amount', 'Status']}
           rows={commissions.map((c: any) => [
-            <span key={`s-${c.id}`} className="text-[#0A0A0A]">{c.source_user?.name}</span>,
-            <span key={`t-${c.id}`} className="text-[#6B7280] capitalize">{c.commission_type?.replace('_', ' ')}</span>,
-            <span key={`l-${c.id}`} className="text-[#6B7280]">L{c.mlm_level}</span>,
+            <span key={`s-${c.id}`} className="text-text-primary">{c.source_user?.name}</span>,
+            <span key={`t-${c.id}`} className="text-text-tertiary capitalize">{c.commission_type?.replace('_', ' ')}</span>,
+            <span key={`l-${c.id}`} className="text-text-tertiary">L{c.mlm_level}</span>,
             <span key={`a-${c.id}`} className="font-mono tabular-nums text-emerald-600">${fmt(c.amount || 0)}</span>,
             (
               <span
@@ -372,13 +372,13 @@ function SubBrokerTab() {
           <StatCard label="Commission" value={`$${fmt(dashboard.total_commission || 0)}`} icon={Award} tone="default" />
         </div>
 
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+        <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
             <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
-            <p className="text-sm font-semibold text-[#0A0A0A]">Your Referral Code</p>
+            <p className="text-sm font-semibold text-text-primary">Your Referral Code</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-[#F5F5F5] px-4 py-2.5 text-lg font-bold font-mono text-[#E94E1B]">
+            <span className="rounded-lg bg-bg-input px-4 py-2.5 text-lg font-bold font-mono text-[#E94E1B]">
               {dashboard.referral_code}
             </span>
             <button
@@ -399,8 +399,8 @@ function SubBrokerTab() {
             rows={dashboard.clients.map((c: any) => [
               (
                 <div key={`c-${c.user_id}`}>
-                  <p className="text-[#0A0A0A] font-medium">{c.name}</p>
-                  <p className="text-[11px] text-[#9CA3AF]">{c.email}</p>
+                  <p className="text-text-primary font-medium">{c.name}</p>
+                  <p className="text-[11px] text-text-tertiary">{c.email}</p>
                 </div>
               ),
               (
@@ -408,14 +408,14 @@ function SubBrokerTab() {
                   key={`s-${c.user_id}`}
                   className={clsx(
                     'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                    c.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600',
+                    c.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-bg-card-nested text-text-secondary',
                   )}
                 >
                   {c.status}
                 </span>
               ),
-              <span key={`b-${c.user_id}`} className="font-mono tabular-nums text-[#0A0A0A]">${fmt(c.total_balance || 0)}</span>,
-              <span key={`d-${c.user_id}`} className="text-[#6B7280]">{c.joined_at ? fmtDate(c.joined_at) : '—'}</span>,
+              <span key={`b-${c.user_id}`} className="font-mono tabular-nums text-text-primary">${fmt(c.total_balance || 0)}</span>,
+              <span key={`d-${c.user_id}`} className="text-text-tertiary">{c.joined_at ? fmtDate(c.joined_at) : '—'}</span>,
             ])}
             align={['left', 'left', 'right', 'left']}
           />
@@ -440,15 +440,15 @@ function SubBrokerTab() {
       disabled={applying}
       extra={(
         <div className="text-left">
-          <label className="block text-xs font-medium text-[#6B7280] mb-1.5">
-            Company Name <span className="text-[#9CA3AF]">(optional)</span>
+          <label className="block text-xs font-medium text-text-tertiary mb-1.5">
+            Company Name <span className="text-text-tertiary">(optional)</span>
           </label>
           <input
             type="text"
             value={companyName}
             onChange={e => setCompanyName(e.target.value)}
             placeholder="Your company name"
-            className="w-full rounded-xl border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:border-[#E94E1B] focus:ring-2 focus:ring-[#E94E1B]/15"
+            className="w-full rounded-xl border border-border-primary bg-bg-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#E94E1B] focus:ring-2 focus:ring-[#E94E1B]/15"
           />
         </div>
       )}
@@ -475,48 +475,48 @@ function NetworkTab() {
 
   if (!tree) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#F5F5F5]/60 py-16 px-6 text-center max-w-xl mx-auto">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white border border-[#E5E5E5] mb-3">
-          <Network size={20} className="text-[#9CA3AF]" />
+      <div className="rounded-2xl border border-dashed border-border-primary bg-bg-input/60 py-16 px-6 text-center max-w-xl mx-auto">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-bg-card border border-border-primary mb-3">
+          <Network size={20} className="text-text-tertiary" />
         </div>
-        <p className="text-sm font-semibold text-[#0A0A0A]">No network yet</p>
-        <p className="mt-1 text-xs text-[#6B7280]">You need to be an approved IB to see your network.</p>
+        <p className="text-sm font-semibold text-text-primary">No network yet</p>
+        <p className="mt-1 text-xs text-text-tertiary">You need to be an approved IB to see your network.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+      <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Network size={16} className="text-[#E94E1B]" strokeWidth={2.4} />
-            <h3 className="text-sm font-semibold text-[#0A0A0A]">Your MLM Network</h3>
+            <h3 className="text-sm font-semibold text-text-primary">Your MLM Network</h3>
           </div>
-          <span className="text-xs text-[#6B7280]">{tree.total_nodes || 0} members</span>
+          <span className="text-xs text-text-tertiary">{tree.total_nodes || 0} members</span>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-          <span className="text-[#6B7280]">
+          <span className="text-text-tertiary">
             Your Code: <span className="font-mono font-bold text-[#E94E1B]">{tree.root?.referral_code}</span>
           </span>
-          <span className="text-[#6B7280]">
-            Level: <span className="font-bold text-[#0A0A0A]">L{tree.root?.level}</span>
+          <span className="text-text-tertiary">
+            Level: <span className="font-bold text-text-primary">L{tree.root?.level}</span>
           </span>
-          <span className="text-[#6B7280]">
+          <span className="text-text-tertiary">
             Total Earned: <span className="font-mono font-bold text-emerald-600">${fmt(tree.root?.total_earned || 0)}</span>
           </span>
         </div>
       </div>
 
       {tree.tree?.length > 0 ? (
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
-          <h4 className="text-sm font-semibold text-[#0A0A0A] mb-3">Downline Tree</h4>
+        <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
+          <h4 className="text-sm font-semibold text-text-primary mb-3">Downline Tree</h4>
           <div className="space-y-0.5">
             {tree.tree.map((node: any) => <TreeNode key={node.id} node={node} depth={0} />)}
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#F5F5F5]/60 py-10 px-6 text-center text-sm text-[#6B7280]">
+        <div className="rounded-2xl border border-dashed border-border-primary bg-bg-input/60 py-10 px-6 text-center text-sm text-text-tertiary">
           No downline members yet. Share your referral link to grow your network.
         </div>
       )}
@@ -533,19 +533,19 @@ function TreeNode({ node, depth }: { node: any; depth: number }) {
     <div style={{ marginLeft: depth * 18 }}>
       <button
         onClick={() => hasChildren && setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-lg py-1.5 px-2 text-left text-xs hover:bg-[#F5F5F5] transition-colors"
+        className="flex w-full items-center gap-2 rounded-lg py-1.5 px-2 text-left text-xs hover:bg-bg-input transition-colors"
       >
         {hasChildren ? (
           <ChevronRight
             size={13}
-            className={clsx('text-[#9CA3AF] transition-transform', expanded && 'rotate-90')}
+            className={clsx('text-text-tertiary transition-transform', expanded && 'rotate-90')}
           />
         ) : (
           <span className="w-[13px] text-center text-[#D1D5DB]">•</span>
         )}
-        <span className="font-medium text-[#0A0A0A]">{node.name || node.email}</span>
+        <span className="font-medium text-text-primary">{node.name || node.email}</span>
         <span className="rounded-md bg-[#FCE6DD] px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#E94E1B]">L{node.depth}</span>
-        <span className="ml-auto font-mono tabular-nums text-[#6B7280]">${fmt(node.total_earned || 0)}</span>
+        <span className="ml-auto font-mono tabular-nums text-text-tertiary">${fmt(node.total_earned || 0)}</span>
         {!node.is_active && (
           <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">inactive</span>
         )}
@@ -568,8 +568,8 @@ function PendingCard({ message }: { message: string }) {
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 mb-3">
         <span className="text-xl">⏳</span>
       </div>
-      <h3 className="text-base font-bold text-[#0A0A0A]">Application Pending</h3>
-      <p className="mt-1 text-sm text-[#6B7280]">{message}</p>
+      <h3 className="text-base font-bold text-text-primary">Application Pending</h3>
+      <p className="mt-1 text-sm text-text-tertiary">{message}</p>
     </div>
   );
 }
@@ -595,7 +595,7 @@ function CtaCard({
 }) {
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white">
+      <div className="overflow-hidden rounded-2xl border border-border-primary bg-bg-card">
         <div className="relative px-6 sm:px-8 pt-8 pb-6 text-center">
           <div
             className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#FCE6DD]/60 to-transparent"
@@ -605,11 +605,11 @@ function CtaCard({
             <span className="inline-flex items-center rounded-full bg-[#FCE6DD] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#E94E1B]">
               {eyebrow}
             </span>
-            <h3 className="mt-3 text-xl sm:text-2xl font-bold text-[#0A0A0A]">{title}</h3>
+            <h3 className="mt-3 text-xl sm:text-2xl font-bold text-text-primary">{title}</h3>
             <p className="mt-2 text-sm text-[#4B5563] leading-relaxed max-w-md mx-auto">{subtitle}</p>
           </div>
         </div>
-        <div className="border-t border-[#E5E5E5] px-6 sm:px-8 py-6">
+        <div className="border-t border-border-primary px-6 sm:px-8 py-6">
           <ul className="space-y-2.5 max-w-md mx-auto">
             {benefits.map((b) => <BenefitItem key={b}>{b}</BenefitItem>)}
           </ul>
@@ -647,19 +647,19 @@ function DataTable({
   align: Array<'left' | 'right'>;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white">
-      <div className="px-5 py-3 border-b border-[#E5E5E5]">
-        <h3 className="text-sm font-semibold text-[#0A0A0A]">{title}</h3>
+    <div className="overflow-hidden rounded-2xl border border-border-primary bg-bg-card">
+      <div className="px-5 py-3 border-b border-border-primary">
+        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+            <tr className="border-b border-border-primary bg-bg-card-nested">
               {headers.map((h, i) => (
                 <th
                   key={h}
                   className={clsx(
-                    'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]',
+                    'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary',
                     align[i] === 'right' ? 'text-right' : 'text-left',
                   )}
                 >
@@ -670,7 +670,7 @@ function DataTable({
           </thead>
           <tbody>
             {rows.map((cells, ri) => (
-              <tr key={ri} className="border-b border-[#F5F5F5] last:border-b-0 hover:bg-[#FAFAFA]/60">
+              <tr key={ri} className="border-b border-[#F5F5F5] last:border-b-0 hover:bg-bg-card-nested/60">
                 {cells.map((cell, ci) => (
                   <td
                     key={ci}

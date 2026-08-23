@@ -1,0 +1,43 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Textura landing theme — ported from next16-claude-starter
+   (obsidian/frontend/design-system.md, src/app/globals.css).
+
+   Three-tier token convention from the starter, adapted to Tailwind v3:
+     Tier 1  --raw-*        literal values, never used in markup
+     Tier 2  --tx-*         semantic roles, the themeable layer
+     Binding tailwind.config.ts `tx` namespace → bg-tx-bg, text-tx-ink …
+
+   Color values are space-separated RGB triplets (not hex) so Tailwind
+   can inject <alpha-value> — this is what makes opacity modifiers like
+   `text-tx-inverse-ink/60` and `bg-tx-strong/[0.05]` actually work.
+
+   Scoped under [data-textura] (set on the (landing) layout wrapper) so
+   the trader app's own tokens stay untouched.
+   ──────────────────────────────────────────────────────────────────── */
+[data-textura] {
+  /* Tier 1 — primitives (the starter's neutral ramp, as RGB triplets) */
+  --raw-color-white: 255 255 255;          /* #ffffff */
+  --raw-color-neutral-50: 245 245 245;     /* #f5f5f5 */
+  --raw-color-neutral-100: 237 237 237;    /* #ededed */
+  --raw-color-neutral-400: 163 163 163;    /* #a3a3a3 */
+  --raw-color-neutral-600: 82 82 82;       /* #525252 */
+  --raw-color-neutral-900: 23 23 23;       /* #171717 */
+  --raw-color-neutral-950: 10 10 10;       /* #0a0a0a */
+
+  --raw-duration-fast: 150ms;
+  --raw-duration-normal: 250ms;
+
+  /* Tier 2 — semantic roles (purpose, not appearance) */
+  --tx-background: var(--raw-color-white);
+  --tx-foreground: var(--raw-color-neutral-900);
+  --tx-ink-strong: var(--raw-color-neutral-950);
+  --tx-muted: var(--raw-color-neutral-600);
+  --tx-faint: var(--raw-color-neutral-400);
+  --tx-surface: var(--raw-color-neutral-50);
+  --tx-surface-deep: var(--raw-color-neutral-100);
+  --tx-inverse: var(--raw-color-neutral-950);
+  --tx-inverse-foreground: var(--raw-color-neutral-100);
+
+  --tx-duration-fast: var(--raw-duration-fast);
+  --tx-duration-normal: var(--raw-duration-normal);
+}

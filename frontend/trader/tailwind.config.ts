@@ -110,6 +110,47 @@ const config: Config = {
           positive:  'var(--mkt-positive)',   /* up-move green */
           negative:  'var(--mkt-negative)',   /* down-move red */
         },
+        /* ─────────────────────────────────────────────────────────
+           Textura landing theme (`tx.*` namespace) — ported from
+           next16-claude-starter. CSS-variable references resolving
+           to values in `src/styles/textura.css`, scoped under
+           `[data-textura]` on the (landing) layout wrapper.
+           Monochrome by design: no brand accent color.
+           ───────────────────────────────────────────────────────── */
+        tx: {
+          bg:        'rgb(var(--tx-background) / <alpha-value>)',
+          ink:       'rgb(var(--tx-foreground) / <alpha-value>)',
+          strong:    'rgb(var(--tx-ink-strong) / <alpha-value>)',
+          muted:     'rgb(var(--tx-muted) / <alpha-value>)',
+          faint:     'rgb(var(--tx-faint) / <alpha-value>)',
+          surface:   {
+            DEFAULT: 'rgb(var(--tx-surface) / <alpha-value>)',
+            deep:    'rgb(var(--tx-surface-deep) / <alpha-value>)',
+          },
+          /* hairline: foreground at 10% — use border-tx-line (alpha baked in) */
+          line:      'rgb(var(--tx-foreground) / 0.1)',
+          inverse:   {
+            DEFAULT: 'rgb(var(--tx-inverse) / <alpha-value>)',
+            ink:     'rgb(var(--tx-inverse-foreground) / <alpha-value>)',
+          },
+        },
+        /* ─────────────────────────────────────────────────────────
+           Crextio warm dashboard theme (`crx.*`) — CSS-variable refs
+           resolving to values in `src/styles/crextio.css`, scoped
+           under `.theme-warm` on the DashboardShell wrapper.
+           ───────────────────────────────────────────────────────── */
+        crx: {
+          charcoal: {
+            DEFAULT: 'var(--crx-charcoal)',
+            hover:   'var(--crx-charcoal-hover)',
+            ink:     'var(--crx-charcoal-ink)',
+          },
+          yellow: {
+            DEFAULT: 'var(--crx-yellow)',
+            soft:    'var(--crx-yellow-soft)',
+          },
+          pill: 'var(--crx-pill)',
+        },
       },
       backgroundImage: {
         'gradient-primary': 'linear-gradient(135deg, #F58A60 0%, #E94E1B 50%, #C73E11 100%)',
@@ -128,6 +169,19 @@ const config: Config = {
         display: ['var(--font-display)', 'Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
         body: ['var(--font-body)', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
         numeric: ['var(--font-numeric)', 'Space Grotesk', 'Menlo', 'monospace'],
+        // Textura landing theme font (next16-claude-starter port)
+        onest: ['var(--font-onest)', 'Onest', 'Inter', 'system-ui', 'sans-serif'],
+        // Crextio dashboard theme font (Nixtio reference)
+        crextio: ['var(--font-crextio)', 'Poppins', 'Inter', 'system-ui', 'sans-serif'],
+        editorial: ['var(--font-editorial)', 'Instrument Serif', 'Georgia', 'serif'],
+      },
+      transitionTimingFunction: {
+        // Starter's entrance ease (globals.css --ease-entrance)
+        entrance: 'cubic-bezier(0.2, 0, 0, 1)',
+      },
+      transitionDuration: {
+        fast: '150ms',
+        normal: '250ms',
       },
       fontSize: {
         'xxs': ['10px', { lineHeight: '14px' }],

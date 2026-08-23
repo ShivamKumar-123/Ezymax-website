@@ -39,13 +39,19 @@ interface StrategyPreviewPaneProps {
   showReset: boolean;
   onReset: () => void;
   onSave: () => void;
+  /** Editable strategy name (rename before saving). */
+  name?: string;
+  onNameChange?: (v: string) => void;
+  /** Save, then jump straight into a backtest / deploy on the saved strategy. */
+  onSaveAndBacktest?: () => void;
+  onSaveAndDeploy?: () => void;
   /** Present in the mobile sheet / collapsible rail — renders a close button. */
   onClose?: () => void;
 }
 
 function JoinBadge({ join }: { join: 'ALL' | 'ANY' }) {
   return (
-    <span className="rounded bg-[#FCE6DD] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#E94E1B]">
+    <span className="rounded bg-crx-yellow-soft px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#E94E1B]">
       {join === 'ALL' ? 'All must match' : 'Any can match'}
     </span>
   );
@@ -99,6 +105,10 @@ export default function StrategyPreviewPane({
   onReset,
   onSave,
   onClose,
+  name,
+  onNameChange,
+  onSaveAndBacktest,
+  onSaveAndDeploy,
 }: StrategyPreviewPaneProps) {
   const desc = useMemo(() => (config ? describeDsl(config) : null), [config]);
   // Cross-fade the body whenever the config meaningfully changes.
@@ -145,7 +155,7 @@ export default function StrategyPreviewPane({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
         {aiUnavailable && (
-          <div className="mb-3.5 flex items-start gap-2.5 rounded-xl border border-[#E94E1B]/25 bg-[#FCE6DD] px-3 py-2.5 text-[12px] text-[#0A0A0A]">
+          <div className="mb-3.5 flex items-start gap-2.5 rounded-xl border border-[#E94E1B]/25 bg-crx-yellow-soft px-3 py-2.5 text-[12px] text-text-primary">
             <Info size={14} className="mt-0.5 shrink-0 text-[#E94E1B]" aria-hidden />
             <div>
               <p className="font-semibold text-[#E94E1B]">AI generation unavailable</p>
@@ -246,18 +256,40 @@ export default function StrategyPreviewPane({
       </div>
 
       {config && (
-        <div className="shrink-0 border-t border-border-primary bg-card p-3">
+        <div className="shrink-0 space-y-2 border-t border-border-primary bg-card p-3">
+          {onNameChange && (
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">Strategy name</span>
+              <input
+                value={name ?? ''}
+                onChange={(e) => onNameChange(e.target.value)}
+                placeholder="e.g. EURUSD 1h trend rider"
+                className="w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#E94E1B]/50 focus:outline-none"
+              />
+            </label>
+          )}
           <button
             type="button"
             onClick={onSave}
-            className={clsx(
-              'inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#E94E1B] py-2.5 text-xs font-bold text-white',
-              'transition-[background-color,transform] hover:bg-[#C73E11] active:scale-[0.99]',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
-            )}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E94E1B] py-2.5 text-xs font-bold text-white transition-[background-color,transform] hover:bg-[#C73E11] active:scale-[0.99]"
           >
-            <Save size={13} aria-hidden /> Save Strategy
+            <Save size={13} aria-hidden /> Save to My Strategies
           </button>
+          {(onSaveAndBacktest || onSaveAndDeploy) && (
+            <div className="grid grid-cols-2 gap-2">
+              {onSaveAndBacktest && (
+                <button type="button" onClick={onSaveAndBacktest} className="rounded-full border border-border-primary bg-bg-card-nested py-2 text-xs font-semibold text-text-primary hover:bg-bg-hover transition-colors">
+                  Save &amp; backtest
+                </button>
+              )}
+              {onSaveAndDeploy && (
+                <button type="button" onClick={onSaveAndDeploy} className="rounded-full border border-border-primary bg-bg-card-nested py-2 text-xs font-semibold text-text-primary hover:bg-bg-hover transition-colors">
+                  Save &amp; deploy
+                </button>
+              )}
+            </div>
+          )}
+          <p className="text-center text-[10px] text-text-tertiary">Want changes? Just describe them in the chat — the rules update here.</p>
         </div>
       )}
     </div>

@@ -29,26 +29,15 @@
  */
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { useTradingStore } from '@/stores/tradingStore';
+import { useTradingStore, type ChartExitsDraft } from '@/stores/tradingStore';
 import { createDatafeed, type DatafeedInstrument } from '@/lib/chart/datafeed';
 import { loadChartLibrary } from '@/lib/chart/loadChartLibrary';
-import { api } from '@/lib/api/client';
 import { netPnl } from '@/lib/pnl';
 import toast from 'react-hot-toast';
 import { ChartTradeWidget } from '@/components/charts/ChartTradeWidget';
 
-// Tell the React Native app (when this runs inside its WebView) that an SL/TP
-// drag is in progress, so it can freeze the surrounding ScrollView — otherwise
-// the page scrolls instead of the line dragging. No-op in a normal browser.
-function postDragToNative(active: boolean) {
-  try {
-    (window as unknown as { ReactNativeWebView?: { postMessage: (s: string) => void } })
-      .ReactNativeWebView?.postMessage(JSON.stringify({ type: 'chart:drag', active }));
-  } catch { /* ignore */ }
-}
 
 // A freshly-opened MARKET position shows optimistically with a temporary id
 // ("optim-…") until the server row arrives with a real UUID. SL/TP/close must
@@ -80,19 +69,41 @@ const PENDING_SELL_COLOR = '#a855f7';// purple — pending SELL entry line
 // Where the on-chart [SL] [TP] [✕] group sits, measured from the chart's RIGHT
 // edge: just left of each line's right-axis label so the buttons read as part
 // of the line's pill instead of hiding behind the left drawing toolbar.
-const CLOSE_BTN_RIGHT_PX = 268;
 
-// In-app dialog replacing window.confirm / window.prompt for the on-chart
-// trade buttons (close ✕, SL/TP drag + type-a-price). `input` switches it to
-// prompt mode (type-a-price).
-type ChartDialog = {
-  title: string;
-  body: string;
-  confirmLabel: string;
-  danger?: boolean;
-  input?: { defaultValue: string; placeholder: string };
-  onConfirm: (value?: string) => void;
-} | null;
+/** Shown over the pane when the selected symbol has no live tick. */
+function NoFeedNotice({ symbol }: { symbol: string }) {
+  const tick = useTradingStore((st) => st.prices[symbol.toUpperCase()]);
+  const quotedKey = useTradingStore((st) => Object.keys(st.prices).join(','));
+  const setSelectedSymbol = useTradingStore((st) => st.setSelectedSymbol);
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    setWaited(false);
+    const t = setTimeout(() => setWaited(true), 4000);
+    return () => clearTimeout(t);
+  }, [symbol]);
+  if (tick || !waited) return null;
+  const alt = quotedKey.split(',').filter(Boolean).find((q) => q !== symbol.toUpperCase());
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[20] flex items-center justify-center">
+      <div className="pointer-events-auto max-w-sm rounded-2xl border border-border-primary bg-bg-glass-heavy px-5 py-4 text-center shadow-xl backdrop-blur">
+        <p className="text-sm font-semibold text-text-primary">No live feed for {symbol}</p>
+        <p className="mt-1 text-xs text-text-secondary">
+          This instrument isn&apos;t quoted on this environment yet — the chart stays empty until a
+          price feed is connected for it.
+        </p>
+        {alt && (
+          <button
+            type="button"
+            onClick={() => setSelectedSymbol(alt)}
+            className="mt-3 inline-flex items-center rounded-full bg-crx-charcoal px-4 py-1.5 text-xs font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover transition-colors"
+          >
+            Switch to {alt} (live)
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function TradingViewChartInner({
   onRequestFullscreen,
@@ -134,15 +145,6 @@ function TradingViewChartInner({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linesRef = useRef<Map<string, any>>(new Map());
 
-  const [dialog, setDialog] = useState<ChartDialog>(null);
-  const [dialogValue, setDialogValue] = useState('');
-  const openDialog = useCallback((d: NonNullable<ChartDialog>) => {
-    setDialogValue(d.input?.defaultValue ?? '');
-    setDialog(d);
-  }, []);
-  // Live handle for the imperative overlay (built in a []-ish effect below).
-  const openDialogRef = useRef(openDialog);
-  openDialogRef.current = openDialog;
 
   // Mount the widget once.
   useEffect(() => {
@@ -196,17 +198,25 @@ function TradingViewChartInner({
         container_id: CONTAINER_ID,
         datafeed,
         library_path: '/charting_library/',
+        custom_css_url: '/chart-theme.css',
         locale: 'en',
         timezone: 'Etc/UTC',
         theme,
         autosize: true,
         fullscreen: false,
-        toolbar_bg: theme === 'dark' ? '#0b0e11' : '#ffffff',
-        loading_screen: { backgroundColor: theme === 'dark' ? '#0b0e11' : '#ffffff' },
+        toolbar_bg: theme === 'dark' ? '#000000' : '#ffffff',
+        loading_screen: { backgroundColor: theme === 'dark' ? '#000000' : '#ffffff' },
         disabled_features: ['use_localstorage_for_settings', 'symbol_search_hot_key'],
         enabled_features: ['hide_left_toolbar_by_default'],
         overrides: theme === 'dark'
-          ? { 'paneProperties.background': '#0b0e11', 'paneProperties.backgroundType': 'solid', 'scalesProperties.textColor': '#b7bdc6' }
+          ? {
+              'paneProperties.background': '#000000',
+              'paneProperties.backgroundType': 'solid',
+              'paneProperties.vertGridProperties.color': '#131313',
+              'paneProperties.horzGridProperties.color': '#131313',
+              'scalesProperties.textColor': '#9a9a9a',
+              'scalesProperties.lineColor': '#1f1f1f',
+            }
           : {},
       });
       try {
@@ -335,18 +345,12 @@ function TradingViewChartInner({
     if (!chart?.createShape) return;
 
     const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
-    const myPos = positions.filter((p) => String(p.symbol).toUpperCase() === sym);
     const myPending = (pendingOrders || []).filter((o) => String(o.symbol).toUpperCase() === sym);
     const inst = useTradingStore.getState().instruments.find(
       (i) => String(i.symbol).toUpperCase() === sym,
     );
     const digits = inst?.digits ?? 2;
-    const cs = Number(inst?.contract_size) || 100000;
     const fp = (n: number) => Number(n).toFixed(digits);
-
-    // P&L → LABEL colour: blue in profit, red in loss, gray near break-even.
-    const pnlColor = (pnl: number) =>
-      Math.abs(pnl) < 0.10 ? BREAKEVEN_COLOR : pnl > 0 ? PROFIT_COLOR : LOSS_COLOR;
 
     // `color` is the LINE colour, `textColor` the LABEL colour. For position
     // entry lines they differ: the line is fixed by side (BUY blue / SELL red)
@@ -354,53 +358,6 @@ function TradingViewChartInner({
     // omit textColor → it falls back to the line colour.
     type Desired = { key: string; price: number; color: string; textColor?: string; text: string; dashed: boolean; pnl?: number };
     const desired: Desired[] = [];
-
-    // ── Open positions: entry line labelled with LIVE P&L, coloured by P&L
-    //    state (not side). p.profit is the SAME value the positions table uses
-    //    → single source of truth, so the line can never disagree with the
-    //    table. SL (amber) / TP (teal) with projected P&L at the level. ──
-    for (const p of myPos) {
-      // NET P&L (profit − commission + swap; swap is negative for a charge) —
-      // the same figure the positions table and the mobile app show, so the
-      // chart label can never disagree with them by the fee amount.
-      const pnl = netPnl(p);
-      const lots = Number(p.lots || 0);
-      const entry = Number(p.open_price || 0);
-      const notional = entry * lots * cs;
-      const pct = notional > 0 ? (pnl / notional) * 100 : 0;
-      const pnlStr = `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`;
-      const pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
-      // Line colour by SIDE (BUY blue / SELL red); label colour by P&L.
-      const sideColor = p.side.toUpperCase() === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
-      desired.push({
-        key: p.id, price: entry, color: sideColor, textColor: pnlColor(pnl),
-        // Live P&L rendered as the TV shape's OWN label — TradingView pins it
-        // exactly on the entry price (right axis), so it can never drift.
-        text: `${p.side.toUpperCase()} ${lots}  ${pnlStr} (${pctStr})`,
-        dashed: false, pnl,
-      });
-      // SL/TP labels PROJECT the realized outcome if price reaches that level,
-      // so they must show NET P&L — computePnlAt returns gross, but the close
-      // books net = profit − commission + swap (lib/pnl netPnl; swap stored
-      // negative for charges). Without this a TP label reads e.g. +$2.06 while
-      // the trade realizes +$2.01 after a $0.06 commission (sibling-platform
-      // client: "TP amount doesn't match what I get").
-      const netAt = (gross: number) => gross - (Number(p.commission) || 0) + (Number(p.swap) || 0);
-      if (p.stop_loss != null && Number(p.stop_loss) > 0) {
-        const slp = Number(p.stop_loss);
-        const r = computePnlAt(p, slp);
-        const net = Number.isFinite(r) ? netAt(r) : NaN;
-        const pl = Number.isFinite(net) ? `  ${net >= 0 ? '+' : '−'}$${Math.abs(net).toFixed(2)}` : '';
-        desired.push({ key: `${p.id}-sl`, price: slp, color: SL_COLOR, text: `SL ${fp(slp)}${pl}`, dashed: true });
-      }
-      if (p.take_profit != null && Number(p.take_profit) > 0) {
-        const tpp = Number(p.take_profit);
-        const r = computePnlAt(p, tpp);
-        const net = Number.isFinite(r) ? netAt(r) : NaN;
-        const pl = Number.isFinite(net) ? `  ${net >= 0 ? '+' : '−'}$${Math.abs(net).toFixed(2)}` : '';
-        desired.push({ key: `${p.id}-tp`, price: tpp, color: TP_COLOR, text: `TP ${fp(tpp)}${pl}`, dashed: true });
-      }
-    }
 
     // ── Pending orders (limit/stop): entry + SL + TP. ──
     for (const o of myPending) {
@@ -436,7 +393,7 @@ function TradingViewChartInner({
     const now = Date.now();
     // Throttle the live-P&L label refresh: 500ms normally, 1000ms once 10+
     // positions are open, so streaming ticks never thrash the chart.
-    const throttleMs = myPos.length >= 10 ? 1000 : 500;
+    const throttleMs = desired.length >= 10 ? 1000 : 500;
     const wanted = new Set(desired.map((d) => d.key));
 
     for (const d of desired) {
@@ -542,6 +499,7 @@ function TradingViewChartInner({
       const now = Date.now();
       // Position ENTRY lines (carry live P&L; entry.pnl != null). SL/TP and
       // pending-order labels are static, so leave them untouched.
+      for (const e of nativeRef.current) e.setStale();
       for (const [, entry] of linesRef.current) {
         if (!entry || entry.id == null || entry.pnl == null) continue;
         try {
@@ -563,36 +521,10 @@ function TradingViewChartInner({
     // backend UUID check would 422). This window is ~1 tick; the real id lands
     // and the button works.
     if (!isRealPositionId(positionId)) { toast('Order still finalizing…'); return; }
+    // Review happens in the terminal sidebar (ChartExitsPanel), not a modal.
     const st = useTradingStore.getState();
-    const p = st.positions.find((x) => x.id === positionId);
-    if (!p) return;
-    const side = String(p.side).toUpperCase();
-    const sym = String(p.symbol).toUpperCase();
-    openDialogRef.current({
-      title: 'Close position',
-      body: `Close ${side} ${Number(p.lots)} ${sym} at market?`,
-      confirmLabel: 'Close position',
-      danger: true,
-      onConfirm: () => {
-        try { useTradingStore.getState().removePosition(positionId); } catch { /* ignore */ }
-        void (async () => {
-          try {
-            const res = await api.post<{ profit?: number; close_price?: number }>(
-              `/positions/${positionId}/close`, {}, { timeoutMs: 8000 },
-            );
-            const pnl = Number(res?.profit ?? 0);
-            toast.success(`Closed @ ${res?.close_price ?? ''} | ${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`);
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Close failed');
-          } finally {
-            Promise.all([
-              useTradingStore.getState().refreshPositions(),
-              useTradingStore.getState().refreshAccount(),
-            ]).catch(() => {});
-          }
-        })();
-      },
-    });
+    st.setChartExitsDraft(null);
+    st.setChartCloseRequest(positionId);
   }, []);
 
   // Stable key of the open positions on this symbol — the button overlay
@@ -603,18 +535,24 @@ function TradingViewChartInner({
     .map((p) => `${p.id}:${p.side}:${p.lots}:${p.trade_type === 'copy_trade' ? 'c' : ''}`)
     .join('|');
 
-  // ── On-chart [SL] [TP] [✕] button group per position ────────────────────────
-  // P&L is a native TV shape label (always pinned to the exact price). The
-  // buttons MUST be clickable HTML — price→pixel comes from the pane's price
-  // scale (getVisiblePriceRange + pane height, re-read every frame so it
-  // follows zoom/pan live) plus the pane's top offset, measured EXACTLY from
-  // the DOM (the chart mounts inline, so the pane canvas is reachable) with a
-  // crosshair-calibrated fallback. A rAF loop repositions the group and the
-  // persistent entry→SL / entry→TP shaded zones every frame.
+  // ── Position lines with NATIVE drag (Charting Library drawings) ────────────
+  // This build is the Charting Library (createOrderLine/createPositionLine
+  // are Trading-Platform-only), so each position is drawn as horizontal_line
+  // DRAWINGS: the entry line is locked, while TP / SL lines are UNLOCKED —
+  // the library itself handles the drag (smooth, pixel-exact, touch-friendly);
+  // we listen to `drawing_event` (points_changed/move) and update the label
+  // live (price + projected net P&L). When the drag settles the level lands in
+  // `chartExitsDraft` and the terminal sidebar shows the Exits review
+  // (Confirm → PUT, Discard → `chartLinesResetNonce` re-syncs the lines).
   //
-  // Drag an [SL]/[TP] button up/down to set that bracket — a dashed preview
-  // line + shaded zone + price/projected-P&L label follow the cursor; release
-  // opens the confirm dialog. A plain click opens the type-a-price dialog.
+  // A TradingView-style chip row rides the entry line — [TP] [SL] [qty]
+  // [P&L] [✕] — passive HTML positioned each frame from the price scale.
+  // TP / SL create a draggable level at a sensible default distance (or
+  // open the review if one exists); ✕ opens the close review. Bracket lines
+  // exist only while a level exists (no ghost lines cluttering the axis).
+  // Shaded entry→TP / entry→SL zones are passive overlay divs.
+  const resetNonce = useTradingStore((s) => s.chartLinesResetNonce);
+  const nativeRef = useRef<{ setStale: () => void }[]>([]);
   useEffect(() => {
     const w = widgetRef.current;
     const overlay = overlayRef.current;
@@ -623,17 +561,123 @@ function TradingViewChartInner({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let chart: any;
     try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
-    if (!chart) return;
+    if (!chart?.createShape) return;
 
     const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const inst = useTradingStore.getState().instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+    const digits = inst?.digits ?? 2;
+    const eps = Number(inst?.pip_size) > 0 ? Number(inst?.pip_size) / 2 : Math.pow(10, -digits) / 2;
+    const myPos = useTradingStore.getState().positions.filter((p) => String(p.symbol).toUpperCase() === sym);
+    let anchorTime = Math.floor(Date.now() / 1000);
+    try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* keep now */ }
 
+    const fmtPnl = (v: number) => `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
+    const pnlColor = (pnl: number) => (Math.abs(pnl) < 0.10 ? BREAKEVEN_COLOR : pnl > 0 ? PROFIT_COLOR : LOSS_COLOR);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const netAt = (p: any, price: number) => {
+      const g = computePnlAt(p, price);
+      return Number.isFinite(g) ? g - (Number(p.commission) || 0) + (Number(p.swap) || 0) : NaN;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entryText = (p: any) => `${String(p.side).toUpperCase()} ${Number(p.lots)}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const safe = <T,>(fn: () => T): T | undefined => { try { return fn(); } catch { return undefined; } };
+
+    type Bracket = { kind: 'tp' | 'sl'; id: string | null; price: number | null; zone: HTMLDivElement; draftTimer: number | null; creating: boolean; lastTarget: number | null | undefined };
+    type Entry = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      p: any; entry: number; entryId: string | null; tp: Bracket | null; sl: Bracket | null;
+      chips: HTMLDivElement; pnlChip: HTMLSpanElement; tpBtn: HTMLButtonElement | null; slBtn: HTMLButtonElement | null;
+    };
+    const entries: Entry[] = [];
+    const byShape = new Map<string, { e: Entry; b: Bracket | null }>(); // shape id → owner
+    let disposed = false;
+
+    // createShape rejects ("Cannot create … shape") while the symbol's data
+    // is still loading (we run right after a symbol switch). Retry briefly.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const createLine = async (price: number, opts: any): Promise<string | null> => {
+      for (let attempt = 0; attempt < 12; attempt++) {
+        if (disposed) return null;
+        try {
+          const id = await chart.createShape({ time: anchorTime, price }, opts);
+          return id != null ? String(id) : null;
+        } catch (err) {
+          if (attempt === 11) { console.warn('[chart-lines] createShape failed', opts?.text, err); return null; }
+          await new Promise((r) => setTimeout(r, 350));
+          try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* keep */ }
+        }
+      }
+      return null;
+    };
+    const mkZone = (rgba: string) => {
+      const z = document.createElement('div');
+      z.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:${rgba};pointer-events:none;visibility:hidden;z-index:4;`;
+      overlay.appendChild(z);
+      return z;
+    };
+    const bracketProps = (e: Entry, b: Bracket, price: number) => {
+      const color = b.kind === 'tp' ? TP_COLOR : SL_COLOR;
+      const n = netAt(e.p, price);
+      return {
+        linecolor: color, linestyle: 2, linewidth: 1, showLabel: true, bold: true, fontsize: 11,
+        textcolor: color, text: `${b.kind.toUpperCase()} ${price.toFixed(digits)}${Number.isFinite(n) ? `  ${fmtPnl(n)}` : ''}`, showPrice: true,
+        horzLabelsAlign: 'right', vertLabelsAlign: 'middle',
+      };
+    };
+    /** Make sure a bracket LINE exists at `price` (create lazily, else move). */
+    const ensureBracket = async (e: Entry, b: Bracket, price: number) => {
+      b.price = price;
+      if (b.id) {
+        safe(() => chart.getShapeById(b.id)?.setPoints([{ time: anchorTime, price }]));
+        safe(() => chart.getShapeById(b.id)?.setProperties(bracketProps(e, b, price)));
+        return;
+      }
+      if (b.creating) return;
+      b.creating = true;
+      const props = bracketProps(e, b, price);
+      const id = await createLine(price, {
+        shape: 'horizontal_line', text: props.text,
+        lock: false, disableSelection: false, disableSave: true, disableUndo: true,
+        overrides: props,
+      });
+      b.creating = false;
+      if (disposed || b.price == null) { if (id) safe(() => chart.removeEntity(id)); return; }
+      b.id = id;
+      if (id) byShape.set(id, { e, b });
+      // Level may have moved while the shape was being created.
+      if (Math.abs(b.price - price) > eps) safe(() => chart.getShapeById(id)?.setPoints([{ time: anchorTime, price: b.price! }]));
+    };
+    const dropBracket = (b: Bracket) => {
+      b.price = null;
+      if (b.id) { byShape.delete(b.id); safe(() => chart.removeEntity(b.id)); b.id = null; }
+      b.zone.style.visibility = 'hidden';
+    };
+    const setDraftLevel = (e: Entry, b: Bracket, value: number | null | undefined) => {
+      const st = useTradingStore.getState();
+      st.setChartCloseRequest(null);
+      const prev = st.chartExitsDraft?.positionId === e.p.id ? st.chartExitsDraft : null;
+      const next: ChartExitsDraft = { positionId: String(e.p.id), takeProfit: prev?.takeProfit, stopLoss: prev?.stopLoss };
+      if (b.kind === 'tp') next.takeProfit = value; else next.stopLoss = value;
+      st.setChartExitsDraft(next);
+    };
+    const refreshChips = (e: Entry) => {
+      const pnl = netPnl(e.p);
+      e.pnlChip.textContent = fmtPnl(pnl);
+      e.pnlChip.style.color = pnlColor(pnl);
+      const tpOn = !!e.tp?.price, slOn = !!e.sl?.price;
+      if (e.tpBtn) { e.tpBtn.style.background = tpOn ? TP_COLOR : 'rgba(20,184,166,0.12)'; e.tpBtn.style.color = tpOn ? '#fff' : TP_COLOR; e.tpBtn.title = tpOn ? 'Edit take profit' : 'Add take profit'; }
+      if (e.slBtn) { e.slBtn.style.background = slOn ? SL_COLOR : 'rgba(245,158,11,0.12)'; e.slBtn.style.color = slOn ? '#fff' : SL_COLOR; e.slBtn.title = slOn ? 'Edit stop loss' : 'Add stop loss'; }
+    };
+
+    // ── Geometry (passive: zones + chip row positioning) ──
     type Geo = { top: number; bottom: number; h: number; log: boolean };
     const geom = (): Geo | null => {
       try {
         const pane = chart.getPanes?.()[0];
         const ps = pane?.getMainSourcePriceScale?.();
         if (!ps) return null;
-        const mode = ps.getMode?.() ?? 0;            // 0 linear, 1 log
+        const mode = ps.getMode?.() ?? 0;
         if (mode !== 0 && mode !== 1) return null;
         const range = ps.getVisiblePriceRange?.();
         const h = pane?.getHeight?.() || 0;
@@ -643,26 +687,13 @@ function TradingViewChartInner({
       } catch { return null; }
     };
     const paneY = (price: number, g: Geo): number => {
-      if (g.log) {
-        if (!(price > 0)) return NaN;
-        const lt = Math.log(g.top), lb = Math.log(g.bottom);
-        return (g.h * (lt - Math.log(price))) / (lt - lb);
-      }
+      if (g.log) { if (!(price > 0)) return NaN; const lt = Math.log(g.top), lb = Math.log(g.bottom); return (g.h * (lt - Math.log(price))) / (lt - lb); }
       return (g.h * (g.top - price)) / (g.top - g.bottom);
     };
-
-    // Pane-top offset (container-Y of the pane's top edge). Preferred source:
-    // measure the price-pane canvas straight from the DOM — exact, no drift,
-    // and works for touch (no crosshair needed). Fallback: rolling-median
-    // crosshair calibration (candidate = mouseY - paneY(price)).
-    let calibOffset: number | null = null;
-    let lastMouseY: number | null = null;
-    const calibSamples: number[] = [];
-    const measurePaneTop = (paneH: number): number | null => {
+    const paneTop = (paneH: number): number | null => {
       try {
         const rootRect = container.getBoundingClientRect();
-        let best: number | null = null;
-        let bestDiff = 40;
+        let best: number | null = null; let bestDiff = 40;
         const scan = (root: ParentNode, extraTop: number) => {
           root.querySelectorAll('canvas').forEach((c) => {
             const r = (c as HTMLCanvasElement).getBoundingClientRect();
@@ -673,366 +704,226 @@ function TradingViewChartInner({
         };
         scan(container, 0);
         if (best == null) {
-          // The library may render inside its own SAME-ORIGIN iframe (mobile
-          // builds) — canvases there aren't reachable from the container.
-          // Scan the iframe document, converting its viewport coords to ours.
           container.querySelectorAll('iframe').forEach((f) => {
-            try {
-              const doc = (f as HTMLIFrameElement).contentDocument;
-              if (doc) scan(doc, (f as HTMLIFrameElement).getBoundingClientRect().top);
-            } catch { /* cross-origin — skip */ }
+            try { const doc = (f as HTMLIFrameElement).contentDocument; if (doc) scan(doc, (f as HTMLIFrameElement).getBoundingClientRect().top); } catch { /* cross-origin */ }
           });
         }
         return best;
       } catch { return null; }
     };
-    const paneTopOf = (g: Geo): number => {
-      const m = measurePaneTop(g.h);
-      if (m != null) { calibOffset = m; return m; }
-      if (calibOffset != null) return calibOffset;
-      // Rough estimate before any measurement/calibration exists (pane fills
-      // the container above the ~46px time axis). Slightly off is fine — the
-      // buttons must APPEAR immediately; the first real sample snaps them
-      // into exact place.
-      return container.clientHeight - g.h - 46;
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      lastMouseY = e.clientY - container.getBoundingClientRect().top;
-    };
-    container.addEventListener('mousemove', onMouseMove);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onCross = (params: any) => {
-      const price = params?.price;
-      if (price == null) return;
-      // Prefer the crosshair event's own offsetY (exact, works even when the
-      // library swallows container mouse events); fall back to the tracked
-      // container mouseY.
-      const my = typeof params?.offsetY === 'number' ? params.offsetY : lastMouseY;
-      if (my == null) return;
-      const g = geom();
-      if (!g) return;
-      const py = paneY(Number(price), g);
-      if (!Number.isFinite(py)) return;
-      const candidate = my - py;
-      // Rolling MEDIAN of the last 15 samples — rejects the per-move
-      // mouseY/price mismatch that would make the offset jitter.
-      calibSamples.push(candidate);
-      while (calibSamples.length > 15) calibSamples.shift();
-      const sorted = [...calibSamples].sort((a, b) => a - b);
-      calibOffset = sorted[Math.floor(sorted.length / 2)] ?? candidate;
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let crossSub: any = null;
-    try { crossSub = chart.crossHairMoved?.(); crossSub?.subscribe?.(null, onCross); } catch { /* ignore */ }
-
-    // Inverse of paneY: container-Y → price (drives the drag-to-set gesture).
-    const priceForY = (containerY: number): number | null => {
-      const g = geom();
-      if (!g) return null;
-      const top = paneTopOf(g);
-      if (top == null) return null;
-      const py = containerY - top; // pane-relative Y
-      if (g.log) {
-        const lt = Math.log(g.top), lb = Math.log(g.bottom);
-        return Math.exp(lt - (py / g.h) * (lt - lb));
-      }
-      return g.top - (py / g.h) * (g.top - g.bottom);
-    };
-
-    const digits = (useTradingStore.getState().instruments.find(
-      (i) => String(i.symbol).toUpperCase() === sym,
-    )?.digits) ?? 2;
-
-    // Set / clear a position's stop-loss or take-profit from the chart via the
-    // type-a-price dialog. Sends ONLY the bracket being changed — the backend
-    // does a partial update, so the OTHER bracket is never affected (the
-    // button's captured `p` is a stale closure: it only rebuilds on
-    // id/side/lots change, NOT on SL/TP change, so re-sending its copy of the
-    // other bracket would revert it).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const setBracket = (p: any, kind: 'sl' | 'tp') => {
-      if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
-      const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
-      const t = useTradingStore.getState().prices[sym];
-      const cur = kind === 'sl' ? p.stop_loss : p.take_profit;
-      const dflt = Number(cur) || (t ? (p.side === 'buy' ? t.bid : t.ask) : Number(p.open_price)) || 0;
-      openDialogRef.current({
-        title: `${label} — ${String(p.side).toUpperCase()} ${p.lots} ${sym}`,
-        body: 'Enter the price. Leave blank to remove.',
-        confirmLabel: 'Save',
-        input: { defaultValue: dflt ? dflt.toFixed(digits) : '', placeholder: 'Price' },
-        onConfirm: (raw) => {
-          const trimmed = (raw ?? '').trim();
-          const val = trimmed === '' ? null : parseFloat(trimmed);
-          if (val !== null && !(val > 0)) { toast.error('Invalid price'); return; }
-          void (async () => {
-            try {
-              await api.put(`/positions/${p.id}`,
-                kind === 'sl' ? { stop_loss: val } : { take_profit: val });
-              toast.success(val === null ? `${label} removed` : `${label} set @ ${val}`);
-              await useTradingStore.getState().refreshPositions();
-            } catch (err) {
-              toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
-            }
-          })();
-        },
-      });
-    };
-
-    const mkBtn = (txt: string, bg: string, title: string, onClick: () => void): HTMLButtonElement => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = txt;
-      b.title = title;
-      b.style.cssText =
-        `display:flex;align-items:center;justify-content:center;height:18px;min-width:18px;`
-        + `padding:0 ${txt.length > 1 ? '5' : '0'}px;border:0;border-radius:3px;cursor:pointer;`
-        + `font-size:10px;font-weight:700;line-height:1;color:#fff;pointer-events:auto;`
-        + `background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.55);`;
-      b.onmouseenter = () => { b.style.filter = 'brightness(1.15)'; };
-      b.onmouseleave = () => { b.style.filter = 'none'; };
-      b.onclick = (e) => { e.stopPropagation(); onClick(); };
-      return b;
-    };
-
-    // Draggable SL/TP button: press & drag up/down → a dashed preview line
-    // (+ shaded zone + price/P&L label) follows the cursor → release → confirm
-    // → PUT. A plain click (no drag) falls back to the type-a-price prompt.
-    // Pointer capture makes the same gesture work for mouse AND touch.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mkDragBtn = (txt: string, bg: string, title: string, p: any, kind: 'sl' | 'tp'): HTMLButtonElement => {
-      const color = kind === 'sl' ? SL_COLOR : TP_COLOR;
-      const zoneBg = kind === 'sl' ? 'rgba(239,68,68,0.13)' : 'rgba(20,184,166,0.13)';
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = txt;
-      b.title = `${title} — drag up/down to set, or click to type`;
-      b.style.cssText =
-        `display:flex;align-items:center;justify-content:center;height:18px;min-width:18px;`
-        + `padding:0 5px;border:0;border-radius:3px;cursor:ns-resize;touch-action:none;`
-        + `font-size:10px;font-weight:700;line-height:1;color:#fff;pointer-events:auto;`
-        + `background:${bg};box-shadow:0 1px 3px rgba(0,0,0,.55);`;
-      b.onmouseenter = () => { b.style.filter = 'brightness(1.15)'; };
-      b.onmouseleave = () => { b.style.filter = 'none'; };
-      b.onpointerdown = (e) => {
-        e.preventDefault(); e.stopPropagation();
-        if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
-        // Capture the pointer to the button: the drag follows the cursor and
-        // won't "let go" even if it leaves the button — released on pointerup.
-        try { b.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-        postDragToNative(true); // freeze the app's ScrollView during the drag
-        const startY = e.clientY;
-        let moved = false;
-        // Preview: shaded zone (entry → cursor) + dashed line + price label.
-        const zone = document.createElement('div');
-        zone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:${zoneBg};pointer-events:none;z-index:6;`;
-        const line = document.createElement('div');
-        line.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;border-top:1px dashed ${color};pointer-events:none;z-index:7;`;
-        const lbl = document.createElement('div');
-        lbl.style.cssText = `position:absolute;right:2px;top:0;transform:translateY(-50%);background:${color};`
-          + `color:#fff;font:700 10px system-ui;padding:1px 6px;border-radius:3px;pointer-events:none;z-index:8;white-space:nowrap;`;
-        overlay.appendChild(zone); overlay.appendChild(line); overlay.appendChild(lbl);
-        const entryY = (): number | null => {
-          const g = geom();
-          if (!g) return null;
-          const top = paneTopOf(g);
-          if (top == null) return null;
-          return paneY(Number(p.open_price) || 0, g) + top;
-        };
-        const cleanup = () => { for (const el of [zone, line, lbl]) { try { overlay.removeChild(el); } catch { /* ignore */ } } };
-        b.onpointermove = (ev) => {
-          if (Math.abs(ev.clientY - startY) > 3) moved = true;
-          const r = container.getBoundingClientRect();
-          const cy = ev.clientY - r.top;
-          const price = priceForY(cy);
-          line.style.top = `${cy}px`;
-          lbl.style.top = `${cy}px`;
-          // Show the target price AND the projected NET P&L at that price
-          // (gross − commission + swap; matches the static SL/TP labels and
-          // the amount the close actually books).
-          let ptxt = `${kind === 'sl' ? 'SL' : 'TP'} ${price ? price.toFixed(digits) : '—'}`;
-          if (price) {
-            const rr = computePnlAt(p, price);
-            const netRR = Number.isFinite(rr) ? rr - (Number(p.commission) || 0) + (Number(p.swap) || 0) : NaN;
-            if (Number.isFinite(netRR)) ptxt += `  ${netRR >= 0 ? '+' : '−'}$${Math.abs(netRR).toFixed(2)}`;
-          }
-          lbl.textContent = ptxt;
-          const ey = entryY();
-          if (ey != null) { zone.style.top = `${Math.min(ey, cy)}px`; zone.style.height = `${Math.abs(ey - cy)}px`; }
-        };
-        const endDrag = (ev: PointerEvent, cancelled: boolean) => {
-          b.onpointermove = null; b.onpointerup = null; b.onpointercancel = null;
-          try { b.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
-          cleanup();
-          postDragToNative(false); // re-enable the app's ScrollView
-          if (cancelled) return;
-          if (!moved) { setBracket(p, kind); return; } // plain click → type-a-price
-          const r = container.getBoundingClientRect();
-          const price = priceForY(ev.clientY - r.top);
-          if (!price || !(price > 0)) { toast.error('Could not read price'); return; }
-          const label = kind === 'sl' ? 'Stop Loss' : 'Take Profit';
-          const projGross = computePnlAt(p, price);
-          const proj = Number.isFinite(projGross)
-            ? projGross - (Number(p.commission) || 0) + (Number(p.swap) || 0)
-            : NaN;
-          const projTxt = Number.isFinite(proj) ? ` (${proj >= 0 ? 'profit' : 'loss'} ${proj >= 0 ? '+' : '−'}$${Math.abs(proj).toFixed(2)})` : '';
-          // Commit on release — MT5-style, NO confirmation dialog. The old
-          // confirm step was the reason SL/TP "didn't stick": users dragged,
-          // released, and never completed the popup (easy to miss, especially
-          // in the app WebView), so the PUT never fired and the level was gone
-          // on refresh. Optimistically reflect the new bracket in the store so
-          // the persistent chart line + positions row update instantly, then
-          // PUT; on failure we reload to snap back to the server's truth.
-          void (async () => {
-            try {
-              const st = useTradingStore.getState();
-              const patch = kind === 'sl' ? { stop_loss: price } : { take_profit: price };
-              try { st.updatePosition?.(p.id, patch); } catch { /* store may lack helper */ }
-              // Only the dragged bracket — the backend partial-update keeps
-              // the other intact (see setBracket note; `p` is a stale closure).
-              await api.put(`/positions/${p.id}`, patch);
-              toast.success(`${label} set @ ${price.toFixed(digits)}${projTxt}`);
-              await useTradingStore.getState().refreshPositions();
-            } catch (err) {
-              // Rejected (e.g. level on the wrong side of the market) — reload
-              // so the optimistic line snaps back and the user sees why.
-              toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
-              try { await useTradingStore.getState().refreshPositions(); } catch { /* ignore */ }
-            }
-          })();
-        };
-        b.onpointerup = (ev) => endDrag(ev, false);
-        b.onpointercancel = (ev) => endDrag(ev, true);
-      };
-      return b;
-    };
-
-    // Per open position: independent [SL] [TP] [✕] buttons. Each has its OWN
-    // absolutely-positioned wrapper so a SET bracket's button rides its OWN
-    // price line (SL button on the SL line, TP button on the TP line), while
-    // an UNSET SL/TP button and ✕ stay grouped on the entry line. Copied (MAM)
-    // positions get only ✕ — SL/TP is master-controlled. Positions set each
-    // frame in the sync loop below.
-    const myPos = useTradingStore.getState().positions.filter(
-      (p) => String(p.symbol).toUpperCase() === sym,
-    );
-    // Approx button footprint for stacking unset SL/TP to the left of ✕.
-    const BTN_W = 24, BTN_GAP = 4;
-    const mkSlot = (btnEl: HTMLButtonElement): HTMLDivElement => {
-      const w = document.createElement('div');
-      w.style.cssText = `position:absolute;transform:translateY(-50%);pointer-events:none;visibility:hidden;z-index:6;`;
-      w.appendChild(btnEl); // the button keeps pointer-events:auto → clickable
-      overlay.appendChild(w);
-      return w;
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const btns: { p: any; entry: number; slEl: HTMLDivElement | null; tpEl: HTMLDivElement | null; closeEl: HTMLDivElement; slZone: HTMLDivElement; tpZone: HTMLDivElement }[] = [];
-    for (const p of myPos) {
-      const side = String(p.side).toUpperCase();
-      const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
-      const isCopy = p.trade_type === 'copy_trade';
-      let slEl: HTMLDivElement | null = null;
-      let tpEl: HTMLDivElement | null = null;
-      if (!isCopy) {
-        slEl = mkSlot(mkDragBtn('SL', 'rgba(245,158,11,0.97)', `Stop loss ${side} ${p.lots} ${sym}`, p, 'sl'));
-        tpEl = mkSlot(mkDragBtn('TP', 'rgba(20,184,166,0.97)', `Take profit ${side} ${p.lots} ${sym}`, p, 'tp'));
-      }
-      const closeEl = mkSlot(mkBtn('✕', sideColor, `Close ${side} ${p.lots} ${sym} at market`, () => {
-        closePositionFromChart(p.id);
-      }));
-      // Persistent shaded zones (entry → SL red, entry → TP teal), positioned
-      // in the sync loop from the LIVE bracket prices. Below the buttons (z 4).
-      const slZone = document.createElement('div');
-      slZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(239,68,68,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
-      const tpZone = document.createElement('div');
-      tpZone.style.cssText = `position:absolute;left:0;right:0;top:0;height:0;background:rgba(20,184,166,0.10);pointer-events:none;visibility:hidden;z-index:4;`;
-      overlay.appendChild(slZone); overlay.appendChild(tpZone);
-      btns.push({ p, entry: Number(p.open_price) || 0, slEl, tpEl, closeEl, slZone, tpZone });
+    // Dev-only handle so UI tests can map prices → pixels.
+    if (process.env.NODE_ENV !== 'production') {
+      (window as unknown as { __scChart?: unknown }).__scChart = { geom, paneY, paneTop: () => { const g = geom(); return g ? paneTop(g.h) : null; }, container };
     }
-
-    let raf = 0;
-    const sync = () => {
-      raf = requestAnimationFrame(sync);
-      if (btns.length === 0) return;
-      // Re-read the price scale EVERY frame so the buttons/zones follow live
-      // through zoom/pan; the DOM-measured pane top stays exact throughout.
+    /** Default distance for a freshly added level: ~12% of the visible range. */
+    const defaultLevel = (e: Entry, kind: 'tp' | 'sl'): number => {
       const g = geom();
-      const top = g ? paneTopOf(g) : null;
-      const rightPx = Math.min(CLOSE_BTN_RIGHT_PX, Math.max(8, container.clientWidth - 78));
-      if (!g || top == null) {
-        for (const b of btns) {
-          for (const el of [b.slEl, b.tpEl, b.closeEl, b.slZone, b.tpZone]) {
-            if (el) el.style.visibility = 'hidden';
-          }
+      const span = g ? (g.top - g.bottom) * 0.12 : e.entry * 0.005;
+      const up = (e.p.side === 'buy') === (kind === 'tp');
+      return up ? e.entry + span : e.entry - span;
+    };
+
+    const mkChip = (txt: string, bg: string, fg: string, title: string, onClick?: () => void) => {
+      const el = document.createElement(onClick ? 'button' : 'span');
+      if (onClick) (el as HTMLButtonElement).type = 'button';
+      el.textContent = txt;
+      el.title = title;
+      el.style.cssText =
+        `display:inline-flex;align-items:center;justify-content:center;height:20px;min-width:22px;padding:0 7px;border:0;border-radius:5px;`
+        + `font:700 10.5px -apple-system,Segoe UI,Roboto,sans-serif;line-height:1;letter-spacing:.02em;white-space:nowrap;`
+        + `background:${bg};color:${fg};box-shadow:0 1px 4px rgba(0,0,0,.55);pointer-events:auto;${onClick ? 'cursor:pointer;' : ''}`;
+      if (onClick) {
+        el.onmouseenter = () => { el.style.filter = 'brightness(1.15)'; };
+        el.onmouseleave = () => { el.style.filter = 'none'; };
+        (el as HTMLButtonElement).onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); onClick(); };
+        (el as HTMLButtonElement).onpointerdown = (ev) => ev.stopPropagation();
+      }
+      return el;
+    };
+
+    (async () => {
+      for (const p of myPos) {
+        const side = String(p.side).toUpperCase();
+        const sideColor = side === 'BUY' ? CHART_BUY_COLOR : CHART_SELL_COLOR;
+        const entry = Number(p.open_price) || 0;
+        const isCopy = p.trade_type === 'copy_trade';
+
+        // Chip row (HTML, passive positioning) — built first so it shows instantly.
+        const chips = document.createElement('div');
+        chips.style.cssText = 'position:absolute;display:flex;gap:4px;align-items:center;transform:translateY(-50%);pointer-events:none;visibility:hidden;z-index:6;';
+        const e: Entry = { p, entry, entryId: null, tp: null, sl: null, chips, pnlChip: document.createElement('span'), tpBtn: null, slBtn: null };
+        if (!isCopy) {
+          e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined };
+          e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined };
+          e.tpBtn = mkChip('TP', 'rgba(20,184,166,0.12)', TP_COLOR, 'Add take profit', () => {
+            if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+            const st = useTradingStore.getState();
+            const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
+            const existing = d?.takeProfit !== undefined ? d.takeProfit : (Number(e.p.take_profit) > 0 ? Number(e.p.take_profit) : null);
+            if (existing != null) { st.setChartCloseRequest(null); st.setChartExitsDraft({ positionId: String(p.id), takeProfit: d?.takeProfit, stopLoss: d?.stopLoss }); return; }
+            setDraftLevel(e, e.tp!, defaultLevel(e, 'tp'));
+          }) as HTMLButtonElement;
+          e.slBtn = mkChip('SL', 'rgba(245,158,11,0.12)', SL_COLOR, 'Add stop loss', () => {
+            if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+            const st = useTradingStore.getState();
+            const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
+            const existing = d?.stopLoss !== undefined ? d.stopLoss : (Number(e.p.stop_loss) > 0 ? Number(e.p.stop_loss) : null);
+            if (existing != null) { st.setChartCloseRequest(null); st.setChartExitsDraft({ positionId: String(p.id), takeProfit: d?.takeProfit, stopLoss: d?.stopLoss }); return; }
+            setDraftLevel(e, e.sl!, defaultLevel(e, 'sl'));
+          }) as HTMLButtonElement;
+          chips.appendChild(e.tpBtn); chips.appendChild(e.slBtn);
         }
+        chips.appendChild(mkChip(String(Number(p.lots)), sideColor, '#fff', `${side} ${Number(p.lots)} lots @ ${entry.toFixed(digits)}`));
+        e.pnlChip = mkChip('…', 'rgba(10,10,10,0.92)', '#f5f5f5', 'Open P&L (net)') as HTMLSpanElement;
+        e.pnlChip.style.border = `1px solid ${sideColor}`;
+        chips.appendChild(e.pnlChip);
+        chips.appendChild(mkChip('✕', 'rgba(10,10,10,0.92)', '#f5f5f5', `Close ${side} ${Number(p.lots)} ${sym} at market`, () => closePositionFromChart(p.id)));
+        overlay.appendChild(chips);
+        refreshChips(e);
+        entries.push(e);
+
+        // Entry line — locked (not draggable); click also opens the close review.
+        const entryId = await createLine(entry, {
+          shape: 'horizontal_line', text: entryText(p),
+          lock: true, disableSelection: false, disableSave: true, disableUndo: true,
+          overrides: { linecolor: sideColor, linestyle: 0, linewidth: 2, showLabel: true, textcolor: sideColor, fontsize: 11, bold: true, horzLabelsAlign: 'left', vertLabelsAlign: 'middle', showPrice: true },
+        });
+        if (disposed) { if (entryId) safe(() => chart.removeEntity(entryId)); return; }
+        e.entryId = entryId;
+        if (e.entryId) byShape.set(e.entryId, { e, b: null });
+
+        // Existing levels → lines.
+        if (e.tp) { const v = Number(p.take_profit) > 0 ? Number(p.take_profit) : null; e.tp.lastTarget = v; if (v != null) await ensureBracket(e, e.tp, v); }
+        if (e.sl) { const v = Number(p.stop_loss) > 0 ? Number(p.stop_loss) : null; e.sl.lastTarget = v; if (v != null) await ensureBracket(e, e.sl, v); }
+        refreshChips(e);
+      }
+      nativeRef.current = entries.map((x) => ({
+        setStale: () => { if (x.entryId) safe(() => chart.getShapeById(x.entryId)?.setProperties({ linecolor: STALE_COLOR, textcolor: STALE_COLOR })); },
+      }));
+    })();
+
+    // Drag handling — the library moves the drawing; we react to its events.
+    const onDrawing = (id: unknown, type: unknown) => {
+      const owner = byShape.get(String(id));
+      if (!owner) return;
+      const { e, b } = owner;
+      const t = String(type);
+      if (!b) {
+        if (t === 'click' && isRealPositionId(e.p.id)) closePositionFromChart(e.p.id);
         return;
       }
-      const h = container.clientHeight || g.h;
-      const live = useTradingStore.getState().positions;
-      const drawZone = (el: HTMLDivElement, entryY: number, price: unknown) => {
-        const pr = Number(price);
-        if (!(pr > 0)) { el.style.visibility = 'hidden'; return; }
-        const zy = paneY(pr, g) + top;
-        const zTop = Math.min(entryY, zy), ht = Math.abs(entryY - zy);
-        if (ht < 1) { el.style.visibility = 'hidden'; return; }
-        el.style.top = `${zTop}px`; el.style.height = `${ht}px`; el.style.visibility = 'visible';
-      };
-      // Place a button wrapper at a price-line Y and right offset (hidden when
-      // its line is off the visible pane).
-      const place = (el: HTMLDivElement | null, y: number, rightOffset: number) => {
-        if (!el) return;
-        if (!(y > 8) || y > h - 8) { el.style.visibility = 'hidden'; return; }
-        el.style.top = `${y}px`;
-        el.style.right = `${rightOffset}px`;
-        el.style.visibility = 'visible';
-      };
-      for (const b of btns) {
-        const entryY = paneY(b.entry, g) + top;
-        const lp = live.find((x) => x.id === b.p.id);
-        const slPrice = Number(lp?.stop_loss);
-        const tpPrice = Number(lp?.take_profit);
-        const slSet = slPrice > 0;
-        const tpSet = tpPrice > 0;
-
-        // ✕ always on the entry line, rightmost slot.
-        place(b.closeEl, entryY, rightPx);
-
-        // A SET bracket's button rides its OWN line (alone at the rightmost
-        // slot). An UNSET one stacks to the LEFT of ✕ on the entry line so the
-        // user can still grab it to add a bracket.
-        let entrySlot = 1; // slot 0 is ✕
-        if (b.slEl) {
-          if (slSet) place(b.slEl, paneY(slPrice, g) + top, rightPx);
-          else { place(b.slEl, entryY, rightPx + entrySlot * (BTN_W + BTN_GAP)); entrySlot++; }
+      if (t !== 'points_changed' && t !== 'move') return;
+      const pts = safe(() => chart.getShapeById(b.id)?.getPoints?.());
+      const px = Number(pts?.[0]?.price);
+      if (!(px > 0)) return;
+      // Live label while dragging; the draft lands once the drag settles.
+      b.price = px;
+      safe(() => chart.getShapeById(b.id)?.setProperties(bracketProps(e, b, px)));
+      if (b.draftTimer) window.clearTimeout(b.draftTimer);
+      b.draftTimer = window.setTimeout(() => {
+        b.draftTimer = null;
+        if (!isRealPositionId(e.p.id)) { toast('Order still finalizing…'); return; }
+        if (Math.abs(px - e.entry) <= eps) {
+          // Dropped onto the entry line = remove the level.
+          const wasSet = b.kind === 'tp' ? Number(e.p.take_profit) > 0 : Number(e.p.stop_loss) > 0;
+          dropBracket(b);
+          b.lastTarget = null;
+          setDraftLevel(e, b, wasSet ? null : undefined);
+        } else {
+          b.lastTarget = px;
+          setDraftLevel(e, b, px);
         }
-        if (b.tpEl) {
-          if (tpSet) place(b.tpEl, paneY(tpPrice, g) + top, rightPx);
-          else { place(b.tpEl, entryY, rightPx + entrySlot * (BTN_W + BTN_GAP)); entrySlot++; }
-        }
+        refreshChips(e);
+      }, 220);
+    };
+    try { w.subscribe('drawing_event', onDrawing); } catch { /* older builds */ }
 
-        drawZone(b.slZone, entryY, lp?.stop_loss);
-        drawZone(b.tpZone, entryY, lp?.take_profit);
+    // Sync from the store without recreating entry lines: live P&L chip,
+    // server SL/TP after a confirmed PUT / refresh, levels typed in the
+    // sidebar (draft) → create / move / drop bracket lines.
+    let lastSync = 0;
+    const unsub = useTradingStore.subscribe((st) => {
+      const now = Date.now();
+      if (now - lastSync < 250) return;
+      lastSync = now;
+      for (const e of entries) {
+        const lp = st.positions.find((x) => x.id === e.p.id);
+        if (!lp) continue;
+        e.p = lp;
+        const d = st.chartExitsDraft?.positionId === lp.id ? st.chartExitsDraft : null;
+        for (const b of [e.tp, e.sl]) {
+          if (!b || b.draftTimer) continue; // mid-drag — leave it alone
+          const dv = d ? (b.kind === 'tp' ? d.takeProfit : d.stopLoss) : undefined;
+          const sv = b.kind === 'tp' ? lp.take_profit : lp.stop_loss;
+          const target = dv !== undefined ? dv : (sv != null && Number(sv) > 0 ? Number(sv) : null);
+          const same = (target == null && b.lastTarget == null) || (target != null && b.lastTarget != null && Math.abs(target - b.lastTarget) <= eps);
+          if (same) continue; // nothing new from the store → never touch a line the user may be dragging
+          b.lastTarget = target;
+          if (target == null) { if (b.price != null || b.id) dropBracket(b); }
+          else void ensureBracket(e, b, target);
+        }
+        refreshChips(e);
+      }
+    });
+
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (entries.length === 0) return;
+      const g = geom();
+      const top = g ? paneTop(g.h) : null;
+      const h = container.clientHeight || 0;
+      const rightPx = Math.min(96, Math.max(8, container.clientWidth - 120));
+      for (const e of entries) {
+        if (!g || top == null) { e.chips.style.visibility = 'hidden'; for (const b of [e.tp, e.sl]) if (b) b.zone.style.visibility = 'hidden'; continue; }
+        const ey = paneY(e.entry, g) + top;
+        if (ey > 8 && ey < h - 8) { e.chips.style.top = `${ey}px`; e.chips.style.right = `${rightPx}px`; e.chips.style.visibility = 'visible'; }
+        else e.chips.style.visibility = 'hidden';
+        for (const b of [e.tp, e.sl]) {
+          if (!b) continue;
+          if (b.price == null) { b.zone.style.visibility = 'hidden'; continue; }
+          const zy = paneY(b.price, g) + top;
+          const zTop = Math.min(ey, zy), ht = Math.abs(ey - zy);
+          if (!(ht >= 1)) { b.zone.style.visibility = 'hidden'; continue; }
+          b.zone.style.top = `${zTop}px`; b.zone.style.height = `${ht}px`; b.zone.style.visibility = 'visible';
+        }
       }
     };
-    raf = requestAnimationFrame(sync);
+    raf = requestAnimationFrame(tick);
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(raf);
-      container.removeEventListener('mousemove', onMouseMove);
-      try { crossSub?.unsubscribe?.(null, onCross); } catch { /* ignore */ }
-      for (const b of btns) { for (const el of [b.slEl, b.tpEl, b.closeEl, b.slZone, b.tpZone]) { if (el) { try { overlay.removeChild(el); } catch { /* ignore */ } } } }
+      try { w.unsubscribe('drawing_event', onDrawing); } catch { /* ignore */ }
+      try { unsub(); } catch { /* ignore */ }
+      for (const e of entries) {
+        if (e.entryId) safe(() => chart.removeEntity(e.entryId));
+        safe(() => overlay.removeChild(e.chips));
+        for (const b of [e.tp, e.sl]) {
+          if (!b) continue;
+          if (b.draftTimer) window.clearTimeout(b.draftTimer);
+          if (b.id) safe(() => chart.removeEntity(b.id));
+          safe(() => overlay.removeChild(b.zone));
+        }
+      }
+      nativeRef.current = [];
     };
-  }, [chartReady, selectedSymbol, positionsKey, computePnlAt, closePositionFromChart]);
+  }, [chartReady, selectedSymbol, positionsKey, resetNonce, computePnlAt, closePositionFromChart]);
 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
+      {/* No live quote for this instrument on this environment — say so
+          instead of a silent empty pane, and offer the first symbol that IS
+          quoted. In production every instrument is fed, so this never shows. */}
+      <NoFeedNotice symbol={selectedSymbol ?? 'EURUSD'} />
+
       {/* Loader until the chart is ready (covers the library load). */}
       {!chartReady && (
         <div
           className="absolute inset-0 z-40 flex items-center justify-center"
-          style={{ background: theme === 'dark' ? '#0b0e11' : '#ffffff' }}
+          style={{ background: theme === 'dark' ? '#000000' : '#ffffff' }}
         >
           <div
             className="animate-spin"
@@ -1056,75 +947,6 @@ function TradingViewChartInner({
           all positioned imperatively by the rAF loop above. */}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-20 overflow-hidden" />
 
-      {/* In-app dialog for the on-chart trade buttons: close ✕ confirmation,
-          SL/TP drag confirmation (with projected P&L), and type-a-price. */}
-      {dialog &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed inset-0 p-0" style={{ zIndex: 2147483646, isolation: 'isolate' }}>
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-label="Dismiss"
-              className="absolute inset-0 z-0 m-0 h-full w-full cursor-default border-0 bg-black/60 p-0 backdrop-blur-sm"
-              onClick={() => setDialog(null)}
-            />
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">
-              <div
-                role="dialog"
-                aria-modal="true"
-                className="relative w-full max-w-[300px] rounded-xl border p-3.5 shadow-2xl overflow-hidden pointer-events-auto bg-bg-secondary border-border-primary"
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="text-sm font-bold pr-2 text-text-primary">{dialog.title}</h3>
-                  <button
-                    type="button"
-                    onClick={() => setDialog(null)}
-                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors bg-bg-hover text-text-tertiary hover:text-text-primary"
-                    aria-label="Close"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <p className="text-xs text-text-secondary mb-3">{dialog.body}</p>
-                {dialog.input && (
-                  <input
-                    autoFocus
-                    type="number"
-                    step="any"
-                    value={dialogValue}
-                    onChange={(e) => setDialogValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const d = dialog; setDialog(null); d.onConfirm(dialogValue);
-                      } else if (e.key === 'Escape') { setDialog(null); }
-                    }}
-                    placeholder={dialog.input.placeholder}
-                    className="w-full mb-3 px-3 py-2 rounded-lg border border-border-primary bg-bg-input font-mono text-sm text-text-primary outline-none focus:border-accent/50"
-                  />
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDialog(null)}
-                    className="flex-1 py-2.5 font-bold rounded-lg text-sm active:scale-[0.98] transition-all bg-bg-hover text-text-primary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { const d = dialog; setDialog(null); d.onConfirm(dialogValue); }}
-                    className={`flex-1 py-2.5 text-white font-bold rounded-lg shadow-lg active:scale-[0.98] transition-all text-sm ${dialog.danger ? 'bg-sell shadow-sell/20' : 'bg-buy shadow-buy/20'}`}
-                  >
-                    {dialog.confirmLabel}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
     </div>
   );
 }

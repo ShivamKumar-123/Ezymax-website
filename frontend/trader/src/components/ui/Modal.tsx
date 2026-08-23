@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { useWarmTheme } from '@/stores/warmThemeStore';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -33,6 +34,10 @@ export default function Modal({
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
   }, [onClose]);
+
+  // The portal escapes the DashboardShell wrapper that carries the warm theme
+  // tokens — re-apply them here so dialogs follow the light/dark toggle.
+  const warmDark = useWarmTheme((st) => st.dark);
 
   useEffect(() => {
     setMounted(true);
@@ -69,10 +74,10 @@ export default function Modal({
   // doesn't steal `position: fixed` (CSS containing-block rule). This keeps the
   // modal centered in the viewport regardless of page scroll position.
   return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+    <div data-theme="warm" className={cn('theme-warm font-crextio fixed inset-0 z-[1000] flex items-center justify-center p-4', warmDark && 'theme-warm-dark')}>
       <div className="absolute inset-0 bg-bg-base/75" onClick={onClose} />
       <div className={cn(
-        'relative w-full max-h-[90vh] overflow-y-auto bg-bg-tertiary border border-border-primary rounded-lg shadow-modal animate-fade-in',
+        'relative w-full max-h-[90vh] overflow-y-auto bg-bg-tertiary border border-border-primary rounded-[22px] shadow-modal animate-fade-in',
         widths[width],
         className,
       )}>

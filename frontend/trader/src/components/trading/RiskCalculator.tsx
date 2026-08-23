@@ -14,7 +14,7 @@ const TABS: { id: CalcTab; label: string }[] = [
   { id: 'swap', label: 'Swap' },
 ];
 
-/* ─── Compact field row ─── */
+/* ─── Field card: label + control inside one nested tile (order-ticket style) ─── */
 function Row({
   label,
   tip,
@@ -25,8 +25,8 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <label className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+    <div className="rounded-xl px-3.5 py-2" style={{ background: 'var(--bg-card-nested)' }}>
+      <label className="flex items-center text-[11px] text-text-tertiary">
         {label}
         {tip && (
           <span className="ml-1 cursor-help" title={tip}>
@@ -54,7 +54,7 @@ function CompactSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg py-2 px-2.5 text-[12px] font-medium text-text-primary outline-none appearance-none cursor-pointer bg-bg-secondary border border-border-primary"
+      className="ticket-input w-full cursor-pointer appearance-none border-0 bg-transparent p-0 pt-0.5 text-[15px] font-bold text-text-primary shadow-none outline-none focus:ring-0"
     >
       {placeholder && <option value="">{placeholder}</option>}
       {options.map((o) => (
@@ -76,18 +76,16 @@ function CompactInput({
   suffix?: string;
 }) {
   return (
-    <div
-      className="flex items-center rounded-lg overflow-hidden bg-bg-secondary border border-border-primary"
-    >
+    <div className="flex items-center gap-2">
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent px-2.5 py-2 text-[12px] font-mono font-bold text-text-primary outline-none w-0 min-w-0 placeholder:text-text-tertiary"
+        className="ticket-input w-0 min-w-0 flex-1 border-0 bg-transparent p-0 pt-0.5 text-[15px] font-bold tabular-nums text-text-primary shadow-none outline-none placeholder:font-medium placeholder:text-text-tertiary focus:ring-0"
       />
       {suffix && (
-        <span className="pr-2.5 text-[10px] font-semibold text-text-tertiary shrink-0">{suffix}</span>
+        <span className="shrink-0 text-[12px] font-medium text-text-secondary">{suffix}</span>
       )}
     </div>
   );
@@ -133,14 +131,14 @@ function CompactInstrumentPicker({
       <button
         type="button"
         onClick={() => { setOpen(!open); setSearch(''); }}
-        className="w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-[12px] font-medium text-text-primary cursor-pointer transition-colors bg-bg-secondary border border-border-primary"
+        className="flex w-full cursor-pointer items-center justify-between pt-0.5 text-[15px] font-bold text-text-primary"
       >
-        <span className="truncate">{current?.symbol || 'Select Instrument'}</span>
-        <ChevronDown size={12} className={`text-text-tertiary shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="truncate">{current?.symbol || 'Select instrument'}</span>
+        <ChevronDown size={14} className={`text-text-tertiary shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 w-full mt-1 rounded-lg overflow-hidden shadow-2xl bg-card border border-border-primary">
-          <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border-primary bg-bg-secondary">
+        <div className="absolute top-full -left-3.5 -right-3.5 z-50 mt-2 overflow-hidden rounded-xl border border-border-primary bg-bg-secondary shadow-[0_20px_50px_-16px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center gap-1.5 border-b border-border-primary px-3 py-2">
             <Search size={12} className="text-text-tertiary shrink-0" />
             <input
               ref={inputRef}
@@ -148,7 +146,7 @@ function CompactInstrumentPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="flex-1 bg-transparent text-[11px] text-text-primary outline-none placeholder:text-text-tertiary"
+              className="ticket-input flex-1 border-0 bg-transparent p-0 text-[12px] text-text-primary shadow-none outline-none placeholder:text-text-tertiary focus:ring-0"
             />
             {search && (
               <button type="button" onClick={() => setSearch('')} className="text-text-tertiary hover:text-text-primary">
@@ -156,17 +154,16 @@ function CompactInstrumentPicker({
               </button>
             )}
           </div>
-          <div className="max-h-[180px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+          <div className="max-h-[220px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
             {filtered.length > 0 ? filtered.map((inst) => (
               <button
                 key={inst.symbol}
                 type="button"
                 onClick={() => { onChange(inst.symbol); setOpen(false); setSearch(''); }}
-                className="w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
-                style={{ color: inst.symbol === value ? 'var(--accent, #2962FF)' : 'var(--text-secondary)' }}
+                className={clsx('flex w-full items-center justify-between px-3 py-1.5 text-left transition-colors hover:bg-bg-hover', inst.symbol === value ? 'text-accent' : 'text-text-primary')}
               >
-                <span className="text-[11px] font-semibold">{inst.symbol}</span>
-                <span className="text-[9px] text-text-tertiary">{inst.segment}</span>
+                <span className="text-[12px] font-semibold">{inst.symbol}</span>
+                <span className="text-[10px] text-text-tertiary">{inst.segment}</span>
               </button>
             )) : (
               <div className="px-2 py-3 text-center text-[10px] text-text-tertiary">No results</div>
@@ -294,45 +291,43 @@ export default function RiskCalculator() {
   return (
     <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-2.5 py-2 border-b border-border-primary bg-bg-secondary">
-        <div className="flex items-center gap-2">
-          <Calculator size={14} className="text-accent" />
-          <span className="text-xs font-bold text-text-primary">Risk Calculator</span>
-        </div>
+      <div className="shrink-0 flex items-center justify-between px-3 pt-2.5 pb-1">
+        <h2 className="flex items-center gap-2 text-[17px] font-bold leading-none text-text-primary">
+          <Calculator size={17} className="text-accent" />
+          Risk calculator
+        </h2>
         <button
           type="button"
           onClick={handleReset}
-          className="w-7 h-7 rounded-md flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
           title="Reset"
+          aria-label="Reset calculator"
         >
-          <RotateCcw size={12} />
+          <RotateCcw size={14} />
         </button>
       </div>
 
-      <div className="h-px w-full shrink-0 bg-accent" aria-hidden />
-
-      {/* Tabs */}
-      <div className="shrink-0 flex items-center gap-0 px-1 py-1.5 border-b border-border-primary bg-bg-secondary">
+      {/* Tabs — orange underline, same language as Markets / News */}
+      <div className="shrink-0 flex gap-5 px-3">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={clsx(
-              'flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all',
-              tab === t.id
-                ? 'bg-accent text-white shadow-md shadow-accent/20'
-                : 'text-text-tertiary hover:text-text-primary',
+              'relative pb-2 pt-1 text-[14px] transition-colors',
+              tab === t.id ? 'font-bold text-text-primary' : 'font-medium text-text-tertiary hover:text-text-secondary',
             )}
           >
             {t.label}
+            <span className={clsx('absolute bottom-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-accent transition-opacity', tab === t.id ? 'opacity-100' : 'opacity-0')} aria-hidden />
           </button>
         ))}
       </div>
 
       {/* Scrollable body */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain" style={{ scrollbarWidth: 'none' }}>
-        <div className="px-2.5 py-2.5 space-y-2.5">
+        <div className="px-3 py-2.5 space-y-2">
 
           {/* Account */}
           <Row label="Account" tip="Select your trading account">
@@ -358,10 +353,8 @@ export default function RiskCalculator() {
           {/* Lot Size: Balance */}
           {tab === 'lotsize' && (
             <Row label="Account Balance" tip="Your balance">
-              <div
-                className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-accent bg-bg-secondary border border-border-primary"
-              >
-                ${balance.toFixed(2)}
+              <div className="pt-0.5 text-[15px] font-bold tabular-nums text-text-primary">
+                ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </Row>
           )}
@@ -395,11 +388,7 @@ export default function RiskCalculator() {
           {tab === 'margin' && (
             <>
               <Row label="Leverage" tip="Account leverage">
-                <div
-                  className="rounded-lg px-2.5 py-2 text-[12px] font-mono font-bold text-text-primary bg-bg-secondary border border-border-primary"
-                >
-                  1:{accountLeverage}
-                </div>
+                <div className="pt-0.5 text-[15px] font-bold tabular-nums text-text-primary">1:{accountLeverage}</div>
               </Row>
               <Row label="Lot Size" tip="Position size">
                 <CompactInput value={lots} onChange={setLots} placeholder="Enter Size" />
@@ -446,35 +435,29 @@ export default function RiskCalculator() {
             onClick={() => {
               if (!entryPrice && livePrice > 0) setEntryPrice(livePrice.toFixed(digits));
             }}
-            className="w-full py-2.5 rounded-lg text-[11px] font-bold text-white bg-accent transition-all active:scale-[0.98] shadow-md shadow-accent/20"
+            className="w-full rounded-xl bg-accent py-2.5 text-[15px] font-semibold text-white transition-[transform,opacity] hover:opacity-90 active:scale-[0.98]"
           >
             Calculate
           </button>
 
           {/* ─── Result panel ─── */}
-          <div
-            className="rounded-xl flex flex-col items-center justify-center p-5"
-            style={{
-              background: 'linear-gradient(135deg, rgba(41,98,255,0.12) 0%, rgba(94,179,255,0.06) 100%)',
-              border: '1px solid rgba(41,98,255,0.2)',
-            }}
-          >
-            <span className="text-[11px] font-semibold text-text-secondary mb-1">{resultLabel}</span>
-            <span className="text-2xl font-black font-mono text-[#5eb3ff]">{resultValue}</span>
+          <div className="rounded-2xl p-4 text-white ring-1 ring-[#E94E1B]/35 shadow-[0_14px_40px_-12px_rgba(233,78,27,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[linear-gradient(165deg,#E94E1B_0%,#7a2a0e_28%,#1a0b06_62%,#0a0a0a_100%)]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/70">{resultLabel}</p>
+            <p className="mt-1 text-[26px] font-bold leading-none tabular-nums">{resultValue}</p>
             {resultDetails.length > 0 && (
-              <div className="mt-3 w-full space-y-1">
+              <dl className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[12px] leading-none">
                 {resultDetails.map((d) => (
-                  <div key={d.l} className="flex items-center justify-between text-[10px]">
-                    <span className="text-text-tertiary">{d.l}</span>
-                    <span className="font-mono font-semibold text-text-secondary">{d.v}</span>
+                  <div key={d.l} className="flex items-center justify-between gap-3 py-[3px]">
+                    <dt className="text-white/60">{d.l}</dt>
+                    <dd className="font-medium tabular-nums text-white">{d.v}</dd>
                   </div>
                 ))}
-              </div>
+              </dl>
             )}
           </div>
 
-          <p className="text-[8px] text-text-tertiary/50 text-center leading-relaxed pb-1">
-            Approximate values. May vary by market conditions.
+          <p className="pb-1 text-center text-[10px] leading-relaxed text-text-tertiary">
+            Approximate values — may vary with market conditions.
           </p>
         </div>
       </div>

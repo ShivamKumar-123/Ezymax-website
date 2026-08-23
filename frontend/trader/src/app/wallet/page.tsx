@@ -27,6 +27,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { downloadWalletStatementPdf } from '@/lib/pdf/walletStatementPdf';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 // Razorpay popup integration removed — local-banking flow replaces it.
 // Admin can still attach Razorpay payment-links per request from the
@@ -341,6 +342,7 @@ function WalletPageContent() {
 
   // History tab — recent ledger items rendered as a compact table.
   const [historyItems, setHistoryItems] = useState<WalletListItem[]>([]);
+  const historyPager = usePagination(historyItems, 10);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchData = useCallback(
@@ -1271,7 +1273,7 @@ function WalletPageContent() {
       <DashboardShell>
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
           <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-[#6B7280]">Loading wallet…</span>
+          <span className="text-sm font-medium text-text-tertiary">Loading wallet…</span>
         </div>
       </DashboardShell>
     );
@@ -1301,7 +1303,7 @@ function WalletPageContent() {
       { id: 'history', label: 'Transaction History' },
     ];
     return (
-      <div className="border-b border-[#E5E5E5]">
+      <div className="border-b border-border-primary">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           {tabs.map((t) => {
             const active = tab === t.id;
@@ -1313,8 +1315,8 @@ function WalletPageContent() {
                 className={clsx(
                   'relative -mb-px py-3 text-sm transition-colors whitespace-nowrap',
                   active
-                    ? 'font-bold text-[#0A0A0A]'
-                    : 'font-medium text-[#6B7280] hover:text-[#0A0A0A]',
+                    ? 'font-bold text-text-primary'
+                    : 'font-medium text-text-tertiary hover:text-text-primary',
                 )}
               >
                 {t.label}
@@ -1356,7 +1358,7 @@ function WalletPageContent() {
       <div className="lg:col-span-2 space-y-5">
         {/* Account */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[#0A0A0A]">Account</label>
+          <label className="text-sm font-medium text-text-primary">Account</label>
           <FundsDropdown
             value={depositAccountId}
             options={accountOptionsForFunding}
@@ -1375,7 +1377,7 @@ function WalletPageContent() {
             this blank or use it as a suggestion. */}
         {(depositUiSection === 'crypto' || depositUiSection === 'local_banking') && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">
+            <label className="text-sm font-medium text-text-primary">
               Amount{depositUiSection === 'local_banking' ? ' (optional)' : ''}
             </label>
             <input
@@ -1387,7 +1389,7 @@ function WalletPageContent() {
               onChange={(e) => setDepositAmount(e.target.value)}
               placeholder="Enter an amount"
               className={clsx(
-                'w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none transition-shadow',
+                'w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-shadow',
                 'focus:ring-2 focus:ring-[#E94E1B]/40',
               )}
             />
@@ -1397,7 +1399,7 @@ function WalletPageContent() {
               </p>
             )}
             {depositMinDeposit > 0 && depositAmountValid && (
-              <p className="text-xs text-[#6B7280]">
+              <p className="text-xs text-text-tertiary">
                 Minimum deposit: {formatCurrency(depositMinDeposit, depositAccount?.currency || wallet?.currency || 'USD')}
               </p>
             )}
@@ -1407,7 +1409,7 @@ function WalletPageContent() {
         {/* Payment method chips: Crypto (admin's QR shown, user pays + uploads
             proof) and Local Banking (request flow, admin sends back link). */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[#0A0A0A]">Payment method</label>
+          <label className="text-sm font-medium text-text-primary">Payment method</label>
           <div className="flex gap-2">
             {(
               [
@@ -1424,12 +1426,12 @@ function WalletPageContent() {
                   className={clsx(
                     'flex-1 rounded-xl border px-4 py-3 text-left transition-colors',
                     active
-                      ? 'border-[#0A0A0A] bg-white'
-                      : 'border-transparent bg-[#F5F5F5] hover:border-[#E5E5E5]',
+                      ? 'border-[#0A0A0A] bg-bg-card'
+                      : 'border-transparent bg-bg-input hover:border-border-primary',
                   )}
                 >
-                  <div className="text-sm font-semibold text-[#0A0A0A]">{c.label}</div>
-                  {c.sub && <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>}
+                  <div className="text-sm font-semibold text-text-primary">{c.label}</div>
+                  {c.sub && <div className="text-xs text-text-tertiary mt-0.5">{c.sub}</div>}
                 </button>
               );
             })}
@@ -1447,51 +1449,51 @@ function WalletPageContent() {
               manualBankInfo.qr_code_url ||
               manualBankInfo.wallet_address
             ) && (
-              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5 text-sm text-[#0A0A0A] space-y-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
+              <div className="rounded-xl border border-border-primary bg-bg-card px-4 py-3.5 text-sm text-text-primary space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                   Pay to
                 </div>
                 {manualBankInfo.qr_code_url && (
                   <img
                     src={manualBankInfo.qr_code_url}
                     alt="Admin payment QR"
-                    className="block w-40 h-40 object-contain rounded-lg border border-[#E5E5E5] bg-white"
+                    className="block w-40 h-40 object-contain rounded-lg border border-border-primary bg-bg-card"
                   />
                 )}
                 <div className="space-y-1 text-xs">
                   {manualBankInfo.bank_name && (
-                    <div><span className="text-[#0A0A0A] font-semibold">Bank:</span> {manualBankInfo.bank_name}</div>
+                    <div><span className="text-text-primary font-semibold">Bank:</span> {manualBankInfo.bank_name}</div>
                   )}
                   {manualBankInfo.account_holder && (
-                    <div><span className="text-[#0A0A0A] font-semibold">Holder:</span> {manualBankInfo.account_holder}</div>
+                    <div><span className="text-text-primary font-semibold">Holder:</span> {manualBankInfo.account_holder}</div>
                   )}
                   {manualBankInfo.account_number && (
-                    <div><span className="text-[#0A0A0A] font-semibold">A/C:</span> {manualBankInfo.account_number}</div>
+                    <div><span className="text-text-primary font-semibold">A/C:</span> {manualBankInfo.account_number}</div>
                   )}
                   {manualBankInfo.ifsc_code && (
-                    <div><span className="text-[#0A0A0A] font-semibold">IFSC:</span> {manualBankInfo.ifsc_code}</div>
+                    <div><span className="text-text-primary font-semibold">IFSC:</span> {manualBankInfo.ifsc_code}</div>
                   )}
                   {manualBankInfo.upi_id && (
-                    <div><span className="text-[#0A0A0A] font-semibold">UPI:</span> {manualBankInfo.upi_id}</div>
+                    <div><span className="text-text-primary font-semibold">UPI:</span> {manualBankInfo.upi_id}</div>
                   )}
                 </div>
                 {manualBankInfo.wallet_address && (
-                  <div className="space-y-2 pt-2 border-t border-[#E5E5E5]">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7280]">
+                  <div className="space-y-2 pt-2 border-t border-border-primary">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
                       Crypto address
                     </div>
                     {(() => {
                       const addr = manualBankInfo.wallet_address!;
                       const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(addr)}`;
                       return (
-                        <div className="flex items-start gap-3 rounded-lg border border-[#E5E5E5] p-2.5 bg-[#FAFAFA]">
+                        <div className="flex items-start gap-3 rounded-lg border border-border-primary p-2.5 bg-bg-card-nested">
                           <img
                             src={qrSrc}
                             alt="Wallet address QR"
-                            className="block w-24 h-24 shrink-0 object-contain rounded bg-white border border-[#E5E5E5]"
+                            className="block w-24 h-24 shrink-0 object-contain rounded bg-bg-card border border-border-primary"
                           />
                           <div className="flex-1 min-w-0 space-y-1">
-                            <div className="text-[11px] font-mono break-all leading-snug text-[#0A0A0A]">{addr}</div>
+                            <div className="text-[11px] font-mono break-all leading-snug text-text-primary">{addr}</div>
                             <button
                               type="button"
                               onClick={() => {
@@ -1506,7 +1508,7 @@ function WalletPageContent() {
                         </div>
                       );
                     })()}
-                    <p className="text-[10px] text-[#6B7280] leading-snug">
+                    <p className="text-[10px] text-text-tertiary leading-snug">
                       Scan the QR or copy the address. After paying, paste your transaction hash below as proof.
                     </p>
                   </div>
@@ -1539,26 +1541,26 @@ function WalletPageContent() {
               manualBankInfo.wallet_address
             ) && (
               <>
-                <p className="text-[11px] text-[#6B7280] leading-snug text-center">
+                <p className="text-[11px] text-text-tertiary leading-snug text-center">
                   Or pay manually to the address above and submit your transaction hash below.
                 </p>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[#0A0A0A]">Transaction reference / tx hash</label>
+                  <label className="text-sm font-medium text-text-primary">Transaction reference / tx hash</label>
                   <input
                     type="text"
                     value={depositTxId}
                     onChange={(e) => setDepositTxId(e.target.value)}
                     placeholder="On-chain tx hash, UTR, or transfer reference"
-                    className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                    className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[#0A0A0A]">Payment proof</label>
+                  <label className="text-sm font-medium text-text-primary">Payment proof</label>
                   <input
                     type="file"
                     accept="image/*,application/pdf"
                     onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
-                    className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                    className="w-full rounded-xl bg-bg-input px-4 py-3 text-sm text-text-primary file:mr-3 file:rounded-lg file:border-0 file:bg-crx-charcoal file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-crx-charcoal-ink"
                   />
                 </div>
               </>
@@ -1566,7 +1568,7 @@ function WalletPageContent() {
           </>
         ) : (
           <div className="space-y-2">
-            <div className="rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A]">
+            <div className="rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary">
               <p className="leading-relaxed">
                 Submit this request and our team will share a payment link (Razorpay, bank transfer, or UPI) with you shortly. Your wallet is credited the USD amount once payment is confirmed.
               </p>
@@ -1574,8 +1576,8 @@ function WalletPageContent() {
 
             {/* User's existing local-banking requests (admin queue / link). */}
             {localBankingRequests.length > 0 && (
-              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5">
-                <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] mb-2">
+              <div className="rounded-xl border border-border-primary bg-bg-card px-4 py-3.5">
+                <div className="text-xs font-semibold uppercase tracking-wider text-text-tertiary mb-2">
                   Your requests
                 </div>
                 <ul className="space-y-2">
@@ -1598,16 +1600,16 @@ function WalletPageContent() {
                     return (
                       <li
                         key={r.id}
-                        className="rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm space-y-2"
+                        className="rounded-lg bg-bg-input px-3 py-2 text-sm space-y-2"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="font-semibold text-[#0A0A0A] tabular-nums">
+                            <div className="font-semibold text-text-primary tabular-nums">
                               {proofSubmitted
                                 ? `$${Number(r.amount || 0).toLocaleString()}`
                                 : 'Deposit request'}
                             </div>
-                            <div className="text-[11px] text-[#6B7280]">
+                            <div className="text-[11px] text-text-tertiary">
                               {r.created_at ? new Date(r.created_at).toLocaleString() : ''} · {stage}
                             </div>
                           </div>
@@ -1652,7 +1654,7 @@ function WalletPageContent() {
                                         setConfirmTxId('');
                                         setConfirmFile(null);
                                       }}
-                                      className="inline-flex items-center justify-center rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-xs font-semibold px-3 py-1.5 hover:bg-[#0A0A0A] hover:text-white transition-colors"
+                                      className="inline-flex items-center justify-center rounded-lg border border-[#0A0A0A] text-text-primary text-xs font-semibold px-3 py-1.5 hover:bg-[#0A0A0A] hover:text-white transition-colors"
                                     >
                                       {isConfirming ? 'Cancel' : "I've Paid"}
                                     </button>
@@ -1667,13 +1669,13 @@ function WalletPageContent() {
                             the amount and we create the Razorpay order on the
                             fly, then open the Checkout popup. */}
                         {r.payment_link === 'razorpay:awaiting' && !isApproved && !isRejected && (
-                          <div className="space-y-2 rounded-lg bg-white border border-[#E5E5E5] p-3">
-                            <p className="text-xs text-[#6B7280] leading-snug">
+                          <div className="space-y-2 rounded-lg bg-bg-card border border-border-primary p-3">
+                            <p className="text-xs text-text-tertiary leading-snug">
                               Your request was approved. Enter how much you want to deposit and pay via Razorpay.
                             </p>
                             <div className="flex items-end gap-2">
                               <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium text-[#0A0A0A]">Amount (USD)</label>
+                                <label className="text-xs font-medium text-text-primary">Amount (USD)</label>
                                 <input
                                   type="number"
                                   inputMode="decimal"
@@ -1684,7 +1686,7 @@ function WalletPageContent() {
                                     setRzpPayAmountByDeposit((prev) => ({ ...prev, [r.id]: e.target.value }))
                                   }
                                   placeholder="e.g. 100"
-                                  className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                  className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
                                 />
                               </div>
                               <button
@@ -1704,9 +1706,9 @@ function WalletPageContent() {
 
                         {/* Inline "I've Paid" form — collapses back when closed. */}
                         {isConfirming && (
-                          <div className="space-y-2 rounded-lg bg-white border border-[#E5E5E5] p-3">
+                          <div className="space-y-2 rounded-lg bg-bg-card border border-border-primary p-3">
                             <div className="space-y-1">
-                              <label className="text-xs font-medium text-[#0A0A0A]">Amount paid (USD)</label>
+                              <label className="text-xs font-medium text-text-primary">Amount paid (USD)</label>
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -1714,26 +1716,26 @@ function WalletPageContent() {
                                 value={confirmAmount}
                                 onChange={(e) => setConfirmAmount(e.target.value)}
                                 placeholder="e.g. 100"
-                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs font-medium text-[#0A0A0A]">UTR / UPI reference</label>
+                              <label className="text-xs font-medium text-text-primary">UTR / UPI reference</label>
                               <input
                                 type="text"
                                 value={confirmTxId}
                                 onChange={(e) => setConfirmTxId(e.target.value)}
                                 placeholder="Transaction reference from your bank / UPI app"
-                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs font-medium text-[#0A0A0A]">Payment proof (screenshot / PDF)</label>
+                              <label className="text-xs font-medium text-text-primary">Payment proof (screenshot / PDF)</label>
                               <input
                                 type="file"
                                 accept="image/*,application/pdf"
                                 onChange={(e) => setConfirmFile(e.target.files?.[0] ?? null)}
-                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-xs file:mr-3 file:rounded file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white"
+                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-xs file:mr-3 file:rounded file:border-0 file:bg-crx-charcoal file:px-3 file:py-1 file:text-xs file:font-semibold file:text-crx-charcoal-ink"
                               />
                             </div>
                             <button
@@ -1790,7 +1792,7 @@ function WalletPageContent() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       <div className="lg:col-span-2 space-y-5">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[#0A0A0A]">Account</label>
+          <label className="text-sm font-medium text-text-primary">Account</label>
           <FundsDropdown
             value={withdrawAccountId}
             options={accountOptionsForFunding}
@@ -1805,7 +1807,7 @@ function WalletPageContent() {
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
+            <label className="text-sm font-medium text-text-primary">Amount</label>
             <button
               type="button"
               onClick={() => {
@@ -1813,7 +1815,7 @@ function WalletPageContent() {
                 const bal = Number(acc?.balance ?? wallet?.main_wallet_balance ?? 0);
                 setWithdrawAmount(String(Math.max(0, bal)));
               }}
-              className="text-xs font-bold text-[#0A0A0A] hover:underline"
+              className="text-xs font-bold text-text-primary hover:underline"
             >
               Max
             </button>
@@ -1826,7 +1828,7 @@ function WalletPageContent() {
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(e.target.value)}
             placeholder="Enter an amount"
-            className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+            className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
           />
         </div>
 
@@ -1834,7 +1836,7 @@ function WalletPageContent() {
             the user fills in the whole form. The backend enforces this
             regardless (403 KYC_REQUIRED on submit). */}
         {!kycApproved && (
-          <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-[#0A0A0A] flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-text-primary flex flex-wrap items-center justify-between gap-3">
             <span className="leading-relaxed">
               Withdrawals require <span className="font-semibold">verified KYC</span>. Your KYC status is checked when you submit a request.
             </span>
@@ -1850,7 +1852,7 @@ function WalletPageContent() {
 
         {/* Payment-method chips */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[#0A0A0A]">Payout method</label>
+          <label className="text-sm font-medium text-text-primary">Payout method</label>
           <div className="flex gap-2">
             {(
               [
@@ -1867,12 +1869,12 @@ function WalletPageContent() {
                   className={clsx(
                     'flex-1 rounded-xl border px-4 py-3 text-left transition-colors',
                     active
-                      ? 'border-[#0A0A0A] bg-white'
-                      : 'border-transparent bg-[#F5F5F5] hover:border-[#E5E5E5]',
+                      ? 'border-[#0A0A0A] bg-bg-card'
+                      : 'border-transparent bg-bg-input hover:border-border-primary',
                   )}
                 >
-                  <div className="text-sm font-semibold text-[#0A0A0A]">{c.label}</div>
-                  {c.sub && <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>}
+                  <div className="text-sm font-semibold text-text-primary">{c.label}</div>
+                  {c.sub && <div className="text-xs text-text-tertiary mt-0.5">{c.sub}</div>}
                 </button>
               );
             })}
@@ -1882,7 +1884,7 @@ function WalletPageContent() {
         {withdrawUiSection === 'crypto' ? (
           <>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">USDT Network</label>
+              <label className="text-sm font-medium text-text-primary">USDT Network</label>
               <div className="grid grid-cols-3 gap-2">
                 {WITHDRAW_NETWORK_OPTIONS.map((opt) => {
                   const active = opt.network === withdrawNetwork;
@@ -1894,12 +1896,12 @@ function WalletPageContent() {
                       className={clsx(
                         'rounded-xl border px-3 py-2.5 text-left text-xs transition-colors',
                         active
-                          ? 'border-[#0A0A0A] bg-white'
-                          : 'border-transparent bg-[#F5F5F5] hover:border-[#E5E5E5]',
+                          ? 'border-[#0A0A0A] bg-bg-card'
+                          : 'border-transparent bg-bg-input hover:border-border-primary',
                       )}
                     >
-                      <div className="font-semibold text-[#0A0A0A]">{opt.label}</div>
-                      <div className="text-[11px] text-[#6B7280] mt-0.5">{opt.sub}</div>
+                      <div className="font-semibold text-text-primary">{opt.label}</div>
+                      <div className="text-[11px] text-text-tertiary mt-0.5">{opt.sub}</div>
                     </button>
                   );
                 })}
@@ -1907,12 +1909,12 @@ function WalletPageContent() {
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-[#0A0A0A]">Your {withdrawActiveNetwork.label} address</label>
+                <label className="text-sm font-medium text-text-primary">Your {withdrawActiveNetwork.label} address</label>
                 {linkedWalletAddress && withdrawActiveNetwork.addressRegex.test(linkedWalletAddress) && (
                   <button
                     type="button"
                     onClick={() => setWithdrawCryptoAddress(linkedWalletAddress)}
-                    className="text-xs font-bold text-[#0A0A0A] hover:underline"
+                    className="text-xs font-bold text-text-primary hover:underline"
                   >
                     Use linked wallet
                   </button>
@@ -1927,13 +1929,13 @@ function WalletPageContent() {
                 onChange={(e) => setWithdrawCryptoAddress(e.target.value)}
                 placeholder={withdrawActiveNetwork.addressHint}
                 className={clsx(
-                  'w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm font-mono text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none break-all',
+                  'w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm font-mono text-text-primary placeholder:text-text-tertiary outline-none break-all',
                   withdrawAddrTrimmed && !withdrawAddrValid
                     ? 'ring-2 ring-red-500/60'
                     : 'focus:ring-2 focus:ring-[#E94E1B]/40',
                 )}
               />
-              <p className="text-xs text-[#6B7280] leading-relaxed">
+              <p className="text-xs text-text-tertiary leading-relaxed">
                 {withdrawAddrTrimmed && !withdrawAddrValid
                   ? `That doesn't look like a valid ${withdrawActiveNetwork.label} address.`
                   : `Double-check the address — payouts on the wrong network can't be recovered. Processing time: up to 24h.`}
@@ -1943,32 +1945,32 @@ function WalletPageContent() {
         ) : (
           <>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">UPI ID</label>
+              <label className="text-sm font-medium text-text-primary">UPI ID</label>
               <input
                 type="text"
                 value={manualWithdrawUpi}
                 onChange={(e) => setManualWithdrawUpi(e.target.value)}
                 placeholder="yourname@upi"
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">QR code (optional)</label>
+              <label className="text-sm font-medium text-text-primary">QR code (optional)</label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setManualWithdrawQrFile(e.target.files?.[0] ?? null)}
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                className="w-full rounded-xl bg-bg-input px-4 py-3 text-sm text-text-primary file:mr-3 file:rounded-lg file:border-0 file:bg-crx-charcoal file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-crx-charcoal-ink"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">Notes (optional)</label>
+              <label className="text-sm font-medium text-text-primary">Notes (optional)</label>
               <input
                 type="text"
                 value={manualWithdrawNotes}
                 onChange={(e) => setManualWithdrawNotes(e.target.value)}
                 placeholder="Any context for finance"
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
               />
             </div>
           </>
@@ -2026,7 +2028,7 @@ function WalletPageContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
         <div className="lg:col-span-2 space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">From</label>
+            <label className="text-sm font-medium text-text-primary">From</label>
             <FundsDropdown
               value={transferSourceId}
               options={sharedOptions}
@@ -2036,7 +2038,7 @@ function WalletPageContent() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">To</label>
+            <label className="text-sm font-medium text-text-primary">To</label>
             <FundsDropdown
               value={transferDestinationId}
               options={sharedOptions.filter((o) => o.id !== transferSourceId)}
@@ -2046,7 +2048,7 @@ function WalletPageContent() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
+            <label className="text-sm font-medium text-text-primary">Amount</label>
             <input
               type="number"
               inputMode="decimal"
@@ -2055,9 +2057,9 @@ function WalletPageContent() {
               value={transferAmount}
               onChange={(e) => setTransferAmount(e.target.value)}
               placeholder="Enter an amount"
-              className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+              className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
             />
-            <p className="text-xs text-[#6B7280] leading-relaxed">
+            <p className="text-xs text-text-tertiary leading-relaxed">
               Transfers between accounts are instant. Trading-account ↔ trading-account routes via your main wallet automatically.
             </p>
           </div>
@@ -2094,7 +2096,7 @@ function WalletPageContent() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       <div className="lg:col-span-2 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-[#0A0A0A]">Recent transactions</h2>
+          <h2 className="text-base font-semibold text-text-primary">Recent transactions</h2>
           <button
             type="button"
             onClick={() => {
@@ -2114,13 +2116,13 @@ function WalletPageContent() {
                 },
               );
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-xs font-medium text-[#0A0A0A] transition hover:bg-[#F9FAFB] shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-primary bg-bg-card text-xs font-medium text-text-primary transition hover:bg-[#F9FAFB] shrink-0"
           >
-            <FileText size={14} className="text-[#6B7280]" /> Statement PDF
+            <FileText size={14} className="text-text-tertiary" /> Statement PDF
           </button>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-[#E5E5E5] bg-white">
-          <div className="grid min-w-[560px] grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">
+        <div className="overflow-x-auto rounded-xl border border-border-primary bg-bg-card">
+          <div className="grid min-w-[560px] grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] text-xs font-semibold uppercase tracking-wide text-text-tertiary bg-[#F9FAFB] px-4 py-3 border-b border-border-primary">
             <span>Type</span>
             <span>Method</span>
             <span className="text-right">Amount</span>
@@ -2128,11 +2130,11 @@ function WalletPageContent() {
             <span className="text-right">Status</span>
           </div>
           {historyLoading ? (
-            <div className="px-4 py-10 text-center text-sm text-[#6B7280]">Loading…</div>
+            <div className="px-4 py-10 text-center text-sm text-text-tertiary">Loading…</div>
           ) : historyItems.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-[#6B7280]">No transactions yet.</div>
+            <div className="px-4 py-10 text-center text-sm text-text-tertiary">No transactions yet.</div>
           ) : (
-            historyItems.slice(0, 25).map((it) => {
+            historyPager.items.map((it) => {
               const t = (it.type || '').toLowerCase();
               const status = (it.status || '').toLowerCase();
               const statusClass =
@@ -2142,18 +2144,18 @@ function WalletPageContent() {
                     ? 'text-amber-600 bg-amber-50'
                     : status === 'failed' || status === 'rejected' || status === 'cancelled'
                       ? 'text-red-600 bg-red-50'
-                      : 'text-[#6B7280] bg-[#F5F5F5]';
+                      : 'text-text-tertiary bg-bg-input';
               return (
                 <div
                   key={`${it.id}-${it.type}`}
                   className="grid min-w-[560px] grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] items-center px-4 py-3 text-sm border-b border-[#F0F0F0] last:border-b-0"
                 >
-                  <div className="font-medium text-[#0A0A0A] capitalize truncate">{t || 'transaction'}</div>
-                  <div className="text-[#6B7280] truncate">{prettyMethod(it.method)}</div>
-                  <div className="font-mono tabular-nums text-right text-[#0A0A0A]">
+                  <div className="font-medium text-text-primary capitalize truncate">{t || 'transaction'}</div>
+                  <div className="text-text-tertiary truncate">{prettyMethod(it.method)}</div>
+                  <div className="font-mono tabular-nums text-right text-text-primary">
                     {formatCurrency(Number(it.amount) || 0, it.currency || wallet?.currency || 'USD')}
                   </div>
-                  <div className="text-right text-[#6B7280] text-xs tabular-nums">{fmtHistoryDate(it.created_at)}</div>
+                  <div className="text-right text-text-tertiary text-xs tabular-nums">{fmtHistoryDate(it.created_at)}</div>
                   <div className="flex justify-end">
                     <span className={clsx('rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize', statusClass)}>
                       {status || 'unknown'}
@@ -2163,47 +2165,50 @@ function WalletPageContent() {
               );
             })
           )}
+          {historyItems.length > 0 && (
+            <div className="px-4 pb-3"><Pagination {...historyPager.props} itemLabel="transactions" /></div>
+          )}
         </div>
       </div>
 
       {/* Right — info card */}
       <div className="space-y-4">
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+        <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-lg bg-[#0A0A0A] text-white flex items-center justify-center">
               <HistoryIcon size={16} />
             </div>
-            <h3 className="text-sm font-bold text-[#0A0A0A]">Wallet Snapshot</h3>
+            <h3 className="text-sm font-bold text-text-primary">Wallet Snapshot</h3>
           </div>
           <dl className="space-y-2.5 text-sm">
             <div className="flex items-center justify-between">
-              <dt className="text-[#6B7280]">Total deposits</dt>
-              <dd className="font-mono tabular-nums font-semibold text-[#0A0A0A]">
+              <dt className="text-text-tertiary">Total deposits</dt>
+              <dd className="font-mono tabular-nums font-semibold text-text-primary">
                 {fmt(wallet?.total_deposited ?? 0)}
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt className="text-[#6B7280]">Total withdrawals</dt>
-              <dd className="font-mono tabular-nums font-semibold text-[#0A0A0A]">
+              <dt className="text-text-tertiary">Total withdrawals</dt>
+              <dd className="font-mono tabular-nums font-semibold text-text-primary">
                 {fmt(wallet?.total_withdrawn ?? 0)}
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt className="text-[#6B7280]">Pending withdrawals</dt>
-              <dd className="font-mono tabular-nums font-semibold text-[#0A0A0A]">
+              <dt className="text-text-tertiary">Pending withdrawals</dt>
+              <dd className="font-mono tabular-nums font-semibold text-text-primary">
                 {wallet?.pending_withdrawals ?? 0}
               </dd>
             </div>
           </dl>
         </div>
-        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+        <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-[#F5F5F5] text-[#6B7280] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-lg bg-bg-input text-text-tertiary flex items-center justify-center">
               <Hourglass size={16} />
             </div>
-            <h3 className="text-sm font-bold text-[#0A0A0A]">Processing time</h3>
+            <h3 className="text-sm font-bold text-text-primary">Processing time</h3>
           </div>
-          <p className="text-xs text-[#6B7280] leading-relaxed">
+          <p className="text-xs text-text-tertiary leading-relaxed">
             Crypto withdrawals are reviewed by finance; most requests are processed within 24 hours.
           </p>
         </div>
@@ -2212,22 +2217,22 @@ function WalletPageContent() {
   );
 
   return (
-    <DashboardShell mainClassName="flex flex-col min-h-0 overflow-hidden p-0 bg-white">
-      <div className="dashboard-main-scroll flex-1 min-h-0 min-w-0 overflow-y-auto bg-white">
+    <DashboardShell mainClassName="flex flex-col min-h-0 overflow-hidden p-0 bg-bg-card">
+      <div className="dashboard-main-scroll flex-1 min-h-0 min-w-0 overflow-y-auto bg-bg-card">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 space-y-6">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-3xl font-bold tracking-tight text-[#0A0A0A]">Funds</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-text-primary">Funds</h1>
             <button
               type="button"
               onClick={() => void fetchData(true)}
               disabled={refreshing}
               className={clsx(
-                'p-2 rounded-lg border border-[#E5E5E5] bg-white hover:bg-[#F5F5F5] transition-all active:scale-95 shrink-0',
+                'p-2 rounded-lg border border-border-primary bg-bg-card hover:bg-bg-input transition-all active:scale-95 shrink-0',
                 refreshing && 'animate-spin cursor-not-allowed opacity-50',
               )}
               aria-label="Refresh wallet"
             >
-              <RefreshCcw className="w-4 h-4 text-[#6B7280]" />
+              <RefreshCcw className="w-4 h-4 text-text-tertiary" />
             </button>
           </div>
 
@@ -2311,30 +2316,30 @@ function FundsDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={clsx(
-          'flex w-full items-center justify-between gap-2 rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-left text-sm outline-none transition-shadow',
+          'flex w-full items-center justify-between gap-2 rounded-xl bg-bg-input px-4 py-3.5 text-left text-sm outline-none transition-shadow',
           'focus:ring-2 focus:ring-[#E94E1B]/40',
           disabled && 'opacity-60 cursor-not-allowed',
         )}
       >
         {selected ? (
           <span className="flex flex-col min-w-0">
-            <span className="text-[#0A0A0A] font-medium truncate">{selected.label}</span>
+            <span className="text-text-primary font-medium truncate">{selected.label}</span>
             {selected.sublabel && (
-              <span className="text-xs text-[#6B7280] font-mono tabular-nums truncate">{selected.sublabel}</span>
+              <span className="text-xs text-text-tertiary font-mono tabular-nums truncate">{selected.sublabel}</span>
             )}
           </span>
         ) : (
-          <span className="text-[#9CA3AF]">{placeholder}</span>
+          <span className="text-text-tertiary">{placeholder}</span>
         )}
         <ChevronDown
           size={16}
-          className={clsx('text-[#6B7280] transition-transform shrink-0', open && 'rotate-180')}
+          className={clsx('text-text-tertiary transition-transform shrink-0', open && 'rotate-180')}
         />
       </button>
       {open && !disabled && options.length > 0 && (
         <ul
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[#E5E5E5] bg-white shadow-lg ring-1 ring-black/5"
+          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-border-primary bg-bg-card shadow-lg ring-1 ring-black/5"
         >
           {options.map((o) => {
             const sel = o.id === value;
@@ -2347,19 +2352,19 @@ function FundsDropdown({
                     setOpen(false);
                   }}
                   className={clsx(
-                    'flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#F5F5F5]',
-                    sel && 'bg-[#F5F5F5]',
+                    'flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg-input',
+                    sel && 'bg-bg-input',
                   )}
                 >
                   <span className="flex flex-col min-w-0">
-                    <span className={clsx('truncate', sel ? 'font-semibold text-[#0A0A0A]' : 'text-[#0A0A0A]')}>
+                    <span className={clsx('truncate', sel ? 'font-semibold text-text-primary' : 'text-text-primary')}>
                       {o.label}
                     </span>
                     {o.sublabel && (
-                      <span className="text-xs text-[#6B7280] font-mono tabular-nums truncate">{o.sublabel}</span>
+                      <span className="text-xs text-text-tertiary font-mono tabular-nums truncate">{o.sublabel}</span>
                     )}
                   </span>
-                  {sel && <CheckCircle2 size={14} className="text-[#0A0A0A] shrink-0" />}
+                  {sel && <CheckCircle2 size={14} className="text-text-primary shrink-0" />}
                 </button>
               </li>
             );
@@ -2390,7 +2395,7 @@ function ContinueButton({
       className={clsx(
         'w-full rounded-full py-3.5 text-sm font-semibold transition-colors',
         disabled
-          ? 'bg-[#E5E5E5] text-[#9CA3AF] cursor-not-allowed'
+          ? 'bg-bg-active text-text-tertiary cursor-not-allowed'
           : 'bg-[#0A0A0A] text-white hover:bg-black active:scale-[0.99]',
       )}
     >
@@ -2415,7 +2420,7 @@ function Stepper({
 }) {
   return (
     <div className="relative">
-      <div className="absolute left-[15px] top-8 bottom-8 w-px bg-[#E5E5E5]" aria-hidden />
+      <div className="absolute left-[15px] top-8 bottom-8 w-px bg-border-primary" aria-hidden />
       <ul className="space-y-7 relative">
         {steps.map((s, i) => {
           const filled = s.state === 'current' || s.state === 'done';
@@ -2426,16 +2431,16 @@ function Stepper({
                   'shrink-0 w-8 h-8 rounded-md flex items-center justify-center border-2',
                   filled
                     ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
-                    : 'bg-white text-[#9CA3AF] border-[#E5E5E5]',
+                    : 'bg-bg-card text-text-tertiary border-border-primary',
                 )}
               >
                 {s.icon}
               </div>
               <div className="min-w-0 pt-0.5">
-                <h4 className={clsx('text-sm font-bold', filled ? 'text-[#0A0A0A]' : 'text-[#6B7280]')}>
+                <h4 className={clsx('text-sm font-bold', filled ? 'text-text-primary' : 'text-text-tertiary')}>
                   {s.title}
                 </h4>
-                <p className="mt-1 text-xs text-[#6B7280] leading-relaxed">{s.description}</p>
+                <p className="mt-1 text-xs text-text-tertiary leading-relaxed">{s.description}</p>
               </div>
             </li>
           );
@@ -2452,7 +2457,7 @@ export default function WalletPage() {
         <DashboardShell>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
             <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm font-medium text-[#6B7280]">Loading wallet…</span>
+            <span className="text-sm font-medium text-text-tertiary">Loading wallet…</span>
           </div>
         </DashboardShell>
       }

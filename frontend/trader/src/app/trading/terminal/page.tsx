@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { CandlestickChart, List, Minimize2, Search, X } from 'lucide-react';
+import '@/styles/crextio.css';
+import { CandlestickChart, Home, List, Minimize2, Search, Wallet, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -15,9 +16,8 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingNav';
 import { wsManager } from '@/lib/ws/wsManager';
 import Watchlist from '@/components/trading/Watchlist';
-import InstrumentsTable from '@/components/trading/InstrumentsTable';
-import DraggableOrderModal from '@/components/trading/DraggableOrderModal';
 import OrderPanel from '@/components/trading/OrderPanel';
+import ChartExitsPanel from '@/components/trading/ChartExitsPanel';
 import RiskCalculator from '@/components/trading/RiskCalculator';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
@@ -28,7 +28,7 @@ import AppNavbar from '@/components/layout/AppNavbar';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
-const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
+const TerminalNewsPanel = dynamic(() => import('@/components/trading/TerminalNewsPanel'), {
   ssr: false,
 });
 
@@ -72,8 +72,18 @@ export default function TradingTerminalPage() {
   const [terminalCalcOpen, setTerminalCalcOpen] = useState(false);
   // The Buy/Sell order panel now lives in a movable floating window instead
   // of a pinned right column, so the chart can be full-width.
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const openOrderModal = useCallback(() => setOrderModalOpen(true), []);
+  // Fixed right sidebar (Markets + Trade stacked). Not resizable, not
+  // draggable — the old floating order window is gone.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // One panel at a time: Markets (instrument list) OR Trade (order ticket).
+  const [sidebarView, setSidebarView] = useState<'markets' | 'trade'>('trade');
+  const openOrderModal = useCallback(() => { setSidebarView('trade'); setSidebarOpen(true); }, []);
+  // Chart-driven review (TP/SL drag or ✕ on the position line) takes over the
+  // sidebar — TradingView-style "Exits" panel where the order ticket sits.
+  const chartReview = useTradingStore((s) => !!(s.chartExitsDraft || s.chartCloseRequest));
+  useEffect(() => {
+    if (chartReview) { setSidebarView('trade'); setSidebarOpen(true); }
+  }, [chartReview]);
 
   const snapshotLayout = useCallback(() => {
     const s = useUIStore.getState();
@@ -219,11 +229,12 @@ export default function TradingTerminalPage() {
     setChartExpanded(false);
     setTerminalCalcOpen(false);
     setTerminalMarketsOpen(true);
+    setSidebarView('markets');
+    setSidebarOpen(true);
   }, [terminalMarketsOpen, terminalNewsOpen, chartExpanded, terminalCalcOpen, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectOrder = useCallback(() => {
-    // The order panel is a floating window now — the rail's "Order" button
-    // closes any side panel and pops the order window.
+    // Rail "Order" button → the Trade panel in the right sidebar.
     resetAllPanels();
     openOrderModal();
   }, [resetAllPanels, openOrderModal]);
@@ -406,7 +417,7 @@ export default function TradingTerminalPage() {
     return (
       <div
         className={clsx(
-          'flex-1 flex flex-col overflow-hidden min-h-0 scrollbar-none bg-bg-base',
+          'theme-warm theme-warm-dark font-crextio flex-1 flex flex-col overflow-hidden min-h-0 scrollbar-none bg-bg-base',
           // Only the chart view has the fixed Sell/Lots/Buy bar at the bottom;
           // reserving the space in the other views just leaves a dead band.
           mobileView === 'chart'
@@ -430,11 +441,11 @@ export default function TradingTerminalPage() {
                 >
                   ← Chart
                 </button>
-                <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Live news</span>
+                <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Market news</span>
                 <span className="w-14" aria-hidden />
               </div>
               <div className="flex-1 min-h-0">
-                <TradingViewNewsTimeline />
+                <TerminalNewsPanel />
               </div>
             </div>
           )}
@@ -632,7 +643,7 @@ export default function TradingTerminalPage() {
                     {/* The mobile terminal has its own fixed Sell/Lots/Buy bar
                         below the chart — the on-chart quick-trade widget would
                         duplicate it and overlap the OHLC legend at 390px. */}
-                    <TradingViewChart showTradeWidget={false} />
+                    <TradingViewChart theme="dark" showTradeWidget={false} />
                   </ChartErrorBoundary>
                 </div>
               </div>
@@ -728,13 +739,15 @@ export default function TradingTerminalPage() {
     );
   }
 
-  // The right column now hosts ONLY the Markets / News / Risk-Calculator
-  // panels. When none is open it collapses so the chart is full-width; the
-  // order panel is no longer here (it's the floating DraggableOrderModal).
-  const rightPanelOpen = terminalMarketsOpen || terminalNewsOpen || terminalCalcOpen;
+  // Right sidebar: Markets (top) + Trade (bottom) always; News / Risk
+  // Calculator temporarily take over the sidebar when opened from the rail.
+  const sidebarVisible = sidebarOpen && !chartExpanded;
 
   return (
-    <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
+    <div data-theme="dark" className="theme-warm theme-warm-dark font-crextio flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
+      {/* Full-screen chart: the rail is unmounted so the chart truly owns the
+          viewport — only the "Normal view" button (or Esc) brings it back. */}
+      {!chartExpanded && (
       <TerminalLeftRail
         activeSpace={activeSpace}
         onSpaceChange={applySpace}
@@ -752,6 +765,7 @@ export default function TradingTerminalPage() {
         terminalCalcOpen={terminalCalcOpen}
         onPanelsSelectCalc={onPanelsSelectCalc}
       />
+      )}
       <div
         ref={centerColumnRef}
         className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0 relative z-0"
@@ -759,29 +773,52 @@ export default function TradingTerminalPage() {
         <TerminalTicker
           rightSlot={
             <>
+              {/* Home / Deposit — quick exits back to the dashboard and wallet. */}
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-bold border border-border-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors whitespace-nowrap"
+                title="Back to dashboard"
+              >
+                <Home className="w-4 h-4" aria-hidden />
+                <span className="hidden md:inline">Home</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/wallet')}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-bold border border-border-primary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors whitespace-nowrap"
+                title="Deposit / withdraw"
+              >
+                <Wallet className="w-4 h-4" aria-hidden />
+                <span className="hidden md:inline">Deposit</span>
+              </button>
               {/* Markets — opens the instruments list (full-height panel on
                   the right); chart + positions shrink to the left. Toggle. */}
               <button
                 type="button"
-                onClick={onPanelsSelectMarkets}
+                onClick={() => {
+                  if (sidebarOpen && sidebarView === 'markets') { setSidebarOpen(false); return; }
+                  resetAllPanels();
+                  setSidebarView('markets');
+                  setSidebarOpen(true);
+                }}
                 className={clsx(
-                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold border transition-colors whitespace-nowrap',
-                  // Always highlighted (accent-tinted); stronger when open.
-                  terminalMarketsOpen
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold border transition-colors whitespace-nowrap',
+                  sidebarOpen && sidebarView === 'markets'
                     ? 'bg-accent/20 border-accent/60 text-accent'
                     : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
                 )}
-                title="Browse instruments"
+                title="Browse all instruments"
               >
                 <List className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">Markets</span>
               </button>
-              {/* Trade — pops the movable order window. */}
+              {/* Trade — ensures the sidebar (with the order panel) is open. */}
               <button
                 type="button"
-                onClick={openOrderModal}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold text-white bg-accent border border-accent hover:bg-accent/90 transition-colors whitespace-nowrap"
-                title="Open the order ticket"
+                onClick={() => { resetAllPanels(); setSidebarView('trade'); setSidebarOpen(true); }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold text-white bg-accent border border-accent hover:bg-accent/90 transition-colors whitespace-nowrap"
+                title="Open the order panel"
               >
                 <CandlestickChart className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">Trade</span>
@@ -824,7 +861,7 @@ export default function TradingTerminalPage() {
                   chart's own buttons. Collapse is via the header's "Normal view"
                   button / Esc when expanded. */}
               <ChartErrorBoundary>
-                <TradingViewChart onRequestFullscreen={enterFullscreen} />
+                <TradingViewChart theme="dark" onRequestFullscreen={enterFullscreen} />
               </ChartErrorBoundary>
             </div>
           </div>
@@ -847,18 +884,10 @@ export default function TradingTerminalPage() {
           </div>
           </div>{/* LEFT column (chart + positions) close */}
 
-          {rightPanelOpen && (
-            <>
-          <PanelResizeHandle
-            axis="vertical"
-            hitSize={TERMINAL_RESIZE.handleHitPx}
-            onDragStart={snapshotLayout}
-            onDrag={onChartRailDrag}
-          />
-
-          <div
-            className="shrink-0 flex flex-col h-full min-h-0 overflow-hidden bg-bg-base border-l border-border-primary"
-            style={{ width: opW }}
+          {sidebarVisible && (
+          <aside
+            className="shrink-0 w-[380px] h-full min-h-0 flex flex-col overflow-hidden bg-bg-base border-l border-border-primary"
+            aria-label="Markets and trade sidebar"
           >
             {terminalCalcOpen && !terminalNewsOpen ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -869,55 +898,43 @@ export default function TradingTerminalPage() {
                 <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-border-primary bg-bg-secondary">
                   <button
                     type="button"
-                    onClick={() => {
-                      setTerminalNewsOpen(false);
-                      setTerminalMarketsOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-card text-[11px] font-bold uppercase tracking-wide text-accent hover:bg-accent/10 hover:border-accent/40 transition-colors"
+                    onClick={() => { setTerminalNewsOpen(false); setTerminalMarketsOpen(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border-primary bg-card text-[11px] font-bold uppercase tracking-wide text-accent hover:bg-accent/10 hover:border-accent/40 transition-colors"
                   >
                     ← Markets
                   </button>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary">Live News</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary">Market News</span>
                   <button
                     type="button"
-                    onClick={() => {
-                      setTerminalNewsOpen(false);
-                      setTerminalMarketsOpen(false);
-                    }}
-                    className="ml-auto px-3 py-1.5 rounded-lg border border-border-primary bg-card text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-secondary transition-colors"
+                    onClick={() => { setTerminalNewsOpen(false); setTerminalMarketsOpen(false); }}
+                    className="ml-auto px-3 py-1.5 rounded-full border border-border-primary bg-card text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-secondary transition-colors"
                   >
                     Close
                   </button>
                 </div>
                 <div className="flex-1 min-h-0">
-                  <TradingViewNewsTimeline />
+                  <TerminalNewsPanel />
                 </div>
               </div>
             ) : (
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <InstrumentsTable
-                  onExitMarkets={() => {
-                    // Picking an instrument closes the markets panel and
-                    // pops the movable order window for that symbol.
-                    setTerminalMarketsOpen(false);
-                    setTerminalNewsOpen(false);
-                    openOrderModal();
-                  }}
-                  onViewNews={() => {
-                    setTerminalMarketsOpen(false);
-                    setTerminalNewsOpen(true);
-                  }}
-                />
-              </div>
+              sidebarView === 'markets' ? (
+                /* ── Markets: all instruments; picking one opens the Trade panel ── */
+                <section className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <Watchlist variant="terminalRail" onExitMarkets={() => setSidebarView('trade')} />
+                </section>
+              ) : (
+                /* ── Trade: the order ticket, pinned (not movable) — or the
+                      chart's Exits / Close review while one is in progress ── */
+                <section className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  {chartReview ? <ChartExitsPanel /> : <OrderPanel />}
+                </section>
+              )
             )}
-          </div>
-            </>
+          </aside>
           )}
         </div>
       </div>
 
-      {/* Movable order window — replaces the old pinned right column. */}
-      {orderModalOpen && <DraggableOrderModal onClose={() => setOrderModalOpen(false)} />}
     </div>
   );
 }

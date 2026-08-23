@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { User, Shield, Bell, Monitor, ChevronRight } from 'lucide-react';
+import { type LucideIcon, User, Shield, Bell, Monitor, ChevronRight, ShieldCheck, BarChart3, Coins, LayoutGrid } from 'lucide-react';
+import { motion } from 'framer-motion';
+import GlossyIcon from '@/components/ui/GlossyIcon';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import KycTab from '@/components/profile/KycTab';
+import AnalyticsTab from '@/components/profile/AnalyticsTab';
+import EarningsTab from '@/components/profile/EarningsTab';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
 import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
@@ -21,6 +28,8 @@ interface Profile {
   state?: string | null;
   postal_code?: string | null;
   kyc_status: string;
+  avatar?: string | null;
+  created_at?: string | null;
   two_factor_enabled: boolean;
   // Onboarding flag from /profile (mirror /auth/me) — drives the
   // EmailVerificationCard's "verified" badge and the Change-Email
@@ -48,13 +57,16 @@ interface Session {
   created_at: string;
 }
 
-type TabId = 'profile' | 'security' | 'notifications' | 'sessions';
+type TabId = 'profile' | 'kyc' | 'analytics' | 'earnings' | 'security' | 'notifications' | 'sessions';
 
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'profile',       label: 'Profile',       icon: User },
-  { id: 'security',      label: 'Security',       icon: Shield },
-  { id: 'notifications', label: 'Notifications',  icon: Bell },
-  { id: 'sessions',      label: 'Sessions',       icon: Monitor },
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+  { id: 'profile',       label: 'Personal',      icon: User },
+  { id: 'kyc',           label: 'KYC',           icon: ShieldCheck },
+  { id: 'analytics',     label: 'Analytics',     icon: BarChart3 },
+  { id: 'earnings',      label: 'Earnings',      icon: Coins },
+  { id: 'security',      label: 'Security',      icon: Shield },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'sessions',      label: 'Sessions',      icon: Monitor },
 ];
 
 function fmt(n: number) {
@@ -72,6 +84,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const sessionPager = usePagination(sessions, 8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -243,9 +256,8 @@ export default function ProfilePage() {
     `${(profile?.first_name?.[0] ?? '').toUpperCase()}${(profile?.last_name?.[0] ?? '').toUpperCase()}` || 'U';
   const username = profile?.email ? profile.email.split('@')[0] : '';
 
-  const inputCls =
-    'w-full bg-bg-secondary border border-border-primary rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors placeholder:text-text-tertiary disabled:opacity-50 disabled:cursor-not-allowed';
-  const labelCls = 'text-xs text-text-secondary block mb-1.5 font-medium';
+  const inputCls = 'w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary transition-colors focus:border-[#E94E1B]/50 focus:outline-none disabled:opacity-60';
+  const labelCls = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-text-tertiary';
 
   const tabIndex = TABS.findIndex((t) => t.id === tab);
   const slideIndex = tabIndex >= 0 ? tabIndex : 0;
@@ -259,27 +271,16 @@ export default function ProfilePage() {
           monitors. The default shell layout (mx-auto max-w-[1600px]
           + native main scroll) gives full width across the page. */}
       <div className="space-y-5">
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card">
-            <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
-              aria-hidden
-            />
-            <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
-              <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
-              <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Profile, security, notifications, and active sessions — aligned with SwissCresta.
-              </p>
-            </div>
-          </section>
+          <ProfileHeader profile={profile} onAvatarSaved={fetchProfile} />
 
         {loading && (
-          <div className="rounded-xl border border-border-primary bg-card flex flex-col items-center gap-3 py-20">
+          <div className="rounded-[24px] bg-bg-card flex flex-col items-center gap-3 py-20">
             <div className="h-8 w-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-text-secondary">Loading settings…</span>
           </div>
         )}
         {!loading && error && (
-          <div className="rounded-xl border border-border-primary bg-card text-center space-y-3 py-12 px-4">
+          <div className="rounded-[24px] bg-bg-card text-center space-y-3 py-12 px-4">
             <p className="text-sell text-sm">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchProfile}>
               Retry
@@ -288,73 +289,49 @@ export default function ProfilePage() {
         )}
 
         {!loading && !error && (
-          <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
-            <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
-              <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                <div
-                  className="absolute top-0 h-full transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-                  /* width is derived from the tab count (not a hardcoded
-                     w-1/4) so the sliding highlight always matches the
-                     flex-1 tabs — adding/removing a tab can't desync it. */
-                  style={{ width: `${100 / TABS.length}%`, transform: `translate3d(${slideIndex * 100}%,0,0)` }}
-                >
-                  <div
-                    className={clsx(
-                      'absolute inset-x-1 top-0 h-full rounded-t-2xl border-2 border-b-0 border-accent bg-card-nested',
-                      'animate-wallet-main-tab-glow',
-                    )}
-                  />
-                </div>
+          <div className="overflow-hidden rounded-[24px] bg-bg-card">
+            <div className="p-2 sm:p-3 border-b border-border-secondary">
+              <div className="flex gap-1 overflow-x-auto rounded-2xl p-1 scrollbar-none" style={{ background: 'var(--bg-card-nested)' }}>
+                {TABS.map((t) => {
+                  const active = tab === t.id;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTab(t.id)}
+                      className={clsx(
+                        'relative flex-1 min-w-[112px] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold whitespace-nowrap outline-none transition-colors',
+                        active ? 'text-white' : 'text-text-secondary hover:text-text-primary',
+                      )}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="profile-tab-pill"
+                          className="absolute inset-0 rounded-xl bg-[#E94E1B] shadow-[0_6px_18px_rgba(233,78,27,0.35)]"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.8 }}
+                        />
+                      )}
+                      <GlossyIcon icon={Icon} size="sm" active={active} className="relative" />
+                      <span className="relative">{t.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              {TABS.map((t) => {
-                const active = tab === t.id;
-                const Icon = t.icon;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={clsx(
-                      'relative z-10 flex-1 min-w-0 border-0 bg-transparent py-3.5 px-1 sm:px-2 text-[11px] sm:text-xs font-semibold outline-none inline-flex items-center justify-center gap-1.5',
-                      'transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
-                      active ? 'text-accent' : 'text-text-secondary hover:text-text-primary',
-                    )}
-                  >
-                    <Icon size={14} className="shrink-0 opacity-90" />
-                    {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(99,102,241,0.6)] truncate">
-                        {t.label}
-                      </span>
-                    ) : (
-                      <span className="truncate">{t.label}</span>
-                    )}
-                  </button>
-                );
-              })}
             </div>
 
-            <div key={tab} className="bg-card-nested p-4 md:p-6 animate-wallet-fund-enter-lg min-h-[200px]">
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="p-4 md:p-6 min-h-[200px]"
+            >
         {/* ── Profile tab ── */}
         {tab === 'profile' && (
           <div className="w-full space-y-5">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
-              <h2 className="text-sm font-semibold text-text-primary mb-5">Profile Information</h2>
-
-              {/* Avatar row */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-xl font-bold text-accent">
-                    {initials}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">{profile?.first_name} {profile?.last_name}</p>
-                  <p className="text-xs text-text-tertiary">{profile?.email}</p>
-                  <p className={clsx('text-[10px] mt-0.5', profile?.kyc_status === 'verified' ? 'text-accent' : 'text-warning')}>
-                    {profile?.kyc_status === 'verified' ? 'Verified Account' : `KYC: ${profile?.kyc_status ?? 'not started'}`}
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-[24px] p-5 sm:p-6 border border-border-secondary">
+              <div className="mb-5 flex items-center gap-3"><GlossyIcon icon={User} /><h2 className="text-sm font-semibold text-text-primary">Personal information</h2></div>
 
               <div className="space-y-4">
                 {/* Username (read-only) */}
@@ -431,15 +408,15 @@ export default function ProfilePage() {
 
             {/* Trading Accounts section */}
             {accounts.length > 0 && (
-              <div className="rounded-xl border border-border-primary bg-card overflow-hidden noise-texture">
+              <div className="rounded-[24px] overflow-hidden border border-border-secondary">
                 <div className="px-5 py-3.5 border-b border-border-primary">
-                  <h3 className="text-sm font-semibold text-text-primary">Trading Accounts</h3>
+                  <div className="flex items-center gap-3"><GlossyIcon icon={LayoutGrid} size="sm" /><h3 className="text-sm font-semibold text-text-primary">Trading accounts</h3></div>
                 </div>
                 <ul className="divide-y divide-border-primary">
                   {accounts.map((acc) => (
                     <li key={acc.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-bg-secondary border border-border-primary flex items-center justify-center text-xs font-bold text-text-tertiary shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-[linear-gradient(160deg,#34343a,#0e0e10)] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] flex items-center justify-center text-xs font-bold text-white shrink-0">
                           {acc.is_demo ? 'D' : 'L'}
                         </div>
                         <div className="min-w-0">
@@ -472,9 +449,12 @@ export default function ProfilePage() {
         )}
 
         {/* ── Security tab ── */}
+        {tab === 'kyc' && <KycTab status={profile?.kyc_status} />}
+        {tab === 'analytics' && <AnalyticsTab />}
+        {tab === 'earnings' && <EarningsTab />}
         {tab === 'security' && (
           <div className="max-w-lg mx-auto space-y-6">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
+            <div className="rounded-[24px] p-5 sm:p-6 border border-border-secondary">
               <h3 className="text-base font-semibold text-text-primary mb-4">Change Password</h3>
               <div className="space-y-3">
                 <div>
@@ -496,7 +476,7 @@ export default function ProfilePage() {
             </div>
 
             {TWO_FA_ENABLED && (
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
+            <div className="rounded-[24px] p-5 sm:p-6 border border-border-secondary">
               <h3 className="text-base font-semibold text-text-primary mb-1">Two-Factor Authentication</h3>
               <p className="text-sm text-text-secondary mb-4">Add an extra layer of security to your account.</p>
 
@@ -555,7 +535,7 @@ export default function ProfilePage() {
             ].map((n) => (
               <div
                 key={n.key}
-                className="rounded-xl border border-border-primary bg-card px-4 py-3 flex items-center justify-between gap-3 noise-texture"
+                className="rounded-[24px] bg-bg-card px-4 py-3 flex items-center justify-between gap-3 noise-texture"
               >
                 <div className="min-w-0">
                   <div className="text-sm text-text-primary">{n.label}</div>
@@ -585,13 +565,13 @@ export default function ProfilePage() {
         {/* ── Sessions tab ── */}
         {tab === 'sessions' && (
           <div className="w-full">
-            <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
+            <div className="rounded-[24px] p-5 sm:p-6 border border-border-secondary">
               <h3 className="text-base font-semibold text-text-primary mb-4">Active Sessions</h3>
               {sessions.length === 0 ? (
                 <p className="text-sm text-text-tertiary text-center py-4">No active sessions</p>
               ) : (
                 <div className="space-y-3">
-                  {sessions.map((s) => (
+                  {sessionPager.items.map((s) => (
                     <div
                       key={s.id}
                       className="bg-bg-secondary border border-border-primary rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap"
@@ -607,12 +587,13 @@ export default function ProfilePage() {
                       </Button>
                     </div>
                   ))}
+                  <Pagination {...sessionPager.props} itemLabel="sessions" />
                 </div>
               )}
             </div>
           </div>
         )}
-            </div>
+            </motion.div>
           </div>
         )}
 

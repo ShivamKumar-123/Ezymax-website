@@ -21,24 +21,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Bell,
   Bitcoin,
   Bot,
   ChevronDown,
   Copy,
-  FileText,
   Home,
   LayoutGrid,
-  LineChart,
   Menu,
-  MoreHorizontal,
-  Newspaper,
-  Plug,
-  Receipt,
-  ShieldCheck,
+  Moon,
   Settings,
-  Smartphone,
+  Sun,
   TrendingUp,
+  User,
   Users,
   Wallet,
   X,
@@ -46,8 +40,30 @@ import {
 } from 'lucide-react';
 import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useWarmTheme } from '@/stores/warmThemeStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { cn } from '@/lib/utils';
+import DockNav, { type DockItemSpec } from '@/components/layout/DockNav';
+
+/** Sun/moon toggle for the warm theme's dark variant. */
+function ThemeToggle({ className }: { className?: string }) {
+  const dark = useWarmTheme((s) => s.dark);
+  const toggle = useWarmTheme((s) => s.toggle);
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={dark ? 'Light theme' : 'Dark theme'}
+      className={cn(
+        'flex h-10 w-10 items-center justify-center rounded-full bg-crx-pill border border-border-primary backdrop-blur text-text-primary hover:bg-bg-hover transition-colors',
+        className,
+      )}
+    >
+      {dark ? <Sun size={16} strokeWidth={1.9} /> : <Moon size={16} strokeWidth={1.9} />}
+    </button>
+  );
+}
 
 type NavItem = {
   label: string;
@@ -56,6 +72,8 @@ type NavItem = {
   isNew?: boolean;
   /** Anchor id for the first-login feature tour (data-tour="…"). */
   tourKey?: string;
+  /** Route prefix that should light this item up (defaults to `href`). */
+  match?: string;
   /** When present, the item renders as a hover dropdown instead of a
    *  plain link (the `href` then points at the first/default child). */
   children?: readonly NavItem[];
@@ -63,9 +81,6 @@ type NavItem = {
    *  so the browser saves the file instead of the router trying to navigate. */
   download?: boolean;
 };
-
-/** Android APK served by nginx from /opt/swisscresta/downloads on the host. */
-const APK_DOWNLOAD_PATH = '/downloads/SwissCresta.apk';
 
 /** Primary horizontal nav items (visible on lg+). */
 const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
@@ -83,25 +98,20 @@ const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
     ],
   },
   { label: 'Affiliates', href: '/business', icon: Users, tourKey: 'affiliates' },
-  { label: 'AI Strategies', href: '/ai-strategies', icon: Bot, isNew: true },
+  // Opens the builder (chat) directly — the saved-strategies list stays
+  // reachable from the builder's "All strategies" link.
+  { label: 'AI Strategies', href: '/ai-strategies/new', match: '/ai-strategies', icon: Bot, isNew: true },
 ];
 
-/** Secondary nav items (live under the "More" dropdown on lg+). */
-const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
-  { label: 'Trade', href: '/trading', icon: LineChart },
-  { label: 'Portfolio', href: '/portfolio', icon: Receipt },
-  { label: 'Economic News', href: '/news', icon: Newspaper },
-  { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },
-  { label: 'Algo Connector', href: '/algo-connector', icon: Plug, isNew: true },
-  { label: 'KYC', href: '/kyc', icon: ShieldCheck },
-  { label: 'Terms', href: '/terms', icon: FileText },
-  { label: 'Download Android App', href: APK_DOWNLOAD_PATH, icon: Smartphone, isNew: true, download: true },
+/** Dock order (lg+): primary items, then Profile — identical to the old pill. */
+const DOCK_ITEMS: readonly DockItemSpec[] = [
+  ...PRIMARY_ITEMS,
+  { label: 'Profile', href: '/profile', icon: User },
 ];
 
 /** Flattened list — used by the mobile drawer (expands dropdown children). */
 const ALL_NAV: readonly NavItem[] = [
   ...PRIMARY_ITEMS.flatMap((i) => (i.children ? [...i.children] : [i])),
-  ...MORE_ITEMS,
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -112,7 +122,7 @@ function isActive(pathname: string, href: string): boolean {
 
 function NewBadge() {
   return (
-    <span className="ml-1.5 inline-flex items-center rounded-full bg-[#E94E1B] px-1.5 py-[1px] text-[10px] font-semibold uppercase leading-none text-white">
+    <span className="ml-1.5 inline-flex items-center rounded-full bg-crx-yellow px-1.5 py-[1px] text-[10px] font-semibold uppercase leading-none text-white">
       NEW
     </span>
   );
@@ -124,10 +134,8 @@ export default function AppNavbar() {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useShellStore();
 
-  const [moreOpen, setMoreOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const moreRef = useRef<HTMLDivElement | null>(null);
   const userRef = useRef<HTMLDivElement | null>(null);
 
   // Reuse `sidebarOpen` from shellStore as the mobile drawer flag —
@@ -139,6 +147,11 @@ export default function AppNavbar() {
     if (user?.first_name) return [user.first_name, user.last_name].filter(Boolean).join(' ');
     if (user?.email) return user.email.split('@')[0] ?? 'Trader';
     return 'Trader';
+  }, [user]);
+
+  const avatarSrc = useMemo(() => {
+    const a = (user as { avatar?: string | null } | null)?.avatar;
+    return a && (a.startsWith('data:') || a.startsWith('http') || a.startsWith('/')) ? a : null;
   }, [user]);
 
   const initials = useMemo(() => {
@@ -153,12 +166,11 @@ export default function AppNavbar() {
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (moreRef.current && !moreRef.current.contains(t)) setMoreOpen(false);
       if (userRef.current && !userRef.current.contains(t)) setUserMenuOpen(false);
     };
-    if (moreOpen || userMenuOpen) document.addEventListener('mousedown', onDown);
+    if (userMenuOpen) document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [moreOpen, userMenuOpen]);
+  }, [userMenuOpen]);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -174,152 +186,34 @@ export default function AppNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#E5E5E5] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-[60px] max-w-[1400px] items-center px-4 lg:px-6">
-        {/* LEFT — Logo (same PNG as the marketing navbar) */}
-        <Link href="/dashboard" className="flex items-center shrink-0" aria-label="SwissCresta home">
+    <header className="sticky top-0 z-50 bg-transparent">
+      <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-3 px-4 lg:px-6">
+        {/* LEFT — Logo, plain on the canvas (no pill/card) */}
+        <Link
+          href="/dashboard"
+          className="flex items-center shrink-0"
+          aria-label="SwissCresta home"
+        >
+          {/* Icon-only mark — the red square reads correctly on both the
+              cream and the Vantablack canvas (no invert hack needed). */}
           <Image
-            src="/marketing/swisscresta-logo.png"
+            src="/marketing/swisscresta_fevicon.png"
             alt="SwissCresta"
-            width={200}
+            width={44}
             height={44}
             priority
-            className="h-9 w-auto"
+            className="h-9 w-9 rounded-xl"
           />
         </Link>
 
-        {/* CENTER — Primary nav (lg+) */}
-        <nav className="hidden lg:flex items-center gap-1 ml-8">
-          {PRIMARY_ITEMS.map((item) => {
-            // Hover dropdown (e.g. Social → Copy Trading / PAMM)
-            if (item.children) {
-              const groupActive = item.children.some((c) => isActive(pathname, c.href));
-              return (
-                <div key={item.label} className="relative group">
-                  <button
-                    type="button"
-                    data-tour={item.tourKey}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
-                      groupActive ? 'bg-[#FCE6DD] text-[#E94E1B]' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                    )}
-                    aria-haspopup="menu"
-                  >
-                    <span>{item.label}</span>
-                    <ChevronDown size={14} className="transition-transform group-hover:rotate-180" />
-                  </button>
-                  {/* pt-2 keeps a hover bridge so the menu doesn't close in the gap */}
-                  <div className="absolute left-0 top-full pt-2 hidden group-hover:block">
-                    <div className="min-w-[200px] rounded-xl border border-[#E5E5E5] bg-white p-1.5 shadow-xl ring-1 ring-black/5">
-                      {item.children.map((child) => {
-                        const childActive = isActive(pathname, child.href);
-                        const ChildIcon = child.icon;
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            prefetch={false}
-                            className={cn(
-                              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                              childActive ? 'bg-[#FCE6DD] text-[#E94E1B]' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                            )}
-                          >
-                            <ChildIcon size={16} strokeWidth={1.9} />
-                            <span>{child.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            const active = isActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                prefetch={false}
-                data-tour={item.tourKey}
-                className={cn(
-                  'inline-flex items-center rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
-                  active
-                    ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                    : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                )}
-              >
-                <span>{item.label}</span>
-                {item.isNew && <NewBadge />}
-              </Link>
-            );
-          })}
-
-          {/* MORE dropdown */}
-          <div className="relative" ref={moreRef}>
-            <button
-              type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
-                MORE_ITEMS.some((i) => isActive(pathname, i.href))
-                  ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                  : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-              )}
-              aria-haspopup="menu"
-              aria-expanded={moreOpen}
-            >
-              <MoreHorizontal size={16} strokeWidth={2} />
-              <span>More</span>
-            </button>
-            {moreOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full mt-2 w-[520px] rounded-2xl border border-[#E5E5E5] bg-white p-3 shadow-xl ring-1 ring-black/5"
-              >
-                <div className="grid grid-cols-2 gap-1">
-                  {MORE_ITEMS.map((item) => {
-                    const active = isActive(pathname, item.href);
-                    const Icon = item.icon;
-                    const rowCls = cn(
-                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                      active
-                        ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                        : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                    );
-                    const inner = (
-                      <>
-                        <span
-                          className={cn(
-                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                            active ? 'bg-[#E94E1B] text-white' : 'bg-[#F5F5F5] text-[#0A0A0A]',
-                          )}
-                        >
-                          <Icon size={17} strokeWidth={1.9} />
-                        </span>
-                        <span className="truncate">{item.label}</span>
-                        {item.isNew && <NewBadge />}
-                      </>
-                    );
-                    // File downloads bypass the Next router — a plain anchor
-                    // lets the browser save the file (APK) directly.
-                    return item.download ? (
-                      <a key={item.href} href={item.href} download onClick={() => setMoreOpen(false)} className={rowCls}>
-                        {inner}
-                      </a>
-                    ) : (
-                      <Link key={item.href} href={item.href} prefetch={false} onClick={() => setMoreOpen(false)} className={rowCls}>
-                        {inner}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </nav>
-
-        {/* SPACER */}
-        <div className="flex-1" />
+        {/* CENTER — Primary nav as a floating dock (lg+). Same slot/order as
+            before; Profile rides along as the last dock item. */}
+        <DockNav
+          items={DOCK_ITEMS}
+          pathname={pathname}
+          isActive={isActive}
+          className="hidden lg:flex ml-auto"
+        />
 
         {/* RIGHT — actions (lg+) */}
         <div className="hidden lg:flex items-center gap-2">
@@ -331,8 +225,8 @@ export default function AppNavbar() {
             <>
               <Link
                 href="/wallet"
-                prefetch={false}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-2.5 py-1 text-[12px] font-medium text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+               
+                className="inline-flex items-center gap-1.5 rounded-full border border-border-primary bg-crx-pill backdrop-blur px-3 py-2 text-[12px] font-medium text-text-primary hover:bg-bg-hover transition-colors"
                 aria-label="Crypto deposit"
               >
                 <Bitcoin size={14} className="text-[#F7931A]" />
@@ -341,17 +235,18 @@ export default function AppNavbar() {
 
               <Link
                 href="/wallet"
-                prefetch={false}
+               
                 data-tour="deposit"
-                className="inline-flex items-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-[#222] transition-colors"
+                className="inline-flex items-center rounded-full bg-crx-charcoal px-4 py-2 text-[13px] font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover transition-colors"
               >
                 Deposit
               </Link>
             </>
           )}
 
-          {/* Notifications */}
-          <div className="text-[#0A0A0A]">
+          {/* Theme toggle + notifications */}
+          <ThemeToggle />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-crx-pill border border-border-primary backdrop-blur text-text-primary">
             <NotificationBell />
           </div>
 
@@ -360,52 +255,57 @@ export default function AppNavbar() {
             <button
               type="button"
               onClick={() => setUserMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full p-0.5 hover:bg-[#F5F5F5] transition-colors"
+              className="flex items-center gap-1 rounded-full bg-crx-pill border border-border-primary backdrop-blur p-1 hover:bg-bg-hover transition-colors"
               aria-haspopup="menu"
               aria-expanded={userMenuOpen}
             >
-              <div className="h-8 w-8 rounded-full bg-[#FCE6DD] border border-[#E94E1B]/30 flex items-center justify-center text-[12px] font-bold uppercase text-[#E94E1B]">
-                {initials}
-              </div>
-              <ChevronDown size={14} className="text-[#5B5B5B] mr-1" />
+              {avatarSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarSrc} alt="" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-crx-yellow flex items-center justify-center text-[12px] font-semibold uppercase text-white">
+                  {initials}
+                </div>
+              )}
+              <ChevronDown size={14} className="text-text-secondary mr-1" />
             </button>
 
             {userMenuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-2 w-[220px] rounded-xl border border-[#E5E5E5] bg-white py-1 shadow-lg"
+                className="absolute right-0 top-full mt-2 w-[220px] rounded-2xl border border-border-primary bg-bg-glass-heavy backdrop-blur py-1 shadow-lg"
               >
-                <div className="px-3 pt-2 pb-2 border-b border-[#EDEDED] mb-1">
-                  <div className="text-[13px] font-semibold text-[#0A0A0A] truncate">{handle}</div>
+                <div className="px-3 pt-2 pb-2 border-b border-border-secondary mb-1">
+                  <div className="text-[13px] font-semibold text-text-primary truncate">{handle}</div>
                   {user?.email && (
-                    <div className="text-[11.5px] text-[#9A9A9A] truncate">{user.email}</div>
+                    <div className="text-[11.5px] text-text-tertiary truncate">{user.email}</div>
                   )}
                 </div>
                 <Link
                   href="/profile"
-                  prefetch={false}
+                 
                   onClick={() => setUserMenuOpen(false)}
-                  className="block px-3 py-2 text-[13px] text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+                  className="block px-3 py-2 text-[13px] text-text-primary hover:bg-bg-hover transition-colors"
                 >
                   Profile &amp; Settings
                 </Link>
                 <Link
                   href="/wallet"
-                  prefetch={false}
+                 
                   onClick={() => setUserMenuOpen(false)}
-                  className="block px-3 py-2 text-[13px] text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+                  className="block px-3 py-2 text-[13px] text-text-primary hover:bg-bg-hover transition-colors"
                 >
                   Wallet
                 </Link>
                 <Link
                   href="/kyc"
-                  prefetch={false}
+                 
                   onClick={() => setUserMenuOpen(false)}
-                  className="block px-3 py-2 text-[13px] text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+                  className="block px-3 py-2 text-[13px] text-text-primary hover:bg-bg-hover transition-colors"
                 >
                   KYC Verification
                 </Link>
-                <div className="border-t border-[#EDEDED] my-1" />
+                <div className="border-t border-border-secondary my-1" />
                 <button
                   type="button"
                   onClick={onSignOut}
@@ -419,23 +319,24 @@ export default function AppNavbar() {
         </div>
 
         {/* RIGHT — mobile (lg-) */}
-        <div className="flex lg:hidden items-center gap-1">
+        <div className="flex lg:hidden items-center gap-1 ml-auto">
+          <ThemeToggle className="h-9 w-9" />
           {!user?.is_demo && (
             <Link
               href="/wallet"
-              prefetch={false}
-              className="inline-flex items-center rounded-full bg-[#0A0A0A] px-3 py-1.5 text-[12px] font-semibold text-white"
+             
+              className="inline-flex items-center rounded-full bg-crx-charcoal px-3 py-1.5 text-[12px] font-semibold text-crx-charcoal-ink"
             >
               Deposit
             </Link>
           )}
-          <div className="text-[#0A0A0A]">
+          <div className="text-text-primary">
             <NotificationBell />
           </div>
           <button
             type="button"
             onClick={() => setSidebarOpen(!mobileOpen)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#0A0A0A] hover:bg-[#F5F5F5]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-primary hover:bg-bg-hover"
             aria-label="Open menu"
             aria-expanded={mobileOpen}
           >
@@ -452,16 +353,16 @@ export default function AppNavbar() {
             aria-hidden
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="fixed left-0 right-0 top-[60px] z-50 max-h-[calc(100dvh-60px)] overflow-y-auto border-b border-[#E5E5E5] bg-white lg:hidden">
+          <div className="fixed left-0 right-0 top-[60px] z-50 max-h-[calc(100dvh-60px)] overflow-y-auto border-b border-border-primary bg-bg-glass-heavy backdrop-blur lg:hidden">
             <nav className="px-3 py-3">
               {ALL_NAV.map((item) => {
-                const active = isActive(pathname, item.href);
+                const active = isActive(pathname, item.match ?? item.href);
                 const Icon = item.icon;
                 const rowCls = cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors',
                   active
-                    ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                    : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                    ? 'bg-crx-yellow-soft text-text-primary'
+                    : 'text-text-primary hover:bg-bg-hover',
                 );
                 const inner = (
                   <>
@@ -475,17 +376,17 @@ export default function AppNavbar() {
                     {inner}
                   </a>
                 ) : (
-                  <Link key={item.href} href={item.href} prefetch={false} onClick={() => setSidebarOpen(false)} className={rowCls}>
+                  <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className={rowCls}>
                     {inner}
                   </Link>
                 );
               })}
-              <div className="my-3 h-px bg-[#EDEDED]" />
+              <div className="my-3 h-px bg-border-secondary" />
               <Link
                 href="/profile"
-                prefetch={false}
+               
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-[#0A0A0A] hover:bg-[#F5F5F5]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-text-primary hover:bg-bg-hover"
               >
                 <Settings size={18} strokeWidth={1.85} />
                 <span>Profile &amp; Settings</span>

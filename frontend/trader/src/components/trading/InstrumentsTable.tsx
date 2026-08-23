@@ -361,7 +361,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                 type="button"
                 onClick={() => handleRowClick(symbol)}
                 className={clsx(
-                  'w-full grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2.5 text-left border-b border-border-primary transition-colors items-center',
+                  'w-full grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-1.5 text-left border-b border-border-secondary transition-colors items-center',
                   sel
                     ? 'bg-accent/[0.06] border-l-[3px] border-l-accent pl-[9px]'
                     : 'border-l-[3px] border-l-transparent hover:bg-bg-hover',
@@ -382,19 +382,24 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   >
                     <Star className="w-3 h-3" fill={isStarred ? 'currentColor' : 'none'} />
                   </span>
-                  <SymbolIcon symbol={symbol} size={20} />
-                  <span className="text-[13px] font-bold text-text-primary font-mono truncate">{symbol}</span>
+                  <span
+                    className={clsx(
+                      'w-2.5 shrink-0 text-[10px] leading-none',
+                      bFlash === 'up' ? 'text-buy' : bFlash === 'down' ? 'text-sell' : 'text-text-tertiary',
+                    )}
+                    aria-hidden
+                  >
+                    {bFlash === 'up' ? '\u25B2' : bFlash === 'down' ? '\u25BC' : '\u2022'}
+                  </span>
+                  <SymbolIcon symbol={symbol} size={16} />
+                  <span className="text-[13px] font-semibold text-text-primary font-mono truncate">{symbol}</span>
                 </div>
 
                 {/* Bid */}
                 <div
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
-                    bFlash === 'up'
-                      ? 'text-[#6366F1]'
-                      : bFlash === 'down'
-                        ? 'text-[#ef5350]'
-                        : 'text-[#6366F1]',
+                    bFlash === 'up' ? 'text-buy' : bFlash === 'down' ? 'text-sell' : 'text-text-primary',
                   )}
                 >
                   {tick ? tick.bid.toFixed(digits) : '—'}
@@ -404,11 +409,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                 <div
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
-                    aFlash === 'up'
-                      ? 'text-[#6366F1]'
-                      : aFlash === 'down'
-                        ? 'text-[#ef5350]'
-                        : 'text-[#6366F1]',
+                    aFlash === 'up' ? 'text-buy' : aFlash === 'down' ? 'text-sell' : 'text-text-primary',
                   )}
                 >
                   {tick ? tick.ask.toFixed(digits) : '—'}

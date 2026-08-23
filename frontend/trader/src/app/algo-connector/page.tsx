@@ -143,10 +143,10 @@ export default function AlgoConnectorPage() {
               Generate API credentials for any trading account and connect your algorithmic trading bot.
             </p>
             <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E94E1B]/20 bg-white/70 px-3 py-1 text-xs font-semibold text-[#C73E11]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E94E1B]/20 bg-bg-card/70 px-3 py-1 text-xs font-semibold text-[#C73E11]">
                 <Key size={12} /> {accounts.length} account{accounts.length === 1 ? '' : 's'}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/25 bg-white/70 px-3 py-1 text-xs font-semibold text-green-600">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/25 bg-bg-card/70 px-3 py-1 text-xs font-semibold text-green-600">
                 <Radio size={12} /> {connectedKeys.length} connected
               </span>
             </div>

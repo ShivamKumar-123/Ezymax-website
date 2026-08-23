@@ -24,7 +24,7 @@ export default function RuleCard({ dsl, className }: { dsl: StrategyDsl; classNa
           <div key={s.title} className="rounded-lg border border-border-primary bg-card px-3 py-2.5">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wide text-text-tertiary">{s.title}</p>
-              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#FCE6DD] text-[#E94E1B]">
+              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-crx-yellow-soft text-[#E94E1B]">
                 {s.join === 'ALL' ? 'All must match' : 'Any can match'}
               </span>
             </div>

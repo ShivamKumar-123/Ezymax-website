@@ -236,14 +236,18 @@ function PortfolioPageContent() {
     router.replace(qs ? `/portfolio?${qs}` : '/portfolio', { scroll: false });
   };
 
+  // Accept both `account_id` (canonical) and the shorter `account` that the
+  // account cards / terminal links use.
   const validAccountId = useMemo(() => {
-    return parseAccountId(new URLSearchParams(queryKey).get('account_id'));
+    const q = new URLSearchParams(queryKey);
+    return parseAccountId(q.get('account_id') ?? q.get('account'));
   }, [queryKey]);
 
   const accountNoLabel = useMemo(() => {
     const v = new URLSearchParams(queryKey).get('account_no');
-    return v?.trim() ? v.trim() : '';
-  }, [queryKey]);
+    if (v?.trim()) return v.trim();
+    return accountOptions.find((a) => a.id === validAccountId)?.account_number ?? '';
+  }, [queryKey, accountOptions, validAccountId]);
 
   // Portfolio is now always all-time. The timeframe selector was removed
   // from the UI per client direction — `tf` stays as a const reference so
@@ -465,7 +469,7 @@ function PortfolioPageContent() {
 
 
 
-  const rawAccountParam = useMemo(() => new URLSearchParams(queryKey).get('account_id'), [queryKey]);
+  const rawAccountParam = useMemo(() => { const q = new URLSearchParams(queryKey); return q.get('account_id') ?? q.get('account'); }, [queryKey]);
 
   const invalidAccountParam = Boolean(rawAccountParam && !validAccountId);
 
@@ -587,54 +591,49 @@ function PortfolioPageContent() {
       <div className="page-main space-y-4 sm:space-y-6 text-text-primary">
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-text-primary">
-            {validAccountId ? 'Trading journal' : 'Portfolio'}
-          </h2>
+          <div>
+            <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-tight text-text-primary">Portfolio</h2>
+            <p className="mt-0.5 text-sm text-text-secondary">
+              {validAccountId
+                ? `Account ${accountNoLabel ? `#${accountNoLabel}` : validAccountId.slice(0, 8) + '…'} — equity, journal and trade history`
+                : 'All accounts combined — equity, journal and trade history'}
+            </p>
+          </div>
           {accountOptions.length > 0 && (
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Account</span>
-              <select
-                value={validAccountId ?? ''}
-                onChange={(e) => onPickAccount(e.target.value)}
-                className="rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-sm font-medium text-text-primary outline-none focus:border-[#E94E1B] cursor-pointer"
-                aria-label="Filter by trading account"
-              >
-                <option value="">All accounts</option>
-                {accountOptions.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.is_demo ? 'Demo' : 'Live'} {a.account_number || a.id.slice(0, 8)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Portfolio scope">
+              {[{ id: '', label: 'All accounts', is_demo: false }, ...accountOptions.map((a) => ({ id: a.id, label: a.account_number || a.id.slice(0, 8), is_demo: a.is_demo }))].map((opt) => {
+                const active = (validAccountId ?? '') === opt.id;
+                return (
+                  <button
+                    key={opt.id || 'all'}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => onPickAccount(opt.id)}
+                    className={clsx(
+                      'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors',
+                      active
+                        ? 'border-crx-charcoal bg-crx-charcoal text-crx-charcoal-ink'
+                        : 'border-border-primary bg-crx-pill text-text-secondary hover:text-text-primary hover:bg-bg-hover',
+                    )}
+                  >
+                    {opt.id ? (
+                      <span className={clsx('rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider', active ? 'bg-white/15 text-current' : opt.is_demo ? 'bg-amber-500/15 text-amber-600' : 'bg-[#E94E1B]/12 text-[#C73E11]')}>
+                        {opt.is_demo ? 'Demo' : 'Live'}
+                      </span>
+                    ) : null}
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
-
         {invalidAccountParam ? (
           <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-text-primary">
             Invalid account id in the URL — showing your full portfolio.{' '}
             <Link href="/portfolio" className="font-semibold text-[#E94E1B] underline underline-offset-2 hover:text-[#C73E11]">
               Reset
-            </Link>
-          </div>
-        ) : null}
-
-        {validAccountId ? (
-          <div className="rounded-xl border border-[#E94E1B]/30 bg-[#E94E1B]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E94E1B]">Account scope</p>
-              <p className="text-sm text-text-primary mt-0.5">
-                Journal and trade list for{' '}
-                <span className="font-mono font-semibold">
-                  {accountNoLabel ? `#${accountNoLabel}` : validAccountId.slice(0, 8) + '…'}
-                </span>
-              </p>
-            </div>
-            <Link
-              href="/portfolio"
-              className="text-xs font-semibold text-[#E94E1B] hover:text-[#C73E11] underline underline-offset-2 shrink-0"
-            >
-              View all accounts
             </Link>
           </div>
         ) : null}
@@ -656,7 +655,7 @@ function PortfolioPageContent() {
 
         {tab === 'overview' && (
 
-          <div className="rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden">
+          <div className="rounded-2xl border border-border-primary bg-bg-card overflow-hidden">
 
             {/* Mobile card layout */}
             <div className="md:hidden p-2 space-y-2">
@@ -796,7 +795,7 @@ function PortfolioPageContent() {
 
           <>
 
-            <div className="rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden">
+            <div className="rounded-2xl border border-border-primary bg-bg-card overflow-hidden">
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-b border-border-glass">
 

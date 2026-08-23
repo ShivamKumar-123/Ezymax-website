@@ -79,6 +79,11 @@ export interface AiStrategySummary {
   created_at: string;
   updated_at: string;
   running_instances: number;
+  /** From the latest backtest (null when never backtested). */
+  latest_return_pct?: number | null;
+  latest_win_rate?: number | null;
+  latest_total_trades?: number | null;
+  latest_backtest_at?: string | null;
 }
 
 export interface BacktestStats {

@@ -11,12 +11,11 @@ import {
   ArrowLeftRight,
   Trash2,
   Settings,
-  LayoutGrid,
-  List as ListIcon,
   Wallet,
   ArrowDownToLine,
   TrendingUp,
   Users,
+  PieChart,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
@@ -29,7 +28,9 @@ import {
   tradingTerminalUrl,
 } from '@/lib/tradingNav';
 import Modal from '@/components/ui/Modal';
+import BrandCard, { useBrandTone } from '@/components/ui/BrandCard';
 import AccountTypePickerModal from '@/components/accounts/AccountTypePickerModal';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 const ALIAS_PREFIX = 'ptd-account-alias:';
 
@@ -94,7 +95,6 @@ function toTradingAccount(row: AccountRow): TradingAccount {
 }
 
 type AccountKindFilter = 'all' | 'live' | 'demo';
-type ViewMode = 'grid' | 'list';
 
 export default function AccountsPage() {
   const router = useRouter();
@@ -106,7 +106,6 @@ export default function AccountsPage() {
   /* New filter state for the Vantage-style header row. */
   const [kindFilter, setKindFilter] = useState<AccountKindFilter>('live');
   const [groupFilter, setGroupFilter] = useState<string>('all'); // 'all' or AccountGroupInfo.id
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [rows, setRows] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +229,7 @@ export default function AccountsPage() {
       return true;
     });
   }, [rows, user?.is_demo, kindFilter, groupFilter]);
+  const rowPager = usePagination(visibleRows, 6);
 
   /* Distinct account groups present in the loaded data — drives the
      "All" dropdown. Only populated when group data is on the rows. */
@@ -258,8 +258,6 @@ export default function AccountsPage() {
     if (getPersistedTradingAccountId() === id) setPersistedTradingAccountId(null);
   };
 
-  const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#E94E1B] text-[#E94E1B] text-sm font-bold hover:bg-[#E94E1B]/10 transition-colors shrink-0';
 
   /** Live account creation no longer gates on KYC — the only KYC gate left is
    *  on Razorpay (Card / UPI) deposits. Everything else (open account, trade,
@@ -353,12 +351,22 @@ export default function AccountsPage() {
                 )}
                 <div className="flex-1" />
 
+                {/* Overall portfolio — every account combined (equity, P&L,
+                    journal, trade history). Per-account views live on each card. */}
+                <Link
+                  href="/portfolio"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border-primary bg-crx-pill px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
+                >
+                  <PieChart size={15} />
+                  Overall portfolio
+                </Link>
+
                 {/* Open Account — solid black pill that opens AccountTypePickerModal */}
                 {user?.is_demo ? (
                   <button
                     type="button"
                     onClick={() => setDemoUpgradeOpen(true)}
-                    className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
+                    className="inline-flex items-center justify-center rounded-full bg-crx-charcoal px-5 py-2 text-sm font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover transition-colors"
                   >
                     Open Account
                   </button>
@@ -366,41 +374,13 @@ export default function AccountsPage() {
                   <button
                     type="button"
                     onClick={handleOpenNewAccount}
-                    className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
+                    className="inline-flex items-center justify-center rounded-full bg-crx-charcoal px-5 py-2 text-sm font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover transition-colors"
                   >
                     Open Account
                   </button>
                 )}
 
-                {/* Grid / List view toggle */}
-                <div className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E5] bg-white p-1">
-                  <button
-                    type="button"
-                    aria-label="Grid view"
-                    onClick={() => setViewMode('grid')}
-                    className={clsx(
-                      'p-1.5 rounded-full transition-colors',
-                      viewMode === 'grid'
-                        ? 'bg-white text-[#0A0A0A] shadow-sm'
-                        : 'text-[#9CA3AF] hover:text-[#0A0A0A]',
-                    )}
-                  >
-                    <LayoutGrid size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="List view"
-                    onClick={() => setViewMode('list')}
-                    className={clsx(
-                      'p-1.5 rounded-full transition-colors',
-                      viewMode === 'list'
-                        ? 'bg-white text-[#0A0A0A] shadow-sm'
-                        : 'text-[#9CA3AF] hover:text-[#0A0A0A]',
-                    )}
-                  >
-                    <ListIcon size={16} />
-                  </button>
-                </div>
+
               </div>
 
               {loading && (
@@ -420,7 +400,7 @@ export default function AccountsPage() {
               )}
 
               {!loading && !error && visibleRows.length === 0 && (
-                <div className="rounded-2xl border border-[#E5E5E5] bg-white p-8 text-center">
+                <div className="rounded-2xl border border-border-primary bg-bg-card p-8 text-center">
                   <p className="text-sm text-text-secondary">
                     {user?.is_demo
                       ? 'No demo trading account is linked yet.'
@@ -433,12 +413,10 @@ export default function AccountsPage() {
                 <div
                   className={clsx(
                     'grid gap-5',
-                    viewMode === 'grid'
-                      ? 'grid-cols-1 md:grid-cols-2'
-                      : 'grid-cols-1',
+                    'grid-cols-1 md:grid-cols-2',
                   )}
                 >
-                  {visibleRows.map((row) => (
+                  {rowPager.items.map((row) => (
                     <AccountCard
                       key={row.id}
                       row={row}
@@ -452,10 +430,11 @@ export default function AccountsPage() {
                     />
                   ))}
 
-                  {/* Join Copy Trading promo — full width across the grid */}
-                  <JoinCopyTradingCard onStart={() => router.push('/social')} />
+                  {/* Build-with-AI card — full width across the grid */}
+                  <BuildStrategyCard onStart={() => router.push('/ai-strategies/new')} />
                 </div>
               )}
+              <Pagination {...rowPager.props} pageSizes={[6, 12, 24]} itemLabel="accounts" />
             </div>
           </div>
       </div>
@@ -511,17 +490,17 @@ function FilterDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={clsx(
-          'inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-medium text-[#0A0A0A] hover:border-[#0A0A0A] transition-colors',
-          disabled && 'opacity-60 cursor-not-allowed hover:border-[#E5E5E5]',
+          'inline-flex items-center gap-2 rounded-full border border-border-primary bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-text-tertiary transition-colors',
+          disabled && 'opacity-60 cursor-not-allowed hover:border-border-primary',
         )}
       >
         <span>{label}</span>
-        <ChevronDown size={14} className={clsx('text-[#6B7280] transition-transform', open && 'rotate-180')} />
+        <ChevronDown size={14} className={clsx('text-text-tertiary transition-transform', open && 'rotate-180')} />
       </button>
       {open && !disabled && (
         <ul
           role="listbox"
-          className="absolute left-0 top-full z-50 mt-2 min-w-[160px] overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-lg ring-1 ring-black/5"
+          className="absolute left-0 top-full z-50 mt-2 min-w-[160px] overflow-hidden rounded-xl border border-border-primary bg-bg-card shadow-lg ring-1 ring-black/5"
         >
           {options.map((o) => {
             const selected = o.id === value;
@@ -534,8 +513,8 @@ function FilterDropdown({
                     setOpen(false);
                   }}
                   className={clsx(
-                    'block w-full px-4 py-2 text-left text-sm hover:bg-[#F5F5F5] transition-colors',
-                    selected ? 'bg-[#F5F5F5] font-semibold text-[#0A0A0A]' : 'text-[#0A0A0A]',
+                    'block w-full px-4 py-2 text-left text-sm hover:bg-bg-input transition-colors',
+                    selected ? 'bg-bg-input font-semibold text-text-primary' : 'text-text-primary',
                   )}
                 >
                   {o.label}
@@ -550,57 +529,73 @@ function FilterDropdown({
 }
 
 /* ----------------------------------------------------------------------------
-   Join Copy Trading promo card � spans both columns at md+.
-   Click "Start Copying" ? routes to /social (where the copy-trading UI lives).
-   The inline SVG line is intentionally minimal so it stays performant and
-   doesn't pull in image assets.
+   "Build your strategy with AI" card — spans both columns at md+. Dual-tone
+   (Vantablack shell, orange accents) with the Claude mark; routes to the
+   AI Strategy Maker. Replaces the old Join-Copy-Trading promo.
    ------------------------------------------------------------------------ */
-function JoinCopyTradingCard({ onStart }: { onStart: () => void }) {
+function ClaudeMark({ className }: { className?: string }) {
+  // Stylised Claude starburst mark (12 rounded spokes).
   return (
-    <div className="md:col-span-2 relative overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white p-6">
-      <div className="relative z-[1] flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-md">
-          <h3 className="text-lg font-bold tracking-tight text-[#0A0A0A]">Join Copy Trading</h3>
-          <p className="mt-2 text-sm leading-relaxed text-[#4B5563]">
-            More than <span className="font-semibold text-emerald-600">50,000+ Copiers</span>
-            <br />
-            Trade like a master and earn by copying professional investors
-          </p>
+    <svg viewBox="0 0 48 48" className={className} aria-hidden>
+      {Array.from({ length: 12 }, (_, i) => (
+        <rect
+          key={i}
+          x={22}
+          y={4}
+          width={4}
+          height={15}
+          rx={2}
+          fill="currentColor"
+          transform={`rotate(${i * 30} 24 24)`}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function BuildStrategyCard({ onStart }: { onStart: () => void }) {
+  const t = useBrandTone();
+  return (
+    <div
+      className={clsx(
+        'md:col-span-2 relative overflow-hidden rounded-[24px] p-6',
+        t.dark
+          ? 'bg-black text-white ring-1 ring-white/10 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.9)]'
+          : 'bg-white text-text-primary ring-1 ring-black/[0.06] shadow-[0_14px_36px_-18px_rgba(0,0,0,0.22)]',
+      )}
+    >
+      {/* soft orange glow behind the mark */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#E94E1B]/25 blur-3xl"
+      />
+      <div className="relative z-[1] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E94E1B] text-white">
+            <ClaudeMark className="h-8 w-8" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-bold tracking-tight">Build your strategy with AI</h3>
+              <span className={clsx('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', t.dark ? 'bg-white/10 text-white/80' : 'bg-[#E94E1B]/10 text-[#C73E11]')}>
+                <ClaudeMark className={clsx('h-3 w-3', t.dark ? 'text-[#F7A17F]' : 'text-[#E94E1B]')} /> Powered by Claude
+              </span>
+            </div>
+            <p className={clsx('mt-1.5 max-w-xl text-sm leading-relaxed', t.muted)}>
+              Describe a strategy in plain language — get rules you can inspect, backtest on real data,
+              and deploy to any of your accounts in minutes.
+            </p>
+          </div>
         </div>
         <button
           type="button"
           onClick={onStart}
-          className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors shrink-0"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#E94E1B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#C73E11] transition-colors"
         >
-          Start Copying
+          Build with AI
+          <span aria-hidden>→</span>
         </button>
       </div>
-      {/* Faded background trend graph � purely decorative */}
-      <svg
-        className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-1/2 opacity-30 md:block"
-        viewBox="0 0 400 160"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="copy-trend-fade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M0,120 L40,110 L80,115 L120,90 L160,95 L200,70 L240,80 L280,55 L320,60 L360,35 L400,40 L400,160 L0,160 Z"
-          fill="url(#copy-trend-fade)"
-        />
-        <path
-          d="M0,120 L40,110 L80,115 L120,90 L160,95 L200,70 L240,80 L280,55 L320,60 L360,35 L400,40"
-          fill="none"
-          stroke="#10B981"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
     </div>
   );
 }
@@ -690,27 +685,23 @@ function AccountCard({
     toast.success(next ? 'Label updated' : 'Label cleared');
   };
 
-  return (
-    <div
-      id={`account-card-${row.id}`}
-      className="rounded-2xl border border-[#E5E5E5] bg-white p-5"
-    >
-      {/* Header � status pill + platform + account number + settings cog */}
+  const t = useBrandTone();
+  const header = (
+    <>
+      {/* Header — status pill + platform + account number + settings cog */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <span
             className={clsx(
               'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
-              isActive
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-gray-100 text-gray-600',
+              isActive ? t.pill : t.pillQuiet,
             )}
           >
             {isActive ? 'Active' : 'Inactive'}
           </span>
           {isManagedAccount && (
             <span
-              className="inline-flex items-center gap-1 rounded-md bg-[#FCE6DD] px-2 py-0.5 text-xs font-medium text-[#E94E1B]"
+              className={clsx('inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium', t.pill)}
               title="Copy-trading account — trades are mirrored from the master you follow"
             >
               <Users size={12} />
@@ -719,15 +710,15 @@ function AccountCard({
           )}
           {alias ? (
             <div className="min-w-0 flex flex-col leading-tight">
-              <span className="truncate text-sm font-semibold text-[#0A0A0A]" title={alias}>
+              <span className={clsx('truncate text-sm font-semibold', t.text)} title={alias}>
                 {alias}
               </span>
-              <span className="text-[11px] tabular-nums text-[#6B7280]">
+              <span className={clsx('text-[11px] tabular-nums', t.muted)}>
                 {row.account_number}
               </span>
             </div>
           ) : (
-            <span className="text-sm font-semibold tabular-nums text-[#0A0A0A]">
+            <span className={clsx('text-sm font-semibold tabular-nums', t.text)}>
               {row.account_number}
             </span>
           )}
@@ -738,16 +729,16 @@ function AccountCard({
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Account settings"
-            className="rounded-full p-1.5 text-[#6B7280] hover:bg-gray-100 hover:text-[#0A0A0A] transition-colors"
+            className={clsx('rounded-full p-1.5 transition-colors', t.iconBtn)}
           >
             <Settings size={18} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-9 z-20 w-44 rounded-xl border border-[#E5E5E5] bg-white py-1 shadow-lg">
+            <div className="absolute right-0 top-9 z-20 w-44 rounded-xl border border-border-primary bg-bg-card py-1 shadow-lg">
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); setRenameOpen(true); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#0A0A0A] hover:bg-gray-50"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary hover:bg-bg-hover"
               >
                 <Pencil size={14} />
                 Rename label
@@ -755,7 +746,7 @@ function AccountCard({
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); onTransfer(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#0A0A0A] hover:bg-gray-50"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary hover:bg-bg-hover"
               >
                 <ArrowLeftRight size={14} />
                 Transfer funds
@@ -775,30 +766,34 @@ function AccountCard({
 
       {/* Sub-header � copy-trading accounts show just "Copy Trading"; regular
           accounts show their group + server line. */}
-      <p className="mt-2 text-xs text-[#6B7280]">
+      <p className={clsx('mt-2 text-xs', t.muted)}>
         {isManagedAccount ? (
-          <span className="font-medium text-[#E94E1B]">Copy Trading</span>
+          <span className={clsx('font-medium', t.text)}>Copy Trading</span>
         ) : (
           <>
-            {groupName} STP <span className="mx-2 text-[#D1D5DB]">|</span> {serverLabel}
+            {groupName} STP <span className={clsx('mx-2', t.faint)}>|</span> {serverLabel}
           </>
         )}
       </p>
+    </>
+  );
 
+  return (
+    <BrandCard id={`account-card-${row.id}`} header={header}>
       {/* Inner summary tile */}
-      <div className="mt-4 rounded-xl bg-[#F5F5F5] p-4">
+      <div>
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FCE6DD]">
-            <Wallet size={20} className="text-[#E94E1B]" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E94E1B]">
+            <Wallet size={20} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] uppercase tracking-wide font-semibold text-[#9A9A9A]">Equity</p>
-            <p className="truncate text-xl font-bold font-mono tabular-nums text-[#0A0A0A]">
+            <p className={clsx('text-[11px] uppercase tracking-wide font-semibold', t.tileMuted)}>Equity</p>
+            <p className={clsx('truncate text-xl font-bold font-mono tabular-nums', t.tileText)}>
               {hasNumbers ? fmt(balance, row.currency) : '--'}
             </p>
-            <p className="mt-0.5 text-xs text-[#6B7280]">
+            <p className={clsx('mt-0.5 text-xs', t.tileMuted)}>
               Credits: {hasNumbers ? fmt(credit, row.currency) : '-'}
-              <span className="mx-2 text-[#D1D5DB]">|</span>
+              <span className={clsx('mx-2', t.tileFaint)}>|</span>
               Balance: {hasNumbers ? fmt(balance, row.currency) : '-'}
             </p>
           </div>
@@ -811,7 +806,7 @@ function AccountCard({
             <button
               type="button"
               onClick={onDeposit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0A0A0A] px-4 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#E94E1B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#C73E11] transition-colors"
             >
               <ArrowDownToLine size={15} />
               Deposit
@@ -825,11 +820,19 @@ function AccountCard({
                 ? 'Managed account — trades are mirrored from the master. Open the terminal to view the copied positions.'
                 : undefined
             }
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-[#E94E1B] hover:text-[#E94E1B] transition-colors"
+            className={clsx('inline-flex items-center justify-center gap-1.5 rounded-full bg-transparent px-4 py-2 text-sm font-semibold transition-colors', t.outlineBtn)}
           >
             <TrendingUp size={15} />
             {isManagedAccount ? 'View Trades' : 'Trade'}
           </button>
+          <Link
+            href={`/portfolio?account_id=${row.id}&account_no=${encodeURIComponent(row.account_number)}`}
+            title="Portfolio — equity curve, holdings and trade history for this account"
+            className={clsx('inline-flex items-center justify-center gap-1.5 rounded-full bg-transparent px-4 py-2 text-sm font-semibold transition-colors', t.outlineBtn)}
+          >
+            <PieChart size={15} />
+            Portfolio
+          </Link>
         </div>
       </div>
 
@@ -890,7 +893,7 @@ function AccountCard({
           </div>
         </div>
       </Modal>
-    </div>
+    </BrandCard>
   );
 }
 

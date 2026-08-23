@@ -7,37 +7,14 @@ import { tradingTerminalUrl } from '@/lib/tradingNav';
 import { clsx } from 'clsx';
 import MobileOrderSheet from '@/components/trading/MobileOrderSheet';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
-import { useUIStore } from '@/stores/uiStore';
-import { BellOff, ChevronUp, Star, TrendingUp } from 'lucide-react';
+import api from '@/lib/api/client';
+import { ArrowUpDown, ChevronRight, Search, Settings, Star, TrendingUp } from 'lucide-react';
 
 type Trend = 'up' | 'down' | 'neutral';
 
 const TERMINAL_GROUPS = ['FOREX', 'CRYPTO', 'INDICES', 'METALS', 'COMMODITIES', 'STOCKS'] as const;
 type TerminalGroup = (typeof TERMINAL_GROUPS)[number];
 
-const SYMBOL_EMOJI: Record<string, string> = {
-  BTCUSD: '₿',
-  ETHUSD: 'Ξ',
-  LTCUSD: 'Ł',
-  XRPUSD: '✕',
-  SOLUSD: '◎',
-  DOGUSD: '🐕',
-  DOGEUSD: '🐕',
-  EURUSD: '🇪🇺',
-  GBPUSD: '🇬🇧',
-  USDJPY: '¥',
-  AUDUSD: 'A$',
-  USDCAD: 'C$',
-  NZDUSD: '🇳🇿',
-  XAUUSD: '🥇',
-  XAGUSD: '🥈',
-  USOIL: '🛢',
-  US30: '📊',
-  US500: '📊',
-  NAS100: '📊',
-  UK100: '📊',
-  GER40: '📊',
-};
 
 function terminalGroup(symbol: string, instruments: InstrumentInfo[]): TerminalGroup {
   const u = symbol.toUpperCase();
@@ -59,7 +36,6 @@ function terminalGroup(symbol: string, instruments: InstrumentInfo[]): TerminalG
   return 'FOREX';
 }
 
-const SEGMENTS = ['All', 'Forex', 'Crypto', 'Indices', 'Commodities', 'Metals', 'Stocks'];
 
 /** True if `query` appears in symbol, backend display_name, or SYMBOL_META.display.
     Lets users find XAUUSD/XAGUSD by typing 'gold'/'silver' etc. */
@@ -143,69 +119,6 @@ function spreadInPips(symbol: string, bid: number, ask: number, instruments: Ins
   return Math.round(width * Math.pow(10, digits - 1));
 }
 
-/** Session move in pips (same units as spread when catalog pip_size exists). */
-function sessionPipChange(
-  symbol: string,
-  bid: number,
-  sessionOpen: number,
-  instruments: InstrumentInfo[],
-): number {
-  const pip = pipSizeForSymbol(symbol, instruments);
-  if (pip != null) {
-    return Math.round((bid - sessionOpen) / pip);
-  }
-  const digits = getDigits(symbol);
-  return Math.round((bid - sessionOpen) * Math.pow(10, digits - 1));
-}
-
-/** Single-line tabular price: same font size throughout; last digit slightly bolder for tick resolution. */
-function PriceCell({
-  value,
-  digits,
-  flash,
-  tone,
-}: {
-  value: number;
-  digits: number;
-  flash?: Trend;
-  tone: 'bid' | 'ask';
-}) {
-  const s = value.toFixed(digits);
-  const dot = s.indexOf('.');
-  const color =
-    flash === 'up'
-      ? 'text-buy'
-      : flash === 'down'
-        ? 'text-sell'
-        : tone === 'bid'
-          ? 'text-sell/95'
-          : 'text-buy/95';
-
-  if (dot === -1 || digits === 0) {
-    return (
-      <span className={clsx('tabular-nums text-[13px] sm:text-sm font-semibold tracking-tight', color)}>
-        {s}
-      </span>
-    );
-  }
-  const dec = s.slice(dot + 1);
-  if (dec.length <= 1) {
-    return (
-      <span className={clsx('tabular-nums text-[13px] sm:text-sm font-semibold tracking-tight', color)}>
-        {s}
-      </span>
-    );
-  }
-  const head = s.slice(0, -1);
-  const last = s.slice(-1);
-  return (
-    <span className={clsx('tabular-nums text-[13px] sm:text-sm tracking-tight', color)}>
-      <span className="font-medium opacity-95">{head}</span>
-      <span className="font-bold">{last}</span>
-    </span>
-  );
-}
-
 type WatchlistProps = {
   /** Desktop terminal: dark rail between chart and order (matches crucial-ui screenshots). */
   variant?: 'default' | 'terminalRail';
@@ -217,7 +130,6 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const router = useRouter();
   const pathname = usePathname();
   const urlParams = useSearchParams();
-  const terminalMarketsOpen = useUIStore((s) => s.terminalMarketsOpen);
   // Narrow selectors: still tracks `prices` (this list renders live ticks) but
   // no longer re-renders on positions/accounts/etc. Actions are stable refs.
   const watchlist = useTradingStore((s) => s.watchlist);
@@ -233,8 +145,15 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const [bidFlash, setBidFlash] = useState<Record<string, Trend>>({});
   const [askFlash, setAskFlash] = useState<Record<string, Trend>>({});
   const [activeOrderSymbol, setActiveOrderSymbol] = useState<string | null>(null);
-  /** Terminal rail: collapse search + categorized list (header strip stays). */
-  const [railListExpanded, setRailListExpanded] = useState(true);
+  /** Terminal rail (Markets panel): category tab, %change sort, display prefs. */
+  const [railTab, setRailTab] = useState<'Watchlist' | TerminalGroup>('Watchlist');
+  const [sortPct, setSortPct] = useState<'none' | 'desc' | 'asc'>('none');
+  const [railSettingsOpen, setRailSettingsOpen] = useState(false);
+  const [showNames, setShowNames] = useState(true);
+  const [showSpread, setShowSpread] = useState(true);
+  /** Real day-open per symbol from the 1D bars store — drives the %change column. */
+  const [dayOpen, setDayOpen] = useState<Record<string, number>>({});
+  const dayOpenRequested = useRef<Set<string>>(new Set());
 
   const prevTickRef = useRef<Record<string, { bid: number; ask: number }>>({});
   const sessionOpenRef = useRef<Record<string, number>>({});
@@ -242,11 +161,6 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   const dayHighRef = useRef<Record<string, number>>({});
   const lastTimeRef = useRef<Record<string, string>>({});
 
-  useEffect(() => {
-    if (variant === 'terminalRail' && terminalMarketsOpen) {
-      setRailListExpanded(true);
-    }
-  }, [variant, terminalMarketsOpen]);
 
   useEffect(() => {
     for (const symbol of watchlist) {
@@ -313,39 +227,36 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlist, instruments, priceCount]);
 
-  const filtered = allSymbols.filter((s: string) => {
-    if (!matchesSearch(s, search, instruments, SYMBOL_META)) return false;
-    if (segment === 'Starred') return watchlist.includes(s);
-    if (segment !== 'All') {
-      const meta = SYMBOL_META[s];
-      const inst = instruments.find((i) => i.symbol === s);
-      const seg = (inst?.segment || meta?.segment || '').toLowerCase();
-      const segLow = segment.toLowerCase();
-      if (segLow === 'metals') return s === 'XAUUSD' || s === 'XAGUSD' || seg.includes('metal');
-      if (!seg.includes(segLow) && !seg.startsWith(segLow.slice(0, 5))) return false;
-    }
-    return true;
-  });
+  // Fetch the current daily candle's open for every listed symbol (once per
+  // symbol, small batches) so %change is a true day move, not session-relative.
+  useEffect(() => {
+    if (variant !== 'terminalRail') return;
+    const pending = allSymbols.filter((sym) => !dayOpenRequested.current.has(sym));
+    if (pending.length === 0) return;
+    pending.forEach((sym) => dayOpenRequested.current.add(sym));
+    let cancelled = false;
+    (async () => {
+      for (let i = 0; i < pending.length; i += 6) {
+        const chunk = pending.slice(i, i + 6);
+        const rows = await Promise.all(chunk.map((sym) =>
+          api.get<{ bars?: { time: number; open: number }[] } | { time: number; open: number }[]>(`/instruments/${sym}/bars`, { resolution: '1D' })
+            .then((res) => {
+              const bars = Array.isArray(res) ? res : res?.bars ?? [];
+              return [sym, bars.length > 0 ? Number(bars[bars.length - 1]!.open) : NaN] as const;
+            })
+            .catch(() => [sym, NaN] as const),
+        ));
+        if (cancelled) return;
+        setDayOpen((prev) => {
+          const next = { ...prev };
+          for (const [sym, open] of rows) if (Number.isFinite(open) && open > 0) next[sym] = open;
+          return next;
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [variant, allSymbols]);
 
-  const filteredTerminal = allSymbols.filter((s: string) => {
-    if (!matchesSearch(s, search, instruments, SYMBOL_META)) return false;
-    return true;
-  });
-
-  const groupedTerminal = (() => {
-    const buckets: Record<TerminalGroup, string[]> = {
-      FOREX: [],
-      CRYPTO: [],
-      INDICES: [],
-      METALS: [],
-      COMMODITIES: [],
-      STOCKS: [],
-    };
-    for (const s of filteredTerminal) {
-      buckets[terminalGroup(s, instruments)].push(s);
-    }
-    return buckets;
-  })();
 
   const handleRowClick = (symbol: string) => {
     setSelectedSymbol(symbol);
@@ -375,139 +286,180 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
       ) : null}
       {variant === 'terminalRail' ? (
         <>
-          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 bg-bg-secondary border-b border-border-primary">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div
-                className="w-8 h-8 rounded-full shrink-0 bg-gradient-to-br from-amber-400 to-blue-500"
-                aria-hidden
-              />
-              <span className="text-sm font-bold text-text-primary font-mono truncate">{selectedSymbol}</span>
-              <span className="text-base leading-none shrink-0" aria-hidden>
-                {SYMBOL_EMOJI[selectedSymbol] || '●'}
-              </span>
-              <BellOff className="w-3.5 h-3.5 text-text-tertiary shrink-0" aria-hidden />
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-bg-hover text-text-secondary shrink-0">
-                DB
-              </span>
+          {/* ── Title + settings ── */}
+          <div className="shrink-0 flex items-center justify-between px-3 pt-2.5 pb-1">
+            <h2 className="text-[17px] font-bold leading-none text-text-primary">Market</h2>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setRailSettingsOpen((o) => !o)}
+                className={clsx('flex h-8 w-8 items-center justify-center rounded-full transition-colors', railSettingsOpen ? 'bg-bg-hover text-text-primary' : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary')}
+                aria-label="Market list settings"
+                aria-expanded={railSettingsOpen}
+              >
+                <Settings size={18} strokeWidth={1.8} />
+              </button>
+              {railSettingsOpen && (
+                <>
+                  <button type="button" className="fixed inset-0 z-20 cursor-default" aria-label="Close settings" onClick={() => setRailSettingsOpen(false)} />
+                  <div className="absolute right-0 top-9 z-30 w-48 rounded-xl border border-border-primary bg-bg-secondary p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)]">
+                    {([
+                      ['Show instrument names', showNames, () => setShowNames((v) => !v)],
+                      ['Show spread', showSpread, () => setShowSpread((v) => !v)],
+                    ] as const).map(([label, on, toggle]) => (
+                      <button key={label} type="button" onClick={toggle} className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-[12px] font-medium text-text-primary hover:bg-bg-hover">
+                        {label}
+                        <span className={clsx('relative h-4 w-7 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-border-primary')} aria-hidden>
+                          <span className={clsx('absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform', on ? 'left-3.5' : 'left-0.5')} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (onExitMarkets) {
-                  onExitMarkets();
-                } else {
-                  setRailListExpanded((e) => !e);
-                }
-              }}
-              className="shrink-0 p-1 rounded-md text-accent hover:bg-accent/10 transition-colors"
-              aria-expanded={onExitMarkets ? true : railListExpanded}
-              aria-label={onExitMarkets ? 'Back to trade panel' : railListExpanded ? 'Collapse symbol list' : 'Expand symbol list'}
-            >
-              <ChevronUp
-                className={clsx(
-                  'w-5 h-5 transition-transform duration-200',
-                  !onExitMarkets && !railListExpanded && 'rotate-180',
-                )}
-              />
-            </button>
           </div>
-          {onExitMarkets || railListExpanded ? (
-            <>
-              <div className="p-3 shrink-0 border-b border-border-primary">
-                <div className="relative">
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 text-text-tertiary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    data-terminal-symbol-search
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search symbols…"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
-                  />
-                </div>
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y">
-                {TERMINAL_GROUPS.map((group) => {
-                  const syms = groupedTerminal[group];
-                  if (syms.length === 0) return null;
+
+          {/* ── Search ── */}
+          <div className="shrink-0 px-3 pt-1.5 pb-2">
+            <label htmlFor="terminal-instrument-search" className="flex items-center gap-2.5 rounded-xl px-3.5 py-2" style={{ background: 'var(--bg-card-nested)' }}>
+              <Search size={16} strokeWidth={2} className="shrink-0 text-text-tertiary" />
+              <input
+                id="terminal-instrument-search"
+                type="text"
+                data-terminal-symbol-search
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search instruments"
+                className="ticket-input w-full min-w-0 bg-transparent p-0 text-[13px] text-text-primary placeholder:text-text-tertiary outline-none border-0 shadow-none focus:ring-0"
+              />
+            </label>
+          </div>
+
+          {/* ── Category tabs ── */}
+          <div className="relative shrink-0 px-3">
+            <div className="flex gap-5 overflow-x-auto no-scrollbar scrollbar-none pr-6">
+              {(['Watchlist', ...TERMINAL_GROUPS] as const)
+                .filter((g) => g === 'Watchlist' || allSymbols.some((sym) => terminalGroup(sym, instruments) === g))
+                .map((g) => {
+                  const label = g === 'Watchlist' ? 'Watchlist' : g === 'STOCKS' ? 'Shares' : g.charAt(0) + g.slice(1).toLowerCase();
+                  const active = railTab === g;
                   return (
-                    <div key={group}>
-                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-text-tertiary border-t border-border-primary first:border-t-0 bg-bg-secondary">
-                        {group}
-                      </div>
-                      {syms.map((symbol) => {
-                        const tick = prices[symbol];
-                        const digits = getDigits(symbol);
-                        const sel = symbol === selectedSymbol;
-                        return (
-                          <button
-                            key={symbol}
-                            type="button"
-                            onClick={() => handleRowClick(symbol)}
-                            className={clsx(
-                              'w-full flex items-center justify-between gap-2 pl-0 pr-3 py-2.5 text-left border-l-[3px] transition-colors',
-                              sel
-                                ? 'border-l-accent bg-accent/10'
-                                : 'border-l-transparent hover:bg-bg-hover',
-                            )}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 pl-3">
-                              <div
-                                className="w-6 h-6 rounded-full shrink-0 bg-gradient-to-br from-amber-400/90 to-blue-500/90"
-                                aria-hidden
-                              />
-                              <span className="text-sm font-bold text-text-primary font-mono">{symbol}</span>
-                              <span className="text-sm leading-none opacity-90 shrink-0">
-                                {SYMBOL_EMOJI[symbol] || '·'}
-                              </span>
-                            </div>
-                            <div className="flex gap-4 shrink-0">
-                              <div className="flex flex-col items-end gap-0.5">
-                                {tick ? (
-                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#ef5350]">
-                                    {tick.bid.toFixed(digits)}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-text-tertiary">—</span>
-                                )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
-                                  Bid
-                                </span>
-                              </div>
-                              <div className="flex flex-col items-end gap-0.5">
-                                {tick ? (
-                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#6366F1]">
-                                    {tick.ask.toFixed(digits)}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-text-tertiary">—</span>
-                                )}
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
-                                  Ask
-                                </span>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setRailTab(g)}
+                      className={clsx(
+                        'relative shrink-0 whitespace-nowrap pb-2 pt-1 text-[14px] transition-colors',
+                        active ? 'font-bold text-text-primary' : 'font-medium text-text-tertiary hover:text-text-secondary',
+                      )}
+                    >
+                      {label}
+                      <span className={clsx('absolute bottom-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-accent transition-opacity', active ? 'opacity-100' : 'opacity-0')} aria-hidden />
+                    </button>
                   );
                 })}
-              </div>
-            </>
-          ) : null}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-bg-base via-bg-base/90 to-transparent pr-2 text-text-secondary" aria-hidden>
+              <ChevronRight size={18} strokeWidth={2} />
+            </div>
+          </div>
+
+          {/* ── Column header ── */}
+          <div className="shrink-0 grid grid-cols-[minmax(0,1fr)_76px_28px_76px_66px] items-center gap-1.5 px-3 pt-2.5 pb-1.5 text-[12px] text-text-tertiary">
+            <span>Symbol</span>
+            <span className="text-right">Sell</span>
+            <span />
+            <span className="text-right">Buy</span>
+            <button
+              type="button"
+              onClick={() => setSortPct((m) => (m === 'none' ? 'desc' : m === 'desc' ? 'asc' : 'none'))}
+              className={clsx('flex items-center justify-end gap-0.5 hover:text-text-primary', sortPct !== 'none' && 'text-text-primary')}
+              aria-label="Sort by % change"
+            >
+              %change <ArrowUpDown size={12} className={clsx(sortPct === 'asc' && 'rotate-180')} />
+            </button>
+          </div>
+
+          {/* ── Rows ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y px-1.5 pb-2">
+            {(() => {
+              const rows = allSymbols
+                .filter((sym) => matchesSearch(sym, search, instruments, SYMBOL_META))
+                .filter((sym) => (railTab === 'Watchlist' ? watchlist.includes(sym) : terminalGroup(sym, instruments) === railTab))
+                .map((sym) => {
+                  const tick = prices[sym];
+                  const open = dayOpen[sym] ?? sessionOpenRef.current[sym];
+                  const pct = tick && open && open > 0 ? ((tick.bid - open) / open) * 100 : NaN;
+                  return { sym, tick, pct };
+                });
+              if (sortPct !== 'none') {
+                rows.sort((a, b) => {
+                  const x = Number.isFinite(a.pct) ? a.pct : -Infinity;
+                  const y = Number.isFinite(b.pct) ? b.pct : -Infinity;
+                  return sortPct === 'desc' ? y - x : x - y;
+                });
+              }
+              if (rows.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
+                    <Star size={22} className="text-text-tertiary/60" />
+                    <p className="text-[13px] font-medium text-text-tertiary">
+                      {railTab === 'Watchlist' ? 'No favourites yet — tap ☆ on any instrument' : 'No instruments found'}
+                    </p>
+                  </div>
+                );
+              }
+              return rows.map(({ sym, tick, pct }) => {
+                const digits = getDigits(sym);
+                const sel = sym === selectedSymbol;
+                const fav = watchlist.includes(sym);
+                const inst = instruments.find((i) => i.symbol === sym);
+                const name = SYMBOL_META[sym]?.display ?? (inst?.display_name && inst.display_name !== sym ? inst.display_name : '');
+                const bf = bidFlash[sym];
+                const af = askFlash[sym];
+                const fmt = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+                const tint = (f?: Trend) => (f === 'up' ? 'text-buy' : f === 'down' ? 'text-sell' : 'text-text-primary');
+                return (
+                  <div
+                    key={sym}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleRowClick(sym)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(sym); } }}
+                    className={clsx(
+                      'grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_76px_28px_76px_66px] items-center gap-1.5 rounded-xl px-1.5 py-2 text-left transition-colors',
+                      sel ? 'bg-bg-hover' : 'hover:bg-bg-hover/60',
+                    )}
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); if (fav) removeFromWatchlist(sym); else addToWatchlist(sym); }}
+                        className="shrink-0 rounded-md p-0.5 text-text-tertiary/70 hover:text-amber-400"
+                        aria-label={fav ? 'Remove from watchlist' : 'Add to watchlist'}
+                        aria-pressed={fav}
+                      >
+                        <Star size={15} strokeWidth={2} className={clsx(fav && 'fill-amber-400 text-amber-400')} />
+                      </button>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-bold leading-tight text-text-primary">{sym}</span>
+                        {showNames && name ? <span className="block truncate text-[11px] leading-tight text-text-tertiary">{name}</span> : null}
+                      </span>
+                    </span>
+                    <span className={clsx('text-right text-[13px] font-medium tabular-nums', tint(bf))}>{tick ? fmt(tick.bid) : '—'}</span>
+                    <span className="text-center text-[11px] tabular-nums text-text-tertiary">
+                      {showSpread && tick ? Math.abs(spreadInPips(sym, tick.bid, tick.ask, instruments)) : ''}
+                    </span>
+                    <span className={clsx('text-right text-[13px] font-medium tabular-nums', tint(af))}>{tick ? fmt(tick.ask) : '—'}</span>
+                    <span className={clsx('text-right text-[12px] font-semibold tabular-nums', !Number.isFinite(pct) ? 'text-text-tertiary' : pct >= 0 ? 'text-emerald-500' : 'text-[#E5484D]')}>
+                      {Number.isFinite(pct) ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—'}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
         </>
       ) : (
         <>

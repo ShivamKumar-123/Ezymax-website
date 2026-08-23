@@ -1,0 +1,214 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Crextio warm theme — logged-in app restyle after the Nixtio/Crextio
+   HR-dashboard reference (dribbble.com/shots/25121521).
+
+   Language: warm cream canvas with a soft yellow glow, frosted warm-
+   white cards with very large radii, charcoal pills for primary
+   actions/active states, soft butter-yellow chips for icons/highlights,
+   light geometric type (Poppins via --font-crextio).
+
+   Scoped as a full override of the app's theme tokens under
+   [data-theme="warm"] / .theme-warm — every component that styles with
+   `bg-bg-card`, `text-text-primary`, `border-border-primary`, … flips
+   automatically. Applied by DashboardShell.
+   ──────────────────────────────────────────────────────────────────── */
+[data-theme="warm"], .theme-warm {
+  color-scheme: light;
+
+  --bg-page: #F1EFEA;
+  --bg-base: #F1EFEA;
+  --bg-primary: #F1EFEA;
+  --bg-secondary: #ECE9E1;
+  --bg-tertiary: #E7E3D8;
+  --bg-hover: rgba(35, 33, 26, 0.05);
+  --bg-active: rgba(35, 33, 26, 0.09);
+  --bg-input: #FDFCF9;
+  --bg-card: rgba(253, 252, 248, 0.82);
+  --bg-card-nested: #F3F0E7;
+  --bg-glass: rgba(253, 252, 248, 0.7);
+  --bg-glass-light: rgba(253, 252, 248, 0.55);
+  --bg-glass-heavy: rgba(253, 252, 248, 0.92);
+
+  --border-primary: rgba(35, 33, 26, 0.08);
+  --border-secondary: rgba(35, 33, 26, 0.06);
+  --border-accent: #E94E1B;
+  --border-glass: rgba(35, 33, 26, 0.06);
+  --border-glass-bright: rgba(35, 33, 26, 0.1);
+
+  --text-primary: #23211A;
+  --text-secondary: #6E6A5E;
+  --text-tertiary: #A6A093;
+  --text-inverse: #FFFFFF;
+
+  /* SwissCresta brand orange stays the accent inside the app shell */
+  --accent: #E94E1B;
+  --accent-hover: #C73E11;
+  --accent-soft: #FCE6DD;
+
+  --scrollbar-track: #ECE9E1;
+  --scrollbar-thumb: #D6D1C4;
+  --scrollbar-hover: #B8B2A2;
+
+  --input-bg: #FDFCF9;
+  --input-border: rgba(35, 33, 26, 0.1);
+  --input-shadow: 0 1px 2px rgba(35, 33, 26, 0.04);
+  --input-focus-border: #E94E1B;
+  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.15);
+  --input-placeholder: #A6A093;
+
+  --selection-bg: rgba(233, 78, 27, 0.16);
+
+  --toast-bg: #FDFCF9;
+  --toast-fg: #23211A;
+  --toast-border: rgba(35, 33, 26, 0.1);
+
+  /* Crextio-specific roles */
+  --crx-charcoal: #26241E;        /* primary pills, dark cards */
+  --crx-charcoal-hover: #383530;
+  --crx-charcoal-ink: #F5F3EC;    /* text on charcoal */
+  --crx-yellow: #E94E1B;          /* brand orange — chips, gauges, highlights */
+  --crx-yellow-soft: #FCE6DD;     /* soft peach — icon chip backgrounds */
+  --crx-pill: rgba(255, 255, 255, 0.72);  /* frosted nav pills */
+}
+
+/* Warm canvas — cream base with a soft peach glow pooling toward the
+   bottom-right. Painted on a position:fixed ::before layer instead of
+   `background-attachment: fixed`, which forces full-page repaints on
+   every scroll frame (the source of visible scroll lag). */
+.theme-warm-canvas {
+  position: relative;
+  background: #F1EFEC;
+}
+.theme-warm-canvas::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(110% 80% at 88% 112%, rgba(238, 135, 85, 0.32) 0%, rgba(238, 135, 85, 0) 60%),
+    radial-gradient(80% 60% at -6% -8%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(155deg, #F1EFEC 0%, #F3EDE4 55%, #F6EADC 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DARK VARIANT — `.theme-warm-dark` on the same wrapper (after the
+   light block so equal-specificity overrides win). Same Crextio
+   language on a warm charcoal canvas: dark frosted cards, brand-orange
+   accent, cream ink. Primary pills invert to cream-on-charcoal.
+   ──────────────────────────────────────────────────────────────────── */
+.theme-warm-dark {
+  color-scheme: dark;
+
+  /* Vantablack: pure black canvas, near-black frosted surfaces. */
+  --bg-page: #000000;
+  --bg-base: #000000;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #0f0f0f;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.1);
+  --bg-input: #0d0d0d;
+  --bg-card: rgba(255, 255, 255, 0.045);
+  --bg-card-nested: #161616;
+  --bg-glass: rgba(12, 12, 12, 0.72);
+  --bg-glass-light: rgba(10, 10, 10, 0.55);
+  --bg-glass-heavy: rgba(8, 8, 8, 0.94);
+
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  --border-glass-bright: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #F5F5F5;
+  --text-secondary: #A6A6A6;
+  --text-tertiary: #6E6E6E;
+  --text-inverse: #000000;
+
+  --accent-soft: rgba(233, 78, 27, 0.18);
+
+  --scrollbar-track: #0a0a0a;
+  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-hover: #3a3a3a;
+
+  --input-bg: #0d0d0d;
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --input-placeholder: #6E6E6E;
+
+  --toast-bg: #111111;
+  --toast-fg: #F5F5F5;
+  --toast-border: rgba(255, 255, 255, 0.12);
+
+  /* Primary pills invert: white pill, black text */
+  --crx-charcoal: #FFFFFF;
+  --crx-charcoal-hover: #E8E8E8;
+  --crx-charcoal-ink: #0a0a0a;
+  --crx-yellow-soft: rgba(233, 78, 27, 0.16);
+  --crx-pill: rgba(255, 255, 255, 0.06);
+}
+
+/* Flat Vantablack canvas — no warm tint, no glow. */
+.theme-warm-dark.theme-warm-canvas {
+  background: #000000;
+}
+.theme-warm-dark.theme-warm-canvas::before {
+  background: #000000;
+}
+
+/* The wordmark PNG has dark lettering — render it all-white on the
+   Vantablack canvas (no separate light-logo asset exists). */
+.theme-warm-dark .crx-logo-img {
+  filter: brightness(0) invert(1);
+}
+
+/* Market marker pulse (WorldMarketsMap) — expanding ring on open markets. */
+@keyframes crx-pulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+.crx-pulse {
+  animation: crx-pulse 2.4s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The app's global `[data-theme="light"] input { color: #000 }` rule (set on
+   <html>) leaks into the warm-dark scope — force form controls to the
+   theme ink so values stay readable on Vantablack. */
+[data-theme="warm"].theme-warm-dark input,
+[data-theme="warm"].theme-warm-dark textarea,
+[data-theme="warm"].theme-warm-dark select,
+.theme-warm-dark input, .theme-warm-dark textarea, .theme-warm-dark select {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary);
+  caret-color: var(--text-primary);
+}
+.theme-warm-dark input::placeholder, .theme-warm-dark textarea::placeholder {
+  color: var(--text-tertiary) !important;
+  -webkit-text-fill-color: var(--text-tertiary);
+}
+
+/* Order-ticket lot slider — diamond handle over a thin track with tick dots. */
+.crx-range { -webkit-appearance: none; appearance: none; height: 20px; background: transparent; cursor: pointer; }
+.crx-range::-webkit-slider-runnable-track {
+  height: 2px; border-radius: 2px;
+  background:
+    radial-gradient(circle, var(--text-tertiary) 0 2.5px, transparent 3px) 0 50% / 25% 100% repeat-x,
+    linear-gradient(var(--crx-yellow), var(--crx-yellow)) 0 0 / var(--pct, 0%) 100% no-repeat,
+    var(--border-primary);
+}
+.crx-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px;
+  background: var(--text-primary); border-radius: 3px; transform: rotate(45deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+.crx-range::-moz-range-track { height: 2px; background: var(--border-primary); border-radius: 2px; }
+.crx-range::-moz-range-progress { height: 2px; background: var(--crx-yellow); }
+.crx-range::-moz-range-thumb { width: 16px; height: 16px; border: 0; background: var(--text-primary); border-radius: 3px; transform: rotate(45deg); }
+
+/* Order-ticket value inputs live inside their own card — no inner chrome. */
+.theme-warm .ticket-input, .theme-warm-dark .ticket-input,
+[data-theme="warm"] .ticket-input {
+  border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; border-radius: 0 !important;
+}

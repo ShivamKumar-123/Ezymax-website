@@ -1,14 +1,18 @@
 /**
- * Shared className tokens that replace utility classes from the legacy
- * marketing site's `globals.css` (`heading-section`, `text-display`,
- * `text-stat`).
+ * Shared className tokens for marketing headings.
+ *
+ * Textura theme (next16-claude-starter port): oversized fluid display
+ * type set in Onest at semibold, sentence case, tight negative
+ * tracking, and the starter's `leading-display` floor (1.1) so clipped
+ * text reveals never cut ascenders/descenders. Color comes from the
+ * `tx` token namespace (tailwind.config.ts → src/styles/textura.css).
  */
 
 export const HEADING_SECTION =
-  'text-3xl md:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight leading-[1.05]'
+  'font-semibold tracking-[-0.03em] leading-[1.08] text-tx-strong text-[clamp(2.2rem,4.4vw,4.25rem)]'
 
 export const TEXT_DISPLAY =
-  'font-extrabold uppercase leading-[0.95] tracking-[-0.03em] text-[clamp(3.5rem,9vw,8rem)]'
+  'font-semibold leading-[1.1] tracking-[-0.04em] text-[clamp(3rem,8vw,7rem)] text-tx-strong'
 
 export const TEXT_STAT =
-  'font-extrabold leading-[0.9] tracking-[-0.04em] text-[clamp(6rem,16vw,14rem)]'
+  'font-semibold leading-[1.1] tracking-[-0.04em] text-[clamp(5rem,14vw,12rem)] text-tx-strong'
