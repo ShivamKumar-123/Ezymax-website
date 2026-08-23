@@ -27,6 +27,10 @@ from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
 
+# Practice accounts a user may open themselves (admin can provision more).
+MAX_SELF_SERVICE_DEMO_ACCOUNTS = 5
+
+
 
 # ─── Per-user leverage cap (Trading_Mechanism.docx risk control) ──────
 # Default ceiling is 1:50 for everyone. KYC unlocks the broker's full
@@ -147,24 +151,31 @@ async def open_live_account(
 
     new_balance = Decimal("0")
     if user_is_demo:
-        # One demo account per user (self-service). Deactivated ("deleted")
-        # demo accounts don't count, so a user who removed theirs can open a
-        # fresh one; the admin back office can still provision extras.
+        # Self-service demo accounts are capped per user (practice accounts
+        # carry no funding risk, but an unbounded list clutters the picker).
+        # Deactivated ("deleted") demo accounts don't count, so a user who
+        # removed one can open a fresh one; admin back office can provision
+        # extras beyond the cap.
         existing_demo = await db.execute(
-            select(TradingAccount.id)
-            .where(
+            select(TradingAccount.id).where(
                 TradingAccount.user_id == user_id,
                 TradingAccount.is_demo == True,  # noqa: E712
                 TradingAccount.is_active.isnot(False),
             )
-            .limit(1)
         )
-        if existing_demo.scalars().first() is not None:
+        demo_count = len(existing_demo.scalars().all())
+        # Demo-login (practice) users get exactly ONE practice account — the
+        # shared demo identity must not accumulate cards. Real users may keep
+        # several demo accounts beside their live ones.
+        cap = 1 if bool(user.is_demo) else MAX_SELF_SERVICE_DEMO_ACCOUNTS
+        if demo_count >= cap:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "You already have a demo account — switch to it from the "
-                    "account picker. Contact support if you need another one."
+                    "Your demo login includes one practice account. Sign up for a live "
+                    "account to open more." if bool(user.is_demo) else
+                    f"You already have {demo_count} demo accounts (limit {cap}). Close one "
+                    "from the Accounts page to open another, or contact support."
                 ),
             )
         # Demo users get a starter virtual balance; use min_deposit if set, else $10,000.

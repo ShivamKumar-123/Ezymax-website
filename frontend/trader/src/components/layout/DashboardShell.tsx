@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { MessageSquare } from 'lucide-react';
-import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import AppNavbar from './AppNavbar';
 import DashboardFooter from './DashboardFooter';
+import SupportChatWidget from '@/components/support/SupportChatWidget';
 import FeatureTour from '@/components/onboarding/FeatureTour';
+import { useWarmTheme } from '@/stores/warmThemeStore';
+import '@/styles/crextio.css';
 
 /**
  * DashboardShell — top-navbar layout for the logged-in app pages.
@@ -26,23 +26,28 @@ export default function DashboardShell({
   className?: string;
   mainClassName?: string;
 }) {
-  const pathname = usePathname();
+  const dark = useWarmTheme((s) => s.dark);
 
   return (
     <div
+      data-theme="warm"
       className={cn(
-        // Transparent so the themed body gradient (orange→black in dark,
-        // white+orange in light) shows through the app shell.
-        'min-h-[100dvh] flex flex-col bg-transparent text-text-primary',
+        // Crextio warm theme: cream canvas with butter glow, Poppins
+        // type, token overrides scoped by .theme-warm (crextio.css).
+        // `.theme-warm-dark` flips the token set to the charcoal
+        // variant (navbar sun/moon toggle, persisted per browser).
+        'theme-warm theme-warm-canvas font-crextio min-h-[100dvh] flex flex-col text-text-primary',
+        dark && 'theme-warm-dark',
         className,
       )}
     >
       <AppNavbar />
 
+      {/* No key={pathname} remount and no fade animation — pages swap
+          instantly on navigation (0ms transition by design). */}
       <main
-        key={pathname}
         className={cn(
-          'dashboard-main-scroll flex-1 page-fade-in',
+          'dashboard-main-scroll flex-1',
           mainClassName,
         )}
       >
@@ -58,14 +63,9 @@ export default function DashboardShell({
         <DashboardFooter />
       </main>
 
-      <Link
-        href="/support"
-        data-tour="support"
-        className="fixed bottom-4 right-4 w-11 h-11 sm:bottom-6 sm:right-6 sm:w-12 sm:h-12 z-[75] rounded-full bg-[#E94E1B] hover:bg-[#C73E11] shadow-lg shadow-[#E94E1B]/20 flex items-center justify-center transition-colors"
-        aria-label="Support"
-      >
-        <MessageSquare size={20} className="text-white" />
-      </Link>
+      {/* Support bubble → in-app assistant (fixed setup answers, human
+          hand-off via ticket). The full ticket page stays at /support. */}
+      <SupportChatWidget />
 
       {/* First-login spotlight walkthrough (shows once per user). */}
       <FeatureTour />

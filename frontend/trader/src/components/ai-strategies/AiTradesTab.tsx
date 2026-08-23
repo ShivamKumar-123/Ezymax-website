@@ -7,6 +7,7 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { netPnl } from '@/lib/pnl';
 import { formatDateTime, formatNumber } from '@/lib/formatters';
 import { aiApi, type AiClosedTrade, type AiOpenTrade } from '@/lib/ai-strategies';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 function SideBadge({ side }: { side: string }) {
   const isBuy = String(side).toLowerCase() === 'buy';
@@ -117,6 +118,8 @@ export default function AiTradesTab() {
 
   const openTotal = openRows.reduce((s, r) => s + (Number.isFinite(r.profit as number) ? (r.profit as number) : 0), 0);
 
+  const openPager = usePagination(openRows, 10);
+  const closedPager = usePagination(closed, 10);
   return (
     <div className="space-y-6">
       {/* ── Open AI trades (live) ── */}
@@ -150,7 +153,7 @@ export default function AiTradesTab() {
                 </tr>
               </thead>
               <tbody>
-                {openRows.map((r) => (
+                {openPager.items.map((r) => (
                   <tr key={r.position_id} className="border-b border-border-primary last:border-0 hover:bg-bg-hover">
                     <td className="px-4 py-3 text-text-secondary">{r.strategy_name}</td>
                     <td className="px-4 py-3 font-bold font-mono text-text-primary">{r.symbol}</td>
@@ -165,6 +168,7 @@ export default function AiTradesTab() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...openPager.props} itemLabel="open trades" />
           </div>
         )}
       </div>
@@ -198,7 +202,7 @@ export default function AiTradesTab() {
                 </tr>
               </thead>
               <tbody>
-                {closed.map((t) => (
+                {closedPager.items.map((t) => (
                   <tr key={t.position_id} className="border-b border-border-primary last:border-0 hover:bg-bg-hover">
                     <td className="px-4 py-3 text-text-secondary">{t.strategy_name}</td>
                     <td className="px-4 py-3 font-bold font-mono text-text-primary">{t.symbol}</td>
@@ -212,6 +216,7 @@ export default function AiTradesTab() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...closedPager.props} itemLabel="closed trades" />
           </div>
         )}
       </div>

@@ -111,7 +111,7 @@ export default function TerminalLeftRail({
           <LayoutTemplate size={17} strokeWidth={1.75} />
         </RailBtn>
         <RailBtn
-          title="Live news — TradingView timeline"
+          title="Market news & economic calendar"
           active={terminalNewsOpen && !chartExpanded}
           onClick={onPanelsSelectNews}
         >

@@ -344,7 +344,27 @@ async def list_strategies(user_id: UUID, db: AsyncSession) -> list[dict]:
         .where(AIStrategyInstance.user_id == user_id, AIStrategyInstance.status == "running")
         .group_by(AIStrategyInstance.strategy_id)
     )).all())
-    return [_strategy_out(s, counts.get(s.id, 0)) for s in rows]
+    # Latest backtest per strategy → ROI / win-rate for the "My strategies"
+    # cards without N detail round-trips.
+    latest: dict = {}
+    bts = (await db.execute(
+        select(AIStrategyBacktest.strategy_id, AIStrategyBacktest.stats, AIStrategyBacktest.created_at)
+        .where(AIStrategyBacktest.user_id == user_id)
+        .order_by(AIStrategyBacktest.created_at.desc())
+    )).all()
+    for sid, stats, created in bts:
+        if sid not in latest:
+            latest[sid] = (stats or {}, created)
+    out = []
+    for s in rows:
+        d = _strategy_out(s, counts.get(s.id, 0))
+        st, created = latest.get(s.id, ({}, None))
+        d["latest_return_pct"] = st.get("return_pct")
+        d["latest_win_rate"] = st.get("win_rate")
+        d["latest_total_trades"] = st.get("total_trades")
+        d["latest_backtest_at"] = created.isoformat() if created else None
+        out.append(d)
+    return out
 
 
 async def get_strategy(strategy_id: UUID, user_id: UUID, db: AsyncSession) -> dict:

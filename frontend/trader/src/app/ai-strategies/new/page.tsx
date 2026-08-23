@@ -31,6 +31,8 @@ import {
   X,
 } from 'lucide-react';
 import AppNavbar from '@/components/layout/AppNavbar';
+import { useWarmTheme } from '@/stores/warmThemeStore';
+import '@/styles/crextio.css';
 import ChatComposer, { type ChatComposerHandle } from '@/components/ai-strategies/ChatComposer';
 import ChatHistoryPanel from '@/components/ai-strategies/ChatHistoryPanel';
 import StrategyPreviewPane from '@/components/ai-strategies/StrategyPreviewPane';
@@ -90,7 +92,7 @@ function PaneToggle({
         'inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold transition-colors',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
         active
-          ? 'border-[#E94E1B]/40 bg-[#FCE6DD] text-[#E94E1B]'
+          ? 'border-[#E94E1B]/40 bg-crx-yellow-soft text-[#E94E1B]'
           : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary active:bg-bg-active',
         className,
       )}
@@ -103,6 +105,7 @@ function PaneToggle({
 
 export default function AiStrategyMakerPage() {
   const router = useRouter();
+  const warmDark = useWarmTheme((s) => s.dark);
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -354,29 +357,46 @@ export default function AiStrategyMakerPage() {
     setSaveOpen(true);
   }, [activeConfig]);
 
-  const handleSave = async () => {
-    if (!activeConfig) return;
-    if (!name.trim()) {
+  /** Persist the current config; returns the new strategy id (or null). */
+  const persist = async (): Promise<string | null> => {
+    if (!activeConfig) return null;
+    const finalName = (name.trim() || suggestName(activeConfig)).trim();
+    if (!finalName) {
       toast.error('Give your strategy a name');
-      return;
+      return null;
     }
     setSaving(true);
     try {
       const firstPrompt = messages.find((m) => m.role === 'user')?.content;
       const explanation = [...messages].reverse().find((m) => m.role === 'assistant' && m.dsl)?.content;
       const created = await aiApi.create({
-        name: name.trim(),
+        name: finalName,
         description: description.trim() || undefined,
         prompt: firstPrompt,
         explanation,
         dsl: activeConfig,
       });
-      toast.success('Strategy saved as a draft — run a backtest before deploying it');
-      router.push(`/ai-strategies/${created.id}`);
+      return created.id;
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to save strategy');
       setSaving(false);
+      return null;
     }
+  };
+
+  const handleSave = async () => {
+    const id = await persist();
+    if (!id) return;
+    toast.success('Saved to My Strategies — run a backtest before deploying it');
+    router.push(`/ai-strategies/${id}`);
+  };
+
+  /** Save, then open the detail page with the backtest / deploy dialog ready. */
+  const saveAndGo = async (action: 'backtest' | 'deploy') => {
+    const id = await persist();
+    if (!id) return;
+    toast.success(action === 'backtest' ? 'Saved — starting your backtest' : 'Saved — choose an account to deploy on');
+    router.push(`/ai-strategies/${id}?action=${action}`);
   };
 
   const showReset = Boolean(activeConfig || messages.length > 0);
@@ -411,14 +431,26 @@ export default function AiStrategyMakerPage() {
       onReset={resetAll}
       onSave={openSave}
       onClose={onClose}
+      name={name}
+      onNameChange={setName}
+      onSaveAndBacktest={() => void saveAndGo('backtest')}
+      onSaveAndDeploy={() => void saveAndGo('deploy')}
     />
   );
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg-secondary text-text-primary">
+    /* This workbench owns the viewport (no DashboardShell), so it must
+       carry the warm theme scope itself or dark mode never applies. */
+    <div
+      data-theme="warm"
+      className={clsx(
+        'theme-warm theme-warm-canvas font-crextio flex h-[100dvh] flex-col overflow-hidden text-text-primary',
+        warmDark && 'theme-warm-dark',
+      )}
+    >
       <AppNavbar />
 
-      <main className="page-fade-in flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+      <main className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         {/* Compact page header — the workbench below owns the rest of the height. */}
         <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border-primary px-3 py-2 sm:px-4 lg:px-6">
           <Link

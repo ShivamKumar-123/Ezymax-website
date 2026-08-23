@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { Minus, Plus, X, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap } from 'lucide-react';
+import { Minus, Plus, X, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Info, Gauge, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -80,6 +80,43 @@ export default function OrderPanel({
   const ask = tick?.ask ?? 0;
   const execPrice = tick ? (side === 'buy' ? tick.ask : tick.bid) : 0;
   const lotsNum = parseFloat(lots) || 0;
+  // Day-change indicator: first bid seen per symbol this session is the
+  // reference (the feed doesn't carry a day-open field).
+  const sessionOpenRef = useRef<Record<string, number>>({});
+  if (tick && sessionOpenRef.current[selectedSymbol] == null) sessionOpenRef.current[selectedSymbol] = tick.bid;
+  const dayOpen = sessionOpenRef.current[selectedSymbol];
+  const pipSize = instrumentInfo?.pip_size ? Number(instrumentInfo.pip_size) : (digits >= 4 ? 0.0001 : 0.01);
+  const dayChangePts = tick && dayOpen ? Math.round((tick.bid - dayOpen) / pipSize) : 0;
+  const spreadPts = tick ? Math.round((tick.ask - tick.bid) / pipSize) : 0;
+  const fmtPx = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const maxLots = Number((instrumentInfo as { max_lot?: number | string } | undefined)?.max_lot) || 100;
+  const minLots = Number((instrumentInfo as { min_lot?: number | string } | undefined)?.min_lot) || 0.01;
+  const stepPx = execPrice > 100 ? 0.01 : Math.pow(10, -digits);
+  /** Reference tab: market | limit | stop | stop_limit (maps onto orderTab + pendingKind). */
+  const ticketTab: 'market' | 'limit' | 'stop' | 'stop_limit' = orderTab === 'market' ? 'market' : pendingKind;
+  const selectTicketTab = (t: 'market' | 'limit' | 'stop' | 'stop_limit') => {
+    if (t === 'market') { setOrderTab('market'); return; }
+    setOrderTab('pending'); setPendingKind(t);
+  };
+  const trig = parseFloat(triggerPrice);
+  /** Limit must be better than market, stop must be beyond it — the broker rule the reference shows as Min/Max value. */
+  const triggerBound = (() => {
+    if (!tick || ticketTab === 'market') return null;
+    if (ticketTab === 'limit') return side === 'buy' ? { kind: 'max' as const, v: tick.ask } : { kind: 'min' as const, v: tick.bid };
+    return side === 'buy' ? { kind: 'min' as const, v: tick.ask } : { kind: 'max' as const, v: tick.bid };
+  })();
+  const triggerOutOfBounds = !!triggerBound && Number.isFinite(trig) && (triggerBound.kind === 'max' ? trig > triggerBound.v : trig < triggerBound.v);
+  const stepTrigger = (d: number) => {
+    const base = Number.isFinite(trig) && trig > 0 ? trig : execPrice;
+    setTriggerPrice((base + d * stepPx).toFixed(digits));
+  };
+  const equityVal = Number(activeAccount?.equity ?? 0);
+  const balanceVal = Number(activeAccount?.balance ?? 0);
+  const creditVal = Number((activeAccount as { credit?: number } | null)?.credit ?? 0);
+  const marginUsedVal = Number((activeAccount as { margin_used?: number } | null)?.margin_used ?? 0);
+  const floatingPnl = equityVal - balanceVal - creditVal;
+  const marginLevelNow = marginUsedVal > 0 ? (equityVal / marginUsedVal) * 100 : null;
+  const usd = (n: number) => `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
   const marginRequired = useMemo(() => {
     if (!execPrice || !activeAccount) return 0;
@@ -88,6 +125,7 @@ export default function OrderPanel({
 
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
+  const marginAfter = marginUsedVal + marginRequired > 0 ? (equityVal / (marginUsedVal + marginRequired)) * 100 : null;
 
   // The account-group minimum deposit applies at ACCOUNT OPENING only —
   // trading is never blocked by it (margin checks are the only funding
@@ -335,16 +373,17 @@ export default function OrderPanel({
 
   const isConnected = wsStatus === 'connected';
 
-  const pad = isTradingTerminal ? 'px-2 py-2 space-y-2' : 'p-4 space-y-4';
+  const pad = isTradingTerminal ? 'px-3 py-2 space-y-2' : 'p-4 space-y-3';
   const tabPad = isTradingTerminal ? 'py-1 text-[11px]' : 'py-1.5 text-xs';
   const volBtn = isTradingTerminal ? 'w-8 h-8' : 'w-10 h-10';
   const volIn = isTradingTerminal ? 'py-1.5 text-sm' : 'py-2.5 text-base';
 
   return (
     <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
+      {!isTradingTerminal && (<>
       {/* ═══ Header ═══ */}
       <div
-        className={clsx('shrink-0 flex items-center justify-between border-b border-border-primary bg-bg-secondary', isTradingTerminal ? 'px-2 py-2' : 'px-4 py-2.5')}
+        className={clsx('shrink-0 flex items-center justify-between border-b border-border-primary bg-bg-secondary', isTradingTerminal ? 'px-2 py-1' : 'px-4 py-2.5')}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <div className="relative flex items-center gap-1.5 min-w-0" ref={dropdownRef}>
@@ -391,6 +430,7 @@ export default function OrderPanel({
           </div>
           {isTradingTerminal ? (
             <div className="flex items-center gap-1 shrink-0">
+              {!isTradingTerminal && (
               <button
                 type="button"
                 onClick={() => {
@@ -409,6 +449,7 @@ export default function OrderPanel({
                 />
                 <span className="text-[9px] font-extrabold uppercase tracking-wider">Markets</span>
               </button>
+              )}
               <button
                 type="button"
                 title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
@@ -431,12 +472,12 @@ export default function OrderPanel({
           <div className="flex items-center gap-1">
             <span
               className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#6366F1' : '#f57c00' }}
+              style={{ color: marketStatus.isOpen ? '#1E66F5' : '#f57c00' }}
             >
               {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
             </span>
             {isConnected ? (
-              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#6366F1]" />
+              <Wifi size={isTradingTerminal ? 11 : 12} className="text-buy" />
             ) : (
               <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
             )}
@@ -444,9 +485,7 @@ export default function OrderPanel({
         </div>
       </div>
 
-      {isTradingTerminal ? (
-        <div className="h-px w-full shrink-0 bg-accent" aria-hidden />
-      ) : null}
+      </>)}
 
       <div
         className={clsx('flex-1 min-h-0 flex flex-col bg-bg-base', isTradingTerminal && 'overflow-hidden')}
@@ -460,459 +499,243 @@ export default function OrderPanel({
           )}
         >
           <div className={pad}>
-          {/* Market / Pending tabs */}
-          <div className="flex rounded-md overflow-hidden bg-bg-secondary border border-border-primary">
-            {(['market', 'pending'] as const).map((t) => (
+          {/* ══ Sell ⟋ spread ⟍ Buy ══ */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+            <button
+              type="button"
+              onClick={() => setSide('sell')}
+              aria-pressed={side === 'sell'}
+              className={clsx(
+                'flex flex-col items-center justify-center rounded-l-xl py-1.5 pl-3 pr-6 transition-colors [clip-path:polygon(0_0,100%_0,84%_100%,0_100%)]',
+                side === 'sell' ? 'bg-[#E5484D] text-white' : 'bg-bg-card-nested text-text-secondary hover:bg-bg-hover',
+              )}
+            >
+              <span className="text-[11px] font-medium opacity-90 leading-none">Sell</span>
+              <span className="text-[15px] font-bold tabular-nums leading-tight">{tick ? fmtPx(tick.bid) : '---'}</span>
+            </button>
+            <span className="flex items-center justify-center px-1 text-[13px] font-medium tabular-nums text-text-secondary">{tick ? spreadPts : '—'}</span>
+            <button
+              type="button"
+              onClick={() => setSide('buy')}
+              aria-pressed={side === 'buy'}
+              className={clsx(
+                'flex flex-col items-center justify-center rounded-r-xl py-1.5 pl-6 pr-3 transition-colors [clip-path:polygon(16%_0,100%_0,100%_100%,0_100%)]',
+                side === 'buy' ? 'bg-[#1E66F5] text-white' : 'bg-bg-card-nested text-text-secondary hover:bg-bg-hover',
+              )}
+            >
+              <span className="text-[11px] font-medium opacity-90 leading-none">Buy</span>
+              <span className="text-[15px] font-bold tabular-nums leading-tight">{tick ? fmtPx(tick.ask) : '---'}</span>
+            </button>
+          </div>
+
+          {/* Day change bar */}
+          <div className="flex items-center gap-2">
+            {isTradingTerminal && (
+              <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold leading-none text-text-secondary">
+                <span className={clsx('h-1.5 w-1.5 rounded-full', marketStatus.isOpen ? 'bg-emerald-500' : 'bg-[#f57c00]')} aria-hidden />
+                {selectedSymbol}
+              </span>
+            )}
+            <div className={clsx('h-[3px] flex-1 rounded-full', dayChangePts >= 0 ? 'bg-emerald-500' : 'bg-[#E5484D]')} />
+            <span className={clsx('flex items-center gap-1 text-[11px] font-medium tabular-nums leading-none', dayChangePts >= 0 ? 'text-emerald-500' : 'text-[#E5484D]')}>
+              {dayChangePts >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span className="text-text-secondary">{dayChangePts >= 0 ? '+' : ''}{dayChangePts}</span>
+            </span>
+          </div>
+
+          {/* Order type tabs */}
+          <div className="flex items-center border-b border-border-primary">
+            {([
+              { k: 'market' as const, label: 'Market' },
+              { k: 'limit' as const, label: 'Limit' },
+              { k: 'stop' as const, label: 'Stop' },
+              { k: 'stop_limit' as const, label: 'Stop-Limit' },
+            ]).map(({ k, label }) => (
               <button
-                key={t}
+                key={k}
                 type="button"
-                onClick={() => setOrderTab(t)}
-                className={clsx('flex-1 font-semibold capitalize transition-all', tabPad)}
-                style={{
-                  background: orderTab === t ? 'var(--bg-hover)' : 'transparent',
-                  color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  borderBottom:
-                    orderTab === t
-                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#6366F1'}`
-                      : '2px solid transparent',
-                }}
+                onClick={() => selectTicketTab(k)}
+                className={clsx(
+                  'relative px-2 py-1.5 text-[12px] font-medium transition-colors',
+                  ticketTab === k ? 'text-text-primary' : 'text-text-tertiary hover:text-text-secondary',
+                )}
               >
-                {t}
+                {label}
+                {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#E94E1B]" />}
               </button>
             ))}
+            <span className="ml-auto text-text-tertiary" title="Market: fills at the current price. Limit: fills at your price or better. Stop: triggers once price passes your level."><Info size={15} /></span>
           </div>
 
-          {/* Sell / Buy Vantage-style pills with center spread badge */}
-          <div className="relative">
-            <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-8' : 'gap-9')}>
-              <button
-                type="button"
-                onClick={() => setSide('sell')}
-                className={clsx(
-                  'rounded-2xl flex flex-col items-start justify-center transition-all duration-150 active:scale-[0.98]',
-                  isTradingTerminal ? 'px-3 py-2' : 'px-4 py-3',
-                  side === 'sell'
-                    ? 'bg-[#DC2626] text-white shadow-sm'
-                    : 'bg-bg-secondary text-text-secondary border border-border-primary hover:bg-bg-hover',
-                )}
-                aria-pressed={side === 'sell'}
-              >
-                <div className={clsx('font-bold tracking-tight', isTradingTerminal ? 'text-xs' : 'text-sm')}>
-                  Sell
+          {/* Price card */}
+          {ticketTab === 'market' ? (
+            <div className="rounded-xl px-3.5 py-2.5 text-[13px] font-medium text-text-tertiary" style={{ background: 'var(--bg-card-nested)' }}>Fill at market price</div>
+          ) : (
+            <div>
+              <div className={clsx('flex items-center rounded-xl px-3.5 py-1.5', triggerOutOfBounds ? 'ring-1 ring-[#E5484D]' : '')} style={{ background: 'var(--bg-card-nested)' }}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] text-text-tertiary">{ticketTab === 'limit' ? 'Limit Price' : 'Stop Price'}</p>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={triggerPrice}
+                    onChange={(e) => setTriggerPrice(e.target.value)}
+                    placeholder={execPrice ? execPrice.toFixed(digits) : '—'}
+                    className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-text-primary placeholder:text-text-tertiary focus:outline-none border-0 shadow-none"
+                  />
                 </div>
-                <div className={clsx('font-mono font-bold tabular-nums', isTradingTerminal ? 'text-base' : 'text-lg')}>
-                  {tick ? tick.bid.toFixed(digits) : '---'}
+                <div className="flex items-center gap-1 border-l border-border-primary pl-3">
+                  <button type="button" onClick={() => stepTrigger(-1)} aria-label="Decrease price" className="flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Minus size={14} /></button>
+                  <button type="button" onClick={() => stepTrigger(1)} aria-label="Increase price" className="flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Plus size={14} /></button>
                 </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSide('buy')}
-                className={clsx(
-                  'rounded-2xl flex flex-col items-end justify-center transition-all duration-150 active:scale-[0.98]',
-                  isTradingTerminal ? 'px-3 py-2' : 'px-4 py-3',
-                  side === 'buy'
-                    ? 'bg-[#1E66F5] text-white shadow-sm'
-                    : 'bg-bg-secondary text-text-secondary border border-border-primary hover:bg-bg-hover',
-                )}
-                aria-pressed={side === 'buy'}
-              >
-                <div className={clsx('font-bold tracking-tight', isTradingTerminal ? 'text-xs' : 'text-sm')}>
-                  Buy
-                </div>
-                <div className={clsx('font-mono font-bold tabular-nums', isTradingTerminal ? 'text-base' : 'text-lg')}>
-                  {tick ? tick.ask.toFixed(digits) : '---'}
-                </div>
-              </button>
-            </div>
-
-            {/* Center spread badge — overlaps the gap between buttons.
-                Used to be a bare number "10" in a small circle, which
-                made it impossible to tell at a glance what it meant.
-                Now stacks a "SPREAD" label over the pip count + raw
-                price diff so traders can see exactly what's being
-                charged on the round trip. */}
-            {tick && (() => {
-              const pipSize = instrumentInfo?.pip_size || 0.0001;
-              const pips = tick.spread / pipSize;
-              const pipsLabel = pips >= 100 ? pips.toFixed(0) : pips.toFixed(1);
-              const priceDiff = tick.spread.toFixed(digits);
-              return (
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                  <div
-                    className={clsx(
-                      'flex flex-col items-center rounded-lg bg-white shadow-md ring-1 ring-black/5 border border-[#E5E5E5]',
-                      isTradingTerminal ? 'px-2 py-1' : 'px-2.5 py-1.5',
-                    )}
-                  >
-                    <span
-                      className={clsx(
-                        'font-bold uppercase tracking-[0.08em] text-[#9CA3AF]',
-                        isTradingTerminal ? 'text-[8px] leading-[10px]' : 'text-[9px] leading-[11px]',
-                      )}
-                    >
-                      Spread
-                    </span>
-                    <span
-                      className={clsx(
-                        'font-mono font-bold tabular-nums text-[#E94E1B] leading-tight',
-                        isTradingTerminal ? 'text-[11px]' : 'text-sm',
-                      )}
-                    >
-                      {pipsLabel}
-                      <span className={clsx('ml-0.5 font-semibold text-[#6B7280]', isTradingTerminal ? 'text-[8px]' : 'text-[9px]')}>
-                        pip{pips === 1 ? '' : 's'}
-                      </span>
-                    </span>
-                    <span
-                      className={clsx(
-                        'font-mono tabular-nums text-[#9CA3AF] leading-none mt-0.5',
-                        isTradingTerminal ? 'text-[8px]' : 'text-[9px]',
-                      )}
-                    >
-                      {priceDiff}
-                    </span>
+              </div>
+              {triggerBound && (
+                <p className={clsx('mt-1.5 text-[12px]', triggerOutOfBounds ? 'text-[#E5484D]' : 'text-text-tertiary')}>
+                  {triggerBound.kind === 'min' ? 'Min' : 'Max'} value: {triggerBound.v.toFixed(digits)}
+                </p>
+              )}
+              {ticketTab === 'stop_limit' && (
+                <div className="mt-1.5 flex items-center rounded-xl px-3.5 py-1.5" style={{ background: 'var(--bg-card-nested)' }}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-text-tertiary">Limit Price</p>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={stopLimitPrice}
+                      onChange={(e) => setStopLimitPrice(e.target.value)}
+                      placeholder={Number.isFinite(trig) ? (side === 'buy' ? trig * 0.999 : trig * 1.001).toFixed(digits) : '—'}
+                      className="ticket-input w-full bg-transparent p-0 text-[18px] font-bold tabular-nums text-text-primary placeholder:text-text-tertiary focus:outline-none border-0 shadow-none"
+                    />
                   </div>
                 </div>
-              );
-            })()}
-          </div>
-
-          {/* SL / TP — separate Add / Remove buttons. Click to toggle the
-              corresponding input field below; visually distinct red/blue
-              chips so the trader can tell them apart at a glance. */}
-          <div className={clsx('flex items-center flex-wrap', isTradingTerminal ? 'gap-2 pt-1' : 'gap-2 pt-2')}>
-            <button
-              type="button"
-              onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
-              className={clsx(
-                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors border',
-                slEnabled
-                  ? 'bg-[#ef5350]/15 text-[#ef5350] border-[#ef5350]/40'
-                  : 'bg-bg-secondary text-text-secondary border-border-primary hover:border-[#ef5350]/40 hover:text-[#ef5350]',
               )}
-              title={slEnabled ? 'Remove Stop Loss' : 'Add Stop Loss'}
-            >
-              {slEnabled ? <X size={11} /> : <Plus size={11} />}
-              SL
-            </button>
-            <button
-              type="button"
-              onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
-              className={clsx(
-                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors border',
-                tpEnabled
-                  ? 'bg-[#6366F1]/15 text-[#6366F1] border-[#6366F1]/40'
-                  : 'bg-bg-secondary text-text-secondary border-border-primary hover:border-[#6366F1]/40 hover:text-[#6366F1]',
-              )}
-              title={tpEnabled ? 'Remove Take Profit' : 'Add Take Profit'}
-            >
-              {tpEnabled ? <X size={11} /> : <Plus size={11} />}
-              TP
-            </button>
-            {activeAccount && (
-              <LeveragePicker
-                account={activeAccount}
-                onChanged={() => { void refreshAccount(); }}
-              />
-            )}
-          </div>
-
-          {/* Volume */}
-          <div className={isTradingTerminal ? 'pt-1' : 'pt-2'}>
-            <div className={clsx('flex items-center justify-between', isTradingTerminal ? 'mb-1' : 'mb-1.5')}>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">Volume</span>
-              <div className="flex gap-0.5">
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-bg-hover text-text-secondary">Lots</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors">Units</span>
-              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => adjustLots(-0.01)}
-                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary')}
-              >
-                <Minus size={isTradingTerminal ? 12 : 14} />
-              </button>
+          )}
+
+          {/* Volume card */}
+          <div className="flex items-center rounded-xl px-3.5 py-1.5" style={{ background: 'var(--bg-card-nested)' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-text-tertiary">Volume</p>
               <input
                 type="text"
                 inputMode="decimal"
                 value={lots}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setLots(v);
-                }}
-                onBlur={() => {
-                  const n = parseFloat(lots);
-                  if (!Number.isFinite(n) || n <= 0) setLots('0.01');
-                  else setLots(n.toFixed(2));
-                }}
-                className={clsx('flex-1 text-center font-mono font-bold rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary', volIn)}
+                onChange={(e) => { const v = e.target.value; if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setLots(v); }}
+                onBlur={() => { const n = parseFloat(lots); if (!Number.isFinite(n) || n <= 0) setLots(minLots.toFixed(2)); else setLots(Math.min(n, maxLots).toFixed(2)); }}
+                className="ticket-input w-full bg-transparent p-0 text-[18px] font-bold tabular-nums text-text-primary focus:outline-none border-0 shadow-none"
               />
-              <button
-                type="button"
-                onClick={() => adjustLots(0.01)}
-                className={clsx(volBtn, 'rounded-lg flex items-center justify-center transition-colors text-text-secondary hover:text-text-primary bg-bg-secondary border border-border-primary')}
-              >
-                <Plus size={isTradingTerminal ? 12 : 14} />
-              </button>
             </div>
-            {/* Quick-size chips: tap to set volume directly. */}
-            <div className="flex items-center gap-1 mt-1.5">
-              {(['0.01', '0.1', '1.00', '10', '100'] as const).map((v) => {
-                const active = parseFloat(lots) === parseFloat(v);
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setLots(v)}
-                    className={clsx(
-                      'flex-1 py-1 rounded-md text-[10px] font-bold font-mono tabular-nums border transition-colors',
-                      active
-                        ? 'border-accent/60 bg-accent/10 text-accent'
-                        : 'border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary hover:border-accent/30',
-                    )}
-                  >
-                    {v}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => adjustLots(-0.01)} aria-label="Decrease volume" className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Minus size={16} /></button>
+              <button type="button" onClick={() => adjustLots(0.01)} aria-label="Increase volume" className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Plus size={16} /></button>
+              <span className="ml-1.5 border-l border-border-primary pl-2.5 text-[12px] text-text-primary">Lots</span>
+              <ChevronDown size={14} className="text-text-tertiary" />
             </div>
           </div>
 
-          {/* Pending order — type toggle + trigger price (+ stop-limit
-              target). Only renders on the Pending tab. */}
-          {orderTab === 'pending' && (
-            <div className="pt-2 space-y-2">
-              <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary block mb-1.5">
-                  Pending type
-                </span>
-                <div className="grid grid-cols-3 rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
-                  {([
-                    { k: 'limit' as const, label: 'Limit' },
-                    { k: 'stop' as const, label: 'Stop' },
-                    { k: 'stop_limit' as const, label: 'Stop-Limit' },
-                  ]).map(({ k, label }) => {
-                    const active = pendingKind === k;
-                    return (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => setPendingKind(k)}
-                        className={clsx(
-                          'px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap',
-                          active
-                            ? 'bg-accent/15 text-accent'
-                            : 'text-text-tertiary hover:text-text-primary',
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Lot slider */}
+          <div className="px-1">
+            <input
+              type="range"
+              min={minLots}
+              max={maxLots}
+              step={0.01}
+              value={Math.min(Math.max(lotsNum || minLots, minLots), maxLots)}
+              onChange={(e) => setLots(parseFloat(e.target.value).toFixed(2))}
+              aria-label="Volume"
+              className="crx-range w-full"
+              style={{ '--pct': `${Math.min(100, Math.max(0, ((lotsNum - minLots) / (maxLots - minLots)) * 100))}%` } as React.CSSProperties}
+            />
+            <div className="-mt-0.5 flex items-center justify-between text-[11px] text-text-tertiary">
+              <span>0</span>
+              <span>Max open {maxLots.toFixed(2)} Lots</span>
+            </div>
+          </div>
+
+          {/* TP / SL toggle */}
+          <label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-text-primary">
+            <input
+              type="checkbox"
+              checked={slEnabled || tpEnabled}
+              onChange={(e) => { setSlEnabled(e.target.checked); setTpEnabled(e.target.checked); if (!e.target.checked) { setStopLoss(''); setTakeProfit(''); } }}
+              className="h-4 w-4 rounded border-border-primary accent-[#E94E1B]"
+            />
+            TP/SL
+          </label>
+          {(slEnabled || tpEnabled) && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl px-3 py-1.5" style={{ background: 'var(--bg-card-nested)' }}>
+                <p className="text-[11px] text-text-tertiary">Take Profit</p>
+                <input type="text" inputMode="decimal" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder={execPrice ? (execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits) : '—'} className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-buy placeholder:text-text-tertiary focus:outline-none border-0 shadow-none" />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                    {pendingKind === 'stop_limit' ? 'Stop (trigger) price' : 'Trigger price'}
-                  </span>
-                  <span className="text-[9.5px] text-text-tertiary font-mono">
-                    {pendingKind === 'limit'
-                      ? side === 'buy'
-                        ? `< ${ask.toFixed(digits)}`
-                        : `> ${bid.toFixed(digits)}`
-                      : side === 'buy'
-                        ? `> ${ask.toFixed(digits)}`
-                        : `< ${bid.toFixed(digits)}`}
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={triggerPrice}
-                  onChange={(e) => setTriggerPrice(e.target.value)}
-                  step={execPrice > 100 ? 0.01 : 0.00001}
-                  placeholder={(
-                    pendingKind === 'limit'
-                      ? side === 'buy'
-                        ? ask * 0.999
-                        : bid * 1.001
-                      : side === 'buy'
-                        ? ask * 1.001
-                        : bid * 0.999
-                  ).toFixed(digits)}
-                  className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary placeholder:text-text-tertiary focus:border-accent/50"
-                />
+              <div className="rounded-xl px-3 py-1.5" style={{ background: 'var(--bg-card-nested)' }}>
+                <p className="text-[11px] text-text-tertiary">Stop Loss</p>
+                <input type="text" inputMode="decimal" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder={execPrice ? (execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits) : '—'} className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-[#E5484D] placeholder:text-text-tertiary focus:outline-none border-0 shadow-none" />
               </div>
-              {/* Second price input only for stop-limit */}
-              {pendingKind === 'stop_limit' && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                      Limit (target) price
-                    </span>
-                    <span className="text-[9.5px] text-text-tertiary font-mono">
-                      {side === 'buy' ? '< stop' : '> stop'}
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={stopLimitPrice}
-                    onChange={(e) => setStopLimitPrice(e.target.value)}
-                    step={execPrice > 100 ? 0.01 : 0.00001}
-                    placeholder={
-                      Number.isFinite(parseFloat(triggerPrice))
-                        ? (
-                            side === 'buy'
-                              ? parseFloat(triggerPrice) * 0.999
-                              : parseFloat(triggerPrice) * 1.001
-                          ).toFixed(digits)
-                        : '—'
-                    }
-                    className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-border-primary text-text-primary placeholder:text-text-tertiary focus:border-accent/50"
-                  />
-                </div>
-              )}
             </div>
           )}
 
-          {/* SL input */}
-          {slEnabled && (
-            <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-1.5 block">Stop Loss</span>
-              <input
-                type="number"
-                value={stopLoss}
-                onChange={(e) => setStopLoss(e.target.value)}
-                step={execPrice > 100 ? 0.01 : 0.00001}
-                placeholder={`e.g. ${(execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-red-500/30 text-red-400"
-              />
-            </div>
+          {/* Action */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid || triggerOutOfBounds)}
+            className={clsx(
+              'w-full rounded-xl py-2.5 text-[15px] font-semibold text-white transition-[transform,opacity] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45',
+              side === 'buy' ? 'bg-[#1E66F5] hover:bg-[#1a58d6]' : 'bg-[#E5484D] hover:bg-[#d23b40]',
+            )}
+          >
+            {submitting ? 'Placing…' : side === 'buy' ? 'Buy' : 'Sell'}
+          </button>
+          {!hasEnoughMargin && <p className="text-center text-[12px] font-semibold text-[#E5484D]">Insufficient margin</p>}
+          {!marketStatus.isOpen && orderTab === 'market' && (
+            <p className="rounded-xl px-3 py-2 text-center text-[12px] text-[#E5484D]" style={{ background: 'rgba(229,72,77,0.1)' }}>{marketStatus.reason}</p>
           )}
 
-          {/* TP input */}
-          {tpEnabled && (
-            <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] mb-1.5 block">Take Profit</span>
-              <input
-                type="number"
-                value={takeProfit}
-                onChange={(e) => setTakeProfit(e.target.value)}
-                step={execPrice > 100 ? 0.01 : 0.00001}
-                placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#6366F1]/30 text-[#6366F1]"
-              />
-            </div>
-          )}
-
-          {!isTradingTerminal ? (
-            <>
-              <div className="py-2" />
-              <div className="rounded-xl p-3 space-y-2 bg-bg-secondary border border-border-primary">
-                {[
-                  { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
-                  { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
-                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#6366F1' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#6366F1' : '#f57c00' },
-                ].map((row) => (
-                  <div key={row.label} className="flex items-center justify-between">
-                    <span className="text-[11px] text-text-tertiary">{row.label}</span>
-                    <span className="text-[11px] font-mono font-semibold" style={{ color: row.color }}>{row.value}</span>
-                  </div>
-                ))}
-                {!hasEnoughMargin && (
-                  <div className="text-[11px] text-red-500 font-bold text-center pt-2 mt-2" style={{ borderTop: '1px solid rgba(239,83,80,0.15)' }}>
-                    ⚠ Insufficient margin
-                  </div>
-                )}
+          {/* Margin rows */}
+          <dl className="text-[12px] leading-none">
+            {[
+              ['Margin', usd(marginRequired)],
+              ['Free Margin', usd(freeMargin)],
+              ['Margin Level After Trading', marginAfter != null ? `${marginAfter.toLocaleString('en-US', { maximumFractionDigits: 2 })} %` : '--'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
+                <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                <dd className="tabular-nums font-medium text-text-primary">{v}</dd>
               </div>
-              <div className="py-2" />
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
-                className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
-                style={{
-                  background: side === 'buy' ? '#2962FF' : '#ef5350',
-                  color: '#fff',
-                  boxShadow: side === 'buy' ? '0 4px 20px rgba(41,98,255,0.2)' : '0 4px 20px rgba(239,83,80,0.2)',
-                }}
-              >
-                {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
-              </button>
-              {!marketStatus.isOpen && orderTab === 'market' && (
-                <div className="mt-4 rounded-lg px-3 py-2 text-[11px] text-red-400 leading-snug text-center" style={{ background: 'rgba(239,83,80,0.1)', border: '1px solid rgba(239,83,80,0.2)' }}>
-                  {marketStatus.reason}
+            ))}
+            <div className="flex items-center justify-between gap-3 py-[3.5px]">
+              <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">Leverage</dt>
+              <dd className="tabular-nums font-medium text-text-primary">
+                {activeAccount ? <LeveragePicker account={activeAccount} onChanged={() => { void refreshAccount(); }} /> : '—'}
+              </dd>
+            </div>
+          </dl>
+
+          {/* Assets */}
+          <div className="-mx-3 border-t border-border-primary px-3 pt-2">
+            <h3 className="text-[13px] font-bold text-text-primary">Assets</h3>
+            <dl className="mt-1 text-[12px] leading-none">
+              {[
+                ['Equity', usd(equityVal)],
+                ['Balance', usd(balanceVal)],
+                ['Floating PnL', `${floatingPnl >= 0 ? '' : '-'}${Math.abs(floatingPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD (${balanceVal > 0 ? ((floatingPnl / balanceVal) * 100).toFixed(2) : '0.00'} %)`],
+                ['Credit', usd(creditVal)],
+                ['Margin Level', marginLevelNow != null ? `${marginLevelNow.toLocaleString('en-US', { maximumFractionDigits: 2 })} %` : '--'],
+                ['Margin Used', usd(marginUsedVal)],
+                ['Free Margin', usd(freeMargin)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
+                  <dt className="shrink-0 text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                  <dd className="flex items-center gap-1.5 text-right tabular-nums font-medium text-text-primary">
+                    {k === 'Margin Level' && <Gauge size={13} className="shrink-0 text-emerald-500" />}{v}
+                  </dd>
                 </div>
-              )}
-            </>
-          ) : null}
+              ))}
+            </dl>
+          </div>
           </div>
         </div>
-
-        {isTradingTerminal ? (
-          <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
-            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
-              {/* Market orders show the required Margin here (the standalone
-                  "Mrgn $.." line below was removed); pending orders keep the
-                  Trigger price since that's the essential value to confirm. */}
-              <span className="text-[10px] text-text-tertiary">
-                {orderTab === 'pending' ? 'Trigger' : 'Margin'}
-              </span>
-              <span className="text-xs font-mono font-semibold text-text-primary">
-                {orderTab === 'pending'
-                  ? (Number.isFinite(parseFloat(triggerPrice)) && parseFloat(triggerPrice) > 0
-                      ? parseFloat(triggerPrice).toFixed(digits)
-                      : '—')
-                  : `$${marginRequired.toFixed(2)}`}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
-              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#6366F1]' : 'text-[#ef5350]')}>
-                Free ${freeMargin.toFixed(2)}
-              </span>
-              <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#6366F1]' : 'text-[#f57c00]')}
-                title={isConnected ? 'Feed connected' : 'Feed disconnected'}
-              >
-                {isConnected ? '●' : '○'}
-              </span>
-            </div>
-            {!hasEnoughMargin && (
-              <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">Insufficient margin</div>
-            )}
-            {orderTab === 'pending' && !pendingTriggerValid && hasEnoughMargin && (
-              <div className="text-[10px] text-warning font-semibold text-center leading-tight">
-                Enter a trigger price to place the order
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
-              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
-              style={{
-                background: side === 'buy' ? '#2962FF' : '#ef5350',
-                color: '#fff',
-                boxShadow: side === 'buy' ? '0 2px 12px rgba(41,98,255,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
-              }}
-            >
-              {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
-            </button>
-            {!marketStatus.isOpen && orderTab === 'market' && (
-              <div
-                className="rounded px-2 py-1 text-[10px] text-red-400 leading-snug text-center"
-                style={{ background: 'rgba(239,83,80,0.1)', border: '1px solid rgba(239,83,80,0.2)' }}
-              >
-                {marketStatus.reason}
-              </div>
-            )}
-          </div>
-        ) : null}
       </div>
     </div>
   );
@@ -1022,7 +845,7 @@ function LeveragePicker({
                 className={clsx(
                   'w-full text-left px-2 py-1 text-[11px] font-mono transition-colors',
                   v === account.leverage
-                    ? 'bg-[#6366F1]/15 text-[#6366F1] font-bold'
+                    ? 'bg-[#1E66F5]/15 text-buy font-bold'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >

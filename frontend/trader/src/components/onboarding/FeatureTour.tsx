@@ -262,7 +262,7 @@ export default function FeatureTour() {
           rest of the screen through the "hole"). */}
       {rect && (
         <div
-          className="pointer-events-none absolute rounded-xl ring-2 ring-[#E94E1B] transition-all duration-200"
+          className="pointer-events-none absolute rounded-xl ring-2 ring-crx-yellow transition-all duration-200"
           style={{
             top: rect.top - HIGHLIGHT_PAD,
             left: rect.left - HIGHLIGHT_PAD,
@@ -275,20 +275,20 @@ export default function FeatureTour() {
 
       {/* Instruction card */}
       <div
-        className="absolute z-[10000] rounded-2xl border border-[#E5E5E5] bg-white p-5 shadow-2xl"
+        className="absolute z-[10000] rounded-2xl border border-border-primary bg-bg-card p-5 shadow-2xl"
         style={cardStyle}
       >
         <button
           type="button"
           onClick={finish}
           aria-label="Skip tour"
-          className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-[#9A9A9A] hover:bg-[#F5F5F5] hover:text-[#0A0A0A] transition-colors"
+          className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-text-tertiary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <X size={16} />
         </button>
 
-        <h3 className="pr-6 text-base font-bold text-[#0A0A0A]">{step.title}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#5B5B5B]">{step.body}</p>
+        <h3 className="pr-6 text-base font-bold text-text-primary">{step.title}</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">{step.body}</p>
 
         {/* Progress dots */}
         <div className="mt-4 flex items-center gap-1.5">
@@ -297,8 +297,8 @@ export default function FeatureTour() {
               key={s.key}
               className={
                 i === index
-                  ? 'h-1.5 w-4 rounded-full bg-[#E94E1B] transition-all'
-                  : 'h-1.5 w-1.5 rounded-full bg-[#E5E5E5] transition-all'
+                  ? 'h-1.5 w-4 rounded-full bg-crx-yellow transition-all'
+                  : 'h-1.5 w-1.5 rounded-full bg-border-secondary transition-all'
               }
             />
           ))}
@@ -308,7 +308,7 @@ export default function FeatureTour() {
           <button
             type="button"
             onClick={finish}
-            className="text-xs font-medium text-[#9A9A9A] hover:text-[#0A0A0A] transition-colors"
+            className="text-xs font-medium text-text-tertiary hover:text-text-primary transition-colors"
           >
             Skip
           </button>
@@ -317,7 +317,7 @@ export default function FeatureTour() {
               <button
                 type="button"
                 onClick={back}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#E5E5E5] px-3 py-1.5 text-sm font-medium text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+                className="inline-flex items-center gap-1 rounded-full border border-border-primary px-4 py-1.5 text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
               >
                 <ArrowLeft size={14} />
                 Back
@@ -326,7 +326,7 @@ export default function FeatureTour() {
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#E94E1B] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#C73E11] transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-crx-charcoal px-4 py-1.5 text-sm font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover transition-colors"
             >
               {isLast ? 'Got it' : 'Next'}
               {!isLast && <ArrowRight size={14} />}

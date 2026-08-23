@@ -39,14 +39,14 @@ function LangMenu({ compact = false }: { compact?: boolean }) {
       <button
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
-        className={`inline-flex items-center gap-1 text-gray-900 rounded-full hover:bg-gray-100 transition-colors ${
+        className={`inline-flex items-center gap-1 text-tx-strong rounded-full hover:bg-tx-surface transition-colors ${
           compact ? 'text-[12px] px-1.5 py-1' : 'text-[13px] px-2 py-1'
         }`}
         aria-label="Change language"
         aria-haspopup="listbox"
         aria-expanded={menuOpen}
       >
-        <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
+        <Globe className="w-4 h-4 text-tx-strong" strokeWidth={2} />
         <span className="font-semibold uppercase">{current.label}</span>
       </button>
       {menuOpen && (
@@ -65,8 +65,8 @@ function LangMenu({ compact = false }: { compact?: boolean }) {
                 setLang(l.code)
                 setMenuOpen(false)
               }}
-              className={`block w-full px-3.5 py-2 text-left text-[13px] hover:bg-gray-50 transition-colors ${
-                l.code === lang ? 'font-semibold text-[#E94E1B]' : 'text-gray-900'
+              className={`block w-full px-3.5 py-2 text-left text-[13px] hover:bg-tx-surface transition-colors duration-fast ease-entrance ${
+                l.code === lang ? 'font-semibold text-tx-strong' : 'text-tx-muted'
               }`}
             >
               {l.nativeName}
@@ -166,16 +166,16 @@ function DropdownCard({ title, body, accent = 'currency' }: DropdownCardProps) {
   return (
     <a
       href={`/${slugify(title)}`}
-      className="group relative block rounded-2xl bg-gray-50 overflow-hidden p-6 h-[220px] hover:shadow-md transition-shadow"
+      className="group relative block rounded-2xl bg-tx-surface overflow-hidden p-6 h-[220px] hover:shadow-md transition-shadow"
     >
       <span className={`pointer-events-none absolute inset-0 marketing-dropdown-accent-${accent}`} />
-      <h3 className="relative z-10 text-xl font-extrabold uppercase tracking-tight text-gray-900 max-w-[60%]">
+      <h3 className="relative z-10 text-xl font-semibold uppercase tracking-tight text-tx-strong max-w-[60%]">
         {title}
       </h3>
-      <p className="absolute z-10 bottom-16 left-6 right-6 text-sm text-gray-900/80 leading-relaxed max-w-[60%]">
+      <p className="absolute z-10 bottom-16 left-6 right-6 text-sm text-tx-muted leading-relaxed max-w-[60%]">
         {body}
       </p>
-      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-gray-900/40 flex items-center justify-center text-gray-900 z-10 group-hover:border-[#E94E1B] group-hover:text-[#E94E1B] transition-colors">
+      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-tx-line flex items-center justify-center text-tx-strong z-10 group-hover:border-tx-strong group-hover:text-tx-strong transition-colors">
         <ChevronRight className="w-4 h-4" strokeWidth={2} />
       </span>
     </a>
@@ -196,7 +196,7 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
         href={href}
         className="group relative block rounded-2xl overflow-hidden h-full min-h-[420px] bg-[#475a6b] text-white"
       >
-        <span className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#E94E1B] z-20" aria-hidden="true" />
+        <span className="absolute top-0 bottom-0 left-0 w-1.5 bg-tx-strong z-20" aria-hidden="true" />
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -205,7 +205,7 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
           }}
           aria-hidden="true"
         />
-        <h3 className="absolute top-6 left-8 right-6 text-3xl font-extrabold uppercase tracking-tight z-10">
+        <h3 className="absolute top-6 left-8 right-6 text-3xl font-semibold uppercase tracking-tight z-10">
           {title}
         </h3>
         <div
@@ -213,7 +213,7 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
           aria-hidden="true"
         />
         <p className="absolute bottom-6 left-8 right-16 text-sm font-semibold leading-snug z-10">{body}</p>
-        <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#E94E1B] transition-colors">
+        <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-tx-strong transition-colors">
           <ChevronRight className="w-4 h-4" strokeWidth={2} />
         </span>
       </a>
@@ -223,13 +223,13 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
     <a
       href={href}
       className={`group relative block rounded-2xl overflow-hidden p-6 h-full min-h-[420px] ${
-        accent === 'orange' ? 'bg-[#E94E1B] text-white' : 'bg-gray-50 text-gray-900'
+        accent === 'orange' ? 'bg-tx-strong text-white' : 'bg-tx-surface text-tx-strong'
       }`}
     >
-      <h3 className="text-3xl font-extrabold uppercase tracking-tight relative z-10">{title}</h3>
+      <h3 className="text-3xl font-semibold uppercase tracking-tight relative z-10">{title}</h3>
       <div className="absolute inset-0 marketing-featured-illustration" />
       <p className="absolute bottom-6 left-6 right-16 text-sm font-semibold leading-snug z-10">{body}</p>
-      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#E94E1B] transition-colors">
+      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-tx-strong transition-colors">
         <ChevronRight className="w-4 h-4" strokeWidth={2} />
       </span>
     </a>
@@ -246,13 +246,13 @@ interface LinkGroupProps {
 function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
   return (
     <div>
-      <h4 className="text-xs font-extrabold uppercase tracking-widest text-gray-900/40 mb-4">{title}</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-faint mb-4">{title}</h4>
       <ul className="flex flex-col gap-3">
         {items.map((label) => (
           <li key={label}>
             <a
               href={`/${slugify(label)}`}
-              className="text-[15px] text-gray-900 hover:text-[#E94E1B] transition-colors"
+              className="text-[15px] text-tx-strong hover:text-tx-strong transition-colors"
             >
               {label}
             </a>
@@ -261,7 +261,7 @@ function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
       </ul>
       {extraTitle && extraItems && extraItems.length > 0 && (
         <>
-          <h4 className="text-xs font-extrabold uppercase tracking-widest text-gray-900/40 mt-7 mb-4">
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-faint mt-7 mb-4">
             {extraTitle}
           </h4>
           <ul className="flex flex-col gap-3">
@@ -269,7 +269,7 @@ function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
               <li key={label}>
                 <a
                   href={`/${slugify(label)}`}
-                  className="text-[15px] text-gray-900 hover:text-[#E94E1B] transition-colors"
+                  className="text-[15px] text-tx-strong hover:text-tx-strong transition-colors"
                 >
                   {label}
                 </a>
@@ -288,7 +288,7 @@ function DropdownPanel({ item }: { item: SubNavLink | undefined }) {
 
   if (featured || groups) {
     return (
-      <div className="absolute left-0 right-0 top-full bg-white border-t border-gray-200 shadow-lg">
+      <div className="absolute left-0 right-0 top-full bg-white border-t border-tx-line shadow-lg">
         <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             {featured && (
@@ -325,7 +325,7 @@ function DropdownPanel({ item }: { item: SubNavLink | undefined }) {
 
   if (!cards || !cards.length) return null
   return (
-    <div className="absolute left-0 right-0 top-full bg-white border-t border-gray-200 shadow-lg">
+    <div className="absolute left-0 right-0 top-full bg-white border-t border-tx-line shadow-lg">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {cards.map((c) => (
@@ -349,8 +349,8 @@ function SubNavItem({ link, onHover, isActive }: SubNavItemProps) {
     <li onMouseEnter={() => onHover(link.label)} className="relative">
       <a
         href={link.href}
-        className={`block py-3 text-sm font-bold transition-colors ${
-          showAccent ? 'text-[#E94E1B]' : 'text-gray-900 hover:text-[#E94E1B]'
+        className={`block py-3 text-sm font-medium transition-colors duration-fast ease-entrance ${
+          showAccent ? 'text-tx-strong' : 'text-tx-muted hover:text-tx-strong'
         }`}
       >
         {link.label}
@@ -400,8 +400,8 @@ export default function MarketingNavbar({
   )
 
   return (
-    <header className="sticky top-3 md:top-4 z-50 mx-3 md:mx-4 lg:mx-5 rounded-2xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-white/45">
-      <nav className="w-full mx-auto px-3 md:px-4 lg:px-5 relative flex items-center gap-3 h-16 md:h-[68px]">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-tx-line supports-[backdrop-filter]:bg-white/80">
+      <nav className="w-full mx-auto px-4 md:px-8 lg:px-12 relative flex items-center gap-3 h-16 md:h-[72px]">
         <div className="shrink-0">
           <Wordmark />
         </div>
@@ -409,8 +409,8 @@ export default function MarketingNavbar({
         <ul className="hidden lg:flex flex-1 items-center justify-center gap-3 xl:gap-5 2xl:gap-6">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
-            const cls = `whitespace-nowrap text-[13px] 2xl:text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
-              active ? 'text-[#E94E1B]' : 'text-gray-900'
+            const cls = `whitespace-nowrap text-[13px] 2xl:text-[14px] font-medium tracking-tight transition-colors duration-fast ease-entrance hover:text-tx-strong ${
+              active ? 'text-tx-strong' : 'text-tx-muted'
             }`
             return (
               <li key={link.key}>
@@ -435,7 +435,7 @@ export default function MarketingNavbar({
           <a
             href="/downloads/SwissCresta.apk"
             download="SwissCresta.apk"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-tx-strong text-[13px] font-semibold text-tx-strong hover:bg-tx-strong hover:text-white transition-colors"
           >
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
@@ -451,8 +451,8 @@ export default function MarketingNavbar({
               aria-expanded={terminalMenuOpen}
               aria-label="Download Desktop Terminal"
               title="Download Desktop Terminal"
-              className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#E94E1B] transition-colors ${
-                terminalMenuOpen ? 'bg-[#E94E1B] text-white' : 'text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white'
+              className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-tx-strong transition-colors ${
+                terminalMenuOpen ? 'bg-tx-strong text-white' : 'text-tx-strong hover:bg-tx-strong hover:text-white'
               }`}
             >
               <Monitor className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -469,9 +469,9 @@ export default function MarketingNavbar({
                 />
                 <div
                   role="menu"
-                  className="absolute right-0 top-full mt-2 z-50 w-60 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+                  className="absolute right-0 top-full mt-2 z-50 w-60 rounded-xl border border-tx-line bg-white p-1.5 shadow-xl"
                 >
-                  <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-tx-faint">
                     Desktop Terminal
                   </div>
                   {/* Windows */}
@@ -480,7 +480,7 @@ export default function MarketingNavbar({
                     download="SwissCrestaTerminal-Setup.exe"
                     role="menuitem"
                     onClick={() => setTerminalMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-[#E94E1B]/10 hover:text-[#E94E1B] transition-colors"
+                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-tx-strong hover:bg-tx-surface hover:text-tx-strong transition-colors"
                   >
                     <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor" aria-hidden="true">
                       <path d="M3 5.6 10.3 4.6v6.9H3V5.6Zm0 12.8 7.3 1v-6.8H3v5.8Zm8.2 1.1L21 21V12.4h-9.8v7.1Zm0-14.9v7.1H21V3l-9.8 1.6Z" />
@@ -491,14 +491,14 @@ export default function MarketingNavbar({
                   <div
                     role="menuitem"
                     aria-disabled="true"
-                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-gray-400 cursor-not-allowed"
+                    className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-tx-faint cursor-not-allowed"
                     title="macOS build coming soon"
                   >
                     <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor" aria-hidden="true">
                       <path d="M16.4 12.9c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.5 2.2 2.6 2.2 1 0 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.6 1.1 0 1.8-1 2.5-2 .8-1.2 1.1-2.3 1.1-2.3s-2.1-.8-2.1-3.2ZM14.3 6.3c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6.9.1 1.8-.5 2.5-1.2Z" />
                     </svg>
                     <span className="flex-1">Download for macOS</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wide rounded bg-gray-100 px-1.5 py-0.5 text-gray-400">Soon</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wide rounded bg-gray-100 px-1.5 py-0.5 text-tx-faint">Soon</span>
                   </div>
                 </div>
               </>
@@ -516,7 +516,7 @@ export default function MarketingNavbar({
             <>
               <Link
                 href="/auth/portal"
-                className="inline-flex items-center justify-center whitespace-nowrap px-3.5 py-2 rounded-full border border-gray-900 text-[13px] font-semibold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+                className="inline-flex items-center justify-center whitespace-nowrap px-3.5 py-2 rounded-full border border-tx-strong text-[13px] font-semibold text-tx-strong hover:bg-gray-900 hover:text-white transition-colors"
               >
                 {t('nav.login')}
               </Link>
@@ -538,7 +538,7 @@ export default function MarketingNavbar({
           <LangMenu compact />
           <button
             type="button"
-            className="p-2 -mr-2 text-gray-900"
+            className="p-2 -mr-2 text-tx-strong"
             aria-label="Toggle menu"
             onClick={() => setOpen((v) => !v)}
           >
@@ -585,7 +585,7 @@ export default function MarketingNavbar({
             {NAV_LINKS.map((link) => {
               const active = link.key === activePage
               const cls = `block text-sm font-semibold py-1 ${
-                active ? 'text-[#E94E1B]' : 'text-gray-900/80'
+                active ? 'text-tx-strong' : 'text-tx-muted'
               }`
               return (
                 <li key={link.key}>
@@ -612,13 +612,13 @@ export default function MarketingNavbar({
               )
             })}
             {hasSubNav && (
-              <li className="pt-3 mt-1 border-t border-gray-200">
+              <li className="pt-3 mt-1 border-t border-tx-line">
                 <ul className="flex flex-col gap-2">
                   {allSubNav.map((link) => (
                     <li key={link.label}>
                       <a
                         href={link.href}
-                        className="block text-sm text-gray-900/80 py-1"
+                        className="block text-sm text-tx-muted py-1"
                         onClick={() => setOpen(false)}
                       >
                         {link.label}
@@ -628,12 +628,12 @@ export default function MarketingNavbar({
                 </ul>
               </li>
             )}
-            <li className="pt-3 border-t border-gray-200">
+            <li className="pt-3 border-t border-tx-line">
               <a
                 href="/downloads/SwissCresta.apk"
                 download="SwissCresta.apk"
                 onClick={() => setOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-tx-strong text-tx-strong text-sm font-semibold hover:bg-tx-strong hover:text-white transition-colors"
               >
                 <Download className="w-4 h-4" strokeWidth={2} />
                 Download APK
@@ -644,7 +644,7 @@ export default function MarketingNavbar({
                 href="/downloads/SwissCrestaTerminal-Setup-1.0.1.exe"
                 download="SwissCrestaTerminal-Setup.exe"
                 onClick={() => setOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-tx-strong text-tx-strong text-sm font-semibold hover:bg-tx-strong hover:text-white transition-colors"
               >
                 <Monitor className="w-4 h-4" strokeWidth={2} />
                 Terminal for Windows
@@ -654,7 +654,7 @@ export default function MarketingNavbar({
               <span
                 aria-disabled="true"
                 title="macOS build coming soon"
-                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-gray-400 text-sm font-semibold cursor-not-allowed"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-tx-line text-tx-faint text-sm font-semibold cursor-not-allowed"
               >
                 <Monitor className="w-4 h-4" strokeWidth={2} />
                 Terminal for macOS
@@ -662,7 +662,7 @@ export default function MarketingNavbar({
               </span>
             </li>
             {showCta && (
-              <li className="flex items-center gap-3 pt-3 border-t border-gray-200">
+              <li className="flex items-center gap-3 pt-3 border-t border-tx-line">
                 {showAppLink ? (
                   <Button
                     variant="primary"
@@ -676,7 +676,7 @@ export default function MarketingNavbar({
                     <Link
                       href="/auth/portal"
                       onClick={() => setOpen(false)}
-                      className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold"
+                      className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-tx-strong text-tx-strong text-sm font-semibold"
                     >
                       {t('nav.login')}
                     </Link>
@@ -698,33 +698,33 @@ export default function MarketingNavbar({
       <style>{`
         .marketing-dropdown-accent-currency {
           background:
-            radial-gradient(circle at 78% 60%, rgba(233,78,27,0.18) 0, transparent 35%),
-            radial-gradient(circle at 88% 30%, rgba(30,80,200,0.18) 0, transparent 30%),
-            radial-gradient(circle at 70% 80%, rgba(199,62,17,0.18) 0, transparent 30%);
+            radial-gradient(circle at 78% 60%, rgba(23,23,23,0.18) 0, transparent 35%),
+            radial-gradient(circle at 88% 30%, rgba(80,80,80,0.18) 0, transparent 30%),
+            radial-gradient(circle at 70% 80%, rgba(23,23,23,0.18) 0, transparent 30%);
         }
         .marketing-dropdown-accent-metals {
           background:
-            radial-gradient(circle at 80% 55%, rgba(212,175,55,0.35) 0, transparent 38%),
+            radial-gradient(circle at 80% 55%, rgba(120,120,120,0.35) 0, transparent 38%),
             radial-gradient(circle at 90% 80%, rgba(180,180,180,0.45) 0, transparent 32%);
         }
         .marketing-dropdown-accent-crypto {
           background:
-            radial-gradient(circle at 75% 45%, rgba(233,78,27,0.30) 0, transparent 32%),
-            radial-gradient(circle at 90% 75%, rgba(212,175,55,0.30) 0, transparent 30%),
-            radial-gradient(circle at 70% 75%, rgba(30,80,200,0.18) 0, transparent 28%);
+            radial-gradient(circle at 75% 45%, rgba(23,23,23,0.30) 0, transparent 32%),
+            radial-gradient(circle at 90% 75%, rgba(120,120,120,0.30) 0, transparent 30%),
+            radial-gradient(circle at 70% 75%, rgba(80,80,80,0.18) 0, transparent 28%);
         }
         .marketing-dropdown-accent-platform {
           background:
-            radial-gradient(circle at 85% 60%, rgba(30,80,200,0.22) 0, transparent 38%),
+            radial-gradient(circle at 85% 60%, rgba(80,80,80,0.22) 0, transparent 38%),
             radial-gradient(circle at 75% 30%, rgba(80,80,80,0.18) 0, transparent 30%);
         }
         .marketing-dropdown-accent-news {
           background:
-            radial-gradient(circle at 80% 55%, rgba(233,78,27,0.22) 0, transparent 36%);
+            radial-gradient(circle at 80% 55%, rgba(23,23,23,0.22) 0, transparent 36%);
         }
         .marketing-dropdown-accent-pricing {
           background:
-            radial-gradient(circle at 80% 60%, rgba(0,150,80,0.22) 0, transparent 36%);
+            radial-gradient(circle at 80% 60%, rgba(100,100,100,0.22) 0, transparent 36%);
         }
         .marketing-featured-illustration {
           background:

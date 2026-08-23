@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -133,6 +133,10 @@ export default function AiStrategyDetailPage() {
   const [tab, setTab] = useState('overview');
   const [backtestOpen, setBacktestOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
+  // Deep link from the builder: /ai-strategies/<id>?action=backtest|deploy
+  const searchParams = useSearchParams();
+  const deepAction = searchParams?.get('action');
+  const [deepHandled, setDeepHandled] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -170,6 +174,19 @@ export default function AiStrategyDetailPage() {
       // keep last-known state
     }
   }, [id]);
+
+  useEffect(() => {
+    if (deepHandled || !detail || !deepAction) return;
+    setDeepHandled(true);
+    if (deepAction === 'backtest') setBacktestOpen(true);
+    if (deepAction === 'deploy') {
+      if (detail.latest_backtest) setDeployOpen(true);
+      else {
+        toast('Run a backtest first — deploy unlocks after it completes');
+        setBacktestOpen(true);
+      }
+    }
+  }, [deepAction, deepHandled, detail]);
 
   useEffect(() => {
     void fetchDetail();

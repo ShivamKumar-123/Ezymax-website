@@ -104,7 +104,7 @@ function SessionRow({
           'relative block w-full rounded-lg py-2 pl-3 text-left transition-colors',
           mode === 'confirmDelete' ? 'pr-20' : 'pr-16',
           isActive
-            ? 'bg-[#FCE6DD]/60'
+            ? 'bg-crx-yellow-soft/60'
             : 'hover:bg-bg-hover active:bg-bg-active',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
         )}
@@ -215,7 +215,7 @@ export default function ChatHistoryPanel({
           onClick={onNew}
           aria-label="New chat"
           title="New chat"
-          className={clsx(iconBtnCls, 'text-[#E94E1B] hover:bg-[#FCE6DD] hover:text-[#E94E1B]')}
+          className={clsx(iconBtnCls, 'text-[#E94E1B] hover:bg-crx-yellow-soft hover:text-[#E94E1B]')}
         >
           <Plus size={16} aria-hidden />
         </button>
@@ -234,7 +234,7 @@ export default function ChatHistoryPanel({
               className={clsx(
                 iconBtnCls,
                 'shrink-0',
-                s.id === activeId && 'bg-[#FCE6DD] text-[#E94E1B] hover:bg-[#FCE6DD] hover:text-[#E94E1B]',
+                s.id === activeId && 'bg-crx-yellow-soft text-[#E94E1B] hover:bg-crx-yellow-soft hover:text-[#E94E1B]',
               )}
             >
               <MessageSquare size={14} aria-hidden />
@@ -270,9 +270,9 @@ export default function ChatHistoryPanel({
           type="button"
           onClick={onNew}
           className={clsx(
-            'flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#E94E1B]/30 bg-[#FCE6DD]/50 py-2',
+            'flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#E94E1B]/30 bg-crx-yellow-soft/50 py-2',
             'text-xs font-bold text-[#E94E1B] transition-colors',
-            'hover:border-[#E94E1B]/50 hover:bg-[#FCE6DD] active:bg-[#FCE6DD]',
+            'hover:border-[#E94E1B]/50 hover:bg-crx-yellow-soft active:bg-crx-yellow-soft',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
           )}
         >

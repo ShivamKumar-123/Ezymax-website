@@ -95,6 +95,12 @@ import '@/landing/landing.css'
 // rebuilds the home sections.
 import '@/styles/marketing.css'
 
+// Textura landing theme — monochrome token set ported from
+// next16-claude-starter, scoped under `[data-textura]` (set on the
+// wrapper below). Light marketing pages style with `tx-*` utilities
+// bound in tailwind.config.ts.
+import '@/styles/textura.css'
+
 /* Marketing pages rendered on the light SwissCresta canvas (#FFFFFF).
  * The shared Navbar reads `theme="light"` for these and `theme="dark"`
  * for everything else; LandingFooter swaps in for the legacy dark
@@ -152,7 +158,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
     if (isLight) {
       html.setAttribute('data-theme', 'light')
       html.style.backgroundColor = '#ffffff'
-      html.style.color = '#111827'
+      html.style.color = '#171717'
     } else {
       html.setAttribute('data-theme', 'dark')
       html.style.backgroundColor = '#08090b'
@@ -184,11 +190,12 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
                                 theme without re-checking the URL. */}
       <div
         {...(isLight ? {} : { 'data-mkt': 'true' })}
+        data-textura="true"
         data-page-mode={isLight ? 'light' : 'dark'}
         className={
           isLight
-            ? 'min-h-screen bg-white text-gray-900'
-            : 'landing-root min-h-screen bg-[#08090b] text-[#f5f5f5]'
+            ? 'min-h-screen bg-tx-bg text-tx-ink font-onest'
+            : 'landing-root min-h-screen bg-[#08090b] text-[#f5f5f5] font-onest'
         }
       >
         <MarketingNavbar

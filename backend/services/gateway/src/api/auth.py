@@ -46,6 +46,9 @@ async def platform_status():
         "allow_new_registrations": await get_bool_setting("allow_new_registrations", True),
         "allow_deposits": await get_bool_setting("allow_deposits", True),
         "allow_withdrawals": await get_bool_setting("allow_withdrawals", True),
+        # Admin-enforced identity verification. When false KYC stays optional
+        # (users may still verify to unlock higher leverage / card deposits).
+        "kyc_required": await get_bool_setting("kyc_required", False),
     }
 
 

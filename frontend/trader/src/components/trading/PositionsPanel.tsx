@@ -820,12 +820,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const tabTitle = (id: TabId) =>
     id === 'open' ? 'Positions' : id === 'history' ? 'Closed Positions' : 'Pending';
 
-  const equity =
-    activeAccount != null
-      ? activeAccount.balance + (activeAccount.credit || 0) + totalPnl
-      : 0;
-  const freeMarginCalc =
-    activeAccount != null ? equity - activeAccount.margin_used : 0;
 
   return (
     <div className={clsx('h-full w-full min-w-0 flex flex-col min-h-0', isTerminal ? 'bg-bg-base' : 'bg-bg-primary')}>
@@ -887,65 +881,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 />
               </div>
               <div className="flex items-end gap-3 sm:gap-4 md:gap-5 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
-                {activeAccount ? (
-                  <>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Balance
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${activeAccount.balance.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Credit
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${(activeAccount.credit || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Equity
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${equity.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Margin Used
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${activeAccount.margin_used.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Free Margin
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${freeMarginCalc.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Floating P&amp;L
-                      </span>
-                      <span
-                        className={clsx(
-                          'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          netTotalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
-                        )}
-                      >
-                        {netTotalPnl >= 0 ? '+' : ''}${netTotalPnl.toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                ) : null}
                 {isTerminal && activeTab === 'open' && (
-                  <div className="flex items-center gap-1 shrink-0 pb-0.5 border-l border-border-primary ml-1 pl-2">
+                  <div className="flex items-center gap-1 shrink-0 pb-0.5">
                     <button
                       type="button"
                       onClick={() => setTerminalOpenCardView((v) => !v)}
@@ -1124,7 +1061,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               {aiPositionIds.has(pos.id) && <AiBadge />}
                               <span className={clsx('text-[10px] font-bold uppercase', pos.side === 'buy' ? 'text-buy' : 'text-sell')}>{pos.side}</span>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
+                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
                               </span>
                             </div>
                             <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
@@ -1218,7 +1155,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td className={td}>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
+                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
                               </span>
                             </td>
                             <td className={td}>
@@ -1571,7 +1508,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 <span className="text-sm font-bold text-text-primary">{trade.symbol}</span>
                                 <span className={clsx('text-[10px] font-bold uppercase', trade.side === 'buy' ? 'text-buy' : 'text-sell')}>{trade.side}</span>
                                 <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                  {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
+                                  {trade.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
                                 </span>
                               </div>
                               <div className="inline-flex items-center gap-2">
@@ -1652,7 +1589,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>{trade.symbol}</td>
                             <td className={td}>
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
+                                {trade.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
                               </span>
                             </td>
                             <td className={td}>

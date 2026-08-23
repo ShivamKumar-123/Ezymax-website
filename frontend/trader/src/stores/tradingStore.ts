@@ -92,6 +92,17 @@ export interface InstrumentInfo {
   quote_currency?: string | null;
 }
 
+/** Pending SL/TP edit made by dragging the chart's bracket lines. The chart
+ *  writes it on drag-release; the terminal sidebar shows it for review and
+ *  either PUTs (confirm) or asks the chart to snap the lines back (discard).
+ *  `undefined` = bracket untouched, `null` = remove bracket. `nonce` bumps on
+ *  discard so the chart effect re-syncs lines to the server values. */
+export type ChartExitsDraft = {
+  positionId: string;
+  takeProfit?: number | null;
+  stopLoss?: number | null;
+};
+
 /** One-shot prefill for order panel (clone from open position). */
 export type OrderFormCloneDraft = {
   symbol: string;
@@ -142,6 +153,14 @@ interface TradingState {
 
   orderFormCloneDraft: OrderFormCloneDraft | null;
   setOrderFormCloneDraft: (d: OrderFormCloneDraft | null) => void;
+  /** Chart-driven review state shown in the terminal sidebar. */
+  chartExitsDraft: ChartExitsDraft | null;
+  setChartExitsDraft: (d: ChartExitsDraft | null) => void;
+  chartCloseRequest: string | null;
+  setChartCloseRequest: (positionId: string | null) => void;
+  /** Incremented whenever a draft is discarded — chart lines re-sync to server values. */
+  chartLinesResetNonce: number;
+  bumpChartLinesReset: () => void;
 }
 
 const DEFAULT_WATCHLIST = [
@@ -265,6 +284,9 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   watchlist: DEFAULT_WATCHLIST,
   instruments: [],
   orderFormCloneDraft: null,
+  chartExitsDraft: null,
+  chartCloseRequest: null,
+  chartLinesResetNonce: 0,
 
   setActiveAccount: (a) => set({ activeAccount: a }),
   setAccounts: (a) => set({ accounts: a }),
@@ -276,6 +298,9 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   },
   setInstruments: (i) => set({ instruments: i }),
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
+  setChartExitsDraft: (d) => set({ chartExitsDraft: d }),
+  setChartCloseRequest: (positionId) => set({ chartCloseRequest: positionId }),
+  bumpChartLinesReset: () => set((s) => ({ chartLinesResetNonce: s.chartLinesResetNonce + 1 })),
   removePosition: (id) => set((s) => ({ positions: s.positions.filter((p) => p.id !== id) })),
   // Optimistically patch one position (e.g. SL/TP just set from the chart) so
   // the chart line + positions row update instantly, before the PUT round-trips.

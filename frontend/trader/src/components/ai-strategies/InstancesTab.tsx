@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Activity, Square } from 'lucide-react';
 import { aiApi, type AiInstance } from '@/lib/ai-strategies';
 import { formatDateTime } from '@/lib/formatters';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 function StatusPill({ status }: { status: AiInstance['status'] }) {
   const map: Record<AiInstance['status'], { label: string; cls: string; dot: string }> = {
@@ -62,6 +63,7 @@ export default function InstancesTab() {
     }
   };
 
+  const pager = usePagination(instances, 10);
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -97,7 +99,7 @@ export default function InstancesTab() {
             </tr>
           </thead>
           <tbody>
-            {instances.map((inst) => (
+            {pager.items.map((inst) => (
               <tr key={inst.id} className="border-b border-border-primary last:border-0 hover:bg-bg-hover align-top">
                 <td className="px-4 py-3">
                   <p className="text-text-primary font-semibold">{inst.strategy_name}</p>
@@ -132,6 +134,7 @@ export default function InstancesTab() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager.props} itemLabel="instances" />
       </div>
     </div>
   );

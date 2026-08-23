@@ -12,7 +12,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { clsx } from 'clsx';
-import { CornerDownLeft, Send, Square } from 'lucide-react';
+import { ArrowUp, CornerDownLeft, Plus, Sparkles, Square } from 'lucide-react';
 
 export interface ChatComposerHandle {
   /** Put text into the input (without sending) and focus it. */
@@ -69,9 +69,9 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
     <div className="space-y-1.5">
       <div
         className={clsx(
-          'relative flex items-end gap-2 rounded-2xl border border-border-primary bg-card p-2 pl-4',
-          'shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-150',
-          'focus-within:border-[#E94E1B]/50 focus-within:shadow-[0_0_0_3px_rgba(233,78,27,0.10),0_2px_10px_rgba(0,0,0,0.05)]',
+          'relative flex flex-col gap-2 rounded-[22px] border border-border-primary bg-bg-card-nested p-3',
+          'transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-[#E94E1B]/50 focus-within:shadow-[0_0_0_3px_rgba(233,78,27,0.10)]',
         )}
       >
         <textarea
@@ -89,55 +89,57 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
           disabled={isSubmitting}
           rows={1}
           aria-label="Message the AI"
-          // Neutralise the global `@layer base` textarea chrome (border,
-          // padding, inner shadow, focus ring) — the wrapper card owns all
-          // of that. flex-1 min-w-0 keeps it inside the rounded border.
           className={clsx(
-            'min-w-0 flex-1 resize-none border-0 bg-transparent shadow-none outline-none ring-0',
-            'px-0 py-2 text-md leading-[20px] text-text-primary',
+            'min-w-0 w-full resize-none border-0 bg-transparent shadow-none outline-none ring-0',
+            'px-1 py-1 text-md leading-[20px] text-text-primary',
             'placeholder:text-text-tertiary focus:border-0 focus:shadow-none focus:outline-none focus:ring-0',
             'disabled:opacity-60',
           )}
         />
-
-        {isSubmitting ? (
-          <button
-            type="button"
-            onClick={onStop}
-            disabled={!onStop}
-            aria-label="Stop generating"
-            title="Stop generating"
-            className={clsx(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-              'bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)]',
-              'transition-transform duration-100 hover:bg-[#C73E11] active:scale-90',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-            )}
-          >
-            <Square size={12} fill="currentColor" aria-hidden />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!hasText}
-            aria-label="Send"
-            title="Send"
-            className={clsx(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-              'transition-[background-color,color,transform,box-shadow] duration-150',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
-              hasText
-                ? 'bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)] hover:bg-[#C73E11] active:scale-90'
-                : 'cursor-not-allowed bg-bg-active text-text-tertiary',
-            )}
-          >
-            <Send size={15} className="-translate-x-px" aria-hidden />
-          </button>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => textareaRef.current?.focus()}
+              aria-label="New prompt"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border-primary text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
+            >
+              <Plus size={14} aria-hidden />
+            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border-primary px-2.5 py-1 text-[11px] font-medium text-text-secondary">
+              <Sparkles size={12} className="text-[#E94E1B]" aria-hidden /> Claude
+            </span>
+          </div>
+          {isSubmitting ? (
+            <button
+              type="button"
+              onClick={onStop}
+              disabled={!onStop}
+              aria-label="Stop generating"
+              title="Stop generating"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)] transition-transform hover:bg-[#C73E11] active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Square size={12} fill="currentColor" aria-hidden />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!hasText}
+              aria-label="Send"
+              title="Send"
+              className={clsx(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-[background-color,color,transform] duration-150',
+                hasText
+                  ? 'bg-crx-charcoal text-crx-charcoal-ink hover:bg-crx-charcoal-hover active:scale-90'
+                  : 'cursor-not-allowed bg-bg-active text-text-tertiary',
+              )}
+            >
+              <ArrowUp size={16} aria-hidden />
+            </button>
+          )}
+        </div>
       </div>
-
       <p className="flex items-center gap-1 px-1 text-[10px] text-text-tertiary">
         <CornerDownLeft size={11} aria-hidden />
         Enter to send, Shift + Enter for a new line
