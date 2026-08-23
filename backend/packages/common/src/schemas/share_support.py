@@ -18,6 +18,20 @@ class CreateShareRequest(BaseModel):
     display_mode: str = Field(default="pnl")  # pnl | roi | ticks
 
 
+class CreateAccountShareRequest(BaseModel):
+    """Share every trade on one account rather than a single position.
+
+    `scope` picks how much is covered: ``open`` is the account's currently
+    open positions (priced live), ``history`` is its whole record — open
+    positions plus closed trades. Unlike a single-position share the link
+    is not a snapshot: it re-reads the account each time it is viewed.
+    """
+    scope: str = Field(pattern="^(open|history)$")
+    description: str | None = Field(default=None, max_length=140)
+    link_description: str | None = Field(default=None, max_length=500)
+    display_mode: str = Field(default="pnl")  # pnl | roi | ticks
+
+
 # ─── Support tickets ────────────────────────────────────────────────
 
 

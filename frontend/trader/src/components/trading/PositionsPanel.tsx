@@ -350,6 +350,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
+  // Portfolio-wide share opened from the toolbar — no single position is
+  // involved, so it is tracked separately from `sharePosition`.
+  const [shareScope, setShareScope] = useState<'open' | 'history' | null>(null);
 
   // Position ids opened by AI strategy instances — used only to render the
   // small "AI" badge next to the symbol. Fails silently (empty set) so a
@@ -921,6 +924,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   >
                     <Download className="w-4 h-4" />
                   </button>
+                  {activeAccountId && activeTab !== 'pending' && (
+                    <button
+                      type="button"
+                      onClick={() => { setSharePosition(null); setShareScope(activeTab === 'history' ? 'history' : 'open'); }}
+                      className="p-1.5 rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                      title={activeTab === 'history' ? 'Share trade history' : 'Share all open positions'}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -968,6 +981,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   <Download className="w-3.5 h-3.5" />
                   Download CSV
                 </button>
+                {activeAccountId && activeTab !== 'pending' && (
+                  <button
+                    type="button"
+                    onClick={() => { setSharePosition(null); setShareScope(activeTab === 'history' ? 'history' : 'open'); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold text-text-secondary bg-bg-secondary/80 border border-border-glass hover:bg-bg-hover hover:text-text-primary"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    {activeTab === 'history' ? 'Share history' : 'Share all'}
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1099,7 +1122,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <div className="inline-flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => setSharePosition(pos)}
+                                onClick={() => { setShareScope(null); setSharePosition(pos); }}
                                 className="p-1.5 rounded-lg text-text-tertiary active:text-text-primary"
                                 aria-label="Share trade"
                               >
@@ -1289,7 +1312,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <div className="inline-flex items-center gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => setSharePosition(pos)}
+                                  onClick={() => { setShareScope(null); setSharePosition(pos); }}
                                   title="Share trade"
                                   className="p-1 rounded-md text-text-tertiary hover:bg-bg-hover hover:text-text-primary transition-fast"
                                 >
@@ -1514,7 +1537,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <div className="inline-flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setSharePosition(sharePos)}
+                                  onClick={() => { setShareScope(null); setSharePosition(sharePos); }}
                                   className="p-1 -m-1 rounded-md text-text-tertiary active:text-text-primary"
                                   aria-label="Share trade"
                                 >
@@ -2087,6 +2110,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
           onClose={() => setSharePosition(null)}
           position={sharePosition}
           leverage={Number(activeAccount?.leverage) || 100}
+          accountId={activeAccountId ?? null}
+        />
+      )}
+
+      {shareScope && (
+        <ShareTradeModal
+          open={!!shareScope}
+          onClose={() => setShareScope(null)}
+          position={null}
+          leverage={Number(activeAccount?.leverage) || 100}
+          accountId={activeAccountId ?? null}
+          initialScope={shareScope}
         />
       )}
     </div>

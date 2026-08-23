@@ -7,8 +7,17 @@ import { toPng } from 'html-to-image';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import ShareTradeCard from './ShareTradeCard';
+import SharePortfolioCard, { type ShareSummary } from './SharePortfolioCard';
 
 type DisplayMode = 'pnl' | 'roi' | 'ticks';
+type Scope = 'single' | 'open' | 'history';
+
+interface SharePreview {
+  scope: 'open' | 'history';
+  summary: ShareSummary;
+  trades: unknown[];
+  truncated: boolean;
+}
 
 interface Position {
   id: string;
@@ -28,14 +37,31 @@ interface ShareTradeModalProps {
   position: Position | null;
   leverage?: number;
   pipSize?: number;
+  /** Account the portfolio-wide scopes cover. Without it the modal is
+   *  single-trade only, which is what the chart widget wants. */
+  accountId?: string | null;
+  /** Opening straight into a portfolio scope, e.g. from the panel toolbar
+   *  where there is no position to share. */
+  initialScope?: Scope;
 }
 
-export default function ShareTradeModal({ open, onClose, position, leverage = 100, pipSize = 0.0001 }: ShareTradeModalProps) {
+export default function ShareTradeModal({
+  open,
+  onClose,
+  position,
+  leverage = 100,
+  pipSize = 0.0001,
+  accountId = null,
+  initialScope = 'single',
+}: ShareTradeModalProps) {
   const [description, setDescription] = useState('');
   const [linkDescription, setLinkDescription] = useState('');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('pnl');
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [scope, setScope] = useState<Scope>(initialScope);
+  const [preview, setPreview] = useState<SharePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,33 +70,81 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
       setLinkDescription('');
       setDisplayMode('pnl');
       setShareUrl(null);
+      // Keyed off the id (same value the dep array watches) so the effect
+      // has no dependency it isn't tracking.
+      setScope(position?.id ? initialScope : 'open');
+      setPreview(null);
     }
-  }, [open, position?.id]);
+  }, [open, position?.id, initialScope]);
 
-  if (!open || !position) return null;
+  // Portfolio scopes preview real server-side figures rather than a
+  // client-side re-derivation, so what the card shows is exactly what the
+  // public page will show. Read-only — no link is created here.
+  useEffect(() => {
+    if (!open || scope === 'single' || !accountId) return;
+    let alive = true;
+    setPreviewLoading(true);
+    api
+      .get<SharePreview>(`/accounts/${accountId}/share-preview`, { scope })
+      .then((res) => {
+        if (alive) setPreview(res);
+      })
+      .catch(() => {
+        if (alive) setPreview(null);
+      })
+      .finally(() => {
+        if (alive) setPreviewLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, scope, accountId]);
+
+  // A changed scope invalidates the link we already minted — it points at
+  // the old scope's card.
+  useEffect(() => {
+    setShareUrl(null);
+  }, [scope]);
+
+  if (!open) return null;
+  if (scope === 'single' && !position) return null;
 
   // A freshly-opened position carries an optimistic "optim-" id until the
   // 1.5s poll reconciles it to the real server UUID (same reason bulk-close
   // filters these out). Sharing one would POST "optim-…" to
   // /positions/{uuid}/share and fail backend UUID validation, so block it
   // with a clear message until the trade is confirmed.
-  const isPending = position.id.startsWith('optim-');
+  const isPending = scope === 'single' && !!position?.id.startsWith('optim-');
+  // A link over zero trades would render an empty card — block it rather
+  // than mint a dead link.
+  const emptySelection = scope !== 'single' && (previewLoading || !preview || preview.summary.total_trades === 0);
 
   const handleCopyLink = async () => {
     if (isPending) {
       toast.error('Trade is still being confirmed — try again in a moment.');
       return;
     }
+    if (scope !== 'single' && !accountId) {
+      toast.error('No account selected.');
+      return;
+    }
     setCreating(true);
     try {
-      const res = await api.post<{ short_code: string; expires_at: string }>(
-        `/positions/${position.id}/share`,
-        {
-          description: description || null,
-          link_description: linkDescription || null,
-          display_mode: displayMode,
-        },
-      );
+      const body = {
+        description: description || null,
+        link_description: linkDescription || null,
+        display_mode: displayMode,
+      };
+      const res =
+        scope === 'single'
+          ? await api.post<{ short_code: string; expires_at: string }>(
+              `/positions/${position!.id}/share`,
+              body,
+            )
+          : await api.post<{ short_code: string; expires_at: string }>(
+              `/accounts/${accountId}/share`,
+              { ...body, scope },
+            );
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const url = `${origin}/s/${res.short_code}`;
       setShareUrl(url);
@@ -88,7 +162,10 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
     try {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       const link = document.createElement('a');
-      link.download = `swisscresta-${position.symbol}-${position.side}.png`;
+      link.download =
+        scope === 'single'
+          ? `swisscresta-${position!.symbol}-${position!.side}.png`
+          : `swisscresta-${scope === 'open' ? 'open-positions' : 'trading-history'}.png`;
       link.href = dataUrl;
       link.click();
       toast.success('Image downloaded');
@@ -112,25 +189,102 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
           {/* Card preview */}
           <div>
             <div ref={cardRef}>
-              <ShareTradeCard
-                symbol={position.symbol}
-                side={position.side}
-                lots={position.lots}
-                leverage={leverage}
-                openPrice={position.open_price}
-                currentPrice={position.current_price ?? position.open_price}
-                pnl={(position.profit ?? 0) - (position.commission ?? 0)}
-                openedAt={position.created_at ?? null}
-                displayMode={displayMode}
-                pipSize={pipSize}
-                status="active"
-                shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
-              />
+              {scope === 'single' && position ? (
+                <ShareTradeCard
+                  symbol={position.symbol}
+                  side={position.side}
+                  lots={position.lots}
+                  leverage={leverage}
+                  openPrice={position.open_price}
+                  currentPrice={position.current_price ?? position.open_price}
+                  pnl={(position.profit ?? 0) - (position.commission ?? 0)}
+                  openedAt={position.created_at ?? null}
+                  displayMode={displayMode}
+                  pipSize={pipSize}
+                  status="active"
+                  shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
+                />
+              ) : preview ? (
+                <SharePortfolioCard
+                  scope={preview.scope}
+                  summary={preview.summary}
+                  displayMode={displayMode}
+                  shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
+                />
+              ) : (
+                <div className="w-full aspect-[4/5] rounded-2xl border border-border-glass bg-bg-tertiary flex items-center justify-center">
+                  {previewLoading ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-text-tertiary" />
+                  ) : (
+                    <p className="text-xs text-text-tertiary px-6 text-center">
+                      No trades to share in this selection yet.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Controls */}
           <div className="space-y-5">
+            {accountId && (
+              <div>
+                <label className="text-xs font-semibold text-text-secondary mb-2 block">What to share</label>
+                <div className="space-y-2">
+                  {([
+                    {
+                      v: 'single' as Scope,
+                      label: 'This trade only',
+                      hint: position ? `${position.symbol} · ${position.lots} lots` : 'No trade selected',
+                      disabled: !position,
+                    },
+                    {
+                      v: 'open' as Scope,
+                      label: 'All open positions',
+                      hint: 'Live P&L, updates while the link is open',
+                      disabled: false,
+                    },
+                    {
+                      v: 'history' as Scope,
+                      label: 'Entire trade history',
+                      hint: 'Every open and closed trade on this account',
+                      disabled: false,
+                    },
+                  ]).map((opt) => (
+                    <label
+                      key={opt.v}
+                      className={`flex items-start gap-3 ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="shareScope"
+                        value={opt.v}
+                        checked={scope === opt.v}
+                        disabled={opt.disabled}
+                        onChange={() => setScope(opt.v)}
+                        className="w-4 h-4 mt-0.5 accent-buy"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm text-text-primary">{opt.label}</span>
+                        <span className="block text-[11px] text-text-tertiary">{opt.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {scope !== 'single' && (
+                  <p className="text-[11px] text-text-tertiary mt-2">
+                    Anyone with the link sees each trade&apos;s symbol, size, entry and P&amp;L
+                    {scope === 'open' ? ', refreshed live' : ''}.
+                  </p>
+                )}
+                {preview?.truncated && (
+                  <p className="text-[11px] text-text-tertiary mt-1">
+                    Totals cover every trade; the list shows the most recent 200.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold text-text-secondary">Card description</label>
@@ -189,8 +343,14 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
               <button
                 type="button"
                 onClick={handleCopyLink}
-                disabled={creating || isPending}
-                title={isPending ? 'Trade is still being confirmed' : undefined}
+                disabled={creating || isPending || emptySelection}
+                title={
+                  isPending
+                    ? 'Trade is still being confirmed'
+                    : emptySelection
+                      ? 'Nothing to share in this selection'
+                      : undefined
+                }
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold bg-buy text-white hover:bg-buy-light disabled:opacity-60 disabled:cursor-not-allowed transition-fast"
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : shareUrl ? <Copy className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}

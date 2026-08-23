@@ -30,7 +30,7 @@ from .admin import AdminFundAdjustment, AdminTradeCreate, AdminModifyTrade
 from .common import PaginationParams, PaginatedResponse
 from .profile import UpdateProfileRequest, ChangePasswordRequest
 from .share_support import (
-    CreateShareRequest, CreateTicketRequest, ReplyTicketRequest,
+    CreateShareRequest, CreateAccountShareRequest, CreateTicketRequest, ReplyTicketRequest,
 )
 
 
@@ -61,5 +61,5 @@ __all__ = [
     # profile
     "UpdateProfileRequest", "ChangePasswordRequest",
     # share + support
-    "CreateShareRequest", "CreateTicketRequest", "ReplyTicketRequest",
+    "CreateShareRequest", "CreateAccountShareRequest", "CreateTicketRequest", "ReplyTicketRequest",
 ]
