@@ -583,7 +583,7 @@ function TradingViewChartInner({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const safe = <T,>(fn: () => T): T | undefined => { try { return fn(); } catch { return undefined; } };
 
-    type Bracket = { kind: 'tp' | 'sl'; id: string | null; price: number | null; zone: HTMLDivElement; draftTimer: number | null; creating: boolean; lastTarget: number | null | undefined };
+    type Bracket = { kind: 'tp' | 'sl'; id: string | null; price: number | null; zone: HTMLDivElement; draftTimer: number | null; creating: boolean; lastTarget: number | null | undefined; dragging: boolean };
     type Entry = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       p: any; entry: number; entryId: string | null; tp: Bracket | null; sl: Bracket | null;
@@ -661,13 +661,24 @@ function TradingViewChartInner({
       if (b.kind === 'tp') next.takeProfit = value; else next.stopLoss = value;
       st.setChartExitsDraft(next);
     };
+    /** Paint one TP/SL chip. `on` = a level exists for it right now. */
+    const styleLevelChip = (btn: HTMLButtonElement | null, on: boolean, color: string, title: string) => {
+      if (!btn) return;
+      btn.style.background = on ? color : 'rgba(12,14,20,0.92)';
+      btn.style.color = on ? '#08131a' : color;
+      btn.style.borderColor = color;
+      btn.style.boxShadow = on
+        ? `0 1px 5px rgba(0,0,0,.6), 0 0 0 1px ${color}55`
+        : '0 1px 5px rgba(0,0,0,.6)';
+      btn.title = title;
+    };
     const refreshChips = (e: Entry) => {
       const pnl = netPnl(e.p);
       e.pnlChip.textContent = fmtPnl(pnl);
       e.pnlChip.style.color = pnlColor(pnl);
       const tpOn = !!e.tp?.price, slOn = !!e.sl?.price;
-      if (e.tpBtn) { e.tpBtn.style.background = tpOn ? TP_COLOR : 'rgba(20,184,166,0.12)'; e.tpBtn.style.color = tpOn ? '#fff' : TP_COLOR; e.tpBtn.title = tpOn ? 'Edit take profit' : 'Add take profit'; }
-      if (e.slBtn) { e.slBtn.style.background = slOn ? SL_COLOR : 'rgba(245,158,11,0.12)'; e.slBtn.style.color = slOn ? '#fff' : SL_COLOR; e.slBtn.title = slOn ? 'Edit stop loss' : 'Add stop loss'; }
+      styleLevelChip(e.tpBtn, tpOn, TP_COLOR, tpOn ? 'Drag to move take profit' : 'Drag down/up to set take profit — or click to add one');
+      styleLevelChip(e.slBtn, slOn, SL_COLOR, slOn ? 'Drag to move stop loss' : 'Drag down/up to set stop loss — or click to add one');
     };
 
     // ── Geometry (passive: zones + chip row positioning) ──
@@ -689,6 +700,14 @@ function TradingViewChartInner({
     const paneY = (price: number, g: Geo): number => {
       if (g.log) { if (!(price > 0)) return NaN; const lt = Math.log(g.top), lb = Math.log(g.bottom); return (g.h * (lt - Math.log(price))) / (lt - lb); }
       return (g.h * (g.top - price)) / (g.top - g.bottom);
+    };
+    /** Inverse of paneY: a y offset inside the pane back to a price. */
+    const priceAtY = (y: number, g: Geo): number => {
+      if (g.log) {
+        const lt = Math.log(g.top), lb = Math.log(g.bottom);
+        return Math.exp(lt - (y * (lt - lb)) / g.h);
+      }
+      return g.top - (y * (g.top - g.bottom)) / g.h;
     };
     const paneTop = (paneH: number): number | null => {
       try {
@@ -729,7 +748,7 @@ function TradingViewChartInner({
       el.textContent = txt;
       el.title = title;
       el.style.cssText =
-        `display:inline-flex;align-items:center;justify-content:center;height:20px;min-width:22px;padding:0 7px;border:0;border-radius:5px;`
+        `display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:20px;min-width:22px;padding:0 7px;border:1px solid transparent;border-radius:5px;`
         + `font:700 10.5px -apple-system,Segoe UI,Roboto,sans-serif;line-height:1;letter-spacing:.02em;white-space:nowrap;`
         + `background:${bg};color:${fg};box-shadow:0 1px 4px rgba(0,0,0,.55);pointer-events:auto;${onClick ? 'cursor:pointer;' : ''}`;
       if (onClick) {
@@ -739,6 +758,84 @@ function TradingViewChartInner({
         (el as HTMLButtonElement).onpointerdown = (ev) => ev.stopPropagation();
       }
       return el;
+    };
+
+    /** Commit a dragged level: onto the entry line = clear it, else set it. */
+    const commitLevel = (e: Entry, b: Bracket, price: number) => {
+      if (!isRealPositionId(e.p.id)) { toast('Order still finalizing…'); return; }
+      if (Math.abs(price - e.entry) <= eps) {
+        const wasSet = b.kind === 'tp' ? Number(e.p.take_profit) > 0 : Number(e.p.stop_loss) > 0;
+        dropBracket(b);
+        b.lastTarget = null;
+        setDraftLevel(e, b, wasSet ? null : undefined);
+      } else {
+        b.lastTarget = price;
+        setDraftLevel(e, b, price);
+      }
+      refreshChips(e);
+    };
+
+    /**
+     * Vertical drag on a TP/SL chip. Pointer Events + capture so the gesture
+     * survives the pointer leaving the 22px chip (it always does) and works
+     * with touch and pen, not just mouse.
+     */
+    const attachLevelDrag = (e: Entry, b: Bracket, btn: HTMLButtonElement, onTap: () => void) => {
+      const DRAG_THRESHOLD = 3; // px — below this it is a tap, not a drag
+      let pressed = false, moved = false, startY = 0, pid = -1;
+      // Pane offsets are captured once per gesture: neither the container nor
+      // the pane moves mid-drag, so re-measuring per pointermove would only
+      // force a layout on every frame.
+      let top0: number | null = null, rectTop0 = 0;
+
+      btn.style.cursor = 'ns-resize';
+      // Stop the browser turning the gesture into a scroll/pan on touch.
+      btn.style.touchAction = 'none';
+
+      btn.onpointerdown = (ev) => {
+        // Keep the press off the chart, or the pane pans under the drag.
+        ev.stopPropagation();
+        ev.preventDefault();
+        pressed = true; moved = false; startY = ev.clientY; pid = ev.pointerId;
+        const g = geom();
+        top0 = g ? paneTop(g.h) : null;
+        rectTop0 = container.getBoundingClientRect().top;
+        try { btn.setPointerCapture(pid); } catch { /* capture unsupported */ }
+      };
+
+      btn.onpointermove = (ev) => {
+        if (!pressed) return;
+        if (!moved && Math.abs(ev.clientY - startY) < DRAG_THRESHOLD) return;
+        // Geometry was unavailable at press time — cannot map pixels to price.
+        if (top0 == null) return;
+        if (!isRealPositionId(e.p.id)) return;
+        const g = geom();
+        if (!g) return;
+        moved = true;
+        b.dragging = true;
+        const y = ev.clientY - rectTop0 - top0;
+        const price = priceAtY(y, g);
+        if (!Number.isFinite(price) || price <= 0) return;
+        // ensureBracket creates the line on first move and slides it after,
+        // so the level appears the moment the drag starts.
+        void ensureBracket(e, b, Number(price.toFixed(digits)));
+        // b.price is set synchronously above, so the chip lights up to its
+        // "level set" style immediately rather than only on release.
+        refreshChips(e);
+      };
+
+      const release = () => {
+        if (!pressed) return;
+        pressed = false;
+        try { btn.releasePointerCapture(pid); } catch { /* already released */ }
+        if (!moved) { b.dragging = false; onTap(); return; }
+        b.dragging = false;
+        if (b.price != null) commitLevel(e, b, b.price);
+      };
+      btn.onpointerup = (ev) => { ev.stopPropagation(); release(); };
+      btn.onpointercancel = () => { pressed = false; moved = false; b.dragging = false; };
+      // A drag that ends over the chip would otherwise also fire a click.
+      btn.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
     };
 
     (async () => {
@@ -753,24 +850,28 @@ function TradingViewChartInner({
         chips.style.cssText = 'position:absolute;display:flex;gap:4px;align-items:center;transform:translateY(-50%);pointer-events:none;visibility:hidden;z-index:6;';
         const e: Entry = { p, entry, entryId: null, tp: null, sl: null, chips, pnlChip: document.createElement('span'), tpBtn: null, slBtn: null };
         if (!isCopy) {
-          e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined };
-          e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined };
-          e.tpBtn = mkChip('TP', 'rgba(20,184,166,0.12)', TP_COLOR, 'Add take profit', () => {
+          e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
+          e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
+          const tpTap = () => {
             if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
             const st = useTradingStore.getState();
             const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
             const existing = d?.takeProfit !== undefined ? d.takeProfit : (Number(e.p.take_profit) > 0 ? Number(e.p.take_profit) : null);
             if (existing != null) { st.setChartCloseRequest(null); st.setChartExitsDraft({ positionId: String(p.id), takeProfit: d?.takeProfit, stopLoss: d?.stopLoss }); return; }
             setDraftLevel(e, e.tp!, defaultLevel(e, 'tp'));
-          }) as HTMLButtonElement;
-          e.slBtn = mkChip('SL', 'rgba(245,158,11,0.12)', SL_COLOR, 'Add stop loss', () => {
+          };
+          const slTap = () => {
             if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
             const st = useTradingStore.getState();
             const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
             const existing = d?.stopLoss !== undefined ? d.stopLoss : (Number(e.p.stop_loss) > 0 ? Number(e.p.stop_loss) : null);
             if (existing != null) { st.setChartCloseRequest(null); st.setChartExitsDraft({ positionId: String(p.id), takeProfit: d?.takeProfit, stopLoss: d?.stopLoss }); return; }
             setDraftLevel(e, e.sl!, defaultLevel(e, 'sl'));
-          }) as HTMLButtonElement;
+          };
+          e.tpBtn = mkChip('TP', 'rgba(12,14,20,0.92)', TP_COLOR, 'Add take profit', tpTap) as HTMLButtonElement;
+          e.slBtn = mkChip('SL', 'rgba(12,14,20,0.92)', SL_COLOR, 'Add stop loss', slTap) as HTMLButtonElement;
+          attachLevelDrag(e, e.tp!, e.tpBtn, tpTap);
+          attachLevelDrag(e, e.sl!, e.slBtn, slTap);
           chips.appendChild(e.tpBtn); chips.appendChild(e.slBtn);
         }
         chips.appendChild(mkChip(String(Number(p.lots)), sideColor, '#fff', `${side} ${Number(p.lots)} lots @ ${entry.toFixed(digits)}`));
@@ -842,17 +943,16 @@ function TradingViewChartInner({
     // server SL/TP after a confirmed PUT / refresh, levels typed in the
     // sidebar (draft) → create / move / drop bracket lines.
     let lastSync = 0;
-    const unsub = useTradingStore.subscribe((st) => {
-      const now = Date.now();
-      if (now - lastSync < 250) return;
-      lastSync = now;
+    let syncTimer: number | null = null;
+    const applySync = (st: ReturnType<typeof useTradingStore.getState>) => {
+      lastSync = Date.now();
       for (const e of entries) {
         const lp = st.positions.find((x) => x.id === e.p.id);
         if (!lp) continue;
         e.p = lp;
         const d = st.chartExitsDraft?.positionId === lp.id ? st.chartExitsDraft : null;
         for (const b of [e.tp, e.sl]) {
-          if (!b || b.draftTimer) continue; // mid-drag — leave it alone
+          if (!b || b.draftTimer || b.dragging) continue; // mid-drag — leave it alone
           const dv = d ? (b.kind === 'tp' ? d.takeProfit : d.stopLoss) : undefined;
           const sv = b.kind === 'tp' ? lp.take_profit : lp.stop_loss;
           const target = dv !== undefined ? dv : (sv != null && Number(sv) > 0 ? Number(sv) : null);
@@ -864,6 +964,16 @@ function TradingViewChartInner({
         }
         refreshChips(e);
       }
+    };
+    const unsub = useTradingStore.subscribe((st) => {
+      const wait = 250 - (Date.now() - lastSync);
+      if (wait <= 0) { applySync(st); return; }
+      // Coalesce onto the trailing edge so the newest state still lands.
+      if (syncTimer) window.clearTimeout(syncTimer);
+      syncTimer = window.setTimeout(() => {
+        syncTimer = null;
+        applySync(useTradingStore.getState());
+      }, wait);
     });
 
     let raf = 0;
@@ -896,6 +1006,7 @@ function TradingViewChartInner({
       cancelAnimationFrame(raf);
       try { w.unsubscribe('drawing_event', onDrawing); } catch { /* ignore */ }
       try { unsub(); } catch { /* ignore */ }
+      if (syncTimer) { window.clearTimeout(syncTimer); syncTimer = null; }
       for (const e of entries) {
         if (e.entryId) safe(() => chart.removeEntity(e.entryId));
         safe(() => overlay.removeChild(e.chips));
