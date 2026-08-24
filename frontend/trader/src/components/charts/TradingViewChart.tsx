@@ -70,6 +70,42 @@ const PENDING_SELL_COLOR = '#a855f7';// purple — pending SELL entry line
 // edge: just left of each line's right-axis label so the buttons read as part
 // of the line's pill instead of hiding behind the left drawing toolbar.
 
+// ── Chart layout persistence ───────────────────────────────────────────────
+// The widget is created with `use_localstorage_for_settings` disabled and
+// nothing ever called widget.save(), so studies (indicators), drawings, the
+// interval and the chart style were all rebuilt from defaults on every mount:
+// a reload silently wiped whatever the user had set up.
+//
+// The layout is saved to localStorage and handed back via `saved_data`. Our
+// own position / order overlays are NOT included — every createShape call
+// passes `disableSave: true` — so a restored layout brings back the user's
+// indicators without resurrecting stale position lines.
+const LAYOUT_KEY = 'sc:chart:layout:v1';
+
+/** Last saved layout, or undefined when there is nothing usable stored. */
+function readSavedLayout(): Record<string, unknown> | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = window.localStorage.getItem(LAYOUT_KEY);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    // A truncated or hand-edited entry must not take the chart down with it.
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSavedLayout(state: unknown): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(state));
+  } catch {
+    // Private mode / quota exceeded — persistence is a convenience, never a
+    // reason to break the chart.
+  }
+}
+
 /** Shown over the pane when the selected symbol has no live tick. */
 function NoFeedNotice({ symbol }: { symbol: string }) {
   const tick = useTradingStore((st) => st.prices[symbol.toUpperCase()]);
@@ -128,6 +164,8 @@ function TradingViewChartInner({
   const containerRef = useRef<HTMLDivElement>(null);
   // Overlay layer above the chart for the [SL]/[TP]/✕ buttons + shaded zones.
   const overlayRef = useRef<HTMLDivElement>(null);
+  // Set once the widget exists; lets the unmount path flush a pending save.
+  const persistRef = useRef<(() => void) | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const widgetRef = useRef<any>(null);
   const readyRef = useRef(false);
@@ -149,6 +187,7 @@ function TradingViewChartInner({
   // Mount the widget once.
   useEffect(() => {
     let disposed = false;
+    let cleanupPersist: (() => void) | null = null;
 
     (async () => {
       const datafeed = createDatafeed({
@@ -189,6 +228,8 @@ function TradingViewChartInner({
       }
       if (disposed || !containerRef.current || !window.TradingView) return;
 
+      const savedLayout = readSavedLayout();
+
       widgetRef.current = new window.TradingView.widget({
         symbol: initialSymbol,
         interval,
@@ -208,6 +249,12 @@ function TradingViewChartInner({
         loading_screen: { backgroundColor: theme === 'dark' ? '#000000' : '#ffffff' },
         disabled_features: ['use_localstorage_for_settings', 'symbol_search_hot_key'],
         enabled_features: ['hide_left_toolbar_by_default'],
+        // Restore the user's indicators / drawings / interval, and ask the
+        // library to tell us (via onAutoSaveNeeded) whenever they change.
+        // The symbol effect below re-asserts the selected symbol on mount, so
+        // a layout saved under a different symbol cannot hijack the view.
+        ...(savedLayout ? { saved_data: savedLayout } : {}),
+        auto_save_delay: 2,
         overrides: theme === 'dark'
           ? {
               'paneProperties.background': '#000000',
@@ -219,10 +266,41 @@ function TradingViewChartInner({
             }
           : {},
       });
+      // Persist on every library-signalled change, plus on the way out: a
+      // fast reload can beat the 2s autosave debounce, which is exactly the
+      // case the user hits when they add an indicator and immediately refresh.
+      const persist = () => {
+        const w = widgetRef.current;
+        if (!w || !readyRef.current) return;
+        try {
+          w.save?.((state: unknown) => writeSavedLayout(state));
+        } catch {
+          /* older builds without save() — nothing to persist */
+        }
+      };
+      persistRef.current = persist;
+      const onPageHide = () => persist();
+      // Only on the way OUT — visibilitychange also fires on re-show, and
+      // saving then would just rewrite what we already stored.
+      const onVisibility = () => { if (document.visibilityState === 'hidden') persist(); };
+      window.addEventListener('pagehide', onPageHide);
+      document.addEventListener('visibilitychange', onVisibility);
+      cleanupPersist = () => {
+        window.removeEventListener('pagehide', onPageHide);
+        document.removeEventListener('visibilitychange', onVisibility);
+      };
+
       try {
         widgetRef.current.onChartReady(() => {
           readyRef.current = true;
           setChartReady(true);
+          // Indicator added/removed, drawing edited, interval or style
+          // changed — the library debounces these by auto_save_delay.
+          try {
+            widgetRef.current.subscribe?.('onAutoSaveNeeded', persist);
+          } catch {
+            /* feature unavailable — pagehide still covers the common case */
+          }
           // Pin a small FIXED right margin (~3 bars) so the latest candle hugs
           // the right edge like MT5 — the library's default wide future
           // whitespace reads as a "candle gap" (sibling-platform client
@@ -263,6 +341,9 @@ function TradingViewChartInner({
 
     return () => {
       disposed = true;
+      // Flush before teardown, otherwise navigating away loses the last edit.
+      try { persistRef.current?.(); } catch { /* ignore */ }
+      try { cleanupPersist?.(); } catch { /* ignore */ }
       try {
         widgetRef.current?.remove?.();
       } catch {
