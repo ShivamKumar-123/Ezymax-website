@@ -9,7 +9,7 @@ from sqlalchemy import text as _sql_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db, TimescaleSessionLocal
-from packages.common.src.redis_client import redis_client
+from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.schemas import InstrumentResponse, TickData
 from packages.common.src.instrumentation import get_rate_limiter
 from packages.common.src.infoway_rest import fetch_klines as _iw_fetch_klines
@@ -317,6 +317,53 @@ async def get_bars(
             bars = [b for b in bars if b["time"] not in iw_times] + iw
             bars.sort(key=lambda x: x["time"])
             _asyncio.create_task(_persist_ohlc_db(sym, tf, iw))
+
+    # --- 4.5 Align history to the LIVE executable price level ---
+    # The chart MUST read at the price the trader can actually execute. Live
+    # quotes and the current forming bar come from the broker's LP feed, but the
+    # deep-history providers (InfoWay / Binance REST + any older backfill already
+    # in the durable store) can sit at a slightly different level. Left alone the
+    # candles render at one level while the tradeable price — and the current
+    # bar — sit at another, i.e. "chart yahan, price wahan". Shift the whole
+    # history by ONE constant offset (the basis) so its right edge meets the live
+    # mid, preserving every candle's shape. Where the levels already agree
+    # (forex / crypto) the basis is 0 and this is a no-op.
+    #
+    # The basis is computed ONCE at the right edge (first / latest load) and
+    # cached, so left-pan requests reuse the SAME shift and stay seamless with
+    # what's already on screen (a per-batch recompute would misalign panned bars).
+    if bars:
+        try:
+            basis_key = f"chartbasis:{sym}:{tf}"
+            is_right_edge = (not to_time) or (to_time >= now_epoch - bar_sec * 2)
+            basis: float | None = None
+            if is_right_edge:
+                tick_raw = await redis_client.get(PriceChannel.tick_key(sym))
+                if tick_raw:
+                    t = _json.loads(tick_raw)
+                    live_mid = (float(t["bid"]) + float(t["ask"])) / 2.0
+                    ref = float(bars[-1]["close"])
+                    if live_mid > 0 and ref > 0:
+                        ratio = abs(live_mid - ref) / live_mid
+                        # Bridge a real, sane gap only: ignore sub-0.05% noise and
+                        # refuse absurd >20% deltas (wrong-symbol / bad-data guard).
+                        basis = (live_mid - ref) if 0.0005 < ratio < 0.20 else 0.0
+                        await redis_client.set(basis_key, repr(basis), ex=3600)
+            if basis is None:
+                cached = await redis_client.get(basis_key)
+                if cached:
+                    try:
+                        basis = float(cached)
+                    except Exception:
+                        basis = None
+            if basis:
+                for _b in bars:
+                    _b["open"] = float(_b["open"]) + basis
+                    _b["high"] = float(_b["high"]) + basis
+                    _b["low"] = float(_b["low"]) + basis
+                    _b["close"] = float(_b["close"]) + basis
+        except Exception:
+            pass
 
     # --- 5. Append current in-progress bar (upper bound only) ---
     current_raw = await redis_client.get(f"bar:current:{sym}:{tf}")
