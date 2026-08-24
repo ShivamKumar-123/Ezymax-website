@@ -528,6 +528,37 @@ export default function TradingTerminalPage() {
                 </div>
               )}
 
+              {/* ── Exits / close review sheet ──
+                  Desktop shows this in the sidebar where the order ticket
+                  sits. Mobile has no sidebar, so without this sheet a level
+                  set from the chart had no Confirm button anywhere: the draft
+                  lived in client state only, never reached the server, never
+                  showed in Open Positions, and was lost on reload. It sits
+                  above the order-ticket sheet so a review always wins. */}
+              {chartReview && (
+                <div className="fixed inset-0 z-[96] flex flex-col bg-bg-base">
+                  <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border-glass bg-bg-secondary">
+                    <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Review</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const st = useTradingStore.getState();
+                        st.setChartExitsDraft(null);
+                        st.setChartCloseRequest(null);
+                        st.bumpChartLinesReset();
+                      }}
+                      aria-label="Discard review"
+                      className="p-2 -mr-1 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
+                    <ChartExitsPanel />
+                  </div>
+                </div>
+              )}
+
               {/* ── Mobile Symbol Search Overlay ── */}
               {mobileSymbolSearch && (
                 <div className="fixed inset-0 z-[90] flex flex-col bg-bg-base">

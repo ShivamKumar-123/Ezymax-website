@@ -590,6 +590,7 @@ function TradingViewChartInner({
       chips: HTMLDivElement; pnlChip: HTMLSpanElement; tpBtn: HTMLButtonElement | null; slBtn: HTMLButtonElement | null;
     };
     const entries: Entry[] = [];
+    const dragCleanups: (() => void)[] = [];
     const byShape = new Map<string, { e: Entry; b: Bracket | null }>(); // shape id → owner
     let disposed = false;
 
@@ -782,60 +783,93 @@ function TradingViewChartInner({
      */
     const attachLevelDrag = (e: Entry, b: Bracket, btn: HTMLButtonElement, onTap: () => void) => {
       const DRAG_THRESHOLD = 3; // px — below this it is a tap, not a drag
-      let pressed = false, moved = false, startY = 0, pid = -1;
-      // Pane offsets are captured once per gesture: neither the container nor
-      // the pane moves mid-drag, so re-measuring per pointermove would only
-      // force a layout on every frame.
+      let pressed = false, moved = false, startY = 0, handled = false;
       let top0: number | null = null, rectTop0 = 0;
 
       btn.style.cursor = 'ns-resize';
       // Stop the browser turning the gesture into a scroll/pan on touch.
       btn.style.touchAction = 'none';
 
-      btn.onpointerdown = (ev) => {
-        // Keep the press off the chart, or the pane pans under the drag.
-        ev.stopPropagation();
-        ev.preventDefault();
-        pressed = true; moved = false; startY = ev.clientY; pid = ev.pointerId;
-        const g = geom();
-        top0 = g ? paneTop(g.h) : null;
-        rectTop0 = container.getBoundingClientRect().top;
-        try { btn.setPointerCapture(pid); } catch { /* capture unsupported */ }
-      };
-
-      btn.onpointermove = (ev) => {
+      // Move/up are bound on WINDOW for the life of the gesture rather than on
+      // the chip. A 22px chip is left within the first few pixels of any drag,
+      // so element-bound listeners only survive via setPointerCapture — and if
+      // capture is unavailable or the pane's own handlers get in the way, the
+      // gesture dies silently. Window listeners need neither.
+      const onMove = (ev: PointerEvent) => {
         if (!pressed) return;
         if (!moved && Math.abs(ev.clientY - startY) < DRAG_THRESHOLD) return;
-        // Geometry was unavailable at press time — cannot map pixels to price.
-        if (top0 == null) return;
+        if (top0 == null) return;              // no geometry — fall back to tap
         if (!isRealPositionId(e.p.id)) return;
         const g = geom();
         if (!g) return;
         moved = true;
         b.dragging = true;
-        const y = ev.clientY - rectTop0 - top0;
-        const price = priceAtY(y, g);
+        ev.preventDefault();
+        const price = priceAtY(ev.clientY - rectTop0 - top0, g);
         if (!Number.isFinite(price) || price <= 0) return;
-        // ensureBracket creates the line on first move and slides it after,
-        // so the level appears the moment the drag starts.
+        // ensureBracket creates the line on the first move and slides it
+        // after, so the level appears as soon as the drag starts.
         void ensureBracket(e, b, Number(price.toFixed(digits)));
-        // b.price is set synchronously above, so the chip lights up to its
+        // b.price is set synchronously above, so the chip switches to its
         // "level set" style immediately rather than only on release.
         refreshChips(e);
       };
 
-      const release = () => {
+      const detach = () => {
+        window.removeEventListener('pointermove', onMove, true);
+        window.removeEventListener('pointerup', onUp, true);
+        window.removeEventListener('pointercancel', onCancel, true);
+      };
+
+      function onUp(ev: PointerEvent) {
         if (!pressed) return;
         pressed = false;
-        try { btn.releasePointerCapture(pid); } catch { /* already released */ }
-        if (!moved) { b.dragging = false; onTap(); return; }
+        detach();
+        const wasDrag = moved;
         b.dragging = false;
+        // Swallow the click this pointer sequence is about to synthesise.
+        handled = true;
+        window.setTimeout(() => { handled = false; }, 400);
+        if (!wasDrag) { onTap(); return; }
+        ev.preventDefault();
         if (b.price != null) commitLevel(e, b, b.price);
+      }
+
+      function onCancel() {
+        pressed = false; moved = false; b.dragging = false;
+        detach();
+      }
+
+      btn.onpointerdown = (ev) => {
+        // Keep the press off the chart, or the pane pans under the drag.
+        ev.stopPropagation();
+        ev.preventDefault();
+        pressed = true; moved = false; startY = ev.clientY;
+        const g = geom();
+        top0 = g ? paneTop(g.h) : null;
+        rectTop0 = container.getBoundingClientRect().top;
+        window.addEventListener('pointermove', onMove, true);
+        window.addEventListener('pointerup', onUp, true);
+        window.addEventListener('pointercancel', onCancel, true);
       };
-      btn.onpointerup = (ev) => { ev.stopPropagation(); release(); };
-      btn.onpointercancel = () => { pressed = false; moved = false; b.dragging = false; };
-      // A drag that ends over the chip would otherwise also fire a click.
-      btn.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+
+      // Click fallback. Pointer events are the primary path, but if they are
+      // swallowed by whatever is layered over the pane, a plain click is the
+      // one thing that has always worked — setting a level must never depend
+      // solely on pointerup firing. `handled` stops a completed pointer
+      // gesture from firing the action a second time.
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (handled || moved) return;
+        pressed = false;
+        detach();
+        onTap();
+      };
+
+      // Torn down with the overlay; listeners are only ever attached for the
+      // duration of a gesture, so a stray teardown mid-drag cannot leak them.
+      dragCleanups.push(detach);
     };
 
     (async () => {
@@ -1006,6 +1040,7 @@ function TradingViewChartInner({
       cancelAnimationFrame(raf);
       try { w.unsubscribe('drawing_event', onDrawing); } catch { /* ignore */ }
       try { unsub(); } catch { /* ignore */ }
+      for (const fn of dragCleanups) { try { fn(); } catch { /* ignore */ } }
       if (syncTimer) { window.clearTimeout(syncTimer); syncTimer = null; }
       for (const e of entries) {
         if (e.entryId) safe(() => chart.removeEntity(e.entryId));
