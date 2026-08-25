@@ -593,10 +593,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       const tpVal = sltpEdit.tp.trim();
       if (slVal !== '' && slVal !== '—') body.stop_loss = parseFloat(slVal);
       if (tpVal !== '' && tpVal !== '—') body.take_profit = parseFloat(tpVal);
-      await api.put(`/positions/${sltpEdit.serverId ?? sltpEdit.positionId}`, body);
-      toast.success('SL/TP updated');
+      const res = await api.put<{ closed?: boolean }>(
+        `/positions/${sltpEdit.serverId ?? sltpEdit.positionId}`, body,
+      );
+      toast.success(res?.closed ? 'Order closed at current market price' : 'SL/TP updated');
       setSltpEdit(null);
       refreshPositions();
+      refreshAccount();
+      void loadHistory();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed to update SL/TP');
     } finally {

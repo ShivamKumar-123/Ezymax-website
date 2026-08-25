@@ -129,18 +129,23 @@ class SLTPEngine:
 
                 triggered = None
 
+                # Brackets fire purely on the market crossing the level in the
+                # side's direction (no open-price guard) — a SELL exits on ASK,
+                # a BUY on BID. This also honours break-even / profit-side stops
+                # set on purpose; already-past levels are handled at set time
+                # (modify_position closes at market instead of storing them).
                 if pos.stop_loss:
                     sl = Decimal(str(pos.stop_loss))
-                    if side == "buy" and sl < pos.open_price and bid <= sl:
+                    if side == "buy" and bid <= sl:
                         triggered = "sl"
-                    elif side == "sell" and sl > pos.open_price and ask >= sl:
+                    elif side == "sell" and ask >= sl:
                         triggered = "sl"
 
                 if not triggered and pos.take_profit:
                     tp = Decimal(str(pos.take_profit))
-                    if side == "buy" and tp > pos.open_price and bid >= tp:
+                    if side == "buy" and bid >= tp:
                         triggered = "tp"
-                    elif side == "sell" and tp < pos.open_price and ask <= tp:
+                    elif side == "sell" and ask <= tp:
                         triggered = "tp"
 
                 if triggered:

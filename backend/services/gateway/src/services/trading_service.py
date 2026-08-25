@@ -28,6 +28,7 @@ from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
 from packages.common.src.market_hours import is_market_open
 from packages.common.src import corecen_trade_client
+from packages.common.src.schemas.trading import ClosePositionRequest
 
 logger = logging.getLogger("trading_service")
 
@@ -790,19 +791,74 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     sv = side_val(pos.side)
     updated = False
 
+    # If the requested SL/TP already sits on the far side of the LIVE market
+    # price — i.e. it would trigger the instant it is placed — we no longer
+    # reject it with a popup ("SL must be above/below open price"). The user is
+    # effectively asking to exit right now, so we CLOSE the position at the
+    # CURRENT market price (not at the impossible bracket level). Trigger
+    # direction matches the SL/TP engine: a SELL exits on ASK, a BUY on BID.
+    #   Example: SELL @100, market @105, user sets SL @90 → ask(105) >= 90
+    #            → position closes now at 105 (the live price), no error.
+    cur_bid = cur_ask = None
+    _tick_raw = await price_cache.get(pos.instrument.symbol)
+    if _tick_raw:
+        try:
+            _t = json.loads(_tick_raw)
+            cur_bid = Decimal(str(_t["bid"]))
+            cur_ask = Decimal(str(_t["ask"]))
+        except Exception:
+            cur_bid = cur_ask = None
+
+    # Safety net: with NO live price we cannot tell whether a bracket is already
+    # past the market — and the engine would fill an already-past level at that
+    # (fictitious) price. So when the price is unknown, keep the classic side
+    # guard so only valid future brackets are stored.
+    if cur_bid is None or cur_ask is None:
+        if req.stop_loss is not None:
+            if sv == "buy" and req.stop_loss >= pos.open_price:
+                raise HTTPException(status_code=400, detail="BUY SL must be below open price")
+            if sv == "sell" and req.stop_loss <= pos.open_price:
+                raise HTTPException(status_code=400, detail="SELL SL must be above open price")
+        if req.take_profit is not None:
+            if sv == "buy" and req.take_profit <= pos.open_price:
+                raise HTTPException(status_code=400, detail="BUY TP must be above open price")
+            if sv == "sell" and req.take_profit >= pos.open_price:
+                raise HTTPException(status_code=400, detail="SELL TP must be below open price")
+
+    def _already_hit(level: Decimal, kind: str) -> bool:
+        if kind == "sl":
+            if sv == "sell" and cur_ask is not None:
+                return cur_ask >= level
+            if sv == "buy" and cur_bid is not None:
+                return cur_bid <= level
+        else:  # tp
+            if sv == "sell" and cur_ask is not None:
+                return cur_ask <= level
+            if sv == "buy" and cur_bid is not None:
+                return cur_bid >= level
+        return False
+
+    _breach = (
+        (req.stop_loss is not None and _already_hit(Decimal(str(req.stop_loss)), "sl"))
+        or (req.take_profit is not None and _already_hit(Decimal(str(req.take_profit)), "tp"))
+    )
+    if _breach:
+        res = await close_position(
+            position_id=position_id, req=ClosePositionRequest(), user_id=user_id, db=db,
+        )
+        if isinstance(res, dict):
+            res = {**res, "closed": True}
+        return res
+
+    # Otherwise it is a normal future bracket — set it. No open-price restriction:
+    # the SL/TP engine triggers purely on the market crossing the level in the
+    # side's adverse (SL) / favourable (TP) direction, so break-even and
+    # profit-side stops are allowed too.
     if req.stop_loss is not None:
-        if sv == "buy" and req.stop_loss >= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY SL must be below open price")
-        if sv == "sell" and req.stop_loss <= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL SL must be above open price")
         pos.stop_loss = req.stop_loss
         updated = True
 
     if req.take_profit is not None:
-        if sv == "buy" and req.take_profit <= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY TP must be above open price")
-        if sv == "sell" and req.take_profit >= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL TP must be below open price")
         pos.take_profit = req.take_profit
         updated = True
 

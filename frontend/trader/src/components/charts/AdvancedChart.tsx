@@ -441,8 +441,8 @@ function AdvancedChartInner() {
           if (val !== null && !(val > 0)) { toast.error('Invalid price'); return; }
           (async () => {
             try {
-              await api.put(`/positions/${sid}`, kind === 'sl' ? { stop_loss: val } : { take_profit: val });
-              toast.success(val === null ? `${label} removed` : `${label} set @ ${val}`);
+              const res = await api.put<{ closed?: boolean }>(`/positions/${sid}`, kind === 'sl' ? { stop_loss: val } : { take_profit: val });
+              toast.success(res?.closed ? 'Order closed at current market price' : (val === null ? `${label} removed` : `${label} set @ ${val}`));
               await useTradingStore.getState().refreshPositions();
             } catch (err) {
               toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
@@ -534,8 +534,8 @@ function AdvancedChartInner() {
           // no popup. (A plain click still opens the type-a-price dialog above.)
           (async () => {
             try {
-              await api.put(`/positions/${sid}`, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
-              toast.success(`${label} set @ ${price.toFixed(digits)}`);
+              const res = await api.put<{ closed?: boolean }>(`/positions/${sid}`, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
+              toast.success(res?.closed ? 'Order closed at current market price' : `${label} set @ ${price.toFixed(digits)}`);
               await useTradingStore.getState().refreshPositions();
             } catch (err) {
               toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
