@@ -26,6 +26,7 @@ import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useWarmTheme } from '@/stores/warmThemeStore';
 
 const STORAGE_PREFIX = 'sc-feature-tour:v1:';
 
@@ -113,6 +114,8 @@ type Rect = { top: number; left: number; width: number; height: number };
 export default function FeatureTour() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
+  // Drives the warm-dark token set inside the portal (see the render root).
+  const warmDark = useWarmTheme((st) => st.dark);
   const userId = user?.id ?? null;
 
   const [mounted, setMounted] = useState(false);
@@ -253,7 +256,18 @@ export default function FeatureTour() {
   const HIGHLIGHT_PAD = 6;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9998]" role="dialog" aria-modal="true" aria-label="Feature tour">
+    // The portal escapes the DashboardShell wrapper that carries the warm
+    // theme tokens, so re-apply them here — same as Modal. Without this the
+    // `--crx-*` variables are undefined and `--text-*` falls back to the
+    // LIGHT palette from <html>: near-black text and a transparent card over
+    // the dark app, i.e. an unreadable box with invisible dots and buttons.
+    <div
+      data-theme="warm"
+      className={`theme-warm font-crextio fixed inset-0 z-[9998]${warmDark ? ' theme-warm-dark' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Feature tour"
+    >
       {/* Full-screen click blocker. When there's no target it also provides
           the dim; with a target the spotlight box below supplies the dim. */}
       <div className={rect ? 'absolute inset-0' : 'absolute inset-0 bg-black/60'} onClick={(e) => e.stopPropagation()} />
@@ -275,7 +289,7 @@ export default function FeatureTour() {
 
       {/* Instruction card */}
       <div
-        className="absolute z-[10000] rounded-2xl border border-border-primary bg-bg-card p-5 shadow-2xl"
+        className="absolute z-[10000] rounded-2xl border border-border-primary bg-bg-tertiary p-5 shadow-2xl"
         style={cardStyle}
       >
         <button

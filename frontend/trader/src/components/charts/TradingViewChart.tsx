@@ -791,6 +791,21 @@ function TradingViewChartInner({
       }
       return g.top - (y * (g.top - g.bottom)) / g.h;
     };
+    /**
+     * Price at `y`, measured RELATIVE to a known (price, y) pair rather than
+     * to the top of the pane. Only the scale is needed, so this keeps working
+     * when paneTop() cannot find the pane — the case where an absolute
+     * mapping silently produced no drag at all.
+     */
+    const priceFromAnchor = (y: number, anchorY: number, anchorPrice: number, g: Geo): number => {
+      const dy = y - anchorY;
+      if (g.log) {
+        if (!(anchorPrice > 0)) return NaN;
+        const span = Math.log(g.top) - Math.log(g.bottom);
+        return Math.exp(Math.log(anchorPrice) - (dy * span) / g.h);
+      }
+      return anchorPrice - (dy * (g.top - g.bottom)) / g.h;
+    };
     const paneTop = (paneH: number): number | null => {
       try {
         const rootRect = container.getBoundingClientRect();
@@ -865,7 +880,9 @@ function TradingViewChartInner({
     const attachLevelDrag = (e: Entry, b: Bracket, btn: HTMLButtonElement, onTap: () => void) => {
       const DRAG_THRESHOLD = 3; // px — below this it is a tap, not a drag
       let pressed = false, moved = false, startY = 0, handled = false;
-      let top0: number | null = null, rectTop0 = 0;
+      // The chip row rides the entry line, so its centre is a known
+      // (price, pixel) pair — all the mapping needs is the scale.
+      let anchorY = 0, anchorPrice = 0;
 
       btn.style.cursor = 'ns-resize';
       // Stop the browser turning the gesture into a scroll/pan on touch.
@@ -879,14 +896,13 @@ function TradingViewChartInner({
       const onMove = (ev: PointerEvent) => {
         if (!pressed) return;
         if (!moved && Math.abs(ev.clientY - startY) < DRAG_THRESHOLD) return;
-        if (top0 == null) return;              // no geometry — fall back to tap
         if (!isRealPositionId(e.p.id)) return;
         const g = geom();
-        if (!g) return;
+        if (!g || !(anchorPrice > 0)) return;  // no scale — fall back to tap
         moved = true;
         b.dragging = true;
         ev.preventDefault();
-        const price = priceAtY(ev.clientY - rectTop0 - top0, g);
+        const price = priceFromAnchor(ev.clientY, anchorY, anchorPrice, g);
         if (!Number.isFinite(price) || price <= 0) return;
         // ensureBracket creates the line on the first move and slides it
         // after, so the level appears as soon as the drag starts.
@@ -926,9 +942,9 @@ function TradingViewChartInner({
         ev.stopPropagation();
         ev.preventDefault();
         pressed = true; moved = false; startY = ev.clientY;
-        const g = geom();
-        top0 = g ? paneTop(g.h) : null;
-        rectTop0 = container.getBoundingClientRect().top;
+        const r = btn.getBoundingClientRect();
+        anchorY = r.top + r.height / 2;
+        anchorPrice = e.entry;
         window.addEventListener('pointermove', onMove, true);
         window.addEventListener('pointerup', onUp, true);
         window.addEventListener('pointercancel', onCancel, true);
@@ -1034,10 +1050,17 @@ function TradingViewChartInner({
       if (!(px > 0)) return;
       // Live label while dragging; the draft lands once the drag settles.
       b.price = px;
+      // Claim the line for the whole gesture, not just the 220ms settle
+      // window. The store sync skips dragging brackets, and between two drag
+      // events `draftTimer` can fire and leave the line unguarded — a sync
+      // landing in that gap calls setPoints and snaps the line out from under
+      // the pointer. Cleared once the level has settled below.
+      b.dragging = true;
       safe(() => chart.getShapeById(b.id)?.setProperties(bracketProps(e, b, px)));
       if (b.draftTimer) window.clearTimeout(b.draftTimer);
       b.draftTimer = window.setTimeout(() => {
         b.draftTimer = null;
+        b.dragging = false;
         if (!isRealPositionId(e.p.id)) { toast('Order still finalizing…'); return; }
         if (Math.abs(px - e.entry) <= eps) {
           // Dropped onto the entry line = remove the level.
