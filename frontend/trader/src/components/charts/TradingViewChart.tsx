@@ -239,7 +239,7 @@ function TradingViewChartInner({
         container_id: CONTAINER_ID,
         datafeed,
         library_path: '/charting_library/',
-        custom_css_url: '/chart-theme.css',
+        custom_css_url: theme === 'dark' ? '/chart-theme.css' : '/chart-theme-light.css',
         locale: 'en',
         timezone: 'Etc/UTC',
         theme,
@@ -355,7 +355,7 @@ function TradingViewChartInner({
       setChartReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [theme]);
 
   // Switch symbol without reloading the library. Position/order lines are
   // symbol-specific overlays — remove the shapes and drop our refs so the
@@ -782,14 +782,6 @@ function TradingViewChartInner({
     const paneY = (price: number, g: Geo): number => {
       if (g.log) { if (!(price > 0)) return NaN; const lt = Math.log(g.top), lb = Math.log(g.bottom); return (g.h * (lt - Math.log(price))) / (lt - lb); }
       return (g.h * (g.top - price)) / (g.top - g.bottom);
-    };
-    /** Inverse of paneY: a y offset inside the pane back to a price. */
-    const priceAtY = (y: number, g: Geo): number => {
-      if (g.log) {
-        const lt = Math.log(g.top), lb = Math.log(g.bottom);
-        return Math.exp(lt - (y * (lt - lb)) / g.h);
-      }
-      return g.top - (y * (g.top - g.bottom)) / g.h;
     };
     /**
      * Price at `y`, measured RELATIVE to a known (price, y) pair rather than

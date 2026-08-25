@@ -10,6 +10,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
 import { useTradingStore, InstrumentInfo } from '@/stores/tradingStore';
+import { useWarmTheme } from '@/stores/warmThemeStore';
 import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import { getMarketStatus } from '@/lib/marketHours';
@@ -81,6 +82,10 @@ export default function TradingTerminalPage() {
   // Chart-driven review (TP/SL drag or ✕ on the position line) takes over the
   // sidebar — TradingView-style "Exits" panel where the order ticket sits.
   const chartReview = useTradingStore((s) => !!(s.chartExitsDraft || s.chartCloseRequest));
+  // Follow the shared light/dark toggle (AppNavbar sun/moon, persisted per
+  // browser) like DashboardShell does — the terminal used to pin itself to
+  // the dark token set, so the toggle appeared but did nothing here.
+  const warmDark = useWarmTheme((st) => st.dark);
   useEffect(() => {
     if (chartReview) { setSidebarView('trade'); setSidebarOpen(true); }
   }, [chartReview]);
@@ -416,8 +421,10 @@ export default function TradingTerminalPage() {
 
     return (
       <div
+        data-theme={warmDark ? 'dark' : 'light'}
         className={clsx(
-          'theme-warm theme-warm-dark font-crextio flex-1 flex flex-col overflow-hidden min-h-0 scrollbar-none bg-bg-base',
+          'theme-warm font-crextio flex-1 flex flex-col overflow-hidden min-h-0 scrollbar-none bg-bg-base',
+          warmDark && 'theme-warm-dark',
           // Only the chart view has the fixed Sell/Lots/Buy bar at the bottom;
           // reserving the space in the other views just leaves a dead band.
           mobileView === 'chart'
@@ -674,7 +681,7 @@ export default function TradingTerminalPage() {
                     {/* The mobile terminal has its own fixed Sell/Lots/Buy bar
                         below the chart — the on-chart quick-trade widget would
                         duplicate it and overlap the OHLC legend at 390px. */}
-                    <TradingViewChart theme="dark" showTradeWidget={false} />
+                    <TradingViewChart theme={warmDark ? 'dark' : 'light'} showTradeWidget={false} />
                   </ChartErrorBoundary>
                 </div>
               </div>
@@ -775,7 +782,13 @@ export default function TradingTerminalPage() {
   const sidebarVisible = sidebarOpen && !chartExpanded;
 
   return (
-    <div data-theme="dark" className="theme-warm theme-warm-dark font-crextio flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
+    <div
+      data-theme={warmDark ? 'dark' : 'light'}
+      className={clsx(
+        'theme-warm font-crextio flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base',
+        warmDark && 'theme-warm-dark',
+      )}
+    >
       {/* Full-screen chart: the rail is unmounted so the chart truly owns the
           viewport — only the "Normal view" button (or Esc) brings it back. */}
       {!chartExpanded && (
@@ -892,7 +905,7 @@ export default function TradingTerminalPage() {
                   chart's own buttons. Collapse is via the header's "Normal view"
                   button / Esc when expanded. */}
               <ChartErrorBoundary>
-                <TradingViewChart theme="dark" onRequestFullscreen={enterFullscreen} />
+                <TradingViewChart theme={warmDark ? 'dark' : 'light'} onRequestFullscreen={enterFullscreen} />
               </ChartErrorBoundary>
             </div>
           </div>

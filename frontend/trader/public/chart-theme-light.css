@@ -1,0 +1,15 @@
+/* Light-mode twin of chart-theme.css. Loaded INSIDE the charting-library
+   iframe via `custom_css_url`, which is a construction-time option — the
+   widget is rebuilt when the theme toggles, so the two files never have to
+   swap at runtime. Keep the non-colour rules below in sync with the dark
+   file; only the canvas colour differs. */
+html, body { background: #fff !important; }
+a[href*="tradingview.com"],
+[class*="tv-logo"],
+[class*="logoWrapper"],
+[class*="logo-"][class*="pane"] { display: none !important; visibility: hidden !important; }
+
+/* Our position / TP / SL lines are managed from the sidebar Exits panel —
+   hide the library's floating drawing toolbar that pops up when one is
+   selected (colour / style / lock / delete would desync the levels). */
+[class*="floating-toolbar-react-widgets"] { display: none !important; }
