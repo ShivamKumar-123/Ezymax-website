@@ -349,25 +349,13 @@ async def place_order(
         db.add(position)
 
         account.margin_used = (account.margin_used or Decimal("0")) + required_margin
-        account.balance -= commission
+        # Commission is NOT charged here — it is settled at CLOSE, folded into the
+        # trade's realized P&L, so the trade's single ledger entry reads NET
+        # (gross − commission) and matches what the trader sees. The net balance
+        # effect over the trade is identical to charging it at open. The rate is
+        # still recorded on the order/position for the Trade History breakdown.
         account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
         account.free_margin = account.equity - account.margin_used
-
-        # Book the commission debit in the ledger. Previously commission was only
-        # subtracted from the balance here with NO Transaction row, so the ledger
-        # was short by the commission (ledger sum > balance → drift) and the trade
-        # P&L looked GROSS in the admin Transactions log while the trader showed
-        # it NET. Recording it keeps the ledger complete and self-reconciling.
-        if commission and commission > 0:
-            db.add(Transaction(
-                user_id=user_id,
-                account_id=account.id,
-                type="commission",
-                amount=-commission,
-                balance_after=account.balance,
-                reference_id=order.id,
-                description=f"Commission {instrument.symbol} {str(req.side).upper()} {req.lots} lots",
-            ))
 
     else:
         if not req.price:
@@ -1004,12 +992,14 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         )
         db.add(history)
 
-        apply_realized_pnl(account, partial_profit)  # bonus credit consumed before balance on loss
+        # NET the commission into the realized P&L at close (see the open path).
+        partial_net = partial_profit - partial_commission
+        apply_realized_pnl(account, partial_net)  # bonus credit consumed before balance on loss
         partial_margin = (close_lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
         account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - partial_margin)
 
         result_msg = f"Partial close: {close_lots} lots"
-        result_profit = partial_profit
+        result_profit = partial_net
     else:
         pos.status = "closed"
         pos.close_price = close_price
@@ -1033,12 +1023,14 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         )
         db.add(history)
 
-        apply_realized_pnl(account, full_profit)  # bonus credit consumed before balance on loss
+        # NET the commission into the realized P&L at close (see the open path).
+        full_net = full_profit - (pos.commission or Decimal("0"))
+        apply_realized_pnl(account, full_net)  # bonus credit consumed before balance on loss
         margin_release = (pos.lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
         account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - margin_release)
 
         result_msg = "Position closed"
-        result_profit = full_profit
+        result_profit = full_net
 
     account.equity = account.balance + (account.credit or Decimal("0"))
     account.free_margin = account.equity - (account.margin_used or Decimal("0"))

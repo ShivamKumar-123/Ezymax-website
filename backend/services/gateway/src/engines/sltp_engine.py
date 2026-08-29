@@ -204,9 +204,12 @@ class SLTPEngine:
             select(TradingAccount).where(TradingAccount.id == pos.account_id)
         )
         account = acct_result.scalar_one_or_none()
+        # NET the commission into the realized P&L at close (commission is no
+        # longer charged at open), so the ledger entry reads NET like the trader.
+        net_profit = profit - (pos.commission or Decimal("0"))
         if account:
             margin_release = (pos.lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
-            apply_realized_pnl(account, profit)  # bonus credit consumed before balance on loss
+            apply_realized_pnl(account, net_profit)  # bonus credit consumed before balance on loss
             account.margin_used = max(Decimal("0"), (account.margin_used or Decimal("0")) - margin_release)
             account.equity = account.balance + (account.credit or Decimal("0"))
             account.free_margin = account.equity - account.margin_used
@@ -231,8 +234,8 @@ class SLTPEngine:
         tx = Transaction(
             user_id=account.user_id if account else pos.account_id,
             account_id=pos.account_id,
-            type="profit" if profit >= 0 else "loss",
-            amount=profit,
+            type="profit" if net_profit >= 0 else "loss",
+            amount=net_profit,
             balance_after=account.balance if account else None,
             reference_id=pos.id,
             description=f"{reason.upper()} hit: {pos.instrument.symbol if pos.instrument else ''} {side} {pos.lots} lots @ {close_price}",
