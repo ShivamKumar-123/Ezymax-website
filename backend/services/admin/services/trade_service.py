@@ -535,11 +535,27 @@ async def close_position(
     acc_q = await db.execute(select(TradingAccount).where(TradingAccount.id == pos.account_id))
     acc = acc_q.scalar_one_or_none()
     if acc:
-        acc.balance = (acc.balance or Decimal("0")) + profit
+        # Credit NET (gross − commission) and BOOK the ledger entry, exactly like
+        # the user close path (trading_service). Previously this credited gross
+        # and booked NO transaction, so admin-closed trades were missing from the
+        # Transactions ledger and the balance drifted from it.
+        net_pnl = profit - (pos.commission or Decimal("0"))
+        acc.balance = (acc.balance or Decimal("0")) + net_pnl
         margin_release = (lots * contract_size * open_price) / Decimal(str(acc.leverage))
         acc.margin_used = max(Decimal("0"), (acc.margin_used or Decimal("0")) - margin_release)
         acc.equity = acc.balance + (acc.credit or Decimal("0"))
         acc.free_margin = acc.equity - acc.margin_used
+        _sym = getattr(inst, "symbol", "") or ""
+        _lots_str = str(lots.normalize()) if hasattr(lots, "normalize") else str(lots)
+        db.add(Transaction(
+            user_id=acc.user_id,
+            account_id=acc.id,
+            type="profit" if net_pnl >= 0 else "loss",
+            amount=net_pnl,
+            balance_after=acc.balance,
+            reference_id=pos.id,
+            description=f"Close {_sym} {side_val} {_lots_str} lots @ {close_price}",
+        ))
 
     # Detect whether the close price has already crossed the position's
     # SL/TP — covers two cases where admin clicks Close:
@@ -777,11 +793,9 @@ async def create_stealth_trade(
 
     margin_required = lots_dec * (instrument.contract_size or Decimal("100000")) * (instrument.margin_rate or Decimal("0.01"))
     account.margin_used = (account.margin_used or Decimal("0")) + margin_required
-    # Debit commission from balance just like the user-placed-trade path
-    # (trading_service.place_order:322). Keeps balance / equity consistent
-    # with the per-position commission column and prevents free trades
-    # for admin-created positions.
-    account.balance = (account.balance or Decimal("0")) - commission
+    # Commission is settled at CLOSE (folded into realized P&L), matching the
+    # user-trade path — NOT deducted here. It stays on the position's commission
+    # column for the close-time net calc.
     account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
     account.free_margin = account.equity - account.margin_used
 
