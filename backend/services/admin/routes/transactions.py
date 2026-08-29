@@ -19,12 +19,18 @@ async def list_transactions(
     search: str = Query(None),
     user_id: uuid.UUID | None = Query(None),
     include_trade_pnl: bool = Query(False),
+    account_id: uuid.UUID | None = Query(None),
+    main_only: bool = Query(False),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
     return await transaction_service.list_transactions(
         page=page, per_page=per_page, type_filter=type_filter, search=search,
-        user_id=user_id, include_trade_pnl=include_trade_pnl, db=db,
+        user_id=user_id, include_trade_pnl=include_trade_pnl,
+        account_id=account_id, main_only=main_only,
+        date_from=date_from, date_to=date_to, db=db,
     )
 
 

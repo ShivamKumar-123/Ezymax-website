@@ -274,8 +274,6 @@ export default function UserDetailPage() {
   const [tradeAcctFilter, setTradeAcctFilter] = useState<string>('all'); // 'all' | account_id
   const [tradeDateFrom, setTradeDateFrom] = useState('');
   const [tradeDateTo, setTradeDateTo] = useState('');
-  const [transactions, setTransactions] = useState<TxRow[]>([]);
-  const [txLoading, setTxLoading] = useState(false);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [depLoading, setDepLoading] = useState(false);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
@@ -336,18 +334,6 @@ export default function UserDetailPage() {
     } catch { setTrades([]); } finally { setTradesLoading(false); }
   }, [userId, tradeAcctFilter, tradeDateFrom, tradeDateTo]);
 
-  const fetchTransactions = useCallback(async () => {
-    setTxLoading(true);
-    try {
-      // include_trade_pnl=true so the per-user ledger truly shows
-      // EVERYTHING (deposits + withdrawals + transfers + profits +
-      // losses + adjustments). The global Transactions tab still
-      // hides profit/loss by default.
-      const res = await adminApi.get<any>('/transactions', { user_id: userId, include_trade_pnl: 'true', per_page: '100' });
-      setTransactions(res.items || res.transactions || []);
-    } catch { setTransactions([]); } finally { setTxLoading(false); }
-  }, [userId]);
-
   const fetchDeposits = useCallback(async () => {
     setDepLoading(true);
     try {
@@ -367,10 +353,10 @@ export default function UserDetailPage() {
   useEffect(() => {
     if (activeTab === 'positions') void fetchPositions();
     else if (activeTab === 'trades' || activeTab === 'commission') void fetchTrades();
-    else if (activeTab === 'transactions') void fetchTransactions();
+    // 'transactions' tab is self-fetching (UserTransactionsTab).
     else if (activeTab === 'deposits') void fetchDeposits();
     else if (activeTab === 'withdrawals') void fetchWithdrawals();
-  }, [activeTab, fetchPositions, fetchTrades, fetchTransactions, fetchDeposits, fetchWithdrawals]);
+  }, [activeTab, fetchPositions, fetchTrades, fetchDeposits, fetchWithdrawals]);
 
   if (loading) {
     return (
@@ -805,9 +791,8 @@ export default function UserDetailPage() {
       {/* ─── TRANSACTIONS TAB ─── */}
       {activeTab === 'transactions' && (
         <UserTransactionsTab
-          transactions={transactions}
-          loading={txLoading}
-          accounts={accounts.map((a) => a.account_number).filter(Boolean)}
+          userId={userId}
+          accounts={accounts.map((a) => ({ id: a.id, account_number: a.account_number })).filter((a) => a.account_number)}
           userName={name}
           userEmail={data.user.email}
         />
@@ -953,18 +938,6 @@ function txTitle(type: string): string {
   return type ? type.replace(/_/g, ' ') : 'Transaction';
 }
 
-function txMatchesType(type: string, f: string): boolean {
-  const x = (type || '').toLowerCase();
-  if (f === 'all') return true;
-  if (f === 'deposit') return x === 'deposit';
-  if (f === 'withdrawal') return x === 'withdrawal';
-  if (f === 'transfer') return x === 'transfer';
-  if (f === 'trading') return x === 'profit' || x === 'loss';
-  if (f === 'commission') return x.includes('commission') || x === 'credit';
-  if (f === 'adjustment') return ['adjustment', 'correction', 'bonus', 'bonus_release', 'admin_commission'].includes(x);
-  return true;
-}
-
 function TxIcon({ type }: { type: string }) {
   const x = (type || '').toLowerCase();
   if (x === 'deposit') return <ArrowDownCircle className="w-4 h-4" />;
@@ -984,30 +957,49 @@ function TxDetailField({ label, value, valueClass }: { label: string; value: str
   );
 }
 
-function UserTransactionsTab({ transactions, loading, accounts, userName, userEmail }: { transactions: TxRow[]; loading: boolean; accounts: string[]; userName: string; userEmail?: string }) {
-  const MAIN = '__main__';
+const MAIN = '__main__'; // account-filter sentinel for the main-wallet bucket
+
+function UserTransactionsTab({ userId, accounts, userName, userEmail }: { userId: string; accounts: { id: string; account_number: string }[]; userName: string; userEmail?: string }) {
   const [typeFilter, setTypeFilter] = useState('all');
-  const [acctFilter, setAcctFilter] = useState('all');
+  const [acctFilter, setAcctFilter] = useState('all'); // 'all' | MAIN | account_id
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // The dropdown lists the user's FULL account set (passed from the parent),
-  // plus a Main-wallet bucket for wallet-level entries (account_id = null).
+  // Server-side data: filters + pagination + summary all handled by the API so
+  // the count / totals are correct over the WHOLE filtered ledger, not a page.
+  const [rows, setRows] = useState<TxRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [summary, setSummary] = useState<{ count: number; total_in: number; total_out: number; net: number } | null>(null);
 
-  const filtered = transactions.filter((t) => {
-    if (!txMatchesType(t.type, typeFilter)) return false;
-    if (acctFilter === MAIN && t.account_number) return false;
-    if (acctFilter !== 'all' && acctFilter !== MAIN && (t.account_number || '') !== acctFilter) return false;
-    if (dateFrom && t.created_at) { const f = new Date(dateFrom); f.setHours(0, 0, 0, 0); if (new Date(t.created_at) < f) return false; }
-    if (dateTo && t.created_at) { const to = new Date(dateTo); to.setHours(23, 59, 59, 999); if (new Date(t.created_at) > to) return false; }
-    return true;
-  });
+  const load = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { user_id: userId, include_trade_pnl: 'true', page: String(p), per_page: '100' };
+      if (typeFilter !== 'all') params.type = typeFilter;
+      if (acctFilter === MAIN) params.main_only = 'true';
+      else if (acctFilter !== 'all') params.account_id = acctFilter;
+      // Timezone-correct UTC boundaries for the picked LOCAL day range.
+      if (dateFrom) params.date_from = new Date(`${dateFrom}T00:00:00`).toISOString();
+      if (dateTo) { const e = new Date(`${dateTo}T00:00:00`); e.setDate(e.getDate() + 1); params.date_to = e.toISOString(); }
+      const res = await adminApi.get<any>('/transactions', params);
+      setRows(res.items || []);
+      setTotal(Number(res.total) || 0);
+      setPage(p);
+      if (res.summary) setSummary(res.summary);
+    } catch { setRows([]); } finally { setLoading(false); }
+  }, [userId, typeFilter, acctFilter, dateFrom, dateTo]);
 
-  const totalIn = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const net = totalIn - totalOut;
+  useEffect(() => { void load(1); }, [load]);
+
   const hasFilters = typeFilter !== 'all' || acctFilter !== 'all' || !!dateFrom || !!dateTo;
+  const totalIn = summary?.total_in ?? 0;
+  const totalOut = summary?.total_out ?? 0;
+  const net = summary?.net ?? 0;
+  const count = summary?.count ?? total;
+  const pages = Math.max(1, Math.ceil((total || 0) / 100));
 
   async function handleDownload() {
     try {
@@ -1016,7 +1008,7 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
         userName,
         userEmail,
         columns: ['Type', 'Amount', 'Balance After', 'Account', 'Description', 'Date'],
-        rows: filtered.map((t) => [
+        rows: rows.map((t) => [
           txTitle(t.type),
           `${t.amount >= 0 ? '+' : '-'}$${fmt(Math.abs(t.amount))}`,
           t.balance_after != null ? `$${fmt(t.balance_after)}` : '—',
@@ -1031,14 +1023,10 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
     }
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>;
-  }
-
   return (
     <div className="space-y-3">
       <SectionToolbar title="Transactions" onDownload={handleDownload} />
-      {/* Filter bar */}
+      {/* Filter bar — all filters applied SERVER-SIDE. */}
       <div className="flex flex-wrap items-center gap-1.5">
         {TX_TYPE_FILTERS.map((f) => (
           <button key={f.id} type="button" onClick={() => setTypeFilter(f.id)}
@@ -1051,12 +1039,12 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
           className="text-xs py-1.5 pl-2.5 pr-7 rounded-lg bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer">
           <option value="all">All accounts</option>
           <option value={MAIN}>Main wallet</option>
-          {accounts.map((a) => <option key={a} value={a}>{a}</option>)}
+          {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_number}</option>)}
         </select>
-        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+        <input type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => setDateFrom(e.target.value)}
           className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
         <span className="text-text-tertiary text-xs">–</span>
-        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+        <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => setDateTo(e.target.value)}
           className="text-xs py-1.5 px-2 rounded-lg bg-bg-input border border-border-primary text-text-secondary focus:outline-none focus:border-accent/50" />
         {hasFilters && (
           <button type="button" onClick={() => { setTypeFilter('all'); setAcctFilter('all'); setDateFrom(''); setDateTo(''); }}
@@ -1064,10 +1052,10 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
         )}
       </div>
 
-      {/* Summary */}
-      {filtered.length > 0 && (
+      {/* Summary — from the server over the WHOLE filtered set (not the page) */}
+      {count > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Transactions" value={filtered.length.toString()} icon={Receipt} color="text-text-primary" />
+          <StatCard label="Transactions" value={count.toLocaleString()} icon={Receipt} color="text-text-primary" />
           <StatCard label="Total In" value={`+$${fmt(totalIn)}`} icon={TrendingUp} color="text-success" />
           <StatCard label="Total Out" value={`-$${fmt(totalOut)}`} icon={TrendingDown} color="text-danger" />
           <StatCard label="Net" value={`${net >= 0 ? '+' : '-'}$${fmt(Math.abs(net))}`} icon={net >= 0 ? TrendingUp : TrendingDown} color={net >= 0 ? 'text-success' : 'text-danger'} />
@@ -1075,13 +1063,15 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
       )}
 
       {/* List */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>
+      ) : rows.length === 0 ? (
         <div className="py-16 text-center text-text-tertiary text-sm">
-          {transactions.length === 0 ? 'No transactions' : 'No transactions match your filters'}
+          {hasFilters ? 'No transactions match your filters' : 'No transactions'}
         </div>
       ) : (
         <div className="space-y-1.5">
-          {filtered.map((t) => {
+          {rows.map((t) => {
             const after = t.balance_after;
             const before = after != null ? after - t.amount : null;
             const isExpanded = expandedId === t.id;
@@ -1150,6 +1140,21 @@ function UserTransactionsTab({ transactions, loading, accounts, userName, userEm
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination — 100 per page; the cards above summarise the full set. */}
+      {pages > 1 && (
+        <div className="flex items-center justify-between gap-3 pt-1 text-xs">
+          <span className="text-text-tertiary">
+            Page {page} of {pages} · {total.toLocaleString()} transactions{hasFilters && <span className="ml-1 text-text-tertiary/70">(filtered)</span>}
+          </span>
+          <div className="flex items-center gap-2">
+            <button type="button" disabled={loading || page <= 1} onClick={() => void load(page - 1)}
+              className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:pointer-events-none">Prev</button>
+            <button type="button" disabled={loading || page >= pages} onClick={() => void load(page + 1)}
+              className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:pointer-events-none">Next</button>
+          </div>
         </div>
       )}
     </div>

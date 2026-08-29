@@ -1,12 +1,22 @@
 """Admin Transaction Service — paginated listing and summary."""
 
 import uuid  # noqa: F401  (used in type hints below)
+from datetime import datetime
 
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, TradingAccount, Transaction
 from packages.common.src.admin_schemas import AdminTransactionOut, PaginatedResponse
+
+# Frontend filter chips map to one-or-more underlying transaction types.
+_TYPE_GROUPS = {
+    "deposit": ("deposit",),
+    "withdrawal": ("withdrawal",),
+    "transfer": ("transfer",),
+    "trading": ("profit", "loss"),
+    "adjustment": ("adjustment", "correction", "bonus", "bonus_release", "admin_commission"),
+}
 
 
 def _txn_to_out(
@@ -53,7 +63,11 @@ async def list_transactions(
     db: AsyncSession,
     user_id: "uuid.UUID | None" = None,
     include_trade_pnl: bool = False,
-) -> PaginatedResponse:
+    account_id: "uuid.UUID | None" = None,
+    main_only: bool = False,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> dict:
     query = select(Transaction)
 
     # Per-user filter for the user-detail ledger page. When admin
@@ -65,12 +79,40 @@ async def list_transactions(
         query = query.where(Transaction.user_id == user_id)
 
     if type_filter and type_filter != "all":
-        # Admin explicitly asked for a type — respect it, even if it's
-        # one of the hidden ones (lets ops drill into trade P&L from
-        # the URL when they really need to).
-        query = query.where(Transaction.type == type_filter)
+        # A filter chip maps to one or more underlying types (e.g. P&L =
+        # profit|loss, Adjustments = adjustment|correction|bonus…). An
+        # unknown value is treated as an exact type for URL drill-downs.
+        grp = _TYPE_GROUPS.get(type_filter)
+        query = query.where(
+            Transaction.type.in_(grp) if grp else Transaction.type == type_filter
+        )
     elif not include_trade_pnl:
         query = query.where(Transaction.type.notin_(_HIDDEN_FROM_ADMIN_TX))
+
+    # Account scope: a specific trading account, or the main-wallet bucket
+    # (account_id IS NULL), or all (neither set).
+    if account_id is not None:
+        query = query.where(Transaction.account_id == account_id)
+    elif main_only:
+        query = query.where(Transaction.account_id.is_(None))
+
+    # Date range — frontend sends timezone-correct UTC boundaries (local-day
+    # start .. exclusive next-local-midnight) so filtering matches the
+    # local-time ledger table. created_at is timestamptz, so the raw
+    # timestamp comparison is timezone-correct.
+    def _parse_iso(s: str):
+        try:
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return None
+    if date_from:
+        dfrom = _parse_iso(date_from)
+        if dfrom is not None:
+            query = query.where(Transaction.created_at >= dfrom)
+    if date_to:
+        dto = _parse_iso(date_to)
+        if dto is not None:
+            query = query.where(Transaction.created_at < dto)
 
     if search:
         user_ids_q = select(User.id).where(
@@ -91,8 +133,20 @@ async def list_transactions(
             )
         )
 
-    count_q = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(count_q)).scalar() or 0
+    # Summary over the FULL filtered set (count + money in/out/net) — NOT the
+    # current page, so the cards are correct regardless of pagination.
+    sub = query.subquery()
+    srow = (await db.execute(
+        select(
+            func.count(),
+            func.coalesce(func.sum(case((sub.c.amount > 0, sub.c.amount), else_=0)), 0),
+            func.coalesce(func.sum(case((sub.c.amount < 0, -sub.c.amount), else_=0)), 0),
+        ).select_from(sub)
+    )).first()
+    total = int(srow[0] or 0)
+    total_in = float(srow[1] or 0)
+    total_out = float(srow[2] or 0)
+    summary = {"count": total, "total_in": total_in, "total_out": total_out, "net": total_in - total_out}
 
     query = query.order_by(Transaction.created_at.desc()).offset(
         (page - 1) * per_page
@@ -138,7 +192,7 @@ async def list_transactions(
             admin=admins_map.get(t.created_by),
         ))
 
-    return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
+    return {"items": items, "total": total, "page": page, "per_page": per_page, "summary": summary}
 
 
 async def get_transaction_summary(db: AsyncSession) -> dict:
