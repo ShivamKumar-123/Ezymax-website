@@ -353,6 +353,22 @@ async def place_order(
         account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
         account.free_margin = account.equity - account.margin_used
 
+        # Book the commission debit in the ledger. Previously commission was only
+        # subtracted from the balance here with NO Transaction row, so the ledger
+        # was short by the commission (ledger sum > balance → drift) and the trade
+        # P&L looked GROSS in the admin Transactions log while the trader showed
+        # it NET. Recording it keeps the ledger complete and self-reconciling.
+        if commission and commission > 0:
+            db.add(Transaction(
+                user_id=user_id,
+                account_id=account.id,
+                type="commission",
+                amount=-commission,
+                balance_after=account.balance,
+                reference_id=order.id,
+                description=f"Commission {instrument.symbol} {str(req.side).upper()} {req.lots} lots",
+            ))
+
     else:
         if not req.price:
             raise HTTPException(status_code=400, detail="Price required for pending orders")
