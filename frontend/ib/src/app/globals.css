@@ -917,3 +917,17 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   opacity: 0.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
+
+/* Positive "success" text — IB's success token is lime (#a6d600), invisible
+   on the white light-mode surfaces. Darken it (and any light emerald shades)
+   to a readable green as a foreground only in light mode. */
+[data-theme="light"] .text-success,
+[data-theme="light"] .text-emerald-300,
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-emerald-500,
+.theme-light .text-success,
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400,
+.theme-light .text-emerald-500 {
+  color: #15803d !important;
+}

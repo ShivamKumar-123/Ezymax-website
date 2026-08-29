@@ -305,3 +305,17 @@ html.light .hover\:text-\[\#ccff00\]:hover,
 [data-theme='light'] .hover\:text-\[\#ccff00\]:hover {
   color: var(--accent-ink) !important;
 }
+
+/* Positive "success"/green text — #22c55e and the light emerald shades wash
+   out on the white light-mode surfaces. Darken to a readable green as a
+   foreground only (backgrounds keep their tint). */
+html.light .text-success,
+html.light .text-emerald-300,
+html.light .text-emerald-400,
+html.light .text-emerald-500,
+[data-theme='light'] .text-success,
+[data-theme='light'] .text-emerald-300,
+[data-theme='light'] .text-emerald-400,
+[data-theme='light'] .text-emerald-500 {
+  color: #15803d !important;
+}

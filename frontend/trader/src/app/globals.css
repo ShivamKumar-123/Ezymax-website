@@ -1000,3 +1000,27 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 [data-theme="light"] .hover\:text-\[\#ccff00\]:hover {
   color: var(--accent-ink) !important;
 }
+
+/* Positive "green" P&L text — the light emerald/green shades (300–500) are
+   designed for dark surfaces and wash out on the white light-mode page.
+   Darken them to a readable green (WCAG ~4.9:1) as a foreground only. */
+[data-theme="light"] .text-emerald-200,
+[data-theme="light"] .text-emerald-300,
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-emerald-500,
+[data-theme="light"] .text-emerald-200\/60,
+[data-theme="light"] .text-emerald-200\/80,
+[data-theme="light"] .text-emerald-300\/80,
+[data-theme="light"] .text-green-400,
+[data-theme="light"] .text-green-500,
+.theme-light .text-emerald-200,
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400,
+.theme-light .text-emerald-500,
+.theme-light .text-emerald-200\/60,
+.theme-light .text-emerald-200\/80,
+.theme-light .text-emerald-300\/80,
+.theme-light .text-green-400,
+.theme-light .text-green-500 {
+  color: #15803d !important;
+}
