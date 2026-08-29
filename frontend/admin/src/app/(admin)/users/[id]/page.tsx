@@ -320,8 +320,14 @@ export default function UserDetailPage() {
     try {
       const params: Record<string, string> = { user_id: userId, page: String(page), per_page: '100' };
       if (tradeAcctFilter !== 'all') params.account_id = tradeAcctFilter;
-      if (tradeDateFrom) params.date_from = tradeDateFrom;
-      if (tradeDateTo) params.date_to = tradeDateTo;
+      // Send timezone-correct UTC boundaries for the LOCAL day range the admin
+      // picked, so filtering matches the local-time trade table (not UTC dates).
+      if (tradeDateFrom) params.date_from = new Date(`${tradeDateFrom}T00:00:00`).toISOString();
+      if (tradeDateTo) {
+        const end = new Date(`${tradeDateTo}T00:00:00`);
+        end.setDate(end.getDate() + 1); // exclusive: include the whole To day
+        params.date_to = end.toISOString();
+      }
       const res = await adminApi.get<any>('/trades/history', params);
       setTrades(res.items || res.trades || []);
       setTradesTotal(Number(res.total) || 0);

@@ -210,16 +210,29 @@ async def list_trade_history(
         conds.append(TradingAccount.user_id == user_id)
     if account_id is not None:
         conds.append(TradeHistory.account_id == account_id)
+    # Date range. The frontend sends timezone-correct UTC boundaries as full ISO
+    # timestamps (local-day start .. exclusive local-day-end), so we compare the
+    # raw closed_at timestamp — NOT its UTC date. This keeps admin day-filtering
+    # aligned with the trader's LOCAL-time table (a trade at 00:40 local on the
+    # 28th is UTC-27th; a UTC-date filter would wrongly drop it). Plain YYYY-MM-DD
+    # is still accepted (treated as a UTC calendar day) for any other caller.
+    def _parse_iso(s: str):
+        try:
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return None
+
     if date_from:
-        try:
-            conds.append(func.date(TradeHistory.closed_at) >= datetime.strptime(date_from, "%Y-%m-%d").date())
-        except ValueError:
-            pass
+        dfrom = _parse_iso(date_from)
+        if dfrom is not None:
+            conds.append(TradeHistory.closed_at >= dfrom)
     if date_to:
-        try:
-            conds.append(func.date(TradeHistory.closed_at) <= datetime.strptime(date_to, "%Y-%m-%d").date())
-        except ValueError:
-            pass
+        dto = _parse_iso(date_to)
+        if dto is not None:
+            if "T" in date_to:          # full timestamp boundary → exclusive end
+                conds.append(TradeHistory.closed_at < dto)
+            else:                        # plain date → inclusive calendar day
+                conds.append(func.date(TradeHistory.closed_at) <= dto.date())
 
     query = (
         select(TradeHistory)
