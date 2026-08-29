@@ -1,10 +1,62 @@
+import logging
+
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session as _SyncSession
 from .config import get_settings
+
+_logger = logging.getLogger("common.database")
 
 
 class Base(DeclarativeBase):
     pass
+
+
+@event.listens_for(_SyncSession, "before_flush")
+def _fill_transaction_balance_after(session, flush_context, instances):
+    """Ledger safety-net: guarantee every account-scoped Transaction records the
+    running balance in `balance_after`.
+
+    Historically several money-movement paths (copy-trade deposits/withdrawals,
+    performance fees, some scripts) inserted Transaction rows WITHOUT setting
+    `balance_after`, so ~37% of a heavy account's ledger had NULL running
+    balances and admin views / reconciliation drifted. Rather than patch every
+    call site (and risk missing future ones), we fill it here at flush time from
+    the account (or user's main wallet) that is already loaded in this session —
+    a pure in-memory read, no DB query, so it is safe inside before_flush.
+
+    Defensive by construction: only fills when the field is None, only from an
+    object already in the session, and never raises (a listener error must never
+    break a live financial write — worst case the field stays NULL, as before).
+    """
+    try:
+        pending = [o for o in session.new if type(o).__name__ == "Transaction"]
+        if not pending:
+            return
+        accounts, users = {}, {}
+        for o in session.identity_map.values():
+            tn = type(o).__name__
+            oid = getattr(o, "id", None)
+            if oid is None:
+                continue
+            if tn == "TradingAccount":
+                accounts[oid] = o
+            elif tn == "User":
+                users[oid] = o
+        for tx in pending:
+            if getattr(tx, "balance_after", None) is not None:
+                continue
+            acct_id = getattr(tx, "account_id", None)
+            if acct_id is not None:
+                acc = accounts.get(acct_id)
+                bal = getattr(acc, "balance", None) if acc is not None else None
+            else:
+                usr = users.get(getattr(tx, "user_id", None))
+                bal = getattr(usr, "main_wallet_balance", None) if usr is not None else None
+            if bal is not None:
+                tx.balance_after = bal
+    except Exception as exc:  # never break a flush over an audit-field default
+        _logger.debug("balance_after auto-fill skipped: %s", exc)
 
 
 settings = get_settings()
