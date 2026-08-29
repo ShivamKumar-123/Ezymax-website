@@ -467,7 +467,7 @@ export default function UserDetailPage() {
       } else if (tab === 'trades') {
         await exportTablePdf({ ...base, title: 'Trade History',
           columns: ['Closed', 'Account', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'Commission', 'Swap', 'P&L', 'Reason'],
-          rows: filteredTrades.map((t) => [formatDate(t.closed_at), t.account_number || '—', t.instrument_symbol || '—', t.side?.toUpperCase() || '', t.lots, t.open_price, t.close_price, `$${fmt(t.commission)}`, `$${fmt(t.swap)}`, `${t.profit >= 0 ? '+' : ''}$${fmt(t.profit)}`, t.close_reason || 'manual']),
+          rows: filteredTrades.map((t) => { const net = (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0); return [formatDate(t.closed_at), t.account_number || '—', t.instrument_symbol || '—', t.side?.toUpperCase() || '', t.lots, t.open_price, t.close_price, `$${fmt(t.commission)}`, `$${fmt(t.swap)}`, `${net >= 0 ? '+' : ''}$${fmt(net)}`, t.close_reason || 'manual']; }),
           filename: pdfName('trade-history') });
       } else if (tab === 'commission') {
         await exportTablePdf({ ...base, title: 'Commission & Fees',
@@ -742,7 +742,12 @@ export default function UserDetailPage() {
             emptyText="No closed trades"
             headers={['Closed', 'Account', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason']}
             rightAlign={[4, 5, 6, 7, 8, 9]}
-            rows={filteredTrades.map((t) => [
+            rows={filteredTrades.map((t) => {
+              // Show NET P&L (gross − commission − swap) so the admin row matches
+              // exactly what the trader sees on their closed position. `title`
+              // exposes the gross + charge breakdown on hover.
+              const net = (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0);
+              return [
               <span className="text-text-tertiary text-xxs font-mono">{formatDate(t.closed_at)}</span>,
               <span className="font-mono text-xxs text-text-secondary">{t.account_number || '—'}</span>,
               <span className="font-medium text-text-primary">{t.instrument_symbol || '—'}</span>,
@@ -752,9 +757,9 @@ export default function UserDetailPage() {
               <span className="font-mono tabular-nums text-text-secondary">{t.close_price}</span>,
               <span className={cn('font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{t.stop_loss ?? '—'}</span>,
               <span className={cn('font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{t.take_profit ?? '—'}</span>,
-              <span className={cn('font-mono tabular-nums font-semibold', t.profit >= 0 ? 'text-success' : 'text-danger')}>{t.profit >= 0 ? '+' : ''}${fmt(t.profit)}</span>,
+              <span title={`Gross ${t.profit >= 0 ? '+' : ''}$${fmt(t.profit)} − commission $${fmt(t.commission)} − swap $${fmt(t.swap)}`} className={cn('font-mono tabular-nums font-semibold', net >= 0 ? 'text-success' : 'text-danger')}>{net >= 0 ? '+' : ''}${fmt(net)}</span>,
               <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', typeColor(t.close_reason || 'manual'))}>{t.close_reason || 'manual'}</span>,
-            ])}
+            ]; })}
           />
 
           {/* Pagination — the list shows 100 closed trades per page; the cards
