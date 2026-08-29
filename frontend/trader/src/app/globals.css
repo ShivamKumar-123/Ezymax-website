@@ -1013,6 +1013,8 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 [data-theme="light"] .text-emerald-300\/80,
 [data-theme="light"] .text-green-400,
 [data-theme="light"] .text-green-500,
+[data-theme="light"] .text-\[\#a6d600\],
+.theme-light .text-\[\#a6d600\],
 .theme-light .text-emerald-200,
 .theme-light .text-emerald-300,
 .theme-light .text-emerald-400,
