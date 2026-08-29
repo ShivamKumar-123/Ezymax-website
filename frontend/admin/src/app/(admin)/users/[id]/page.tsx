@@ -269,8 +269,11 @@ export default function UserDetailPage() {
   const [tradesTotal, setTradesTotal] = useState(0);
   const [tradesPage, setTradesPage] = useState(1);
   const [tradesSummary, setTradesSummary] = useState<TradeSummary | null>(null);
-  // Trade-History account filter: 'all' or a specific account_number.
-  const [tradeAcctFilter, setTradeAcctFilter] = useState<string>('all');
+  // Trade-History filters (applied server-side): account_id ('all' = every
+  // account) + optional closed-date range.
+  const [tradeAcctFilter, setTradeAcctFilter] = useState<string>('all'); // 'all' | account_id
+  const [tradeDateFrom, setTradeDateFrom] = useState('');
+  const [tradeDateTo, setTradeDateTo] = useState('');
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [txLoading, setTxLoading] = useState(false);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
@@ -315,13 +318,17 @@ export default function UserDetailPage() {
   const fetchTrades = useCallback(async (page = 1) => {
     setTradesLoading(true);
     try {
-      const res = await adminApi.get<any>('/trades/history', { user_id: userId, page: String(page), per_page: '100' });
+      const params: Record<string, string> = { user_id: userId, page: String(page), per_page: '100' };
+      if (tradeAcctFilter !== 'all') params.account_id = tradeAcctFilter;
+      if (tradeDateFrom) params.date_from = tradeDateFrom;
+      if (tradeDateTo) params.date_to = tradeDateTo;
+      const res = await adminApi.get<any>('/trades/history', params);
       setTrades(res.items || res.trades || []);
       setTradesTotal(Number(res.total) || 0);
       setTradesPage(page);
       if (res.summary) setTradesSummary(res.summary as TradeSummary);
     } catch { setTrades([]); } finally { setTradesLoading(false); }
-  }, [userId]);
+  }, [userId, tradeAcctFilter, tradeDateFrom, tradeDateTo]);
 
   const fetchTransactions = useCallback(async () => {
     setTxLoading(true);
@@ -418,35 +425,14 @@ export default function UserDetailPage() {
       })()
   ).sort((a, b) => b.net - a.net);
 
-  // Trade rows scoped to the selected account (list is one page; the tab's
-  // aggregate cards below use the server summary, not this page).
-  const filteredTrades = tradeAcctFilter === 'all'
-    ? trades
-    : trades.filter((t) => (t.account_number || '—') === tradeAcctFilter);
-  const filteredNet = filteredTrades.reduce(
-    (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
-  );
-
-  // Authoritative Trade-History tab totals. For "all accounts" the server
-  // summary covers every closed trade (not just the loaded page); for a
-  // single account we read that account's row from the summary. Gross
-  // profit/loss split per-account isn't in the summary, so a single-account
-  // view falls back to the loaded page for that split only.
-  const histAcct = tradeAcctFilter === 'all'
-    ? null
-    : tradesByAccount.find((a) => a.account === tradeAcctFilter);
-  const histTotalClosed = tradeAcctFilter === 'all'
-    ? (tradesSummary?.total_closed ?? filteredTrades.length)
-    : (histAcct?.count ?? filteredTrades.length);
-  const histGrossProfit = tradeAcctFilter === 'all' && tradesSummary
-    ? tradesSummary.gross_profit
-    : filteredTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
-  const histGrossLoss = tradeAcctFilter === 'all' && tradesSummary
-    ? tradesSummary.gross_loss
-    : filteredTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0);
-  const histNet = tradeAcctFilter === 'all'
-    ? (tradesSummary?.net_pnl ?? filteredNet)
-    : (histAcct?.net ?? filteredNet);
+  // Account + date filtering is now done SERVER-SIDE (so pagination + totals
+  // all respect it), so the loaded page is already the filtered set and the
+  // summary already covers the whole filtered set — just read them directly.
+  const filteredTrades = trades;
+  const histTotalClosed = tradesSummary?.total_closed ?? trades.length;
+  const histGrossProfit = tradesSummary?.gross_profit ?? filteredTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
+  const histGrossLoss = tradesSummary?.gross_loss ?? filteredTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0);
+  const histNet = tradesSummary?.net_pnl ?? filteredTrades.reduce((s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0);
   const tradesPages = Math.max(1, Math.ceil((tradesTotal || 0) / 100));
 
   // Open Positions — account + side filters. Populate the account dropdown
@@ -670,10 +656,11 @@ export default function UserDetailPage() {
       {activeTab === 'trades' && (
         <>
           <SectionToolbar title="Trade History" onDownload={() => downloadPdf('trades')} />
-          {/* Account filter — scope the trade history to a single account */}
-          {trades.length > 0 && tradesByAccount.length > 1 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-text-tertiary">Account</span>
+          {/* Filters — account + date range, applied SERVER-SIDE so the totals,
+              by-account breakdown and pagination all reflect the filtered set. */}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Account</span>
               <select
                 value={tradeAcctFilter}
                 onChange={(e) => setTradeAcctFilter(e.target.value)}
@@ -681,12 +668,41 @@ export default function UserDetailPage() {
                 className="text-xs py-1.5 pl-2.5 pr-7 rounded-md bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50 cursor-pointer"
               >
                 <option value="all">All accounts</option>
-                {tradesByAccount.map((a) => (
-                  <option key={a.account} value={a.account}>{a.account} ({a.count})</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.account_number}</option>
                 ))}
               </select>
-            </div>
-          )}
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">From</span>
+              <input
+                type="date"
+                value={tradeDateFrom}
+                max={tradeDateTo || undefined}
+                onChange={(e) => setTradeDateFrom(e.target.value)}
+                className="text-xs py-1.5 px-2.5 rounded-md bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">To</span>
+              <input
+                type="date"
+                value={tradeDateTo}
+                min={tradeDateFrom || undefined}
+                onChange={(e) => setTradeDateTo(e.target.value)}
+                className="text-xs py-1.5 px-2.5 rounded-md bg-bg-input border border-border-primary text-text-primary focus:outline-none focus:border-accent/50"
+              />
+            </label>
+            {(tradeAcctFilter !== 'all' || tradeDateFrom || tradeDateTo) && (
+              <button
+                type="button"
+                onClick={() => { setTradeAcctFilter('all'); setTradeDateFrom(''); setTradeDateTo(''); }}
+                className="text-xs py-1.5 px-3 rounded-md border border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
           {/* P&L summary — totals come from the server summary (ALL closed
               trades), not just the loaded page, so the counts are correct even
@@ -755,7 +771,7 @@ export default function UserDetailPage() {
             <div className="flex items-center justify-between gap-3 pt-1 text-xs">
               <span className="text-text-tertiary">
                 Page {tradesPage} of {tradesPages} · {tradesTotal.toLocaleString()} closed trades
-                {tradeAcctFilter !== 'all' && <span className="ml-1 text-text-tertiary/70">(account filter applies to this page)</span>}
+                {(tradeAcctFilter !== 'all' || tradeDateFrom || tradeDateTo) && <span className="ml-1 text-text-tertiary/70">(filtered)</span>}
               </span>
               <div className="flex items-center gap-2">
                 <button

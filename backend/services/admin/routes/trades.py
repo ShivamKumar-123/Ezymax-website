@@ -47,11 +47,15 @@ async def list_trade_history(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
     user_id: uuid.UUID | None = Query(None),
+    account_id: uuid.UUID | None = Query(None),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
     return await trade_service.list_trade_history(
-        page=page, per_page=per_page, user_id=user_id, db=db,
+        page=page, per_page=per_page, user_id=user_id,
+        account_id=account_id, date_from=date_from, date_to=date_to, db=db,
     )
 
 

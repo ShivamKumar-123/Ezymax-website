@@ -199,14 +199,33 @@ async def list_orders(
 async def list_trade_history(
     page: int, per_page: int, db: AsyncSession,
     user_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ):
+    # Shared filter conditions — applied to BOTH the row query and the summary
+    # aggregate so the totals always match the filtered list (account + date).
+    conds = [TradingAccount.is_demo == False]
+    if user_id is not None:
+        conds.append(TradingAccount.user_id == user_id)
+    if account_id is not None:
+        conds.append(TradeHistory.account_id == account_id)
+    if date_from:
+        try:
+            conds.append(func.date(TradeHistory.closed_at) >= datetime.strptime(date_from, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            conds.append(func.date(TradeHistory.closed_at) <= datetime.strptime(date_to, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+
     query = (
         select(TradeHistory)
         .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
-        .where(TradingAccount.is_demo == False)
+        .where(*conds)
     )
-    if user_id is not None:
-        query = query.where(TradingAccount.user_id == user_id)
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -226,11 +245,9 @@ async def list_trade_history(
                gp_col.label("gp"), gl_col.label("gl"), profit_col.label("profit"),
                comm_col.label("comm"), swap_col.label("swap"), func.count().label("cnt"))
         .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
-        .where(TradingAccount.is_demo == False)
+        .where(*conds)
         .group_by(TradeHistory.account_id, TradingAccount.account_number)
     )
-    if user_id is not None:
-        agg_base = agg_base.where(TradingAccount.user_id == user_id)
     agg_rows = (await db.execute(agg_base)).all()
 
     gross_profit = sum(float(r.gp or 0) for r in agg_rows)
