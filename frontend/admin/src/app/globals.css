@@ -279,3 +279,29 @@ html.dark body::after {
   opacity: 0.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT-MODE ACCENT-TEXT LEGIBILITY
+   The lime accent (#ccff00) is perfect on the dark theme but nearly
+   invisible as a TEXT / icon color on the white light-mode surfaces
+   (e.g. the "Bal: $…" pills, small lime labels). Darken lime ONLY when
+   it is used as a foreground in light mode, via a theme-aware token, so
+   lime BACKGROUNDS / buttons stay bright.
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --accent-ink: #ccff00; }
+html.light, [data-theme='light'] { --accent-ink: #4f6d00; }
+
+html.light .text-accent,
+html.light .text-accent\/80,
+html.light .text-\[\#ccff00\],
+[data-theme='light'] .text-accent,
+[data-theme='light'] .text-accent\/80,
+[data-theme='light'] .text-\[\#ccff00\] {
+  color: var(--accent-ink) !important;
+}
+html.light .hover\:text-accent:hover,
+html.light .hover\:text-\[\#ccff00\]:hover,
+[data-theme='light'] .hover\:text-accent:hover,
+[data-theme='light'] .hover\:text-\[\#ccff00\]:hover {
+  color: var(--accent-ink) !important;
+}
