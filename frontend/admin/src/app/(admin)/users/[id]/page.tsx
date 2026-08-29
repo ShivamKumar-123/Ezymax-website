@@ -91,6 +91,24 @@ interface TradeHistoryRow {
   account_number?: string | null;
 }
 
+interface TradeAccountSummary {
+  account_id: string;
+  account_number: string | null;
+  count: number;
+  gross: number;
+  net: number;
+}
+
+interface TradeSummary {
+  total_closed: number;
+  gross_profit: number;
+  gross_loss: number;
+  net_pnl: number;
+  total_commission: number;
+  total_swap: number;
+  by_account: TradeAccountSummary[];
+}
+
 interface TxRow {
   id: string;
   type: string;
@@ -248,6 +266,9 @@ export default function UserDetailPage() {
   const [posLoading, setPosLoading] = useState(false);
   const [trades, setTrades] = useState<TradeHistoryRow[]>([]);
   const [tradesLoading, setTradesLoading] = useState(false);
+  const [tradesTotal, setTradesTotal] = useState(0);
+  const [tradesPage, setTradesPage] = useState(1);
+  const [tradesSummary, setTradesSummary] = useState<TradeSummary | null>(null);
   // Trade-History account filter: 'all' or a specific account_number.
   const [tradeAcctFilter, setTradeAcctFilter] = useState<string>('all');
   const [transactions, setTransactions] = useState<TxRow[]>([]);
@@ -291,11 +312,14 @@ export default function UserDetailPage() {
     } catch { setPositions([]); } finally { setPosLoading(false); }
   }, [userId]);
 
-  const fetchTrades = useCallback(async () => {
+  const fetchTrades = useCallback(async (page = 1) => {
     setTradesLoading(true);
     try {
-      const res = await adminApi.get<any>('/trades/history', { user_id: userId, per_page: '100' });
+      const res = await adminApi.get<any>('/trades/history', { user_id: userId, page: String(page), per_page: '100' });
       setTrades(res.items || res.trades || []);
+      setTradesTotal(Number(res.total) || 0);
+      setTradesPage(page);
+      if (res.summary) setTradesSummary(res.summary as TradeSummary);
     } catch { setTrades([]); } finally { setTradesLoading(false); }
   }, [userId]);
 
@@ -372,27 +396,58 @@ export default function UserDetailPage() {
     : (trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null);
 
   // Trade-History tab: per-account breakdown so admin sees "this account X,
-  // that account Y" (net = profit − commission − swap).
-  const tradesByAccount = (() => {
-    const m = new Map<string, { account: string; count: number; gross: number; net: number }>();
-    for (const t of trades) {
-      const key = t.account_number || '—';
-      const e = m.get(key) || { account: key, count: 0, gross: 0, net: 0 };
-      e.count += 1;
-      e.gross += Number(t.profit) || 0;
-      e.net += (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0);
-      m.set(key, e);
-    }
-    return Array.from(m.values()).sort((a, b) => b.net - a.net);
-  })();
+  // that account Y" (net = profit − commission − swap). Prefer the SERVER
+  // summary (computed over ALL closed trades) so a user with more trades than
+  // one page still shows correct per-account totals; fall back to the loaded
+  // page only when the summary is absent (older API).
+  const tradesByAccount = (tradesSummary?.by_account?.length
+    ? tradesSummary.by_account.map((a) => ({
+        account: a.account_number || '—', count: a.count, gross: a.gross, net: a.net,
+      }))
+    : (() => {
+        const m = new Map<string, { account: string; count: number; gross: number; net: number }>();
+        for (const t of trades) {
+          const key = t.account_number || '—';
+          const e = m.get(key) || { account: key, count: 0, gross: 0, net: 0 };
+          e.count += 1;
+          e.gross += Number(t.profit) || 0;
+          e.net += (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0);
+          m.set(key, e);
+        }
+        return Array.from(m.values());
+      })()
+  ).sort((a, b) => b.net - a.net);
 
-  // Trade rows scoped to the selected account (+ its net after charges).
+  // Trade rows scoped to the selected account (list is one page; the tab's
+  // aggregate cards below use the server summary, not this page).
   const filteredTrades = tradeAcctFilter === 'all'
     ? trades
     : trades.filter((t) => (t.account_number || '—') === tradeAcctFilter);
   const filteredNet = filteredTrades.reduce(
     (s, t) => s + (Number(t.profit) || 0) - (Number(t.commission) || 0) - (Number(t.swap) || 0), 0,
   );
+
+  // Authoritative Trade-History tab totals. For "all accounts" the server
+  // summary covers every closed trade (not just the loaded page); for a
+  // single account we read that account's row from the summary. Gross
+  // profit/loss split per-account isn't in the summary, so a single-account
+  // view falls back to the loaded page for that split only.
+  const histAcct = tradeAcctFilter === 'all'
+    ? null
+    : tradesByAccount.find((a) => a.account === tradeAcctFilter);
+  const histTotalClosed = tradeAcctFilter === 'all'
+    ? (tradesSummary?.total_closed ?? filteredTrades.length)
+    : (histAcct?.count ?? filteredTrades.length);
+  const histGrossProfit = tradeAcctFilter === 'all' && tradesSummary
+    ? tradesSummary.gross_profit
+    : filteredTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
+  const histGrossLoss = tradeAcctFilter === 'all' && tradesSummary
+    ? tradesSummary.gross_loss
+    : filteredTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0);
+  const histNet = tradeAcctFilter === 'all'
+    ? (tradesSummary?.net_pnl ?? filteredNet)
+    : (histAcct?.net ?? filteredNet);
+  const tradesPages = Math.max(1, Math.ceil((tradesTotal || 0) / 100));
 
   // Open Positions — account + side filters. Populate the account dropdown
   // from the user's FULL account list (data.accounts), not just accounts
@@ -406,11 +461,16 @@ export default function UserDetailPage() {
   const filteredDeposits = deposits.filter((d) => statusMatches(d.status, depStatus) && dateInRange(d.created_at, depFrom, depTo));
   const filteredWithdrawals = withdrawals.filter((w) => statusMatches(w.status, wdStatus) && dateInRange(w.created_at, wdFrom, wdTo));
 
-  // Commission tab — broker-fee totals over the user's closed trades.
+  // Commission tab — broker-fee totals over ALL the user's closed trades.
+  // Prefer the server summary (whole set); fall back to the loaded page.
   // (Spread is baked into the fill price and not stored per-trade, so only
   // commission + swap are separable here.)
-  const totalCommission = trades.reduce((s, t) => s + (Number(t.commission) || 0), 0);
-  const totalSwap = trades.reduce((s, t) => s + (Number(t.swap) || 0), 0);
+  const totalCommission = tradesSummary
+    ? tradesSummary.total_commission
+    : trades.reduce((s, t) => s + (Number(t.commission) || 0), 0);
+  const totalSwap = tradesSummary
+    ? tradesSummary.total_swap
+    : trades.reduce((s, t) => s + (Number(t.swap) || 0), 0);
   const totalFees = totalCommission + totalSwap;
 
   // ── PDF export per section (branded, centered logo watermark) ──
@@ -628,13 +688,15 @@ export default function UserDetailPage() {
             </div>
           )}
 
-          {/* P&L summary (scoped to the selected account) */}
-          {filteredTrades.length > 0 && (
+          {/* P&L summary — totals come from the server summary (ALL closed
+              trades), not just the loaded page, so the counts are correct even
+              when the user has more trades than one page. */}
+          {(tradesSummary ? histTotalClosed > 0 : filteredTrades.length > 0) && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Total Closed Trades" value={filteredTrades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
-              <StatCard label="Gross Profit" value={`$${fmt(filteredTrades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingUp} color="text-emerald-400" />
-              <StatCard label="Gross Loss" value={`$${fmt(filteredTrades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0))}`} icon={TrendingDown} color="text-rose-400" />
-              <StatCard label="Net P&L" value={`${filteredNet >= 0 ? '+' : ''}$${fmt(filteredNet)}`} icon={filteredNet >= 0 ? TrendingUp : TrendingDown} color={filteredNet >= 0 ? 'text-success' : 'text-danger'} />
+              <StatCard label="Total Closed Trades" value={histTotalClosed.toLocaleString()} icon={HistoryIcon} color="text-text-primary" />
+              <StatCard label="Gross Profit" value={`$${fmt(histGrossProfit)}`} icon={TrendingUp} color="text-emerald-400" />
+              <StatCard label="Gross Loss" value={`$${fmt(histGrossLoss)}`} icon={TrendingDown} color="text-rose-400" />
+              <StatCard label="Net P&L" value={`${histNet >= 0 ? '+' : ''}$${fmt(histNet)}`} icon={histNet >= 0 ? TrendingUp : TrendingDown} color={histNet >= 0 ? 'text-success' : 'text-danger'} />
             </div>
           )}
 
@@ -686,6 +748,35 @@ export default function UserDetailPage() {
               <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', typeColor(t.close_reason || 'manual'))}>{t.close_reason || 'manual'}</span>,
             ])}
           />
+
+          {/* Pagination — the list shows 100 closed trades per page; the cards
+              above summarise ALL of them. Lets admin browse the full history. */}
+          {tradesPages > 1 && (
+            <div className="flex items-center justify-between gap-3 pt-1 text-xs">
+              <span className="text-text-tertiary">
+                Page {tradesPage} of {tradesPages} · {tradesTotal.toLocaleString()} closed trades
+                {tradeAcctFilter !== 'all' && <span className="ml-1 text-text-tertiary/70">(account filter applies to this page)</span>}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={tradesLoading || tradesPage <= 1}
+                  onClick={() => void fetchTrades(tradesPage - 1)}
+                  className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={tradesLoading || tradesPage >= tradesPages}
+                  onClick={() => void fetchTrades(tradesPage + 1)}
+                  className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -775,9 +866,9 @@ export default function UserDetailPage() {
       {activeTab === 'commission' && (
         <>
           <SectionToolbar title="Commission & Fees" onDownload={() => downloadPdf('commission')} />
-          {trades.length > 0 && (
+          {(tradesSummary ? tradesSummary.total_closed > 0 : trades.length > 0) && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Closed Trades" value={trades.length.toString()} icon={HistoryIcon} color="text-text-primary" />
+              <StatCard label="Closed Trades" value={(tradesSummary?.total_closed ?? trades.length).toLocaleString()} icon={HistoryIcon} color="text-text-primary" />
               <StatCard label="Total Commission" value={`$${fmt(totalCommission)}`} icon={Percent} color="text-warning" />
               <StatCard label="Total Swap" value={`$${fmt(totalSwap)}`} icon={DollarSign} color="text-accent" />
               <StatCard label="Total Fees" value={`$${fmt(totalFees)}`} icon={DollarSign} color="text-text-primary" hint="commission + swap" />

@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import redis.asyncio as aioredis
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
@@ -210,6 +210,55 @@ async def list_trade_history(
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
+    # --- Summary over the FULL filtered set (NOT just the current page) ---
+    # The Trade History tab used to derive its totals from the returned page
+    # (capped at per_page), so a user with 200 closed trades showed "100" and
+    # gross/net/by-account computed over only 100 rows. Compute them server-side
+    # so the numbers are always correct regardless of pagination.
+    gp_col = func.coalesce(func.sum(case((TradeHistory.profit > 0, TradeHistory.profit), else_=0)), 0)
+    gl_col = func.coalesce(func.sum(case((TradeHistory.profit < 0, TradeHistory.profit), else_=0)), 0)
+    profit_col = func.coalesce(func.sum(TradeHistory.profit), 0)
+    comm_col = func.coalesce(func.sum(TradeHistory.commission), 0)
+    swap_col = func.coalesce(func.sum(TradeHistory.swap), 0)
+
+    agg_base = (
+        select(TradeHistory.account_id, TradingAccount.account_number,
+               gp_col.label("gp"), gl_col.label("gl"), profit_col.label("profit"),
+               comm_col.label("comm"), swap_col.label("swap"), func.count().label("cnt"))
+        .join(TradingAccount, TradeHistory.account_id == TradingAccount.id)
+        .where(TradingAccount.is_demo == False)
+        .group_by(TradeHistory.account_id, TradingAccount.account_number)
+    )
+    if user_id is not None:
+        agg_base = agg_base.where(TradingAccount.user_id == user_id)
+    agg_rows = (await db.execute(agg_base)).all()
+
+    gross_profit = sum(float(r.gp or 0) for r in agg_rows)
+    gross_loss = sum(float(r.gl or 0) for r in agg_rows)
+    total_profit = sum(float(r.profit or 0) for r in agg_rows)
+    total_commission = sum(float(r.comm or 0) for r in agg_rows)
+    total_swap = sum(float(r.swap or 0) for r in agg_rows)
+    net_pnl = total_profit - total_commission - total_swap
+    by_account = [
+        {
+            "account_id": str(r.account_id),
+            "account_number": r.account_number,
+            "count": int(r.cnt or 0),
+            "gross": float(r.profit or 0),
+            "net": float((r.profit or 0)) - float((r.comm or 0)) - float((r.swap or 0)),
+        }
+        for r in sorted(agg_rows, key=lambda x: int(x.cnt or 0), reverse=True)
+    ]
+    summary = {
+        "total_closed": int(total),
+        "gross_profit": gross_profit,
+        "gross_loss": gross_loss,
+        "net_pnl": net_pnl,
+        "total_commission": total_commission,
+        "total_swap": total_swap,
+        "by_account": by_account,
+    }
+
     query = query.order_by(TradeHistory.closed_at.desc()).offset((page - 1) * per_page).limit(per_page)
     result = await db.execute(query)
     trades = result.scalars().all()
@@ -264,7 +313,13 @@ async def list_trade_history(
             account_number=account_number,
         ))
 
-    return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "summary": summary,
+    }
 
 
 async def modify_position(
