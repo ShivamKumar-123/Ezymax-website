@@ -246,9 +246,25 @@ const config: Config = {
         'wallet-fund-enter': 'walletFundEnter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both',
         'wallet-fund-enter-lg': 'walletFundEnterLg 0.65s cubic-bezier(0.22, 1, 0.36, 1) both',
         'wallet-sub-pill': 'walletSubPill 0.32s cubic-bezier(0.22, 1, 0.36, 1) both',
+        /** Open-Account drawer — staggered card entrance + selection tick */
+        'drawer-card': 'drawerCard 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'drawer-section': 'drawerSection 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'check-pop': 'checkPop 0.3s cubic-bezier(0.34, 1.45, 0.64, 1) both',
       },
       keyframes: {
         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        drawerCard: {
+          '0%': { opacity: '0', transform: 'translateY(14px) scale(0.97)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        drawerSection: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        checkPop: {
+          '0%': { opacity: '0', transform: 'scale(0.4)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
         slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         slideDown: { '0%': { opacity: '0', transform: 'translateY(-8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         flashBlue: { '0%': { backgroundColor: 'rgba(41,98,255,0.22)' }, '100%': { backgroundColor: 'transparent' } },

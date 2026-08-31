@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
-import { ChevronDown, Loader2, X } from 'lucide-react';
+import { Check, ChevronDown, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
@@ -188,7 +188,8 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       {/* Backdrop. Fades in/out so the drawer slide doesn't feel detached. */}
       <div
         className={clsx(
-          'absolute inset-0 bg-black/40 transition-opacity duration-300',
+          'absolute inset-0 bg-black/45 backdrop-blur-[2px]',
+          'transition-opacity duration-300 ease-out',
           open ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
         onClick={onClose}
@@ -208,18 +209,26 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
         style={{ background: 'var(--bg-card, #FFFFFF)' }}
         className={clsx(
           'absolute top-0 right-0 h-full w-full sm:max-w-[640px] border-l border-border-primary shadow-2xl',
-          'flex flex-col transform transition-transform duration-300 ease-out',
+          'flex flex-col transform transition-transform duration-[420ms]',
+          '[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
         {/* Sticky header with title + close. */}
-        <header className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-border-primary shrink-0">
+        <header className="relative flex items-center justify-between px-6 sm:px-8 py-5 border-b border-border-primary shrink-0">
+          {/* Brand hairline across the top edge of the panel. */}
+          <span
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-[3px]"
+            style={{ background: 'linear-gradient(90deg, #E94E1B 0%, #F59E0B 55%, rgba(233,78,27,0) 100%)' }}
+          />
           <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Open Account</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 -m-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+            className="p-1.5 -m-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-hover
+                       transition-all duration-200 hover:rotate-90 active:scale-90"
           >
             <X size={20} />
           </button>
@@ -231,9 +240,21 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
               like the Vantage drawer rather than a small inline segmented
               control. */}
           <div
-            className="grid grid-cols-2 p-1 rounded-full"
+            className="relative grid grid-cols-2 p-1 rounded-full motion-safe:animate-drawer-section"
             style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
           >
+            {/* The active pill is one element that slides, so the change
+                reads as movement rather than two backgrounds blinking. */}
+            <span
+              aria-hidden
+              className="absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] rounded-full
+                         transition-transform duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+              style={{
+                background: 'var(--bg-card)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                transform: requestedType === 'demo' ? 'translateX(100%)' : 'translateX(0)',
+              }}
+            />
             <TypePill
               active={requestedType === 'real'}
               disabled={userIsDemo}
@@ -255,7 +276,10 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
 
           {/* Account type picker — 2-column grid of group cards. */}
           <section>
-            <h3 className="text-sm font-bold text-text-primary mb-3">Choose An Account Type</h3>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-text-primary mb-3">
+              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#E94E1B' }} />
+              Choose An Account Type
+            </h3>
             {loading ? (
               <div className="flex items-center justify-center py-16 text-text-secondary text-sm gap-2">
                 <Loader2 size={14} className="animate-spin" /> Loading account types…
@@ -268,24 +292,59 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                 No account types are available yet. Please contact support.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {groups.map((g) => {
+              // Keyed on `open` so the stagger replays every time the
+              // drawer is reopened, not just on first mount.
+              <div key={String(open)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {groups.map((g, i) => {
                   const sel = selectedId === g.id;
                   return (
                     <button
                       key={g.id}
                       type="button"
                       onClick={() => setSelectedId(g.id)}
+                      aria-pressed={sel}
                       className={clsx(
-                        'relative text-left rounded-xl p-4 transition-all',
-                        sel ? 'ring-2 ring-[#E94E1B]/60' : '',
+                        'group relative isolate overflow-hidden text-left rounded-xl p-4',
+                        'transition-[transform,box-shadow,border-color] duration-200 ease-out',
+                        'motion-safe:animate-drawer-card',
+                        'hover:-translate-y-[3px] hover:shadow-[0_10px_24px_rgba(0,0,0,0.10)]',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94E1B]/50',
+                        sel
+                          ? 'ring-2 ring-[#E94E1B]/55 shadow-[0_8px_22px_rgba(233,78,27,0.18)]'
+                          : 'hover:border-[#E94E1B]/45',
                       )}
                       style={{
                         background: 'var(--bg-card-nested)',
                         border: `1px solid ${sel ? '#E94E1B' : 'var(--border-primary)'}`,
+                        // Cards arrive one after another rather than all at once.
+                        animationDelay: `${Math.min(i, 8) * 45}ms`,
                       }}
                     >
-                      <div className="flex items-center gap-2 mb-2">
+                      {/* Warm wash that fades up on hover and stays on the
+                          selected card. -z-10 keeps it under the text. */}
+                      <span
+                        aria-hidden
+                        className={clsx(
+                          'pointer-events-none absolute inset-0 -z-10 transition-opacity duration-300',
+                          sel ? 'opacity-100' : 'opacity-0 group-hover:opacity-60',
+                        )}
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(233,78,27,0.10) 0%, rgba(245,158,11,0.05) 45%, transparent 75%)',
+                        }}
+                      />
+                      {sel && (
+                        <span
+                          aria-hidden
+                          className="absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full
+                                     text-white shadow-[0_2px_6px_rgba(233,78,27,0.45)]
+                                     motion-safe:animate-check-pop"
+                          style={{ background: '#E94E1B' }}
+                        >
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2 mb-2 pr-6">
                         <span className="text-sm font-bold text-text-primary tracking-wide uppercase">
                           {g.name || 'Standard'}
                         </span>
@@ -326,7 +385,10 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
 
           {/* Leverage */}
           <section>
-            <h3 className="text-sm font-bold text-text-primary mb-3">Leverage</h3>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-text-primary mb-3">
+              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#E94E1B' }} />
+              Leverage
+            </h3>
             <div className="relative">
               <select
                 value={leverage ?? ''}
@@ -362,8 +424,24 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             type="button"
             onClick={handleCreate}
             disabled={creating || !selected}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-[#E94E1B] hover:bg-[#C73E11] text-white shadow-[0_2px_8px_rgba(233,78,27,0.25)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group/sbm relative w-full overflow-hidden inline-flex items-center justify-center gap-2
+                       px-6 py-3 rounded-xl text-sm font-bold text-white
+                       shadow-[0_4px_14px_rgba(233,78,27,0.30)]
+                       transition-[transform,box-shadow,filter] duration-200 ease-out
+                       hover:-translate-y-[2px] hover:shadow-[0_8px_22px_rgba(233,78,27,0.42)]
+                       active:translate-y-0 active:scale-[0.99]
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_14px_rgba(233,78,27,0.30)]"
+            style={{ background: 'linear-gradient(135deg, #F2622A 0%, #E94E1B 55%, #C73E11 100%)' }}
           >
+            {/* Shine sweep — purely decorative, skipped under reduced motion. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 -left-full w-1/2 skew-x-[-20deg]
+                         bg-white/25 transition-none
+                         motion-safe:group-hover/sbm:left-[150%] motion-safe:group-hover/sbm:transition-all
+                         motion-safe:group-hover/sbm:duration-700"
+            />
             {creating && <Loader2 size={14} className="animate-spin" />}
             {creating ? 'Creating…' : 'Submit'}
           </button>
@@ -392,14 +470,17 @@ function TypePill({
       type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className="py-2.5 text-sm font-semibold rounded-full transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94E1B]/40"
+      // `relative` lifts the label above the sliding thumb behind it; the
+      // thumb owns the active background now, so this only animates colour.
+      className="relative z-10 py-2.5 text-sm font-semibold rounded-full select-none
+                 transition-colors duration-200 focus:outline-none
+                 focus-visible:ring-2 focus-visible:ring-[#E94E1B]/40"
       style={{
-        background: active ? 'var(--bg-card)' : 'transparent',
+        background: 'transparent',
         color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
         opacity: disabled ? 0.55 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
         border: 'none',
-        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
       }}
     >
       {label}
