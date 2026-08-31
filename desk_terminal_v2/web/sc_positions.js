@@ -14,13 +14,21 @@
  *     projected P&L live on the pill that rides them.
  *   - one segmented pill per line  -> [badge][price][P&L][lots][✕], real HTML,
  *     pinned at the LEFT edge (clear of the drawing toolbar) on the line it
- *     describes. Entry pill's ✕ closes the position.
+ *     describes. Entry pill's ✕ closes the position; an SL/TP pill's ✕ removes
+ *     just that bracket (shown only while the bracket is set).
  *   - an UNSET bracket shows as a badge-only handle parked on the right at the
  *     entry line — drag it down/up to create the bracket.
- *   - press & drag a badge/price segment -> dashed preview line + shaded zone
- *     follow the cursor showing the target price and the P&L there; release
- *     saves immediately. A plain click (no drag) opens a type-a-price dialog
- *     instead (blank removes the bracket).
+ *   - a SET bracket is draggable from ANYWHERE along its line, not just off the
+ *     pill: a full-width invisible grab strip rides each SL/TP line (see
+ *     _mkGrabStrip). It sits BELOW the pill in the stacking order so the pill's
+ *     ✕ stays clickable, and only exists while the bracket is set — an unset
+ *     bracket has no line to grab.
+ *   - press & drag any pill segment, or the line itself -> dashed preview line
+ *     + shaded zone follow the cursor showing the target price and the P&L
+ *     there; release saves immediately. A plain click (no drag) on the PILL
+ *     opens a type-a-price dialog (blank removes the bracket); a click on the
+ *     line does nothing, since a full-width strip catches far too many stray
+ *     clicks for a dialog to be anything but an interruption.
  *
  * price -> pixel: this build exposes no priceToCoordinate, so the SCALE comes
  * from the price scale (getVisiblePriceRange + pane height, re-read every
@@ -45,6 +53,7 @@
   var LINE_SOLID = 0, LINE_DASHED = 2;
   var BTN_RIGHT_PX = 268;         // clear of the price axis + its P&L label
   var LEFT_PX      = 54;          // clear of the left drawing toolbar
+  var AXIS_PX      = 62;          // width of the price scale, kept grabbable for zoom
 
   // Pill chrome — follows the app's light/dark theme (sc.theme + themeChanged).
   var PILL_BG, PILL_FG, PILL_DIM, PILL_DIV, DLG_BG, DLG_BORDER, DLG_FG, DLG_SUB, DLG_INPUT;
@@ -86,6 +95,9 @@
     this._rowKey = "";     // rebuild pills only when the position set changes
     this._quote = {};      // symbol -> { bid, ask } for live P&L between polls
     this._calibOffset = null;
+    this._pendingSet = null;
+    // { id, kind, level } while a bracket is under the cursor — see _attachDrag.
+    this._drag = null;
 
     applyThemeVars(bridge.theme || "dark");
 
@@ -383,6 +395,10 @@
       // forward again. The optimistic value stands until positionOp resolves.
       var pend = self._pendingSet;
       if (pend && pend.id === id) p[pend.kind] = pend.level;
+      // Same idea for a drag still under the cursor — a poll mid-drag would
+      // otherwise pull the line back to the server's level for a frame.
+      var drg = self._drag;
+      if (drg && drg.id === id) p[drg.kind] = drg.level;
       self._pos[id] = p;
 
       var isBuy = self._isBuy(p);
@@ -444,7 +460,8 @@
     var ov = this._overlay;
     if (!ov) { this._rows = []; return; }
     this._rows.forEach(function (r) {
-      [r.entry.el, r.sl.el, r.tp.el, r.slZone, r.tpZone].forEach(function (el) {
+      [r.entry.el, r.sl.el, r.tp.el, r.slZone, r.tpZone,
+       r.slGrab, r.tpGrab].forEach(function (el) {
         try { ov.removeChild(el); } catch (e) {}
       });
     });
@@ -486,6 +503,32 @@
     return { el: el, badge: badge, price: price, pnl: pnl, lots: lots, x: x };
   };
 
+  // A full-width, invisible grab strip that rides an SL/TP line so the bracket
+  // can be dragged from anywhere along it, not only from the pill.
+  //
+  // z-index 5 puts it UNDER the pill (6) — otherwise a strip spanning the pane
+  // would sit over the pill and swallow the clicks meant for its ✕. It is only
+  // made visible while the bracket is set; an unset bracket draws no line, so
+  // there would be nothing under the cursor to justify a resize affordance.
+  //
+  // 11px tall and centred on the line: tall enough to hit without aiming, small
+  // enough that it barely eats into the chart's own crosshair/drawing area.
+  //
+  // Inset at both ends rather than spanning the pane edge to edge. On the left
+  // it clears the drawing toolbar (same LEFT_PX the pills use); on the right it
+  // clears the price scale, which you drag to zoom — a full-width strip put an
+  // 11px dead band across both.
+  Overlay.prototype._mkGrabStrip = function () {
+    var el = document.createElement("div");
+    el.style.cssText =
+      "position:absolute;left:" + LEFT_PX + "px;right:" + AXIS_PX + "px;height:11px;" +
+      "transform:translateY(-50%);" +
+      "display:none;pointer-events:auto;cursor:ns-resize;touch-action:none;z-index:5;" +
+      "background:transparent;";
+    this._overlay.appendChild(el);
+    return el;
+  };
+
   Overlay.prototype._buildPills = function (positions) {
     this._clearPills();
     var self = this, ov = this._overlay;
@@ -512,25 +555,47 @@
         });
       };
 
-      // SL / TP pills — badge and price are the drag handles. No ✕: a bracket is
-      // removed by clicking it and leaving the price blank.
-      var sl = self._mkPill();
-      sl.badge.textContent = "SL";
-      sl.badge.style.color = SL_COLOR;
-      sl.el.style.borderColor = SL_COLOR;
-      sl.badge.title = sl.price.title = "Stop Loss — drag up/down to set, or click to type";
-      self._attachDrag(sl.badge, p, "sl");
-      self._attachDrag(sl.price, p, "sl");
-      sl.x.remove();
+      // SL / TP pills. EVERY segment is a drag handle, not just the badge and
+      // price — the two narrow segments were a small target, and there is no
+      // reason for the P&L and lots readouts beside them to behave differently.
+      // The ✕ is excluded, or removing a bracket would fight the drag.
+      var brackets = { sl: null, tp: null };
+      [["sl", "SL", SL_COLOR, "Stop Loss"],
+       ["tp", "TP", TP_COLOR, "Take Profit"]].forEach(function (spec) {
+        var kind = spec[0], text = spec[1], color = spec[2], label = spec[3];
+        var pill = self._mkPill();
+        pill.badge.textContent = text;
+        pill.badge.style.color = color;
+        pill.el.style.borderColor = color;
+        var tip = label + " — drag up/down to set, or click to type";
+        pill.badge.title = pill.price.title = pill.pnl.title = pill.lots.title = tip;
+        [pill.badge, pill.price, pill.pnl, pill.lots].forEach(function (seg) {
+          self._attachDrag(seg, p, kind, true);
+        });
 
-      var tp = self._mkPill();
-      tp.badge.textContent = "TP";
-      tp.badge.style.color = TP_COLOR;
-      tp.el.style.borderColor = TP_COLOR;
-      tp.badge.title = tp.price.title = "Take Profit — drag up/down to set, or click to type";
-      self._attachDrag(tp.badge, p, "tp");
-      self._attachDrag(tp.price, p, "tp");
-      tp.x.remove();
+        // ✕ removes just this bracket. No confirm: leaving the price blank in
+        // the type-a-price dialog already removes without one, so a prompt here
+        // would be inconsistent, and a mis-click is undone by dragging it back.
+        pill.x.title = "Remove " + label;
+        pill.x.onclick = function (e) {
+          e.stopPropagation();
+          var live = self._pos[String(p.id)] || p;
+          if (!(Number(live[kind]) > 0)) return;      // nothing set to remove
+          self._commit(live, kind, 0);
+        };
+        // Swallow the press too — _attachDrag lives on the segments either side
+        // of the ✕, and without this a press that lands on the button edge can
+        // start a drag that then eats the click.
+        pill.x.onpointerdown = function (e) { e.stopPropagation(); };
+        brackets[kind] = pill;
+      });
+      var sl = brackets.sl, tp = brackets.tp;
+
+      // Drag the line itself, anywhere across the pane.
+      var slGrab = self._mkGrabStrip();
+      var tpGrab = self._mkGrabStrip();
+      self._attachDrag(slGrab, p, "sl", false);
+      self._attachDrag(tpGrab, p, "tp", false);
 
       // Shaded entry->SL / entry->TP zones, positioned by the rAF loop.
       var slZone = document.createElement("div");
@@ -541,17 +606,22 @@
         TP_ZONE + ";pointer-events:none;visibility:hidden;z-index:4;";
       ov.appendChild(slZone); ov.appendChild(tpZone);
 
-      self._rows.push({ p: p, entry: entry, sl: sl, tp: tp, slZone: slZone, tpZone: tpZone });
+      self._rows.push({ p: p, entry: entry, sl: sl, tp: tp, slZone: slZone, tpZone: tpZone,
+                        slGrab: slGrab, tpGrab: tpGrab });
     });
   };
 
   // Press & drag up/down -> preview line + shaded zone follow the cursor with
   // the target price and the P&L there; release saves it straight away (drag
-  // again to move it). A plain click (no drag) opens the type-a-price dialog.
-  Overlay.prototype._attachDrag = function (el, p, kind) {
+  // again to move it).
+  //
+  // `clickOpens` decides what a press with no movement does. On a pill it opens
+  // the type-a-price dialog. On the full-width line strip it must NOT: that
+  // strip spans the pane, so ordinary clicks near the line — placing a drawing,
+  // dismissing something — would keep throwing a dialog in the user's face.
+  Overlay.prototype._attachDrag = function (el, p, kind, clickOpens) {
     var self = this;
     var color = kind === "sl" ? SL_COLOR : TP_COLOR;
-    var zoneBg = kind === "sl" ? "rgba(239,68,68,0.13)" : "rgba(20,184,166,0.13)";
     el.style.cursor = "ns-resize";
     el.style.touchAction = "none";
 
@@ -559,35 +629,51 @@
       e.preventDefault(); e.stopPropagation();
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
       var startY = e.clientY, moved = false;
+      var id = String(p.id);
 
-      var zone = document.createElement("div");
-      zone.style.cssText = "position:absolute;left:0;right:0;top:0;height:0;background:" +
-        zoneBg + ";pointer-events:none;z-index:6;";
-      var line = document.createElement("div");
-      line.style.cssText = "position:absolute;left:0;right:0;top:0;height:0;border-top:1px dashed " +
-        color + ";pointer-events:none;z-index:7;";
+      // Only a floating price/P&L readout is drawn by hand now. There used to be
+      // a dashed preview line and a shaded preview zone here as well, because
+      // the REAL line sat frozen at its old level until the drag was released.
+      // The drag now moves the real line, pill and zone every frame (see
+      // applyLive), so a preview would just be a second line tracking the first.
       var lbl = document.createElement("div");
       lbl.style.cssText = "position:absolute;left:50%;top:0;transform:translate(-50%,-50%);background:" +
         color + ";color:#fff;font:700 11px Inter,'Segoe UI',sans-serif;padding:2px 9px;" +
         "border-radius:4px;pointer-events:none;z-index:8;white-space:nowrap;" +
         "box-shadow:0 1px 5px rgba(0,0,0,.5);";
-      self._overlay.appendChild(zone);
-      self._overlay.appendChild(line);
       self._overlay.appendChild(lbl);
 
       // Always drag against the LIVE record — `p` is the snapshot the pill was
       // built from and its open price may have been re-polled since.
-      var live = function () { return self._pos[String(p.id)] || p; };
+      var live = function () { return self._pos[id] || p; };
       var d = self._digits(p.symbol);
-      var entryY = function () {
-        var g = self._geom();
-        if (!g || self._calibOffset == null) return null;
-        return self._paneY(Number(live().open_price) || 0, g) + self._calibOffset;
-      };
+      var lastSent = null;
+
       var cleanup = function () {
-        [zone, line, lbl].forEach(function (x) {
-          try { self._overlay.removeChild(x); } catch (err) {}
-        });
+        try { self._overlay.removeChild(lbl); } catch (err) {}
+      };
+
+      // Push `price` into everything that draws this bracket, so the whole
+      // overlay tracks the cursor instead of snapping on release:
+      //   - the record the rAF loop reads  -> pill position, price, P&L, zone
+      //   - the TradingView line shape     -> the line itself
+      // _drag is what stops a positions poll landing mid-drag from yanking it
+      // back to the server's value for a frame (see _sync).
+      var applyLive = function (price) {
+        var lvl = Number(price.toFixed(d));
+        if (lastSent === lvl) return;             // nothing moved at this precision
+        lastSent = lvl;
+        self._drag = { id: id, kind: kind, level: lvl };
+        var rec = self._pos[id];
+        if (rec) rec[kind] = lvl;
+        var g = self._shapes[id];
+        if (g) {
+          // Dragging an UNSET bracket has no line yet — create it on the spot so
+          // the new level is visible while it is being chosen.
+          if (g[kind] == null) g[kind] = self._makeLine(lvl, "", color, LINE_DASHED, true);
+          else self._moveLine(g[kind], lvl);
+          self._drawn[id + "|" + kind] = lvl;
+        }
       };
 
       el.onpointermove = function (ev) {
@@ -595,30 +681,40 @@
         var r = self._host.getBoundingClientRect();
         var cy = ev.clientY - r.top;
         var price = self._priceForY(cy);
-        line.style.top = cy + "px";
         lbl.style.top = cy + "px";
         var t = (kind === "sl" ? "SL " : "TP ") + (price ? fmt(price, d) : "—");
         if (price) t += "   " + fmtProfit(self._pnlAt(live(), price));
         lbl.textContent = t;
-        var ey = entryY();
-        if (ey != null) {
-          zone.style.top = Math.min(ey, cy) + "px";
-          zone.style.height = Math.abs(ey - cy) + "px";
-        }
+        if (moved && price && price > 0) applyLive(price);
       };
 
       el.onpointerup = function (ev) {
         el.onpointermove = null; el.onpointerup = null;
         try { el.releasePointerCapture(ev.pointerId); } catch (err) {}
         cleanup();
+        // Dropped BEFORE _commit: an invalid level makes _commit re-sync, and a
+        // stale _drag would hold the rejected price on screen.
+        self._drag = null;
 
-        if (!moved) { self._promptBracket(live(), kind); return; }   // plain click
+        if (!moved) {                                                // plain click
+          if (clickOpens !== false) self._promptBracket(live(), kind);
+          return;
+        }
 
         var r = self._host.getBoundingClientRect();
         var price = self._priceForY(ev.clientY - r.top);
-        if (!price || !(price > 0)) { self._toast("Could not read price"); return; }
+        if (!price || !(price > 0)) { self._toast("Could not read price"); self._sync(); return; }
         // Drag release saves immediately — drag again to move it.
         self._commit(live(), kind, Number(price.toFixed(d)));
+      };
+
+      // A cancelled gesture (window blur, touch interrupted) must not leave the
+      // bracket sitting at the half-dragged level.
+      el.onpointercancel = function () {
+        el.onpointermove = null; el.onpointerup = null; el.onpointercancel = null;
+        cleanup();
+        self._drag = null;
+        self._sync();
       };
     };
   };
@@ -697,6 +793,7 @@
   // remove the DOM layer. Called by app.js before it rebuilds the widget.
   Overlay.prototype.destroy = function () {
     this._dead = true;
+    this._drag = null;
     if (this._raf) { cancelAnimationFrame(this._raf); this._raf = 0; }
     (this._binds || []).forEach(function (b) {
       try { b[0].disconnect(b[1]); } catch (e) {}
@@ -722,6 +819,8 @@
           r.entry.el.style.display = "none";
           r.sl.el.style.display = "none";
           r.tp.el.style.display = "none";
+          r.slGrab.style.display = "none";
+          r.tpGrab.style.display = "none";
           r.slZone.style.visibility = "hidden";
           r.tpZone.style.visibility = "hidden";
         });
@@ -770,10 +869,21 @@
         // SL / TP: full pill on its own line when set, aligned on the left with
         // the entry pill so all three read as one column; badge-only
         // drag-to-create handle parked on the right at the entry line when unset.
-        var bracket = function (pill, kind) {
+        var bracket = function (pill, kind, grab) {
           var val = Number(p[kind]) || 0;
           var set = val > 0;
+          // The grab strip only exists for a drawn line. Hidden first so an
+          // off-pane or unset bracket can never leave a live strip behind
+          // catching drags for a line that is not there.
+          var gy = set ? self._paneY(val, g) + off : 0;
+          if (set && gy > 8 && gy < h - 8) {
+            grab.style.top = gy + "px";
+            grab.style.display = "block";
+          } else {
+            grab.style.display = "none";
+          }
           if (!put(pill, set ? val : open)) return;
+          pill.x.style.display = set ? "flex" : "none";
           if (set) {
             pill.el.style.left = LEFT_PX + "px";
             pill.el.style.right = "auto";
@@ -794,8 +904,8 @@
           }
         };
         var ey = self._paneY(open, g) + off;
-        bracket(r.sl, "sl");
-        bracket(r.tp, "tp");
+        bracket(r.sl, "sl", r.slGrab);
+        bracket(r.tp, "tp", r.tpGrab);
         drawZone(r.slZone, ey, p.sl);
         drawZone(r.tpZone, ey, p.tp);
       });

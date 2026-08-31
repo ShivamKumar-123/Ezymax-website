@@ -476,7 +476,7 @@ export default function MarketingNavbar({
                   </div>
                   {/* Windows */}
                   <a
-                    href="/downloads/SwissCrestaTerminal-Setup-1.1.0.exe"
+                    href="/downloads/SwissCrestaTerminal-Setup-1.1.1.exe"
                     download="SwissCrestaTerminal-Setup.exe"
                     role="menuitem"
                     onClick={() => setTerminalMenuOpen(false)}
@@ -641,7 +641,7 @@ export default function MarketingNavbar({
             </li>
             <li>
               <a
-                href="/downloads/SwissCrestaTerminal-Setup-1.1.0.exe"
+                href="/downloads/SwissCrestaTerminal-Setup-1.1.1.exe"
                 download="SwissCrestaTerminal-Setup.exe"
                 onClick={() => setOpen(false)}
                 className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-tx-strong text-tx-strong text-sm font-semibold hover:bg-tx-strong hover:text-white transition-colors"
