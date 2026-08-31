@@ -46,6 +46,7 @@ Config Config::load() {
     if (o.contains("apiSecret")) c.apiSecret = o.value("apiSecret").toString();
     // Clamped on the way in: a hand-edited or corrupt file must not put the
     // grid into a state setChartCount() would reject anyway.
+    if (o.contains("windowGeometry")) c.windowGeometry = o.value("windowGeometry").toString();
     if (o.contains("chartCount"))
         c.chartCount = qBound(1, o.value("chartCount").toInt(1), 4);
     if (o.contains("chartSymbols")) {
@@ -74,6 +75,7 @@ bool Config::save() const {
     o["apiSecret"]    = apiSecret;
     o["restBase"]     = restBase;
     o["wsUrl"]        = wsUrl;
+    o["windowGeometry"] = windowGeometry;
     o["chartCount"]   = chartCount;
     o["chartSymbols"] = QJsonArray::fromStringList(chartSymbols);
 

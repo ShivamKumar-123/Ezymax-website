@@ -74,6 +74,6 @@ int main(int argc, char* argv[]) {
     }
 
     MainWindow w(cfg);
-    w.show();
+    w.showRestored();   // remembered geometry, or maximised on a first run
     return app.exec();
 }

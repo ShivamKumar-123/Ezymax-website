@@ -13,6 +13,8 @@
 #include "ui/WalletDialog.h"
 #include "core/ApiClient.h"
 #include "core/PriceStream.h"
+#include <QCloseEvent>
+#include <QByteArray>
 
 #include <QSplitter>
 #include <QStatusBar>
@@ -40,6 +42,8 @@ MainWindow::MainWindow(const Config& cfg, QWidget* parent)
     : QMainWindow(parent), m_cfg(cfg) {
     setWindowTitle(tr("SwissCresta Terminal"));
     setMinimumSize(980, 600);
+    // Fallback only, for a first run whose saveGeometry() blob is missing or
+    // unusable. showRestored() is what actually sizes the window.
     resize(1360, 840);
 
     m_api    = new ApiClient(m_cfg, this);
@@ -753,6 +757,34 @@ void MainWindow::onActiveChartChanged(int) {
     m_positions->setNewsSymbol(sym);
     m_positions->setCalendarSymbol(sym);
     persistChartLayout();
+}
+
+// Maximised is the right default for a trading terminal: the layout is five
+// panels wide (watchlist, chart grid, blotter, account strip) and everything in
+// it is denser than it needs to be at the fallback size.
+//
+// restoreGeometry() is preferred over a bare showMaximized() once there IS a
+// saved blob, so someone who deliberately runs the terminal windowed on a
+// second monitor keeps that instead of being re-maximised on every launch. It
+// returns false for a blob written by a different Qt build or one that no
+// longer lands on any attached screen (unplugged monitor) — maximise then, so a
+// stale geometry can never open the window off-screen where it looks like a
+// failed launch.
+void MainWindow::showRestored() {
+    const QByteArray blob = QByteArray::fromBase64(m_cfg.windowGeometry.toUtf8());
+    if (!blob.isEmpty() && restoreGeometry(blob)) {
+        show();
+        return;
+    }
+    showMaximized();
+}
+
+void MainWindow::closeEvent(QCloseEvent* e) {
+    // saveGeometry() carries the maximised flag AND the normal-state rectangle,
+    // so this restores correctly whether the window was maximised or not.
+    m_cfg.windowGeometry = QString::fromUtf8(saveGeometry().toBase64());
+    m_cfg.save();
+    QMainWindow::closeEvent(e);
 }
 
 void MainWindow::persistChartLayout() {

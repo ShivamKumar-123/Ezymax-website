@@ -20,14 +20,14 @@ AppName={#MyApp}
 ; website's download button already links to
 ; (frontend/trader/src/landing/marketing/Navbar.tsx). Bump both together, and
 ; the site's href with them, or the link 404s.
-AppVersion=1.1.1
+AppVersion=1.1.2
 AppPublisher=SwissCresta
 DefaultDirName={autopf}\SwissCresta Terminal
 DefaultGroupName=SwissCresta Terminal
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#MyExe}
 OutputDir={#SourcePath}dist
-OutputBaseFilename=SwissCrestaTerminal-Setup-1.1.1
+OutputBaseFilename=SwissCrestaTerminal-Setup-1.1.2
 SetupIconFile={#SourcePath}resources\swisscresta.ico
 Compression=lzma2/max
 SolidCompression=yes

@@ -35,6 +35,18 @@ public:
     int         chartCount = 1;   // 1..4
     QStringList chartSymbols;
 
+    // Window size, position and maximised state, restored on the next launch.
+    //
+    // Base64 of QMainWindow::saveGeometry(), which already encodes the
+    // maximised/full-screen flag alongside the normal-state rectangle — so one
+    // field covers both, and un-maximising restores the right size.
+    //
+    // Empty means "never launched before", and the terminal opens MAXIMISED.
+    // It used to open at a hard-coded 1360x840 every time, which is small on a
+    // trading monitor and taller than a 768/800px laptop screen, so the first
+    // thing anyone did on every launch was maximise it by hand.
+    QString windowGeometry;
+
     // Legacy bot auth (still supported for a pasted API key).
     QString apiKey;
     QString apiSecret;

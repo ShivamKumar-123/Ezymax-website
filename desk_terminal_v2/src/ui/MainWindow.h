@@ -36,6 +36,15 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(const Config& cfg, QWidget* parent = nullptr);
 
+    // Show the window at its remembered size/position, or MAXIMISED the first
+    // time. Call this instead of show() — plain show() would open at the
+    // fallback size and drop the saved state on the floor.
+    void showRestored();
+
+protected:
+    // Remembers the geometry on the way out; see Config::windowGeometry.
+    void closeEvent(QCloseEvent* e) override;
+
 private slots:
     void onSymbolsReceived(const QVector<SymbolSpec>& symbols);
     void onSymbolActivated(const QString& symbol);
