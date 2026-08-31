@@ -872,13 +872,32 @@ function TradingViewChartInner({
     const attachLevelDrag = (e: Entry, b: Bracket, btn: HTMLButtonElement, onTap: () => void) => {
       const DRAG_THRESHOLD = 3; // px — below this it is a tap, not a drag
       let pressed = false, moved = false, startY = 0, handled = false;
+      // Largest vertical travel this gesture, tracked even when the drag
+      // could not be mapped to a price — see the release handler.
+      let maxDelta = 0;
       // The chip row rides the entry line, so its centre is a known
       // (price, pixel) pair — all the mapping needs is the scale.
       let anchorY = 0, anchorPrice = 0;
+      // Scale captured at press time. geom() reads the live chart and returns
+      // null while the pane is mid-rescale; falling back to the captured
+      // value keeps a gesture alive instead of dropping it, which is what
+      // made the grab feel like it only caught on the third or fourth try.
+      let g0: Geo | null = null;
 
       btn.style.cursor = 'ns-resize';
       // Stop the browser turning the gesture into a scroll/pan on touch.
       btn.style.touchAction = 'none';
+
+      // The chip itself is only 20px tall and drifts vertically as the chart
+      // rescales, so pressing it exactly is fiddly — especially on touch.
+      // A transparent child stretches the press target to ~36x(w+12) without
+      // changing the chip's layout or appearance; events on it bubble to the
+      // button just the same.
+      btn.style.position = 'relative';
+      const hit = document.createElement('span');
+      hit.style.cssText = 'position:absolute;left:-6px;right:-6px;top:-8px;bottom:-8px;border-radius:9px;';
+      hit.setAttribute('aria-hidden', 'true');
+      btn.appendChild(hit);
 
       // Move/up are bound on WINDOW for the life of the gesture rather than on
       // the chip. A 22px chip is left within the first few pixels of any drag,
@@ -887,10 +906,15 @@ function TradingViewChartInner({
       // gesture dies silently. Window listeners need neither.
       const onMove = (ev: PointerEvent) => {
         if (!pressed) return;
-        if (!moved && Math.abs(ev.clientY - startY) < DRAG_THRESHOLD) return;
+        const delta = Math.abs(ev.clientY - startY);
+        if (delta > maxDelta) maxDelta = delta;
+        if (!moved && delta < DRAG_THRESHOLD) return;
         if (!isRealPositionId(e.p.id)) return;
-        const g = geom();
-        if (!g || !(anchorPrice > 0)) return;  // no scale — fall back to tap
+        // Prefer the live scale, but never abandon the gesture because a
+        // single sample came back null.
+        const g = geom() ?? g0;
+        if (!g || !(anchorPrice > 0)) return;
+        g0 = g;
         moved = true;
         b.dragging = true;
         ev.preventDefault();
@@ -919,7 +943,15 @@ function TradingViewChartInner({
         // Swallow the click this pointer sequence is about to synthesise.
         handled = true;
         window.setTimeout(() => { handled = false; }, 400);
-        if (!wasDrag) { onTap(); return; }
+        if (!wasDrag) {
+          // A real drag that could not be mapped to a price must NOT fall
+          // through to the tap: that plants a level at the default distance,
+          // nowhere near the pointer, which reads as the drag misfiring.
+          // Doing nothing is the honest outcome — the user retries.
+          if (maxDelta >= DRAG_THRESHOLD) return;
+          onTap();
+          return;
+        }
         ev.preventDefault();
         if (b.price != null) commitLevel(e, b, b.price);
       }
@@ -933,10 +965,13 @@ function TradingViewChartInner({
         // Keep the press off the chart, or the pane pans under the drag.
         ev.stopPropagation();
         ev.preventDefault();
-        pressed = true; moved = false; startY = ev.clientY;
+        pressed = true; moved = false; startY = ev.clientY; maxDelta = 0;
+        // Measure the BUTTON, not the event target — the press may land on
+        // the transparent hit area, whose box is deliberately larger.
         const r = btn.getBoundingClientRect();
         anchorY = r.top + r.height / 2;
         anchorPrice = e.entry;
+        g0 = geom();
         window.addEventListener('pointermove', onMove, true);
         window.addEventListener('pointerup', onUp, true);
         window.addEventListener('pointercancel', onCancel, true);
@@ -970,7 +1005,7 @@ function TradingViewChartInner({
 
         // Chip row (HTML, passive positioning) — built first so it shows instantly.
         const chips = document.createElement('div');
-        chips.style.cssText = 'position:absolute;display:flex;gap:4px;align-items:center;transform:translateY(-50%);pointer-events:none;visibility:hidden;z-index:6;';
+        chips.style.cssText = 'position:absolute;display:flex;gap:4px;align-items:center;transform:translateY(-50%);pointer-events:auto;visibility:hidden;z-index:6;';
         const e: Entry = { p, entry, entryId: null, tp: null, sl: null, chips, pnlChip: document.createElement('span'), tpBtn: null, slBtn: null };
         if (!isCopy) {
           e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
@@ -1115,7 +1150,14 @@ function TradingViewChartInner({
       const h = container.clientHeight || 0;
       const rightPx = Math.min(96, Math.max(8, container.clientWidth - 120));
       for (const e of entries) {
-        if (!g || top == null) { e.chips.style.visibility = 'hidden'; for (const b of [e.tp, e.sl]) if (b) b.zone.style.visibility = 'hidden'; continue; }
+        if (!g || top == null) {
+          // Fallback: show chips at a default position if geometry fails
+          e.chips.style.top = '50%';
+          e.chips.style.right = `${rightPx}px`;
+          e.chips.style.visibility = 'visible';
+          for (const b of [e.tp, e.sl]) if (b) b.zone.style.visibility = 'hidden';
+          continue;
+        }
         const ey = paneY(e.entry, g) + top;
         if (ey > 8 && ey < h - 8) { e.chips.style.top = `${ey}px`; e.chips.style.right = `${rightPx}px`; e.chips.style.visibility = 'visible'; }
         else e.chips.style.visibility = 'hidden';
@@ -1187,7 +1229,7 @@ function TradingViewChartInner({
       {/* Overlay layer for the per-position [SL] [TP] [✕] button groups, the
           persistent entry→SL / entry→TP shaded zones, and the drag previews —
           all positioned imperatively by the rAF loop above. */}
-      <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-20 overflow-hidden" />
+      <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-30 overflow-hidden" />
 
     </div>
   );
