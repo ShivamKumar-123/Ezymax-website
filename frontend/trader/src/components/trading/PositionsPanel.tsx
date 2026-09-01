@@ -335,7 +335,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const refreshAccount = useTradingStore((s) => s.refreshAccount);
   const resolvePositionId = useTradingStore((s) => s.resolvePositionId);
   const instruments = useTradingStore((s) => s.instruments);
-  const chartDraft = useTradingStore((s) => s.chartExitsDraft);
   const [activeTab, setActiveTab] = useState<TabId>('open');
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
   // Server-reported TOTAL closed trades — the list holds only the latest page
@@ -402,22 +401,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const getDigits = (symbol: string) => {
     const inst = instruments.find((i) => i.symbol === symbol);
     return inst?.digits ?? 5;
-  };
-
-  // SL/TP to DISPLAY for a position: a level drawn on the chart but not yet
-  // confirmed (chartExitsDraft) overrides the saved value, flagged `pending`
-  // so it renders amber. Without this the chart showed an SL line while this
-  // table still said "+ SL" — the user reasonably read that contradiction as
-  // the level being set when it was never saved.
-  const effExits = (pos: { id: string; stop_loss?: number; take_profit?: number }) => {
-    const df = chartDraft?.positionId === pos.id ? chartDraft : null;
-    const slPending = !!df && df.stopLoss !== undefined;
-    const tpPending = !!df && df.takeProfit !== undefined;
-    return {
-      slPending, tpPending,
-      sl: slPending ? (df!.stopLoss ?? null) : (pos.stop_loss ?? null),
-      tp: tpPending ? (df!.takeProfit ?? null) : (pos.take_profit ?? null),
-    };
   };
 
   const accountLabel = (accountId: string) => {
@@ -1137,12 +1120,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   <button type="button" onClick={() => void saveSltpEdit()} disabled={sltpSaving} className="p-1 rounded bg-buy/15 text-buy hover:bg-buy/25 disabled:opacity-50"><Check className="w-3.5 h-3.5" /></button>
                                   <button type="button" onClick={() => setSltpEdit(null)} className="p-1 rounded bg-sell/15 text-sell hover:bg-sell/25"><X className="w-3.5 h-3.5" /></button>
                                 </div>
-                              ) : (() => { const eff = effExits(pos); return (
-                                <button type="button" onClick={() => setSltpEdit({ positionId: pos.id, sl: eff.sl != null ? eff.sl.toFixed(d) : '', tp: eff.tp != null ? eff.tp.toFixed(d) : '' })} className={(eff.slPending || eff.tpPending) ? 'text-[#f59e0b] active:text-text-secondary' : 'text-text-tertiary active:text-text-secondary'}>
-                                  SL: {eff.sl != null ? eff.sl.toFixed(d) : '—'} · TP: {eff.tp != null ? eff.tp.toFixed(d) : '—'}{(eff.slPending || eff.tpPending) ? ' ⏳' : ''}
+                              ) : (
+                                <button type="button" onClick={() => setSltpEdit({ positionId: pos.id, sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '', tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '' })} className="text-text-tertiary active:text-text-secondary">
+                                  SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'} · TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}
                                   <Pencil className="w-2.5 h-2.5 inline ml-1 opacity-60" />
                                 </button>
-                              ); })()}
+                              )}
                             </div>
                             <div className="inline-flex items-center gap-2">
                               <button
@@ -1192,7 +1175,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const d = getDigits(pos.symbol);
                         const charges = pos.commission || 0;
                         const net = netPnl(pos);
-                        const eff = effExits(pos);
                         return (
                           <tr key={pos.id} className={tbodyRowClass}>
                             <td className={td}>{accountLabel(pos.account_id)}</td>
@@ -1275,18 +1257,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-1.5 items-center">
-                                  {eff.sl != null ? (
+                                  {pos.stop_loss != null ? (
                                     <button
                                       type="button"
                                       onClick={() => setSltpEdit({
                                         positionId: pos.id,
-                                        sl: eff.sl != null ? eff.sl.toFixed(d) : '',
-                                        tp: eff.tp != null ? eff.tp.toFixed(d) : '',
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
                                       })}
                                       className="text-left group inline-flex items-center gap-1 cursor-pointer"
-                                      title={eff.slPending ? 'Drawn on the chart, not saved yet — Confirm in the sidebar, or Save here' : 'Click to edit Stop Loss'}
+                                      title="Click to edit Stop Loss"
                                     >
-                                      <span className={eff.slPending ? 'text-[#f59e0b]' : 'text-[#ef5350]'}>SL: {eff.sl.toFixed(d)}{eff.slPending ? ' ⏳' : ''}</span>
+                                      <span className="text-[#ef5350]">SL: {pos.stop_loss.toFixed(d)}</span>
                                       <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
                                     </button>
                                   ) : (
@@ -1295,7 +1277,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                       onClick={() => setSltpEdit({
                                         positionId: pos.id,
                                         sl: '',
-                                        tp: eff.tp != null ? eff.tp.toFixed(d) : '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
                                       })}
                                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-[#ef5350]/30 text-[#ef5350] bg-[#ef5350]/5 hover:bg-[#ef5350]/15 transition-colors"
                                       title="Add Stop Loss"
@@ -1303,18 +1285,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                       <Plus className="w-2.5 h-2.5" /> SL
                                     </button>
                                   )}
-                                  {eff.tp != null ? (
+                                  {pos.take_profit != null ? (
                                     <button
                                       type="button"
                                       onClick={() => setSltpEdit({
                                         positionId: pos.id,
-                                        sl: eff.sl != null ? eff.sl.toFixed(d) : '',
-                                        tp: eff.tp != null ? eff.tp.toFixed(d) : '',
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
                                       })}
                                       className="text-left group inline-flex items-center gap-1 cursor-pointer"
-                                      title={eff.tpPending ? 'Drawn on the chart, not saved yet — Confirm in the sidebar, or Save here' : 'Click to edit Take Profit'}
+                                      title="Click to edit Take Profit"
                                     >
-                                      <span className={eff.tpPending ? 'text-[#f59e0b]' : 'text-[#6366F1]'}>TP: {eff.tp.toFixed(d)}{eff.tpPending ? ' ⏳' : ''}</span>
+                                      <span className="text-[#6366F1]">TP: {pos.take_profit.toFixed(d)}</span>
                                       <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
                                     </button>
                                   ) : (
@@ -1322,7 +1304,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                       type="button"
                                       onClick={() => setSltpEdit({
                                         positionId: pos.id,
-                                        sl: eff.sl != null ? eff.sl.toFixed(d) : '',
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
                                         tp: '',
                                       })}
                                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-[#6366F1]/30 text-[#6366F1] bg-[#6366F1]/5 hover:bg-[#6366F1]/15 transition-colors"
