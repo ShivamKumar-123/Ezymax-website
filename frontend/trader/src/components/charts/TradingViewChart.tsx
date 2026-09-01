@@ -83,6 +83,30 @@ const TP_COLOR = '#14b8a6';          // teal  — take-profit line
 const PENDING_BUY_COLOR = '#3b82f6'; // blue   — pending BUY entry line
 const PENDING_SELL_COLOR = '#a855f7';// purple — pending SELL entry line
 
+// Pane/scale colours per theme. BOTH themes get explicit values (light used
+// to rely on the library defaults): a layout restored via `saved_data`
+// carries the colours it was autosaved with, so a session saved in dark
+// mode painted the light-mode chart black. These are (re-)asserted after
+// every restore — see the changeTheme/applyOverrides call in onChartReady.
+const CHART_THEME_OVERRIDES: Record<'dark' | 'light', Record<string, string>> = {
+  dark: {
+    'paneProperties.background': '#000000',
+    'paneProperties.backgroundType': 'solid',
+    'paneProperties.vertGridProperties.color': '#131313',
+    'paneProperties.horzGridProperties.color': '#131313',
+    'scalesProperties.textColor': '#9a9a9a',
+    'scalesProperties.lineColor': '#1f1f1f',
+  },
+  light: {
+    'paneProperties.background': '#ffffff',
+    'paneProperties.backgroundType': 'solid',
+    'paneProperties.vertGridProperties.color': '#f2f3f5',
+    'paneProperties.horzGridProperties.color': '#f2f3f5',
+    'scalesProperties.textColor': '#6b7280',
+    'scalesProperties.lineColor': '#e6e8ec',
+  },
+};
+
 // ── Chart layout persistence ───────────────────────────────────────────────
 // The widget is created with `use_localstorage_for_settings` disabled and
 // nothing ever called widget.save(), so studies (indicators), drawings, the
@@ -269,16 +293,7 @@ function TradingViewChartInner({
         // a layout saved under a different symbol cannot hijack the view.
         ...(savedLayout ? { saved_data: savedLayout } : {}),
         auto_save_delay: 2,
-        overrides: theme === 'dark'
-          ? {
-              'paneProperties.background': '#000000',
-              'paneProperties.backgroundType': 'solid',
-              'paneProperties.vertGridProperties.color': '#131313',
-              'paneProperties.horzGridProperties.color': '#131313',
-              'scalesProperties.textColor': '#9a9a9a',
-              'scalesProperties.lineColor': '#1f1f1f',
-            }
-          : {},
+        overrides: CHART_THEME_OVERRIDES[theme],
       });
       // Persist on every library-signalled change, plus on the way out: a
       // fast reload can beat the 2s autosave debounce, which is exactly the
@@ -308,6 +323,22 @@ function TradingViewChartInner({
         widgetRef.current.onChartReady(() => {
           readyRef.current = true;
           setChartReady(true);
+          // A restored layout brings back the colours it was autosaved with,
+          // and those beat both the `theme` and the constructor `overrides`
+          // — a session last used in dark mode painted the light chart
+          // black. Re-assert the active theme ON TOP of the restore:
+          // changeTheme resets the built-in palette where the build supports
+          // it, applyOverrides then pins our exact pane/scale colours.
+          if (savedLayout) {
+            const reassert = () => {
+              try { widgetRef.current?.applyOverrides?.(CHART_THEME_OVERRIDES[theme]); } catch { /* ignore */ }
+            };
+            try {
+              const p = widgetRef.current.changeTheme?.(theme);
+              if (p && typeof p.then === 'function') p.then(reassert, reassert);
+              else reassert();
+            } catch { reassert(); }
+          }
           // Indicator added/removed, drawing edited, interval or style
           // changed — the library debounces these by auto_save_delay.
           try {
@@ -633,7 +664,7 @@ function TradingViewChartInner({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const safe = <T,>(fn: () => T): T | undefined => { try { return fn(); } catch { return undefined; } };
 
-    type Bracket = { kind: 'tp' | 'sl'; id: string | null; price: number | null; zone: HTMLDivElement; draftTimer: number | null; creating: boolean; lastTarget: number | null | undefined; dragging: boolean };
+    type Bracket = { kind: 'tp' | 'sl'; id: string | null; price: number | null; zone: HTMLDivElement; draftTimer: number | null; creating: boolean; lastTarget: number | null | undefined; dragging: boolean; labelRaf: number; lastLabel: string };
     type Entry = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       p: any; entry: number; entryId: string | null; tp: Bracket | null; sl: Bracket | null;
@@ -680,8 +711,17 @@ function TradingViewChartInner({
     const ensureBracket = async (e: Entry, b: Bracket, price: number) => {
       b.price = price;
       if (b.id) {
-        safe(() => chart.getShapeById(b.id)?.setPoints([{ time: anchorTime, price }]));
-        safe(() => chart.getShapeById(b.id)?.setProperties(bracketProps(e, b, price)));
+        // ONE shape lookup per call, and only repaint the label when its
+        // rendered text actually changed — this runs once per frame for the
+        // life of a drag, and a redundant setProperties forces the library
+        // through a full drawing re-render for nothing.
+        const shape = safe(() => chart.getShapeById(b.id));
+        safe(() => shape?.setPoints([{ time: anchorTime, price }]));
+        const props = bracketProps(e, b, price);
+        if (props.text !== b.lastLabel) {
+          b.lastLabel = props.text;
+          safe(() => shape?.setProperties(props));
+        }
         return;
       }
       if (b.creating) return;
@@ -695,12 +735,14 @@ function TradingViewChartInner({
       b.creating = false;
       if (disposed || b.price == null) { if (id) safe(() => chart.removeEntity(id)); return; }
       b.id = id;
+      b.lastLabel = props.text;
       if (id) byShape.set(id, { e, b });
       // Level may have moved while the shape was being created.
       if (Math.abs(b.price - price) > eps) safe(() => chart.getShapeById(id)?.setPoints([{ time: anchorTime, price: b.price! }]));
     };
     const dropBracket = (b: Bracket) => {
       b.price = null;
+      b.lastLabel = '';
       if (b.id) { byShape.delete(b.id); safe(() => chart.removeEntity(b.id)); b.id = null; }
       b.zone.style.visibility = 'hidden';
     };
@@ -787,6 +829,21 @@ function TradingViewChartInner({
         }
         return best;
       } catch { return null; }
+    };
+    // paneTop() forces layout (getBoundingClientRect on every chart canvas)
+    // and the rAF loop below wants it EVERY frame — competing with the
+    // chart's own redraws, exactly while a drag has the main thread busiest.
+    // The offset only moves on layout changes, so serve it from a cache
+    // keyed on the pane/container dimensions with a short TTL: worst case a
+    // rare un-resized layout shift misplaces chips for a quarter second.
+    let ptCache: { v: number | null; at: number; h: number; cw: number; ch: number } | null = null;
+    const paneTopCached = (paneH: number): number | null => {
+      const cw = container.clientWidth, ch = container.clientHeight;
+      const t = performance.now();
+      if (ptCache && ptCache.h === paneH && ptCache.cw === cw && ptCache.ch === ch && t - ptCache.at < 250) return ptCache.v;
+      const v = paneTop(paneH);
+      ptCache = { v, at: t, h: paneH, cw, ch };
+      return v;
     };
     // Dev-only handle so UI tests can map prices → pixels.
     if (process.env.NODE_ENV !== 'production') {
@@ -932,6 +989,12 @@ function TradingViewChartInner({
         moved = true;
         b.dragging = true;
         ev.preventDefault();
+        // We own the pointer for the rest of this gesture: stop the event
+        // here (window, capture phase) so the chart's own crosshair
+        // tracking and hover hit-testing don't also run on every move —
+        // that per-event library work alongside our redraws is what read
+        // as stutter.
+        ev.stopPropagation();
         // Cheap: record and coalesce. All chart work happens in `flush`.
         lastClientY = ev.clientY;
         if (!rafId) rafId = window.requestAnimationFrame(flush);
@@ -968,6 +1031,9 @@ function TradingViewChartInner({
           return;
         }
         ev.preventDefault();
+        // The release ends OUR gesture — don't let the chart also treat it
+        // as a click/selection on whatever sits under the cursor.
+        ev.stopPropagation();
         // Land on the pointer's RELEASE position rather than the last move
         // sample the rAF loop happened to render, then snap to the tick grid
         // ONCE.
@@ -1049,8 +1115,8 @@ function TradingViewChartInner({
         chips.style.cssText = 'position:absolute;display:flex;gap:4px;align-items:center;transform:translateY(-50%);pointer-events:auto;visibility:hidden;z-index:6;';
         const e: Entry = { p, entry, entryId: null, tp: null, sl: null, chips, pnlChip: document.createElement('span'), tpBtn: null, slBtn: null };
         if (!isCopy) {
-          e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
-          e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
+          e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false, labelRaf: 0, lastLabel: '' };
+          e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false, labelRaf: 0, lastLabel: '' };
           const tpTap = () => {
             if (!isRealPositionId(readyPositionId(p.id))) { toast('Order still finalizing…'); return; }
             const st = useTradingStore.getState();
@@ -1128,7 +1194,20 @@ function TradingViewChartInner({
       // landing in that gap calls setPoints and snaps the line out from under
       // the pointer. Cleared once the level has settled below.
       b.dragging = true;
-      safe(() => chart.getShapeById(b.id)?.setProperties(bracketProps(e, b, px)));
+      // Label repaint once per FRAME, not once per event: a high-polling
+      // mouse fires several 'move' events per frame, and a setProperties on
+      // each one made the library's own line drag stutter under our feet.
+      if (!b.labelRaf) {
+        b.labelRaf = window.requestAnimationFrame(() => {
+          b.labelRaf = 0;
+          if (b.price == null || !b.id) return;
+          const props = bracketProps(e, b, b.price);
+          if (props.text !== b.lastLabel) {
+            b.lastLabel = props.text;
+            safe(() => chart.getShapeById(b.id)?.setProperties(props));
+          }
+        });
+      }
       if (b.draftTimer) window.clearTimeout(b.draftTimer);
       b.draftTimer = window.setTimeout(() => {
         b.draftTimer = null;
@@ -1191,7 +1270,7 @@ function TradingViewChartInner({
       raf = requestAnimationFrame(tick);
       if (entries.length === 0) return;
       const g = geom();
-      const top = g ? paneTop(g.h) : null;
+      const top = g ? paneTopCached(g.h) : null;
       const h = container.clientHeight || 0;
       const rightPx = Math.min(96, Math.max(8, container.clientWidth - 120));
       for (const e of entries) {
@@ -1231,6 +1310,7 @@ function TradingViewChartInner({
         for (const b of [e.tp, e.sl]) {
           if (!b) continue;
           if (b.draftTimer) window.clearTimeout(b.draftTimer);
+          if (b.labelRaf) window.cancelAnimationFrame(b.labelRaf);
           if (b.id) safe(() => chart.removeEntity(b.id));
           safe(() => overlay.removeChild(b.zone));
         }
