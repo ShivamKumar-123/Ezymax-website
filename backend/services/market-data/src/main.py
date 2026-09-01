@@ -222,14 +222,29 @@ class MarketDataService:
     async def _process_ticks(self):
         logger.info("Tick processor started")
         while self.running:
+            # The whole body is guarded: an unhandled exception here used to
+            # kill the tick-processor task, which took down asyncio.gather →
+            # the entire service exited on a transient Redis/Timescale blip.
+            # With restart:always that meant a full container bounce (and a
+            # trip through the 55s Infoway boot window) instead of skipping
+            # one tick.
+            try:
+                await self._process_one_tick()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.error("Tick processing error (tick skipped): %s", exc)
+                await asyncio.sleep(0.1)
+
+    async def _process_one_tick(self):
             tick = await self.feed.get_tick()
             if tick is None:
                 await asyncio.sleep(0.01)
-                continue
+                return
 
             symbol = str(tick["symbol"] or "").strip().upper()
             if not symbol:
-                continue
+                return
             self._last_feed_tick_mono = time.monotonic()
             # Crypto precedence: while the Binance side-feed is live for this
             # symbol its ~10 ticks/s stream is the source of truth — drop the
@@ -240,7 +255,7 @@ class MarketDataService:
                 last_b = self._binance_live_mono.get(symbol, 0.0)
                 if last_b and time.monotonic() - last_b < BINANCE_FRESH_SEC:
                     self._tick_count += 1
-                    continue
+                    return
             bid = float(tick["bid"])
             ask = float(tick["ask"])
             ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
@@ -249,7 +264,7 @@ class MarketDataService:
             # 1a. Structurally invalid quote (non-positive or crossed) — always
             #     drop; there is no valid downstream use for it.
             if bid <= 0 or ask <= 0 or ask < bid:
-                continue
+                return
 
             raw_mid = (bid + ask) / 2.0
             prev_mid = self._last_mid.get(symbol)
@@ -260,7 +275,7 @@ class MarketDataService:
             if prev_mid and prev_mid > 0 and abs(raw_mid - prev_mid) / prev_mid > 0.10:
                 self._bad_tick_count[symbol] += 1
                 if self._bad_tick_count[symbol] < JUMP_ACCEPT_AFTER:
-                    continue
+                    return
                 # Persisted → accept the new level and reset the median window
                 # so the old (pre-gap) mids don't drag the de-spiked value.
                 self._mid_history[symbol].clear()
@@ -440,7 +455,25 @@ class MarketDataService:
             self._last_feed_tick_mono = time.monotonic()
 
     async def _infoway_fallback_watchdog(self) -> None:
-        """If Infoway never delivers ticks (bad key, network, symbol mismatch), use simulator."""
+        """If Infoway never delivers ticks (bad key, network, symbol mismatch),
+        fall back to the crypto-only feed — then KEEP TRYING to restore Infoway.
+
+        The fallback used to be permanent: a transient Infoway outage during
+        the 55s boot window (deploy restart, provider blip, brief network
+        loss) left the service in crypto-only mode until a MANUAL restart at
+        a lucky moment. Every forex/metals symbol froze at its last mid — the
+        stale refresher republished it with stale=True forever, so the chart
+        showed a frozen price and every order was rejected with "No live
+        price … market data is reconnecting". Observed live on XAUUSD.
+
+        Now: after falling back, probe Infoway every INFOWAY_RETRY_SEC with a
+        CANDIDATE feed running alongside the fallback. Only when the candidate
+        actually produces a tick is it promoted to primary (the fallback keeps
+        crypto live in the meantime, and a failed probe changes nothing).
+        """
+        INFOWAY_RETRY_SEC = 120.0
+        PROBE_WINDOW_SEC = 50.0
+
         try:
             await asyncio.sleep(55.0)
         except asyncio.CancelledError:
@@ -451,7 +484,9 @@ class MarketDataService:
             return
         logger.error(
             "Infoway: no ticks in 55s — check INFOWAY_API_KEY, outbound HTTPS/WSS, and symbol codes. "
-            "Falling back to LIVE crypto only (Binance); forex/indices stay unquoted ('-')."
+            "Falling back to LIVE crypto only (Binance); forex/indices stay unquoted "
+            "and Infoway will be retried every %.0fs.",
+            INFOWAY_RETRY_SEC,
         )
         try:
             await self.feed.stop()
@@ -460,6 +495,65 @@ class MarketDataService:
         # Crypto-only live feed (no price simulation) so at least crypto keeps ticking.
         self.feed = FeedSimulator(tick_rate_multiplier=1.0)
         asyncio.create_task(self.feed.start())
+
+        # ── Recovery loop: probe Infoway until it streams again ──────────
+        raw_key = (settings.INFOWAY_API_KEY or "").strip()
+        attempt = 0
+        while self.running:
+            await asyncio.sleep(INFOWAY_RETRY_SEC)
+            if not self.running:
+                return
+            # Someone else already restored a real feed (e.g. config change +
+            # redeploy) — nothing to do.
+            if isinstance(self.feed, InfowayFeed):
+                return
+            attempt += 1
+            candidate = InfowayFeed(raw_key, INSTRUMENTS)
+            probe_task = asyncio.create_task(candidate.start())
+            first_tick = None
+            deadline = time.monotonic() + PROBE_WINDOW_SEC
+            try:
+                while self.running and time.monotonic() < deadline:
+                    first_tick = await candidate.get_tick()
+                    if first_tick is not None:
+                        break
+                    await asyncio.sleep(1.0)
+            except Exception as exc:
+                logger.warning("Infoway recovery probe error: %s", exc)
+
+            if first_tick is not None:
+                # Re-enqueue the popped probe tick so it isn't lost, then
+                # promote: swap primary and stop the fallback feed.
+                candidate._enqueue(first_tick)
+                old = self.feed
+                self.feed = candidate
+                try:
+                    await old.stop()
+                except Exception as exc:
+                    logger.warning("Stopping fallback feed: %s", exc)
+                self._last_feed_tick_mono = time.monotonic()
+                # The Binance crypto side-feed task exits whenever the primary
+                # stops being an InfowayFeed — bring it back alongside the
+                # restored feed (fast crypto ticks; Infoway crypto is slow).
+                asyncio.create_task(self._binance_crypto_feed())
+                logger.warning(
+                    "Infoway feed RESTORED after %d probe(s) — full symbol coverage resumes.",
+                    attempt,
+                )
+                return
+
+            # Probe failed — tear the candidate down and keep the fallback.
+            probe_task.cancel()
+            try:
+                await candidate.stop()
+            except Exception:
+                pass
+            if attempt % 5 == 0:
+                logger.error(
+                    "Infoway still unreachable after %d recovery probes — "
+                    "forex/metals remain unquoted (crypto stays live).",
+                    attempt,
+                )
 
     async def _auto_seed_bars(self) -> None:
         """Wait for first ticks to arrive, then seed historical bars if Redis is empty."""
