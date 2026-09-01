@@ -7,6 +7,7 @@ import { Check, ChevronDown, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
+import { useWarmTheme } from '@/stores/warmThemeStore';
 
 export interface AvailableAccountGroup {
   id: string;
@@ -53,6 +54,12 @@ type Props = {
 export default function AccountTypePickerModal({ open, onClose, onCreated }: Props) {
   const user = useAuthStore((s) => s.user);
   const userIsDemo = !!user?.is_demo;
+  // This drawer is portaled straight to document.body (below), so it is a
+  // DOM SIBLING of DashboardShell, not a descendant — it does not inherit
+  // DashboardShell's `.theme-warm` / `.theme-warm-dark` CSS variables just
+  // by being opened from a warm-themed page. It has to read the same warm
+  // dark/light toggle (AppNavbar's sun/moon) and apply the classes itself.
+  const warmDark = useWarmTheme((s) => s.dark);
 
   const [mounted, setMounted] = useState(false);
   const [groups, setGroups] = useState<AvailableAccountGroup[]>([]);
@@ -176,7 +183,19 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     // including the "Open Account" trigger that's supposed to reopen
     // this drawer.
     <div
+      // Re-declares the warm theme scope on the portal's own root, mirroring
+      // DashboardShell exactly (`data-theme="warm"` constant + `.theme-warm`
+      // always, `.theme-warm-dark` only when toggled dark) — NOT "light"/
+      // "dark" as the attribute value, which would instead match globals.css's
+      // unrelated BASE `[data-theme="light"]` / `[data-theme="dark"]` rules.
+      // Without this the drawer's `bg-bg-card` / `text-text-primary` / …
+      // utilities silently fell back to <body>'s base-site theme (pinned to
+      // `.theme-light` forever — dark mode was removed from that separate,
+      // unrelated toggle) instead of the warm dark/light the page is on.
+      data-theme="warm"
       className={clsx(
+        'theme-warm font-crextio',
+        warmDark && 'theme-warm-dark',
         // Bumped above the AppNavbar (sticky z-50) and the support FAB
         // (z-75). Without this the navbar's backdrop-blur stacking
         // context bled through the top of the drawer.
