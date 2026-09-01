@@ -331,7 +331,12 @@ export default function OrderPanel({
       rollback = () => setPositions(prev);
     }
 
-    api.post<{ id: string; position_id: string | null }>('/orders/', {
+    api.post<{
+      id: string;
+      position_id: string | null;
+      filled_price?: number | null;
+      commission?: number | null;
+    }>('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
       order_type: orderTab === 'market' ? 'market' : pendingKind,
@@ -344,21 +349,46 @@ export default function OrderPanel({
       lots: lotsNum,
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
-    }).then(async () => {
+    }).then(async (res) => {
       // Confirm success only now — the request actually went through.
       toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
 
-      // Note: we no longer swap the optimistic row's id with the real
-      // position_id here. The store's refreshPositions does that merge
-      // by matching on (account_id, symbol, side, lots) and preserving
-      // the optimistic React key, which is what actually prevents the
-      // unmount/remount flicker. Swapping the id here would just churn
-      // the key between this microtask and the next poll.
+      // The response for a market order already carries the REAL
+      // position_id (plus fill price / commission) — promote the
+      // optimistic row to it right now instead of waiting on the next
+      // background poll (up to 1.5s away) to reconcile it. Until the row
+      // carries a real id, every chart SL/TP/close control on it refuses
+      // to act ("Order still finalizing…") — this is the actual latency
+      // the trader feels between tapping Buy/Sell and being able to
+      // manage the position.
+      //
+      // Reading/writing through getState() rather than this closure's
+      // `positions`/`setPositions` avoids clobbering a concurrent update
+      // (e.g. the 1.5s poll landing in the same window). Safe against that
+      // very poll's own optimistic-matching too: it only ever touches rows
+      // whose id still starts with "optim-", so a row already swapped to a
+      // real UUID here is invisible to it from this point on — one clean
+      // handoff, not a race.
+      if (orderTab === 'market' && res.position_id) {
+        const st = useTradingStore.getState();
+        st.setPositions(
+          st.positions.map((pos) =>
+            pos.id === optimisticId
+              ? {
+                  ...pos,
+                  id: res.position_id!,
+                  open_price:
+                    res.filled_price != null && res.filled_price > 0 ? res.filled_price : pos.open_price,
+                  commission: res.commission ?? pos.commission,
+                }
+              : pos,
+          ),
+        );
+      }
 
       // refreshAccount updates balance/margin numbers. refreshPositions
-      // would tear down + rebuild the row we just swapped — skip it,
-      // the periodic poll already syncs server-side fields without
-      // remounting React rows.
+      // would tear down + rebuild rows unnecessarily — skip it, the
+      // periodic poll already syncs server-side fields without remounting.
       refreshAccount().catch(() => {});
     }).catch((e: any) => {
       if (rollback) rollback();
