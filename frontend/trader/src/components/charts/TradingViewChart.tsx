@@ -898,6 +898,25 @@ function TradingViewChartInner({
     const attachLevelDrag = (e: Entry, b: Bracket, btn: HTMLButtonElement, onTap: () => void) => {
       const DRAG_THRESHOLD = 3; // px — below this it is a tap, not a drag
       let pressed = false, moved = false, startY = 0, handled = false;
+      // The chart's panes live inside an IFRAME (paneTop() scans for it).
+      // Without pointer capture, the moment the cursor leaves the chip's
+      // small hit pad it is over that iframe, and every pointer event then
+      // dispatches inside the IFRAME's document — the parent window hears
+      // nothing and the gesture dies silently. A slow drag survived (the
+      // 3px threshold was crossed while still over the hit pad); a natural
+      // quick flick jumped straight onto the iframe and was dead — the
+      // "takes five attempts to grab" report. setPointerCapture retargets
+      // the whole gesture to the chip; the shield is the fallback when
+      // capture is unavailable, and also keeps the iframe from reacting
+      // to the pointer mid-drag.
+      let pointerId = -1;
+      let shield: HTMLDivElement | null = null;
+      const mountShield = () => {
+        if (shield) return;
+        shield = document.createElement('div');
+        shield.style.cssText = 'position:fixed;inset:0;z-index:2147483000;cursor:ns-resize;background:transparent;touch-action:none;';
+        document.body.appendChild(shield);
+      };
       // Largest vertical travel this gesture, tracked even when the drag
       // could not be mapped to a price — see the release handler.
       let maxDelta = 0;
@@ -988,6 +1007,7 @@ function TradingViewChartInner({
         if (!isRealPositionId(readyPositionId(e.p.id))) return;
         moved = true;
         b.dragging = true;
+        mountShield();
         ev.preventDefault();
         // We own the pointer for the rest of this gesture: stop the event
         // here (window, capture phase) so the chart's own crosshair
@@ -1002,6 +1022,8 @@ function TradingViewChartInner({
 
       const detach = () => {
         if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0; }
+        if (shield) { shield.remove(); shield = null; }
+        if (pointerId >= 0) { try { btn.releasePointerCapture(pointerId); } catch { /* already released */ } pointerId = -1; }
         window.removeEventListener('pointermove', onMove, true);
         window.removeEventListener('pointerup', onUp, true);
         window.removeEventListener('pointercancel', onCancel, true);
@@ -1077,6 +1099,11 @@ function TradingViewChartInner({
         lastClientY = ev.clientY;
         anchorPrice = b.price != null && b.price > 0 ? b.price : e.entry;
         g0 = geom();
+        // Capture from the very first sample: even the pre-threshold moves
+        // must reach US, not the chart iframe, or a fast flick never
+        // crosses the threshold at all.
+        pointerId = ev.pointerId;
+        try { btn.setPointerCapture(ev.pointerId); } catch { /* window listeners + shield still cover it */ }
         // pointermove is not passive by default, but say so explicitly: the
         // handler calls preventDefault and must never be silently ignored.
         window.addEventListener('pointermove', onMove, { capture: true, passive: false });
