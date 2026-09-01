@@ -131,6 +131,7 @@ function NewBadge() {
 export default function AppNavbar() {
   const pathname = usePathname() ?? '';
   const router = useRouter();
+  const dark = useWarmTheme((s) => s.dark);
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useShellStore();
 
@@ -194,15 +195,16 @@ export default function AppNavbar() {
           className="flex items-center shrink-0"
           aria-label="SwissCresta home"
         >
-          {/* Icon-only mark — the red square reads correctly on both the
-              cream and the Vantablack canvas (no invert hack needed). */}
+          {/* Full logo lockup. The original's wordmark is black, invisible
+              on the Vantablack canvas, so dark mode uses the generated
+              white-text variant (same red mark, wordmark recoloured). */}
           <Image
-            src="/marketing/swisscresta_fevicon.png"
+            src={dark ? '/marketing/swisscresta-logo-dark.png' : '/marketing/swisscresta-logo.png'}
             alt="SwissCresta"
-            width={44}
-            height={44}
+            width={195}
+            height={36}
             priority
-            className="h-9 w-9 rounded-xl"
+            className="h-8 sm:h-9 w-auto"
           />
         </Link>
 
