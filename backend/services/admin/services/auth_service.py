@@ -47,7 +47,8 @@ async def admin_login(body: AdminLoginRequest, db: AsyncSession) -> AdminLoginRe
         result = await db.execute(
             select(User).where(
                 func.lower(User.email) == email_norm,
-                User.role.in_(["admin", "super_admin"]),
+                # "broker" = white-label tenant admin (scoped panel access).
+                User.role.in_(["admin", "super_admin", "broker"]),
             )
         )
     except (OperationalError, DBAPIError) as e:
@@ -68,6 +69,17 @@ async def admin_login(body: AdminLoginRequest, db: AsyncSession) -> AdminLoginRe
 
     if admin.status != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is not active")
+
+    if admin.role == "broker":
+        # Suspended tenants (rental lapsed, ToS breach) get a clear message
+        # at the door instead of a generic 403 on every subsequent call.
+        from packages.common.src import broker_tenancy
+        profile = await broker_tenancy.get_broker_profile(db, admin.id)
+        if profile is None or profile.is_suspended:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Broker account is suspended — contact the platform",
+            )
 
     token = create_admin_token(str(admin.id), admin.role)
 
@@ -98,7 +110,7 @@ async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLog
     result = await db.execute(
         select(User).where(
             User.id == admin_id,
-            User.role.in_(["admin", "super_admin"]),
+            User.role.in_(["admin", "super_admin", "broker"]),
             User.status == "active",
         )
     )
@@ -134,6 +146,51 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
     if admin.role == "super_admin":
         employee_role = "super_admin"
         permissions = {"*"}
+    elif admin.role == "broker":
+        # White-label tenant: expose the tri-state section grants so the
+        # admin frontend can build the (scoped) sidebar. Expressed in the
+        # same "<section>.<action>" vocabulary the frontend already gates
+        # on: view granted at VIEW+, mutations granted at EDIT.
+        from packages.common.src import broker_tenancy
+        from packages.common.src.models.broker import (
+            PERMISSION_EDIT, PERMISSION_VIEW, permission_at_least,
+        )
+        profile = await broker_tenancy.get_broker_profile(db, admin.id)
+        broker_perms: set[str] = set()
+        levels = (profile.permissions or {}) if profile else {}
+        _view_map = {
+            "users": ["users.view"],
+            "kyc": ["kyc.view"],
+            "deposits": ["deposits.view"],
+            "withdrawals": ["withdrawals.view"],
+            "trades": ["trades.view", "positions.view", "orders.view"],
+            "transactions": ["transactions.view"],
+            "sub_brokers": ["sub_brokers.view"],
+        }
+        _edit_map = {
+            "users": ["users.ban", "users.block_trading"],
+            "kyc": ["kyc.manage"],
+            "deposits": ["deposits.approve", "deposits.reject"],
+            "withdrawals": ["withdrawals.approve", "withdrawals.reject"],
+            "sub_brokers": ["sub_brokers.manage"],
+        }
+        for section, level in levels.items():
+            if permission_at_least(level, PERMISSION_VIEW):
+                broker_perms.update(_view_map.get(section, []))
+            if permission_at_least(level, PERMISSION_EDIT):
+                broker_perms.update(_edit_map.get(section, []))
+        return {
+            "id": str(admin.id),
+            "email": admin.email,
+            "first_name": admin.first_name,
+            "last_name": admin.last_name,
+            "role": admin.role,
+            "employee_role": "broker",
+            "permissions": sorted(broker_perms),
+            "broker_permission_levels": levels,
+            "brand_name": profile.brand_name if profile else None,
+            "partner_code": profile.partner_code if profile else None,
+        }
     else:
         emp_q = await db.execute(
             select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)

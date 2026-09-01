@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from dependencies import require_permission
+from dependencies import require_permission, broker_scope_ids, assert_broker_scope
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import FundRequest, CreditRequest
 from services import user_service
@@ -23,9 +23,12 @@ async def list_users(
     admin: User = Depends(require_permission("users.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    # White-label broker actors see only their own pool (None = unscoped).
+    scope_ids = await broker_scope_ids(admin, db)
     return await user_service.list_users(
         page=page, per_page=per_page, search=search,
         status_filter=status_filter, kyc_filter=kyc_filter, group_id=group_id, db=db,
+        user_ids=scope_ids,
     )
 
 
@@ -35,6 +38,7 @@ async def get_user_detail(
     admin: User = Depends(require_permission("users.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.get_user_detail(user_id=user_id, db=db)
 
 
@@ -46,6 +50,7 @@ async def add_fund(
     admin: User = Depends(require_permission("users.add_fund")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.add_fund(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -60,6 +65,7 @@ async def deduct_fund(
     admin: User = Depends(require_permission("users.deduct_fund")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.deduct_fund(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -74,6 +80,7 @@ async def give_credit(
     admin: User = Depends(require_permission("users.add_fund")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.give_credit(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -92,6 +99,7 @@ async def take_credit(
     admin: User = Depends(require_permission("users.deduct_fund")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.take_credit(
         user_id=user_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -105,6 +113,7 @@ async def ban_user(
     admin: User = Depends(require_permission("users.ban")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.ban_user(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -118,6 +127,7 @@ async def unban_user(
     admin: User = Depends(require_permission("users.ban")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.unban_user(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -131,6 +141,7 @@ async def block_trading(
     admin: User = Depends(require_permission("users.block_trading")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.block_trading(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -144,6 +155,7 @@ async def kill_switch(
     admin: User = Depends(require_permission("users.kill_switch")),
     db: AsyncSession = Depends(get_db),
 ):
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.kill_switch(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -165,6 +177,7 @@ async def login_as_user(
     customer. Super-admins bypass automatically. Audit-logged on every
     successful start. The service additionally refuses to impersonate
     any staff role unless the caller is super_admin (audit H5)."""
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.login_as_user(
         user_id=user_id, admin_id=admin.id, admin_role=admin.role,
         ip_address=request.client.host if request.client else None, db=db,
@@ -188,6 +201,7 @@ async def delete_user(
     trading accounts, copy-trade allocations, copy trades, deposits, withdrawals,
     transactions, referrals, IB profile, and finally the user row. Cannot be
     undone."""
+    await assert_broker_scope(admin, user_id, db)
     return await user_service.delete_user(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,

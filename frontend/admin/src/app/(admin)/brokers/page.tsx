@@ -1,0 +1,555 @@
+'use client';
+
+/**
+ * White-label Brokers — platform super-admin manages tenant brokers
+ * (rental model): create, tri-state permissions, rental terms,
+ * suspend/unsuspend, password reset, branding/domain status.
+ * A broker with sub_brokers granted sees the same page scoped to its
+ * own sub-brokers (backend enforces the scope).
+ */
+
+import { useEffect, useState, useCallback } from 'react';
+import { adminApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import {
+  Loader2, Plus, RefreshCw, Building2, ShieldCheck, KeyRound,
+  Ban, CheckCircle2, Copy, Check, Globe, Wallet, Link2,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+interface Broker {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string | null;
+  status: string;
+  partner_code: string;
+  permissions: Record<string, string>;
+  brand_name: string | null;
+  logo_url: string | null;
+  custom_domain: string | null;
+  app_subdomain: string | null;
+  custom_domain_status: string | null;
+  rental_plan: string | null;
+  rental_amount: string;
+  rental_currency: string;
+  rental_period: string;
+  rental_next_due: string | null;
+  rental_notes: string | null;
+  is_suspended: boolean;
+  suspended_reason: string | null;
+  is_sub_broker: boolean;
+  user_count: number | null;
+  created_at: string | null;
+}
+
+interface SectionsInfo {
+  sections: string[];
+  levels: string[];
+  max_grantable: Record<string, string>;
+}
+
+const SECTION_LABELS: Record<string, string> = {
+  users: 'Users',
+  kyc: 'KYC',
+  deposits: 'Deposits',
+  withdrawals: 'Withdrawals',
+  trades: 'Trades',
+  transactions: 'Transactions',
+  sub_brokers: 'Sub-brokers',
+};
+
+const EMPTY_CREATE = {
+  email: '', password: '', first_name: '', last_name: '', brand_name: '',
+  rental_plan: '', rental_amount: '0', rental_currency: 'USD',
+  rental_period: 'monthly', rental_next_due: '', rental_notes: '',
+};
+
+function domainBadge(status: string | null) {
+  switch (status) {
+    case 'ready': return 'bg-success/15 text-success';
+    case 'failed': return 'bg-danger/15 text-danger';
+    case 'provisioning':
+    case 'dns_verified': return 'bg-accent/15 text-accent';
+    case 'pending_dns': return 'bg-warning/15 text-warning';
+    default: return 'bg-text-tertiary/15 text-text-tertiary';
+  }
+}
+
+export default function BrokersPage() {
+  const [brokers, setBrokers] = useState<Broker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sections, setSections] = useState<SectionsInfo | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  // Create modal
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ ...EMPTY_CREATE });
+  const [createPerms, setCreatePerms] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  // Permissions modal
+  const [permBroker, setPermBroker] = useState<Broker | null>(null);
+  const [permDraft, setPermDraft] = useState<Record<string, string>>({});
+
+  // Rental modal
+  const [rentalBroker, setRentalBroker] = useState<Broker | null>(null);
+  const [rentalDraft, setRentalDraft] = useState({
+    rental_plan: '', rental_amount: '0', rental_currency: 'USD',
+    rental_period: 'monthly', rental_next_due: '', rental_notes: '',
+  });
+
+  // Password reset modal
+  const [pwBroker, setPwBroker] = useState<Broker | null>(null);
+  const [pwValue, setPwValue] = useState('');
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApi.get<{ items: Broker[] }>('/brokers');
+      setBrokers(res.items || []);
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load brokers');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    (async () => {
+      try {
+        setSections(await adminApi.get<SectionsInfo>('/brokers/sections'));
+      } catch {}
+    })();
+  }, [fetchData]);
+
+  const copyText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
+
+  const submitCreate = async () => {
+    if (!createForm.email || createForm.password.length < 8) {
+      toast.error('Email and a password of 8+ characters are required');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await adminApi.post('/brokers', {
+        ...createForm,
+        rental_amount: Number(createForm.rental_amount || 0),
+        rental_next_due: createForm.rental_next_due || null,
+        permissions: createPerms,
+      });
+      toast.success('Broker created');
+      setShowCreate(false);
+      setCreateForm({ ...EMPTY_CREATE });
+      setCreatePerms({});
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to create broker');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const savePermissions = async () => {
+    if (!permBroker) return;
+    setSubmitting(true);
+    try {
+      await adminApi.put(`/brokers/${permBroker.id}/permissions`, { permissions: permDraft });
+      toast.success('Permissions updated');
+      setPermBroker(null);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update permissions');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const saveRental = async () => {
+    if (!rentalBroker) return;
+    setSubmitting(true);
+    try {
+      await adminApi.put(`/brokers/${rentalBroker.id}/rental`, {
+        ...rentalDraft,
+        rental_amount: Number(rentalDraft.rental_amount || 0),
+        rental_next_due: rentalDraft.rental_next_due || null,
+      });
+      toast.success('Rental terms updated');
+      setRentalBroker(null);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update rental');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleSuspend = async (b: Broker) => {
+    try {
+      if (b.is_suspended) {
+        await adminApi.post(`/brokers/${b.id}/unsuspend`);
+        toast.success('Broker un-suspended');
+      } else {
+        const reason = window.prompt('Suspend reason (shown in audit log):') || '';
+        await adminApi.post(`/brokers/${b.id}/suspend`, { reason });
+        toast.success('Broker suspended');
+      }
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed');
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!pwBroker || pwValue.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await adminApi.post(`/brokers/${pwBroker.id}/reset-password`, { new_password: pwValue });
+      toast.success('Password reset');
+      setPwBroker(null);
+      setPwValue('');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to reset password');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const PermGrid = ({
+    value, onChange,
+  }: { value: Record<string, string>; onChange: (v: Record<string, string>) => void }) => (
+    <div className="space-y-1.5">
+      {(sections?.sections || Object.keys(SECTION_LABELS)).map((sec) => {
+        const cap = sections?.max_grantable?.[sec] || 'edit';
+        const capRank = cap === 'edit' ? 2 : cap === 'view' ? 1 : 0;
+        const current = value[sec] || 'off';
+        return (
+          <div key={sec} className="flex items-center justify-between gap-2">
+            <span className="text-xs text-text-secondary">{SECTION_LABELS[sec] || sec}</span>
+            <div className="flex gap-1">
+              {['off', 'view', 'edit'].map((lvl, i) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  disabled={i > capRank}
+                  onClick={() => onChange({ ...value, [sec]: lvl })}
+                  className={cn(
+                    'px-2 py-0.5 rounded-sm text-xxs font-medium border transition-fast',
+                    current === lvl
+                      ? lvl === 'edit'
+                        ? 'bg-success/15 text-success border-success/30'
+                        : lvl === 'view'
+                          ? 'bg-accent/15 text-accent border-accent/30'
+                          : 'bg-text-tertiary/15 text-text-tertiary border-border-primary'
+                      : 'text-text-tertiary border-border-primary hover:bg-bg-hover',
+                    i > capRank && 'opacity-30 cursor-not-allowed',
+                  )}
+                >
+                  {lvl}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const inputCls = 'w-full bg-bg-tertiary border border-border-primary rounded-md px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent/50';
+  const labelCls = 'block text-xxs text-text-tertiary uppercase tracking-wide mb-1';
+
+  return (
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+            <Building2 size={15} className="text-accent" /> White-Label Brokers
+          </h1>
+          <p className="text-xxs text-text-tertiary mt-0.5">
+            Rent the platform out under another broker&apos;s brand — isolated user pool, scoped admin access, own domain.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast"
+          >
+            <Plus size={14} /> Add Broker
+          </button>
+          <button onClick={fetchData} className="p-1.5 rounded-md border border-border-primary text-text-secondary hover:bg-bg-hover transition-fast">
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-bg-secondary border border-border-primary rounded-md overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={20} className="animate-spin text-text-tertiary" />
+          </div>
+        ) : brokers.length === 0 ? (
+          <div className="text-center text-xs text-text-tertiary py-12">
+            No brokers yet. Create one to hand a partner their own branded platform.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px]">
+              <thead>
+                <tr className="border-b border-border-primary bg-bg-tertiary/40">
+                  {['Broker', 'Partner code', 'Users', 'Rental', 'Next due', 'Domain', 'Status', 'Actions'].map((col) => (
+                    <th key={col} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', col === 'Actions' && 'text-right')}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {brokers.map((b) => (
+                  <tr key={b.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                    <td className="px-4 py-2.5">
+                      <div className="text-xs text-text-primary font-medium">
+                        {b.brand_name || `${b.first_name} ${b.last_name || ''}`.trim()}
+                        {b.is_sub_broker && (
+                          <span className="ml-1.5 px-1 py-0.5 rounded-sm text-xxs bg-accent/10 text-accent">sub</span>
+                        )}
+                      </div>
+                      <div className="text-xxs text-text-tertiary">{b.email}</div>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => copyText(b.partner_code, `code-${b.id}`)}
+                        className="inline-flex items-center gap-1 text-xxs font-mono text-text-secondary hover:text-text-primary transition-fast"
+                        title="Copy referral code"
+                      >
+                        {b.partner_code}
+                        {copied === `code-${b.id}` ? <Check size={10} className="text-success" /> : <Copy size={10} />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-text-secondary tabular-nums">{b.user_count ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-text-secondary">
+                      {b.rental_plan || '—'}
+                      <span className="text-text-tertiary"> · {b.rental_currency} {b.rental_amount}/{b.rental_period}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums">{b.rental_next_due || '—'}</td>
+                    <td className="px-4 py-2.5">
+                      {b.custom_domain ? (
+                        <div className="flex items-center gap-1.5">
+                          <Globe size={11} className="text-text-tertiary" />
+                          <span className="text-xxs text-text-secondary">{b.custom_domain}</span>
+                          <span className={cn('px-1.5 py-0.5 rounded-sm text-xxs font-medium', domainBadge(b.custom_domain_status))}>
+                            {b.custom_domain_status || '—'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xxs text-text-tertiary">not connected</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium', b.is_suspended ? 'bg-danger/15 text-danger' : 'bg-success/15 text-success')}>
+                        {b.is_suspended ? 'Suspended' : 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => { setPermBroker(b); setPermDraft({ ...b.permissions }); }}
+                          className="p-1 rounded-md text-accent border border-accent/30 hover:bg-accent/10 transition-fast" title="Permissions"
+                        >
+                          <ShieldCheck size={12} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRentalBroker(b);
+                            setRentalDraft({
+                              rental_plan: b.rental_plan || '',
+                              rental_amount: b.rental_amount || '0',
+                              rental_currency: b.rental_currency || 'USD',
+                              rental_period: b.rental_period || 'monthly',
+                              rental_next_due: b.rental_next_due || '',
+                              rental_notes: b.rental_notes || '',
+                            });
+                          }}
+                          className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Rental terms"
+                        >
+                          <Wallet size={12} />
+                        </button>
+                        <button
+                          onClick={() => copyText(`${window.location.origin.replace('admin.', '')}/auth/register?ref=${b.partner_code}`, `link-${b.id}`)}
+                          className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Copy referral link"
+                        >
+                          {copied === `link-${b.id}` ? <Check size={12} className="text-success" /> : <Link2 size={12} />}
+                        </button>
+                        <button
+                          onClick={() => { setPwBroker(b); setPwValue(''); }}
+                          className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Reset password"
+                        >
+                          <KeyRound size={12} />
+                        </button>
+                        <button
+                          onClick={() => toggleSuspend(b)}
+                          className={cn('p-1 rounded-md border transition-fast', b.is_suspended ? 'text-success border-success/30 hover:bg-success/10' : 'text-danger border-danger/30 hover:bg-danger/15')}
+                          title={b.is_suspended ? 'Un-suspend' : 'Suspend'}
+                        >
+                          {b.is_suspended ? <CheckCircle2 size={12} /> : <Ban size={12} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Create modal ─────────────────────────────────────────── */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-4">Create White-Label Broker</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Email *</label>
+                <input className={inputCls} value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="broker@partner.com" />
+              </div>
+              <div>
+                <label className={labelCls}>Password * (8+ chars)</label>
+                <input className={inputCls} type="text" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} placeholder="Initial password" />
+              </div>
+              <div>
+                <label className={labelCls}>First name</label>
+                <input className={inputCls} value={createForm.first_name} onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Last name</label>
+                <input className={inputCls} value={createForm.last_name} onChange={(e) => setCreateForm({ ...createForm, last_name: e.target.value })} />
+              </div>
+              <div className="md:col-span-2">
+                <label className={labelCls}>Brand name</label>
+                <input className={inputCls} value={createForm.brand_name} onChange={(e) => setCreateForm({ ...createForm, brand_name: e.target.value })} placeholder="Shown to their users instead of SwissCresta" />
+              </div>
+              <div>
+                <label className={labelCls}>Rental plan</label>
+                <input className={inputCls} value={createForm.rental_plan} onChange={(e) => setCreateForm({ ...createForm, rental_plan: e.target.value })} placeholder="e.g. Standard WL" />
+              </div>
+              <div>
+                <label className={labelCls}>Rental amount</label>
+                <div className="flex gap-1.5">
+                  <input className={cn(inputCls, 'flex-1')} type="number" min="0" value={createForm.rental_amount} onChange={(e) => setCreateForm({ ...createForm, rental_amount: e.target.value })} />
+                  <select className={cn(inputCls, 'w-20')} value={createForm.rental_currency} onChange={(e) => setCreateForm({ ...createForm, rental_currency: e.target.value })}>
+                    {['USD', 'EUR', 'INR', 'USDT'].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Billing period</label>
+                <select className={inputCls} value={createForm.rental_period} onChange={(e) => setCreateForm({ ...createForm, rental_period: e.target.value })}>
+                  {['monthly', 'quarterly', 'yearly', 'one_time'].map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Next due date</label>
+                <input className={inputCls} type="date" value={createForm.rental_next_due} onChange={(e) => setCreateForm({ ...createForm, rental_next_due: e.target.value })} />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className={labelCls}>Admin-panel permissions (off / view / edit)</label>
+              <div className="bg-bg-tertiary/40 border border-border-primary rounded-md p-3">
+                <PermGrid value={createPerms} onChange={setCreatePerms} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowCreate(false)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={submitCreate} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">
+                {submitting ? 'Creating…' : 'Create Broker'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Permissions modal ────────────────────────────────────── */}
+      {permBroker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPermBroker(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-1">Permissions</h2>
+            <p className="text-xxs text-text-tertiary mb-3">{permBroker.brand_name || permBroker.email} — downgrades cascade to sub-brokers.</p>
+            <PermGrid value={permDraft} onChange={setPermDraft} />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setPermBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={savePermissions} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rental modal ─────────────────────────────────────────── */}
+      {rentalBroker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setRentalBroker(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-3">Rental terms — {rentalBroker.brand_name || rentalBroker.email}</h2>
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Plan</label>
+                <input className={inputCls} value={rentalDraft.rental_plan} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_plan: e.target.value })} />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className={labelCls}>Amount</label>
+                  <input className={inputCls} type="number" min="0" value={rentalDraft.rental_amount} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_amount: e.target.value })} />
+                </div>
+                <div className="w-24">
+                  <label className={labelCls}>Currency</label>
+                  <select className={inputCls} value={rentalDraft.rental_currency} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_currency: e.target.value })}>
+                    {['USD', 'EUR', 'INR', 'USDT'].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="w-28">
+                  <label className={labelCls}>Period</label>
+                  <select className={inputCls} value={rentalDraft.rental_period} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_period: e.target.value })}>
+                    {['monthly', 'quarterly', 'yearly', 'one_time'].map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Next due date</label>
+                <input className={inputCls} type="date" value={rentalDraft.rental_next_due} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_next_due: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Notes</label>
+                <textarea className={cn(inputCls, 'min-h-[60px]')} value={rentalDraft.rental_notes} onChange={(e) => setRentalDraft({ ...rentalDraft, rental_notes: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setRentalBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={saveRental} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reset password modal ─────────────────────────────────── */}
+      {pwBroker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPwBroker(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-3">Reset password — {pwBroker.email}</h2>
+            <input className={inputCls} type="text" placeholder="New password (8+ chars)" value={pwValue} onChange={(e) => setPwValue(e.target.value)} />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setPwBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={resetPassword} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

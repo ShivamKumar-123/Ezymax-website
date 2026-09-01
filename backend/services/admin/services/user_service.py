@@ -87,16 +87,24 @@ async def list_users(
     page: int, per_page: int, search: str | None,
     status_filter: str | None, kyc_filter: str | None,
     group_id: str | None, db: AsyncSession,
+    user_ids: list | None = None,
 ) -> dict:
     # Hide users who have not verified their email yet. An email/password
     # signup sits at email_verified=False until they complete the post-signup
     # OTP, so half-finished registrations never clutter the admin list.
     # Google/OAuth signups are stamped email_verified=True at sign-in, so
     # legitimate users are unaffected.
+    # White-label broker rows are admin-tier accounts, not trading users —
+    # they're managed on the Brokers page, so hide them here like admins.
     query = select(User).where(
-        User.role.notin_(["admin", "super_admin"]),
+        User.role.notin_(["admin", "super_admin", "broker"]),
         User.email_verified.is_(True),
     )
+
+    # White-label pool scoping: a broker actor passes the explicit id list
+    # of their own pool; None = platform admin, unscoped.
+    if user_ids is not None:
+        query = query.where(User.id.in_(user_ids))
 
     if search:
         term = f"%{search}%"

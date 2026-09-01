@@ -294,6 +294,11 @@ async def complete_pending_registration(
             # account on a bad code.
             logger.warning("referral consume failed for %s: %s", user.id, e)
 
+    # White-label pool assignment — same attribution as the legacy
+    # one-shot register path (partner code beats custom-domain host).
+    from .auth_service import apply_tenant_attribution
+    await apply_tenant_attribution(db, user, referral_code, request)
+
     # Successful create — burn the Redis entry so the code can't be
     # replayed.
     await redis_client.delete(_redis_key(email_lower))

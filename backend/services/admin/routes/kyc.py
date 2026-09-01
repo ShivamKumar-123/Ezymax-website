@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from dependencies import require_permission
+from dependencies import require_permission, broker_scope_ids, assert_broker_scope
 from packages.common.src.models import User
 from services import kyc_service
 
@@ -29,7 +29,8 @@ async def list_pending_kyc(
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with pending KYC submissions"""
-    return await kyc_service.list_kyc_pending(page=page, per_page=per_page, db=db)
+    scope_ids = await broker_scope_ids(admin, db)
+    return await kyc_service.list_kyc_pending(page=page, per_page=per_page, db=db, user_ids=scope_ids)
 
 
 @router.get("/approved")
@@ -40,7 +41,8 @@ async def list_approved_kyc(
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with approved KYC"""
-    return await kyc_service.list_kyc_approved(page=page, per_page=per_page, db=db)
+    scope_ids = await broker_scope_ids(admin, db)
+    return await kyc_service.list_kyc_approved(page=page, per_page=per_page, db=db, user_ids=scope_ids)
 
 
 @router.get("/rejected")
@@ -51,7 +53,8 @@ async def list_rejected_kyc(
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with rejected KYC"""
-    return await kyc_service.list_kyc_rejected(page=page, per_page=per_page, db=db)
+    scope_ids = await broker_scope_ids(admin, db)
+    return await kyc_service.list_kyc_rejected(page=page, per_page=per_page, db=db, user_ids=scope_ids)
 
 
 @router.post("/{user_id}/approve")
@@ -63,6 +66,7 @@ async def approve_kyc(
     db: AsyncSession = Depends(get_db),
 ):
     """Approve user KYC"""
+    await assert_broker_scope(admin, user_id, db)
     return await kyc_service.approve_kyc(
         user_id=user_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -78,6 +82,7 @@ async def reject_kyc(
     db: AsyncSession = Depends(get_db),
 ):
     """Reject user KYC"""
+    await assert_broker_scope(admin, user_id, db)
     return await kyc_service.reject_kyc(
         user_id=user_id, reason=body.reason, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -91,4 +96,10 @@ async def view_kyc_file(
     db: AsyncSession = Depends(get_db),
 ):
     """Serve a user's KYC document for admin review (inline image/PDF)."""
+    if admin.role == "broker":
+        from sqlalchemy import select
+        from packages.common.src.models import KYCDocument
+        uid = (await db.execute(select(KYCDocument.user_id).where(KYCDocument.id == doc_id))).scalar_one_or_none()
+        if uid is not None:
+            await assert_broker_scope(admin, uid, db)
     return await kyc_service.get_kyc_file(document_id=doc_id, db=db)

@@ -11,7 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
 from packages.common.src.database import get_db
-from packages.common.src.models import User, Employee
+from packages.common.src.models import User, Employee, BrokerProfile
+from packages.common.src import broker_tenancy
+from packages.common.src.models.broker import (
+    PERMISSION_VIEW, PERMISSION_EDIT, permission_at_least,
+)
 
 security = HTTPBearer()
 settings = get_settings()
@@ -92,13 +96,25 @@ async def get_current_admin(
     result = await db.execute(
         select(User).where(
             User.id == uuid.UUID(admin_id),
-            User.role.in_(["admin", "super_admin"]),
+            # White-label brokers authenticate against the same admin panel
+            # with a scoped, permission-gated view of THEIR user pool only.
+            User.role.in_(["admin", "super_admin", "broker"]),
             User.status == "active",
         )
     )
     admin = result.scalar_one_or_none()
     if admin is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin user not found or inactive")
+
+    if admin.role == "broker":
+        # A suspended tenant (rental lapsed, ToS breach, …) loses admin
+        # access immediately — checked per request, not just at login.
+        profile = await broker_tenancy.get_broker_profile(db, admin.id)
+        if profile is None or profile.is_suspended:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Broker account is suspended — contact the platform",
+            )
 
     return admin
 
@@ -117,6 +133,45 @@ async def require_super_admin(
     return admin
 
 
+# ── White-label broker permission mapping ─────────────────────────────
+# Maps the existing fine-grained permission strings onto the broker
+# tri-state sections (off/view/edit). A permission that maps to None is
+# NEVER available to brokers regardless of grants — platform-only
+# surfaces (config, banks, banners, IB, social, settings, employees…).
+# Rule of thumb: ".view" needs VIEW, any mutation needs EDIT, and the
+# target row must additionally sit inside the broker's pool (enforced
+# by the scoped routes via broker_scope_ids / assert_broker_scope).
+_BROKER_SECTION_MAP: dict[str, str | None] = {
+    "users": "users",
+    "kyc": "kyc",
+    "deposits": "deposits",
+    "withdrawals": "withdrawals",
+    "trades": "trades",
+    "positions": "trades",
+    "orders": "trades",
+    "transactions": "transactions",
+}
+
+# Mutations too destructive to ever delegate to a tenant, even at EDIT.
+_BROKER_DENIED_PERMISSIONS = {
+    "users.delete", "users.impersonate", "users.kill_switch",
+    "trades.create", "trades.manage",
+}
+
+
+def _broker_allows(profile: BrokerProfile | None, permission: str) -> bool:
+    if permission in _BROKER_DENIED_PERMISSIONS:
+        return False
+    section_key, _, action = permission.partition(".")
+    section = _BROKER_SECTION_MAP.get(section_key)
+    if section is None:
+        return False
+    needed = PERMISSION_VIEW if action == "view" else PERMISSION_EDIT
+    return permission_at_least(
+        broker_tenancy.broker_permission_level(profile, section), needed
+    )
+
+
 def require_permission(permission: str):
     """FastAPI dependency factory that checks if the current admin has the required permission."""
     async def _check(
@@ -129,6 +184,15 @@ def require_permission(permission: str):
         # every support/finance employee unrestricted backend access.
         if admin.role == "super_admin":
             return admin
+
+        if admin.role == "broker":
+            profile = await broker_tenancy.get_broker_profile(db, admin.id)
+            if _broker_allows(profile, permission):
+                return admin
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{permission}' not granted to your broker account",
+            )
 
         result = await db.execute(
             select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)
@@ -150,6 +214,35 @@ def require_permission(permission: str):
             detail=f"Permission '{permission}' required",
         )
     return _check
+
+
+# ── White-label pool scoping ──────────────────────────────────────────
+
+async def broker_scope_ids(
+    admin: User, db: AsyncSession
+) -> list[uuid.UUID] | None:
+    """None = unscoped (platform admins keep their existing full view).
+    For a broker actor: the explicit list of client user ids in their
+    pool (subtree incl. sub-brokers' clients). An empty pool returns a
+    sentinel list with one impossible id so callers' IN() filters match
+    nothing instead of everything."""
+    if admin.role != "broker":
+        return None
+    ids = await broker_tenancy.scoped_client_ids(db, admin)
+    return ids or [uuid.UUID(int=0)]
+
+
+async def assert_broker_scope(
+    admin: User, target_user_id: uuid.UUID, db: AsyncSession
+) -> User:
+    """403s when a broker actor targets a user outside their pool.
+    Platform admins pass through unchanged."""
+    try:
+        return await broker_tenancy.assert_user_in_broker_scope(db, admin, target_user_id)
+    except LookupError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 async def write_audit_log(

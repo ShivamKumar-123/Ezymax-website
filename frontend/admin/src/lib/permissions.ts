@@ -10,6 +10,8 @@
 
 /** Longest-prefix-first list so /admin-audit-logs wins over /audit-logs etc. */
 const PATH_PERMS: [prefix: string, perm: string][] = [
+  ['/branding', '_broker'],
+  ['/brokers', 'sub_brokers.view'],
   ['/admin-audit-logs', 'audit_logs.view'],
   ['/account-types', 'config.view'],
   ['/audit-logs', 'audit_logs.view'],
@@ -45,6 +47,7 @@ export function hasPerm(
   perm: string | null,
 ): boolean {
   if (!perm) return true;
+  if (perm === '_broker') return employeeRole === 'broker';
   if (permissions.includes('*')) return true;
   if (perm === '_super_admin') return employeeRole === 'super_admin';
   return permissions.includes(perm);

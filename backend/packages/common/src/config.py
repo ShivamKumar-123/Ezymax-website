@@ -68,6 +68,25 @@ class Settings(BaseSettings):
     # Public trader app URL (password reset links). No trailing slash.
     TRADER_APP_URL: str = "http://localhost:3000"
 
+    # ── White-label brokers (rental model, ported from stock4x) ──────────
+    # Master switch — every branding/custom-domain endpoint 503s when off,
+    # and login/signup tenant attribution becomes a no-op.
+    BRANDING_ENABLED: bool = False
+    # Hostnames that are the PLATFORM's own (comma-separated, no scheme).
+    # A login/signup arriving from one of these hosts is never attributed
+    # to a tenant, and tenant login-isolation fails OPEN for them.
+    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,localhost,127.0.0.1"
+    # The origin IP tenants must point their A record at (shown in the
+    # domain-connect wizard and checked by DNS verification).
+    PLATFORM_PUBLIC_IP: str = ""
+    # SSL/nginx provisioning (server-side; leave empty on dev — the
+    # provisioner then only records status transitions without shelling out).
+    BRANDING_NGINX_TENANTS_FILE: str = ""   # e.g. /etc/nginx/conf.d/swisscresta-tenants.conf
+    BRANDING_TRADER_UPSTREAM: str = "127.0.0.1:3000"
+    BRANDING_CERTBOT_BIN: str = "/usr/bin/certbot"
+    BRANDING_NGINX_BIN: str = "/usr/sbin/nginx"
+    BRANDING_CERTBOT_EMAIL: str = ""
+
     # Optional SMTP — required for password-reset emails in non-dev. If SMTP_HOST is empty, reset links are only logged in development.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

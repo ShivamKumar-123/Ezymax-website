@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from dependencies import require_permission
+from dependencies import require_permission, broker_scope_ids
 from packages.common.src.models import User
 from services import transaction_service
 
@@ -22,9 +22,11 @@ async def list_transactions(
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await transaction_service.list_transactions(
         page=page, per_page=per_page, type_filter=type_filter, search=search,
         user_id=user_id, include_trade_pnl=include_trade_pnl, db=db,
+        user_ids=scope_ids,
     )
 
 

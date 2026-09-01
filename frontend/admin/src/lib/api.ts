@@ -126,7 +126,7 @@ class AdminApi {
   }
 
   /** Multipart upload (do not set Content-Type — browser sets boundary). */
-  async postForm<T>(path: string, formData: FormData): Promise<T> {
+  async postForm<T>(path: string, formData: FormData, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
     const base = getAdminApiBase();
     const p = path.startsWith('/') ? path : `/${path}`;
     const url = `${base}${p}`;
@@ -134,7 +134,7 @@ class AdminApi {
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
     const res = await fetch(url, {
-      method: 'POST', headers, body: formData,
+      method, headers, body: formData,
       credentials: 'include',
     });
 

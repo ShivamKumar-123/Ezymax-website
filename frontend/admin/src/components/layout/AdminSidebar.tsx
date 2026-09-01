@@ -11,6 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, ScrollText, BookOpen, X,
+  Building2, Palette,
 } from 'lucide-react';
 
 interface NavItem {
@@ -63,6 +64,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
   { label: 'Banners', href: '/banners', icon: Image, perm: 'banners.view' },
   { label: 'Support', href: '/support', icon: HeadphonesIcon, perm: 'tickets.view' },
+  { label: 'Brokers', href: '/brokers', icon: Building2, perm: 'sub_brokers.view' },
+  { label: 'Branding', href: '/branding', icon: Palette, perm: '_broker' },
   { label: 'Employees', href: '/employees', icon: UserCog, perm: '_super_admin' },
   { label: 'Settings', href: '/settings', icon: Settings, perm: '_super_admin' },
 ];
@@ -112,6 +115,9 @@ export default function AdminSidebar({
 
   const hasAccess = (perm?: string) => {
     if (!perm) return true;
+    // '_broker' marks broker-only surfaces (own Branding page) — checked
+    // before the '*' wildcard so a super admin doesn't see them.
+    if (perm === '_broker') return employeeRole === 'broker';
     if (permissions.includes('*')) return true;
     if (perm === '_super_admin') return employeeRole === 'super_admin';
     return permissions.includes(perm);

@@ -53,8 +53,13 @@ async def list_transactions(
     db: AsyncSession,
     user_id: "uuid.UUID | None" = None,
     include_trade_pnl: bool = False,
+    user_ids: list | None = None,
 ) -> PaginatedResponse:
     query = select(Transaction)
+
+    # White-label pool scoping (broker actors); None = unscoped.
+    if user_ids is not None:
+        query = query.where(Transaction.user_id.in_(user_ids))
 
     # Per-user filter for the user-detail ledger page. When admin
     # drills into a single user's full ledger we DO want to see the

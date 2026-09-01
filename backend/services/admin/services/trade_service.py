@@ -43,6 +43,7 @@ async def _get_live_price(symbol: str) -> dict | None:
 async def list_positions(
     page: int, per_page: int, status_filter: str, db: AsyncSession,
     user_id: uuid.UUID | None = None,
+    user_ids: list | None = None,
 ):
     # Exclude demo-account activity from admin views (demo trades are practice-only).
     query = (
@@ -55,6 +56,9 @@ async def list_positions(
     # directly) so this picks up every account the user owns.
     if user_id is not None:
         query = query.where(TradingAccount.user_id == user_id)
+    # White-label pool scoping (broker actors); None = unscoped.
+    if user_ids is not None:
+        query = query.where(TradingAccount.user_id.in_(user_ids))
     if status_filter == "open":
         query = query.where(Position.status == PositionStatus.OPEN.value)
     elif status_filter == "closed":
@@ -138,12 +142,15 @@ async def list_positions(
 
 async def list_orders(
     page: int, per_page: int, status_filter: str, db: AsyncSession,
+    user_ids: list | None = None,
 ):
     query = (
         select(Order)
         .join(TradingAccount, Order.account_id == TradingAccount.id)
         .where(TradingAccount.is_demo == False)
     )
+    if user_ids is not None:
+        query = query.where(TradingAccount.user_id.in_(user_ids))
     if status_filter == "pending":
         query = query.where(Order.status == OrderStatus.PENDING)
     elif status_filter == "filled":
@@ -199,6 +206,7 @@ async def list_orders(
 async def list_trade_history(
     page: int, per_page: int, db: AsyncSession,
     user_id: uuid.UUID | None = None,
+    user_ids: list | None = None,
 ):
     query = (
         select(TradeHistory)
@@ -207,6 +215,8 @@ async def list_trade_history(
     )
     if user_id is not None:
         query = query.where(TradingAccount.user_id == user_id)
+    if user_ids is not None:
+        query = query.where(TradingAccount.user_id.in_(user_ids))
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 

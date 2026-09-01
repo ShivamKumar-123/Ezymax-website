@@ -69,6 +69,28 @@ def assert_same_origin(request: Request) -> None:
     raise AuthServiceError("Origin not allowed", 403)
 
 
+async def assert_same_origin_or_tenant(request: Request, db: AsyncSession) -> None:
+    """Same-origin guard that ALSO accepts live white-label tenant domains.
+
+    A tenant's users log in from https://<their-broker-domain>, which is
+    never in CORS_ORIGINS — without this, every white-label login would
+    403. Only domains whose provisioning status is READY (cached 60s)
+    are accepted, so the allow-list stays as tight as the static one."""
+    try:
+        assert_same_origin(request)
+        return
+    except AuthServiceError:
+        if not get_settings().BRANDING_ENABLED:
+            raise
+        from packages.common.src import broker_tenancy
+        host = broker_tenancy.host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        )
+        if host and host in await broker_tenancy.active_tenant_hosts(db):
+            return
+        raise
+
+
 # Rate-limit helpers were lifted into packages/common so the admin API
 # can share them. Re-exported here for back-compat with the existing
 # `from .auth_service import rate_limit_http` callers across the gateway.
@@ -256,6 +278,37 @@ async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str)
         db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user_id, ib_profile_id=ib_profile.id))
 
 
+# ─── Utility: white-label tenant attribution (stock4x port) ──────────────
+
+async def apply_tenant_attribution(
+    db: AsyncSession, user: User, referral_code: str | None, request: Request
+) -> None:
+    """Places a NEW self-registered user in the right white-label pool.
+
+    Priority (stock4x order): explicit ?ref=<WL-partner-code> beats the
+    custom domain the signup arrived on; anything else stays in the
+    platform pool. Separate from the IB referral system — the same code
+    field is tried against broker partner codes first, then falls
+    through to IB attribution untouched. No-op when BRANDING_ENABLED is
+    off or nothing matches, so plain platform signups are unaffected."""
+    from packages.common.src import broker_tenancy
+    try:
+        host = broker_tenancy.host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        )
+        owner, origin = await broker_tenancy.resolve_owner_for_request(
+            db, referral_code=referral_code, host=host
+        )
+        pool = broker_tenancy.pool_assignment_for_owner(owner)
+        for field, value in pool.items():
+            setattr(user, field, value)
+        if pool or user.signup_origin is None:
+            user.signup_origin = origin
+    except Exception:
+        # Attribution must never block a signup.
+        logger.exception("tenant attribution skipped")
+
+
 # ─── Core: issue auth response ───────────────────────────────────────────
 
 async def issue_auth_json_response(
@@ -374,7 +427,7 @@ async def register_user(
     request: Request,
     db: AsyncSession,
 ) -> JSONResponse:
-    assert_same_origin(request)
+    await assert_same_origin_or_tenant(request, db)
     from packages.common.src.settings_store import get_bool_setting
 
     rate_limit_http(request, "register", 15, 3600.0)
@@ -428,6 +481,7 @@ async def register_user(
 
     if referral_code:
         await _consume_referral(db, user.id, referral_code)
+    await apply_tenant_attribution(db, user, referral_code, request)
 
     response = await issue_auth_json_response(
         user, request, db, status_code=201, user_audit_action="REGISTER",
@@ -448,7 +502,7 @@ async def login_user(
     request: Request,
     db: AsyncSession,
 ) -> JSONResponse:
-    assert_same_origin(request)
+    await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "login", 40, 60.0)
     # Case-insensitive email lookup so users who registered with mixed case can still
     # sign in. The unique index on lower(email) (migration 0018) enforces uniqueness.
@@ -477,11 +531,30 @@ async def login_user(
     # responses); done BEFORE 2FA + token issuance so staff credentials
     # never mint a trader session, even if the staff user accidentally
     # submitted them to the wrong form.
-    STAFF_ROLES = ("admin", "super_admin", "employee", "manager", "support")
+    STAFF_ROLES = ("admin", "super_admin", "employee", "manager", "support", "broker")
     if user.role in STAFF_ROLES:
         raise AuthServiceError(
             "Staff accounts must sign in via the admin portal.", 403
         )
+
+    # White-label tenant isolation (stock4x port): a login arriving on a
+    # broker's custom domain only admits that broker's own users. Fails
+    # OPEN on platform / unrecognised hosts so nobody gets locked out by
+    # a half-configured domain. Done after the password check so tenant
+    # domains don't become an email-enumeration oracle.
+    settings_wl = get_settings()
+    if settings_wl.BRANDING_ENABLED:
+        from packages.common.src import broker_tenancy
+        wl_host = broker_tenancy.host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        )
+        wl_owner = await broker_tenancy.find_broker_by_domain(db, wl_host)
+        if not broker_tenancy.user_belongs_to_owner(user, wl_owner):
+            raise AuthServiceError(
+                "This account is not registered with this broker. "
+                "Please sign in on the platform you registered with.",
+                403,
+            )
 
     # Email-verification gate. A user who never verified the email they
     # signed up with cannot hold a trader session — this keeps login in
@@ -611,7 +684,7 @@ async def google_oauth(
 ) -> JSONResponse:
     """Verify a Google id_token and sign the user in. Creates a new user, links to an
     existing email-based account, or returns the existing google-linked user."""
-    assert_same_origin(request)
+    await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "google-oauth", 30, 60.0)
 
     st = get_settings()
@@ -718,6 +791,7 @@ async def google_oauth(
             is_new = True
             if referral_code:
                 await _consume_referral(db, user.id, referral_code)
+            await apply_tenant_attribution(db, user, referral_code, request)
 
     if user.status == "banned":
         raise AuthServiceError("Account has been banned", 403)
@@ -839,7 +913,7 @@ def _reset_link_base(request: Request) -> str:
 
 
 async def forgot_password(email: str, request: Request, db: AsyncSession) -> dict:
-    assert_same_origin(request)
+    await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "forgot-password", 5, 600.0)
     msg = {"message": "If an account exists for this email, you will receive password reset instructions shortly."}
     result = await db.execute(select(User).where(User.email == email))
@@ -874,7 +948,7 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
 
 
 async def reset_password(token: str, new_password: str, request: Request, db: AsyncSession) -> dict:
-    assert_same_origin(request)
+    await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "reset-password", 20, 600.0)
     token_hash = hash_token(token.strip())
     now = datetime.now(timezone.utc)

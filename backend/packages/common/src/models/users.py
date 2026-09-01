@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import (
     Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
 )
-from sqlalchemy.dialects.postgresql import UUID, INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID, INET, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -59,6 +59,33 @@ class User(Base):
     language = Column(String(10), default="en")
     theme = Column(String(10), default="dark")
     book_type = Column(String(1), default="B", server_default="B")  # 'A' (LP routed) or 'B' (internal)
+
+    # ── White-label tenancy (ported from the stock4x broker model) ──────
+    # A white-label BROKER is a users row with role='broker' plus a
+    # broker_profiles row (branding, permissions, rental terms).
+    #
+    # assigned_broker_id: the broker that owns/minted this user. NULL means
+    # the user belongs to the platform pool (plain swisscresta.com signup).
+    # For a sub-broker row it points at the parent broker.
+    assigned_broker_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    # Materialised broker ancestry, root-first, NOT including self. Lets us
+    # scope an entire subtree (sub-brokers + their clients) with a single
+    # GIN-indexed containment query:
+    #     users.broker_ancestry @> ARRAY[broker_id]
+    # Top-level broker: []. Sub-broker: [top_broker.id]. A client minted by
+    # a sub-broker: [top_broker.id, sub_broker.id].
+    broker_ancestry = Column(
+        ARRAY(UUID(as_uuid=True)), nullable=False,
+        default=list, server_default="{}",
+    )
+    # Signup origin breadcrumb: 'platform' (direct swisscresta signup),
+    # 'broker_referral' (?ref=<partner_code> link), 'custom_domain'
+    # (signed up on a white-label tenant's own domain). NULL for rows
+    # created before the white-label feature.
+    signup_origin = Column(String(20), nullable=True)
     trading_blocked_until = Column(DateTime(timezone=True))
     main_wallet_balance = Column(Numeric(18, 8), nullable=False, default=0)
     # Lowercased EVM address (0x + 40 hex). Unique via the partial index

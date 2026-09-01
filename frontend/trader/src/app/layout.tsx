@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
+import BrandingProvider from '@/components/providers/BrandingProvider';
 import NotificationListener from '@/components/NotificationListener';
 import OnboardingGate from '@/components/auth/OnboardingGate';
 import TopLoader from '@/components/TopLoader';
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <GoogleAuthProvider>
+            <BrandingProvider>
             <NotificationListener />
             {/* OnboardingGate enforces email verification after signup.
                 The profile-details form (ProfileCompleteGate) is no longer
@@ -127,6 +129,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
               }}
             />
+            </BrandingProvider>
             </GoogleAuthProvider>
           </AuthProvider>
         </ThemeProvider>

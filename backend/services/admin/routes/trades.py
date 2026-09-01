@@ -4,12 +4,34 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from dependencies import require_permission
+from fastapi import HTTPException
+from sqlalchemy import select
+
+from dependencies import require_permission, broker_scope_ids, assert_broker_scope
+from packages.common.src.models import Position, TradingAccount
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest
 from services import trade_service
 
 router = APIRouter(prefix="/trades", tags=["Trades"])
+
+
+async def _assert_position_scope(admin: User, position_id: uuid.UUID, db: AsyncSession) -> None:
+    """White-label guard: broker actors may only touch positions owned by
+    users in their own pool. Platform admins pass through."""
+    if admin.role != "broker":
+        return
+    uid = (
+        await db.execute(
+            select(TradingAccount.user_id)
+            .join(Position, Position.account_id == TradingAccount.id)
+            .where(Position.id == position_id)
+        )
+    ).scalar_one_or_none()
+    if uid is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    await assert_broker_scope(admin, uid, db)
+
 
 
 @router.get("/positions")
@@ -23,9 +45,10 @@ async def list_positions(
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await trade_service.list_positions(
         page=page, per_page=per_page, status_filter=status_filter,
-        user_id=user_id, db=db,
+        user_id=user_id, db=db, user_ids=scope_ids,
     )
 
 
@@ -37,8 +60,10 @@ async def list_orders(
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await trade_service.list_orders(
         page=page, per_page=per_page, status_filter=status_filter, db=db,
+        user_ids=scope_ids,
     )
 
 
@@ -50,8 +75,10 @@ async def list_trade_history(
     admin: User = Depends(require_permission("trades.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await trade_service.list_trade_history(
         page=page, per_page=per_page, user_id=user_id, db=db,
+        user_ids=scope_ids,
     )
 
 
@@ -63,6 +90,7 @@ async def modify_position(
     admin: User = Depends(require_permission("trades.modify")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_position_scope(admin, position_id, db)
     return await trade_service.modify_position(
         position_id=position_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -77,6 +105,7 @@ async def close_position(
     admin: User = Depends(require_permission("trades.close")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_position_scope(admin, position_id, db)
     return await trade_service.close_position(
         position_id=position_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,

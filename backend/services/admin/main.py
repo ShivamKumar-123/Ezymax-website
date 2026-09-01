@@ -19,6 +19,8 @@ from routes import (
     admin_audit_logs,
     deposit_wallets,
     notifications,
+    brokers,
+    branding_admin,
 )
 
 app_settings = get_settings()
@@ -79,6 +81,52 @@ async def _apply_startup_ddl():
             # never run alembic also stop holding plaintext trading credentials.
             await conn.execute(text(
                 "ALTER TABLE algo_api_keys DROP COLUMN IF EXISTS api_secret"
+            ))
+            # White-label brokers (alembic 0062) — tenancy columns + profile
+            # table so broker endpoints work even before alembic runs.
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_broker_id UUID "
+                "REFERENCES users(id) ON DELETE SET NULL"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS broker_ancestry UUID[] NOT NULL DEFAULT '{}'"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_origin VARCHAR(20)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_users_broker_ancestry ON users USING GIN (broker_ancestry)"
+            ))
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS broker_profiles (
+                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    partner_code VARCHAR(20) UNIQUE NOT NULL,
+                    permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    brand_name VARCHAR(100),
+                    logo_url TEXT,
+                    support_email VARCHAR(255),
+                    support_whatsapp VARCHAR(32),
+                    custom_domain VARCHAR(255),
+                    app_subdomain VARCHAR(63),
+                    custom_domain_status VARCHAR(20),
+                    custom_domain_last_error TEXT,
+                    custom_domain_provisioned_at TIMESTAMPTZ,
+                    rental_plan VARCHAR(50),
+                    rental_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
+                    rental_currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+                    rental_period VARCHAR(20) NOT NULL DEFAULT 'monthly',
+                    rental_next_due DATE,
+                    rental_notes TEXT,
+                    is_suspended BOOLEAN NOT NULL DEFAULT false,
+                    suspended_reason TEXT,
+                    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
+            await conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_broker_profiles_custom_domain "
+                "ON broker_profiles (custom_domain) WHERE custom_domain IS NOT NULL"
             ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
@@ -152,6 +200,8 @@ app.include_router(user_audit_logs.router, prefix=prefix)
 app.include_router(admin_audit_logs.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
 app.include_router(notifications.router, prefix=prefix)
+app.include_router(brokers.router, prefix=prefix)
+app.include_router(branding_admin.router, prefix=prefix)
 
 
 @app.get("/health")

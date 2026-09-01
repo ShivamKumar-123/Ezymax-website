@@ -5,8 +5,11 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from dependencies import require_permission
-from packages.common.src.models import User
+from fastapi import HTTPException
+from sqlalchemy import select
+
+from dependencies import require_permission, broker_scope_ids, assert_broker_scope
+from packages.common.src.models import User, Deposit, Withdrawal
 from packages.common.src.admin_schemas import RejectRequest
 from services import deposit_service
 
@@ -23,6 +26,27 @@ class PaymentLinkRequest(BaseModel):
 router = APIRouter(prefix="/finance", tags=["Finance"])
 
 
+async def _assert_deposit_scope(admin: User, deposit_id: uuid.UUID, db: AsyncSession) -> None:
+    """White-label guard: a broker actor may only act on deposits raised
+    by users in their own pool. Platform admins pass through."""
+    if admin.role != "broker":
+        return
+    uid = (await db.execute(select(Deposit.user_id).where(Deposit.id == deposit_id))).scalar_one_or_none()
+    if uid is None:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    await assert_broker_scope(admin, uid, db)
+
+
+async def _assert_withdrawal_scope(admin: User, withdrawal_id: uuid.UUID, db: AsyncSession) -> None:
+    if admin.role != "broker":
+        return
+    uid = (await db.execute(select(Withdrawal.user_id).where(Withdrawal.id == withdrawal_id))).scalar_one_or_none()
+    if uid is None:
+        raise HTTPException(status_code=404, detail="Withdrawal not found")
+    await assert_broker_scope(admin, uid, db)
+
+
+
 @router.get("/deposits/pending")
 async def list_pending_deposits(
     page: int = Query(1, ge=1),
@@ -30,7 +54,8 @@ async def list_pending_deposits(
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await deposit_service.list_pending_deposits(page=page, per_page=per_page, db=db)
+    scope_ids = await broker_scope_ids(admin, db)
+    return await deposit_service.list_pending_deposits(page=page, per_page=per_page, db=db, user_ids=scope_ids)
 
 
 @router.get("/withdrawals/pending")
@@ -40,7 +65,8 @@ async def list_pending_withdrawals(
     admin: User = Depends(require_permission("withdrawals.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await deposit_service.list_pending_withdrawals(page=page, per_page=per_page, db=db)
+    scope_ids = await broker_scope_ids(admin, db)
+    return await deposit_service.list_pending_withdrawals(page=page, per_page=per_page, db=db, user_ids=scope_ids)
 
 
 @router.get("/deposits")
@@ -52,8 +78,10 @@ async def list_all_deposits(
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await deposit_service.list_all_deposits(
         page=page, per_page=per_page, status=status, user_id=user_id, db=db,
+        user_ids=scope_ids,
     )
 
 
@@ -66,8 +94,10 @@ async def list_all_withdrawals(
     admin: User = Depends(require_permission("withdrawals.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    scope_ids = await broker_scope_ids(admin, db)
     return await deposit_service.list_all_withdrawals(
         page=page, per_page=per_page, status=status, user_id=user_id, db=db,
+        user_ids=scope_ids,
     )
 
 
@@ -78,6 +108,7 @@ async def approve_deposit(
     admin: User = Depends(require_permission("deposits.approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_deposit_scope(admin, deposit_id, db)
     return await deposit_service.approve_deposit(
         deposit_id=deposit_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -96,6 +127,7 @@ async def set_deposit_payment_link(
     payment URL onto the user's request. Kept for cases where Razorpay
     isn't appropriate (admin wants to share a custom invoice link, UPI
     VPA, etc.). For the auto-Razorpay path see /deposits/{id}/approve-razorpay."""
+    await _assert_deposit_scope(admin, deposit_id, db)
     return await deposit_service.set_payment_link(
         deposit_id=deposit_id,
         payment_link=body.payment_link,
@@ -126,6 +158,7 @@ async def approve_deposit_with_razorpay(
     for that amount and notifies the user. They tap the deposit row in
     their wallet to open the Razorpay checkout and pay; the existing
     Razorpay webhook credits the deposit on payment.captured."""
+    await _assert_deposit_scope(admin, deposit_id, db)
     from decimal import Decimal
     amount = None
     if body is not None and body.amount is not None and body.amount > 0:
@@ -147,6 +180,7 @@ async def reject_deposit(
     admin: User = Depends(require_permission("deposits.reject")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_deposit_scope(admin, deposit_id, db)
     return await deposit_service.reject_deposit(
         deposit_id=deposit_id, reason=body.reason, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -160,6 +194,7 @@ async def approve_withdrawal(
     admin: User = Depends(require_permission("withdrawals.approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_withdrawal_scope(admin, withdrawal_id, db)
     return await deposit_service.approve_withdrawal(
         withdrawal_id=withdrawal_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -174,6 +209,7 @@ async def reject_withdrawal(
     admin: User = Depends(require_permission("withdrawals.reject")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_withdrawal_scope(admin, withdrawal_id, db)
     return await deposit_service.reject_withdrawal(
         withdrawal_id=withdrawal_id, reason=body.reason, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
@@ -191,6 +227,7 @@ async def mark_withdrawal_paid(
     """Record the off-platform payout admin made. Requires withdrawal to
     be in 'approved' status. Stamps the on-chain tx hash (or bank
     reference) and flips status to 'paid'."""
+    await _assert_withdrawal_scope(admin, withdrawal_id, db)
     return await deposit_service.mark_withdrawal_paid(
         withdrawal_id=withdrawal_id,
         tx_hash=body.tx_hash,
@@ -207,6 +244,7 @@ async def download_deposit_screenshot(
     admin: User = Depends(require_permission("deposits.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_deposit_scope(admin, deposit_id, db)
     return await deposit_service.download_deposit_screenshot(deposit_id=deposit_id, db=db)
 
 
@@ -216,4 +254,5 @@ async def download_withdrawal_payout_qr(
     admin: User = Depends(require_permission("withdrawals.view")),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_withdrawal_scope(admin, withdrawal_id, db)
     return await deposit_service.download_withdrawal_payout_qr(withdrawal_id=withdrawal_id, db=db)

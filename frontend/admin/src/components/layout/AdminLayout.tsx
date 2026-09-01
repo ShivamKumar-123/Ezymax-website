@@ -46,6 +46,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, [gate]);
 
+  // White-label broker accounts land on the scoped Users page — the
+  // platform Dashboard's widgets are platform-wide aggregates their
+  // permission model 403s on.
+  useEffect(() => {
+    if (perms?.employeeRole === 'broker' && pathname === '/dashboard') {
+      router.replace('/users');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perms, pathname]);
+
   useEffect(() => {
     setMounted(true);
   }, []);

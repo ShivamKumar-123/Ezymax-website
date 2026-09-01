@@ -95,6 +95,7 @@ services:
       WALLET_UPLOAD_ROOT: /app/uploads/wallet
       BANK_QR_UPLOAD_DIR: /app/uploads/qr
       KYC_UPLOAD_ROOT: /app/uploads/kyc
+      BRANDING_UPLOAD_DIR: /app/uploads/branding
     volumes:
       - ./backend/services/admin:/app
       - ./backend/packages/common:/app/packages/common
@@ -119,6 +120,7 @@ services:
       BANNERS_UPLOAD_DIR: /app/uploads/banners
       WALLET_UPLOAD_ROOT: /app/uploads/wallet
       KYC_UPLOAD_ROOT: /app/uploads/kyc
+      BRANDING_UPLOAD_DIR: /app/uploads/branding
     volumes:
       - ./backend/services/gateway:/app/services/gateway
       - ./backend/packages:/app/packages
