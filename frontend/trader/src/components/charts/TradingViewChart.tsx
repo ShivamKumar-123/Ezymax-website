@@ -875,9 +875,22 @@ function TradingViewChartInner({
       // Largest vertical travel this gesture, tracked even when the drag
       // could not be mapped to a price — see the release handler.
       let maxDelta = 0;
-      // The chip row rides the entry line, so its centre is a known
-      // (price, pixel) pair — all the mapping needs is the scale.
+      // GRAB OFFSET. The anchor is the exact pixel pressed paired with the
+      // level's CURRENT price, so the level moves relative to where it was
+      // rather than teleporting under the cursor. Anchoring on the chip's
+      // centre and the entry price (as this did) jumped twice: once by
+      // however far off-centre the press landed in the hit pad, and again —
+      // by the whole entry-to-level distance — when re-dragging a level that
+      // already sat somewhere else.
       let anchorY = 0, anchorPrice = 0;
+      // Latest pointer position; the chart writes happen once per frame from
+      // rAF, not once per pointermove. A high-polling mouse fires several
+      // moves per frame, and each one used to do a geom() read plus two
+      // getShapeById lookups, setPoints, setProperties and a P&L recompute.
+      let lastClientY = 0;
+      let rafId = 0;
+      // The chip only needs restyling the first time a level appears.
+      let chipLit = false;
       // Scale captured at press time. geom() reads the live chart and returns
       // null while the pane is mid-rescale; falling back to the captured
       // value keeps a gesture alive instead of dropping it, which is what
@@ -885,8 +898,11 @@ function TradingViewChartInner({
       let g0: Geo | null = null;
 
       btn.style.cursor = 'ns-resize';
-      // Stop the browser turning the gesture into a scroll/pan on touch.
+      // Stop the browser turning the gesture into a scroll/pan on touch, and
+      // stop a fast drag from selecting the chip's label text.
       btn.style.touchAction = 'none';
+      btn.style.userSelect = 'none';
+      btn.style.webkitUserSelect = 'none';
 
       // The chip itself is only 20px tall and drifts vertically as the chart
       // rescales, so pressing it exactly is fiddly — especially on touch.
@@ -904,31 +920,47 @@ function TradingViewChartInner({
       // so element-bound listeners only survive via setPointerCapture — and if
       // capture is unavailable or the pane's own handlers get in the way, the
       // gesture dies silently. Window listeners need neither.
+      /** Price under the last pointer sample, unrounded. */
+      const priceAtPointer = (): number | null => {
+        // Prefer the live scale, but never abandon the gesture because a
+        // single sample came back null.
+        const g = geom() ?? g0;
+        if (!g || !(anchorPrice > 0)) return null;
+        g0 = g;
+        const price = priceFromAnchor(lastClientY, anchorY, anchorPrice, g);
+        return Number.isFinite(price) && price > 0 ? price : null;
+      };
+
+      // One chart write per frame, regardless of pointer rate.
+      const flush = () => {
+        rafId = 0;
+        if (!pressed) return;
+        const price = priceAtPointer();
+        if (price == null) return;
+        // RAW price — deliberately NOT rounded to `digits` here. Snapping the
+        // visual position to the tick grid mid-drag is what made the line
+        // feel sticky: it only stepped once the cursor had travelled a whole
+        // tick. Rounding happens once, on release, for the committed value.
+        void ensureBracket(e, b, price);
+        if (!chipLit) { refreshChips(e); chipLit = true; }
+      };
+
       const onMove = (ev: PointerEvent) => {
         if (!pressed) return;
         const delta = Math.abs(ev.clientY - startY);
         if (delta > maxDelta) maxDelta = delta;
         if (!moved && delta < DRAG_THRESHOLD) return;
         if (!isRealPositionId(e.p.id)) return;
-        // Prefer the live scale, but never abandon the gesture because a
-        // single sample came back null.
-        const g = geom() ?? g0;
-        if (!g || !(anchorPrice > 0)) return;
-        g0 = g;
         moved = true;
         b.dragging = true;
         ev.preventDefault();
-        const price = priceFromAnchor(ev.clientY, anchorY, anchorPrice, g);
-        if (!Number.isFinite(price) || price <= 0) return;
-        // ensureBracket creates the line on the first move and slides it
-        // after, so the level appears as soon as the drag starts.
-        void ensureBracket(e, b, Number(price.toFixed(digits)));
-        // b.price is set synchronously above, so the chip switches to its
-        // "level set" style immediately rather than only on release.
-        refreshChips(e);
+        // Cheap: record and coalesce. All chart work happens in `flush`.
+        lastClientY = ev.clientY;
+        if (!rafId) rafId = window.requestAnimationFrame(flush);
       };
 
       const detach = () => {
+        if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0; }
         window.removeEventListener('pointermove', onMove, true);
         window.removeEventListener('pointerup', onUp, true);
         window.removeEventListener('pointercancel', onCancel, true);
@@ -953,7 +985,13 @@ function TradingViewChartInner({
           return;
         }
         ev.preventDefault();
-        if (b.price != null) commitLevel(e, b, b.price);
+        // Land on the pointer's final position rather than whatever the last
+        // rendered frame happened to be, then snap to the tick grid ONCE.
+        const raw = priceAtPointer() ?? b.price;
+        if (raw == null) return;
+        const settled = Number(raw.toFixed(digits));
+        void ensureBracket(e, b, settled);
+        commitLevel(e, b, settled);
       }
 
       function onCancel() {
@@ -966,13 +1004,20 @@ function TradingViewChartInner({
         ev.stopPropagation();
         ev.preventDefault();
         pressed = true; moved = false; startY = ev.clientY; maxDelta = 0;
-        // Measure the BUTTON, not the event target — the press may land on
-        // the transparent hit area, whose box is deliberately larger.
-        const r = btn.getBoundingClientRect();
-        anchorY = r.top + r.height / 2;
-        anchorPrice = e.entry;
+        chipLit = false;
+        // Anchor on the EXACT pixel pressed, paired with the level's current
+        // price — that pairing is the grab offset. Pressing anywhere in the
+        // hit pad, or grabbing a level that already sits far from the entry
+        // line, now moves it from where it is instead of snapping it to the
+        // cursor. A level that does not exist yet starts at the entry line,
+        // which is where the chip itself sits.
+        anchorY = ev.clientY;
+        lastClientY = ev.clientY;
+        anchorPrice = b.price != null && b.price > 0 ? b.price : e.entry;
         g0 = geom();
-        window.addEventListener('pointermove', onMove, true);
+        // pointermove is not passive by default, but say so explicitly: the
+        // handler calls preventDefault and must never be silently ignored.
+        window.addEventListener('pointermove', onMove, { capture: true, passive: false });
         window.addEventListener('pointerup', onUp, true);
         window.addEventListener('pointercancel', onCancel, true);
       };
