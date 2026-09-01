@@ -333,6 +333,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const updatePosition = useTradingStore((s) => s.updatePosition);
   const refreshPositions = useTradingStore((s) => s.refreshPositions);
   const refreshAccount = useTradingStore((s) => s.refreshAccount);
+  const resolvePositionId = useTradingStore((s) => s.resolvePositionId);
   const instruments = useTradingStore((s) => s.instruments);
   const [activeTab, setActiveTab] = useState<TabId>('open');
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
@@ -501,7 +502,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     setCloseModal(null);
     setCloseSubmitting(false);
 
-    if (id.startsWith('optim-')) {
+    // The server usually confirms a fresh trade's real id within a poll tick
+    // or two of it opening (resolvePositionId), well before the store
+    // actually swaps this row's DISPLAYED id over (kept stable for ~5s to
+    // avoid a remount — see tradingStore.refreshPositions). Resolve first so
+    // Close doesn't sit blocked for the full 5s over a purely cosmetic delay.
+    const realId = resolvePositionId(id);
+    if (realId.startsWith('optim-')) {
       toast('Trade still settling — try again in a moment', { icon: '⏳' });
       refreshPositions().catch(() => {});
       return;
@@ -510,13 +517,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     const body: Record<string, unknown> = {};
     if (lots) body.lots = lots;
 
-    // Optimistic: remove from UI immediately for full close
+    // Optimistic: remove from UI immediately for full close. `id` (the
+    // DISPLAYED id), not `realId` — that's the row's actual key in the store.
     if (!lots) removePosition(id);
 
     void (async () => {
       try {
         const res = await api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
-          `/positions/${id}/close`,
+          `/positions/${realId}/close`,
           body,
           { timeoutMs: 8_000 },
         );

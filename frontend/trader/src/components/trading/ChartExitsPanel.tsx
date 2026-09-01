@@ -45,6 +45,7 @@ export default function ChartExitsPanel() {
   const removePosition = useTradingStore((s) => s.removePosition);
   const refreshPositions = useTradingStore((s) => s.refreshPositions);
   const refreshAccount = useTradingStore((s) => s.refreshAccount);
+  const resolvePositionId = useTradingStore((s) => s.resolvePositionId);
 
   const positionId = draft?.positionId ?? closeReq ?? null;
   const p = positions.find((x) => x.id === positionId) ?? null;
@@ -106,8 +107,13 @@ export default function ChartExitsPanel() {
     if (draft.takeProfit !== undefined) patch.take_profit = draft.takeProfit;
     if (draft.stopLoss !== undefined) patch.stop_loss = draft.stopLoss;
     try {
+      // The row is still keyed/updated by its DISPLAYED id (may briefly be
+      // the optimistic "optim-…" one) so the store patch lands on the right
+      // row, but the request URL needs the REAL server id the chart's
+      // readiness check already confirmed exists — submitting the fake id
+      // would 422.
       updatePosition(p.id, { take_profit: patch.take_profit === undefined ? p.take_profit : (patch.take_profit ?? undefined), stop_loss: patch.stop_loss === undefined ? p.stop_loss : (patch.stop_loss ?? undefined) });
-      await api.put(`/positions/${p.id}`, patch);
+      await api.put(`/positions/${resolvePositionId(p.id)}`, patch);
       toast.success('Exits updated');
       setDraft(null);
       await refreshPositions();
@@ -125,7 +131,7 @@ export default function ChartExitsPanel() {
     setBusy(true);
     try {
       removePosition(p.id);
-      const res = await api.post<{ profit?: number; close_price?: number }>(`/positions/${p.id}/close`, {}, { timeoutMs: 8000 });
+      const res = await api.post<{ profit?: number; close_price?: number }>(`/positions/${resolvePositionId(p.id)}/close`, {}, { timeoutMs: 8000 });
       const pnl = Number(res?.profit ?? 0);
       toast.success(`Closed @ ${res?.close_price ?? ''} | ${usd(pnl)}`);
       setCloseReq(null); setDraft(null);

@@ -122,6 +122,13 @@ interface TradingState {
   prevPrices: Record<string, number>;
   watchlist: string[];
   instruments: InstrumentInfo[];
+  /** optimistic "optim-…" id → the real server UUID it already resolves to.
+   *  Populated by refreshPositions the moment a server row is matched, which
+   *  is almost immediate — independent of the 5s FRESH_OPTIM_WINDOW_MS grace
+   *  period that keeps the row DISPLAYED under its optimistic id to avoid a
+   *  list remount. Lets SL/TP/close target the real position right away
+   *  without waiting out that cosmetic delay. See resolvePositionId. */
+  optimisticIdMap: Record<string, string>;
 
   setActiveAccount: (a: TradingAccount | null) => void;
   setAccounts: (a: TradingAccount[]) => void;
@@ -139,6 +146,10 @@ interface TradingState {
   removeAccount: (id: string) => void;
   refreshPositions: () => Promise<void>;
   refreshAccount: () => Promise<void>;
+  /** Real id to use for an API call against `id` — itself if already real,
+   *  else the server UUID from optimisticIdMap once known, else `id`
+   *  unchanged (still genuinely unresolved; caller should treat as pending). */
+  resolvePositionId: (id: string) => string;
   placeOrder: (data: {
     account_id: string;
     symbol: string;
@@ -283,6 +294,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   prevPrices: {},
   watchlist: DEFAULT_WATCHLIST,
   instruments: [],
+  optimisticIdMap: {},
   orderFormCloneDraft: null,
   chartExitsDraft: null,
   chartCloseRequest: null,
@@ -348,6 +360,9 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         return Number.isFinite(t) && now - t < FRESH_OPTIM_WINDOW_MS;
       });
       const optimMatched = new Set<string>();
+      // optim id -> real id, for every match found THIS pass — independent
+      // of the freshness window, which only decides the DISPLAYED id.
+      const resolvedThisPass: Record<string, string> = {};
 
       const merged = list.map((p: Record<string, unknown>) => {
         const serverPos = {
@@ -377,6 +392,10 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         );
         if (candidate) {
           optimMatched.add(candidate.id);
+          // The row keeps showing `candidate.id` (no remount), but the real
+          // id is known NOW — record it so SL/TP/close can act immediately
+          // instead of waiting out the freshness window.
+          resolvedThisPass[candidate.id] = serverPos.id;
           return { ...serverPos, id: candidate.id };
         }
         return serverPos;
@@ -394,8 +413,26 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         ? [...orphanedOptimistic, ...merged]
         : merged;
 
-      set({ positions: finalPositions });
+      // Merge the newly-resolved ids into the map, and drop any entry whose
+      // optimistic key no longer appears in the live list at all — either it
+      // graduated to its real id (no longer needed) or the position closed
+      // before ever settling. Unbounded otherwise: a rejected/instantly-
+      // closed optimistic row would never be matched again to trigger its
+      // own removal.
+      const finalIds = new Set(finalPositions.map((p) => p.id));
+      const prevMap = get().optimisticIdMap;
+      const nextMap: Record<string, string> = { ...prevMap, ...resolvedThisPass };
+      for (const optimId of Object.keys(nextMap)) {
+        if (!finalIds.has(optimId)) delete nextMap[optimId];
+      }
+
+      set({ positions: finalPositions, optimisticIdMap: nextMap });
     } catch {}
+  },
+
+  resolvePositionId: (id) => {
+    if (!id.startsWith('optim-')) return id;
+    return get().optimisticIdMap[id] ?? id;
   },
 
   refreshAccount: async () => {

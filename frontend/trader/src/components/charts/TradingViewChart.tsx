@@ -47,6 +47,23 @@ function isRealPositionId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || ''));
 }
 
+// tradingStore.refreshPositions matches a fresh optimistic row to its server
+// twin almost immediately (well under a second, typically), but keeps
+// DISPLAYING it under the fake "optim-…" id for a full 5s afterwards purely
+// to avoid a list-remount flicker — see FRESH_OPTIM_WINDOW_MS there. Gating
+// SL/TP/close readiness on that DISPLAYED id (as isRealPositionId(id) alone
+// does) blocks every chart interaction for that whole 5s even though the
+// real position, and its real id, already exist. resolvePositionId reads the
+// side-channel map the store fills in as soon as the match is found, so
+// readiness checks below track actual server confirmation, not the cosmetic
+// display delay. This must NEVER replace the id handed to setChartExitsDraft
+// / setChartCloseRequest / closePositionFromChart — those need the row's
+// DISPLAYED id, because that is the only id `positions.find` in
+// ChartExitsPanel can look the row up by while it's still "fresh".
+function readyPositionId(id: string): string {
+  return useTradingStore.getState().resolvePositionId(id);
+}
+
 // Stale-price thresholds (ms): how long without a tick before a position
 // line's P&L is treated as stale. Crypto trades 24/7 (short), forex/metals
 // are quiet at weekends (long so we don't spam "stale" when no ticks are
@@ -598,10 +615,11 @@ function TradingViewChartInner({
   }, [chartReady, selectedSymbol]);
 
   const closePositionFromChart = useCallback((positionId: string) => {
-    // The temp `optim-…` id isn't a real position yet — don't POST it (the
-    // backend UUID check would 422). This window is ~1 tick; the real id lands
-    // and the button works.
-    if (!isRealPositionId(positionId)) { toast('Order still finalizing…'); return; }
+    // Readiness is checked against the RESOLVED id (server may have already
+    // confirmed the fill) — `positionId` itself is left untouched below, so
+    // ChartExitsPanel's `positions.find` still locates the row under
+    // whatever id the store currently displays it as.
+    if (!isRealPositionId(readyPositionId(positionId))) { toast('Order still finalizing…'); return; }
     // Review happens in the terminal sidebar (ChartExitsPanel), not a modal.
     const st = useTradingStore.getState();
     st.setChartExitsDraft(null);
@@ -851,7 +869,7 @@ function TradingViewChartInner({
 
     /** Commit a dragged level: onto the entry line = clear it, else set it. */
     const commitLevel = (e: Entry, b: Bracket, price: number) => {
-      if (!isRealPositionId(e.p.id)) { toast('Order still finalizing…'); return; }
+      if (!isRealPositionId(readyPositionId(e.p.id))) { toast('Order still finalizing…'); return; }
       if (Math.abs(price - e.entry) <= eps) {
         const wasSet = b.kind === 'tp' ? Number(e.p.take_profit) > 0 : Number(e.p.stop_loss) > 0;
         dropBracket(b);
@@ -950,7 +968,7 @@ function TradingViewChartInner({
         const delta = Math.abs(ev.clientY - startY);
         if (delta > maxDelta) maxDelta = delta;
         if (!moved && delta < DRAG_THRESHOLD) return;
-        if (!isRealPositionId(e.p.id)) return;
+        if (!isRealPositionId(readyPositionId(e.p.id))) return;
         moved = true;
         b.dragging = true;
         ev.preventDefault();
@@ -1056,7 +1074,7 @@ function TradingViewChartInner({
           e.tp = { kind: 'tp', id: null, price: null, zone: mkZone('rgba(20,184,166,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
           e.sl = { kind: 'sl', id: null, price: null, zone: mkZone('rgba(239,68,68,0.11)'), draftTimer: null, creating: false, lastTarget: undefined, dragging: false };
           const tpTap = () => {
-            if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+            if (!isRealPositionId(readyPositionId(p.id))) { toast('Order still finalizing…'); return; }
             const st = useTradingStore.getState();
             const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
             const existing = d?.takeProfit !== undefined ? d.takeProfit : (Number(e.p.take_profit) > 0 ? Number(e.p.take_profit) : null);
@@ -1064,7 +1082,7 @@ function TradingViewChartInner({
             setDraftLevel(e, e.tp!, defaultLevel(e, 'tp'));
           };
           const slTap = () => {
-            if (!isRealPositionId(p.id)) { toast('Order still finalizing…'); return; }
+            if (!isRealPositionId(readyPositionId(p.id))) { toast('Order still finalizing…'); return; }
             const st = useTradingStore.getState();
             const d = st.chartExitsDraft?.positionId === p.id ? st.chartExitsDraft : null;
             const existing = d?.stopLoss !== undefined ? d.stopLoss : (Number(e.p.stop_loss) > 0 ? Number(e.p.stop_loss) : null);
@@ -1113,7 +1131,11 @@ function TradingViewChartInner({
       const { e, b } = owner;
       const t = String(type);
       if (!b) {
-        if (t === 'click' && isRealPositionId(e.p.id)) closePositionFromChart(e.p.id);
+        // closePositionFromChart owns the readiness check (and its toast) —
+        // duplicating it here with the unresolved id would silently swallow
+        // a click during the optimistic window instead of opening the
+        // review or explaining why not.
+        if (t === 'click') closePositionFromChart(e.p.id);
         return;
       }
       if (t !== 'points_changed' && t !== 'move') return;
@@ -1133,7 +1155,7 @@ function TradingViewChartInner({
       b.draftTimer = window.setTimeout(() => {
         b.draftTimer = null;
         b.dragging = false;
-        if (!isRealPositionId(e.p.id)) { toast('Order still finalizing…'); return; }
+        if (!isRealPositionId(readyPositionId(e.p.id))) { toast('Order still finalizing…'); return; }
         if (Math.abs(px - e.entry) <= eps) {
           // Dropped onto the entry line = remove the level.
           const wasSet = b.kind === 'tp' ? Number(e.p.take_profit) > 0 : Number(e.p.stop_loss) > 0;
