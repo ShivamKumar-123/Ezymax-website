@@ -766,7 +766,7 @@ function AccountCard({
 
       {/* Sub-header � copy-trading accounts show just "Copy Trading"; regular
           accounts show their group + server line. */}
-      <p className={clsx('mt-2 text-xs', t.muted)}>
+      <p className={clsx('mt-1 text-xs', t.muted)}>
         {isManagedAccount ? (
           <span className={clsx('font-medium', t.text)}>Copy Trading</span>
         ) : (

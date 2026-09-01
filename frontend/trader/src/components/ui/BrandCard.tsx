@@ -69,10 +69,10 @@ export default function BrandCard({
   return (
     <div
       id={id}
-      className={clsx('rounded-[24px] p-1.5 pt-3 transition-shadow', dark ? BRAND_SHELL_DARK : BRAND_SHELL_LIGHT, className)}
+      className={clsx('rounded-[24px] p-1.5 pt-2 transition-shadow', dark ? BRAND_SHELL_DARK : BRAND_SHELL_LIGHT, className)}
     >
       {header ? <div className="px-2.5">{header}</div> : null}
-      <div className={clsx('rounded-[18px] p-4', header ? 'mt-2.5' : 'mt-0', dark ? BRAND_TILE_DARK : BRAND_TILE_LIGHT, tileClassName)}>
+      <div className={clsx('rounded-[18px] p-4', header ? 'mt-1.5' : 'mt-0', dark ? BRAND_TILE_DARK : BRAND_TILE_LIGHT, tileClassName)}>
         {children}
       </div>
     </div>
