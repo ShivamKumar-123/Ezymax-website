@@ -222,10 +222,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
         role="dialog"
         aria-modal="true"
         aria-label="Open account"
-        // Inline `background` is belt-and-suspenders: even if the
-        // bg-bg-card utility doesn't apply for any reason, the panel
-        // still renders fully opaque so the navbar can't bleed through.
-        style={{ background: 'var(--bg-card, #FFFFFF)' }}
+        // NOT --bg-card: the warm theme defines that as translucent glass
+        // (4.5% white in dark mode), which let the whole page bleed through
+        // the drawer. --bg-secondary is fully opaque in both warm themes —
+        // the fallback keeps the panel solid even if the token is missing.
+        style={{ background: 'var(--bg-secondary, #111111)' }}
         className={clsx(
           'absolute top-0 right-0 h-full w-full sm:max-w-[640px] border-l border-border-primary shadow-2xl',
           'flex flex-col transform transition-transform duration-[420ms]',
