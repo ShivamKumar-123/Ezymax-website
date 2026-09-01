@@ -83,10 +83,6 @@ const TP_COLOR = '#14b8a6';          // teal  — take-profit line
 const PENDING_BUY_COLOR = '#3b82f6'; // blue   — pending BUY entry line
 const PENDING_SELL_COLOR = '#a855f7';// purple — pending SELL entry line
 
-// Where the on-chart [SL] [TP] [✕] group sits, measured from the chart's RIGHT
-// edge: just left of each line's right-axis label so the buttons read as part
-// of the line's pill instead of hiding behind the left drawing toolbar.
-
 // ── Chart layout persistence ───────────────────────────────────────────────
 // The widget is created with `use_localstorage_for_settings` disabled and
 // nothing ever called widget.save(), so studies (indicators), drawings, the
@@ -195,8 +191,9 @@ function TradingViewChartInner({
   const positions = useTradingStore((s) => s.positions);
   const pendingOrders = useTradingStore((s) => s.pendingOrders);
   const [chartReady, setChartReady] = useState(false);
-  // line key -> { id, price, creating, text, color, textColor, pnl, propAt }.
-  // Keys: <posId> (entry), <posId>-sl, <posId>-tp, ord-<id>, ord-<id>-sl/-tp.
+  // Pending-order line key -> { id, price, creating, text, color }.
+  // Keys: ord-<id> (entry), ord-<id>-sl, ord-<id>-tp. Position lines live in
+  // the native-drag effect below, not here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linesRef = useRef<Map<string, any>>(new Map());
 
@@ -420,20 +417,16 @@ function TradingViewChartInner({
     return pnl;
   }, []);
 
-  // Reconcile chart lines whenever positions / pending orders change. Each open
-  // position gets an ENTRY line whose LINE colour is fixed by side (BUY blue /
-  // SELL red) and whose LABEL shows the LIVE P&L coloured by profit/loss
-  // (blue/red/gray), throttled to 500ms; plus SL (amber) / TP (teal) labelled
-  // with the projected P&L at that level. Each pending order gets its entry
-  // (BUY blue / SELL purple, dashed) + SL/TP.
+  // Reconcile PENDING-ORDER lines whenever pending orders change: each order
+  // gets its entry (BUY blue / SELL purple, dashed) + SL/TP lines. Open
+  // positions are NOT drawn here — they live in the native-drag effect below.
   //
   // Drawn with createShape('horizontal_line') — the CORE Charting Library API
   // (Advanced Charts has no order-line API). Shapes span the FULL chart width
   // and stay pinned to the price scale through zoom / scroll / timeframe
   // changes; they're created once, moved with setPoints when a price (e.g.
-  // SL/TP) changes, and removed when the position/order closes. The lines are
-  // LOCKED — SL/TP is edited via the [SL]/[TP] buttons on the entry line (drag
-  // or click-to-type), never by dragging the line shape itself.
+  // SL/TP) changes, and removed when the order fills or is cancelled. The
+  // lines are LOCKED — pending orders are edited from the Orders panel.
   useEffect(() => {
     const w = widgetRef.current;
     if (!chartReady || !w) return;
@@ -450,31 +443,25 @@ function TradingViewChartInner({
     const digits = inst?.digits ?? 2;
     const fp = (n: number) => Number(n).toFixed(digits);
 
-    // `color` is the LINE colour, `textColor` the LABEL colour. For position
-    // entry lines they differ: the line is fixed by side (BUY blue / SELL red)
-    // while the label tracks P&L (profit blue / loss red / gray). SL/TP/pending
-    // omit textColor → it falls back to the line colour.
-    type Desired = { key: string; price: number; color: string; textColor?: string; text: string; dashed: boolean; pnl?: number };
+    type Desired = { key: string; price: number; color: string; text: string };
     const desired: Desired[] = [];
-
-    // ── Pending orders (limit/stop): entry + SL + TP. ──
     for (const o of myPending) {
       const pColor = o.side === 'buy' ? PENDING_BUY_COLOR : PENDING_SELL_COLOR;
       desired.push({ key: `ord-${o.id}`, price: Number(o.price), color: pColor,
-        text: `${String(o.order_type || '').toUpperCase()} ${o.side.toUpperCase()} ${fp(Number(o.price))}`, dashed: true });
+        text: `${String(o.order_type || '').toUpperCase()} ${o.side.toUpperCase()} ${fp(Number(o.price))}` });
       if (o.stop_loss != null && Number(o.stop_loss) > 0)
-        desired.push({ key: `ord-${o.id}-sl`, price: Number(o.stop_loss), color: SL_COLOR, text: `SL ${fp(Number(o.stop_loss))}`, dashed: true });
+        desired.push({ key: `ord-${o.id}-sl`, price: Number(o.stop_loss), color: SL_COLOR, text: `SL ${fp(Number(o.stop_loss))}` });
       if (o.take_profit != null && Number(o.take_profit) > 0)
-        desired.push({ key: `ord-${o.id}-tp`, price: Number(o.take_profit), color: TP_COLOR, text: `TP ${fp(Number(o.take_profit))}`, dashed: true });
+        desired.push({ key: `ord-${o.id}-tp`, price: Number(o.take_profit), color: TP_COLOR, text: `TP ${fp(Number(o.take_profit))}` });
     }
 
-    const shapeOpts = (text: string, lineColor: string, textColor: string, dashed: boolean) => ({
+    const shapeOpts = (text: string, color: string) => ({
       shape: 'horizontal_line',
       text,
       lock: true, disableSelection: true, disableSave: true, disableUndo: true,
       overrides: {
-        linecolor: lineColor, linestyle: dashed ? 2 : 0, linewidth: dashed ? 1 : 2,
-        showLabel: true, textcolor: textColor, fontsize: 11, bold: true,
+        linecolor: color, linestyle: 2, linewidth: 1,
+        showLabel: true, textcolor: color, fontsize: 11, bold: true,
         horzLabelsAlign: 'right', vertLabelsAlign: 'middle', showPrice: true,
       },
     });
@@ -488,10 +475,6 @@ function TradingViewChartInner({
       const vr = chart.getVisibleRange?.();
       if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from);
     } catch { /* keep now */ }
-    const now = Date.now();
-    // Throttle the live-P&L label refresh: 500ms normally, 1000ms once 10+
-    // positions are open, so streaming ticks never thrash the chart.
-    const throttleMs = desired.length >= 10 ? 1000 : 500;
     const wanted = new Set(desired.map((d) => d.key));
 
     for (const d of desired) {
@@ -500,9 +483,9 @@ function TradingViewChartInner({
         // createShape is ASYNC (Promise<EntityId>). Reserve the key with a
         // 'creating' entry so a re-render mid-create doesn't spawn a duplicate.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry: any = { id: null, price: d.price, creating: true, text: d.text, color: d.color, textColor: d.textColor ?? d.color, pnl: d.pnl ?? null, propAt: now };
+        const entry: any = { id: null, price: d.price, creating: true, text: d.text, color: d.color };
         linesRef.current.set(d.key, entry);
-        Promise.resolve(chart.createShape({ time: anchorTime, price: d.price }, shapeOpts(d.text, d.color, d.textColor ?? d.color, d.dashed)))
+        Promise.resolve(chart.createShape({ time: anchorTime, price: d.price }, shapeOpts(d.text, d.color)))
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .then((id: any) => {
             if (linesRef.current.get(d.key) === entry) { entry.id = id; entry.creating = false; }
@@ -510,49 +493,29 @@ function TradingViewChartInner({
           })
           .catch(() => { if (linesRef.current.get(d.key) === entry) linesRef.current.delete(d.key); });
       } else if (existing.id != null) {
-        // Price moved (SL/TP edited) → slide the existing line, no recreate.
+        // Price moved (order modified) → slide the existing line, no recreate.
         if (existing.price !== d.price) {
           try { chart.getShapeById(existing.id)?.setPoints([{ time: anchorTime, price: d.price }]); } catch { /* ignore */ }
           existing.price = d.price;
         }
-        // Live label + colour refresh. For P&L lines (entry): throttle AND
-        // only when P&L moved > $0.01 or the profit/loss colour flipped — so we
-        // don't setProperties on every micro-tick. SL/TP/order labels are
-        // static, so they update immediately when they actually change.
-        const nextTextColor = d.textColor ?? d.color;
-        if (d.text !== existing.text || d.color !== existing.color || nextTextColor !== existing.textColor) {
-          const isPnl = d.pnl != null;
-          const throttleOk = !isPnl || (now - (existing.propAt || 0) >= throttleMs);
-          // For entry lines the LINE colour is fixed by side, so the P&L flip
-          // shows up in the LABEL colour — trigger on that too.
-          const worthIt = !isPnl
-            || d.color !== existing.color
-            || nextTextColor !== existing.textColor
-            || Math.abs((d.pnl as number) - (existing.pnl ?? 0)) > 0.01;
-          if (throttleOk && worthIt) {
-            try {
-              chart.getShapeById(existing.id)?.setProperties({
-                text: d.text, linecolor: d.color, textcolor: nextTextColor,
-              });
-            } catch { /* keep last-known label on error */ }
-            existing.text = d.text;
-            existing.color = d.color;
-            existing.textColor = nextTextColor;
-            existing.pnl = d.pnl ?? existing.pnl;
-            existing.propAt = now;
-          }
+        if (d.text !== existing.text || d.color !== existing.color) {
+          try {
+            chart.getShapeById(existing.id)?.setProperties({ text: d.text, linecolor: d.color, textcolor: d.color });
+          } catch { /* keep last-known label on error */ }
+          existing.text = d.text;
+          existing.color = d.color;
         }
       }
     }
 
-    // Remove lines whose position / order / SL / TP is gone (or symbol changed).
+    // Remove lines whose order / SL / TP is gone (or symbol changed).
     for (const [key, entry] of linesRef.current) {
       if (!wanted.has(key)) {
         if (entry && entry.id != null) { try { chart.removeEntity(entry.id); } catch { /* ignore */ } }
         linesRef.current.delete(key);
       }
     }
-  }, [positions, pendingOrders, selectedSymbol, chartReady, computePnlAt]);
+  }, [pendingOrders, selectedSymbol, chartReady]);
 
   // Stale-price watchdog. The reconcile above only runs when `positions`
   // changes — i.e. on a tick — so if the feed stalls it simply STOPS and the
@@ -594,21 +557,9 @@ function TradingViewChartInner({
       if (isStale === stale) return;          // only act on a transition
       stale = isStale;
       if (!isStale) return;                    // recovery handled by the reconcile
-      const now = Date.now();
-      // Position ENTRY lines (carry live P&L; entry.pnl != null). SL/TP and
-      // pending-order labels are static, so leave them untouched.
+      // Position ENTRY lines carry the live P&L; SL/TP and pending-order
+      // labels are static, so leave them untouched.
       for (const e of nativeRef.current) e.setStale();
-      for (const [, entry] of linesRef.current) {
-        if (!entry || entry.id == null || entry.pnl == null) continue;
-        try {
-          chart.getShapeById(entry.id)?.setProperties({
-            linecolor: STALE_COLOR, textcolor: STALE_COLOR,
-          });
-        } catch { /* ignore */ }
-        entry.color = STALE_COLOR;
-        entry.textColor = STALE_COLOR;
-        entry.propAt = now; // so the reconcile's throttle lets recovery through
-      }
     }, 1000);
 
     return () => { clearInterval(intervalId); try { unsub(); } catch { /* ignore */ } };
@@ -955,6 +906,15 @@ function TradingViewChartInner({
         if (!pressed) return;
         const price = priceAtPointer();
         if (price == null) return;
+        // Re-anchor on the pair just computed, so the NEXT delta is measured
+        // from here with whatever scale is live then. With a single fixed
+        // press-time anchor, an auto-scale rescale mid-drag (every tick can
+        // rescale the pane on a moving market) remapped the WHOLE travelled
+        // distance with the new scale — the line jumped away from the
+        // pointer the instant the range changed. Per-frame deltas are a
+        // pixel or two, so a rescale between frames is imperceptible.
+        anchorY = lastClientY;
+        anchorPrice = price;
         // RAW price — deliberately NOT rounded to `digits` here. Snapping the
         // visual position to the tick grid mid-drag is what made the line
         // feel sticky: it only stepped once the cursor had travelled a whole
@@ -994,17 +954,24 @@ function TradingViewChartInner({
         handled = true;
         window.setTimeout(() => { handled = false; }, 400);
         if (!wasDrag) {
-          // A real drag that could not be mapped to a price must NOT fall
+          // Real vertical travel that never became a drag must NOT fall
           // through to the tap: that plants a level at the default distance,
           // nowhere near the pointer, which reads as the drag misfiring.
-          // Doing nothing is the honest outcome — the user retries.
-          if (maxDelta >= DRAG_THRESHOLD) return;
+          // The only way to get here with travel ≥ threshold is the
+          // readiness gate in onMove — so say that, instead of a silent
+          // dead gesture the user retries three times before giving up on.
+          if (maxDelta >= DRAG_THRESHOLD) {
+            if (!isRealPositionId(readyPositionId(e.p.id))) toast('Order still finalizing…');
+            return;
+          }
           onTap();
           return;
         }
         ev.preventDefault();
-        // Land on the pointer's final position rather than whatever the last
-        // rendered frame happened to be, then snap to the tick grid ONCE.
+        // Land on the pointer's RELEASE position rather than the last move
+        // sample the rAF loop happened to render, then snap to the tick grid
+        // ONCE.
+        lastClientY = ev.clientY;
         const raw = priceAtPointer() ?? b.price;
         if (raw == null) return;
         const settled = Number(raw.toFixed(digits));
@@ -1013,8 +980,19 @@ function TradingViewChartInner({
       }
 
       function onCancel() {
+        const wasDrag = moved;
         pressed = false; moved = false; b.dragging = false;
         detach();
+        // A cancelled gesture (OS gesture / tab switch mid-drag) must not
+        // leave the preview line at a level that was never drafted — the
+        // store sync skips it (lastTarget unchanged), so it would sit there
+        // looking committed while nothing saves. Snap back to the last
+        // committed target, or remove a preview that never had one.
+        if (!wasDrag) return;
+        const back = b.lastTarget ?? null;
+        if (back != null) void ensureBracket(e, b, back);
+        else if (b.id || b.price != null) dropBracket(b);
+        refreshChips(e);
       }
 
       btn.onpointerdown = (ev) => {

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import api from '@/lib/api/client';
 
 export interface TickData {
@@ -135,8 +134,7 @@ interface TradingState {
   setPositions: (p: Position[]) => void;
   setPendingOrders: (o: PendingOrder[]) => void;
   setSelectedSymbol: (s: string) => void;
-  updatePrice: (t: TickData) => void;
-  /** Batch variant: ONE store commit (one render pass) per WS payload. */
+  /** Fold a whole WS payload into ONE store commit (one render pass). */
   updatePrices: (ticks: TickData[]) => void;
   addToWatchlist: (s: string) => void;
   removeFromWatchlist: (s: string) => void;
@@ -193,7 +191,7 @@ function getPersistedSymbol(): string {
 }
 
 // ── Tick application (pure) ─────────────────────────────────────────────────
-// Shared by updatePrice (single tick) and updatePrices (batched payload).
+// Called by updatePrices once per tick of a batched payload.
 // Returns the changed slices, or null when the tick is a no-op (bad symbol /
 // stale by server timestamp). Perf contract: the returned `positions` is the
 // SAME array reference unless a position actually trades this symbol, so
@@ -461,8 +459,6 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       }
     } catch {}
   },
-
-  updatePrice: (tick) => set((state) => applyTick(state, tick) ?? state),
 
   updatePrices: (ticks) => set((state) => {
     // Fold every tick of the payload into ONE partial-state commit — the old
