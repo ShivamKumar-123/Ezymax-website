@@ -91,7 +91,7 @@ input, select, textarea {
   color: rgb(var(--c-text-primary) / 1);
   border-radius: 8px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   outline: none;
   transition: border-color 200ms ease, box-shadow 200ms ease;

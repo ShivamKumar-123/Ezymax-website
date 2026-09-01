@@ -733,7 +733,7 @@ html {
     color: var(--text-primary);
     border-radius: 8px;
     padding: 10px 14px;
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
     outline: none;
     box-shadow: var(--input-shadow);
