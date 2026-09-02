@@ -51,12 +51,11 @@ class BarAggregator:
 
         for tf_name, tf_seconds in TIMEFRAMES.items():
             bar_start = (epoch // tf_seconds) * tf_seconds
-            key = f"{symbol}:{tf_name}"
 
             current_start = self._bar_timestamps.get(symbol, {}).get(tf_name)
 
             if current_start != bar_start:
-                if current_start is not None and key in self._bars.get(symbol, {}):
+                if current_start is not None and tf_name in self._bars.get(symbol, {}):
                     old_bar = self._bars[symbol].pop(tf_name, None)
                     if old_bar:
                         asyncio.create_task(self._store_bar(symbol, tf_name, old_bar, current_start))
