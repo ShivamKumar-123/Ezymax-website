@@ -374,19 +374,42 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
 
     try:
+        import json as _json
         ping_interval = 30
+        # Coalesce per symbol and flush every 50 ms. The old loop read ONE
+        # message then slept 10 ms — capping forwarding at ~100 msg/s across ALL
+        # symbols, so a fast feed (Binance ~470/s on the shared channel) starved
+        # slow ones (gold ~1.5/s) and prices lagged. Now we drain the whole
+        # backlog each wake keeping only the LATEST price per symbol, then push
+        # it out at 20 fps: gold arrives within 50 ms (feels instant, like a real
+        # broker) while a firehose feed is capped to one frame per symbol per
+        # flush — no starvation, bounded bandwidth regardless of feed rate.
+        flush_interval = 0.05
         last_ping = asyncio.get_event_loop().time()
+        last_flush = last_ping
+        latest: dict[str, str] = {}
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=flush_interval
+            )
             if message and message["type"] == "message":
-                await websocket.send_text(message["data"])
+                data = message["data"]
+                try:
+                    sym = str(_json.loads(data).get("symbol") or "")
+                except Exception:
+                    sym = ""
+                latest[sym] = data
 
             now = asyncio.get_event_loop().time()
+            if latest and now - last_flush >= flush_interval:
+                for d in latest.values():
+                    await websocket.send_text(d)
+                latest.clear()
+                last_flush = now
+
             if now - last_ping >= ping_interval:
                 await websocket.send_json({"type": "ping"})
                 last_ping = now
-
-            await asyncio.sleep(0.01)
     except WebSocketDisconnect:
         pass
     finally:
