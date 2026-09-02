@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import { ChevronDown, Search, Star, Newspaper, BarChart3 } from 'lucide-react';
 import { useTradingStore, type InstrumentInfo } from '@/stores/tradingStore';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { tradingTerminalUrl } from '@/lib/tradingNav';
 import SymbolIcon from './SymbolIcon';
 
@@ -380,7 +381,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                         : 'text-[#ccff00]',
                   )}
                 >
-                  {tick ? tick.bid.toFixed(digits) : '—'}
+                  {tick ? <AnimatedPrice value={tick.bid} digits={digits} flash={false} /> : '—'}
                 </div>
 
                 {/* Ask */}
@@ -394,7 +395,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                         : 'text-[#ccff00]',
                   )}
                 >
-                  {tick ? tick.ask.toFixed(digits) : '—'}
+                  {tick ? <AnimatedPrice value={tick.ask} digits={digits} flash={false} /> : '—'}
                 </div>
 
                 {/* Spread */}

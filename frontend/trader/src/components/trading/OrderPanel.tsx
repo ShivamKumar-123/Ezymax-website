@@ -12,6 +12,7 @@ import { sounds, unlockAudio } from '@/lib/sounds';
 import { getDigits } from '@/lib/utils';
 import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
 import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
 import { insuranceApi, type InsuranceDuration, type InsuranceTier } from '@/lib/api/insurance';
@@ -527,7 +528,7 @@ export default function OrderPanel() {
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Sell</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'sell' && 'text-red-400')}>{tick ? tick.bid.toFixed(digits) : '---'}</div>
+                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'sell' && 'text-red-400')}>{tick ? <AnimatedPrice value={tick.bid} digits={digits} /> : '---'}</div>
                 <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Bid</div>
              </button>
              <button
@@ -541,7 +542,7 @@ export default function OrderPanel() {
                 }}
              >
                 <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Buy</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2962FF]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
+                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2962FF]')}>{tick ? <AnimatedPrice value={tick.ask} digits={digits} /> : '---'}</div>
                 <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
              </button>
           </div>

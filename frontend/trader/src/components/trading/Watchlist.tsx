@@ -6,6 +6,7 @@ import { useTradingStore, InstrumentInfo } from '@/stores/tradingStore';
 import { tradingTerminalUrl } from '@/lib/tradingNav';
 import { clsx } from 'clsx';
 import MobileOrderSheet from '@/components/trading/MobileOrderSheet';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import { useUIStore } from '@/stores/uiStore';
 import { BellOff, ChevronUp, Star, TrendingUp } from 'lucide-react';
@@ -467,7 +468,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                               <div className="flex flex-col items-end gap-0.5">
                                 {tick ? (
                                   <span className="text-xs font-mono font-semibold tabular-nums text-[#ef5350]">
-                                    {tick.bid.toFixed(digits)}
+                                    <AnimatedPrice value={tick.bid} digits={digits} />
                                   </span>
                                 ) : (
                                   <span className="text-xs text-text-tertiary">—</span>
@@ -479,7 +480,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                               <div className="flex flex-col items-end gap-0.5">
                                 {tick ? (
                                   <span className="text-xs font-mono font-semibold tabular-nums text-[#ccff00]">
-                                    {tick.ask.toFixed(digits)}
+                                    <AnimatedPrice value={tick.ask} digits={digits} />
                                   </span>
                                 ) : (
                                   <span className="text-xs text-text-tertiary">—</span>
@@ -669,7 +670,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                         className="shrink-0 text-right"
                       >
                         <span className="block text-sm font-mono font-bold tabular-nums text-text-primary">
-                          {tick.bid.toFixed(digits)}
+                          <AnimatedPrice value={tick.bid} digits={digits} />
                         </span>
                         <span className={clsx('block text-[10px] font-bold tabular-nums', isUp ? 'text-buy' : 'text-sell')}>
                           {isUp ? '▲' : '▼'} {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip

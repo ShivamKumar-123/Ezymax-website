@@ -10,6 +10,7 @@ import { sounds, unlockAudio } from '@/lib/sounds';
 import { getDigits } from '@/lib/utils';
 import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager, type ConnectionStatus } from '@/lib/ws/wsManager';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 
 interface AccountTradePanelProps {
@@ -351,7 +352,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 }}
               >
                 <div className="text-xs font-bold">Sell</div>
-                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5">{tick.bid.toFixed(digits)}</div>}
+                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.bid} digits={digits} /></div>}
               </button>
               <button
                 type="button"
@@ -363,7 +364,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 }}
               >
                 <div className="text-xs font-bold">Buy</div>
-                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5">{tick.ask.toFixed(digits)}</div>}
+                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.ask} digits={digits} /></div>}
               </button>
             </div>
 
@@ -371,7 +372,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
             {tick && (
               <div className="flex items-center justify-between px-1">
                 <div className="text-center">
-                  <div className="text-xs font-mono font-semibold text-red-400">{tick.bid.toFixed(digits)}</div>
+                  <div className="text-xs font-mono font-semibold text-red-400"><AnimatedPrice value={tick.bid} digits={digits} /></div>
                   <div className="text-[9px] text-text-tertiary">Bid</div>
                 </div>
                 <div className="text-center">
@@ -381,7 +382,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   <div className="text-[9px] text-text-tertiary">Spread</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs font-mono font-semibold text-[#ccff00]">{tick.ask.toFixed(digits)}</div>
+                  <div className="text-xs font-mono font-semibold text-[#ccff00]"><AnimatedPrice value={tick.ask} digits={digits} /></div>
                   <div className="text-[9px] text-text-tertiary">Ask</div>
                 </div>
               </div>

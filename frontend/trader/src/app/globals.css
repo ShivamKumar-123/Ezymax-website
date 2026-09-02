@@ -1026,3 +1026,21 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 .theme-light .text-green-500 {
   color: #15803d !important;
 }
+
+/* ── Live price flash (AnimatedPrice) ─────────────────────────────────────
+   Display-only: a green/red background tint that fades on every real tick, so
+   the price reads as "live" like a pro terminal. Uses background (not color)
+   so it never fights a selected side's text colour. */
+@keyframes priceFlashUp {
+  0%   { background-color: rgba(22, 163, 74, 0.30); }
+  100% { background-color: transparent; }
+}
+@keyframes priceFlashDown {
+  0%   { background-color: rgba(220, 38, 38, 0.30); }
+  100% { background-color: transparent; }
+}
+.price-flash-up   { animation: priceFlashUp 0.45s ease-out; border-radius: 3px; }
+.price-flash-down { animation: priceFlashDown 0.45s ease-out; border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .price-flash-up, .price-flash-down { animation: none; }
+}
