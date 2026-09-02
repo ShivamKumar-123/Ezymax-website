@@ -11,7 +11,7 @@ import {
   LayoutGrid,
   Wallet,
   ArrowLeftRight,
-  History,
+  PieChart,
   TrendingUp,
   Copy,
   Users,
@@ -42,7 +42,7 @@ export const SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: Home },
       { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
-      { label: 'Portfolio', href: '/portfolio', icon: Receipt },
+      { label: 'Portfolio', href: '/portfolio', icon: PieChart },
     ],
   },
   {
@@ -50,7 +50,7 @@ export const SECTIONS: NavSection[] = [
     items: [
       { label: 'Deposit/Withdraw', href: '/wallet', icon: Wallet },
       { label: 'Internal Transfer', href: '/transfer', icon: ArrowLeftRight },
-      { label: 'Transactions', href: '/transactions', icon: History },
+      { label: 'Transactions', href: '/transactions', icon: Receipt },
     ],
   },
   {
