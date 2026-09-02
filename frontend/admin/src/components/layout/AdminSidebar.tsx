@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
     perm: 'kyc.view',
   },
   { label: 'Trades', href: '/trades', icon: CandlestickChart, perm: 'trades.view' },
-  { label: 'Book Management', href: '/book', icon: BookOpen, perm: 'trades.view' },
+  { label: 'Book Management', href: '/book', icon: BookOpen, perm: '_platform:trades.view' },
   { label: 'Deposits', href: '/deposits', icon: Wallet, perm: 'deposits.view' },
   { label: 'Transactions', href: '/transactions', icon: Receipt, perm: 'deposits.view' },
   { label: 'Banks', href: '/banks', icon: Landmark, perm: 'banks.view' },
@@ -85,6 +85,7 @@ export default function AdminSidebar({
   const [employeeRole, setEmployeeRole] = useState<string>('super_admin');
   // White-label broker logins show THEIR brand in the sidebar header.
   const [brandName, setBrandName] = useState<string>('');
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
 
   // Track viewport so the desktop "collapse" state never hides labels in the
   // mobile drawer (the drawer is always full-width on phones).
@@ -108,14 +109,24 @@ export default function AdminSidebar({
   useEffect(() => {
     (async () => {
       try {
-        const me = await adminApi.get<{ permissions: string[]; employee_role: string; brand_name?: string | null; role?: string }>('/auth/me');
+        const me = await adminApi.get<{ permissions: string[]; employee_role: string; brand_name?: string | null; logo_url?: string | null; role?: string }>('/auth/me');
         setPermissions(me.permissions || []);
         setEmployeeRole(me.employee_role || '');
         if (me.role === 'broker') {
           const bn = (me.brand_name || '').trim() || 'Broker Panel';
           setBrandName(bn);
+          setBrandLogo(me.logo_url || null);
           // Tab identity follows the tenant everywhere in the panel.
           document.title = `${bn} Admin`;
+          if (me.logo_url) {
+            const icon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+            if (icon) icon.href = me.logo_url;
+            const link = document.createElement('link');
+            link.rel = 'icon';
+            link.href = me.logo_url;
+            link.setAttribute('data-wl-icon', '1');
+            document.head.appendChild(link);
+          }
         }
       } catch {}
     })();
@@ -126,6 +137,13 @@ export default function AdminSidebar({
     // '_broker' marks broker-only surfaces (own Branding page) — checked
     // before the '*' wildcard so a super admin doesn't see them.
     if (perm === '_broker') return employeeRole === 'broker';
+    // '_platform:<perm>' — platform-only surfaces brokers never see,
+    // even when they hold the underlying permission (Book Management).
+    if (perm.startsWith('_platform:')) {
+      if (employeeRole === 'broker') return false;
+      const base = perm.slice('_platform:'.length);
+      return permissions.includes('*') || permissions.includes(base);
+    }
     if (permissions.includes('*')) return true;
     if (perm === '_super_admin') return employeeRole === 'super_admin';
     return permissions.includes(perm);
@@ -155,9 +173,17 @@ export default function AdminSidebar({
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {brandName ? (
           showLabels ? (
-            <Link href="/" className="flex items-center min-w-0">
-              <span className="font-bold tracking-tight text-base text-text-primary truncate">{brandName}</span>
+            <Link href="/" className="flex items-center min-w-0 gap-2">
+              {brandLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brandLogo} alt={brandName} className="h-7 w-auto max-w-[150px] object-contain shrink-0" />
+              ) : (
+                <span className="font-bold tracking-tight text-base text-text-primary truncate">{brandName}</span>
+              )}
             </Link>
+          ) : brandLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={brandLogo} alt={brandName} className="w-7 h-7 object-contain rounded-md mx-auto" />
           ) : (
             <span className="font-bold text-base text-text-primary mx-auto select-none">
               {brandName.slice(0, 2).toUpperCase()}

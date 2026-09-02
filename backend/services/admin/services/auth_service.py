@@ -258,6 +258,7 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
             "permissions": sorted(broker_perms),
             "broker_permission_levels": levels,
             "brand_name": profile.brand_name if profile else None,
+            "logo_url": profile.logo_url if profile else None,
             "partner_code": profile.partner_code if profile else None,
         }
     else:

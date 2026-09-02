@@ -218,6 +218,23 @@ def require_permission(permission: str):
 
 # ── White-label pool scoping ──────────────────────────────────────────
 
+def require_platform_permission(permission: str):
+    """Like require_permission, but NEVER satisfied by a broker account —
+    for platform-wide surfaces (A/B book management, LP settings) that
+    share permission strings with tenant-scoped pages but must stay the
+    platform's alone."""
+    inner = require_permission(permission)
+
+    async def _check(admin: User = Depends(inner)) -> User:
+        if admin.role == "broker":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This section is platform-only",
+            )
+        return admin
+    return _check
+
+
 async def broker_scope_ids(
     admin: User, db: AsyncSession
 ) -> list[uuid.UUID] | None:

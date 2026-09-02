@@ -29,7 +29,7 @@ const PATH_PERMS: [prefix: string, perm: string][] = [
   ['/banks', 'banks.view'],
   ['/bonus', 'bonus.view'],
   ['/users', 'users.view'],
-  ['/book', 'trades.view'],
+  ['/book', '_platform:trades.view'],
   ['/kyc', 'kyc.view'],
 ];
 
@@ -48,6 +48,11 @@ export function hasPerm(
 ): boolean {
   if (!perm) return true;
   if (perm === '_broker') return employeeRole === 'broker';
+  if (perm.startsWith('_platform:')) {
+    if (employeeRole === 'broker') return false;
+    const base = perm.slice('_platform:'.length);
+    return permissions.includes('*') || base === '' || permissions.includes(base);
+  }
   if (permissions.includes('*')) return true;
   if (perm === '_super_admin') return employeeRole === 'super_admin';
   return permissions.includes(perm);
