@@ -1181,8 +1181,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                 </span>
                               )}
                             </div>
-                            <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
-                              {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                            <span
+                              className="font-mono text-sm font-bold tabular-nums"
+                              style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
+                              title={`Floating (gross) ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} · commission -$${charges.toFixed(2)} · net if closed now ${net >= 0 ? '+' : ''}$${net.toFixed(2)}`}
+                            >
+                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
                             </span>
                           </div>
                           <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
@@ -1299,8 +1303,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-mono')}>
                               {pos.current_price != null ? <AnimatedPrice value={pos.current_price} digits={d} /> : '—'}
                             </td>
-                            <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
-                              {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                            <td
+                              className={clsx(td, 'font-mono font-bold tabular-nums')}
+                              style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
+                              title={`Floating (gross) ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} · commission -$${charges.toFixed(2)} · net if closed now ${net >= 0 ? '+' : ''}$${net.toFixed(2)}`}
+                            >
+                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
                             </td>
                             <td className={clsx(td, 'text-[10px]')}>
                               {sltpEdit && sltpEdit.positionId === pos.id ? (
