@@ -10,6 +10,7 @@ import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
 import { getDigits } from '@/lib/utils';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { createDatafeed } from '@/lib/charting/datafeed';
 
 // On-chart line + overlay colours.
@@ -729,9 +730,9 @@ function AdvancedChartInner() {
         aria-label="Broker quote — actual execution price"
       >
         <span className="text-text-tertiary uppercase tracking-wider">Broker</span>
-        <span className="text-sell font-mono tabular-nums">Bid {fmt(tick?.bid)}</span>
+        <span className="text-sell font-mono tabular-nums">Bid {tick?.bid != null ? <AnimatedPrice value={tick.bid} digits={digits} flash={false} /> : fmt(tick?.bid)}</span>
         <span className="text-text-tertiary">·</span>
-        <span className="text-buy font-mono tabular-nums">Ask {fmt(tick?.ask)}</span>
+        <span className="text-buy font-mono tabular-nums">Ask {tick?.ask != null ? <AnimatedPrice value={tick.ask} digits={digits} flash={false} /> : fmt(tick?.ask)}</span>
       </div>
 
       {/* Confirm / input modal for the on-chart SL / TP / close buttons. */}

@@ -26,6 +26,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import ShareTradeModal from '@/components/trading/ShareTradeModal';
 import MarginRing from '@/components/trading/MarginRing';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -254,7 +255,7 @@ function TerminalPositionStaticCard({
         <div className="min-w-0 flex-1 text-right">
           <div className="text-[8px] font-bold uppercase tracking-wide text-text-tertiary">Current price</div>
           <div className="text-[11px] font-mono font-semibold tabular-nums inline-flex items-center justify-end gap-0.5 text-text-primary leading-tight">
-            {cur != null ? cur.toFixed(digits) : '—'}
+            {cur != null ? <AnimatedPrice value={cur} digits={digits} flash={false} /> : '—'}
             {cur != null &&
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
@@ -1287,7 +1288,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={td}>{pos.lots}</td>
                             <td className={clsx(td, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
                             <td className={clsx(td, 'font-mono')}>
-                              {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
+                              {pos.current_price != null ? <AnimatedPrice value={pos.current_price} digits={d} /> : '—'}
                             </td>
                             <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
