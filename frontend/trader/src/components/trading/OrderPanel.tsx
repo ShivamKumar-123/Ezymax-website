@@ -542,7 +542,7 @@ export default function OrderPanel({
               )}
             >
               <span className="text-[11px] font-medium opacity-90 leading-none">Sell</span>
-              <AnimatedPrice value={tick?.bid} digits={digits} flash={false} placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
+              <AnimatedPrice value={tick?.bid} digits={digits} flash={false} lockWidth placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
             </button>
             <span className="flex items-center justify-center px-1 text-[13px] font-medium tabular-nums text-text-secondary">{tick ? spreadPts : '—'}</span>
             <button
@@ -555,7 +555,7 @@ export default function OrderPanel({
               )}
             >
               <span className="text-[11px] font-medium opacity-90 leading-none">Buy</span>
-              <AnimatedPrice value={tick?.ask} digits={digits} flash={false} placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
+              <AnimatedPrice value={tick?.ask} digits={digits} flash={false} lockWidth placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
             </button>
           </div>
 

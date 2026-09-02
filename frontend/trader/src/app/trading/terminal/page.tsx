@@ -702,7 +702,7 @@ export default function TradingTerminalPage() {
                      className="flex-1 h-full bg-sell rounded-xl flex flex-col items-center justify-center shadow-lg shadow-sell/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Sell</span>
-                     <AnimatedPrice value={price?.bid} digits={digits} flash={false} placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
+                     <AnimatedPrice value={price?.bid} digits={digits} flash={false} lockWidth placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
                    </button>
 
                    {/* Lot size controls — center */}
@@ -747,7 +747,7 @@ export default function TradingTerminalPage() {
                      className="flex-1 h-full bg-buy rounded-xl flex flex-col items-center justify-center shadow-lg shadow-buy/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Buy</span>
-                     <AnimatedPrice value={price?.ask} digits={digits} flash={false} placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
+                     <AnimatedPrice value={price?.ask} digits={digits} flash={false} lockWidth placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
                    </button>
                 </div>
               </div>

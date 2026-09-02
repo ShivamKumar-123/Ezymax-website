@@ -38,6 +38,11 @@ interface AnimatedPriceProps {
   flash?: boolean;
   /** Rendered when value is null/undefined/NaN. */
   placeholder?: string;
+  /** Lock the span to its widest-seen width (ch units) so the parent
+   *  box NEVER resizes while digits roll — for coloured Buy/Sell
+   *  buttons where any breathing is visible. Resets when the digit
+   *  count changes materially (symbol switch). */
+  lockWidth?: boolean;
 }
 
 const GLIDE_MS = 150;
@@ -49,6 +54,7 @@ export default function AnimatedPrice({
   glide = true,
   flash = true,
   placeholder = '—',
+  lockWidth = false,
 }: AnimatedPriceProps) {
   const spanRef = useRef<HTMLSpanElement>(null);
   // Currently painted value (animation state — display only).
@@ -61,13 +67,29 @@ export default function AnimatedPrice({
   // Previous REAL value, for flash direction.
   const prevRealRef = useRef<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Width-lock ratchet (lockWidth mode): widest text length seen so far.
+  const maxLenRef = useRef(0);
 
   useEffect(() => {
     const el = spanRef.current;
     if (!el) return;
 
     const paint = (v: number) => {
-      el.textContent = v.toFixed(digits);
+      const text = v.toFixed(digits);
+      if (lockWidth) {
+        // A jump of 2+ characters means a different symbol/scale —
+        // reset the ratchet instead of keeping a stale wide box.
+        if (maxLenRef.current && Math.abs(text.length - maxLenRef.current) >= 2) {
+          maxLenRef.current = 0;
+        }
+        if (text.length > maxLenRef.current) {
+          maxLenRef.current = text.length;
+          el.style.display = 'inline-block';
+          el.style.minWidth = `${text.length}ch`;
+          el.style.textAlign = 'center';
+        }
+      }
+      el.textContent = text;
     };
 
     if (value == null || !Number.isFinite(value)) {

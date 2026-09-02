@@ -64,7 +64,7 @@ export function ChartTradeWidget() {
         className="flex flex-col items-center justify-center rounded-md bg-rose-500 hover:bg-rose-400 px-3 py-1 text-white shadow-lg disabled:opacity-60 transition-colors"
         title="Sell at market"
       >
-        <AnimatedPrice value={bid} digits={digits} flash={false} className="text-sm font-extrabold leading-none tabular-nums" />
+        <AnimatedPrice value={bid} digits={digits} flash={false} lockWidth className="text-sm font-extrabold leading-none tabular-nums" />
         <span className="text-[10px] font-bold tracking-wider">SELL</span>
       </button>
 
@@ -88,7 +88,7 @@ export function ChartTradeWidget() {
         className="flex flex-col items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 px-3 py-1 text-white shadow-lg disabled:opacity-60 transition-colors"
         title="Buy at market"
       >
-        <AnimatedPrice value={ask} digits={digits} flash={false} className="text-sm font-extrabold leading-none tabular-nums" />
+        <AnimatedPrice value={ask} digits={digits} flash={false} lockWidth className="text-sm font-extrabold leading-none tabular-nums" />
         <span className="text-[10px] font-bold tracking-wider">BUY</span>
       </button>
     </div>

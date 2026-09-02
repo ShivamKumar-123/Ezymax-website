@@ -186,11 +186,11 @@ export default function MobileOrderSheet({ symbol, onClose, onGoToChart }: Mobil
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-sell rounded-xl p-3 flex flex-col items-center justify-center shadow-lg shadow-sell/20">
               <span className="text-[9px] font-black text-white/60 uppercase tracking-widest mb-0.5">Sell Price</span>
-              <AnimatedPrice value={price?.bid} digits={digits} flash={false} placeholder="--" className="text-xl font-black text-white font-mono tabular-nums tracking-tighter" />
+              <AnimatedPrice value={price?.bid} digits={digits} flash={false} lockWidth placeholder="--" className="text-xl font-black text-white font-mono tabular-nums tracking-tighter" />
             </div>
             <div className="bg-buy rounded-xl p-3 flex flex-col items-center justify-center shadow-lg shadow-buy/20">
               <span className="text-[9px] font-black text-white/60 uppercase tracking-widest mb-0.5">Buy Price</span>
-              <AnimatedPrice value={price?.ask} digits={digits} flash={false} placeholder="--" className="text-xl font-black text-white font-mono tabular-nums tracking-tighter" />
+              <AnimatedPrice value={price?.ask} digits={digits} flash={false} lockWidth placeholder="--" className="text-xl font-black text-white font-mono tabular-nums tracking-tighter" />
             </div>
           </div>
 
