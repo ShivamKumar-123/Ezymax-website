@@ -597,7 +597,16 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       const res = await api.put<{ closed?: boolean }>(
         `/positions/${sltpEdit.serverId ?? sltpEdit.positionId}`, body,
       );
-      toast.success(res?.closed ? 'Order closed at current market price' : 'SL/TP updated');
+      if (res?.closed) {
+        toast.success('Order closed at current market price');
+        // The server already closed the position in this same request. Drop the
+        // row from the list NOW instead of waiting for the next 1.5s poll — the
+        // background refresh below just reconciles. Removes the "closed but the
+        // trade lingers a moment" lag on a wrong-side SL/TP exit.
+        removePosition(sltpEdit.positionId);
+      } else {
+        toast.success('SL/TP updated');
+      }
       setSltpEdit(null);
       refreshPositions();
       refreshAccount();

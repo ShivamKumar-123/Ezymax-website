@@ -444,6 +444,9 @@ function AdvancedChartInner() {
             try {
               const res = await api.put<{ closed?: boolean }>(`/positions/${sid}`, kind === 'sl' ? { stop_loss: val } : { take_profit: val });
               toast.success(res?.closed ? 'Order closed at current market price' : (val === null ? `${label} removed` : `${label} set @ ${val}`));
+              // Wrong-side SL/TP closes the position server-side in this same
+              // request — drop the row now so it doesn't linger until the poll.
+              if (res?.closed) { try { useTradingStore.getState().removePosition(p.id); } catch { /* noop */ } }
               await useTradingStore.getState().refreshPositions();
             } catch (err) {
               toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
@@ -537,6 +540,7 @@ function AdvancedChartInner() {
             try {
               const res = await api.put<{ closed?: boolean }>(`/positions/${sid}`, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
               toast.success(res?.closed ? 'Order closed at current market price' : `${label} set @ ${price.toFixed(digits)}`);
+              if (res?.closed) { try { useTradingStore.getState().removePosition(p.id); } catch { /* noop */ } }
               await useTradingStore.getState().refreshPositions();
             } catch (err) {
               toast.error(err instanceof Error ? err.message : `Failed to set ${label}`);
