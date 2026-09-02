@@ -188,6 +188,55 @@ async def create_broker(
     return _serialize(user, profile, user_count=0)
 
 
+async def update_broker(
+    db: AsyncSession, actor: User, broker_id: uuid.UUID, fields: dict,
+    ip_address: str | None = None,
+) -> dict:
+    """Edit the broker's account fields (email / names) + brand name.
+    Permissions, rental, domain and password have their own endpoints;
+    this covers the identity fields that previously had no edit path."""
+    user, profile = await get_broker_or_404(db, broker_id)
+    await _assert_actor_may_touch(db, actor, user)
+
+    old = {
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "brand_name": profile.brand_name,
+    }
+
+    if "email" in fields and fields["email"]:
+        email_norm = str(fields["email"]).strip().lower()
+        if "@" not in email_norm:
+            raise HTTPException(status_code=422, detail="Valid email required")
+        dupe = (
+            await db.execute(
+                select(User.id).where(
+                    func.lower(User.email) == email_norm, User.id != user.id
+                )
+            )
+        ).scalar_one_or_none()
+        if dupe is not None:
+            raise HTTPException(status_code=409, detail="Email already in use by another account")
+        user.email = email_norm
+    if "first_name" in fields:
+        user.first_name = (fields["first_name"] or "").strip() or user.first_name
+    if "last_name" in fields:
+        user.last_name = (fields["last_name"] or "").strip() or None
+    if "brand_name" in fields:
+        profile.brand_name = (fields["brand_name"] or "").strip() or None
+        profile.updated_at = datetime.utcnow()
+
+    await write_audit_log(
+        db, actor.id, "broker.update", "User", user.id,
+        old_values=old,
+        new_values={k: str(v) for k, v in fields.items()},
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return _serialize(user, profile)
+
+
 async def list_brokers(
     db: AsyncSession, actor: User, *, page: int, per_page: int, search: str | None
 ) -> dict:

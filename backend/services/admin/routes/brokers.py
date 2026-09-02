@@ -60,6 +60,13 @@ class CreateBrokerRequest(BaseModel):
     rental_notes: str = ""
 
 
+class UpdateBrokerRequest(BaseModel):
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    brand_name: str | None = None
+
+
 class PermissionsRequest(BaseModel):
     permissions: dict[str, str]
 
@@ -151,6 +158,21 @@ async def broker_detail(
 ):
     await _require_broker_surface(admin, db, PERMISSION_VIEW)
     return await broker_service.get_broker_detail(db, admin, broker_id)
+
+
+@router.put("/{broker_id}")
+async def update_broker(
+    broker_id: uuid.UUID,
+    body: UpdateBrokerRequest,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    await _require_broker_surface(admin, db, PERMISSION_EDIT)
+    return await broker_service.update_broker(
+        db, admin, broker_id, body.model_dump(exclude_unset=True),
+        ip_address=_client_ip(request),
+    )
 
 
 @router.put("/{broker_id}/permissions")

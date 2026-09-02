@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import {
   Loader2, Plus, RefreshCw, Building2, ShieldCheck, KeyRound,
   Ban, CheckCircle2, Copy, Check, Globe, Wallet, Link2, Palette,
-  Upload, Trash2, RefreshCw as RefreshIcon,
+  Upload, Trash2, RefreshCw as RefreshIcon, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -103,6 +103,65 @@ export default function BrokersPage() {
   // Password reset modal
   const [pwBroker, setPwBroker] = useState<Broker | null>(null);
   const [pwValue, setPwValue] = useState('');
+
+  // Edit modal — all account + rental fields in one place
+  const [editBroker, setEditBroker] = useState<Broker | null>(null);
+  const [editForm, setEditForm] = useState({
+    email: '', first_name: '', last_name: '', brand_name: '',
+    rental_plan: '', rental_amount: '0', rental_currency: 'USD',
+    rental_period: 'monthly', rental_next_due: '', rental_notes: '',
+  });
+
+  const openEdit = (b: Broker) => {
+    setEditBroker(b);
+    setEditForm({
+      email: b.email || '',
+      first_name: b.first_name || '',
+      last_name: b.last_name || '',
+      brand_name: b.brand_name || '',
+      rental_plan: b.rental_plan || '',
+      rental_amount: b.rental_amount || '0',
+      rental_currency: b.rental_currency || 'USD',
+      rental_period: b.rental_period || 'monthly',
+      rental_next_due: b.rental_next_due || '',
+      rental_notes: b.rental_notes || '',
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editBroker) return;
+    if (!editForm.email.includes('@')) { toast.error('Valid email required'); return; }
+    setSubmitting(true);
+    try {
+      await adminApi.put(`/brokers/${editBroker.id}`, {
+        email: editForm.email,
+        first_name: editForm.first_name,
+        last_name: editForm.last_name,
+        brand_name: editForm.brand_name,
+      });
+      // Rental terms are a separate (platform-only) endpoint; a broker
+      // actor editing a sub-broker may lack it — treat 403 as non-fatal.
+      try {
+        await adminApi.put(`/brokers/${editBroker.id}/rental`, {
+          rental_plan: editForm.rental_plan,
+          rental_amount: Number(editForm.rental_amount || 0),
+          rental_currency: editForm.rental_currency,
+          rental_period: editForm.rental_period,
+          rental_next_due: editForm.rental_next_due || null,
+          rental_notes: editForm.rental_notes,
+        });
+      } catch (re: any) {
+        if (!String(re?.message || '').toLowerCase().includes('super admin')) throw re;
+      }
+      toast.success('Broker updated');
+      setEditBroker(null);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update broker');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Branding / domain modal (super-admin edits any broker via ?broker_id=)
   const [brandBroker, setBrandBroker] = useState<Broker | null>(null);
@@ -477,6 +536,12 @@ export default function BrokersPage() {
                           <ShieldCheck size={12} />
                         </button>
                         <button
+                          onClick={() => openEdit(b)}
+                          className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Edit broker"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
                           onClick={() => openBranding(b)}
                           className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Branding & domain"
                         >
@@ -662,6 +727,71 @@ export default function BrokersPage() {
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setPwBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
               <button onClick={resetPassword} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit modal — all account + rental fields ── */}
+      {editBroker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditBroker(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-1 flex items-center gap-1.5">
+              <Pencil size={13} className="text-accent" /> Edit Broker — {editBroker.brand_name || editBroker.email}
+            </h2>
+            <p className="text-xxs text-text-tertiary mb-4">
+              Permissions (🛡), logo &amp; domain (🎨) and password (🔑) have their own dialogs on the row.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Email (their admin login)</label>
+                <input className={inputCls} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Brand name</label>
+                <input className={inputCls} value={editForm.brand_name} onChange={(e) => setEditForm({ ...editForm, brand_name: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>First name</label>
+                <input className={inputCls} value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Last name</label>
+                <input className={inputCls} value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Rental plan</label>
+                <input className={inputCls} value={editForm.rental_plan} onChange={(e) => setEditForm({ ...editForm, rental_plan: e.target.value })} placeholder="e.g. Standard WL" />
+              </div>
+              <div>
+                <label className={labelCls}>Rental amount</label>
+                <div className="flex gap-1.5">
+                  <input className={cn(inputCls, 'flex-1')} type="number" min="0" value={editForm.rental_amount} onChange={(e) => setEditForm({ ...editForm, rental_amount: e.target.value })} />
+                  <select className={cn(inputCls, 'w-20')} value={editForm.rental_currency} onChange={(e) => setEditForm({ ...editForm, rental_currency: e.target.value })}>
+                    {['USD', 'EUR', 'INR', 'USDT'].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Billing period</label>
+                <select className={inputCls} value={editForm.rental_period} onChange={(e) => setEditForm({ ...editForm, rental_period: e.target.value })}>
+                  {['monthly', 'quarterly', 'yearly', 'one_time'].map((pp) => <option key={pp} value={pp}>{pp}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Next due date</label>
+                <input className={inputCls} type="date" value={editForm.rental_next_due} onChange={(e) => setEditForm({ ...editForm, rental_next_due: e.target.value })} />
+              </div>
+              <div className="md:col-span-2">
+                <label className={labelCls}>Notes</label>
+                <textarea className={cn(inputCls, 'min-h-[56px]')} value={editForm.rental_notes} onChange={(e) => setEditForm({ ...editForm, rental_notes: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setEditBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={saveEdit} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">
+                {submitting ? 'Saving…' : 'Save changes'}
+              </button>
             </div>
           </div>
         </div>
