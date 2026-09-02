@@ -1,5 +1,6 @@
 """Tick Store — Writes tick data to TimescaleDB."""
 import logging
+import time
 from datetime import datetime, timezone
 
 from sqlalchemy import text
@@ -80,6 +81,11 @@ class OHLCStore:
 
     def __init__(self) -> None:
         self._ready = False
+        # Monotonic time of the last SUCCESSFUL durable commit (any symbol/tf).
+        # The durable-write watchdog reads this to detect a silent write stall
+        # (e.g. the aggregator-rollover bug that froze history for 5 days): while
+        # live ticks flow but this stops advancing, the persistence path is dead.
+        self.last_write_mono: float | None = None
 
     async def init(self) -> None:
         try:
@@ -133,6 +139,7 @@ class OHLCStore:
                     "l": float(l), "c": float(c), "v": float(volume), "tc": int(tick_count),
                 })
                 await session.commit()
+            self.last_write_mono = time.monotonic()
         except Exception as exc:
             logger.debug("OHLC upsert %s %s failed: %s", symbol, tf, exc)
 
@@ -152,6 +159,7 @@ class OHLCStore:
                         "tc": int(b.get("tick_count", 0) or 0),
                     })
                 await session.commit()
+            self.last_write_mono = time.monotonic()
         except Exception as exc:
             logger.debug("OHLC bulk upsert %s %s failed: %s", symbol, tf, exc)
 

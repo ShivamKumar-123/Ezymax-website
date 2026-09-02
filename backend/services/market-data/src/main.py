@@ -40,6 +40,18 @@ settings = get_settings()
 STALE_TICK_AFTER_SEC = 90.0
 STALE_REFRESH_INTERVAL_SEC = 30.0
 
+# --- Durable-write watchdog ---------------------------------------------------
+# Catches a SILENT stall of the durable OHLC persistence (the class of bug that
+# froze chart history for 5 days: ticks kept flowing + the forming candle kept
+# updating, but no CLOSED bar was ever written). Signal: while the feed is alive
+# (some symbol got a real tick recently), the durable store's last successful
+# write must keep advancing — a 1m bar closes every 60s, so during an open
+# market writes happen constantly. If it stops for this long, the pipeline is
+# dead. Weekend / feed-down needs no alert: no live ticks → nothing expected.
+DURABLE_CHECK_INTERVAL_SEC = 180.0   # how often the watchdog looks
+DURABLE_STALE_SEC = 600.0            # no durable write this long (feed alive) → alarm
+DURABLE_HEALTH_KEY = "health:ohlc_durable_write"
+
 
 class MarketDataService:
     def __init__(self):
@@ -78,6 +90,8 @@ class MarketDataService:
         self.running = True
         self._last_mid: dict[str, float] = {}
         self._last_live_mono: dict[str, float] = {}
+        self._service_start_mono = time.monotonic()
+        self._durable_alert_active = False  # edge-trigger so we alert once per incident
 
     async def start(self):
         logger.info("Starting Market Data Service...")
@@ -102,6 +116,7 @@ class MarketDataService:
             asyncio.create_task(self._stale_quote_refresher()),
             asyncio.create_task(self.aggregator.run_aggregation_loop()),
             asyncio.create_task(self._auto_seed_bars()),
+            asyncio.create_task(self._durable_write_watchdog()),
         ]
         if self._infoway_watchdog_armed:
             tasks.append(asyncio.create_task(self._infoway_fallback_watchdog()))
@@ -182,6 +197,81 @@ class MarketDataService:
                     await publish_price(symbol, bid, ask, ts)
                 except Exception as exc:
                     logger.debug("Stale quote refresh failed for %s: %s", symbol, exc)
+
+    async def _durable_write_watchdog(self):
+        """Alarm when durable OHLC persistence silently stalls while the market
+        is live. Three layers so a warning can never be missed:
+          1. A loud ERROR log (always visible in `docker logs`).
+          2. A Redis health key (machine-readable — admin panel / uptime probe).
+          3. A best-effort email to ADMIN_EMAIL, edge-triggered (once per
+             incident, plus one recovery note) so it never spams.
+        """
+        logger.info("Durable-write watchdog started (stale>%ds, check every %ds)",
+                    int(DURABLE_STALE_SEC), int(DURABLE_CHECK_INTERVAL_SEC))
+        while self.running:
+            await asyncio.sleep(DURABLE_CHECK_INTERVAL_SEC)
+            if not self.running:
+                break
+            try:
+                now = time.monotonic()
+                feed_alive = any(
+                    now - t < STALE_TICK_AFTER_SEC
+                    for t in self._last_live_mono.values()
+                )
+                base = ohlc_store.last_write_mono
+                if base is None:
+                    base = self._service_start_mono
+                age = now - base
+                stalled = feed_alive and age > DURABLE_STALE_SEC
+
+                # Layer 2 — health key (TTL'd so a dead service = missing key).
+                try:
+                    await redis_client.set(DURABLE_HEALTH_KEY, json.dumps({
+                        "status": "stalled" if stalled else "ok",
+                        "feed_alive": feed_alive,
+                        "write_age_sec": round(age, 1),
+                        "threshold_sec": int(DURABLE_STALE_SEC),
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                    }), ex=int(DURABLE_CHECK_INTERVAL_SEC * 3))
+                except Exception as exc:
+                    logger.debug("watchdog health-key write failed: %s", exc)
+
+                if stalled and not self._durable_alert_active:
+                    self._durable_alert_active = True
+                    logger.error(
+                        "🔴 DURABLE OHLC WRITE STALLED — no bar persisted for %.0fs "
+                        "while the feed is live. Chart history will freeze. Check "
+                        "the aggregator / TimescaleDB.", age,
+                    )
+                    await self._email_ops(
+                        "🔴 FXArtha: durable chart-history write STALLED",
+                        f"No OHLC bar has been persisted for {age:.0f}s while live "
+                        f"ticks are flowing (threshold {int(DURABLE_STALE_SEC)}s).<br>"
+                        f"Chart history is freezing — inspect the market-data "
+                        f"aggregator and TimescaleDB.",
+                    )
+                elif not stalled and self._durable_alert_active:
+                    self._durable_alert_active = False
+                    logger.info("✅ Durable OHLC write recovered (age %.0fs).", age)
+                    await self._email_ops(
+                        "✅ FXArtha: durable chart-history write recovered",
+                        f"Durable OHLC persistence is writing again "
+                        f"(last write {age:.0f}s ago).",
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.warning("Durable-write watchdog error (continuing): %s", exc)
+
+    async def _email_ops(self, subject: str, html: str) -> None:
+        """Best-effort ops email — never raises, silently skips if no transport."""
+        try:
+            from packages.common.src.smtp_mail import send_email
+            to = (getattr(settings, "ADMIN_EMAIL", "") or "").strip()
+            if to:
+                await send_email(to, subject, html)
+        except Exception as exc:
+            logger.debug("ops email failed: %s", exc)
 
     async def _process_ticks(self):
         logger.info("Tick processor started")
