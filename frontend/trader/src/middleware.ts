@@ -181,7 +181,13 @@ export function middleware(req: NextRequest) {
     // visitors must never see the SwissCresta marketing site or the
     // platform's legal pages — a tenant's site starts at their login.
     // App pages (/dashboard, /trading/terminal, /auth/*, …) serve
-    // normally; only the (landing) marketing group is redirected.
+    // normally; only the (landing) marketing group is intercepted.
+    // The apex '/' REWRITES (address bar keeps the broker's domain) to
+    // the generated tenant landing page; every other SwissCresta
+    // marketing/legal path redirects to the branded login.
+    if (req.nextUrl.pathname === '/') {
+      return NextResponse.rewrite(new URL('/tenant-home', req.url));
+    }
     if (isTenantMarketingPath(req.nextUrl.pathname)) {
       const r = NextResponse.redirect(new URL('/auth/login', req.url), 307);
       r.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
