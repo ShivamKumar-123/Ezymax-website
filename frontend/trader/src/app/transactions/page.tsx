@@ -198,7 +198,13 @@ export default function TransactionsPage() {
 
   const filteredTx = transactions.filter((tx) => {
     if (!transactionMatchesTypeFilter(tx, typeFilter)) return false;
-    if (accountFilter !== 'all' && (tx.account_id ?? '') !== accountFilter) return false;
+    // Deposits / withdrawals live on the MAIN WALLET (account_id = null), so a
+    // trading-account filter hides them — the "Main wallet" option surfaces them.
+    if (accountFilter === '__main__') {
+      if (tx.account_id) return false;
+    } else if (accountFilter !== 'all' && (tx.account_id ?? '') !== accountFilter) {
+      return false;
+    }
     if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
     if (dateFrom) {
       const from = new Date(dateFrom);
@@ -483,6 +489,7 @@ export default function TransactionsPage() {
                     )}
                   >
                     <option value="all">All accounts</option>
+                    <option value="__main__">Main wallet</option>
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.number}{a.type ? ` · ${a.type}` : ''}
