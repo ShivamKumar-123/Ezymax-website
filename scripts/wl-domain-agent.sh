@@ -20,14 +20,28 @@ set -euo pipefail
 
 REPO_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
 cd "$REPO_DIR"
-set -a; source .env; set +a
 
-TENANTS_FILE="${BRANDING_NGINX_TENANTS_FILE:-/etc/nginx/conf.d/swisscresta-tenants.conf}"
-TRADER_UP="${BRANDING_TRADER_UPSTREAM:-127.0.0.1:3012}"
-ADMIN_UP="${BRANDING_ADMIN_UPSTREAM:-127.0.0.1:3013}"
-CERTBOT="${BRANDING_CERTBOT_BIN:-/usr/bin/certbot}"
-NGINX="${BRANDING_NGINX_BIN:-/usr/sbin/nginx}"
-CERTBOT_EMAIL="${BRANDING_CERTBOT_EMAIL:-}"
+# .env is a dotenv file, NOT a shell script — values like
+# `SMTP_FROM=Name <mail@x>` blow up under `source` (the `<` is a bash
+# redirect). Read only the keys we need, last occurrence wins, optional
+# surrounding quotes and CR stripped.
+env_get() {  # $1 key, $2 default
+  local v
+  v="$(grep -E "^${1}=" .env 2>/dev/null | tail -1 | cut -d'=' -f2- || true)"
+  v="${v%$'\r'}"
+  v="${v%\"}"; v="${v#\"}"
+  v="${v%\'}"; v="${v#\'}"
+  printf '%s' "${v:-$2}"
+}
+
+TENANTS_FILE="$(env_get BRANDING_NGINX_TENANTS_FILE /etc/nginx/conf.d/swisscresta-tenants.conf)"
+TRADER_UP="$(env_get BRANDING_TRADER_UPSTREAM 127.0.0.1:3012)"
+ADMIN_UP="$(env_get BRANDING_ADMIN_UPSTREAM 127.0.0.1:3013)"
+CERTBOT="$(env_get BRANDING_CERTBOT_BIN /usr/bin/certbot)"
+NGINX="$(env_get BRANDING_NGINX_BIN /usr/sbin/nginx)"
+CERTBOT_EMAIL="$(env_get BRANDING_CERTBOT_EMAIL "")"
+POSTGRES_USER="$(env_get POSTGRES_USER swisscresta)"
+POSTGRES_DB="$(env_get POSTGRES_DB swisscresta)"
 
 # One agent at a time — a slow certbot run must not overlap the next tick.
 exec 9>/var/lock/swisscresta-wl-agent.lock
@@ -36,8 +50,8 @@ flock -n 9 || exit 0
 touch "$TENANTS_FILE"
 
 psql_q() {
-  docker compose exec -T postgres psql -U "${POSTGRES_USER:-swisscresta}" \
-    -d "${POSTGRES_DB:-swisscresta}" -At -c "$1"
+  docker compose exec -T postgres psql -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" -At -c "$1"
 }
 
 log() { echo "[$(date '+%F %T')] $*"; }
