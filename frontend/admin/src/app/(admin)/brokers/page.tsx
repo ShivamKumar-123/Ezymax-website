@@ -13,7 +13,8 @@ import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
   Loader2, Plus, RefreshCw, Building2, ShieldCheck, KeyRound,
-  Ban, CheckCircle2, Copy, Check, Globe, Wallet, Link2,
+  Ban, CheckCircle2, Copy, Check, Globe, Wallet, Link2, Palette,
+  Upload, Trash2, RefreshCw as RefreshIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -102,6 +103,115 @@ export default function BrokersPage() {
   // Password reset modal
   const [pwBroker, setPwBroker] = useState<Broker | null>(null);
   const [pwValue, setPwValue] = useState('');
+
+  // Branding / domain modal (super-admin edits any broker via ?broker_id=)
+  const [brandBroker, setBrandBroker] = useState<Broker | null>(null);
+  const [brandState, setBrandState] = useState<any>(null);
+  const [brandForm, setBrandForm] = useState({ brand_name: '', support_email: '', support_whatsapp: '' });
+  const [brandLogo, setBrandLogo] = useState<File | null>(null);
+  const [brandDomain, setBrandDomain] = useState('');
+  const [brandSub, setBrandSub] = useState('');
+  const [brandBusy, setBrandBusy] = useState(false);
+
+  const openBranding = async (b: Broker) => {
+    setBrandBroker(b);
+    setBrandState(null);
+    setBrandLogo(null);
+    setBrandDomain('');
+    setBrandSub('');
+    try {
+      const st = await adminApi.get<any>(`/branding/me?broker_id=${b.id}`);
+      setBrandState(st);
+      setBrandForm({
+        brand_name: st.brand_name || '',
+        support_email: st.support_email || '',
+        support_whatsapp: st.support_whatsapp || '',
+      });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load branding');
+      setBrandBroker(null);
+    }
+  };
+
+  const refreshBranding = async () => {
+    if (!brandBroker) return;
+    try {
+      setBrandState(await adminApi.get<any>(`/branding/me?broker_id=${brandBroker.id}`));
+    } catch {}
+  };
+
+  const saveBrandIdentity = async () => {
+    if (!brandBroker) return;
+    setBrandBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('brand_name', brandForm.brand_name);
+      fd.append('support_email', brandForm.support_email);
+      fd.append('support_whatsapp', brandForm.support_whatsapp);
+      if (brandLogo) fd.append('logo', brandLogo);
+      const st = await adminApi.postForm<any>(`/branding/me?broker_id=${brandBroker.id}`, fd, 'PUT');
+      setBrandState(st);
+      setBrandLogo(null);
+      toast.success('Branding saved');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save branding');
+    } finally {
+      setBrandBusy(false);
+    }
+  };
+
+  const connectBrandDomain = async () => {
+    if (!brandBroker || !brandDomain.trim()) { toast.error('Enter a domain'); return; }
+    setBrandBusy(true);
+    try {
+      const st = await adminApi.post<any>(`/branding/domain?broker_id=${brandBroker.id}`, {
+        domain: brandDomain.trim(), app_subdomain: brandSub.trim(),
+      });
+      setBrandState(st);
+      setBrandDomain(''); setBrandSub('');
+      toast.success('Domain saved — point the DNS records, then Verify');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to set domain');
+    } finally {
+      setBrandBusy(false);
+    }
+  };
+
+  const verifyBrandDomain = async () => {
+    if (!brandBroker) return;
+    setBrandBusy(true);
+    try {
+      const st = await adminApi.post<any>(`/branding/domain/verify?broker_id=${brandBroker.id}`);
+      setBrandState(st);
+      if (st.custom_domain_status === 'pending_dns') {
+        toast.error(st.custom_domain_last_error || 'DNS not pointing at the platform yet');
+      } else {
+        toast.success('DNS verified — SSL provisioning started');
+      }
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Verification failed');
+    } finally {
+      setBrandBusy(false);
+    }
+  };
+
+  const disconnectBrandDomain = async () => {
+    if (!brandBroker) return;
+    if (!window.confirm('Disconnect this domain? Their users lose access via it immediately.')) return;
+    setBrandBusy(true);
+    try {
+      setBrandState(await adminApi.delete<any>(`/branding/domain?broker_id=${brandBroker.id}`));
+      toast.success('Domain disconnected');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to disconnect');
+    } finally {
+      setBrandBusy(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -367,6 +477,12 @@ export default function BrokersPage() {
                           <ShieldCheck size={12} />
                         </button>
                         <button
+                          onClick={() => openBranding(b)}
+                          className="p-1 rounded-md text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast" title="Branding & domain"
+                        >
+                          <Palette size={12} />
+                        </button>
+                        <button
                           onClick={() => {
                             setRentalBroker(b);
                             setRentalDraft({
@@ -546,6 +662,110 @@ export default function BrokersPage() {
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setPwBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Cancel</button>
               <button onClick={resetPassword} disabled={submitting} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Branding & domain modal (super-admin, via ?broker_id=) ── */}
+      {brandBroker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setBrandBroker(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-semibold text-text-primary mb-1 flex items-center gap-1.5">
+              <Palette size={14} className="text-accent" /> Branding &amp; Domain — {brandBroker.brand_name || brandBroker.email}
+            </h2>
+            {!brandState ? (
+              <div className="flex items-center justify-center py-10"><Loader2 size={18} className="animate-spin text-text-tertiary" /></div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className={labelCls}>Brand name</label>
+                    <input className={inputCls} value={brandForm.brand_name} onChange={(e) => setBrandForm({ ...brandForm, brand_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Logo (PNG/JPG/WEBP, 2MB)</label>
+                    <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast cursor-pointer">
+                      <Upload size={12} /> {brandLogo ? brandLogo.name : (brandState.logo_url ? 'Replace logo' : 'Choose file')}
+                      <input type="file" accept=".png,.jpg,.jpeg,.webp" className="hidden" onChange={(e) => setBrandLogo(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Support email</label>
+                    <input className={inputCls} value={brandForm.support_email} onChange={(e) => setBrandForm({ ...brandForm, support_email: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Support WhatsApp</label>
+                    <input className={inputCls} value={brandForm.support_whatsapp} onChange={(e) => setBrandForm({ ...brandForm, support_whatsapp: e.target.value })} />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button onClick={saveBrandIdentity} disabled={brandBusy} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">
+                    {brandBusy ? 'Saving…' : 'Save branding'}
+                  </button>
+                </div>
+
+                <div className="border-t border-border-primary mt-4 pt-4">
+                  <h3 className="text-xs font-semibold text-text-primary mb-1 flex items-center gap-1.5">
+                    <Globe size={12} className="text-accent" /> Custom domain
+                  </h3>
+                  {!brandState.custom_domain ? (
+                    <div className="flex flex-col md:flex-row gap-2 mt-2">
+                      <input className={cn(inputCls, 'flex-1')} placeholder="theirbrand.com" value={brandDomain} onChange={(e) => setBrandDomain(e.target.value)} />
+                      <input className={cn(inputCls, 'md:w-32')} placeholder="subdomain (opt.)" value={brandSub} onChange={(e) => setBrandSub(e.target.value)} />
+                      <button onClick={connectBrandDomain} disabled={brandBusy} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50 shrink-0">
+                        Connect
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-mono text-text-primary">{brandState.custom_domain}</span>
+                        <span className={cn('px-1.5 py-0.5 rounded-sm text-xxs font-medium', domainBadge(brandState.custom_domain_status))}>
+                          {brandState.custom_domain_status || '—'}
+                        </span>
+                        <button onClick={refreshBranding} className="p-1 rounded-md border border-border-primary text-text-tertiary hover:bg-bg-hover transition-fast" title="Refresh status">
+                          <RefreshIcon size={11} />
+                        </button>
+                      </div>
+                      {brandState.custom_domain_status !== 'ready' && (
+                        <div className="bg-bg-tertiary/40 border border-border-primary rounded-md p-3 mb-2">
+                          <p className="text-xxs text-text-tertiary uppercase tracking-wide mb-1">DNS — A records → {brandState.platform_public_ip || 'PLATFORM IP'}</p>
+                          <ul className="space-y-0.5">
+                            {(brandState.dns_hostnames || brandState.served_hostnames || []).map((h: string) => (
+                              <li key={h} className="text-xs font-mono text-text-secondary">
+                                {h}
+                                {h === brandState.admin_hostname && <span className="ml-1.5 text-xxs text-text-tertiary">(their admin panel)</span>}
+                              </li>
+                            ))}
+                          </ul>
+                          {brandState.custom_domain_last_error && (
+                            <p className="text-xxs text-danger mt-1.5">{brandState.custom_domain_last_error}</p>
+                          )}
+                        </div>
+                      )}
+                      {brandState.custom_domain_status === 'ready' && brandState.admin_hostname && (
+                        <p className="text-xs text-text-secondary mb-2">
+                          Their admin panel: <a href={`https://${brandState.admin_hostname}`} target="_blank" rel="noreferrer" className="font-mono text-accent">{brandState.admin_hostname}</a>
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        {brandState.custom_domain_status !== 'ready' && (
+                          <button onClick={verifyBrandDomain} disabled={brandBusy} className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-fast disabled:opacity-50">
+                            {brandBusy ? 'Checking…' : 'Verify DNS & provision SSL'}
+                          </button>
+                        )}
+                        <button onClick={disconnectBrandDomain} disabled={brandBusy} className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-danger/30 text-xs text-danger hover:bg-danger/10 transition-fast disabled:opacity-50">
+                          <Trash2 size={12} /> Disconnect
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setBrandBroker(null)} className="px-3 py-1.5 rounded-md border border-border-primary text-xs text-text-secondary hover:bg-bg-hover transition-fast">Close</button>
             </div>
           </div>
         </div>
