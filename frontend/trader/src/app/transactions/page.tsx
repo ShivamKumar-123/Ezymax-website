@@ -198,11 +198,14 @@ export default function TransactionsPage() {
 
   const filteredTx = transactions.filter((tx) => {
     if (!transactionMatchesTypeFilter(tx, typeFilter)) return false;
-    // Deposits / withdrawals live on the MAIN WALLET (account_id = null), so a
-    // trading-account filter hides them — the "Main wallet" option surfaces them.
+    // Account scope. Deposits / withdrawals sit on the MAIN WALLET
+    // (account_id = null) and fund every trading account, so they are shown
+    // under ANY account selection — only account-scoped entries (P&L, transfers
+    // that carry an account_id) are filtered. "Main wallet" shows wallet-level
+    // entries only.
     if (accountFilter === '__main__') {
       if (tx.account_id) return false;
-    } else if (accountFilter !== 'all' && (tx.account_id ?? '') !== accountFilter) {
+    } else if (accountFilter !== 'all' && tx.account_id && tx.account_id !== accountFilter) {
       return false;
     }
     if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
