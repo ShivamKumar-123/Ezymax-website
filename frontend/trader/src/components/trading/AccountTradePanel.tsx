@@ -352,7 +352,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 }}
               >
                 <div className="text-xs font-bold">Sell</div>
-                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.bid} digits={digits} /></div>}
+                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.bid} digits={digits} flash={false} /></div>}
               </button>
               <button
                 type="button"
@@ -364,7 +364,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 }}
               >
                 <div className="text-xs font-bold">Buy</div>
-                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.ask} digits={digits} /></div>}
+                {tick && <div className="text-[13px] font-mono tabular-nums mt-0.5"><AnimatedPrice value={tick.ask} digits={digits} flash={false} /></div>}
               </button>
             </div>
 
