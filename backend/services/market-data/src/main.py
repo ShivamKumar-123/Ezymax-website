@@ -49,6 +49,17 @@ JUMP_ACCEPT_AFTER = 5
 # crypto tick is dropped so the two feeds' slightly different mids can't
 # interleave. Binance silent longer than this → Infoway flows again.
 BINANCE_FRESH_SEC = 10.0
+# With bookTicker (crypto) + the Infoway trade stream, per-symbol update
+# rates jumped from ~1/s to dozens/s. The live QUOTE must publish every
+# tick, but the heavy side-work must not: a Timescale INSERT per book
+# update starved the websocket reader until keepalive pongs timed out
+# and the socket churned every few minutes. Tick-history writes and
+# forming-bar pub/sub are therefore rate-limited per symbol (history at
+# 2/s is still denser than the old feed; the chart's forming bar at
+# ~6fps is visually continuous, and the aggregation loop republishes
+# every 1s regardless).
+TICK_STORE_MIN_INTERVAL = 0.5
+BAR_PUBLISH_MIN_INTERVAL = 0.15
 
 
 def _primary_feed_instruments() -> dict:
@@ -107,6 +118,9 @@ class MarketDataService:
         # Monotonic time of the last Binance side-feed tick per crypto symbol
         # (see _binance_crypto_feed / BINANCE_FRESH_SEC).
         self._binance_live_mono: dict[str, float] = {}
+        # Per-symbol throttles for tick-history writes / forming-bar publishes.
+        self._last_store_write: dict[str, float] = {}
+        self._last_bar_publish: dict[str, float] = {}
         # Monotonic time of the last tick received from the PRIMARY feed
         # (Infoway) — drives the mid-flight reconnect watchdog below.
         self._last_feed_tick_mono: float = time.monotonic()
@@ -310,10 +324,14 @@ class MarketDataService:
 
             await publish_price(symbol, bid, ask, ts)
 
-            await self.store.insert_tick(symbol, bid, ask, ts)
-
             self.aggregator.update(symbol, bid, ask, ts)
-            await self._publish_current_bars(symbol)
+            now_mono = time.monotonic()
+            if now_mono - self._last_store_write.get(symbol, 0.0) >= TICK_STORE_MIN_INTERVAL:
+                self._last_store_write[symbol] = now_mono
+                await self.store.insert_tick(symbol, bid, ask, ts)
+            if now_mono - self._last_bar_publish.get(symbol, 0.0) >= BAR_PUBLISH_MIN_INTERVAL:
+                self._last_bar_publish[symbol] = now_mono
+                await self._publish_current_bars(symbol)
             self._tick_count += 1
 
     async def _publish_current_bars(self, symbol: str) -> None:
@@ -382,7 +400,10 @@ class MarketDataService:
         while self.running and isinstance(self.feed, InfowayFeed):
             try:
                 logger.info("Binance crypto feed connecting (bookTicker, alongside Infoway)")
-                async with _ws.connect(url, ping_interval=20, ping_timeout=10) as ws:
+                # ping_timeout raised from 10s: at bookTicker rates a brief
+                # processing burst could delay the pong past the old limit
+                # and needlessly churn the connection.
+                async with _ws.connect(url, ping_interval=20, ping_timeout=30) as ws:
                     logger.info("Binance crypto feed connected — live crypto book active")
                     async for raw in ws:
                         if not self.running or not isinstance(self.feed, InfowayFeed):
@@ -410,9 +431,13 @@ class MarketDataService:
                         self._binance_live_mono[symbol] = now_mono
                         bid, ask = self.spread_cache.widen(symbol, bid0, ask0)
                         await publish_price(symbol, bid, ask, ts)
-                        await self.store.insert_tick(symbol, bid, ask, ts)
                         self.aggregator.update(symbol, bid, ask, ts)
-                        await self._publish_current_bars(symbol)
+                        if now_mono - self._last_store_write.get(symbol, 0.0) >= TICK_STORE_MIN_INTERVAL:
+                            self._last_store_write[symbol] = now_mono
+                            await self.store.insert_tick(symbol, bid, ask, ts)
+                        if now_mono - self._last_bar_publish.get(symbol, 0.0) >= BAR_PUBLISH_MIN_INTERVAL:
+                            self._last_bar_publish[symbol] = now_mono
+                            await self._publish_current_bars(symbol)
             except asyncio.CancelledError:
                 raise
             except Exception as e:
