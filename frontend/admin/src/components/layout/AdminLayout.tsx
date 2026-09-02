@@ -22,6 +22,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   // null = permissions not loaded yet
   const [perms, setPerms] = useState<{ permissions: string[]; employeeRole: string } | null>(null);
+  // White-label: broker brand for tab title/favicon (re-asserted on every
+  // route change — Next re-applies the static metadata title otherwise).
+  const [wlBrand, setWlBrand] = useState<{ name: string; logo: string | null } | null>(null);
   const runId = useRef(0);
 
   // Load the signed-in admin's effective permissions once per mount.
@@ -33,9 +36,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let cancelled = false;
     (async () => {
       try {
-        const me = await adminApi.get<{ permissions: string[]; employee_role: string }>('/auth/me');
+        const me = await adminApi.get<{ permissions: string[]; employee_role: string; role?: string; brand_name?: string | null; logo_url?: string | null }>('/auth/me');
         if (!cancelled) {
           setPerms({ permissions: me.permissions || [], employeeRole: me.employee_role || '' });
+          if (me.role === 'broker') {
+            setWlBrand({ name: (me.brand_name || '').trim() || 'Broker Panel', logo: me.logo_url || null });
+          }
         }
       } catch {
         // Leave perms null — ungated pages still render; gated pages keep the spinner.
@@ -45,6 +51,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       cancelled = true;
     };
   }, [gate]);
+
+  // Re-assert the broker's tab identity after EVERY navigation: Next.js
+  // re-applies the layout metadata title on route changes, which was
+  // stomping the brand back to "SwissCresta Admin".
+  useEffect(() => {
+    if (!wlBrand) return;
+    document.title = `${wlBrand.name} Admin`;
+    if (wlBrand.logo) {
+      const icon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+      if (icon) icon.href = wlBrand.logo;
+    }
+  }, [wlBrand, pathname]);
 
   // White-label broker accounts land on the scoped Users page — the
   // platform Dashboard's widgets are platform-wide aggregates their
