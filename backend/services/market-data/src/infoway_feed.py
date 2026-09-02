@@ -231,6 +231,45 @@ class InfowayFeed:
         }
         self._enqueue(tick)
 
+    def _emit_trade(self, data: dict) -> None:
+        """A TRADE tick (push code 10002) carries only the last traded price
+        `p` — no book. Actively-traded instruments (gold, oil, indices) print
+        several trades/sec vs depth's ~1/sec, so subscribing trades alongside
+        depth makes those prices move fluidly. We treat `p` as the mid; market-
+        data main re-spreads it from config via spread_cache.widen(), exactly
+        like a depth mid — so the published quote is consistent with depth."""
+        raw_sym = data.get("s") or ""
+        symbol = self._platform_symbol(str(raw_sym))
+        if not symbol or symbol not in self._instruments:
+            return
+        try:
+            price = float(data.get("p"))
+        except (TypeError, ValueError):
+            return
+        if price <= 0:
+            return
+        decimals = int(self._instruments[symbol]["decimals"])
+        px = round(price, decimals)
+
+        ts_ms = data.get("t")
+        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
+            sec = int(ts_ms // 1000)
+            ms = int(ts_ms % 1000)
+            dt = datetime.fromtimestamp(sec, tz=timezone.utc)
+            timestamp = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
+        else:
+            now = datetime.now(timezone.utc)
+            timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+
+        # bid == ask == last price (mid). widen() applies the configured spread.
+        self._enqueue({
+            "symbol": symbol,
+            "bid": px,
+            "ask": px,
+            "timestamp": timestamp,
+            "volume": 1,
+        })
+
     async def _heartbeat_loop(self, ws) -> None:
         while self._running:
             await asyncio.sleep(45.0)
@@ -274,8 +313,20 @@ class InfowayFeed:
                         }
                     )
                     await ws.send(sub)
+                    # ALSO subscribe TRADE ticks (code 10000, push 10002) for the
+                    # same codes. Depth alone pushes ~1/s; the trade stream adds
+                    # several ticks/s on actively-traded instruments (gold ~7/s,
+                    # oil, indices) so prices move fluidly instead of stepping.
+                    # Depth still supplies the real bid/ask spread signal.
+                    await ws.send(json.dumps(
+                        {
+                            "code": 10000,
+                            "trace": _trace(),
+                            "data": {"codes": codes_str, "includeTy": False},
+                        }
+                    ))
                     logger.info(
-                        "Infoway [%s] subscribed depth for %d codes",
+                        "Infoway [%s] subscribed depth+trade for %d codes",
                         business,
                         len(set(codes)),
                     )
@@ -305,6 +356,10 @@ class InfowayFeed:
                             # (never on heartbeat acks) — that's the whole point.
                             self._last_data_ts[business] = time.time()
                             self._emit_depth(msg.get("data") or {})
+                        elif code == 10002:
+                            # Real-time trade tick — the high-frequency stream.
+                            self._last_data_ts[business] = time.time()
+                            self._emit_trade(msg.get("data") or {})
                         elif code in (10004, 10001):
                             logger.debug("Infoway [%s] ack: %s", business, msg.get("msg"))
                         elif code and code >= 400:
