@@ -46,6 +46,7 @@ from packages.common.src.chain_clients import (
 )
 
 from packages.common.src import notify
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("chain-verifier")
 
@@ -358,6 +359,7 @@ async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
         )
         from packages.common.src.email_templates import render_deposit_confirmed
         from packages.common.src.config import get_settings
+        await apply_email_brand(db, user)
         if smtp_configured() and user.email and not user.email.lower().endswith(
             "@wallet.swisscresta.local"
         ):
@@ -395,6 +397,8 @@ async def _send_rejected_email(deposit: Deposit) -> None:
             user = (await db2.execute(
                 select(User).where(User.id == deposit.user_id)
             )).scalar_one_or_none()
+        async with AsyncSessionLocal() as db3:
+            await apply_email_brand(db3, user)
         if not user or not user.email or user.email.lower().endswith("@wallet.swisscresta.local"):
             return
         subject, html, text = render_deposit_failed(

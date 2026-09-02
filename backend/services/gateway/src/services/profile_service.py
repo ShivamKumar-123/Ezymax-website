@@ -15,6 +15,7 @@ from packages.common.src.auth import hash_password, verify_password
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.notify import create_notification
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("profile_service")
 
@@ -174,6 +175,7 @@ async def update_profile(
     if profile_complete and not getattr(user, "welcome_email_sent", False):
         try:
             from .auth_service import _send_welcome_email
+            await apply_email_brand(db, user)
             _send_welcome_email(user, via_google=False)
             user.welcome_email_sent = True
             await db.commit()

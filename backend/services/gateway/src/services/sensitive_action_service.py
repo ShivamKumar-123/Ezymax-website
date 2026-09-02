@@ -49,6 +49,7 @@ from packages.common.src.auth import verify_password
 from packages.common.src.models import (
     SensitiveActionChallenge, User, UserAuditLog,
 )
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("sensitive_action")
 
@@ -223,6 +224,7 @@ async def start_challenge(
             raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
         if not smtp_configured():
             raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
+        await apply_email_brand(db, user)
         subject, html, text = render_email_otp(
             first_name=user.first_name,
             code=code,

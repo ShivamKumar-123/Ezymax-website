@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .base import render_layout, kv_table
+from .base import render_layout, kv_table, platform_name
 
 
 def render_new_login(
@@ -27,10 +27,11 @@ def render_new_login(
       change your password and reply to this email so support can lock the account.
     </p>
     """
-    subject = "New sign-in to your SwissCresta account"
+    pn = platform_name()
+    subject = f"New sign-in to your {pn} account"
     html = render_layout(
         title="Sign-in detected",
-        intro=f"Hi {name}, we just recorded a sign-in to your SwissCresta account.",
+        intro=f"Hi {name}, we just recorded a sign-in to your {pn} account.",
         body_html=body,
         footer_note=(
             "Wasn't you? Change your password right away and reply to this email "
@@ -40,7 +41,7 @@ def render_new_login(
     text_lines = [
         f"Hi {name},",
         "",
-        "A sign-in to your SwissCresta account was just recorded.",
+        f"A sign-in to your {pn} account was just recorded.",
         "",
         f"When (UTC): {when_utc}",
     ]

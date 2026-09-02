@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import User
 from packages.common.src.redis_client import redis_client
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("monthly-statement")
 
@@ -134,6 +135,7 @@ async def send_monthly_statements(
 
         async with semaphore:
             try:
+                await apply_email_brand(db, user)
                 subject, html, text = render_monthly_statement_available(
                     first_name=user.first_name,
                     statement_month_label=statement_month_label,

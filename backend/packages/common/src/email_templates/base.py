@@ -27,6 +27,17 @@ _BORDER_BRIGHT = "#3a3a3a"
 LOGO_CID = "swisscresta-logo"
 
 
+def platform_name() -> str:
+    """Brand name for email BODY copy: the tenant's brand when an
+    email_branding context is active, else the platform's. Templates
+    must use this instead of a hard-coded "SwissCresta" literal."""
+    from ..email_branding import current_email_brand
+    brand = current_email_brand()
+    if brand and str(brand.get("name") or "").strip():
+        return str(brand["name"]).strip()
+    return "SwissCresta"
+
+
 def render_layout(
     *,
     title: str,
@@ -68,6 +79,39 @@ def render_layout(
         </p>
         """
 
+    # ── White-label tenant shell ────────────────────────────────────
+    # When a tenant brand is on the email_branding contextvar, the shell
+    # must carry THEIR identity: brand name in the header (no platform
+    # logo), their name in the footer, and their support address — or no
+    # support line at all. A tenant's user must never see "SwissCresta".
+    from ..email_branding import current_email_brand
+    brand = current_email_brand()
+    if brand:
+        brand_name = str(brand.get("name") or "").strip() or "Your broker"
+        header_html = f"""<span style="display:block;font-size:20px;font-weight:800;
+                       letter-spacing:0.3px;color:{_TEXT};">{escape(brand_name)}</span>"""
+        support_email = (brand.get("support_email") or "").strip()
+        if support_email:
+            support_line = (
+                f"""Need help? Contact
+              <a href="mailto:{escape(support_email, quote=True)}" style="color:{_ACCENT};text-decoration:none;">
+                {escape(support_email)}</a>."""
+            )
+        else:
+            support_line = ""
+        footer_html = f"""{escape(brand_name)}<br>
+              You received this because of activity on your {escape(brand_name)} account.
+              {support_line}"""
+    else:
+        header_html = f"""<img src="cid:{LOGO_CID}" alt="SwissCresta"
+                   height="36"
+                   style="display:block;height:36px;width:auto;border:0;outline:none;text-decoration:none;" />"""
+        footer_html = f"""SwissCresta — Trade without giving your money to any broker.<br>
+              You received this because of activity on your SwissCresta account.
+              Need help? Reply to this email or contact
+              <a href="mailto:support@swisscresta.com" style="color:{_ACCENT};text-decoration:none;">
+                support@swisscresta.com</a>."""
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -85,9 +129,7 @@ def render_layout(
                       border:1px solid {_BORDER};border-radius:12px;overflow:hidden;">
           <tr>
             <td style="padding:24px 32px;border-bottom:1px solid {_BORDER};">
-              <img src="cid:{LOGO_CID}" alt="SwissCresta"
-                   height="36"
-                   style="display:block;height:36px;width:auto;border:0;outline:none;text-decoration:none;" />
+              {header_html}
             </td>
           </tr>
           <tr>
@@ -106,11 +148,7 @@ def render_layout(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid {_BORDER};
                        color:{_TEXT_DIM};font-size:12px;line-height:1.5;">
-              SwissCresta — Trade without giving your money to any broker.<br>
-              You received this because of activity on your SwissCresta account.
-              Need help? Reply to this email or contact
-              <a href="mailto:support@swisscresta.com" style="color:{_ACCENT};text-decoration:none;">
-                support@swisscresta.com</a>.
+              {footer_html}
             </td>
           </tr>
         </table>

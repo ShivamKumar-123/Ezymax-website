@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .base import render_layout
+from .base import render_layout, platform_name
 
 
 def render_welcome(
@@ -10,8 +10,9 @@ def render_welcome(
     via_google: bool = False,
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
+    pn = platform_name()
     intro = (
-        "Welcome to SwissCresta. Your account is ready — your funds stay in "
+        f"Welcome to {pn}. Your account is ready — your funds stay in "
         "your wallet, the system handles execution."
     )
     next_steps = """
@@ -33,7 +34,7 @@ def render_welcome(
             "</p>"
         ) + next_steps
 
-    subject = "Welcome to SwissCresta"
+    subject = f"Welcome to {pn}"
     html = render_layout(
         title=f"Welcome aboard, {name}.",
         intro=intro,
@@ -41,17 +42,23 @@ def render_welcome(
         cta_label="Open Dashboard",
         cta_url=f"{trader_app_url.rstrip('/')}/accounts",
         footer_note=(
-            "If you didn't create this account, contact support@swisscresta.com immediately."
+            "If you didn't create this account, contact support immediately."
+            if pn != "SwissCresta"
+            else "If you didn't create this account, contact support@swisscresta.com immediately."
         ),
     )
     text = (
-        f"Welcome to SwissCresta, {name}.\n\n"
+        f"Welcome to {pn}, {name}.\n\n"
         "Your account is ready. Get started:\n"
         "  - Open your first trading account from the dashboard\n"
         "  - Complete KYC to unlock higher leverage tiers\n"
         "  - Visit the Earn hub for tasks, spin, and staking\n"
         "  - Try the demo account if you want to practise risk-free\n\n"
         f"Open your dashboard: {trader_app_url.rstrip('/')}/accounts\n\n"
-        "Didn't create this account? Email support@swisscresta.com immediately.\n"
+        + (
+            "Didn't create this account? Contact your broker's support immediately.\n"
+            if pn != "SwissCresta"
+            else "Didn't create this account? Email support@swisscresta.com immediately.\n"
+        )
     )
     return subject, html, text

@@ -38,7 +38,7 @@ export default function KycTab({ status }: { status?: string | null }) {
                   : rejected
                     ? 'Some documents were not accepted. Open the verification flow to re-upload.'
                     : required === true
-                      ? 'SwissCresta requires identity verification before you can trade live.'
+                      ? 'Identity verification is required before you can trade live.'
                       : 'Verification is optional. Complete it to unlock higher leverage and card / UPI deposits.'}
             </p>
           </div>

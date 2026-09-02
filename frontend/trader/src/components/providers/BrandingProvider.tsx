@@ -55,6 +55,27 @@ export function useBranding(): Ctx {
   return useContext(BrandingCtx);
 }
 
+/**
+ * Display-ready brand values with platform defaults baked in — the one
+ * hook UI chrome should use. On platform hosts: SwissCresta identity.
+ * On a white-label tenant domain: the broker's name/logo, and
+ * `isWhiteLabel` so components can hide platform-specific artwork.
+ */
+export function useBrandDisplay() {
+  const { branding } = useBranding();
+  const isWhiteLabel = branding.is_white_label;
+  return {
+    isWhiteLabel,
+    /** Brand name for copy ("Welcome to X", footer, alt text). */
+    name: (isWhiteLabel && branding.brand_name) ? branding.brand_name : 'SwissCresta',
+    /** Tenant logo URL (same-origin /api/v1 path) or null → use the
+     *  platform's bundled logo assets. */
+    logoUrl: isWhiteLabel ? (branding.logo_url || null) : null,
+    supportEmail: isWhiteLabel ? branding.support_email : null,
+    supportWhatsapp: isWhiteLabel ? branding.support_whatsapp : null,
+  };
+}
+
 /** Static platform-host allowlist. Update alongside PLATFORM_HOSTS in
  *  the backend .env when the platform gains a new hostname. */
 const PLATFORM_HOSTS = new Set<string>([

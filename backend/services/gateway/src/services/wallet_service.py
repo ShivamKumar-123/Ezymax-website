@@ -37,6 +37,7 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
+from packages.common.src.email_branding import apply_email_brand
 from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
@@ -183,6 +184,7 @@ async def send_withdrawal_requested_email(
                 destination_str = f"Bank ****{str(acct)[-4:]}"
             elif upi:
                 destination_str = f"UPI {upi}"
+        await apply_email_brand(db, user_row)
         subject, html, text = render_withdrawal_requested(
             first_name=user_row.first_name,
             amount=withdrawal.amount,
@@ -697,6 +699,7 @@ async def handle_oxapay_webhook(
             )
             from packages.common.src.email_templates import render_deposit_confirmed
             from packages.common.src.config import get_settings as _gs
+            await apply_email_brand(db, user_row)
             if smtp_configured() and user_row.email:
                 subject, html, text = render_deposit_confirmed(
                     first_name=user_row.first_name,
@@ -731,6 +734,7 @@ async def handle_oxapay_webhook(
             )
             fail_user = fail_user_q.scalar_one_or_none()
             if fail_user:
+                await apply_email_brand(db, fail_user)
                 _send_deposit_failed_email(
                     fail_user, deposit, oxapay_status, method_label="Crypto (OxaPay)",
                 )
@@ -1251,6 +1255,7 @@ async def _credit_razorpay_deposit_locked(
         )
         from packages.common.src.email_templates import render_deposit_confirmed
         from packages.common.src.config import get_settings as _gs
+        await apply_email_brand(db, user_row)
         if smtp_configured() and user_row.email:
             subject, html, text = render_deposit_confirmed(
                 first_name=user_row.first_name,

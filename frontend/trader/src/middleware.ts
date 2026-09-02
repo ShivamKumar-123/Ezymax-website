@@ -103,6 +103,36 @@ function checkRateLimit(
   return { allowed: true };
 }
 
+/* ── White-label tenant marketing block-list ─────────────────────
+ * The (landing) route group = SwissCresta's marketing + platform legal
+ * pages. On a tenant's custom domain these must redirect to the login
+ * page. Kept in sync with src/app/(landing)/ — top-level segments only;
+ * matching is exact-or-prefix per segment.
+ *   - '/accounts' is EXCLUDED as an exact path (it's the trader app's
+ *     accounts page); its marketing children /accounts/demo|pro|standard
+ *     are covered by the entries below.
+ *   - '/trading' marketing children are listed explicitly so the app's
+ *     /trading/terminal keeps serving. */
+const TENANT_BLOCKED_EXACT = new Set<string>(['/', '/trading']);
+const TENANT_BLOCKED_PREFIXES = [
+  '/about', '/account-deletion', '/careers', '/cfds', '/collaboration',
+  '/company', '/contact', '/currency-pairs', '/demo-account', '/group',
+  '/how-it-works', '/institutional', '/introducing-brokers', '/markets',
+  '/money-managers', '/partners', '/platforms', '/policy',
+  '/precious-metals', '/privacy', '/protocol', '/risk', '/terms',
+  '/white-label',
+  '/accounts/demo', '/accounts/pro', '/accounts/standard',
+  '/trading/commodities', '/trading/crypto', '/trading/forex',
+  '/trading/indices', '/trading/overview',
+];
+
+function isTenantMarketingPath(path: string): boolean {
+  if (TENANT_BLOCKED_EXACT.has(path)) return true;
+  return TENANT_BLOCKED_PREFIXES.some(
+    (p) => path === p || path.startsWith(p + '/'),
+  );
+}
+
 function isTradePath(path: string): boolean {
   return TRADE_PREFIXES.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'));
 }
@@ -144,7 +174,21 @@ export function middleware(req: NextRequest) {
   const host = req.headers.get('host')?.toLowerCase().split(':')[0] ?? '';
   const onMarketing = host === marketingHost.toLowerCase();
   const onTrade = host === tradeHost.toLowerCase();
-  if (!onMarketing && !onTrade) return NextResponse.next();
+  if (!onMarketing && !onTrade) {
+    // ── White-label tenant host ────────────────────────────────────
+    // Any other host reaching this app is a broker's custom domain
+    // (nginx only routes provisioned tenant server_names here). Those
+    // visitors must never see the SwissCresta marketing site or the
+    // platform's legal pages — a tenant's site starts at their login.
+    // App pages (/dashboard, /trading/terminal, /auth/*, …) serve
+    // normally; only the (landing) marketing group is redirected.
+    if (isTenantMarketingPath(req.nextUrl.pathname)) {
+      const r = NextResponse.redirect(new URL('/auth/login', req.url), 307);
+      r.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      return r;
+    }
+    return NextResponse.next();
+  }
 
   const { pathname, search } = req.nextUrl;
   if (isNeutral(pathname)) return NextResponse.next();

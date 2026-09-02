@@ -44,6 +44,7 @@ import { useWarmTheme } from '@/stores/warmThemeStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { cn } from '@/lib/utils';
 import DockNav, { type DockItemSpec } from '@/components/layout/DockNav';
+import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
 /** Sun/moon toggle for the warm theme's dark variant. */
 function ThemeToggle({ className }: { className?: string }) {
@@ -132,6 +133,7 @@ export default function AppNavbar() {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const dark = useWarmTheme((s) => s.dark);
+  const brand = useBrandDisplay();
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useShellStore();
 
@@ -192,20 +194,38 @@ export default function AppNavbar() {
         {/* LEFT — Logo, plain on the canvas (no pill/card) */}
         <Link
           href="/dashboard"
-          className="flex items-center shrink-0"
-          aria-label="SwissCresta home"
+          className="flex items-center shrink-0 gap-2"
+          aria-label={`${brand.name} home`}
         >
-          {/* Full logo lockup. The original's wordmark is black, invisible
-              on the Vantablack canvas, so dark mode uses the generated
-              white-text variant (same red mark, wordmark recoloured). */}
-          <Image
-            src={dark ? '/marketing/swisscresta-logo-dark.png' : '/marketing/swisscresta-logo.png'}
-            alt="SwissCresta"
-            width={195}
-            height={36}
-            priority
-            className="h-8 sm:h-9 w-auto"
-          />
+          {brand.isWhiteLabel ? (
+            /* White-label tenant: their uploaded logo, or their brand
+               name as text when no logo is set. Plain <img> — tenant
+               logos are served from the same-origin /api/v1 proxy. */
+            brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-8 sm:h-9 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <span className="font-bold tracking-tight text-lg text-text-primary select-none truncate max-w-[180px]">
+                {brand.name}
+              </span>
+            )
+          ) : (
+            /* Platform lockup. The original's wordmark is black, invisible
+               on the Vantablack canvas, so dark mode uses the generated
+               white-text variant (same red mark, wordmark recoloured). */
+            <Image
+              src={dark ? '/marketing/swisscresta-logo-dark.png' : '/marketing/swisscresta-logo.png'}
+              alt="SwissCresta"
+              width={195}
+              height={36}
+              priority
+              className="h-8 sm:h-9 w-auto"
+            />
+          )}
         </Link>
 
         {/* CENTER — Primary nav as a floating dock (lg+). Same slot/order as

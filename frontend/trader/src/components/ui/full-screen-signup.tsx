@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 import { scorePassword } from '@/lib/passwordStrength';
+import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
 type Mode = 'login' | 'signup';
 type SignupStep = 'credentials' | 'otp';
@@ -74,7 +75,18 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   // /auth/register/start where the backend stages it and attributes the
   // referral on verify. Without this the IB never gets credited.
   const [referralCode, setReferralCode] = useState<string | null>(null);
-  const copy = COPY[mode];
+  const brand = useBrandDisplay();
+  // White-label tenants get their own name in every piece of copy and
+  // a neutral hero line (the platform's Swiss-precision pitch is
+  // SwissCresta marketing, not theirs).
+  const copy = brand.isWhiteLabel
+    ? {
+        ...COPY[mode],
+        hero: 'A professional multi-asset trading platform.',
+        eyebrow: mode === 'signup' ? `Welcome to ${brand.name}` : 'Welcome back',
+        title: mode === 'signup' ? 'Create your account' : `Sign in to ${brand.name}`,
+      }
+    : COPY[mode];
 
   useEffect(() => {
     try {
@@ -156,7 +168,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
         otp: code,
       });
       await refreshUser();
-      toast.success('Email verified. Welcome to SwissCresta.');
+      toast.success(`Email verified. Welcome to ${brand.name}.`);
       router.push('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
@@ -189,7 +201,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     try {
       setSubmitting(true);
       await demoLogin();
-      toast.success('Demo account ready. Welcome to SwissCresta.');
+      toast.success(`Demo account ready. Welcome to ${brand.name}.`);
       router.push('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not start a demo session.';
@@ -228,17 +240,32 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[20rem] md:min-h-[36rem]">
           <Link
             href="/"
-            aria-label="SwissCresta home"
+            aria-label={`${brand.name} home`}
             className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5"
           >
-            <Image
-              src="/marketing/swisscresta-logo.png"
-              alt="SwissCresta"
-              width={220}
-              height={48}
-              priority
-              className="h-8 w-auto"
-            />
+            {brand.isWhiteLabel ? (
+              brand.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name}
+                  className="h-8 w-auto max-w-[180px] object-contain"
+                />
+              ) : (
+                <span className="font-bold tracking-tight text-lg text-[#0A0A0A] select-none">
+                  {brand.name}
+                </span>
+              )
+            ) : (
+              <Image
+                src="/marketing/swisscresta-logo.png"
+                alt="SwissCresta"
+                width={220}
+                height={48}
+                priority
+                className="h-8 w-auto"
+              />
+            )}
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
             {copy.hero}

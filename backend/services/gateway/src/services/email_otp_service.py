@@ -36,6 +36,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import EmailOtpCode, User, UserAuditLog
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("email_otp")
 
@@ -192,6 +193,7 @@ async def start_verification(
         raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
 
     from packages.common.src.email_templates import render_email_otp
+    await apply_email_brand(db, user)
     subject, html, text = render_email_otp(
         first_name=user.first_name,
         code=code,

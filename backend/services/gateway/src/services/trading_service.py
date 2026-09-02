@@ -27,6 +27,7 @@ from packages.common.src.notify import create_notification
 from packages.common.src.market_hours import is_market_open
 from packages.common.src import corecen_trade_client
 
+from packages.common.src.email_branding import apply_email_brand
 logger = logging.getLogger("trading_service")
 
 
@@ -540,6 +541,7 @@ async def place_order(
                 u = (await bg_db.execute(
                     select(User).where(User.id == _email_payload["user_id"])
                 )).scalar_one_or_none()
+                await apply_email_brand(bg_db, u)
             if not u or not u.email:
                 return
             if u.email.lower().endswith("@wallet.swisscresta.local"):

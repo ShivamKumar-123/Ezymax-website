@@ -77,7 +77,10 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
     # in the template renders without an outbound fetch. We modify the HTML
     # alternative part directly (not the outer message) so the structure is
     # multipart/alternative {plain, multipart/related {html, image}}.
-    logo = _logo_bytes()
+    # SKIPPED when the html doesn't reference the CID — white-label tenant
+    # emails render a text header instead of the platform logo, and an
+    # unreferenced inline attachment shows up as a paperclip in Outlook.
+    logo = _logo_bytes() if f"cid:{_LOGO_CID}" in html else None
     if logo:
         html_part = msg.get_payload()[-1]
         html_part.add_related(

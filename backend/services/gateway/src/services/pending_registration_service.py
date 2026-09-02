@@ -56,6 +56,7 @@ from packages.common.src.auth import hash_password
 from packages.common.src.models import User
 from packages.common.src.rate_limit import rate_limit_http
 from packages.common.src.redis_client import redis_client
+from packages.common.src.email_branding import apply_email_brand_for_signup
 
 logger = logging.getLogger("pending_reg")
 
@@ -190,6 +191,14 @@ async def start_pending_registration(
         raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
     if not smtp_configured():
         raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
+    from packages.common.src.broker_tenancy import host_from_request_headers
+    await apply_email_brand_for_signup(
+        db,
+        referral_code=(referral_code or None),
+        host=host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        ),
+    )
     subject, html, text = render_email_otp(
         first_name=payload["first_name"],
         code=otp,
@@ -349,6 +358,14 @@ async def resend_pending_otp(
         raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
     if not smtp_configured():
         raise HTTPException(status_code=503, detail="Email service unavailable. Try again shortly.")
+    from packages.common.src.broker_tenancy import host_from_request_headers
+    await apply_email_brand_for_signup(
+        db,
+        referral_code=payload.get("referral_code"),
+        host=host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        ),
+    )
     subject, html, text = render_email_otp(
         first_name=payload.get("first_name"),
         code=otp,

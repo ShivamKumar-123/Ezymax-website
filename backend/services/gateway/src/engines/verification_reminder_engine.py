@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import User
+from packages.common.src.email_branding import apply_email_brand
 
 logger = logging.getLogger("verification-reminder")
 
@@ -110,6 +111,7 @@ async def send_due_reminders(db: AsyncSession) -> int:
             continue
 
         days_old = max(0, (now - u.created_at).days) if u.created_at else 0
+        await apply_email_brand(db, u)
         subject, html, text = render_verification_reminder(
             first_name=u.first_name,
             days_since_signup=days_old,

@@ -41,7 +41,7 @@ type Step = {
 const STEPS: readonly Step[] = [
   {
     key: 'welcome',
-    title: 'Welcome to SwissCresta 👋',
+    title: 'Welcome 👋',
     body: "Here's a 30-second tour of the main features. You can skip anytime.",
   },
   {

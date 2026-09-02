@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, KYCDocument
 from packages.common.src.notify import create_notification
+from packages.common.src.email_branding import apply_email_brand
 from dependencies import write_audit_log
 
 
@@ -221,6 +222,7 @@ async def approve_kyc(
         from packages.common.src.config import get_settings
         if smtp_configured() and user.email:
             settings = get_settings()
+            await apply_email_brand(db, user)
             subject, html, text = render_kyc_approved(
                 first_name=user.first_name,
                 trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.swisscresta.com"),
@@ -283,6 +285,7 @@ async def reject_kyc(
         from packages.common.src.config import get_settings
         if smtp_configured() and user.email:
             settings = get_settings()
+            await apply_email_brand(db, user)
             subject, html, text = render_kyc_rejected(
                 first_name=user.first_name,
                 reason=reason_str or None,

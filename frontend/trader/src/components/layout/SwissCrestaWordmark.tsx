@@ -1,6 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
 const LOGO_SRC = '/marketing/swisscresta-logo.png';
 
@@ -18,14 +21,11 @@ type Props = {
 
 
 /**
- * Text wordmark for dashboard chrome. Pure typography next to the
- * Swiss-flag mark — no raster dependency — so the brand renders
- * identically across DPRs and any background.
- *
- * Visual split: "Swiss" in primary text colour, "Cresta" in the brand
- * indigo accent. Swap the two `<span>` halves to retheme without
- * touching any call-site. Set `hideFlag` if the surrounding chrome
- * already shows its own brand mark.
+ * Brand wordmark for dashboard chrome. On platform hosts this is the
+ * SwissCresta lockup; on a white-label tenant domain it renders the
+ * broker's logo (if uploaded) and/or brand name instead — this ONE
+ * component is what re-brands most of the app chrome, so never
+ * hard-code the platform logo at a call-site.
  */
 export function SwissCrestaWordmark({
   href = '/dashboard',
@@ -34,12 +34,11 @@ export function SwissCrestaWordmark({
   variant = 'default',
   hideFlag = false,
 }: Props) {
+  const brand = useBrandDisplay();
+
   if (variant === 'rail') {
-    // Terminal-left-rail variant — only ~36px wide. Renders the brand
-    // favicon PNG (same asset as the browser tab icon) so the mark is
-    // consistent across the app. `hideFlag` is honoured as the
-    // backwards-compatible "letter fallback" mode in case marketing
-    // ever wants the S+C lockup again.
+    // Terminal-left-rail variant — only ~36px wide. Platform: favicon
+    // PNG. Tenant: their logo, or a monogram of their brand name.
     return (
       <Link
         href={href}
@@ -50,7 +49,22 @@ export function SwissCrestaWordmark({
           className,
         )}
       >
-        {hideFlag ? (
+        {brand.isWhiteLabel ? (
+          brand.logoUrl ? (
+            // Tenant logos come from the same-origin /api/v1 proxy —
+            // plain <img>, next/image would need remotePatterns config.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={brand.logoUrl}
+              alt={brand.name}
+              className="w-7 h-7 object-contain rounded-md"
+            />
+          ) : (
+            <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none text-text-primary">
+              {brand.name.slice(0, 2).toUpperCase()}
+            </span>
+          )
+        ) : hideFlag ? (
           <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none">
             <span className="text-text-primary">S</span>
             <span className="text-[#E94E1B]">C</span>
@@ -70,29 +84,45 @@ export function SwissCrestaWordmark({
   }
 
   // textClassName preserved for backward compatibility with callers
-  // that previously controlled the inner text sizing. Now that the
-  // wordmark renders the full logo image, those classes apply to the
-  // outer link (e.g. extra margin) — they're a no-op on the image
-  // height itself, which is driven by Tailwind h-* below.
+  // that previously controlled the inner text sizing.
   void textClassName;
 
   return (
     <Link
       href={href}
-      aria-label="SwissCresta home"
+      aria-label={`${brand.name} home`}
       className={cn(
-        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
+        'inline-flex items-center min-w-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
         className,
       )}
     >
-      <Image
-        src={LOGO_SRC}
-        alt="SwissCresta"
-        width={220}
-        height={48}
-        priority
-        className="h-9 sm:h-10 w-auto"
-      />
+      {brand.isWhiteLabel ? (
+        <>
+          {brand.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={brand.logoUrl}
+              alt={brand.name}
+              className="h-9 sm:h-10 w-auto max-w-[160px] object-contain"
+            />
+          )}
+          {/* Show the name when there's no logo, or alongside a square mark. */}
+          {!brand.logoUrl && (
+            <span className="font-bold tracking-tight text-lg text-text-primary select-none truncate">
+              {brand.name}
+            </span>
+          )}
+        </>
+      ) : (
+        <Image
+          src={LOGO_SRC}
+          alt="SwissCresta"
+          width={220}
+          height={48}
+          priority
+          className="h-9 sm:h-10 w-auto"
+        />
+      )}
     </Link>
   );
 }

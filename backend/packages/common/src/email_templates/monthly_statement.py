@@ -5,7 +5,7 @@ that the previous month's statement is ready to view in the trader app.
 """
 from __future__ import annotations
 
-from .base import render_layout
+from .base import render_layout, platform_name
 
 
 def render_monthly_statement_available(
@@ -15,6 +15,7 @@ def render_monthly_statement_available(
     user_uid: str,
     trader_app_url: str = "https://trade.swisscresta.com",
 ) -> tuple[str, str, str]:
+    pn = platform_name()
     name = (first_name or "trader").strip() or "trader"
     base = trader_app_url.rstrip("/")
 
@@ -36,7 +37,7 @@ def render_monthly_statement_available(
     subject = f"Your account statement for {statement_month_label} is now available"
     html = render_layout(
         title=f"Your account statement for {statement_month_label} is ready",
-        intro=f"Hi {name}, your latest SwissCresta account statement is now available.",
+        intro=f"Hi {name}, your latest {pn} account statement is now available.",
         body_html=body,
         cta_label="Download statement",
         cta_url=f"{base}/portfolio",
@@ -49,7 +50,7 @@ def render_monthly_statement_available(
     text_lines = [
         f"Hi {name},",
         "",
-        f"Your SwissCresta account statement for {statement_month_label} is now available.",
+        f"Your {pn} account statement for {statement_month_label} is now available.",
         "",
         "Open Portfolio in the trader dashboard and click 'Download PDF statement'.",
         "Funding history (deposits / withdrawals) lives under Wallet → Transactions.",

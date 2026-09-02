@@ -182,7 +182,7 @@ export default function ProfileCompleteGate() {
         date_of_birth: form.date_of_birth,
       });
       await refreshUser();
-      toast.success('Profile completed — welcome to SwissCresta');
+      toast.success('Profile completed — welcome aboard');
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Could not save profile'));
     } finally {

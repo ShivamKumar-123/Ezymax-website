@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal, Transaction, BonusOffer
 from packages.common.src.notify import create_notification
+from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.admin_schemas import DepositOut, WithdrawalOut, PaginatedResponse
 from dependencies import write_audit_log
 
@@ -421,6 +422,7 @@ async def approve_deposit(
             render_deposit_confirmed, render_bonus_credited,
         )
         from packages.common.src.config import get_settings as _get_settings
+        await apply_email_brand(db, user_row)
         if smtp_configured() and user_row.email:
             app_url = (_get_settings().TRADER_APP_URL or "https://trade.swisscresta.com")
             subject, html, text = render_deposit_confirmed(
@@ -595,6 +597,7 @@ async def approve_withdrawal(
                 acct = withdrawal.bank_details.get("account_number") or ""
                 if acct:
                     destination_str = f"Bank ****{str(acct)[-4:]}"
+            await apply_email_brand(db, u)
             subject, html, text = render_withdrawal_approved(
                 first_name=u.first_name,
                 amount=withdrawal.amount,
@@ -712,6 +715,7 @@ async def reject_withdrawal(
         from packages.common.src.config import get_settings as _gs
         u = (await db.execute(select(User).where(User.id == withdrawal.user_id))).scalar_one_or_none()
         if smtp_configured() and u and u.email:
+            await apply_email_brand(db, u)
             subject, html, text = render_withdrawal_rejected(
                 first_name=u.first_name,
                 amount=withdrawal.amount,

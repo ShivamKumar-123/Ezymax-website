@@ -31,6 +31,7 @@ import {
   type KbAnswer,
   type KbSection,
 } from '@/lib/supportKb';
+import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
 type Msg =
   | { id: string; role: 'user'; text: string }
@@ -48,8 +49,8 @@ const MAX_STORED = 60;
 let seq = 0;
 const mid = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
-const greeting = (firstName?: string | null): Msg[] => [
-  { id: mid(), role: 'bot', kind: 'text', text: `Hi${firstName ? ` ${firstName}` : ''}! 👋 Welcome to SwissCresta. What can I help you with today?` },
+const greeting = (firstName?: string | null, brandName = 'SwissCresta'): Msg[] => [
+  { id: mid(), role: 'bot', kind: 'text', text: `Hi${firstName ? ` ${firstName}` : ''}! 👋 Welcome to ${brandName}. What can I help you with today?` },
   { id: mid(), role: 'bot', kind: 'sections' },
 ];
 
@@ -127,13 +128,14 @@ function Chip({ children, onClick, tone = 'default' }: { children: ReactNode; on
 }
 
 export default function SupportChatWidget() {
+  const brand = useBrandDisplay();
   const { user } = useAuthStore();
   const reduce = useReducedMotion();
   const storageKey = `${STORAGE_PREFIX}${(user as { id?: string } | null)?.id ?? 'anon'}`;
 
   const [open, setOpen] = useState(false);
   const firstName = (user as { first_name?: string | null } | null)?.first_name ?? null;
-  const [msgs, setMsgs] = useState<Msg[]>(() => greeting(firstName));
+  const [msgs, setMsgs] = useState<Msg[]>(() => greeting(firstName, brand.name));
   const [hydrated, setHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [typingId, setTypingId] = useState<string | null>(null);
@@ -235,7 +237,7 @@ export default function SupportChatWidget() {
     push({ id: mid(), role: 'user', text: `Talk to a human: ${subject}` }, { id: mid(), role: 'bot', kind: 'ticket', ticketId: String(res.ticket_number ?? res.id), subject });
   };
 
-  const reset = () => { setMsgs(greeting(firstName)); setTypingId(null); };
+  const reset = () => { setMsgs(greeting(firstName, brand.name)); setTypingId(null); };
 
   const panel = (
     <motion.div
@@ -252,7 +254,7 @@ export default function SupportChatWidget() {
       <div className="flex shrink-0 items-center gap-2.5 border-b border-border-primary px-4 py-3" style={{ background: 'var(--bg-secondary)' }}>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/15 text-accent"><Sparkles size={17} /></span>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-[14px] font-bold text-text-primary">SwissCresta Assistant</p>
+          <p className="text-[14px] font-bold text-text-primary">{brand.name} Assistant</p>
           <p className="flex items-center gap-1.5 text-[11px] text-text-tertiary"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />Instant answers · humans on standby</p>
         </div>
         <button type="button" onClick={reset} className="rounded-full px-2 py-1 text-[11px] font-semibold text-text-tertiary hover:bg-bg-hover hover:text-text-primary" title="Start over">Reset</button>

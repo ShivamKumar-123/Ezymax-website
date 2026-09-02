@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
+import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
 type DisplayMode = 'pnl' | 'roi' | 'ticks';
 
@@ -58,6 +59,7 @@ export default function ShareTradeCard({
   roiPct,
   ticks,
 }: ShareTradeCardProps) {
+  const brand = useBrandDisplay();
   const isBuy = side.toLowerCase() === 'buy';
   const positive = pnl >= 0;
   const digits = getDigits(symbol, pipSize);
@@ -113,13 +115,13 @@ export default function ShareTradeCard({
         <div className="flex flex-col items-center justify-center pt-1 pb-3 gap-1.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/marketing/swisscresta_fevicon.png"
-            alt="SwissCresta"
+            src={brand.logoUrl || '/marketing/swisscresta_fevicon.png'}
+            alt={brand.name}
             width={40}
             height={40}
             style={{ height: 40, width: 40, objectFit: 'contain', borderRadius: 8 }}
           />
-          <span className="text-white text-[11px] font-bold tracking-[0.32em]">SWISSCRESTA</span>
+          <span className="text-white text-[11px] font-bold tracking-[0.32em]">{brand.name.toUpperCase()}</span>
         </div>
 
         {/* Status + value */}

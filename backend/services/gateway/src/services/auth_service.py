@@ -23,6 +23,8 @@ from packages.common.src.auth import (
     hash_token, decode_token,
 )
 
+from packages.common.src.email_branding import apply_email_brand
+
 logger = logging.getLogger("auth_service")
 
 DEMO_SHARED_EMAIL = "demo@swisscresta.com"
@@ -241,6 +243,7 @@ async def _send_login_notification_email(
         ip = client_ip_for_inet(request) or None
         when_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         st = get_settings()
+        await apply_email_brand(db, user)
         subject, html, text = render_new_login(
             first_name=user.first_name,
             ip_address=str(ip) if ip else None,
@@ -822,6 +825,7 @@ async def google_oauth(
     # rather than waiting for profile completion; flip the flag so the
     # profile path doesn't double-send.
     if is_new:
+        await apply_email_brand(db, user)
         _send_welcome_email(user, via_google=True)
         user.welcome_email_sent = True
         await db.commit()
@@ -934,6 +938,7 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
 
     from packages.common.src.smtp_mail import send_password_reset_email, smtp_configured
     if smtp_configured():
+        await apply_email_brand(db, user)
         sent = await send_password_reset_email(user.email, raw)
         if sent:
             logger.info("Password reset code sent to %s", user.email)

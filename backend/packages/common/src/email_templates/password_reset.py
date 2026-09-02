@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from .base import render_layout
+from .base import render_layout, platform_name
 
 
 def render_password_reset(
     *,
     code: str,
-    app_name: str = "SwissCresta",
+    app_name: str | None = None,
     expires_in_minutes: int = 15,
 ) -> tuple[str, str, str]:
+    # Default to the active tenant brand (or the platform) when the
+    # caller doesn't pin a name explicitly.
+    app_name = app_name or platform_name()
     subject = f"Your {app_name} password reset code"
     body = f"""
     <p style="margin:0 0 16px;color:#f5f5f5;font-size:14px;line-height:1.6;">
