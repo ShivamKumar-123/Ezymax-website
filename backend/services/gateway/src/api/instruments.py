@@ -279,26 +279,29 @@ async def get_bars(
     # --- 1. Durable store first ---
     bars = await _fetch_ohlc_db(sym, tf, to_time)
 
-    # --- 2. Redis list (recent cache) — upper bound only, no `from` floor ---
-    if len(bars) < 20:
-        raw_list: list[bytes] = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 999)
-        redis_bars = []
+    # --- 2. Redis list (recent cache) — ALWAYS merged in. The durable store can
+    # lag or stall (e.g. the aggregator's OHLC-store write being down), so the
+    # last ~1000 bars in Redis are the freshest source. Merge any bar the durable
+    # store is missing (deduped by time) so a durable gap can never leave a hole
+    # in the chart. Upper bound only — no `from` floor. ---
+    raw_list: list[bytes] = await redis_client.lrange(f"bars:{sym}:{tf}", 0, 999)
+    if raw_list:
+        have = {b["time"] for b in bars}
         for raw in raw_list:
             try:
                 b = _json.loads(raw)
                 t = int(b.get("time", 0))
-                if to_time and t > to_time:
+                if (to_time and t > to_time) or t in have:
                     continue
-                redis_bars.append({
+                bars.append({
                     "time": t, "open": float(b["open"]), "high": float(b["high"]),
                     "low": float(b["low"]), "close": float(b["close"]),
                     "volume": float(b.get("volume", 0.0)),
                 })
+                have.add(t)
             except Exception:
                 continue
-        redis_bars.sort(key=lambda x: x["time"])
-        if len(redis_bars) > len(bars):
-            bars = redis_bars
+        bars.sort(key=lambda x: x["time"])
 
     # --- 3. Binance fallback for crypto when empty or stale ---
     has_recent = bars and (now_epoch - bars[-1]["time"]) < bar_sec * 3
