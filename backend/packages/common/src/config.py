@@ -89,6 +89,11 @@ class Settings(BaseSettings):
     BRANDING_CERTBOT_BIN: str = "/usr/bin/certbot"
     BRANDING_NGINX_BIN: str = "/usr/sbin/nginx"
     BRANDING_CERTBOT_EMAIL: str = ""
+    # true = admin-api shells out to nginx/certbot itself (only valid when
+    # it runs directly on the host). false (default) = the containerised
+    # service just marks status 'provisioning' and the HOST cron agent
+    # (scripts/wl-domain-agent.sh) performs the nginx+certbot work.
+    BRANDING_PROVISION_LOCAL: bool = False
 
     # Optional SMTP — required for password-reset emails in non-dev. If SMTP_HOST is empty, reset links are only logged in development.
     SMTP_HOST: str = ""

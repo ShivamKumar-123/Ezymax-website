@@ -169,6 +169,19 @@ async def _provision(user_id: uuid.UUID) -> None:
         profile.custom_domain_status = DOMAIN_STATUS_PROVISIONING
         await db.commit()
 
+    # Containerised deploys (the default) cannot reach host nginx/certbot —
+    # the domain stays in 'provisioning' and the HOST agent
+    # (scripts/wl-domain-agent.sh, root cron) completes it within a minute
+    # and flips the status to ready/failed itself. Set
+    # BRANDING_PROVISION_LOCAL=true only when admin-api runs directly on
+    # the host with sudo access to nginx+certbot.
+    if not getattr(settings, "BRANDING_PROVISION_LOCAL", False):
+        logger.info(
+            "domain %s marked provisioning — host agent (wl-domain-agent) will complete it",
+            domain,
+        )
+        return
+
     try:
         error = await asyncio.get_running_loop().run_in_executor(
             None, _sync_provision, domain, sub
@@ -202,6 +215,13 @@ def schedule_provision(user_id: uuid.UUID) -> None:
 
 
 def schedule_teardown(domain: str, app_subdomain: str | None) -> None:
+    # Agent mode (default): the host agent reconciles — any tenant nginx
+    # block whose domain is no longer active in broker_profiles is
+    # removed and its certificate deleted on the next cron tick.
+    if not getattr(settings, "BRANDING_PROVISION_LOCAL", False):
+        logger.info("domain %s disconnected — host agent will tear it down", domain)
+        return
+
     async def _run_teardown():
         try:
             await asyncio.get_running_loop().run_in_executor(

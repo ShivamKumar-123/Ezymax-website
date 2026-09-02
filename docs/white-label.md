@@ -61,15 +61,23 @@ set domain → pending_dns → (verify: A records == PLATFORM_PUBLIC_IP)
 ## Server setup (one-time, production)
 
 1. Set in `.env`: `BRANDING_ENABLED=true`, `PLATFORM_PUBLIC_IP=<origin ip>`,
-   `BRANDING_NGINX_TENANTS_FILE=/etc/nginx/conf.d/swisscresta-tenants.conf`.
+   `BRANDING_NGINX_TENANTS_FILE=/etc/nginx/conf.d/swisscresta-tenants.conf`,
+   `BRANDING_TRADER_UPSTREAM=127.0.0.1:3012`,
+   `BRANDING_ADMIN_UPSTREAM=127.0.0.1:3013`.
 2. `touch /etc/nginx/conf.d/swisscresta-tenants.conf` and ensure nginx's
    `http {}` block includes `conf.d/*.conf` (default on Debian/Ubuntu).
-3. Passwordless sudo for the admin-api service user:
+3. **Install the host domain agent** (the admin-api container cannot run
+   host nginx/certbot; the agent completes provisioning within a minute):
    ```
-   deploy ALL=(root) NOPASSWD: /usr/bin/certbot, /usr/sbin/nginx
+   sudo ./scripts/install-wl-agent-cron.sh
    ```
-4. Run migration `0062` (`docker compose --profile migrate up migrate`) —
-   the admin service also bootstraps the DDL idempotently on start.
+   Log: `/var/log/swisscresta-wl-agent.log`. The agent also reconciles
+   Disconnects (removes the nginx block + deletes the certificate).
+4. Migrations 0062/0063 run via `deploy.sh`; the admin service also
+   bootstraps the DDL idempotently on start.
+5. Tenant DNS must be **direct** (Cloudflare grey-cloud / "DNS only")
+   during verification + SSL issuance; the proxy may be re-enabled once
+   the domain shows Live.
 
 ## Flow (how to rent the platform out)
 
