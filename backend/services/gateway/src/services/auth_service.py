@@ -124,9 +124,29 @@ def _cookie_samesite() -> str:
     return v
 
 
-def _cookie_domain() -> str | None:
+def _cookie_domain(request: Request | None = None) -> str | None:
+    """Cookie Domain attribute, host-aware for white-label tenants.
+
+    COOKIE_DOMAIN (.swisscresta.com) makes the session span apex +
+    trade subdomain — but a Set-Cookie carrying Domain=.swisscresta.com
+    is silently REJECTED by browsers when the response is served on a
+    tenant domain (tarundewangan.com), which broke demo/login on every
+    white-label site. When the request's browser host isn't under the
+    configured parent domain, omit Domain entirely → host-only cookie,
+    which is exactly right for a tenant (their trader app lives on one
+    host)."""
     d = get_settings().COOKIE_DOMAIN.strip()
-    return d or None
+    if not d:
+        return None
+    if request is not None:
+        parent = d.lstrip(".").lower()
+        from packages.common.src import broker_tenancy
+        host = broker_tenancy.host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        ) or (request.headers.get("host") or "").split(":")[0].lower()
+        if host and host != parent and not host.endswith("." + parent):
+            return None
+    return d
 
 
 def attach_auth_cookies(
@@ -140,7 +160,7 @@ def attach_auth_cookies(
     st = get_settings()
     secure = _cookie_secure_flag(request)
     ss = _cookie_samesite()
-    domain = _cookie_domain()
+    domain = _cookie_domain(request)
     exp = access_expires_at
     if exp.tzinfo is None:
         exp = exp.replace(tzinfo=timezone.utc)
@@ -178,7 +198,7 @@ def clear_auth_cookies(response: JSONResponse, request: Request) -> None:
     st = get_settings()
     secure = _cookie_secure_flag(request)
     ss = _cookie_samesite()
-    domain = _cookie_domain()
+    domain = _cookie_domain(request)
     delete_kw_a = dict(path="/", samesite=ss, secure=secure)
     delete_kw_r = dict(path="/", samesite=ss, secure=secure)
     if domain:
