@@ -70,6 +70,13 @@ def branding_state(profile: BrokerProfile) -> dict:
         broker_tenancy.served_hostnames(profile.custom_domain, profile.app_subdomain)
         if profile.custom_domain else []
     )
+    # The tenant's own admin-panel host (admin.<domain>) — provisioned
+    # alongside the trader hosts so brokers never log in on the
+    # platform's admin domain.
+    admin_host = (
+        broker_tenancy.admin_hostname(profile.custom_domain)
+        if profile.custom_domain else None
+    )
     return {
         "partner_code": profile.partner_code,
         "brand_name": profile.brand_name,
@@ -85,6 +92,8 @@ def branding_state(profile: BrokerProfile) -> dict:
             if profile.custom_domain_provisioned_at else None
         ),
         "served_hostnames": served,
+        "admin_hostname": admin_host,
+        "dns_hostnames": served + ([admin_host] if admin_host else []),
         "platform_public_ip": settings.PLATFORM_PUBLIC_IP or None,
         "referral_link": f"{settings.TRADER_APP_URL}/auth/register?ref={profile.partner_code}",
     }
@@ -190,6 +199,9 @@ async def verify_custom_domain(db: AsyncSession, profile: BrokerProfile) -> dict
         )
 
     hosts = broker_tenancy.served_hostnames(profile.custom_domain, profile.app_subdomain)
+    # The admin panel rides admin.<domain> — its A record is required too,
+    # so a broker can never end up with a live site but a dead back office.
+    hosts = hosts + [broker_tenancy.admin_hostname(profile.custom_domain)]
     misses: list[str] = []
     for h in hosts:
         ips = await _resolve_a_records(h)

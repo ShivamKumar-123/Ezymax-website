@@ -45,6 +45,14 @@ set domain → pending_dns → (verify: A records == PLATFORM_PUBLIC_IP)
 * **Apex mode** (no subdomain): platform serves `brand.com` + `www.brand.com`.
 * **Subdomain mode**: platform serves only `<sub>.brand.com`; the apex
   stays free for the broker's own landing page.
+* **Admin panel**: every connected domain ALSO serves the broker's
+  (scoped) admin panel on `admin.<domain>` — same certificate, second
+  nginx block → `BRANDING_ADMIN_UPSTREAM`. The DNS wizard requires the
+  `admin.` A record too. Login isolation: on `admin.<domain>` only that
+  broker (and its sub-brokers, plus the platform super-admin) can sign
+  in; once a broker's domain is live, the platform's admin host refuses
+  their login and points them at their own portal. `admin` and `www`
+  are reserved app-subdomain labels.
 * Tenant login isolation: a login on `brand.com` only admits users in
   that broker's pool (`user_belongs_to_owner`); platform hosts fail open.
 * The gateway's same-origin guard accepts live tenant domains via a 60s

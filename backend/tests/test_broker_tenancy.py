@@ -146,6 +146,8 @@ def test_normalise_subdomain():
     assert normalise_subdomain("") == ""
     with pytest.raises(ValueError):
         normalise_subdomain("www")
+    with pytest.raises(ValueError):
+        normalise_subdomain("admin")  # reserved for the tenant admin panel
 
 
 def test_served_hostnames_modes():

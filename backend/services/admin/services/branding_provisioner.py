@@ -49,8 +49,7 @@ _BLOCK_BEGIN = "# BEGIN swisscresta-tenant {domain}"
 _BLOCK_END = "# END swisscresta-tenant {domain}"
 
 
-def _server_block(server_names: str) -> str:
-    upstream = settings.BRANDING_TRADER_UPSTREAM
+def _server_block(server_names: str, upstream: str) -> str:
     return f"""
 server {{
     listen 80;
@@ -82,13 +81,16 @@ def _run(cmd: list[str]) -> subprocess.CompletedProcess:
 def _sync_provision(domain: str, app_subdomain: str | None) -> str | None:
     """Blocking shell work. Returns an error string, or None on success."""
     tenants_file = settings.BRANDING_NGINX_TENANTS_FILE
-    hosts = broker_tenancy.served_hostnames(domain, app_subdomain)
-    names = " ".join(hosts)
+    trader_hosts = broker_tenancy.served_hostnames(domain, app_subdomain)
+    admin_host = broker_tenancy.admin_hostname(domain)
+    # certbot covers every host in one certificate.
+    hosts = trader_hosts + [admin_host]
+    names = " ".join(trader_hosts)
 
     if not tenants_file:
         logger.info(
             "BRANDING_NGINX_TENANTS_FILE unset — dev mode, skipping nginx/certbot "
-            "for %s (would serve: %s)", domain, names,
+            "for %s (would serve: %s + admin panel on %s)", domain, names, admin_host,
         )
         return None
 
@@ -98,7 +100,14 @@ def _sync_provision(domain: str, app_subdomain: str | None) -> str | None:
     existing = path.read_text() if path.exists() else ""
     if begin not in existing:
         with path.open("a") as f:
-            f.write(f"\n{begin}\n{_server_block(names)}\n{end}\n")
+            # Two blocks per tenant: the trader app on their chosen hosts,
+            # and the (scoped) admin panel on admin.<domain>.
+            f.write(
+                f"\n{begin}\n"
+                f"{_server_block(names, settings.BRANDING_TRADER_UPSTREAM)}\n"
+                f"{_server_block(admin_host, settings.BRANDING_ADMIN_UPSTREAM)}\n"
+                f"{end}\n"
+            )
 
     r = _run(["sudo", settings.BRANDING_NGINX_BIN, "-s", "reload"])
     if r.returncode != 0:
@@ -127,7 +136,9 @@ def _sync_teardown(domain: str, app_subdomain: str | None) -> None:
     if not tenants_file:
         logger.info("dev mode — skipping teardown for %s", domain)
         return
-    hosts = broker_tenancy.served_hostnames(domain, app_subdomain)
+    hosts = broker_tenancy.served_hostnames(domain, app_subdomain) + [
+        broker_tenancy.admin_hostname(domain)
+    ]
     cert_name = hosts[0]
     _run([
         "sudo", settings.BRANDING_CERTBOT_BIN, "delete",

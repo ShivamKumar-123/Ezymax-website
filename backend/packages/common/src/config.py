@@ -83,6 +83,9 @@ class Settings(BaseSettings):
     # provisioner then only records status transitions without shelling out).
     BRANDING_NGINX_TENANTS_FILE: str = ""   # e.g. /etc/nginx/conf.d/swisscresta-tenants.conf
     BRANDING_TRADER_UPSTREAM: str = "127.0.0.1:3000"
+    # Upstream for the admin panel served on tenant admin domains
+    # (admin.<broker-domain>). Prod: 127.0.0.1:3013 (see nginx upstreams).
+    BRANDING_ADMIN_UPSTREAM: str = "127.0.0.1:3001"
     BRANDING_CERTBOT_BIN: str = "/usr/bin/certbot"
     BRANDING_NGINX_BIN: str = "/usr/sbin/nginx"
     BRANDING_CERTBOT_EMAIL: str = ""

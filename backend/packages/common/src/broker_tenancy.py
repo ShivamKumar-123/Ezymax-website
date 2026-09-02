@@ -63,8 +63,10 @@ def normalise_subdomain(raw: str | None) -> str:
     s = (raw or "").strip().lower().strip(".")
     if not s:
         return ""
-    if not _SUBDOMAIN_RE.match(s) or s == "www":
-        raise ValueError("Subdomain must be a single label like 'trade' (not 'www')")
+    if not _SUBDOMAIN_RE.match(s) or s in ("www", "admin"):
+        raise ValueError(
+            "Subdomain must be a single label like 'trade' — 'www' and 'admin' are reserved"
+        )
     return s
 
 
@@ -91,6 +93,14 @@ def host_from_request_headers(origin: str | None, referer: str | None) -> str | 
         if m:
             return m.group(1)
     return None
+
+
+def admin_hostname(domain: str) -> str:
+    """The tenant's admin-panel hostname. Convention-based: every
+    connected domain also serves the (scoped) admin panel on
+    admin.<domain>, so brokers log in on THEIR domain, never on
+    admin.swisscresta.com."""
+    return f"admin.{domain}"
 
 
 def served_hostnames(domain: str, app_subdomain: str | None) -> list[str]:

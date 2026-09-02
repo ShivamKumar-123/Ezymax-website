@@ -37,6 +37,12 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   // Preserve client IP in the audit logs.
   const fwdFor = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
   if (fwdFor) headers.set('x-forwarded-for', fwdFor);
+  // Preserve the ORIGINAL browser host so admin-api can enforce
+  // white-label host isolation (brokers sign in on admin.<their-domain>,
+  // and only their accounts are accepted there). nginx already sets
+  // x-forwarded-host on tenant domains; fall back to Host for direct hits.
+  const fwdHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  if (fwdHost) headers.set('x-forwarded-host', fwdHost);
 
   const method = req.method.toUpperCase();
   const hasBody = !['GET', 'HEAD'].includes(method);

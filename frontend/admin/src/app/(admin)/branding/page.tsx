@@ -29,6 +29,8 @@ interface BrandingState {
   custom_domain_status: string | null;
   custom_domain_last_error: string | null;
   served_hostnames: string[];
+  admin_hostname?: string | null;
+  dns_hostnames?: string[];
   platform_public_ip: string | null;
   referral_link: string;
 }
@@ -268,6 +270,12 @@ export default function BrandingPage() {
               </button>
             </div>
 
+            {state.custom_domain_status === 'ready' && state.admin_hostname && (
+              <p className="text-xs text-text-secondary mb-3">
+                Your admin panel: <a href={`https://${state.admin_hostname}`} target="_blank" rel="noreferrer" className="font-mono text-accent">{state.admin_hostname}</a>
+                <span className="text-text-tertiary"> — sign in there from now on.</span>
+              </p>
+            )}
             {state.custom_domain_status !== 'ready' && (
               <div className="bg-bg-tertiary/40 border border-border-primary rounded-md p-3 mb-3">
                 <div className="text-xxs text-text-tertiary uppercase tracking-wide mb-1.5">DNS setup</div>
@@ -279,8 +287,13 @@ export default function BrandingPage() {
                   </button>
                 </p>
                 <ul className="space-y-0.5">
-                  {state.served_hostnames.map((h) => (
-                    <li key={h} className="text-xs font-mono text-text-secondary">{h}</li>
+                  {(state.dns_hostnames || state.served_hostnames).map((h) => (
+                    <li key={h} className="text-xs font-mono text-text-secondary">
+                      {h}
+                      {h === state.admin_hostname && (
+                        <span className="ml-1.5 text-xxs text-text-tertiary">(your admin panel)</span>
+                      )}
+                    </li>
                   ))}
                 </ul>
                 {state.custom_domain_last_error && (

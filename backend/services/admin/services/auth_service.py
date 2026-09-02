@@ -38,7 +38,73 @@ def create_admin_token(admin_id: str, role: str) -> str:
         ) from e
 
 
-async def admin_login(body: AdminLoginRequest, db: AsyncSession) -> AdminLoginResponse:
+async def _enforce_admin_host_isolation(admin: User, host: str | None, db: AsyncSession) -> None:
+    """White-label admin-host rules (login-time; cookies are host-only so a
+    session never travels between admin hosts):
+
+      * admin.<broker-domain>  → only that broker (and brokers in its
+        subtree) may sign in; the platform super-admin is also allowed
+        (support/debug). Anyone else is refused.
+      * platform / unknown host → a broker whose custom domain is LIVE is
+        refused with a pointer to their own admin domain (they must never
+        work out of admin.swisscresta.com once their panel exists). A
+        broker with no live domain yet may still use the platform host —
+        otherwise a fresh tenant could never log in to set things up.
+    """
+    from packages.common.src.config import get_settings as _gs
+    if not _gs().BRANDING_ENABLED or not host:
+        return
+    from packages.common.src import broker_tenancy
+    from packages.common.src.models import BrokerProfile
+    from packages.common.src.models.broker import DOMAIN_STATUS_READY
+
+    h = host.strip().lower().split(":", 1)[0]
+    tenant_profile = None
+    if h.startswith("admin."):
+        apex = h[len("admin."):]
+        tenant_profile = (
+            await db.execute(
+                select(BrokerProfile).where(
+                    BrokerProfile.custom_domain == apex,
+                    BrokerProfile.custom_domain_status == DOMAIN_STATUS_READY,
+                    BrokerProfile.is_suspended.is_(False),
+                )
+            )
+        ).scalar_one_or_none()
+
+    if tenant_profile is not None:
+        if admin.role == "super_admin":
+            return
+        owner_id = tenant_profile.user_id
+        if admin.id == owner_id or owner_id in (admin.broker_ancestry or []):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This admin portal belongs to a different broker.",
+        )
+
+    # Platform / unrecognised host.
+    if admin.role == "broker":
+        from packages.common.src import broker_tenancy as _bt
+        profile = await _bt.get_broker_profile(db, admin.id)
+        if (
+            profile is not None
+            and profile.custom_domain
+            and profile.custom_domain_status == DOMAIN_STATUS_READY
+            and not profile.is_suspended
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Please sign in on your own admin portal: "
+                    f"https://admin.{profile.custom_domain}"
+                ),
+            )
+
+
+async def admin_login(
+    body: AdminLoginRequest, db: AsyncSession, host: str | None = None
+) -> AdminLoginResponse:
     email_norm = (body.email or "").strip().lower()
     if not email_norm:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -80,6 +146,9 @@ async def admin_login(body: AdminLoginRequest, db: AsyncSession) -> AdminLoginRe
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Broker account is suspended — contact the platform",
             )
+
+    # White-label host isolation (tenant admin domains vs platform host).
+    await _enforce_admin_host_isolation(admin, host, db)
 
     token = create_admin_token(str(admin.id), admin.role)
 

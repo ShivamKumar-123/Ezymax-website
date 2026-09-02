@@ -83,6 +83,8 @@ export default function AdminSidebar({
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Config', 'Business']);
   const [permissions, setPermissions] = useState<string[]>(['*']);
   const [employeeRole, setEmployeeRole] = useState<string>('super_admin');
+  // White-label broker logins show THEIR brand in the sidebar header.
+  const [brandName, setBrandName] = useState<string>('');
 
   // Track viewport so the desktop "collapse" state never hides labels in the
   // mobile drawer (the drawer is always full-width on phones).
@@ -106,9 +108,10 @@ export default function AdminSidebar({
   useEffect(() => {
     (async () => {
       try {
-        const me = await adminApi.get<{ permissions: string[]; employee_role: string }>('/auth/me');
+        const me = await adminApi.get<{ permissions: string[]; employee_role: string; brand_name?: string | null; role?: string }>('/auth/me');
         setPermissions(me.permissions || []);
         setEmployeeRole(me.employee_role || '');
+        if (me.role === 'broker') setBrandName((me.brand_name || '').trim() || 'Broker Panel');
       } catch {}
     })();
   }, []);
@@ -145,7 +148,17 @@ export default function AdminSidebar({
     )}>
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
-        {!showLabels ? (
+        {brandName ? (
+          showLabels ? (
+            <Link href="/" className="flex items-center min-w-0">
+              <span className="font-bold tracking-tight text-base text-text-primary truncate">{brandName}</span>
+            </Link>
+          ) : (
+            <span className="font-bold text-base text-text-primary mx-auto select-none">
+              {brandName.slice(0, 2).toUpperCase()}
+            </span>
+          )
+        ) : !showLabels ? (
           <img src="/logo.png" alt="SwissCresta" className="w-7 h-7 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center min-w-0">

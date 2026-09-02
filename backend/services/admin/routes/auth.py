@@ -64,7 +64,12 @@ async def admin_login(
     # 6 seconds, enough to retype a wrong password but not enough for
     # credential stuffing / spraying. Audit finding H1.
     rate_limit_http(request, "admin-login", 10, 60.0)
-    result = await auth_service.admin_login(body=body, db=db)
+    # Original browser host (forwarded by the Next admin proxy) — drives
+    # white-label host isolation: on admin.<broker-domain> only that
+    # broker's accounts may sign in; brokers with a live domain are
+    # pushed off the platform's admin host to their own.
+    login_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    result = await auth_service.admin_login(body=body, db=db, host=login_host)
     _set_admin_cookie(response, request, result.access_token)
     return result.model_dump(exclude={"access_token", "token_type"})
 
