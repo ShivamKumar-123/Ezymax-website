@@ -120,6 +120,14 @@ class Settings(BaseSettings):
     # for local dev where a real feed key isn't available.
     ALLOW_SIMULATED_FEED: bool = False
 
+    # Source live CRYPTO quotes from Binance's public WebSocket (deep, real
+    # liquidity) instead of the primary feed. When true and a real primary feed
+    # (Infoway/Corecen) is active, the primary feed STOPS subscribing the crypto
+    # symbols and a Binance bookTicker stream supplies them. Public market-data
+    # needs NO API key. Non-crypto (forex/metals/indices/oil) stays on the
+    # primary feed. Set false to keep crypto on the primary feed.
+    CRYPTO_FEED_BINANCE: bool = True
+
     # Corecen LP (primary market data source). When CORECEN_LP_ENABLED=true the
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).

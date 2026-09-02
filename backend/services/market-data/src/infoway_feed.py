@@ -71,9 +71,13 @@ def _trace() -> str:
 class InfowayFeed:
     """Streams depth (best bid/ask) from Infoway `common` + `crypto` sockets."""
 
-    def __init__(self, api_key: str, instruments: Dict[str, dict]):
+    def __init__(self, api_key: str, instruments: Dict[str, dict],
+                 exclude_symbols: Optional[set] = None):
         self._api_key = api_key.strip()
         self._instruments = instruments
+        # Platform symbols another feed owns (e.g. crypto served from Binance) —
+        # never subscribed here so each symbol has exactly one live source.
+        self._exclude_symbols = {s.upper() for s in (exclude_symbols or set())}
         self._infoway_to_platform = _build_infoway_to_platform(instruments)
 
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
@@ -92,12 +96,13 @@ class InfowayFeed:
         common_codes = [
             CRYPTO_INFOWAY_CODES.get(s, s)
             for s, info in self._instruments.items()
-            if info["category"] != "crypto"
+            if info["category"] != "crypto" and s.upper() not in self._exclude_symbols
         ]
         crypto_codes = [
             CRYPTO_INFOWAY_CODES[s]
             for s in self._instruments
             if self._instruments[s]["category"] == "crypto"
+            and s.upper() not in self._exclude_symbols
         ]
         logger.info(
             "Infoway feed starting — common=%d symbols, crypto=%d symbols",

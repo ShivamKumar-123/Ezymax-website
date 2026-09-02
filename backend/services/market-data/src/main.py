@@ -19,6 +19,7 @@ from .feed_handler import FeedSimulator, NullFeed, INSTRUMENTS
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
 from .corecen_lp_feed import CorecenLPFeed
+from .binance_feed import BinanceCryptoFeed, covered_symbols as binance_covered_symbols
 from .bar_aggregator import BarAggregator
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
@@ -58,6 +59,14 @@ class MarketDataService:
         raw_key = (settings.INFOWAY_API_KEY or "").strip()
         self._tick_count = 0
         self._infoway_watchdog_armed = False
+
+        # Crypto from Binance's public WS (deep real liquidity) when enabled and
+        # a real primary feed is active. The primary feed then drops the crypto
+        # symbols so each has exactly one source; forex/metals/etc stay primary.
+        self.crypto_feed = None
+        binance_crypto = getattr(settings, "CRYPTO_FEED_BINANCE", True)
+        crypto_syms = set(binance_covered_symbols(INSTRUMENTS)) if binance_crypto else set()
+
         if getattr(settings, "CORECEN_LP_ENABLED", False):
             if not settings.CORECEN_LP_API_KEY or not settings.CORECEN_LP_API_SECRET:
                 logger.error(
@@ -66,10 +75,16 @@ class MarketDataService:
                 )
             self.feed = CorecenLPFeed()
             logger.info("Price feed: Corecen LP (receiving pushes on /api/lp/prices/batch)")
+            if crypto_syms:
+                self.crypto_feed = BinanceCryptoFeed(INSTRUMENTS)
         elif usable_infoway_api_key(raw_key):
-            self.feed = InfowayFeed(raw_key, INSTRUMENTS)
+            self.feed = InfowayFeed(raw_key, INSTRUMENTS, exclude_symbols=crypto_syms)
             self._infoway_watchdog_armed = True
-            logger.info("Price feed: Infoway WebSocket (depth)")
+            if crypto_syms:
+                self.crypto_feed = BinanceCryptoFeed(INSTRUMENTS)
+                logger.info("Price feed: Infoway WebSocket (forex/metals) + Binance (crypto)")
+            else:
+                logger.info("Price feed: Infoway WebSocket (depth)")
         elif getattr(settings, "ALLOW_SIMULATED_FEED", False):
             # DEV ONLY — explicit opt-in. Never enable in production.
             self.feed = FeedSimulator(tick_rate_multiplier=1.0)
@@ -118,6 +133,8 @@ class MarketDataService:
             asyncio.create_task(self._auto_seed_bars()),
             asyncio.create_task(self._durable_write_watchdog()),
         ]
+        if self.crypto_feed is not None:
+            tasks.append(asyncio.create_task(self.crypto_feed.start()))
         if self._infoway_watchdog_armed:
             tasks.append(asyncio.create_task(self._infoway_fallback_watchdog()))
 
@@ -277,6 +294,8 @@ class MarketDataService:
         logger.info("Tick processor started")
         while self.running:
             tick = await self.feed.get_tick()
+            if tick is None and self.crypto_feed is not None:
+                tick = await self.crypto_feed.get_tick()
             if tick is None:
                 await asyncio.sleep(0.01)
                 continue
