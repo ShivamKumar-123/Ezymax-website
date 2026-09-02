@@ -32,6 +32,41 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // White-label: on a tenant admin host (admin.<broker-domain>) the login
+  // page carries the BROKER's identity, not the platform's. The /api/*
+  // rewrite proxies this to the gateway's public by-domain lookup.
+  const [brand, setBrand] = useState<{ name: string; logoUrl: string | null } | null>(null);
+  useEffect(() => {
+    const host = window.location.hostname.toLowerCase();
+    const platformHosts = new Set(['admin.swisscresta.com', 'localhost', '127.0.0.1']);
+    if (platformHosts.has(host)) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/v1/branding/by-domain?host=${encodeURIComponent(host)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !data?.is_white_label) return;
+        const name = (data.brand_name || '').trim() || 'Broker';
+        const logoUrl = data.logo_url || null;
+        setBrand({ name, logoUrl });
+        document.title = `${name} Admin`;
+        if (logoUrl) {
+          const icon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+          if (icon) icon.href = logoUrl;
+          const link = document.createElement('link');
+          link.rel = 'icon';
+          link.href = logoUrl;
+          link.setAttribute('data-wl-icon', '1');
+          document.head.appendChild(link);
+        }
+      } catch {
+        /* platform branding stays */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (!authRehydrated) return;
     if (isAuthenticated) router.replace('/dashboard');
@@ -66,19 +101,34 @@ export default function AdminLoginPage() {
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[22rem] md:min-h-[38rem]">
           <span className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5">
-            <Image
-              src="/logo.png"
-              alt="SwissCresta"
-              width={200}
-              height={44}
-              priority
-              className="h-8 w-auto"
-            />
+            {brand ? (
+              brand.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name}
+                  className="h-8 w-auto max-w-[180px] object-contain"
+                />
+              ) : (
+                <span className="font-bold tracking-tight text-lg text-[#0A0A0A] select-none">
+                  {brand.name}
+                </span>
+              )
+            ) : (
+              <Image
+                src="/logo.png"
+                alt="SwissCresta"
+                width={200}
+                height={44}
+                priority
+                className="h-8 w-auto"
+              />
+            )}
           </span>
 
           <div className="relative z-10">
             <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight">
-              Operator console for the SwissCresta platform.
+              Operator console for the {brand ? brand.name : 'SwissCresta'} platform.
             </h1>
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80">
@@ -113,7 +163,7 @@ export default function AdminLoginPage() {
                   type="email"
                   id="email"
                   autoComplete="email"
-                  placeholder="admin@swisscresta.com"
+                  placeholder={brand ? `admin@${window.location.hostname.replace(/^admin\./, "")}` : "admin@swisscresta.com"}
                   className="text-sm w-full py-2.5 pl-10 pr-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E94E1B]/20 focus:border-[#E94E1B] bg-white text-black transition-colors"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

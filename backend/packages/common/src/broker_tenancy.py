@@ -361,10 +361,11 @@ async def find_broker_by_domain(db: AsyncSession, host: str | None) -> User | No
     ).scalar_one_or_none()
     if profile is None:
         return None
-    # Subdomain-mode tenants only own <app_subdomain>.<domain> (+ the
-    # admin panel host is out of scope here); apex-mode tenants own
-    # apex + www.
+    # Hosts this tenant owns: the trader hosts (apex+www, or the chosen
+    # subdomain) AND their admin panel on admin.<domain> — the admin
+    # login page brands itself via this same lookup.
     expected = set(served_hostnames(profile.custom_domain, profile.app_subdomain))
+    expected.add(admin_hostname(profile.custom_domain))
     if h not in expected and apex not in expected:
         return None
     owner = (

@@ -111,7 +111,12 @@ export default function AdminSidebar({
         const me = await adminApi.get<{ permissions: string[]; employee_role: string; brand_name?: string | null; role?: string }>('/auth/me');
         setPermissions(me.permissions || []);
         setEmployeeRole(me.employee_role || '');
-        if (me.role === 'broker') setBrandName((me.brand_name || '').trim() || 'Broker Panel');
+        if (me.role === 'broker') {
+          const bn = (me.brand_name || '').trim() || 'Broker Panel';
+          setBrandName(bn);
+          // Tab identity follows the tenant everywhere in the panel.
+          document.title = `${bn} Admin`;
+        }
       } catch {}
     })();
   }, []);
