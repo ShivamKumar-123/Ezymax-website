@@ -103,6 +103,20 @@ class Settings(BaseSettings):
     SMTP_FROM: str = ""
     SMTP_USE_TLS: bool = True
 
+    # Live crypto from Binance's PUBLIC @bookTicker stream (no key needed).
+    # When true (default) the market-data service runs it as a dedicated
+    # side feed AND removes the crypto symbols from the primary vendor
+    # subscription, so each symbol has exactly ONE live source. bookTicker
+    # pushes best bid/ask many times per second — real spread, real speed.
+    BINANCE_CRYPTO_FEED_ENABLED: bool = True
+
+    # Also subscribe Infoway's TRADE stream (protocol code 10000 → pushes
+    # code 10002) alongside depth. Depth (~1/s) keeps supplying the real
+    # spread; trades add several updates/sec on active instruments (gold
+    # prints ~7 trades/s). A trade's last price is treated as the mid and
+    # re-spread from config, so published quotes stay consistent.
+    INFOWAY_TRADE_STREAM_ENABLED: bool = True
+
     # Market data provider (Infoway.io) — fallback when Corecen LP not configured
     INFOWAY_API_KEY: str = ""
     INFOWAY_API_URL: str = "https://api.infoway.io"

@@ -9,6 +9,7 @@ import MobileOrderSheet from '@/components/trading/MobileOrderSheet';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import api from '@/lib/api/client';
 import { ArrowUpDown, ChevronRight, Search, Settings, Star, TrendingUp } from 'lucide-react';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 
 type Trend = 'up' | 'down' | 'neutral';
 
@@ -447,11 +448,11 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                         {showNames && name ? <span className="block truncate text-[11px] leading-tight text-text-tertiary">{name}</span> : null}
                       </span>
                     </span>
-                    <span className={clsx('text-right text-[13px] font-medium tabular-nums', tint(bf))}>{tick ? fmt(tick.bid) : '—'}</span>
+                    <AnimatedPrice value={tick?.bid} digits={digits} className={clsx('text-right text-[13px] font-medium tabular-nums', tint(bf))} />
                     <span className="text-center text-[11px] tabular-nums text-text-tertiary">
                       {showSpread && tick ? Math.abs(spreadInPips(sym, tick.bid, tick.ask, instruments)) : ''}
                     </span>
-                    <span className={clsx('text-right text-[13px] font-medium tabular-nums', tint(af))}>{tick ? fmt(tick.ask) : '—'}</span>
+                    <AnimatedPrice value={tick?.ask} digits={digits} className={clsx('text-right text-[13px] font-medium tabular-nums', tint(af))} />
                     <span className={clsx('text-right text-[12px] font-semibold tabular-nums', !Number.isFinite(pct) ? 'text-text-tertiary' : pct >= 0 ? 'text-emerald-500' : 'text-[#E5484D]')}>
                       {Number.isFinite(pct) ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—'}
                     </span>
@@ -630,9 +631,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                         onClick={() => handleRowClick(symbol)}
                         className="shrink-0 text-right"
                       >
-                        <span className="block text-sm font-mono font-bold tabular-nums text-text-primary">
-                          {tick.bid.toFixed(digits)}
-                        </span>
+                        <AnimatedPrice value={tick.bid} digits={digits} className="block text-sm font-mono font-bold tabular-nums text-text-primary" />
                         <span className={clsx('block text-[10px] font-bold tabular-nums', isUp ? 'text-buy' : 'text-sell')}>
                           {isUp ? '▲' : '▼'} {Math.abs(spreadInPips(symbol, tick.bid, tick.ask, instruments))} pip
                         </span>

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import toast from 'react-hot-toast';
 import { Minus, Plus, X, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Info, Gauge, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
@@ -541,7 +542,7 @@ export default function OrderPanel({
               )}
             >
               <span className="text-[11px] font-medium opacity-90 leading-none">Sell</span>
-              <span className="text-[15px] font-bold tabular-nums leading-tight">{tick ? fmtPx(tick.bid) : '---'}</span>
+              <AnimatedPrice value={tick?.bid} digits={digits} flash={false} placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
             </button>
             <span className="flex items-center justify-center px-1 text-[13px] font-medium tabular-nums text-text-secondary">{tick ? spreadPts : '—'}</span>
             <button
@@ -554,7 +555,7 @@ export default function OrderPanel({
               )}
             >
               <span className="text-[11px] font-medium opacity-90 leading-none">Buy</span>
-              <span className="text-[15px] font-bold tabular-nums leading-tight">{tick ? fmtPx(tick.ask) : '---'}</span>
+              <AnimatedPrice value={tick?.ask} digits={digits} flash={false} placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
             </button>
           </div>
 

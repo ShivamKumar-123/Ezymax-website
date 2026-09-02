@@ -938,3 +938,20 @@ html {
 /* Legacy AppHeader override removed — the new sticky AppNavbar is
    already flat / hairline-bordered, so the per-page reset is no
    longer needed. */
+
+/* ── AnimatedPrice text flash ─────────────────────────────────────────
+   Only `from` is defined: the browser animates back to the element's
+   own (inherited) colour, so the tint works on any base colour — white
+   button text, muted table cells, themed rows — with no `to` needed. */
+@keyframes price-flash-up {
+  from { color: #16c784; }
+}
+@keyframes price-flash-down {
+  from { color: #ea3943; }
+}
+.price-flash-up {
+  animation: price-flash-up 0.6s ease-out;
+}
+.price-flash-down {
+  animation: price-flash-down 0.6s ease-out;
+}

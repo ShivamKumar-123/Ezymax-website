@@ -7,6 +7,7 @@ import { ChevronDown, Search, Star, Newspaper, BarChart3 } from 'lucide-react';
 import { useTradingStore, type InstrumentInfo } from '@/stores/tradingStore';
 import { tradingTerminalUrl } from '@/lib/tradingNav';
 import SymbolIcon from './SymbolIcon';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 
 type Trend = 'up' | 'down' | 'neutral';
 type Segment = 'All' | 'Forex' | 'Crypto' | 'Indices' | 'Commodities' | 'Metals' | 'Stocks';
@@ -402,7 +403,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                     bFlash === 'up' ? 'text-buy' : bFlash === 'down' ? 'text-sell' : 'text-text-primary',
                   )}
                 >
-                  {tick ? tick.bid.toFixed(digits) : '—'}
+                  <AnimatedPrice value={tick?.bid} digits={digits} />
                 </div>
 
                 {/* Ask */}
@@ -412,7 +413,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                     aFlash === 'up' ? 'text-buy' : aFlash === 'down' ? 'text-sell' : 'text-text-primary',
                   )}
                 >
-                  {tick ? tick.ask.toFixed(digits) : '—'}
+                  <AnimatedPrice value={tick?.ask} digits={digits} />
                 </div>
 
                 {/* Spread */}

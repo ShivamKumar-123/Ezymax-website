@@ -386,26 +386,45 @@ async def algo_prices_ws(websocket: WebSocket) -> None:
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
 
     try:
-        last_ping = asyncio.get_event_loop().time()
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
-            if message and message.get("type") == "message":
-                try:
-                    tick = json.loads(message["data"])
-                    tick["type"] = "tick"
-                    await websocket.send_json(tick)
-                except (json.JSONDecodeError, TypeError):
-                    continue
+        # Drain + coalesce + ~20fps flush (same rationale as /ws/prices):
+        # one-message-per-iteration capped the whole stream at ~100 msg/s
+        # across ALL symbols, so bots and the desktop terminal lagged the
+        # moment any symbol ticked fast. Latest-per-symbol keeps latency
+        # <50ms with bounded bandwidth.
+        FLUSH_INTERVAL = 0.05
+        _now = asyncio.get_event_loop().time
+        last_ping = _now()
+        last_flush = _now()
+        pending: dict[str, dict] = {}
 
-            now = asyncio.get_event_loop().time()
+        while True:
+            wait = max(0.005, FLUSH_INTERVAL - (_now() - last_flush))
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=wait)
+            while message:
+                if message.get("type") == "message":
+                    try:
+                        tick = json.loads(message["data"])
+                        tick["type"] = "tick"
+                        sym = str(tick.get("symbol") or "")
+                        if sym:
+                            pending[sym] = tick
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0)
+
+            now = _now()
+            if pending and now - last_flush >= FLUSH_INTERVAL:
+                for tick in pending.values():
+                    await websocket.send_json(tick)
+                pending.clear()
+                last_flush = now
+
             if now - last_ping >= WS_HEARTBEAT_INTERVAL:
                 try:
                     await websocket.send_json({"type": "ping"})
                 except Exception:
                     break
                 last_ping = now
-
-            await asyncio.sleep(0.01)
     except Exception as exc:
         logger.debug("algo_prices_ws stream ended: %s", exc)
     finally:

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTradingStore } from '@/stores/tradingStore';
 import { sounds } from '@/lib/sounds';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 
 /**
  * On-chart quick-trade widget (like the reference platform's chart buy/sell):
@@ -63,7 +64,7 @@ export function ChartTradeWidget() {
         className="flex flex-col items-center justify-center rounded-md bg-rose-500 hover:bg-rose-400 px-3 py-1 text-white shadow-lg disabled:opacity-60 transition-colors"
         title="Sell at market"
       >
-        <span className="text-sm font-extrabold leading-none">{fmt(bid)}</span>
+        <AnimatedPrice value={bid} digits={digits} flash={false} className="text-sm font-extrabold leading-none" />
         <span className="text-[10px] font-bold tracking-wider">SELL</span>
       </button>
 
@@ -87,7 +88,7 @@ export function ChartTradeWidget() {
         className="flex flex-col items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 px-3 py-1 text-white shadow-lg disabled:opacity-60 transition-colors"
         title="Buy at market"
       >
-        <span className="text-sm font-extrabold leading-none">{fmt(ask)}</span>
+        <AnimatedPrice value={ask} digits={digits} flash={false} className="text-sm font-extrabold leading-none" />
         <span className="text-[10px] font-bold tracking-wider">BUY</span>
       </button>
     </div>

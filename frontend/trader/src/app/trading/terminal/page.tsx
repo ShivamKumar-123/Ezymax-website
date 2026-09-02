@@ -29,6 +29,7 @@ import AppNavbar from '@/components/layout/AppNavbar';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 const TerminalNewsPanel = dynamic(() => import('@/components/trading/TerminalNewsPanel'), {
   ssr: false,
 });
@@ -634,9 +635,7 @@ export default function TradingTerminalPage() {
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
                               {tick ? (
-                                <span className="text-sm font-mono font-bold tabular-nums text-text-primary">
-                                  {tick.bid.toFixed(inst.digits ?? 5)}
-                                </span>
+                                <AnimatedPrice value={tick.bid} digits={inst.digits ?? 5} className="text-sm font-mono font-bold tabular-nums text-text-primary" />
                               ) : null}
                               {!isInTabs && (
                                 <span className="text-buy text-xs font-semibold">+ Open</span>
@@ -703,7 +702,7 @@ export default function TradingTerminalPage() {
                      className="flex-1 h-full bg-sell rounded-xl flex flex-col items-center justify-center shadow-lg shadow-sell/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Sell</span>
-                     <span className="text-white/70 text-[10px] font-mono font-bold leading-tight">{price?.bid.toFixed(digits) || '--'}</span>
+                     <AnimatedPrice value={price?.bid} digits={digits} flash={false} placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
                    </button>
 
                    {/* Lot size controls — center */}
@@ -748,7 +747,7 @@ export default function TradingTerminalPage() {
                      className="flex-1 h-full bg-buy rounded-xl flex flex-col items-center justify-center shadow-lg shadow-buy/20 active:scale-[0.96] transition-transform duration-75 disabled:opacity-50 disabled:pointer-events-none min-w-0"
                    >
                      <span className="text-white text-[14px] font-black uppercase tracking-[0.05em]">Buy</span>
-                     <span className="text-white/70 text-[10px] font-mono font-bold leading-tight">{price?.ask.toFixed(digits) || '--'}</span>
+                     <AnimatedPrice value={price?.ask} digits={digits} flash={false} placeholder="--" className="text-white/70 text-[10px] font-mono font-bold leading-tight" />
                    </button>
                 </div>
               </div>

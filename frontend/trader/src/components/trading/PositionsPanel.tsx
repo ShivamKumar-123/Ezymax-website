@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import dynamic from 'next/dynamic';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
 
 // Lazy: ShareTradeModal pulls in html-to-image (~50KB) which is only needed
 // when the user actually opens the share dialog — keep it out of the
@@ -255,7 +256,7 @@ function TerminalPositionStaticCard({
         <div className="min-w-0 flex-1 text-right">
           <div className="text-[8px] font-bold uppercase tracking-wide text-text-tertiary">Current price</div>
           <div className="text-[11px] font-mono font-semibold tabular-nums inline-flex items-center justify-end gap-0.5 text-text-primary leading-tight">
-            {cur != null ? cur.toFixed(digits) : '—'}
+            <AnimatedPrice value={cur} digits={digits} />
             {cur != null &&
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
@@ -1102,7 +1103,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
                             <div><span className="text-text-tertiary">Qty</span> <span className="text-text-primary font-mono">{pos.lots}</span></div>
                             <div><span className="text-text-tertiary">Open</span> <span className="text-text-primary font-mono">{pos.open_price.toFixed(d)}</span></div>
-                            <div><span className="text-text-tertiary">Now</span> <span className="text-text-primary font-mono">{pos.current_price != null ? pos.current_price.toFixed(d) : '—'}</span></div>
+                            <div><span className="text-text-tertiary">Now</span> <AnimatedPrice value={pos.current_price} digits={d} className="text-text-primary font-mono" /></div>
                             <div><span className="text-text-tertiary">Acct</span> <span className="text-text-secondary">{accountLabel(pos.account_id)}</span></div>
                           </div>
                           <div className="flex items-center justify-between pt-1 border-t border-border-glass/40">
@@ -1205,7 +1206,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               {charges > 0 ? `-$${charges.toFixed(2)}` : '—'}
                             </td>
                             <td className={clsx(tdNum, 'font-mono')}>
-                              {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
+                              <AnimatedPrice value={pos.current_price} digits={d} />
                             </td>
                             <td className={clsx(tdNum, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}

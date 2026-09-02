@@ -596,19 +596,48 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     last_override_reload = asyncio.get_event_loop().time()
 
     try:
+        # ── Drain + coalesce + fixed-rate flush ─────────────────────────
+        # The old loop read ONE pubsub message per iteration (plus a 10ms
+        # control-message wait), capping forwarding at ~100 msg/s across
+        # ALL symbols — a fast feed (crypto book ticks) starved slow ones
+        # and everything lagged behind the backlog. Now every wake drains
+        # the WHOLE backlog keeping only the newest payload per symbol,
+        # and flushes at ~20fps. Perceived latency stays <50ms while
+        # bandwidth is bounded no matter how fast the upstream feed gets.
+        FLUSH_INTERVAL = 0.05
         ping_interval = 30
-        last_ping = asyncio.get_event_loop().time()
+        _now = asyncio.get_event_loop().time
+        last_ping = _now()
+        last_flush = _now()
+        pending: dict[str, str] = {}  # symbol -> latest raw payload
+
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
-            if message and message["type"] == "message":
-                data = message["data"]
-                if overrides:
-                    data = _rewrite_tick_with_spread(data, overrides)
-                await websocket.send_text(data)
+            # Wait for the first message up to the next flush deadline,
+            # then drain everything queued without blocking.
+            wait = max(0.005, FLUSH_INTERVAL - (_now() - last_flush))
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=wait)
+            while message:
+                if message["type"] == "message":
+                    raw_tick = message["data"]
+                    try:
+                        sym = str(json.loads(raw_tick).get("symbol") or "")
+                    except (ValueError, TypeError):
+                        sym = ""
+                    if sym:
+                        pending[sym] = raw_tick
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0)
+
+            now_flush = _now()
+            if pending and now_flush - last_flush >= FLUSH_INTERVAL:
+                for raw_tick in pending.values():
+                    data = _rewrite_tick_with_spread(raw_tick, overrides) if overrides else raw_tick
+                    await websocket.send_text(data)
+                pending.clear()
+                last_flush = now_flush
 
             # Drain client control messages without blocking the stream.
             try:
-                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.001)
             except asyncio.TimeoutError:
                 raw = None
             if raw and user_id:
@@ -676,13 +705,26 @@ async def bars_stream(websocket: WebSocket, token: str | None = Query(default=No
     subs: set[tuple[str, str]] = set()
 
     try:
+        # Same drain + coalesce + ~20fps flush as /ws/prices: the channel
+        # carries a forming-bar update per tick for EVERY symbol, so the
+        # old one-message-per-iteration read backlogged badly the moment
+        # the feed got fast. Only the newest bar per (symbol, tf) matters
+        # for the forming candle — with ONE exception: a bar flagged
+        # closed=true is final candle data and must never be coalesced
+        # away by the next period's forming bar, so it flushes through
+        # immediately.
+        FLUSH_INTERVAL = 0.05
         ping_interval = 30
-        last_ping = asyncio.get_event_loop().time()
+        _now = asyncio.get_event_loop().time
+        last_ping = _now()
+        last_flush = _now()
+        pending: dict[tuple[str, str], str] = {}
+
         while True:
             # 1) Drain client control messages (subscribe / unsubscribe / pong).
             raw = None
             try:
-                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.05)
+                raw = await asyncio.wait_for(websocket.receive_text(), timeout=0.001)
             except asyncio.TimeoutError:
                 pass
             if raw:
@@ -702,26 +744,37 @@ async def bars_stream(websocket: WebSocket, token: str | None = Query(default=No
                             else:
                                 subs.discard((sym, tf))
 
-            # 2) Relay matching bar updates.
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
-            if message and message["type"] == "message" and subs:
-                try:
-                    bar = json.loads(message["data"])
-                    key = (
-                        str(bar.get("symbol") or "").upper(),
-                        str(bar.get("timeframe") or ""),
-                    )
-                    if key in subs:
-                        await websocket.send_text(message["data"])
-                except (ValueError, TypeError):
-                    pass
+            # 2) Drain the whole bar backlog, newest per (symbol, tf).
+            wait = max(0.005, FLUSH_INTERVAL - (_now() - last_flush))
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=wait)
+            while message:
+                if message["type"] == "message" and subs:
+                    try:
+                        bar = json.loads(message["data"])
+                        key = (
+                            str(bar.get("symbol") or "").upper(),
+                            str(bar.get("timeframe") or ""),
+                        )
+                        if key in subs:
+                            prev = pending.get(key)
+                            if prev is not None and '"closed": true' in prev:
+                                # Never lose a finalised candle to coalescing.
+                                await websocket.send_text(prev)
+                            pending[key] = message["data"]
+                    except (ValueError, TypeError):
+                        pass
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0)
 
-            now = asyncio.get_event_loop().time()
+            now = _now()
+            if pending and now - last_flush >= FLUSH_INTERVAL:
+                for payload in pending.values():
+                    await websocket.send_text(payload)
+                pending.clear()
+                last_flush = now
+
             if now - last_ping >= ping_interval:
                 await websocket.send_json({"type": "ping"})
                 last_ping = now
-
-            await asyncio.sleep(0.01)
     except WebSocketDisconnect:
         pass
     finally:

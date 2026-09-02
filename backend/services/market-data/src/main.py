@@ -2,7 +2,6 @@
 import asyncio
 import json
 import logging
-import random
 import signal
 import time
 from collections import defaultdict, deque
@@ -52,6 +51,15 @@ JUMP_ACCEPT_AFTER = 5
 BINANCE_FRESH_SEC = 10.0
 
 
+def _primary_feed_instruments() -> dict:
+    """Instrument set for the PRIMARY vendor feed. With the Binance
+    bookTicker side feed enabled (default), crypto is excluded here so
+    every symbol has exactly ONE live source — no interleaving mids."""
+    if getattr(settings, "BINANCE_CRYPTO_FEED_ENABLED", True):
+        return {s: i for s, i in INSTRUMENTS.items() if i.get("category") != "crypto"}
+    return INSTRUMENTS
+
+
 class MarketDataService:
     def __init__(self):
         raw_key = (settings.INFOWAY_API_KEY or "").strip()
@@ -66,7 +74,7 @@ class MarketDataService:
             self.feed = CorecenLPFeed()
             logger.info("Price feed: Corecen LP (receiving pushes on /api/lp/prices/batch)")
         elif usable_infoway_api_key(raw_key):
-            self.feed = InfowayFeed(raw_key, INSTRUMENTS)
+            self.feed = InfowayFeed(raw_key, _primary_feed_instruments())
             self._infoway_watchdog_armed = True
             logger.info("Price feed: Infoway WebSocket (depth)")
         else:
@@ -134,7 +142,8 @@ class MarketDataService:
         # P&L crawl. Pull crypto from Binance's public trade stream ALONGSIDE
         # Infoway (many ticks/sec) — same fix as the sibling platform.
         if isinstance(self.feed, InfowayFeed):
-            tasks.append(asyncio.create_task(self._binance_crypto_feed()))
+            if getattr(settings, "BINANCE_CRYPTO_FEED_ENABLED", True):
+                tasks.append(asyncio.create_task(self._binance_crypto_feed()))
             tasks.append(asyncio.create_task(self._feed_reconnect_watchdog()))
 
         await asyncio.gather(*tasks)
@@ -347,31 +356,34 @@ class MarketDataService:
                 logger.debug("publish current bar %s %s failed: %s", symbol, tf_name, exc)
 
     async def _binance_crypto_feed(self) -> None:
-        """Live crypto ticks from Binance, run ALONGSIDE the Infoway feed.
+        """Live crypto quotes from Binance's PUBLIC @bookTicker stream,
+        run as the SOLE crypto source alongside the Infoway feed (crypto
+        is excluded from the primary subscription — see
+        _primary_feed_instruments — so each symbol has exactly one live
+        source and mids never interleave).
 
-        Infoway's crypto socket delivers a tick only every few seconds, so BTC
-        (and every crypto) P&L visibly crawled. Binance's public trade stream
-        is free, reliable, and ticks many times per second. This mirrors
-        _process_ticks — same de-spike bookkeeping, admin spread via
-        spread_cache.widen, publish_price → tick store → aggregator →
-        per-tick bar publish — but deliberately does NOT touch
-        self._tick_count, so the Infoway watchdog still detects a dead
-        primary feed correctly. _process_ticks drops Infoway crypto ticks
-        while this feed is fresh (BINANCE_FRESH_SEC) and lets them flow
-        again automatically if Binance goes quiet.
+        @bookTicker pushes the best bid/ask on every book change — many
+        updates per second per symbol, with the REAL market spread
+        (previously @trade gave one price and we synthesised a spread).
+        The spread engine still re-spreads from the mid when an admin
+        spread is configured, so the published quote stays consistent
+        with every other symbol. Same pipeline as _process_ticks:
+        publish_price → tick store → aggregator → per-tick bar publish.
+        Deliberately does NOT touch self._tick_count so the Infoway
+        watchdogs still judge the primary feed on its own ticks.
         """
         import websockets as _ws
-        from .feed_handler import BINANCE_MAP, BINANCE_WS, SPREAD_RANGE
+        from .feed_handler import BINANCE_MAP, BINANCE_WS
 
-        streams = [f"{pair}@trade" for pair in BINANCE_MAP]
+        streams = [f"{pair}@bookTicker" for pair in BINANCE_MAP]
         url = f"{BINANCE_WS}/{'/'.join(streams)}"
         # Stop if the watchdog swaps the primary feed to FeedSimulator, which
         # runs its OWN Binance feed — else we'd double-publish crypto.
         while self.running and isinstance(self.feed, InfowayFeed):
             try:
-                logger.info("Binance crypto feed connecting (alongside Infoway)")
+                logger.info("Binance crypto feed connecting (bookTicker, alongside Infoway)")
                 async with _ws.connect(url, ping_interval=20, ping_timeout=10) as ws:
-                    logger.info("Binance crypto feed connected — live crypto prices active")
+                    logger.info("Binance crypto feed connected — live crypto book active")
                     async for raw in ws:
                         if not self.running or not isinstance(self.feed, InfowayFeed):
                             break
@@ -381,21 +393,17 @@ class MarketDataService:
                             symbol = BINANCE_MAP.get(pair)
                             if not symbol:
                                 continue
-                            price = float(data["p"])
+                            bid0 = float(data["b"])
+                            ask0 = float(data["a"])
                         except (KeyError, ValueError, TypeError):
                             continue
-                        if price <= 0:
+                        if bid0 <= 0 or ask0 <= 0 or ask0 < bid0:
                             continue
+                        mid = (bid0 + ask0) / 2.0
                         ts_dt = datetime.now(timezone.utc)
                         ts = ts_dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts_dt.microsecond // 1000:03d}Z"
-                        # Tiny native spread around the trade price (same range
-                        # the simulator's Binance feed uses); the spread engine
-                        # re-spreads from the mid anyway.
-                        lo, hi = SPREAD_RANGE.get(symbol, (0.0, 0.0))
-                        half = random.uniform(lo, hi) / 2.0
-                        bid0, ask0 = price - half, price + half
-                        self._last_mid[symbol] = price
-                        self._mid_history[symbol].append(price)
+                        self._last_mid[symbol] = mid
+                        self._mid_history[symbol].append(mid)
                         self._last_quote[symbol] = (bid0, ask0)
                         now_mono = time.monotonic()
                         self._last_live_mono[symbol] = now_mono
@@ -448,7 +456,7 @@ class MarketDataService:
             except Exception as exc:
                 logger.warning("Stopping stalled Infoway feed: %s", exc)
             raw_key = (settings.INFOWAY_API_KEY or "").strip()
-            self.feed = InfowayFeed(raw_key, INSTRUMENTS)
+            self.feed = InfowayFeed(raw_key, _primary_feed_instruments())
             asyncio.create_task(self.feed.start())
             # Fresh grace window so we don't immediately re-trigger while the
             # new socket performs its handshake/subscriptions.
@@ -508,7 +516,7 @@ class MarketDataService:
             if isinstance(self.feed, InfowayFeed):
                 return
             attempt += 1
-            candidate = InfowayFeed(raw_key, INSTRUMENTS)
+            candidate = InfowayFeed(raw_key, _primary_feed_instruments())
             probe_task = asyncio.create_task(candidate.start())
             first_tick = None
             deadline = time.monotonic() + PROBE_WINDOW_SEC

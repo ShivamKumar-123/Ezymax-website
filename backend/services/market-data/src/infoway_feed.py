@@ -78,6 +78,11 @@ class InfowayFeed:
         # on code-10005 depth frames — never on heartbeats/acks — so the
         # watchdog measures the provider's push liveness, not the TCP link's.
         self._last_data_mono: Dict[str, float] = {}
+        # Half of the most recent REAL depth spread per symbol. Trade
+        # pushes carry only a last price — we rebuild their quote as
+        # mid ± this half-spread so a trade tick never publishes a
+        # zero-width quote even when no admin spread is configured.
+        self._last_half: Dict[str, float] = {}
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -189,6 +194,7 @@ class InfowayFeed:
         ask_r = round(ask, decimals)
         if ask_r < bid_r:
             ask_r = bid_r
+        self._last_half[symbol] = max(0.0, (ask_r - bid_r) / 2.0)
 
         ts_ms = data.get("t")
         if isinstance(ts_ms, (int, float)) and ts_ms > 0:
@@ -215,6 +221,56 @@ class InfowayFeed:
             "volume": max(volume, 1),
         }
         self._enqueue(tick)
+
+    def _emit_trade(self, data: dict) -> None:
+        """Code-10002 trade push → tick. The trade's last price is the
+        mid; the real spread from the latest depth push is re-applied
+        around it (and the spread engine downstream re-spreads from the
+        mid anyway when an admin spread is configured). This is what
+        makes actively-traded symbols move several times a second
+        instead of once — depth gives truth about the spread, trades
+        give speed."""
+        raw_sym = data.get("s") or ""
+        symbol = self._platform_symbol(str(raw_sym))
+        if not symbol or symbol not in self._instruments:
+            return
+        try:
+            price = float(data.get("p"))
+        except (TypeError, ValueError):
+            return
+        if price <= 0:
+            return
+
+        info = self._instruments[symbol]
+        decimals = int(info["decimals"])
+        half = self._last_half.get(symbol, 0.0)
+        bid_r = round(price - half, decimals)
+        ask_r = round(price + half, decimals)
+        if ask_r < bid_r:
+            ask_r = bid_r
+
+        ts_ms = data.get("t")
+        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
+            sec = int(ts_ms // 1000)
+            ms = int(ts_ms % 1000)
+            dt = datetime.fromtimestamp(sec, tz=timezone.utc)
+            timestamp = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
+        else:
+            ts = datetime.now(timezone.utc)
+            timestamp = ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
+
+        try:
+            volume = int(float(data.get("v") or 0))
+        except (TypeError, ValueError):
+            volume = 0
+
+        self._enqueue({
+            "symbol": symbol,
+            "bid": bid_r,
+            "ask": ask_r,
+            "timestamp": timestamp,
+            "volume": max(volume, 1),
+        })
 
     async def _data_watchdog(self, ws, business: str) -> None:
         """Force-close the socket if no real data frame arrives for
@@ -288,6 +344,19 @@ class InfowayFeed:
                         business,
                         len(set(codes)),
                     )
+                    # Trade stream (code 10000 → 10002 pushes): several
+                    # updates/sec on active instruments vs depth's ~1/s.
+                    from packages.common.src.config import get_settings as _gs
+                    if getattr(_gs(), "INFOWAY_TRADE_STREAM_ENABLED", True):
+                        await ws.send(json.dumps({
+                            "code": 10000,
+                            "trace": _trace(),
+                            "data": {"codes": codes_str},
+                        }))
+                        logger.info(
+                            "Infoway [%s] subscribed trades for %d codes",
+                            business, len(set(codes)),
+                        )
                     # Healthy subscribe — reset the backoff counter so the
                     # next failure starts at 2s, not wherever we ended up.
                     reconnect_attempts = 0
@@ -307,10 +376,13 @@ class InfowayFeed:
                             continue
                         code = msg.get("code")
                         if code == 10005:
-                            # Real data frame — this, and ONLY this, resets the
-                            # data-silence watchdog.
+                            # Real data frame — resets the data-silence watchdog.
                             self._last_data_mono[business] = time.monotonic()
                             self._emit_depth(msg.get("data") or {})
+                        elif code == 10002:
+                            # Trade push — also proof the subscription is alive.
+                            self._last_data_mono[business] = time.monotonic()
+                            self._emit_trade(msg.get("data") or {})
                         elif code in (10004, 10001):
                             logger.debug("Infoway [%s] ack: %s", business, msg.get("msg"))
                         elif code and code >= 400:
