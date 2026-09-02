@@ -128,6 +128,16 @@ async def _apply_startup_ddl():
                 "CREATE UNIQUE INDEX IF NOT EXISTS uq_broker_profiles_custom_domain "
                 "ON broker_profiles (custom_domain) WHERE custom_domain IS NOT NULL"
             ))
+            # The baseline schema whitelists role values; white-label
+            # tenants use role='broker' (alembic 0063). Recreate the CHECK
+            # with 'broker' included — idempotent (same definition each run).
+            await conn.execute(text(
+                "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD CONSTRAINT users_role_check CHECK "
+                "(role IN ('user','admin','super_admin','ib','sub_broker','master_trader','broker'))"
+            ))
     except Exception as e:
         logger.warning("startup DDL skipped: %s", e)
 
