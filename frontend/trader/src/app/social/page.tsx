@@ -34,6 +34,9 @@ interface Provider {
   total_return_pct: number;
   max_drawdown_pct: number;
   sharpe_ratio: number;
+  win_rate?: number;
+  total_trades?: number;
+  total_profit_usd?: number;
   followers_count: number;
   performance_fee_pct: number;
   min_investment: number;
@@ -275,6 +278,26 @@ function TraderCard({
           <div className="text-xxs text-text-tertiary mb-0.5">Total ROI</div>
           <div className={clsx('text-xl sm:text-2xl font-bold tabular-nums font-mono', provider.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>
             {provider.total_return_pct >= 0 ? '+' : ''}{provider.total_return_pct.toFixed(2)}%
+          </div>
+          {/* Raw, verifiable numbers behind the ROI — realized P&L, trades,
+              win rate straight from trade history. */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-text-tertiary tabular-nums">
+            {typeof provider.total_profit_usd === 'number' && (
+              <span>
+                P&amp;L{' '}
+                <span className={clsx('font-medium', provider.total_profit_usd >= 0 ? 'text-buy' : 'text-sell')}>
+                  {provider.total_profit_usd >= 0 ? '+' : '-'}${Math.abs(provider.total_profit_usd).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </span>
+              </span>
+            )}
+            {typeof provider.win_rate === 'number' && (provider.total_trades || 0) > 0 && (
+              <span>Win <span className="font-medium text-text-secondary">{provider.win_rate.toFixed(0)}%</span></span>
+            )}
+            <span>
+              {(provider.total_trades || 0) > 0
+                ? <>{provider.total_trades} trades</>
+                : <span className="text-warning">No closed trades yet</span>}
+            </span>
           </div>
         </div>
 

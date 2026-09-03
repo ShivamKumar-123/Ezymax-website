@@ -112,6 +112,23 @@ async def list_leaderboard(
         )
         real_followers = real_followers_q.scalar() or 0
 
+        # Real trade stats straight from trade_history — the raw numbers a
+        # follower can sanity-check the ROI against.
+        from packages.common.src.models import TradeHistory as _TH
+        from sqlalchemy import case as _case
+        tstats = (
+            await db.execute(
+                select(
+                    func.count(),
+                    func.coalesce(func.sum(_case((_TH.profit > 0, 1), else_=0)), 0),
+                    func.coalesce(func.sum(_TH.profit), 0),
+                ).where(_TH.account_id == master.account_id)
+            )
+        ).one()
+        total_trades = int(tstats[0] or 0)
+        wins = int(tstats[1] or 0)
+        win_rate = (wins / total_trades * 100) if total_trades else 0.0
+
         items.append({
             "id": str(master.id),
             "user_id": str(master.user_id),
@@ -119,6 +136,9 @@ async def list_leaderboard(
             "total_return_pct": float(master.total_return_pct),
             "max_drawdown_pct": float(master.max_drawdown_pct),
             "sharpe_ratio": float(master.sharpe_ratio),
+            "win_rate": round(win_rate, 2),
+            "total_trades": total_trades,
+            "total_profit_usd": round(float(tstats[2] or 0), 2),
             "followers_count": real_followers,
             "performance_fee_pct": float(master.performance_fee_pct),
             "min_investment": float(master.min_investment),
