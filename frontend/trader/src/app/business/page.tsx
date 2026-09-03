@@ -23,6 +23,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import RebateCalculator from '@/components/RebateCalculator';
 
 type TabId = 'ib' | 'sub-broker' | 'network';
 
@@ -336,6 +337,14 @@ function IBTab() {
         <StatTile icon={Clock} label="Pending Payout" value={`$${fmt(dashboard?.pending_payout || 0)}`} valueColor="text-warning" />
         <StatTile icon={Users} label="Referrals" value={String(dashboard?.total_referrals ?? referral?.referred_count ?? 0)} />
         <StatTile icon={Award} label="Level" value={`L${dashboard?.level || 1}`} />
+      </div>
+
+      {/* Earnings calculator */}
+      <div className={clsx(PREMIUM_CARD, 'p-5 sm:p-6 pl-6')} style={PREMIUM_STYLE}>
+        {ACCENT_BAR}
+        <h3 className="text-sm font-bold text-text-primary mb-1">How Much Can You Earn?</h3>
+        <p className="text-[11px] text-text-tertiary mb-6">Estimate your monthly rebate — drag the sliders.</p>
+        <RebateCalculator />
       </div>
 
       {/* My Referrals */}

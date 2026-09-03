@@ -39,6 +39,30 @@ async def ib_status(
     return await business_service.ib_status(user_id=current_user["user_id"], db=db)
 
 
+@router.get("/rebate-tiers")
+async def ib_rebate_tiers(
+    current_user: dict = Depends(get_current_user),
+):
+    """IB rebate tier ladder (USD per closed lot) for the earnings calculator.
+    Reads the live `ib_rebate_tiers` config so it reflects any admin retune;
+    falls back to the Milele defaults. Each tier: {tier, min_lots, min_clients,
+    rate}. The highest tier whose lots AND active-client thresholds are both met
+    applies; estimated rebate = total closed lots × that tier's rate."""
+    from packages.common.src.ib_rebate.config import load_config
+    cfg = await load_config()
+    return {
+        "tiers": [
+            {
+                "tier": str(t.get("tier", "")),
+                "min_lots": float(t.get("min_lots", 0) or 0),
+                "min_clients": int(t.get("min_clients", 0) or 0),
+                "rate": float(t.get("rate", 0) or 0),
+            }
+            for t in cfg.tiers
+        ]
+    }
+
+
 @router.get("/referral/me")
 async def my_referral(
     current_user: dict = Depends(get_current_user),

@@ -10,6 +10,7 @@ import { ibGet, fmt, UnauthorizedError } from '@/lib/api';
 import type { DashboardData, Commission } from '@/lib/types';
 import StatCard from '@/components/StatCard';
 import SectionCard from '@/components/SectionCard';
+import RebateCalculator from '@/components/RebateCalculator';
 import Spinner from '@/components/Spinner';
 
 export default function OverviewPage() {
@@ -119,6 +120,15 @@ export default function OverviewPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {cards.map((c) => <StatCard key={c.label} {...c} />)}
       </div>
+
+      <SectionCard
+        title="How Much Can You Earn?"
+        subtitle="Estimate your monthly rebate — drag the sliders."
+      >
+        <div className="px-4 sm:px-5 py-5">
+          <RebateCalculator />
+        </div>
+      </SectionCard>
 
       <SectionCard
         title="Recent commissions"
