@@ -113,14 +113,17 @@ export default function RebateCalculator() {
       <Slider label="Active Clients This Month" value={clients} min={1} max={50} step={1} onChange={setClients} />
       <Slider label="Avg. Closed Lots per Client" value={lotsPerClient} min={1} max={100} step={1} onChange={setLotsPerClient} />
 
-      <div className="mt-4 rounded-2xl border border-border-primary bg-black/30 p-6 text-center">
-        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-tertiary">
+      {/* Always-dark "spotlight" card so the result reads clearly in BOTH light
+          and dark app themes (explicit light text — never theme-tertiary, which
+          washes out on this panel). */}
+      <div className="mt-4 rounded-2xl border border-white/10 bg-[#111317] p-6 text-center shadow-lg">
+        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">
           Estimated Monthly Rebate
         </div>
         <div className="my-1.5 text-5xl font-black leading-none" style={{ color: LIME }}>
           ${Math.round(rebate).toLocaleString()}
         </div>
-        <p className="mx-auto max-w-md text-[11px] leading-relaxed text-text-tertiary">
+        <p className="mx-auto max-w-md text-[11px] leading-relaxed text-white/55">
           Illustrative estimate on {totalLots.toLocaleString()} closed lots at the{' '}
           <span className="font-semibold capitalize" style={{ color: LIME }}>{tier?.tier}</span> tier
           (${tier?.rate}/lot). Actual rebates depend on client activity and closed volume, and
