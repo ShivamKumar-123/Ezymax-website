@@ -11,7 +11,7 @@ import {
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
   Receipt, Layers, ShieldCheck, Shield, ScrollText, BookOpen, Package, Store, Sparkles,
-  Eye, Globe, ShieldAlert, Gauge, Radar, Scale, UserPlus,
+  Eye, Globe, ShieldAlert, Gauge, Radar, Scale, UserPlus, Coins,
 } from 'lucide-react';
 
 interface NavItem {
@@ -73,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Admin audit logs', href: '/admin-audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
   { label: 'Trade Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
+  { label: 'FXA Coins', href: '/fxa-coins', icon: Coins, perm: '*' },
   { label: 'Reward Store', href: '/reward-store', icon: Store, perm: '*' },
   { label: 'Spin & Win', href: '/spin-wheel', icon: Sparkles, perm: '*' },
   { label: 'Lifestyle Queue', href: '/lifestyle', icon: Package, perm: '*' },
