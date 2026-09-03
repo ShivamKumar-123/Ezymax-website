@@ -631,7 +631,7 @@ async def master_transactions(
         for ct, alloc, follower in copy_q.all():
             follower_by_ref[ct.investor_position_id] = {
                 "user_id": str(follower.id),
-                "name": follower.full_name or follower.email,
+                "name": f"{follower.first_name or ''} {follower.last_name or ''}".strip() or follower.email,
                 "email": follower.email,
             }
         pos_q = await db.execute(
@@ -704,7 +704,7 @@ async def master_transactions(
         "master": {
             "id": str(master.id),
             "user_id": str(master.user_id),
-            "name": (master_user.full_name or master_user.email) if master_user else None,
+            "name": (f"{master_user.first_name or ''} {master_user.last_name or ''}".strip() or master_user.email) if master_user else None,
             "email": master_user.email if master_user else None,
             "performance_fee_pct": perf_pct,
             "admin_commission_pct": admin_pct,

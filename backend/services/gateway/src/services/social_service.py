@@ -2538,7 +2538,7 @@ async def master_transactions(
         for ct, alloc, follower in copy_q.all():
             follower_by_ref[ct.investor_position_id] = {
                 "user_id": str(follower.id),
-                "name": follower.full_name or follower.email,
+                "name": f"{follower.first_name or ''} {follower.last_name or ''}".strip() or follower.email,
                 "email": follower.email,
             }
 
