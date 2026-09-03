@@ -715,13 +715,15 @@ function AdvancedChartInner() {
         </div>
       )}
 
-      {/* Manual remount — recovers a stalled datafeed without reloading the page. */}
+      {/* Manual remount — recovers a stalled datafeed without reloading the page.
+          bottom-16 clears the library's own bottom toolbar (~40px, the
+          3m/1m/5d/1d range row); at bottom-10 this button sat on top of it. */}
       <button
         type="button"
         onClick={reloadChart}
         title="Reload chart"
         aria-label="Reload chart"
-        className="absolute bottom-10 left-2 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] text-text-secondary shadow-md backdrop-blur hover:text-text-primary hover:border-border-primary transition-fast"
+        className="absolute bottom-16 left-2 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] text-text-secondary shadow-md backdrop-blur hover:text-text-primary hover:border-border-primary transition-fast"
       >
         <RotateCw className="w-3 h-3" aria-hidden />
         <span>Reload</span>
@@ -729,8 +731,11 @@ function AdvancedChartInner() {
 
       {/* Broker-quote overlay — the actual executable bid/ask (the chart plots
           our broker candles, but this anchors the user to the live tick). */}
+      {/* right-20 keeps this clear of the price scale: the axis and its
+          current-price label occupy roughly the right 70px, so at right-3 the
+          two overlapped whenever price sat near the top of the range. */}
       <div
-        className="pointer-events-none absolute top-14 right-3 z-10 flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
+        className="pointer-events-none absolute top-14 right-20 z-10 flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
         aria-label="Broker quote — actual execution price"
       >
         <span className="text-text-tertiary uppercase tracking-wider">Broker</span>

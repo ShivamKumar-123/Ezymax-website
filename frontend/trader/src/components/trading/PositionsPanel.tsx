@@ -876,7 +876,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   </button>
                 )}
               </div>
-              <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-end gap-3 sm:gap-4 md:gap-5 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
+              {/* The labels ("Floating P&L", "Margin Level"…) are wider than the
+                  figures under them, so gap-3 let neighbouring columns run into
+                  each other. Give the row real breathing space instead. */}
+              <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-end gap-5 sm:gap-6 md:gap-8 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
                 {activeAccount ? (
                   <>
                     <div className="flex flex-col items-end gap-0.5 shrink-0">
@@ -937,7 +940,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       <MarginRing
                         marginLevel={Number(activeAccount.margin_level) || 0}
                         size={56}
-                        className="shrink-0"
+                        className="shrink-0 ml-1"
                       />
                     )}
                   </>
