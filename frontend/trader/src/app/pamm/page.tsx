@@ -420,6 +420,18 @@ export default function PammPage() {
   };
 
   const submitApply = async () => {
+    // Client-side validation mirroring the API limits — a friendly message
+    // instead of the server's raw "Input should be less than or equal to 10".
+    const perf = parseFloat(applyFee);
+    const mgmt = parseFloat(applyMgmtFee);
+    if (!Number.isFinite(perf) || perf < 0 || perf > 50) {
+      toast.error('Performance fee must be between 0 and 50%');
+      return;
+    }
+    if (!Number.isFinite(mgmt) || mgmt < 0 || mgmt > 10) {
+      toast.error('Management fee must be between 0 and 10% (charged yearly on invested capital)');
+      return;
+    }
     setApplying(true);
     try {
       // Server auto-creates a dedicated master trading account (PM/MM prefix)
@@ -966,6 +978,7 @@ export default function PammPage() {
                         onChange={(e) => setApplyFee(e.target.value)}
                         className="w-full bg-bg-secondary border border-border-primary rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
                       />
+                      <p className="text-[10px] text-text-tertiary mt-1">0–50% of investor profit</p>
                     </div>
                     <div>
                       <label className="block text-xs text-text-secondary mb-1.5">Management Fee %</label>
@@ -975,6 +988,7 @@ export default function PammPage() {
                         onChange={(e) => setApplyMgmtFee(e.target.value)}
                         className="w-full bg-bg-secondary border border-border-primary rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
                       />
+                      <p className="text-[10px] text-text-tertiary mt-1">0–10% per year, on invested capital</p>
                     </div>
                   </div>
 
