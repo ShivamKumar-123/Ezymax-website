@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { CandlestickChart, Home, List, Maximize2, Minimize2, Search, Wallet as WalletIcon, X } from 'lucide-react';
+import { CandlestickChart, Home, List, Minimize2, Search, Wallet as WalletIcon, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -70,6 +70,8 @@ export default function TradingTerminalPage() {
   const [activeSpace, setActiveSpace] = useState<TerminalSpaceId>('balanced');
   const [bottomCollapsed, setBottomCollapsed] = useState(false);
   const [chartExpanded, setChartExpanded] = useState(false);
+  // Stable so the memoized chart isn't re-rendered every tick.
+  const enterFullscreen = useCallback(() => setChartExpanded(true), []);
   const [terminalCalcOpen, setTerminalCalcOpen] = useState(false);
 
   const snapshotLayout = useCallback(() => {
@@ -738,37 +740,19 @@ export default function TradingTerminalPage() {
             <div data-tour={TOUR_TARGETS.CHART_MAIN} className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
               {/* Contained so a chart failure (or a stale-deploy chunk error)
                   can never take the whole terminal down. */}
+              {/* "Full screen" is added INSIDE the chart's own toolbar via the
+                  library's createButton API (see AdvancedChart) so it can never
+                  overlap TV's buttons. Collapse is the header's "Normal view". */}
               <ChartErrorBoundary>
-                <TradingViewChart />
+                <TradingViewChart onRequestFullscreen={enterFullscreen} />
               </ChartErrorBoundary>
-              {/* On-chart quick trade — live SELL (bid) / lot / BUY (ask),
-                  sitting under the chart's own toolbar at the top-left. */}
+              {/* On-chart quick trade — live SELL (bid) / lot / BUY (ask).
+                  top-24 clears BOTH TV's toolbar and the OHLC legend under it;
+                  at top-2 it sat on the Indicators button. */}
               {!chartExpanded && (
-                <div className="pointer-events-none absolute left-2 top-2 z-10">
+                <div className="pointer-events-none absolute left-2 top-24 z-10">
                   <ChartTradeWidget />
                 </div>
-              )}
-              {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
-                  already expanded since the header's "Normal view" button
-                  collapses back.
-
-                  Bottom-right, NOT top-right: the chart's top strip is
-                  TradingView's own toolbar (interval, indicators, undo/redo,
-                  search) and a floating button there sat right on top of it.
-                  `bottom-16` clears TV's time axis and its %/log/auto row,
-                  `right-20` clears the price scale — mirroring the Reload
-                  button that AdvancedChart puts at bottom-16 left-2. */}
-              {!chartExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setChartExpanded(true)}
-                  className="absolute bottom-16 right-20 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] font-semibold text-text-secondary shadow-md backdrop-blur transition-colors hover:border-border-primary hover:text-text-primary"
-                  title="Expand chart to full screen"
-                  aria-label="Expand chart to full screen"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                  <span className="hidden sm:inline">Full screen</span>
-                </button>
               )}
             </div>
           </div>

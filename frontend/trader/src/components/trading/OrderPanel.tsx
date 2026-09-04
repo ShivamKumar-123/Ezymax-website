@@ -464,25 +464,9 @@ export default function OrderPanel() {
           </div>
           {isTradingTerminal ? (
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                data-tour={TOUR_TARGETS.ORDER_MARKETS_BUTTON}
-                onClick={() => {
-                  setSymbolPickerOpen(false);
-                  toggleTerminalMarkets();
-                }}
-                className="flex h-7 shrink-0 items-center gap-1 rounded-lg border border-accent/40 bg-accent/[0.06] px-1.5 text-accent transition-colors hover:bg-accent/15"
-                aria-label={terminalMarketsOpen ? 'Hide markets' : 'Open markets'}
-                aria-expanded={terminalMarketsOpen}
-              >
-                <ChevronLeft
-                  className={clsx(
-                    'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
-                    terminalMarketsOpen && '-rotate-90',
-                  )}
-                />
-                <span className="text-[9px] font-extrabold uppercase tracking-wider">Markets</span>
-              </button>
+              {/* The Markets toggle moved to the ticker row's action group, so
+                  the header keeps only the symbol + the two live toggles —
+                  matching the reference terminal's thin symbol strip. */}
               <button
                 type="button"
                 title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
@@ -607,7 +591,50 @@ export default function OrderPanel() {
             <p className="text-[10px] text-text-tertiary">Fill at market price</p>
           )}
 
-          {/* Sell / Buy buttons */}
+          {/* Sell / Buy — on the terminal this is ONE strip where the chosen
+              side is a solid colour block and the spread sits between the two
+              prices, matching the reference terminal. Elsewhere (dashboard)
+              the original two-card layout is kept. */}
+          {isTradingTerminal ? (
+            <div
+              data-tour={TOUR_TARGETS.ORDER_BUY_SELL}
+              className="flex items-stretch overflow-hidden rounded-lg border border-border-primary"
+            >
+              <button
+                type="button"
+                onClick={() => setSide('sell')}
+                className={clsx(
+                  'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors',
+                  side === 'sell'
+                    ? 'bg-[#ef5350] text-white'
+                    : 'bg-bg-secondary text-text-secondary hover:text-text-primary',
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-90">Sell</span>
+                <span className="font-mono text-[17px] font-extrabold leading-none tabular-nums">
+                  {tick ? <AnimatedPrice value={tick.bid} digits={digits} flash={false} /> : '---'}
+                </span>
+              </button>
+              <div className="flex w-12 shrink-0 items-center justify-center bg-bg-base font-mono text-[11px] font-bold text-text-tertiary tabular-nums">
+                {tick ? (tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(0) : '—'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSide('buy')}
+                className={clsx(
+                  'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors',
+                  side === 'buy'
+                    ? 'bg-[#2962FF] text-white'
+                    : 'bg-bg-secondary text-text-secondary hover:text-text-primary',
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-90">Buy</span>
+                <span className="font-mono text-[17px] font-extrabold leading-none tabular-nums">
+                  {tick ? <AnimatedPrice value={tick.ask} digits={digits} flash={false} /> : '---'}
+                </span>
+              </button>
+            </div>
+          ) : (
           <div data-tour={TOUR_TARGETS.ORDER_BUY_SELL} className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1.5' : 'gap-2')}>
              <button
                 type="button"
@@ -638,11 +665,13 @@ export default function OrderPanel() {
                 <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
              </button>
           </div>
+          )}
 
-          {/* Spread */}
-          {tick && (
-             <div className={clsx('flex items-center justify-center', isTradingTerminal ? '-mt-1' : '-mt-2')}>
-                <span className={clsx('font-mono px-2 py-0.5 rounded-full bg-bg-secondary text-text-tertiary border border-border-primary', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}>
+          {/* Spread pill — only the dashboard layout needs it; on the terminal
+              the spread already sits between the Sell and Buy prices. */}
+          {!isTradingTerminal && tick && (
+             <div className="flex items-center justify-center -mt-2">
+                <span className="font-mono px-2 py-0.5 rounded-full bg-bg-secondary text-text-tertiary border border-border-primary text-[10px]">
                   Spread: {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(1)}
                 </span>
              </div>
@@ -1003,24 +1032,9 @@ export default function OrderPanel() {
 
         {isTradingTerminal ? (
           <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
-            <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
-              <span className="text-[10px] text-text-tertiary">Exec. Price</span>
-              <span className="text-xs font-mono font-semibold text-text-primary">
-                {execPrice > 0 ? execPrice.toFixed(digits) : '—'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
-              <span className="truncate">Mrgn ${marginRequired.toFixed(2)}</span>
-              <span className={clsx('shrink-0 font-mono', hasEnoughMargin ? 'text-[#ccff00]' : 'text-[#ef5350]')}>
-                Free ${freeMargin.toFixed(2)}
-              </span>
-              <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#ccff00]' : 'text-[#f57c00]')}
-                title={isConnected ? 'Feed connected' : 'Feed disconnected'}
-              >
-                {isConnected ? '●' : '○'}
-              </span>
-            </div>
+            {/* Exec price / margin / free margin used to be repeated here; they
+                now live in the Margin + Assets readouts above, so the footer is
+                just the action button (kept sticky so it's always reachable). */}
             {!hasEnoughMargin && (
               <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">Insufficient margin</div>
             )}
@@ -1033,14 +1047,14 @@ export default function OrderPanel() {
               type="button"
               onClick={handleSubmit}
               disabled={!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
-              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
+              className="w-full py-3 rounded-lg text-[15px] font-bold tracking-wide transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               style={{
                 background: side === 'buy' ? '#2962FF' : '#ef5350',
                 color: '#fff',
                 boxShadow: side === 'buy' ? '0 2px 12px rgba(41,98,255,0.2)' : '0 2px 12px rgba(239,83,80,0.2)',
               }}
             >
-              {`${side === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
+              {side === 'buy' ? 'Buy' : 'Sell'}
             </button>
             {!marketStatus.isOpen && orderTab === 'market' && (
               <div

@@ -1256,6 +1256,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Side</th>
                         <th className={th}>Qty</th>
                         <th className={th}>Open</th>
+                        <th className={th}>Charges</th>
                         <th className={th}>Current</th>
                         <th className={th}>
                           <span className="block">P&amp;L</span>
@@ -1303,6 +1304,15 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td className={td}>{pos.lots}</td>
                             <td className={clsx(td, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
+                            {/* Commission + swap booked against this position.
+                                Shown separately so the P&L column can stay
+                                GROSS and still reconcile with the net figure. */}
+                            <td
+                              className={clsx(td, 'font-mono tabular-nums text-text-tertiary')}
+                              title="Commission + swap — realised when the position closes"
+                            >
+                              {charges > 0 ? `-$${charges.toFixed(2)}` : '$0.00'}
+                            </td>
                             <td className={clsx(td, 'font-mono')}>
                               {pos.current_price != null ? <AnimatedPrice value={pos.current_price} digits={d} /> : '—'}
                             </td>
@@ -1359,26 +1369,42 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   </div>
                                 </div>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => setSltpEdit({
+                                /* Two compact chips, like the reference
+                                   terminal: "+ SL" / "+ TP" when unset, the
+                                   value when set. Both open the same editor. */
+                                (() => {
+                                  const openEditor = () => setSltpEdit({
                                     positionId: pos.id,
                                     serverId: pos.server_id ?? pos.id,
                                     sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
                                     tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
-                                  })}
-                                  className="group flex items-center gap-1.5 rounded-md -mx-1 px-1.5 py-1 text-left cursor-pointer border border-transparent hover:border-[#ccff00]/30 hover:bg-[#ccff00]/[0.06] transition-colors"
-                                  title="Edit SL / TP — updates the chart lines too"
-                                >
-                                  <span className="leading-tight">
-                                    <span className="text-text-secondary">SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'}</span>
-                                    <br />
-                                    <span className="text-text-secondary">TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}</span>
-                                  </span>
-                                  <span className="grid place-items-center w-5 h-5 rounded shrink-0 bg-[#ccff00]/12 border border-[#ccff00]/25 group-hover:bg-[#ccff00]/20 transition-colors" aria-hidden>
-                                    <Pencil className="w-2.5 h-2.5 text-[#ccff00]" />
-                                  </span>
-                                </button>
+                                  });
+                                  const chip = (
+                                    label: string,
+                                    value: number | null | undefined,
+                                    tone: string,
+                                  ) => (
+                                    <button
+                                      type="button"
+                                      onClick={openEditor}
+                                      title={`Edit ${label} — updates the chart lines too`}
+                                      className={clsx(
+                                        'inline-flex items-center gap-1 rounded-md border px-1.5 py-1 font-mono text-[10px] font-semibold transition-colors',
+                                        value != null
+                                          ? 'border-border-primary bg-bg-secondary text-text-primary hover:border-border-secondary'
+                                          : tone,
+                                      )}
+                                    >
+                                      {value != null ? `${label} ${value.toFixed(d)}` : `+ ${label}`}
+                                    </button>
+                                  );
+                                  return (
+                                    <div className="flex items-center gap-1">
+                                      {chip('SL', pos.stop_loss, 'border-sell/40 bg-sell/10 text-sell hover:bg-sell/15')}
+                                      {chip('TP', pos.take_profit, 'border-buy/40 bg-buy/10 text-buy hover:bg-buy/15')}
+                                    </div>
+                                  );
+                                })()
                               )}
                             </td>
                             <td className={clsx(td, 'text-right pr-2')}>

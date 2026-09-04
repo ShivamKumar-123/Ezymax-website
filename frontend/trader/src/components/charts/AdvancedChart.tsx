@@ -108,8 +108,13 @@ function buildOverrides(theme: 'dark' | 'light'): Record<string, string> {
   };
 }
 
-function AdvancedChartInner() {
+function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () => void }) {
   const pathname = usePathname();
+  // Kept in a ref so adding the toolbar button doesn't depend on prop identity
+  // (the widget is created once; re-creating it to pick up a new callback
+  // would tear down the whole chart).
+  const fullscreenCbRef = useRef<(() => void) | undefined>(onRequestFullscreen);
+  fullscreenCbRef.current = onRequestFullscreen;
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const theme = useUIStore((s) => s.theme);
   const tick = useTradingStore((s) => s.prices[(selectedSymbol ?? 'EURUSD').toUpperCase()]);
@@ -195,6 +200,26 @@ function AdvancedChartInner() {
           if (cancelled) return;
           widgetRef.current = widget;
           setStatus('ready');
+
+          // "Full screen" lives INSIDE the chart's own header, next to
+          // Indicators — a floating overlay button sat on top of TV's toolbar
+          // instead. createButton is the library's supported way in.
+          try {
+            const btn = widget.createButton?.();
+            if (btn) {
+              btn.setAttribute('title', 'Expand chart to full screen');
+              btn.style.cursor = 'pointer';
+              btn.innerHTML =
+                '<span style="display:inline-flex;align-items:center;gap:5px">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/>' +
+                '<path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>' +
+                'Full screen</span>';
+              btn.addEventListener('click', () => fullscreenCbRef.current?.());
+            }
+          } catch {
+            /* createButton unavailable — the rail's chart-focus button still works */
+          }
         });
       })
       .catch(() => {
