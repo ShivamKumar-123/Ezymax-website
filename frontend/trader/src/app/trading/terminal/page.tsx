@@ -653,17 +653,23 @@ export default function TradingTerminalPage() {
               <TradingViewChart />
               {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
                   already expanded since the header's "Normal view" button
-                  collapses back. Positioned over the chart's top-right
-                  corner where TradingView's iframe has empty space. */}
+                  collapses back.
+
+                  Bottom-right, NOT top-right: the chart's top strip is
+                  TradingView's own toolbar (interval, indicators, undo/redo,
+                  search) and a floating button there sat right on top of it.
+                  `bottom-16` clears TV's time axis and its %/log/auto row,
+                  `right-20` clears the price scale — mirroring the Reload
+                  button that AdvancedChart puts at bottom-16 left-2. */}
               {!chartExpanded && (
                 <button
                   type="button"
                   onClick={() => setChartExpanded(true)}
-                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
+                  className="absolute bottom-16 right-20 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] font-semibold text-text-secondary shadow-md backdrop-blur transition-colors hover:border-border-primary hover:text-text-primary"
                   title="Expand chart to full screen"
                   aria-label="Expand chart to full screen"
                 >
-                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
+                  <Maximize2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
                   <span className="hidden sm:inline">Full screen</span>
                 </button>
               )}

@@ -10,6 +10,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
+import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 const SYMBOLS = ['EURUSD', 'GBPUSD', 'XAUUSD', 'USDJPY', 'BTCUSD', 'USOIL'] as const;
@@ -29,32 +30,49 @@ function formatPrice(p: number | undefined, digits: number): string {
   return (p as number).toFixed(digits);
 }
 
-/** Tiny SVG sparkline. Normalises the buffer into the viewBox so the
- *  shape always fills the width without a leading flat region. */
-function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
+/** Tiny SVG sparkline with a soft area fill. Normalises the buffer into the
+ *  viewBox so the shape always fills the width without a leading flat region.
+ *  `id` must be unique per tile — the gradient is referenced by url(#…). */
+function Sparkline({ data, positive, id }: { data: number[]; positive: boolean; id: string }) {
   if (data.length < 2) {
-    return <svg viewBox="0 0 60 20" className="w-16 h-5 opacity-30"><line x1="0" y1="10" x2="60" y2="10" stroke="currentColor" strokeWidth="1" /></svg>;
+    return (
+      <svg viewBox="0 0 60 20" className="h-5 w-16 shrink-0 opacity-25" aria-hidden>
+        <line x1="0" y1="10" x2="60" y2="10" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" />
+      </svg>
+    );
   }
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const points = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * 60;
-      const y = 18 - ((v - min) / range) * 16;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  const coords = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * 60;
+    const y = 18 - ((v - min) / range) * 16;
+    return [x, y] as const;
+  });
+  const points = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const stroke = positive ? '#22c55e' : '#ef4444';
+  const [lastX, lastY] = coords[coords.length - 1];
+  const gid = `spark-${id}`;
+
   return (
-    <svg viewBox="0 0 60 20" className="w-16 h-5">
+    <svg viewBox="0 0 60 20" className="h-5 w-16 shrink-0 overflow-visible" aria-hidden>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,20 ${points} 60,20`} fill={`url(#${gid})`} />
       <polyline
         points={points}
         fill="none"
-        stroke={positive ? '#22c55e' : '#ef4444'}
+        stroke={stroke}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Leading dot — makes the "live" end of the line readable at a glance */}
+      <circle cx={lastX} cy={lastY} r="1.8" fill={stroke} />
     </svg>
   );
 }
@@ -107,44 +125,67 @@ function TerminalTickerInner() {
 
   return (
     <div className="w-full border-b border-border-primary bg-bg-base">
-      <div data-tour={TOUR_TARGETS.INSTRUMENTS_TICKER} className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-1.5">
+      <div data-tour={TOUR_TARGETS.INSTRUMENTS_TICKER} className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-2">
         {tiles.map(({ sym, meta, mid, pct, positive, buf }) => {
           const isSelected = selectedSymbol === sym;
+          const digits = meta?.digits ?? 5;
           return (
             <button
               key={sym}
               type="button"
               onClick={() => setSelectedSymbol(sym)}
+              aria-pressed={isSelected}
+              title={`${meta?.label || sym} — ${formatPrice(mid, digits)}`}
               className={clsx(
-                'shrink-0 flex items-center gap-2.5 px-3 py-1.5 rounded-lg border transition-colors',
-                'min-w-[180px]',
+                'group relative shrink-0 w-[196px] overflow-hidden rounded-xl border px-3 py-2 text-left',
+                'transition-all duration-200',
                 isSelected
-                  ? 'bg-accent/10 border-accent/40'
-                  : 'bg-bg-secondary border-border-primary hover:border-accent/30',
+                  ? 'border-accent/50 bg-accent/[0.07] shadow-[0_0_18px_-8px_rgba(204,255,0,0.9)]'
+                  : 'border-border-primary bg-bg-secondary hover:border-accent/30 hover:bg-bg-hover',
               )}
             >
-              <span className="text-base leading-none" aria-hidden>
-                {meta?.flag || '·'}
-              </span>
-              <div className="flex flex-col items-start min-w-0">
-                <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">
+              {/* Accent rail marks the active symbol without stealing width */}
+              {isSelected && (
+                <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#ccff00]" />
+              )}
+
+              {/* Row 1 — icon + name on the left, change pill pinned right.
+                  min-w-0 + truncate on the name means a long label shortens
+                  instead of pushing the pill out of the card. */}
+              <div className="flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-bg-base text-[11px] leading-none ring-1 ring-border-primary"
+                >
+                  {meta?.flag || '·'}
+                </span>
+                <span className="min-w-0 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-text-tertiary">
                   {meta?.label || sym}
                 </span>
-                <span className="text-sm font-mono font-bold text-text-primary tabular-nums">
-                  {formatPrice(mid, meta?.digits ?? 5)}
-                </span>
-              </div>
-              <div className="flex flex-col items-end gap-0.5 ml-auto">
                 <span
                   className={clsx(
-                    'text-[10px] font-bold font-mono tabular-nums whitespace-nowrap',
-                    positive ? 'text-green-400' : 'text-red-400',
+                    'ml-auto shrink-0 rounded-full px-1.5 py-px font-mono text-[9px] font-bold tabular-nums',
+                    positive
+                      ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-rose-500/12 text-rose-600 dark:text-rose-400',
                   )}
                 >
-                  {positive ? '+' : ''}
-                  {pct.toFixed(2)}%
+                  {positive ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                 </span>
-                <Sparkline data={buf} positive={positive} />
+              </div>
+
+              {/* Row 2 — price on its own baseline, sparkline in a fixed lane */}
+              <div className="mt-1 flex items-end justify-between gap-2">
+                {Number.isFinite(mid) ? (
+                  <AnimatedPrice
+                    value={mid as number}
+                    digits={digits}
+                    className="min-w-0 truncate font-mono text-[15px] font-bold leading-none tabular-nums text-text-primary"
+                  />
+                ) : (
+                  <span className="font-mono text-[15px] font-bold leading-none text-text-tertiary">—</span>
+                )}
+                <Sparkline data={buf} positive={positive} id={sym} />
               </div>
             </button>
           );

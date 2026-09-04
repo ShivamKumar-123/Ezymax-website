@@ -365,39 +365,44 @@ export default function OrderPanel() {
     <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
       {/* ═══ Header ═══ */}
       <div
-        className={clsx('shrink-0 flex items-center justify-between border-b border-border-primary bg-bg-secondary', isTradingTerminal ? 'px-2 py-2' : 'px-4 py-2.5')}
+        className={clsx(
+          'shrink-0 flex items-center justify-between gap-2 border-b border-border-primary bg-bg-secondary',
+          isTradingTerminal ? 'px-2 py-1.5' : 'px-4 py-2.5',
+        )}
       >
+        {/* Left lane owns all the flexible width; every control to its right is
+            shrink-0, so a long symbol truncates instead of shoving the status
+            pill past the panel edge. */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <div className="relative flex items-center gap-1.5 min-w-0" ref={dropdownRef}>
-            <div
-              className={clsx('rounded-full shrink-0', isTradingTerminal ? 'w-3.5 h-3.5' : 'w-4 h-4')}
-              style={{ background: 'linear-gradient(135deg, #ffb300, #42a5f5)' }}
-              aria-hidden
-            />
+          <div className="relative min-w-0" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setSymbolPickerOpen((o) => !o)}
-              className="flex items-center gap-1 hover:bg-white/[0.05] py-1 pl-0 pr-0.5 rounded-lg transition-colors min-w-0"
+              aria-haspopup="listbox"
+              aria-expanded={symbolPickerOpen}
+              className={clsx(
+                'flex min-w-0 items-center gap-1.5 rounded-lg border border-border-primary/70 bg-bg-base',
+                'transition-colors hover:border-accent/40 hover:bg-bg-hover',
+                isTradingTerminal ? 'h-7 px-1.5' : 'h-9 px-2.5',
+              )}
             >
               <span
+                className={clsx('rounded-full shrink-0', isTradingTerminal ? 'w-3 h-3' : 'w-3.5 h-3.5')}
+                style={{ background: 'linear-gradient(135deg, #ffb300, #42a5f5)' }}
+                aria-hidden
+              />
+              <span
                 className={clsx(
-                  'font-bold text-text-primary font-mono truncate',
+                  'font-bold text-text-primary font-mono truncate min-w-0',
                   isTradingTerminal ? 'text-xs' : 'text-sm',
                 )}
               >
                 {selectedSymbol}
               </span>
-              {!isTradingTerminal ? (
-                <ChevronDown
-                  size={14}
-                  className={clsx('text-text-tertiary shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
-                />
-              ) : (
-                <ChevronDown
-                  size={12}
-                  className={clsx('text-text-tertiary shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
-                />
-              )}
+              <ChevronDown
+                size={isTradingTerminal ? 12 : 14}
+                className={clsx('text-text-tertiary shrink-0 transition-transform', symbolPickerOpen && 'rotate-180')}
+              />
             </button>
             {symbolPickerOpen && (
               <div className="absolute top-full left-0 z-50 w-64 mt-1 rounded-lg border border-border-primary shadow-2xl bg-bg-secondary overflow-hidden">
@@ -419,13 +424,13 @@ export default function OrderPanel() {
                   setSymbolPickerOpen(false);
                   toggleTerminalMarkets();
                 }}
-                className="flex items-center gap-1 px-2 py-1 rounded-md border border-accent/40 text-accent hover:bg-accent/12 transition-colors"
+                className="flex h-7 shrink-0 items-center gap-1 rounded-lg border border-accent/40 bg-accent/[0.06] px-1.5 text-accent transition-colors hover:bg-accent/15"
                 aria-label={terminalMarketsOpen ? 'Hide markets' : 'Open markets'}
                 aria-expanded={terminalMarketsOpen}
               >
                 <ChevronLeft
                   className={clsx(
-                    'w-3.5 h-3.5 transition-transform duration-200',
+                    'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
                     terminalMarketsOpen && '-rotate-90',
                   )}
                 />
@@ -438,42 +443,65 @@ export default function OrderPanel() {
                 aria-pressed={oneClickTrading}
                 onClick={() => setOneClickTrading(!oneClickTrading)}
                 className={clsx(
-                  'flex items-center justify-center w-8 h-8 rounded-md border transition-colors',
+                  'grid h-7 w-7 shrink-0 place-items-center rounded-lg border transition-colors',
                   oneClickTrading
                     ? 'border-accent/50 bg-accent/15 text-accent'
                     : 'border-border-secondary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
                 )}
               >
-                <Zap size={15} strokeWidth={1.75} />
+                <Zap size={14} strokeWidth={1.75} />
               </button>
               <button
                 type="button"
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 onClick={toggleTheme}
-                className="flex items-center justify-center w-8 h-8 rounded-md border border-border-secondary text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border-secondary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
               >
                 {theme === 'dark'
-                  ? <Sun size={15} strokeWidth={1.75} />
-                  : <Moon size={15} strokeWidth={1.75} />}
+                  ? <Sun size={14} strokeWidth={1.75} />
+                  : <Moon size={14} strokeWidth={1.75} />}
               </button>
             </div>
           ) : null}
         </div>
-        <div className="flex flex-col items-end shrink-0">
-          <div className="flex items-center gap-1">
-            <span
-              className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#ccff00' : '#f57c00' }}
-            >
-              {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
-            </span>
-            {isConnected ? (
-              <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#ccff00]" />
-            ) : (
-              <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
+
+        {/* Market status — one pill instead of loose text + icon, so it can't
+            be split or clipped at the panel edge. The label uses
+            var(--accent-ink): raw lime is unreadable on the light theme. */}
+        <div
+          className={clsx(
+            'flex shrink-0 items-center gap-1.5 rounded-full border px-2',
+            isTradingTerminal ? 'h-7' : 'h-8',
+            marketStatus.isOpen
+              ? 'border-accent/35 bg-accent/[0.08]'
+              : 'border-[#f57c00]/35 bg-[#f57c00]/[0.08]',
+          )}
+          title={marketStatus.isOpen ? 'Market open' : marketStatus.reason || 'Market closed'}
+        >
+          <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+            {marketStatus.isOpen && isConnected && (
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ccff00] opacity-60" />
             )}
-          </div>
+            <span
+              className="relative inline-flex h-1.5 w-1.5 rounded-full"
+              style={{ background: marketStatus.isOpen ? '#ccff00' : '#f57c00' }}
+            />
+          </span>
+          <span
+            className={clsx(
+              'font-bold uppercase tracking-wider whitespace-nowrap',
+              isTradingTerminal ? 'text-[9px]' : 'text-[10px]',
+            )}
+            style={{ color: marketStatus.isOpen ? 'var(--accent-ink)' : '#f57c00' }}
+          >
+            {marketStatus.isOpen ? 'Open' : 'Closed'}
+          </span>
+          {isConnected ? (
+            <Wifi size={isTradingTerminal ? 11 : 12} className="shrink-0 text-[#ccff00]" />
+          ) : (
+            <WifiOff size={isTradingTerminal ? 11 : 12} className="shrink-0 text-[#f57c00]" />
+          )}
         </div>
       </div>
 
