@@ -659,7 +659,6 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
       return () => {};
     }
 
-    const R = CLOSE_BTN_RIGHT_PX;
     let raf = 0;
     const sync = () => {
       raf = requestAnimationFrame(sync);
@@ -670,6 +669,14 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
       }
       const off = calibOffset;
       const h = containerRef.current?.clientHeight || g.h;
+      // CLOSE_BTN_RIGHT_PX keeps the row clear of TradingView's own line
+      // label on a desktop chart, but it is wider than a phone chart: the
+      // SL button sits at R+52 and is ~26px wide, so at 268 the whole row
+      // fell off the left edge of a ~340px pane and overflow-hidden ate it.
+      // Clamp R to whatever actually fits, recomputed each frame so a
+      // resize or rotation is picked up.
+      const cw = containerRef.current?.clientWidth || 0;
+      const R = cw > 0 ? Math.max(8, Math.min(CLOSE_BTN_RIGHT_PX, cw - 86)) : CLOSE_BTN_RIGHT_PX;
       const live = useTradingStore.getState().positions;
       const place = (el: HTMLDivElement, y: number, rightPx: number) => {
         if (!(y > 8) || y > h - 8) { el.style.visibility = 'hidden'; return; }
