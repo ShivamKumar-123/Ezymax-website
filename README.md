@@ -40,6 +40,42 @@ in place of the no-op. Real Kafka only earns its keep at multi-region,
 multi-consumer scale.
 
 
+## Monitoring (the 3am pager)
+
+`scripts/health-watchdog.py` runs from root cron every 5 minutes and
+emails `ADMIN_EMAIL` (override with `WATCHDOG_ALERT_EMAIL`) when
+production breaks. It checks the failures that have actually happened
+here: gateway/frontend reachability, every container Up, **live tick
+freshness** (BTCUSD always; XAUUSD only while the forex market is open,
+so weekends never page), nightly backup present and non-truncated, SSL
+certs — platform and every white-label tenant — expiring inside 14 days,
+and disk usage.
+
+Alerts are state-based: one email when a check flips to failing, a
+repeat at most every 6h while it stays broken, and a RECOVERED email
+when it clears. Delivery reuses the platform's own SMTP credentials —
+no extra service.
+
+```bash
+sudo ./scripts/install-watchdog-cron.sh                    # one-time
+sudo python3 scripts/health-watchdog.py --test-email       # prove delivery
+tail -f /var/log/swisscresta-watchdog.log
+```
+
+**Restore drills.** Verifying a dump *is* the backup — restore the
+newest into a scratch database and compare row counts against live
+(never into `swisscresta`):
+
+```bash
+CID=$(docker compose ps -q postgres)
+NEW=$(ls -t backups/db/daily/*.dump | head -1)
+docker cp "$NEW" $CID:/tmp/drill.dump
+docker exec $CID psql -U swisscresta -d postgres -c 'CREATE DATABASE restore_drill;'
+docker exec $CID pg_restore -U swisscresta -d restore_drill --no-owner --no-privileges /tmp/drill.dump
+docker exec $CID psql -U swisscresta -d restore_drill -c 'SELECT count(*) FROM users;'
+docker exec $CID psql -U swisscresta -d postgres -c 'DROP DATABASE restore_drill;'
+```
+
 ## Backups & disaster recovery
 
 Daily snapshots of Postgres, TimescaleDB, and the `uploads/` directory are
