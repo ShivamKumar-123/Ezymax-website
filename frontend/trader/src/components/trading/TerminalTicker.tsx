@@ -77,7 +77,7 @@ function Sparkline({ data, positive, id }: { data: number[]; positive: boolean; 
   );
 }
 
-function TerminalTickerInner() {
+function TerminalTickerInner({ rightSlot }: { rightSlot?: React.ReactNode }) {
   const prices = useTradingStore((s) => s.prices);
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
   const setSelectedSymbol = useTradingStore((s) => s.setSelectedSymbol);
@@ -124,8 +124,8 @@ function TerminalTickerInner() {
   }, [prices, tick]);
 
   return (
-    <div className="w-full border-b border-border-primary bg-bg-base">
-      <div data-tour={TOUR_TARGETS.INSTRUMENTS_TICKER} className="flex overflow-x-auto no-scrollbar gap-2 px-2 py-2">
+    <div className="flex w-full items-center border-b border-border-primary bg-bg-base">
+      <div data-tour={TOUR_TARGETS.INSTRUMENTS_TICKER} className="flex min-w-0 flex-1 overflow-x-auto no-scrollbar gap-2 px-2 py-2">
         {tiles.map(({ sym, meta, mid, pct, positive, buf }) => {
           const isSelected = selectedSymbol === sym;
           const digits = meta?.digits ?? 5;
@@ -191,6 +191,11 @@ function TerminalTickerInner() {
           );
         })}
       </div>
+      {/* Terminal actions (Markets / Trade) ride at the end of the ticker row
+          so the chart below can use the full width. */}
+      {rightSlot ? (
+        <div className="flex shrink-0 items-center gap-2 border-l border-border-primary px-2">{rightSlot}</div>
+      ) : null}
     </div>
   );
 }

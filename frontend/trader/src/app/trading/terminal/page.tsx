@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Maximize2, Minimize2, Search, X } from 'lucide-react';
+import { CandlestickChart, List, Maximize2, Minimize2, Search, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -16,7 +16,7 @@ import { setPersistedTradingAccountId, tradingTerminalUrl } from '@/lib/tradingN
 import Watchlist from '@/components/trading/Watchlist';
 import InstrumentsTable from '@/components/trading/InstrumentsTable';
 import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
-import OrderPanel from '@/components/trading/OrderPanel';
+import DraggableOrderModal from '@/components/trading/DraggableOrderModal';
 import RiskCalculator from '@/components/trading/RiskCalculator';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
@@ -28,6 +28,7 @@ import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 // Self-hosted TradingView Advanced Charts (charting_library) fed by our own
 // broker datafeed. Replaces the previous third-party iframe embed.
 const TradingViewChart = dynamic(() => import('@/components/charts/AdvancedChart'), { ssr: false });
+import { ChartErrorBoundary } from '@/components/charts/ChartErrorBoundary';
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
   ssr: false,
 });
@@ -68,6 +69,13 @@ export default function TradingTerminalPage() {
   const [bottomCollapsed, setBottomCollapsed] = useState(false);
   const [chartExpanded, setChartExpanded] = useState(false);
   const [terminalCalcOpen, setTerminalCalcOpen] = useState(false);
+  // The Buy/Sell ticket now lives in a movable floating window instead of a
+  // pinned right column, so the chart can go full-width. It starts OPEN so the
+  // terminal still lands with trading controls in view; closing it is what
+  // frees the whole width for the chart.
+  const [orderModalOpen, setOrderModalOpen] = useState(true);
+  const openOrderModal = useCallback(() => setOrderModalOpen(true), []);
+  const closeOrderModal = useCallback(() => setOrderModalOpen(false), []);
 
   const snapshotLayout = useCallback(() => {
     const s = useUIStore.getState();
@@ -193,39 +201,66 @@ export default function TradingTerminalPage() {
     });
   }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
 
+  // Rail panel buttons are TOGGLES — clicking an already-active panel closes
+  // back to a bare full-width chart. Previously each handler only set its own
+  // panel ON, so users got stuck in News / Chart focus / Calc with no way to
+  // leave from the rail itself.
+  const resetAllPanels = useCallback(() => {
+    setTerminalMarketsOpen(false);
+    setTerminalNewsOpen(false);
+    setChartExpanded(false);
+    setTerminalCalcOpen(false);
+  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+
   const onPanelsSelectMarkets = useCallback(() => {
+    if (terminalMarketsOpen && !terminalNewsOpen && !chartExpanded && !terminalCalcOpen) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setChartExpanded(false);
     setTerminalCalcOpen(false);
     setTerminalMarketsOpen(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [terminalMarketsOpen, terminalNewsOpen, chartExpanded, terminalCalcOpen, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectOrder = useCallback(() => {
-    setTerminalNewsOpen(false);
-    setChartExpanded(false);
-    setTerminalCalcOpen(false);
-    setTerminalMarketsOpen(false);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+    // The order panel is a floating window now — the rail's "Order" button
+    // closes any side panel and pops the order window.
+    resetAllPanels();
+    openOrderModal();
+  }, [resetAllPanels, openOrderModal]);
 
   const onExpandFullChartFromRail = useCallback(() => {
+    if (chartExpanded) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setTerminalMarketsOpen(false);
     setTerminalCalcOpen(false);
     setChartExpanded(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [chartExpanded, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectNews = useCallback(() => {
+    if (terminalNewsOpen && !chartExpanded) {
+      resetAllPanels();
+      return;
+    }
     setChartExpanded(false);
     setTerminalCalcOpen(false);
     setTerminalNewsOpen(true);
-  }, [setTerminalNewsOpen]);
+  }, [terminalNewsOpen, chartExpanded, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectCalc = useCallback(() => {
+    if (terminalCalcOpen && !chartExpanded && !terminalNewsOpen) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setChartExpanded(false);
     setTerminalMarketsOpen(false);
     setTerminalCalcOpen(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [terminalCalcOpen, terminalNewsOpen, chartExpanded, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
   const [lotSize, setLotSize] = useState('0.01');
   const [chartTabs, setChartTabs] = useState<string[]>([]);
   // orderSubmitting removed — MT5-style: never block rapid-fire clicks
@@ -600,6 +635,48 @@ export default function TradingTerminalPage() {
     );
   }
 
+  // The right column now hosts ONLY the Markets / News / Risk-Calculator
+  // panels. When none is open it collapses so the chart is full-width; the
+  // order ticket is no longer here (it's the floating DraggableOrderModal).
+  const rightPanelOpen = terminalMarketsOpen || terminalNewsOpen || terminalCalcOpen;
+
+  // Memoised so the memo() on TerminalTicker still holds — an inline fragment
+  // would be a new node every render and defeat it on a page that re-renders
+  // with the price feed.
+  const tickerActions = useMemo(
+    () => (
+      <>
+        {/* Markets — opens the instruments list as a full-height right panel;
+            chart + positions shrink to the left. Toggle. */}
+        <button
+          type="button"
+          onClick={onPanelsSelectMarkets}
+          className={clsx(
+            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-bold transition-colors whitespace-nowrap',
+            terminalMarketsOpen
+              ? 'bg-accent/20 border-accent/60 text-accent'
+              : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
+          )}
+          title="Browse instruments"
+        >
+          <List className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden sm:inline">Markets</span>
+        </button>
+        {/* Trade — pops the movable order ticket. */}
+        <button
+          type="button"
+          onClick={openOrderModal}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#ccff00] px-3 py-2 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
+          title="Open the order ticket"
+        >
+          <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden sm:inline">Trade</span>
+        </button>
+      </>
+    ),
+    [terminalMarketsOpen, onPanelsSelectMarkets, openOrderModal],
+  );
+
   return (
     <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
       <TerminalLeftRail
@@ -623,8 +700,12 @@ export default function TradingTerminalPage() {
         ref={centerColumnRef}
         className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0 relative z-0"
       >
-        <TerminalTicker />
+        <TerminalTicker rightSlot={tickerActions} />
         <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* LEFT: chart + positions stacked. When a right panel (Markets /
+              News / Calc) opens, this whole stack shrinks to the left and the
+              panel spans the full height on the right. */}
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           <div
             className={clsx(
               'flex flex-col overflow-hidden bg-bg-base min-w-0 min-h-0 isolate',
@@ -650,7 +731,11 @@ export default function TradingTerminalPage() {
               </div>
             ) : null}
             <div data-tour={TOUR_TARGETS.CHART_MAIN} className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
-              <TradingViewChart />
+              {/* Contained so a chart failure (or a stale-deploy chunk error)
+                  can never take the whole terminal down. */}
+              <ChartErrorBoundary>
+                <TradingViewChart />
+              </ChartErrorBoundary>
               {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
                   already expanded since the header's "Normal view" button
                   collapses back.
@@ -676,6 +761,26 @@ export default function TradingTerminalPage() {
             </div>
           </div>
 
+          <PanelResizeHandle
+            axis="horizontal"
+            hitSize={TERMINAL_RESIZE.bottomHandleHitPx}
+            onDragStart={snapshotLayout}
+            onDrag={onBottomDrag}
+            className="z-[80]"
+          />
+
+          <div
+            className="shrink-0 overflow-hidden min-h-0 flex relative z-[1] border-t border-border-primary"
+            style={{ height: bpH }}
+          >
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+              <PositionsPanel variant="terminal" />
+            </div>
+          </div>
+          </div>{/* LEFT column (chart + positions) close */}
+
+          {rightPanelOpen && (
+            <>
           <PanelResizeHandle
             axis="vertical"
             hitSize={TERMINAL_RESIZE.handleHitPx}
@@ -720,12 +825,15 @@ export default function TradingTerminalPage() {
                   <TradingViewNewsTimeline />
                 </div>
               </div>
-            ) : terminalMarketsOpen ? (
+            ) : (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <InstrumentsTable
                   onExitMarkets={() => {
+                    // Picking an instrument closes the markets panel and pops
+                    // the movable order ticket for that symbol.
                     setTerminalMarketsOpen(false);
                     setTerminalNewsOpen(false);
+                    openOrderModal();
                   }}
                   onViewNews={() => {
                     setTerminalMarketsOpen(false);
@@ -733,33 +841,14 @@ export default function TradingTerminalPage() {
                   }}
                 />
               </div>
-            ) : (
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <OrderPanel />
-              </div>
             )}
           </div>
-        </div>
-
-        <PanelResizeHandle
-          axis="horizontal"
-          hitSize={TERMINAL_RESIZE.bottomHandleHitPx}
-          onDragStart={snapshotLayout}
-          onDrag={onBottomDrag}
-          className="z-[80]"
-        />
-
-        <div
-          className="shrink-0 overflow-hidden min-h-0 flex relative z-[1] border-t border-border-primary"
-          style={{ height: bpH }}
-        >
-          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <PositionsPanel variant="terminal" />
-          </div>
-          {/* Technical-analysis rail removed — the positions table gets the
-              full bottom row. */}
+            </>
+          )}
         </div>
       </div>
+
+      {orderModalOpen && <DraggableOrderModal onClose={closeOrderModal} />}
     </div>
   );
 }
