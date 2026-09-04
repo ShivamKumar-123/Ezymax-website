@@ -441,10 +441,36 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
     let crossSub: any = null;
     try { crossSub = chart.crossHairMoved(); crossSub?.subscribe?.(null, onCross); } catch { /* noop */ }
 
+    /** crossHairMoved only ever fires from a MOUSE move. A touch device never
+     *  hovers, so on a phone calibOffset stayed null forever and sync() hid
+     *  every SL / TP / X button — the row simply never appeared, even though it
+     *  was built and positioned each frame.
+     *
+     *  Fall back to measuring the pane itself: the top edge of the pane's canvas
+     *  relative to our container IS the offset. Only trusted when that canvas is
+     *  as tall as the pane height we already read from the price scale, so we
+     *  can't latch onto the wrong canvas (the chart stacks several). */
+    const offsetFromDom = (g: Geo): number | null => {
+      const host = containerRef.current;
+      if (!host) return null;
+      const hostTop = host.getBoundingClientRect().top;
+      for (const c of Array.from(host.querySelectorAll('canvas'))) {
+        const r = c.getBoundingClientRect();
+        if (r.height > 0 && Math.abs(r.height - g.h) <= 2) return r.top - hostTop;
+      }
+      return null;
+    };
+    /** Mouse calibration when we have it (proven exact), DOM measurement when
+     *  we don't — which is every touch device. */
+    const offsetFor = (g: Geo): number | null =>
+      calibOffset != null ? calibOffset : offsetFromDom(g);
+
     const priceForY = (containerY: number): number | null => {
       const g = geom();
-      if (!g || calibOffset == null) return null;
-      const py = containerY - calibOffset;
+      if (!g) return null;
+      const off = offsetFor(g);
+      if (off == null) return null;
+      const py = containerY - off;
       if (g.log) {
         const lt = Math.log(g.top), lb = Math.log(g.bottom);
         return Math.exp(lt - (py / g.h) * (lt - lb));
@@ -544,8 +570,10 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
         overlay.appendChild(zone); overlay.appendChild(line); overlay.appendChild(lbl);
         const entryY = (): number | null => {
           const g = geom();
-          if (!g || calibOffset == null) return null;
-          return paneY(Number(p.open_price) || 0, g) + calibOffset;
+          if (!g) return null;
+          const off2 = offsetFor(g);
+          if (off2 == null) return null;
+          return paneY(Number(p.open_price) || 0, g) + off2;
         };
         const cleanup = () => { for (const el of [zone, line, lbl]) { try { overlay.removeChild(el); } catch { /* noop */ } } };
         b.onpointermove = (ev) => {
@@ -663,11 +691,11 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
     const sync = () => {
       raf = requestAnimationFrame(sync);
       const g = geom();
-      if (!g || calibOffset == null) {
+      const off = g ? offsetFor(g) : null;
+      if (!g || off == null) {
         for (const b of btns) { for (const el of [b.slWrap, b.tpWrap, b.closeWrap, b.slZone, b.tpZone]) el.style.visibility = 'hidden'; }
         return;
       }
-      const off = calibOffset;
       const h = containerRef.current?.clientHeight || g.h;
       // CLOSE_BTN_RIGHT_PX keeps the row clear of TradingView's own line
       // label on a desktop chart, but it is wider than a phone chart: the
