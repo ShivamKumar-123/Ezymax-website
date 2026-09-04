@@ -57,6 +57,12 @@ async def _apply_startup_ddl():
             await conn.execute(text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS bonus_balance NUMERIC(18,8) NOT NULL DEFAULT 0"
             ))
+            # Per-task Power Score payout (migration 0066). DEFAULT 100 is the
+            # flat amount every claim paid before this became per-task, so
+            # existing rows keep paying exactly what they did.
+            await conn.execute(text(
+                "ALTER TABLE rewards_missions ADD COLUMN IF NOT EXISTS ps_reward INTEGER NOT NULL DEFAULT 100"
+            ))
             # Allow spread_type='floating' (per-user floating spread). The old
             # check constraint only permitted fixed/variable/pips/percentage, so
             # inserting a floating override failed. Re-create it with 'floating'.
