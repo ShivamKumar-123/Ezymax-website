@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Admin · Reward Tasks.
+ * Admin · Coin Tasks.
  *
  * Edits `rewards_missions` — the catalogue behind the trader's Rewards → Tasks
  * screen. Wording, target count, the daily earning (FXA + XP), scheduling and
@@ -133,7 +133,7 @@ export default function AdminRewardTasksPage() {
     if (!d.title.trim()) return toast.error('Title cannot be empty');
     if (!Number.isFinite(target) || target < 1) return toast.error('Target must be at least 1');
     if (![xp, fxa, ps, order].every((n) => Number.isFinite(n)) || xp < 0 || fxa < 0 || ps < 0) {
-      return toast.error('Rewards cannot be negative');
+      return toast.error('Coins cannot be negative');
     }
     const streak = d.streak_day === '' ? 0 : Number(d.streak_day);
     if (streak && (streak < 1 || streak > 7)) return toast.error('Streak day must be 1-7 (or blank)');
@@ -194,7 +194,7 @@ export default function AdminRewardTasksPage() {
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-2">
           <CheckSquare size={22} style={{ color: LIME }} />
-          <h1 className="text-xl font-bold text-text-primary">Reward Tasks</h1>
+          <h1 className="text-xl font-bold text-text-primary">Coin Tasks</h1>
         </div>
         <div className="flex items-center gap-2">
           <button

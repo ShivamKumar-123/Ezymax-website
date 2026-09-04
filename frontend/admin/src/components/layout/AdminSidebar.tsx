@@ -74,7 +74,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
   { label: 'Trade Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
   { label: 'FXA Coins', href: '/fxa-coins', icon: Coins, perm: '*' },
-  { label: 'Reward Tasks', href: '/rewards-tasks', icon: CheckSquare, perm: '*' },
+  { label: 'Coin Tasks', href: '/rewards-tasks', icon: CheckSquare, perm: '*' },
   { label: 'Reward Store', href: '/reward-store', icon: Store, perm: '*' },
   { label: 'Spin & Win', href: '/spin-wheel', icon: Sparkles, perm: '*' },
   { label: 'Lifestyle Queue', href: '/lifestyle', icon: Package, perm: '*' },

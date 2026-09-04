@@ -124,15 +124,15 @@ def _apply(m: RewardsMission, req: TaskPayload) -> None:
         m.target_count = int(req.target_count)
     if req.xp_reward is not None:
         if req.xp_reward < 0:
-            raise HTTPException(status_code=400, detail="XP reward cannot be negative")
+            raise HTTPException(status_code=400, detail="XP coins cannot be negative")
         m.xp_reward = int(req.xp_reward)
     if req.fxa_reward is not None:
         if req.fxa_reward < 0:
-            raise HTTPException(status_code=400, detail="FXA reward cannot be negative")
+            raise HTTPException(status_code=400, detail="FXA-AC coins cannot be negative")
         m.ac_reward = Decimal(str(req.fxa_reward)).quantize(Decimal("0.01"))
     if req.ps_reward is not None:
         if req.ps_reward < 0:
-            raise HTTPException(status_code=400, detail="PS reward cannot be negative")
+            raise HTTPException(status_code=400, detail="PS coins cannot be negative")
         m.ps_reward = int(req.ps_reward)
     if req.is_active is not None:
         m.is_active = bool(req.is_active)
