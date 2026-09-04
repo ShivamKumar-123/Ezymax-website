@@ -74,21 +74,43 @@ export default function AppHeader() {
     /* Outer wrapper — sits on #050707 page bg */
     <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-0 shrink-0">
       <header
-        className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
+        className="relative h-[56px] sm:h-[65px] flex items-center justify-between gap-2 px-3 sm:px-5 rounded-2xl bg-bg-secondary border border-border-primary shadow-[0_6px_24px_-16px_rgba(0,0,0,0.55)]"
       >
-        {/* LEFT — fxartha mark toggles the sidebar (no hamburger) */}
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors"
-          aria-label="Toggle menu"
-        >
-          <img
-            src="/images/fxartha_icon.png"
-            alt="FXArtha"
-            className="w-9 h-9 object-contain"
-          />
-        </button>
+        {/* Lime hairline along the top edge — the same accent the sidebar and
+            the More menu use, so the chrome reads as one system. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#ccff00]/40 to-transparent"
+        />
+        {/* LEFT — brand lockup: the mandala mark still toggles the sidebar (no
+            hamburger), and the wordmark beside it links home. The name is set
+            as text rather than using fxartha-logo.png, whose lockup already
+            contains the mandala and would show the mark twice. */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Menu"
+            className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#ccff00]/25 bg-[#ccff00]/[0.06] transition-all hover:border-[#ccff00]/50 hover:bg-[#ccff00]/10 hover:shadow-[0_0_18px_-6px_rgba(204,255,0,0.9)] active:scale-95"
+            aria-label="Toggle menu"
+          >
+            <img
+              src="/images/fxartha_icon.png"
+              alt="FXArtha"
+              className="h-7 w-7 object-contain transition-transform duration-200 group-hover:scale-110"
+            />
+          </button>
+          <Link
+            href="/dashboard"
+            aria-label="FXArtha — dashboard"
+            className="hidden select-none items-baseline gap-px text-[19px] font-extrabold leading-none tracking-[-0.02em] text-text-primary transition-opacity hover:opacity-80 sm:inline-flex"
+          >
+            FXArtha
+            <span aria-hidden className="ml-1 h-1.5 w-1.5 self-center rounded-full bg-[#ccff00]" />
+          </Link>
+          {/* Hairline separates the brand from the nav capsule */}
+          <span aria-hidden className="hidden h-6 w-px bg-border-primary lg:block" />
+        </div>
 
         {/* CENTER — full categorised nav, inline on the same line (lg+) */}
         <AppTopNav />
