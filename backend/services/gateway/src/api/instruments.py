@@ -30,6 +30,13 @@ _TV_RESOLUTION_TO_BINANCE: dict[str, str] = {
     "60": "1h", "240": "4h", "D": "1d", "1D": "1d",
 }
 
+# Bar-window budget. DEFAULT_BARS is what a caller gets when it doesn't ask
+# for a specific count — comfortably more than any screen renders at once,
+# while a fraction of the old unconditional 5000-row (~445 KB) response.
+# Panning further back just issues another request with an older `to`.
+DEFAULT_BARS = 1000
+MAX_BARS = 5000
+
 # Platform symbol → Binance REST pair (crypto only)
 _BINANCE_PAIRS: dict[str, str] = {
     "BTCUSD": "BTCUSDT", "ETHUSD": "ETHUSDT", "LTCUSD": "LTCUSDT",
@@ -227,6 +234,13 @@ async def get_bars(
     from_time: int = Query(default=0, alias="from"),
     to_time: int = Query(default=0, alias="to"),
     live: int = Query(default=0),
+    # How many bars the caller actually wants. The response used to be a
+    # hard-coded 5000 rows (~445 KB) for EVERY chart open regardless of the
+    # request — the mobile chart's `limit` was silently ignored, which is
+    # most of its load time on mobile data. `countback` is the TradingView
+    # UDF spelling; `limit` is what our own clients send.
+    countback: int = Query(default=0, ge=0, le=MAX_BARS),
+    limit: int = Query(default=0, ge=0, le=MAX_BARS),
     db: AsyncSession = Depends(get_db),
 ):
     """OHLCV bars for the charting library, served from the durable `ohlc_bars`
@@ -331,7 +345,11 @@ async def get_bars(
     #    (e.g. gold on a Saturday); flooring on `from` would return nothing and
     #    blank the chart. Returning the latest bars ≤ `to` keeps history visible,
     #    and `to` is what the library moves when the user pans back.
-    bars = await bars_store.read_bars(db, sym, tf, None, to_time or None, limit=5000)
+    # Newest-first slice: read_bars takes the most recent `limit` rows in the
+    # window and returns them ascending, so a smaller budget trims OLD bars
+    # and always keeps the live edge the user is looking at.
+    bar_budget = countback or limit or DEFAULT_BARS
+    bars = await bars_store.read_bars(db, sym, tf, None, to_time or None, limit=bar_budget)
 
     # Append the current in-progress bar so the last candle stays live.
     current_raw = await redis_client.get(f"bar:current:{sym}:{tf}")
