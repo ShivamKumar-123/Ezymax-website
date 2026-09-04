@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { RotateCw, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { useTradingStore } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -136,6 +136,10 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [reloadNonce, setReloadNonce] = useState(0);
   const reloadChart = useCallback(() => setReloadNonce((n) => n + 1), []);
+  // Held in a ref so the toolbar button created once in onChartReady always
+  // calls the current closure without re-creating the widget.
+  const reloadChartRef = useRef(reloadChart);
+  reloadChartRef.current = reloadChart;
 
   // Small confirm/input modal used by the on-chart SL/TP/close buttons.
   const [dialog, setDialog] = useState<ChartDialog | null>(null);
@@ -216,6 +220,19 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
                 '<path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>' +
                 'Full screen</span>';
               btn.addEventListener('click', () => fullscreenCbRef.current?.());
+            }
+
+            // Reload — remounts the widget to recover a stalled datafeed.
+            const rl = widget.createButton?.();
+            if (rl) {
+              rl.setAttribute('title', 'Reload chart');
+              rl.style.cursor = 'pointer';
+              rl.innerHTML =
+                '<span style="display:inline-flex;align-items:center;gap:5px">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>' +
+                'Reload</span>';
+              rl.addEventListener('click', () => reloadChartRef.current?.());
             }
           } catch {
             /* createButton unavailable — the rail's chart-focus button still works */
@@ -740,19 +757,10 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
         </div>
       )}
 
-      {/* Manual remount — recovers a stalled datafeed without reloading the page.
-          bottom-16 clears the library's own bottom toolbar (~40px, the
-          3m/1m/5d/1d range row); at bottom-10 this button sat on top of it. */}
-      <button
-        type="button"
-        onClick={reloadChart}
-        title="Reload chart"
-        aria-label="Reload chart"
-        className="absolute bottom-16 left-2 z-10 inline-flex items-center gap-1 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2 py-1 text-[11px] text-text-secondary shadow-md backdrop-blur hover:text-text-primary hover:border-border-primary transition-fast"
-      >
-        <RotateCw className="w-3 h-3" aria-hidden />
-        <span>Reload</span>
-      </button>
+      {/* The manual "Reload" button no longer floats over the chart — it moved
+          into the chart's own header via createButton (see onChartReady), so
+          the recovery path for a stalled datafeed is still one click away
+          without a pill sitting on the candles. */}
 
       {/* Broker-quote overlay — the actual executable bid/ask (the chart plots
           our broker candles, but this anchors the user to the live tick). */}

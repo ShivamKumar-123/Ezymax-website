@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Share2,
   ShieldCheck,
+  Wallet as WalletIcon,
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
@@ -347,6 +348,23 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const [closeSubmitting, setCloseSubmitting] = useState(false);
   const [toolbarBusy, setToolbarBusy] = useState(false);
   const [sltpEdit, setSltpEdit] = useState<SltpEdit>(null);
+  // Account-summary popover (Balance / Equity / Margin …) — closes on an
+  // outside click or Escape like the other menus in this panel.
+  const [acctSummaryOpen, setAcctSummaryOpen] = useState(false);
+  const acctSummaryRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!acctSummaryOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!acctSummaryRef.current?.contains(e.target as Node)) setAcctSummaryOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAcctSummaryOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [acctSummaryOpen]);
   const [sltpSaving, setSltpSaving] = useState(false);
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState<BulkCloseType | null>(null);
@@ -879,72 +897,75 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
               {/* The labels ("Floating P&L", "Margin Level"…) are wider than the
                   figures under them, so gap-3 let neighbouring columns run into
                   each other. Give the row real breathing space instead. */}
-              <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-end gap-5 sm:gap-6 md:gap-8 shrink-0 min-w-0 overflow-x-auto scrollbar-none no-scrollbar">
+              {/* Account summary — the six figures used to sit inline and ate
+                  the whole toolbar width. They now live behind one button that
+                  opens a popover (upward: this row sits at the bottom of the
+                  viewport). */}
+              <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-center gap-2 shrink-0">
+                <div className="relative shrink-0" ref={acctSummaryRef}>
                 {activeAccount ? (
                   <>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Balance
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${activeAccount.balance.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Floating P&amp;L
-                      </span>
-                      <span
-                        className={clsx(
-                          'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#ccff00]' : 'text-[#ef5350]',
-                        )}
-                      >
-                        {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Equity
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
+                    <button
+                      type="button"
+                      onClick={() => setAcctSummaryOpen((o) => !o)}
+                      aria-haspopup="dialog"
+                      aria-expanded={acctSummaryOpen}
+                      title="Account summary"
+                      className={clsx(
+                        'flex h-9 items-center gap-2 rounded-lg border px-2.5 transition-colors',
+                        acctSummaryOpen
+                          ? 'border-accent/50 bg-accent/10 text-text-primary'
+                          : 'border-border-primary bg-bg-secondary text-text-secondary hover:text-text-primary hover:border-border-secondary',
+                      )}
+                    >
+                      <WalletIcon className="w-3.5 h-3.5 shrink-0 text-accent" aria-hidden />
+                      <span className="text-[11px] font-bold uppercase tracking-wide">Account</span>
+                      <span className="font-mono text-xs font-semibold tabular-nums text-text-primary">
                         ${equity.toFixed(2)}
                       </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Margin Used
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${activeAccount.margin_used.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none">
-                        Free Margin
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        ${freeMarginCalc.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-text-tertiary leading-none inline-flex items-center gap-0.5">
-                        Margin Level
-                        <Info className="w-3 h-3 text-text-tertiary" aria-label="Margin level info" />
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary tabular-nums leading-tight">
-                        {marginLevelDisplay}
-                      </span>
-                    </div>
-                    {activeAccount.margin_used > 0 && (
-                      <MarginRing
-                        marginLevel={Number(activeAccount.margin_level) || 0}
-                        size={56}
-                        className="shrink-0 ml-1"
+                      <ChevronDown
+                        className={clsx('w-3.5 h-3.5 shrink-0 transition-transform', acctSummaryOpen && 'rotate-180')}
+                        aria-hidden
                       />
+                    </button>
+
+                    {acctSummaryOpen && (
+                      <div
+                        role="dialog"
+                        aria-label="Account summary"
+                        className="absolute bottom-full right-0 z-[70] mb-2 w-[290px] rounded-xl border border-border-primary bg-bg-secondary p-3 shadow-2xl"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            {([
+                              ['Balance', `$${activeAccount.balance.toFixed(2)}`, undefined],
+                              ['Floating P&L', `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`, totalPnl >= 0 ? 'text-[#ccff00]' : 'text-[#ef5350]'],
+                              ['Equity', `$${equity.toFixed(2)}`, undefined],
+                              ['Margin Used', `$${activeAccount.margin_used.toFixed(2)}`, undefined],
+                              ['Free Margin', `$${freeMarginCalc.toFixed(2)}`, undefined],
+                              ['Margin Level', marginLevelDisplay, undefined],
+                            ] as [string, string, string | undefined][]).map(([label, value, tone]) => (
+                              <div key={label} className="flex items-center justify-between gap-3">
+                                <span className="text-[11px] text-text-tertiary">{label}</span>
+                                <span className={clsx('font-mono text-[12px] font-semibold tabular-nums', tone || 'text-text-primary')}>
+                                  {value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {activeAccount.margin_used > 0 && (
+                            <MarginRing
+                              marginLevel={Number(activeAccount.margin_level) || 0}
+                              size={62}
+                              className="shrink-0"
+                            />
+                          )}
+                        </div>
+                      </div>
                     )}
                   </>
                 ) : null}
+                </div>
                 {isTerminal && activeTab === 'open' && (
                   <div className="flex items-center gap-1 shrink-0 pb-0.5 border-l border-border-primary ml-1 pl-2">
                     {positions.length > 0 && (
