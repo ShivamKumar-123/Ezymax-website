@@ -36,6 +36,7 @@ interface Task {
   target_count: number;
   xp_reward: number;
   fxa_reward: number;
+  ps_reward: number;
   is_active: boolean;
   display_order: number;
   streak_day: number | null;
@@ -56,6 +57,7 @@ type Draft = {
   target_count: string;
   xp_reward: string;
   fxa_reward: string;
+  ps_reward: string;
   display_order: string;
   streak_day: string;
   is_active: boolean;
@@ -67,6 +69,7 @@ const toDraft = (t: Task): Draft => ({
   target_count: String(t.target_count),
   xp_reward: String(t.xp_reward),
   fxa_reward: String(t.fxa_reward),
+  ps_reward: String(t.ps_reward),
   display_order: String(t.display_order),
   streak_day: t.streak_day == null ? '' : String(t.streak_day),
   is_active: t.is_active,
@@ -78,6 +81,7 @@ const isDirty = (t: Task, d: Draft) =>
   Number(d.target_count) !== t.target_count ||
   Number(d.xp_reward) !== t.xp_reward ||
   Number(d.fxa_reward) !== t.fxa_reward ||
+  Number(d.ps_reward) !== t.ps_reward ||
   Number(d.display_order) !== t.display_order ||
   (d.streak_day === '' ? null : Number(d.streak_day)) !== t.streak_day ||
   d.is_active !== t.is_active;
@@ -124,10 +128,11 @@ export default function AdminRewardTasksPage() {
     const target = Number(d.target_count);
     const xp = Number(d.xp_reward);
     const fxa = Number(d.fxa_reward);
+    const ps = Number(d.ps_reward);
     const order = Number(d.display_order);
     if (!d.title.trim()) return toast.error('Title cannot be empty');
     if (!Number.isFinite(target) || target < 1) return toast.error('Target must be at least 1');
-    if (![xp, fxa, order].every((n) => Number.isFinite(n)) || xp < 0 || fxa < 0) {
+    if (![xp, fxa, ps, order].every((n) => Number.isFinite(n)) || xp < 0 || fxa < 0 || ps < 0) {
       return toast.error('Rewards cannot be negative');
     }
     const streak = d.streak_day === '' ? 0 : Number(d.streak_day);
@@ -141,6 +146,7 @@ export default function AdminRewardTasksPage() {
         target_count: target,
         xp_reward: xp,
         fxa_reward: fxa,
+        ps_reward: ps,
         display_order: order,
         streak_day: streak,
         is_active: d.is_active,
@@ -208,7 +214,7 @@ export default function AdminRewardTasksPage() {
         </div>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit the tasks users see under Rewards → Tasks, including what each one earns in FXA and XP.
+        Edit the tasks users see under Rewards → Tasks, including what each one earns in FXA coins, XP and PS.
         Changes apply to future completions; coins already credited are not affected.
       </p>
 
@@ -284,7 +290,7 @@ export default function AdminRewardTasksPage() {
                         </p>
                       </div>
 
-                      <div className="grid w-[330px] shrink-0 grid-cols-2 gap-2">
+                      <div className="grid w-[390px] shrink-0 grid-cols-3 gap-2">
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
                             FXA reward
@@ -304,6 +310,17 @@ export default function AdminRewardTasksPage() {
                             type="number" step="1" min="0"
                             value={d.xp_reward}
                             onChange={(e) => setField(t.id, 'xp_reward', e.target.value)}
+                            className={`${inputCls} font-mono`}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
+                            PS reward
+                          </span>
+                          <input
+                            type="number" step="1" min="0"
+                            value={d.ps_reward}
+                            onChange={(e) => setField(t.id, 'ps_reward', e.target.value)}
                             className={`${inputCls} font-mono`}
                           />
                         </label>
@@ -330,7 +347,7 @@ export default function AdminRewardTasksPage() {
                           />
                         </label>
                         {p === 'daily' && (
-                          <label className="col-span-2 block">
+                          <label className="col-span-3 block">
                             <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
                               Streak day (1-7, blank = every day)
                             </span>
@@ -398,6 +415,7 @@ function CreateTaskModal({
   const [actionKind, setActionKind] = useState('');
   const [fxa, setFxa] = useState('0');
   const [xp, setXp] = useState('0');
+  const [ps, setPs] = useState('100');
   const [target, setTarget] = useState('1');
   const [busy, setBusy] = useState(false);
 
@@ -417,6 +435,7 @@ function CreateTaskModal({
         target_count: Number(target) || 1,
         xp_reward: Number(xp) || 0,
         fxa_reward: Number(fxa) || 0,
+        ps_reward: Number(ps) || 0,
       });
       toast.success('Task created');
       onCreated();
@@ -468,7 +487,7 @@ function CreateTaskModal({
           </span>
           <input value={actionKind} onChange={(e) => setActionKind(e.target.value)} className={cls} placeholder="place_trade" />
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <label className="block">
             <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">FXA</span>
             <input type="number" step="0.01" min="0" value={fxa} onChange={(e) => setFxa(e.target.value)} className={`${cls} font-mono`} />
@@ -476,6 +495,10 @@ function CreateTaskModal({
           <label className="block">
             <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">XP</span>
             <input type="number" step="1" min="0" value={xp} onChange={(e) => setXp(e.target.value)} className={`${cls} font-mono`} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">PS</span>
+            <input type="number" step="1" min="0" value={ps} onChange={(e) => setPs(e.target.value)} className={`${cls} font-mono`} />
           </label>
           <label className="block">
             <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">Target</span>

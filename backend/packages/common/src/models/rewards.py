@@ -41,6 +41,9 @@ class RewardsMission(Base):
     target_count = Column(Integer, nullable=False, default=1)
     xp_reward = Column(Integer, nullable=False, default=0)
     ac_reward = Column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+    # Power Score paid on claim. Was a hard-coded +100 in the claim path before
+    # migration 0066; the default keeps every existing task paying the same.
+    ps_reward = Column(Integer, nullable=False, default=100, server_default="100")
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     display_order = Column(Integer, nullable=False, default=0)
     # When set, the mission only opens after this timestamp (used by event +

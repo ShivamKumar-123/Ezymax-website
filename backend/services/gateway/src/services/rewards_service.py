@@ -705,6 +705,7 @@ async def list_missions(db: AsyncSession, user_id, period: str) -> list[dict]:
             "progress": progress,
             "xp_reward": int(m.xp_reward),
             "ac_reward": float(m.ac_reward),
+            "ps_reward": int(m.ps_reward if m.ps_reward is not None else 100),
             "completed": completed,
             "claimed": claimed,
             "period_key": pkey,
@@ -742,8 +743,11 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
     old_xp = int(state.xp or 0)
     state.xp = old_xp + int(mission.xp_reward)
     state.ac_balance = (Decimal(str(state.ac_balance or 0)) + Decimal(str(mission.ac_reward)))
-    # Mission completion also bumps PS — flat 100 per claim, gives the rank a meaningful curve.
-    state.ps = int(state.ps or 0) + 100
+    # PS paid per task (admin-editable). This was a flat +100 for every claim
+    # until migration 0066 added the column, whose default is 100 — so tasks
+    # that have never been edited still pay exactly what they used to.
+    ps_earned = int(mission.ps_reward if mission.ps_reward is not None else 100)
+    state.ps = int(state.ps or 0) + ps_earned
     state.last_updated = datetime.now(timezone.utc)
     new_xp = state.xp
 
@@ -768,6 +772,7 @@ async def claim_mission(db: AsyncSession, user_id, mission_id) -> dict:
     return {
         "xp_earned": int(mission.xp_reward),
         "ac_earned": float(mission.ac_reward),
+        "ps_earned": ps_earned,
         "new_xp": int(state.xp),
         "new_ac_balance": float(state.ac_balance),
         "new_ps": int(state.ps),

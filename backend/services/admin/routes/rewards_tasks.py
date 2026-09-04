@@ -45,6 +45,9 @@ def _row(m: RewardsMission) -> dict:
         # ac_reward is the FXA payout — named "ac" in the schema from before the
         # coin was rebranded to FXA.
         "fxa_reward": float(m.ac_reward) if m.ac_reward is not None else 0.0,
+        # Power Score paid on claim. Defaults to 100 — the flat amount every
+        # claim paid before this became per-task.
+        "ps_reward": int(m.ps_reward) if m.ps_reward is not None else 100,
         "is_active": bool(m.is_active),
         "display_order": int(m.display_order or 0),
         "streak_day": int(m.streak_day) if m.streak_day is not None else None,
@@ -91,6 +94,7 @@ class TaskPayload(BaseModel):
     target_count: Optional[int] = None
     xp_reward: Optional[int] = None
     fxa_reward: Optional[float] = None
+    ps_reward: Optional[int] = None
     is_active: Optional[bool] = None
     display_order: Optional[int] = None
     streak_day: Optional[int] = None
@@ -126,6 +130,10 @@ def _apply(m: RewardsMission, req: TaskPayload) -> None:
         if req.fxa_reward < 0:
             raise HTTPException(status_code=400, detail="FXA reward cannot be negative")
         m.ac_reward = Decimal(str(req.fxa_reward)).quantize(Decimal("0.01"))
+    if req.ps_reward is not None:
+        if req.ps_reward < 0:
+            raise HTTPException(status_code=400, detail="PS reward cannot be negative")
+        m.ps_reward = int(req.ps_reward)
     if req.is_active is not None:
         m.is_active = bool(req.is_active)
     if req.display_order is not None:
@@ -187,6 +195,7 @@ async def create_task(
         target_count=1,
         xp_reward=0,
         ac_reward=Decimal("0"),
+        ps_reward=100,
         is_active=True if req.is_active is None else bool(req.is_active),
         display_order=0,
     )
