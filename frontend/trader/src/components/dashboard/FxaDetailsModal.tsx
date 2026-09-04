@@ -105,7 +105,7 @@ export default function FxaDetailsModal({
           >
             <Coins size={26} style={{ color: ON_ACCENT }} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold tabular-nums" style={{ color: ACCENT }}>
+          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: ACCENT }}>
             {shown.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             <span className="ml-1 text-lg font-bold text-text-secondary">FXA</span>
           </p>

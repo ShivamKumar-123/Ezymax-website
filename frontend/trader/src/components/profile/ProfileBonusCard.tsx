@@ -43,7 +43,7 @@ export default function ProfileBonusCard() {
           </span>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Bonus Wallet</p>
-            <p className="text-2xl font-extrabold tabular-nums text-text-primary">
+            <p className="text-xl sm:text-2xl font-extrabold tabular-nums text-text-primary truncate">
               ${bonus === null ? '—' : fmt(bonus)}
             </p>
           </div>

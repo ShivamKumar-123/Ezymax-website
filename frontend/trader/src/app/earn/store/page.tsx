@@ -143,7 +143,7 @@ function Inner() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Coin Balance</p>
-              <p className="text-2xl font-bold tabular-nums text-text-primary">
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">
                 {state ? formatInteger(acBalance) : '—'} <span className="text-sm font-medium text-text-tertiary">FXA</span>
               </p>
             </div>
@@ -158,7 +158,7 @@ function Inner() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Power Score</p>
-              <p className="text-2xl font-bold tabular-nums text-text-primary">
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">
                 {state ? formatInteger(psBalance) : '—'} <span className="text-sm font-medium text-text-tertiary">PS</span>
               </p>
             </div>

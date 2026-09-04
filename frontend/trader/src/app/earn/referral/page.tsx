@@ -88,7 +88,7 @@ export default function ReferralPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}>
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-bold">People referred</p>
-                <p className="text-3xl font-bold text-text-primary font-mono tabular-nums mt-1">{data.referred_count}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-text-primary font-mono tabular-nums mt-1 truncate">{data.referred_count}</p>
               </div>
               <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ background: 'var(--bg-card)', border: `1px solid ${data.is_ib ? '#ccff0055' : 'var(--border-primary)'}` }}>
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-bold">Partner status</p>

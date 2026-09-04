@@ -68,7 +68,7 @@ export default function AcademyPage() {
                 <s.icon className="w-4 h-4 text-[#ccff00]" />
               </div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{s.label}</p>
-              <p className="text-2xl font-bold tabular-nums text-text-primary mt-0.5">{s.value}</p>
+              <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary mt-0.5 truncate">{s.value}</p>
             </div>
           ))}
         </div>

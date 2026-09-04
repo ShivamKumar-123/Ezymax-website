@@ -107,7 +107,7 @@ export default function PsDetailsModal({
           >
             <Gem size={24} style={{ color: ON_ACCENT }} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold tabular-nums" style={{ color: ACCENT }}>
+          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: ACCENT }}>
             {Math.round(shown).toLocaleString()}
             <span className="ml-1 text-lg font-bold text-text-secondary">PS</span>
           </p>

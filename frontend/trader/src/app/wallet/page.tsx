@@ -793,7 +793,7 @@ function WalletPageContent() {
                     </div>
                     <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Main Balance</p>
                   </div>
-                  <p className="text-2xl font-bold font-mono tabular-nums text-text-primary">
+                  <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-text-primary truncate">
                     ${(wallet?.main_wallet_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-text-tertiary">USD</span>
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -878,7 +878,7 @@ function WalletPageContent() {
                     </div>
                     <p className="text-xs uppercase tracking-wide font-semibold text-text-tertiary">Bonus Balance</p>
                   </div>
-                  <p className="text-2xl font-bold font-mono tabular-nums text-text-primary">
+                  <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-text-primary truncate">
                     ${(wallet?.bonus_balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-medium text-text-tertiary">USD</span>
                   </p>
                   <button

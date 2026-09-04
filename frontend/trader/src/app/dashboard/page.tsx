@@ -117,16 +117,24 @@ function StatTile({ icon: Icon, label, value, negative }: {
 }) {
   return (
     <div
-      className="rounded-xl p-3.5 transition-colors hover:border-[rgba(204,255,0,0.3)]"
+      className="rounded-xl p-3.5 min-w-0 transition-colors hover:border-[rgba(204,255,0,0.3)]"
       style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 min-w-0">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
           <Icon className="w-4 h-4 text-[#ccff00]" />
         </div>
-        <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider truncate">{label}</span>
       </div>
-      <p className="text-2xl font-bold tabular-nums leading-none" style={{ color: negative ? '#f87171' : 'var(--text-primary)' }}>
+      {/* A balance like $45,815.98 is ~10 characters; at a fixed text-2xl it ran
+          straight out of the card on a phone and got clipped mid-digit. Scale the
+          figure down on small screens, and keep truncate as a backstop so an
+          unusually long value ellipsises instead of overflowing. */}
+      <p
+        className="text-lg sm:text-xl md:text-2xl font-bold tabular-nums leading-none truncate"
+        title={value}
+        style={{ color: negative ? '#f87171' : 'var(--text-primary)' }}
+      >
         {value}
       </p>
     </div>
@@ -890,9 +898,9 @@ function HeroAction({ href, children }: { href: string; children: React.ReactNod
 
 function HeroStat({ label, value, negative }: { label: string; value: string; negative?: boolean }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-[0.14em] font-semibold" style={{ color: INK_FAINT }}>{label}</p>
-      <p className="mt-1 font-semibold tabular-nums text-base md:text-lg" style={{ color: negative ? '#7f1d1d' : INK }}>
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-[0.14em] font-semibold truncate" style={{ color: INK_FAINT }}>{label}</p>
+      <p className="mt-1 font-semibold tabular-nums text-base md:text-lg truncate" title={value} style={{ color: negative ? '#7f1d1d' : INK }}>
         {value}
       </p>
     </div>

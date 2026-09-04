@@ -549,7 +549,7 @@ export default function PammPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>Total PAM Accounts</p>
-                <p className="text-2xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-amber-text-strong)' }}>{accounts.length}</p>
+                <p className="text-xl sm:text-2xl font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-amber-text-strong)' }}>{accounts.length}</p>
                 <p className="text-[11px] mt-1" style={{ color: 'var(--card-amber-text-faint)' }}>Active PAM Accounts</p>
               </div>
             </div>

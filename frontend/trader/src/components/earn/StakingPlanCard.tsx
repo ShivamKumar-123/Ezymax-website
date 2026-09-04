@@ -40,7 +40,7 @@ export default function StakingPlanCard({
         )}
       </div>
       <h3 className="text-lg font-bold text-text-primary mt-3">{plan.label}</h3>
-      <div className="text-3xl font-extrabold text-[#ccff00] tabular-nums mt-1">
+      <div className="text-2xl sm:text-3xl font-extrabold text-[#ccff00] tabular-nums mt-1 truncate">
         {plan.apy_pct.toFixed(0)}%
         <span className="text-xs text-text-tertiary font-normal ml-1">APY</span>
       </div>
