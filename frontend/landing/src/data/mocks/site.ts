@@ -101,7 +101,7 @@ export const navGroups = [
       {
         label: "Trade insurance",
         href: "/protection#insurance",
-        blurb: "Cover up to 75% of a loss, paid automatically at close.",
+        blurb: "Cover up to 50% of a loss, paid automatically at close.",
       },
       {
         label: "Risk tools",

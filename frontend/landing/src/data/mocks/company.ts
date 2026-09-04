@@ -34,7 +34,7 @@ export const companyAbout = {
     {
       kicker: "04",
       title: "Losses can be partly insured",
-      body: "Switch on cover before you enter, up to 75%.",
+      body: "Switch on cover before you enter, up to 50%.",
     },
     {
       kicker: "05",
