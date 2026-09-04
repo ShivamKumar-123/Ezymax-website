@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon, Info, TrendingUp, TrendingDown, Gauge } from 'lucide-react';
+import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon, Info, TrendingUp, TrendingDown, Gauge, Lock } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -609,8 +609,10 @@ export default function OrderPanel() {
               </div>
             </div>
 
-            {/* Lot slider */}
-            <div className="px-1">
+            {/* Lot slider — the track sits inside a pill so it reads as a
+                control rather than a hairline, as in the reference. */}
+            <div>
+              <div className="flex items-center rounded-full border border-border-primary bg-bg-base px-3 py-0.5">
               <input
                 type="range"
                 min={minLots}
@@ -622,7 +624,8 @@ export default function OrderPanel() {
                 className="crx-range w-full"
                 style={{ '--pct': `${Math.min(100, Math.max(0, ((lotsNum - minLots) / (maxLots - minLots)) * 100))}%` } as React.CSSProperties}
               />
-              <div className="-mt-0.5 flex items-center justify-between text-[11px] text-text-tertiary">
+              </div>
+              <div className="mt-1 flex items-center justify-between px-1 text-[11px] text-text-tertiary">
                 <span>0</span>
                 <span>Max open {maxLots.toFixed(2)} Lots</span>
               </div>
@@ -653,35 +656,6 @@ export default function OrderPanel() {
                   <input type="text" inputMode="decimal" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder={execPrice ? (execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits) : '—'} className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-[#E5484D] placeholder:text-text-tertiary focus:outline-none" />
                 </div>
               </div>
-            )}
-
-            {/* Fully Funded — FXArtha-only. No leverage, no overnight fee. */}
-            <label className={clsx('flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 border', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-transparent bg-card-nested')} title="No leverage. No overnight cost.">
-              <span className="flex flex-col">
-                <span className="text-[12px] font-medium text-text-primary">Fully Funded</span>
-                <span className="text-[11px] text-text-tertiary leading-tight">No leverage · No overnight fee</span>
-              </span>
-              <span
-                onClick={() => setFullyFunded((p) => !p)}
-                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary shrink-0"
-                style={{ background: fullyFunded ? 'var(--buy, #16a34a)' : 'var(--bg-secondary)' }}
-              >
-                <span className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm block" style={{ left: fullyFunded ? '18px' : '3px' }} />
-              </span>
-            </label>
-
-            {/* Trade Insurance — FXArtha-only, market orders only. */}
-            {orderTab === 'market' && activeAccount && (
-              <InsuranceTierPicker
-                accountId={activeAccount.id}
-                symbol={selectedSymbol}
-                side={side}
-                lots={lotsNum}
-                leverage={activeAccount.leverage || 100}
-                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
-                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
-                onSelect={setInsuranceSelection}
-              />
             )}
 
             {/* Action */}
@@ -749,6 +723,39 @@ export default function OrderPanel() {
                   </div>
                 ))}
               </dl>
+            </div>
+
+            {/* FXArtha-only extras live BELOW Assets so the ticket's
+                top half matches the reference exactly. */}
+            <div className="space-y-2 border-t border-border-primary pt-2">
+            {/* Fully Funded — FXArtha-only. No leverage, no overnight fee. */}
+            <label className={clsx('flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 border', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-transparent bg-card-nested')} title="No leverage. No overnight cost.">
+              <span className="flex flex-col">
+                <span className="text-[12px] font-medium text-text-primary">Fully Funded</span>
+                <span className="text-[11px] text-text-tertiary leading-tight">No leverage · No overnight fee</span>
+              </span>
+              <span
+                onClick={() => setFullyFunded((p) => !p)}
+                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary shrink-0"
+                style={{ background: fullyFunded ? 'var(--buy, #16a34a)' : 'var(--bg-secondary)' }}
+              >
+                <span className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm block" style={{ left: fullyFunded ? '18px' : '3px' }} />
+              </span>
+            </label>
+
+            {/* Trade Insurance — FXArtha-only, market orders only. */}
+            {orderTab === 'market' && activeAccount && (
+              <InsuranceTierPicker
+                accountId={activeAccount.id}
+                symbol={selectedSymbol}
+                side={side}
+                lots={lotsNum}
+                leverage={activeAccount.leverage || 100}
+                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
+                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
+                onSelect={setInsuranceSelection}
+              />
+            )}
             </div>
           </div>
         </div>
@@ -1406,11 +1413,12 @@ function LeveragePicker({
         type="button"
         onClick={() => { if (!fullyFunded) setOpen((p) => !p); }}
         disabled={saving || fullyFunded}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-full bg-card-nested px-2 py-[3px] text-[11px] font-medium tabular-nums text-text-primary transition-colors hover:bg-bg-hover disabled:opacity-60"
         title={fullyFunded ? 'Fully Funded — no leverage (1:1)' : `Max 1:${maxLev} — click to change`}
       >
+        <Lock size={10} className="shrink-0 text-text-tertiary" aria-hidden />
         1:{fullyFunded ? 1 : account.leverage}
-        {!fullyFunded && <ChevronDown size={10} />}
+        {!fullyFunded && <ChevronDown size={10} className="text-text-tertiary" />}
       </button>
       {open && (
         <div

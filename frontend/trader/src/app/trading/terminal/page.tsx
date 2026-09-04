@@ -644,7 +644,7 @@ export default function TradingTerminalPage() {
       <>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2 text-[13px] font-bold text-text-secondary transition-colors hover:text-text-primary hover:border-border-secondary whitespace-nowrap"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
           title="Back to dashboard"
         >
           <Home className="w-4 h-4 shrink-0" aria-hidden />
@@ -652,7 +652,7 @@ export default function TradingTerminalPage() {
         </Link>
         <Link
           href="/wallet"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary bg-bg-secondary px-3 py-2 text-[13px] font-bold text-text-secondary transition-colors hover:text-text-primary hover:border-border-secondary whitespace-nowrap"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
           title="Deposit funds"
         >
           <WalletIcon className="w-4 h-4 shrink-0" aria-hidden />
@@ -663,7 +663,7 @@ export default function TradingTerminalPage() {
           type="button"
           onClick={onPanelsSelectMarkets}
           className={clsx(
-            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-bold transition-colors whitespace-nowrap',
+            'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-[13px] font-semibold transition-colors whitespace-nowrap',
             terminalMarketsOpen
               ? 'bg-accent/20 border-accent/60 text-accent'
               : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
@@ -677,7 +677,7 @@ export default function TradingTerminalPage() {
         <button
           type="button"
           onClick={onPanelsSelectOrder}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#ccff00] px-3 py-2 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#ccff00] px-5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
           title="Show the order ticket"
         >
           <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />
@@ -691,7 +691,7 @@ export default function TradingTerminalPage() {
           aria-pressed={oneClickTrading}
           title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
           className={clsx(
-            'grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-colors',
+            'grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors',
             oneClickTrading
               ? 'border-accent/50 bg-accent/15 text-accent'
               : 'border-border-primary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
@@ -704,7 +704,7 @@ export default function TradingTerminalPage() {
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border-primary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border-primary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden /> : <Moon className="w-4 h-4" aria-hidden />}
         </button>
