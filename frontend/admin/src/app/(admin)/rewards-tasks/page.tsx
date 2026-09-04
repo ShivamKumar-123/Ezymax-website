@@ -214,7 +214,7 @@ export default function AdminRewardTasksPage() {
         </div>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit the tasks users see under Rewards → Tasks, including what each one earns in FXA coins, XP and PS.
+        Edit the tasks users see under Rewards → Tasks, including the FXA-AC, XP and PS coins each one pays out.
         Changes apply to future completions; coins already credited are not affected.
       </p>
 
@@ -293,7 +293,7 @@ export default function AdminRewardTasksPage() {
                       <div className="grid w-[390px] shrink-0 grid-cols-3 gap-2">
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                            FXA reward
+                            FXA-AC Coins
                           </span>
                           <input
                             type="number" step="0.01" min="0"
@@ -304,7 +304,7 @@ export default function AdminRewardTasksPage() {
                         </label>
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                            XP reward
+                            XP Coins
                           </span>
                           <input
                             type="number" step="1" min="0"
@@ -315,7 +315,7 @@ export default function AdminRewardTasksPage() {
                         </label>
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                            PS reward
+                            PS Coins
                           </span>
                           <input
                             type="number" step="1" min="0"
@@ -487,21 +487,21 @@ function CreateTaskModal({
           </span>
           <input value={actionKind} onChange={(e) => setActionKind(e.target.value)} className={cls} placeholder="place_trade" />
         </label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">FXA</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">FXA-AC Coins</span>
             <input type="number" step="0.01" min="0" value={fxa} onChange={(e) => setFxa(e.target.value)} className={`${cls} font-mono`} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">XP</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">XP Coins</span>
             <input type="number" step="1" min="0" value={xp} onChange={(e) => setXp(e.target.value)} className={`${cls} font-mono`} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">PS</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">PS Coins</span>
             <input type="number" step="1" min="0" value={ps} onChange={(e) => setPs(e.target.value)} className={`${cls} font-mono`} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">Target</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">Target count</span>
             <input type="number" step="1" min="1" value={target} onChange={(e) => setTarget(e.target.value)} className={`${cls} font-mono`} />
           </label>
         </div>
