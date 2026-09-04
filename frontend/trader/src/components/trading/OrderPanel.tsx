@@ -20,6 +20,38 @@ import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
+type PendingKind = 'limit' | 'stop' | 'stop_limit';
+
+/** One flat row of order types. `tab`/`kind` map straight onto the existing
+ *  `orderTab` + `pendingKind` state, so the submit path is unchanged. */
+const ORDER_TYPE_TABS: {
+  key: string;
+  label: string;
+  tab: OrderType;
+  kind?: PendingKind;
+}[] = [
+  { key: 'market', label: 'Market', tab: 'market' },
+  { key: 'limit', label: 'Limit', tab: 'pending', kind: 'limit' },
+  { key: 'stop', label: 'Stop', tab: 'pending', kind: 'stop' },
+  { key: 'stop_limit', label: 'Stop-Limit', tab: 'pending', kind: 'stop_limit' },
+];
+
+/** One label/value line in the margin + assets readouts under the ticket. */
+function StatRow({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="min-w-0 truncate text-[11px] text-text-tertiary">{label}</span>
+      <span
+        className={clsx(
+          'shrink-0 font-mono text-[11px] font-semibold tabular-nums',
+          tone || 'text-text-primary',
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export default function OrderPanel() {
   const pathname = usePathname();
@@ -98,6 +130,21 @@ export default function OrderPanel() {
 
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
+
+  // Slider bounds come from the instrument; fall back to sane defaults when
+  // the instrument list hasn't arrived yet so the control is never broken.
+  const volMin = Number(instrumentInfo?.min_lot) > 0 ? Number(instrumentInfo?.min_lot) : 0.01;
+  const volMax = Number(instrumentInfo?.max_lot) > 0 ? Number(instrumentInfo?.max_lot) : 100;
+  const volStep = Number(instrumentInfo?.lot_step) > 0 ? Number(instrumentInfo?.lot_step) : 0.01;
+
+  /** Margin level the account would sit at once this order is filled — the
+   *  reference terminal shows it next to the plain margin figures. */
+  const marginLevelAfter = useMemo(() => {
+    if (!activeAccount) return null;
+    const usedAfter = (activeAccount.margin_used || 0) + marginRequired;
+    if (usedAfter <= 0) return null;
+    return ((activeAccount.equity || 0) / usedAfter) * 100;
+  }, [activeAccount, marginRequired]);
 
   // Account-tier minimum-balance gate (Micro $10 / Standard $100 /
   // Pro $500 / Elite $1000). Server rejects trades when
@@ -521,27 +568,44 @@ export default function OrderPanel() {
           )}
         >
           <div className={pad}>
-          {/* Market / Pending tabs */}
-          <div className="flex rounded-md overflow-hidden bg-bg-secondary border border-border-primary">
-            {(['market', 'pending'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setOrderTab(t)}
-                className={clsx('flex-1 font-semibold capitalize transition-all', tabPad)}
-                style={{
-                  background: orderTab === t ? 'var(--bg-hover)' : 'transparent',
-                  color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  borderBottom:
-                    orderTab === t
-                      ? `2px solid ${isTradingTerminal ? '#2962FF' : '#ccff00'}`
-                      : '2px solid transparent',
-                }}
-              >
-                {t}
-              </button>
-            ))}
+          {/* Order type — Market / Limit / Stop / Stop-Limit on ONE row, like
+              the reference terminal. These still drive exactly the same two
+              pieces of state as before (`orderTab` = market vs pending,
+              `pendingKind` = which pending type), so no order logic changes;
+              only the control surface is flattened. */}
+          <div className="flex items-center gap-0.5 border-b border-border-primary">
+            {ORDER_TYPE_TABS.map(({ key, label, tab, kind }) => {
+              const active =
+                tab === 'market' ? orderTab === 'market' : orderTab === 'pending' && pendingKind === kind;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setOrderTab(tab);
+                    if (kind) setPendingKind(kind);
+                  }}
+                  className={clsx(
+                    'relative whitespace-nowrap px-2 pb-1.5 pt-1 font-semibold transition-colors',
+                    isTradingTerminal ? 'text-[11px]' : 'text-xs',
+                    active ? 'text-text-primary' : 'text-text-tertiary hover:text-text-secondary',
+                  )}
+                >
+                  {label}
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-1 -bottom-px h-0.5 rounded-full"
+                      style={{ background: isTradingTerminal ? '#2962FF' : '#ccff00' }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
+          {orderTab === 'market' && (
+            <p className="text-[10px] text-text-tertiary">Fill at market price</p>
+          )}
 
           {/* Sell / Buy buttons */}
           <div data-tour={TOUR_TARGETS.ORDER_BUY_SELL} className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1.5' : 'gap-2')}>
@@ -694,41 +758,32 @@ export default function OrderPanel() {
                 );
               })}
             </div>
+            {/* Volume slider — drag to size the order anywhere between the
+                instrument's min and max lot, like the reference terminal.
+                Writes the same `lots` state the stepper and chips use. */}
+            <div className="mt-2">
+              <input
+                type="range"
+                min={volMin}
+                max={volMax}
+                step={volStep}
+                value={Math.min(Math.max(lotsNum || volMin, volMin), volMax)}
+                onChange={(e) => setLots(Number(e.target.value).toFixed(2))}
+                aria-label="Order volume"
+                className="w-full cursor-pointer accent-[#2962FF]"
+              />
+              <div className="mt-0.5 flex items-center justify-between text-[9px] text-text-tertiary tabular-nums">
+                <span>{volMin}</span>
+                <span>Max open {volMax.toFixed(2)} Lots</span>
+              </div>
+            </div>
           </div>
 
-          {/* Pending order — type toggle + trigger price (+ stop-limit
-              target). Only renders on the Pending tab. */}
+          {/* Pending order — trigger price (+ stop-limit target). Only renders
+              on a pending tab; the type itself is now picked in the flat
+              order-type row at the top. */}
           {orderTab === 'pending' && (
             <div className="pt-2 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary shrink-0">
-                  Pending type
-                </span>
-                <div className="flex rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
-                  {([
-                    { k: 'limit' as const, label: 'Limit' },
-                    { k: 'stop' as const, label: 'Stop' },
-                    { k: 'stop_limit' as const, label: 'Stop-Limit' },
-                  ]).map(({ k, label }) => {
-                    const active = pendingKind === k;
-                    return (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => setPendingKind(k)}
-                        className={clsx(
-                          'px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap',
-                          active
-                            ? 'bg-accent/15 text-accent'
-                            : 'text-text-tertiary hover:text-text-primary',
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
@@ -887,6 +942,61 @@ export default function OrderPanel() {
                 </div>
               )}
             </>
+          ) : null}
+
+          {/* Margin preview + account assets — the reference terminal keeps
+              these under the ticket so a trader can size an order against live
+              equity without leaving the panel. Read-only; nothing here feeds
+              the order path. */}
+          {isTradingTerminal && activeAccount ? (
+            <div className="space-y-2 pt-2">
+              <div className="space-y-1">
+                <StatRow label="Margin" value={`${marginRequired.toFixed(2)} USD`} />
+                <StatRow
+                  label="Free Margin"
+                  value={`${freeMargin.toFixed(2)} USD`}
+                  tone={hasEnoughMargin ? undefined : 'text-[#ef5350]'}
+                />
+                <StatRow
+                  label="Margin Level After Trading"
+                  value={marginLevelAfter == null ? '—' : `${marginLevelAfter.toFixed(2)} %`}
+                />
+                <StatRow label="Leverage" value={`1:${activeAccount.leverage || 100}`} />
+              </div>
+
+              <div className="border-t border-border-primary pt-2">
+                <p className="mb-1.5 text-[11px] font-bold text-text-primary">Assets</p>
+                <div className="space-y-1">
+                  <StatRow label="Equity" value={`${(activeAccount.equity || 0).toFixed(2)} USD`} />
+                  <StatRow label="Balance" value={`${(activeAccount.balance || 0).toFixed(2)} USD`} />
+                  {(() => {
+                    // equity = balance + credit + gross unrealised P&L, so the
+                    // floating figure is what's left after backing those out.
+                    const bal = activeAccount.balance || 0;
+                    const floating = (activeAccount.equity || 0) - bal - (activeAccount.credit || 0);
+                    const pct = bal > 0 ? (floating / bal) * 100 : 0;
+                    return (
+                      <StatRow
+                        label="Floating PnL"
+                        value={`${floating.toFixed(2)} USD (${pct.toFixed(2)} %)`}
+                        tone={floating < 0 ? 'text-[#ef5350]' : 'text-[#ccff00]'}
+                      />
+                    );
+                  })()}
+                  <StatRow label="Credit" value={`${(activeAccount.credit || 0).toFixed(2)} USD`} />
+                  <StatRow
+                    label="Margin Level"
+                    value={
+                      (activeAccount.margin_used || 0) > 0
+                        ? `${(activeAccount.margin_level || 0).toFixed(2)} %`
+                        : '—'
+                    }
+                  />
+                  <StatRow label="Margin Used" value={`${(activeAccount.margin_used || 0).toFixed(2)} USD`} />
+                  <StatRow label="Free Margin" value={`${freeMargin.toFixed(2)} USD`} />
+                </div>
+              </div>
+            </div>
           ) : null}
           </div>
         </div>
