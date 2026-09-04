@@ -9,7 +9,7 @@ import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import api from '@/lib/api/client';
 import AppTopNav from './AppTopNav';
-import { Sparkles, Wallet } from 'lucide-react';
+import { ChevronDown, Sparkles, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -93,32 +93,34 @@ export default function AppHeader() {
         {/* CENTER — full categorised nav, inline on the same line (lg+) */}
         <AppTopNav />
 
-        {/* RIGHT — icon-only widgets: XP, wallet balance, theme, bell, user */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* XP / rewards — icon only, links to /earn/tasks */}
+        {/* RIGHT — outline pill, solid CTA, circular icon buttons, avatar */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Rewards — outline pill. Label appears once there's room. */}
           <Link
             href="/earn/tasks"
             title="XP & rewards"
             aria-label="XP and rewards"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccff00]/30 bg-[#ccff00]/5 hover:bg-[#ccff00]/10 transition-colors"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border-primary bg-bg-base px-2.5 lg:px-3 text-[13px] font-semibold text-text-secondary transition-colors hover:border-[#ccff00]/40 hover:text-text-primary"
           >
-            <Sparkles size={15} className="text-[#ccff00]" />
+            <Sparkles size={15} className="shrink-0 text-[#ccff00]" />
+            <span className="hidden xl:inline">Rewards</span>
           </Link>
 
-          {/* Wallet balance — icon only, amount in the tooltip */}
+          {/* Deposit — the one solid brand CTA in the header. Balance stays in
+              the tooltip so the pill keeps a fixed width. */}
           <Link
             href="/wallet"
             title={`Balance: ${formatUsd(balance)}`}
-            aria-label={`Wallet — balance ${formatUsd(balance)}`}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccff00]/30 bg-[#ccff00]/5 hover:bg-[#ccff00]/10 transition-colors"
+            aria-label={`Deposit — balance ${formatUsd(balance)}`}
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#ccff00] px-2.5 sm:px-3.5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95"
           >
-            <Wallet size={15} className="text-[#ccff00]" />
+            <Wallet size={15} className="shrink-0" />
+            <span className="hidden sm:inline">Deposit</span>
           </Link>
 
-          {/* Theme toggle — lets the user flip dark/light without
-              digging into Profile → Settings. Compact variant fits
-              alongside the wallet pill + bell. */}
-          <ThemeToggle compact />
+          {/* Theme toggle — bordered circle so it matches the bell beside it
+              (the plain compact variant was 32px and ring-less). */}
+          <ThemeToggle className="border border-border-primary bg-bg-base" />
 
           {/* Notification bell */}
           <NotificationBell />
@@ -128,14 +130,23 @@ export default function AppHeader() {
             <button
               type="button"
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
+              aria-label="Account menu"
+              className="flex items-center gap-1 hover:opacity-80 transition-opacity"
             >
+              {/* Solid avatar, dark initials — the tinted version went pale on
+                  the light theme. */}
               <div
                 title={handle}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#ccff00]/20 border border-[#ccff00]/30 flex items-center justify-center text-[#ccff00] text-[10px] sm:text-xs font-bold uppercase"
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#ccff00] flex items-center justify-center text-[#0a0a0a] text-[10px] sm:text-xs font-bold uppercase"
               >
                 {initials}
               </div>
+              <ChevronDown
+                size={14}
+                className={`shrink-0 text-text-tertiary transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+              />
             </button>
 
             {userMenuOpen && (

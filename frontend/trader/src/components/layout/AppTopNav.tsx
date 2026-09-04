@@ -119,75 +119,80 @@ export default function AppTopNav() {
 
   return (
     <nav aria-label="Primary" className="hidden min-w-0 flex-1 lg:block">
-      <div className="flex items-center justify-center gap-1 px-3">
-        {primary.map((item) => {
-          const Icon = item.icon;
-          const active = leafActive(item);
-          const label = SHORT_LABEL[item.href] ?? item.label;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              target={item.newTab ? '_blank' : undefined}
-              aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
-              onMouseEnter={showTip(item.label)}
-              onMouseLeave={() => setTip(null)}
-              onFocus={showTip(item.label)}
-              onBlur={() => setTip(null)}
-              className={cn(
-                'group relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
-                'text-[13px] font-medium transition-colors duration-200',
-                active
-                  ? 'text-[#ccff00]'
-                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
-              )}
-            >
-              {active && (
-                <motion.span
-                  layoutId="topnav-active-pill"
-                  aria-hidden
-                  className="absolute inset-0 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/10 shadow-[0_0_16px_-6px_rgba(204,255,0,0.8)]"
-                  transition={{ type: 'spring', stiffness: 520, damping: 42, mass: 0.9 }}
-                />
-              )}
-              <motion.span
-                className="relative inline-flex"
-                whileHover={{ scale: 1.18, rotate: 6 }}
-                transition={{ type: 'spring', stiffness: 340, damping: 15 }}
+      {/* One rounded "capsule" holds the whole nav, and the current route is a
+          SOLID brand-lime pill inside it — the shape language the client asked
+          for. Lime-on-near-black reads at full contrast in BOTH themes, so the
+          active label never washes out the way tinted text did on light. */}
+      <div className="flex items-center justify-center px-3">
+        <div className="flex items-center gap-0.5 rounded-full border border-border-primary bg-bg-base p-1 shadow-sm">
+          {primary.map((item) => {
+            const Icon = item.icon;
+            const active = leafActive(item);
+            const label = SHORT_LABEL[item.href] ?? item.label;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                target={item.newTab ? '_blank' : undefined}
+                aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
+                onMouseEnter={showTip(item.label)}
+                onMouseLeave={() => setTip(null)}
+                onFocus={showTip(item.label)}
+                onBlur={() => setTip(null)}
+                className={cn(
+                  'group relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
+                  'text-[13px] font-semibold transition-colors duration-200',
+                  active
+                    ? 'text-[#0a0a0a]'
+                    : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+                )}
               >
-                <Icon size={16} />
-              </motion.span>
-              <span className="relative hidden whitespace-nowrap xl:inline">{label}</span>
-            </Link>
-          );
-        })}
+                {active && (
+                  <motion.span
+                    layoutId="topnav-active-pill"
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)]"
+                    transition={{ type: 'spring', stiffness: 520, damping: 42, mass: 0.9 }}
+                  />
+                )}
+                <motion.span
+                  className="relative inline-flex"
+                  whileHover={{ scale: 1.18, rotate: 6 }}
+                  transition={{ type: 'spring', stiffness: 340, damping: 15 }}
+                >
+                  <Icon size={16} />
+                </motion.span>
+                <span className="relative hidden whitespace-nowrap xl:inline">{label}</span>
+              </Link>
+            );
+          })}
 
-        {/* Divider between the promoted routes and the overflow trigger */}
-        <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border-primary" />
-
-        <button
-          ref={moreBtnRef}
-          type="button"
-          onClick={() => (menu ? setMenu(null) : openMenu())}
-          aria-haspopup="menu"
-          aria-expanded={!!menu}
-          aria-label="More"
-          className={cn(
-            'relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
-            'text-[13px] font-medium transition-colors duration-200',
-            menu || moreActive
-              ? 'border border-[#ccff00]/30 bg-[#ccff00]/10 text-[#ccff00]'
-              : 'border border-transparent text-text-secondary hover:bg-bg-hover hover:text-text-primary',
-          )}
-        >
-          <Grip size={16} />
-          <span className="hidden whitespace-nowrap xl:inline">More</span>
-          <ChevronDown
-            size={13}
-            className={cn('transition-transform duration-200', menu && 'rotate-180')}
-          />
-        </button>
+          <button
+            ref={moreBtnRef}
+            type="button"
+            onClick={() => (menu ? setMenu(null) : openMenu())}
+            aria-haspopup="menu"
+            aria-expanded={!!menu}
+            aria-label="More"
+            className={cn(
+              'relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
+              'text-[13px] font-semibold transition-colors duration-200',
+              moreActive
+                ? 'bg-[#ccff00] text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)]'
+                : menu
+                  ? 'bg-bg-hover text-text-primary'
+                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+            )}
+          >
+            <Grip size={16} />
+            <span className="hidden whitespace-nowrap xl:inline">More</span>
+            <ChevronDown
+              size={13}
+              className={cn('transition-transform duration-200', menu && 'rotate-180')}
+            />
+          </button>
+        </div>
       </div>
 
       {/* ── More mega-menu ──────────────────────────────────────────────
