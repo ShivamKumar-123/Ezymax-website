@@ -50,7 +50,14 @@ export const TradeInsurance = ({ content }: TradeInsuranceProps) => {
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
                   <dt className="text-white/45">Max Cap</dt>
-                  <dd className="font-medium tabular-nums">{tier.cap}</dd>
+                  <dd className="text-right font-medium tabular-nums">
+                    {tier.cap}
+                    {/* The cap is min(flat, pct x trade size), so the dollar
+                        figure alone would overstate what a small trade pays. */}
+                    <span className="mt-0.5 block text-xs font-normal text-white/40">
+                      {tier.capNote}
+                    </span>
+                  </dd>
                 </div>
               </dl>
             </Inview>

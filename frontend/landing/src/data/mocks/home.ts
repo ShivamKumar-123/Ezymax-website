@@ -196,11 +196,15 @@ export const tradeInsurance = {
   heading: "Switch on a cushion before you enter.",
   intro:
     "Choose a tier before placing an eligible trade. If it goes against you, the contract covers part of the loss up to the cap. No hedging, no separate account, no claim form.",
+  // Mirrors the live product config (system_settings: insurance_coverage_pct
+  // and insurance_max_cap_rules). The cap is min(flat, pct x trade size), so
+  // the dollar figure is a ceiling a small trade will not reach — hence the
+  // second line on each card.
   tiers: [
-    { tier: "Minimal", cover: "15%", cap: "$250" },
-    { tier: "Standard", cover: "30%", cap: "$750" },
-    { tier: "Advanced", cover: "50%", cap: "$2,000" },
-    { tier: "Max", cover: "75%", cap: "$5,000" },
+    { tier: "Basic", cover: "20%", cap: "up to $100", capNote: "or 10% of trade size" },
+    { tier: "Advanced", cover: "30%", cap: "up to $300", capNote: "or 20% of trade size" },
+    { tier: "Pro", cover: "40%", cap: "up to $600", capNote: "or 30% of trade size" },
+    { tier: "Elite", cover: "50%", cap: "up to $1,000", capNote: "or 50% of trade size" },
   ],
   activateTitle: "Activate before placing a trade",
   activateBody:
@@ -364,7 +368,7 @@ export const whyArtha = {
     {
       kicker: "04",
       title: "Losses can be partly insured",
-      body: "Switch on cover before you enter, up to 75%.",
+      body: "Switch on cover before you enter, up to 50%.",
     },
     {
       kicker: "05",

@@ -18,14 +18,16 @@ export const protectionInsurance = {
   intro:
     "Choose a tier before placing an eligible trade. If it goes against you, the contract covers part of the loss up to the cap. No hedging, no separate account, no claim form.",
   columns: ["Tier", "Loss covered", "Cap"],
+  // Mirrors the live product config (system_settings: insurance_coverage_pct
+  // and insurance_max_cap_rules).
   rows: [
-    ["Minimal", "15%", "$250"],
-    ["Standard", "30%", "$750"],
-    ["Advanced", "50%", "$2,000"],
-    ["Max", "75%", "$5,000"],
+    ["Basic", "20%", "up to $100 or 10% of trade size"],
+    ["Advanced", "30%", "up to $300 or 20% of trade size"],
+    ["Pro", "40%", "up to $600 or 30% of trade size"],
+    ["Elite", "50%", "up to $1,000 or 50% of trade size"],
   ],
   footnote:
-    "Higher coverage tiers unlock as your XP level rises — see Rewards & XP.",
+    "The cap is whichever is smaller — the flat ceiling or the percentage of your trade size. All four tiers are quoted on every eligible trade.",
 } as const;
 
 export const protectionFaq = {
