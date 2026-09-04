@@ -124,6 +124,9 @@ export default function TerminalLeftRail({
     wsStatus === 'disconnected' && 'bg-red-500/90',
   );
 
+  /* Rail mirrors the reference terminal: brand, search, then just the three
+     panel buttons, with support + settings pinned at the bottom. The old
+     Spaces/Panels sections duplicated what the ticker row now offers. */
   return (
     <aside
       className="shrink-0 w-[52px] flex flex-col items-stretch border-r border-border-primary bg-bg-secondary z-[5]"
@@ -133,62 +136,22 @@ export default function TerminalLeftRail({
         <div className="mb-1 flex justify-center w-full">
           <FXArthaWordmark href="/accounts" variant="rail" />
         </div>
+        {/* Search — opens the Markets panel with the instrument search focused. */}
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>
           <Search size={17} strokeWidth={1.75} />
         </RailBtn>
-        <RailBtn title="Markets / add symbol" onClick={onToggleMarkets}>
-          <Plus size={17} strokeWidth={1.75} />
-        </RailBtn>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-1.5 overflow-y-auto overflow-x-hidden min-h-0 py-1">
-        <SectionLabel>Spaces</SectionLabel>
+      <div className="flex-1 flex flex-col items-center px-1.5 overflow-y-auto overflow-x-hidden min-h-0 py-1.5 gap-0.5">
         <RailBtn
-          title="Balanced layout"
-          active={activeSpace === 'balanced'}
-          onClick={() => onSpaceChange('balanced')}
-        >
-          <LayoutGrid size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Chart focus — wider chart"
-          active={activeSpace === 'chart'}
-          onClick={() => onSpaceChange('chart')}
-        >
-          <Maximize2 size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Order focus — wider order column"
-          active={activeSpace === 'trading'}
-          onClick={() => onSpaceChange('trading')}
-        >
-          <PanelRight size={17} strokeWidth={1.75} />
-        </RailBtn>
-
-        <SectionLabel>Panels</SectionLabel>
-        <RailBtn
-          title="Markets — symbols & prices"
-          active={terminalMarketsOpen && !chartExpanded && !terminalNewsOpen}
-          onClick={onPanelsSelectMarkets}
-        >
-          <ArrowDownUp size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Buy / Sell — order panel"
-          active={!terminalMarketsOpen && !chartExpanded && !terminalNewsOpen}
+          title="Panels — buy / sell order panel"
+          active={!terminalMarketsOpen && !terminalNewsOpen && !terminalCalcOpen && !chartExpanded}
           onClick={onPanelsSelectOrder}
         >
           <LayoutTemplate size={17} strokeWidth={1.75} />
         </RailBtn>
         <RailBtn
-          title="Chart focus — max chart + buy/sell rail"
-          active={chartExpanded && !terminalNewsOpen}
-          onClick={onExpandFullChart}
-        >
-          <ChartCandlestick size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Live news — TradingView timeline"
+          title="Market news & economic calendar"
           active={terminalNewsOpen && !chartExpanded}
           onClick={onPanelsSelectNews}
         >
@@ -206,13 +169,6 @@ export default function TerminalLeftRail({
       </div>
 
       <div className="flex flex-col items-center gap-0.5 px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] border-t border-border-primary">
-        <RailBtn
-          title={bottomPanelCollapsed ? 'Show positions strip' : 'Hide positions strip'}
-          active={bottomPanelCollapsed}
-          onClick={onToggleBottomPanel}
-        >
-          <PanelBottom size={17} strokeWidth={1.75} />
-        </RailBtn>
         <Link
           href="/support"
           title="Support chat"
@@ -220,12 +176,6 @@ export default function TerminalLeftRail({
         >
           <MessageCircle size={17} strokeWidth={1.75} />
         </Link>
-        <div
-          className="w-9 h-9 rounded-md flex items-center justify-center"
-          title={statusTitle}
-        >
-          <span className={statusDot} />
-        </div>
         <Link
           href="/profile"
           title="Settings"

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon } from 'lucide-react';
+import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon, Info, TrendingUp, TrendingDown, Gauge } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -36,22 +36,6 @@ const ORDER_TYPE_TABS: {
   { key: 'stop_limit', label: 'Stop-Limit', tab: 'pending', kind: 'stop_limit' },
 ];
 
-/** One label/value line in the margin + assets readouts under the ticket. */
-function StatRow({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="min-w-0 truncate text-[11px] text-text-tertiary">{label}</span>
-      <span
-        className={clsx(
-          'shrink-0 font-mono text-[11px] font-semibold tabular-nums',
-          tone || 'text-text-primary',
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 export default function OrderPanel() {
   const pathname = usePathname();
@@ -131,20 +115,60 @@ export default function OrderPanel() {
   const freeMargin = activeAccount?.free_margin || 0;
   const hasEnoughMargin = freeMargin >= marginRequired;
 
-  // Slider bounds come from the instrument; fall back to sane defaults when
-  // the instrument list hasn't arrived yet so the control is never broken.
-  const volMin = Number(instrumentInfo?.min_lot) > 0 ? Number(instrumentInfo?.min_lot) : 0.01;
-  const volMax = Number(instrumentInfo?.max_lot) > 0 ? Number(instrumentInfo?.max_lot) : 100;
-  const volStep = Number(instrumentInfo?.lot_step) > 0 ? Number(instrumentInfo?.lot_step) : 0.01;
+  /* ── Reference-terminal derived values ─────────────────────────────
+     Day-change indicator: the first bid seen per symbol this session is the
+     reference point (the feed carries no day-open field). */
+  const sessionOpenRef = useRef<Record<string, number>>({});
+  if (tick && selectedSymbol && sessionOpenRef.current[selectedSymbol] == null) {
+    sessionOpenRef.current[selectedSymbol] = tick.bid;
+  }
+  const dayOpen = selectedSymbol ? sessionOpenRef.current[selectedSymbol] : undefined;
+  const pipSize = instrumentInfo?.pip_size ? Number(instrumentInfo.pip_size) : digits >= 4 ? 0.0001 : 0.01;
+  const dayChangePts = tick && dayOpen ? Math.round((tick.bid - dayOpen) / pipSize) : 0;
+  const spreadPts = tick ? Math.round((tick.ask - tick.bid) / pipSize) : 0;
 
-  /** Margin level the account would sit at once this order is filled — the
-   *  reference terminal shows it next to the plain margin figures. */
-  const marginLevelAfter = useMemo(() => {
-    if (!activeAccount) return null;
-    const usedAfter = (activeAccount.margin_used || 0) + marginRequired;
-    if (usedAfter <= 0) return null;
-    return ((activeAccount.equity || 0) / usedAfter) * 100;
-  }, [activeAccount, marginRequired]);
+  const maxLots = Number(instrumentInfo?.max_lot) > 0 ? Number(instrumentInfo?.max_lot) : 100;
+  const minLots = Number(instrumentInfo?.min_lot) > 0 ? Number(instrumentInfo?.min_lot) : 0.01;
+  const stepPx = execPrice > 100 ? 0.01 : Math.pow(10, -digits);
+
+  /** One flat tab set mapped onto the existing orderTab + pendingKind state. */
+  const ticketTab: 'market' | 'limit' | 'stop' | 'stop_limit' =
+    orderTab === 'market' ? 'market' : pendingKind;
+  const selectTicketTab = (t: 'market' | 'limit' | 'stop' | 'stop_limit') => {
+    if (t === 'market') { setOrderTab('market'); return; }
+    setOrderTab('pending');
+    setPendingKind(t);
+  };
+
+  const trig = parseFloat(triggerPrice);
+  /** Limit must be better than market, stop must be beyond it — the broker
+   *  rule the reference surfaces as a Min/Max value hint. */
+  const triggerBound = (() => {
+    if (!tick || ticketTab === 'market') return null;
+    if (ticketTab === 'limit') {
+      return side === 'buy' ? { kind: 'max' as const, v: tick.ask } : { kind: 'min' as const, v: tick.bid };
+    }
+    return side === 'buy' ? { kind: 'min' as const, v: tick.ask } : { kind: 'max' as const, v: tick.bid };
+  })();
+  const triggerOutOfBounds =
+    !!triggerBound && Number.isFinite(trig) &&
+    (triggerBound.kind === 'max' ? trig > triggerBound.v : trig < triggerBound.v);
+  const stepTrigger = (d: number) => {
+    const base = Number.isFinite(trig) && trig > 0 ? trig : execPrice;
+    setTriggerPrice((base + d * stepPx).toFixed(digits));
+  };
+
+  const equityVal = Number(activeAccount?.equity ?? 0);
+  const balanceVal = Number(activeAccount?.balance ?? 0);
+  const creditVal = Number(activeAccount?.credit ?? 0);
+  const marginUsedVal = Number(activeAccount?.margin_used ?? 0);
+  // equity = balance + credit + gross unrealised P&L
+  const floatingPnl = equityVal - balanceVal - creditVal;
+  const marginLevelNow = marginUsedVal > 0 ? (equityVal / marginUsedVal) * 100 : null;
+  const marginAfter =
+    marginUsedVal + marginRequired > 0 ? (equityVal / (marginUsedVal + marginRequired)) * 100 : null;
+  const usd = (n: number) =>
+    `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
   // Account-tier minimum-balance gate (Micro $10 / Standard $100 /
   // Pro $500 / Elite $1000). Server rejects trades when
@@ -407,6 +431,330 @@ export default function OrderPanel() {
   const obPad = isTradingTerminal ? 'py-2' : 'py-3';
   const volBtn = isTradingTerminal ? 'w-8 h-8' : 'w-10 h-10';
   const volIn = isTradingTerminal ? 'py-1.5 text-sm' : 'py-2.5 text-base';
+
+  /* ══════════════════════════════════════════════════════════════════
+     TERMINAL TICKET
+     A direct port of the reference terminal's order panel: no header,
+     an angled Sell / spread / Buy strip, a day-change bar, flat order-type
+     tabs, card-style price + volume inputs, a lot slider, one TP/SL
+     checkbox, then Margin and Assets readouts. FXArtha's own Fully Funded
+     and Trade Insurance controls are kept, placed where they fit.
+     The dashboard layout below is untouched.
+     ══════════════════════════════════════════════════════════════════ */
+  if (isTradingTerminal) {
+    const submitDisabled =
+      !hasEnoughMargin || !meetsMinBalance || !activeAccount ||
+      (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid || triggerOutOfBounds;
+
+    return (
+      <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain">
+          <div className="px-3 py-3 space-y-2.5">
+
+            {/* ══ Sell ⟋ spread ⟍ Buy ══ */}
+            <div data-tour={TOUR_TARGETS.ORDER_BUY_SELL} className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+              <button
+                type="button"
+                onClick={() => setSide('sell')}
+                aria-pressed={side === 'sell'}
+                className={clsx(
+                  'flex flex-col items-center justify-center rounded-l-xl py-1.5 pl-3 pr-6 transition-colors [clip-path:polygon(0_0,100%_0,84%_100%,0_100%)]',
+                  side === 'sell' ? 'bg-[#E5484D] text-white' : 'bg-card-nested text-text-secondary hover:bg-bg-hover',
+                )}
+              >
+                <span className="text-[11px] font-medium opacity-90 leading-none">Sell</span>
+                <AnimatedPrice value={tick?.bid} digits={digits} flash={false} lockWidth placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
+              </button>
+              <span className="flex items-center justify-center px-1 text-[13px] font-medium tabular-nums text-text-secondary">
+                {tick ? spreadPts : '—'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSide('buy')}
+                aria-pressed={side === 'buy'}
+                className={clsx(
+                  'flex flex-col items-center justify-center rounded-r-xl py-1.5 pl-6 pr-3 transition-colors [clip-path:polygon(16%_0,100%_0,100%_100%,0_100%)]',
+                  side === 'buy' ? 'bg-[#1E66F5] text-white' : 'bg-card-nested text-text-secondary hover:bg-bg-hover',
+                )}
+              >
+                <span className="text-[11px] font-medium opacity-90 leading-none">Buy</span>
+                <AnimatedPrice value={tick?.ask} digits={digits} flash={false} lockWidth placeholder="---" className="text-[15px] font-bold tabular-nums leading-tight" />
+              </button>
+            </div>
+
+            {/* Day change bar */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSymbolPickerOpen((o) => !o)}
+                className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold leading-none text-text-secondary hover:text-text-primary"
+                title="Change symbol"
+              >
+                <span className={clsx('h-1.5 w-1.5 rounded-full', marketStatus.isOpen ? 'bg-emerald-500' : 'bg-[#f57c00]')} aria-hidden />
+                {selectedSymbol}
+              </button>
+              <div className={clsx('h-[3px] flex-1 rounded-full', dayChangePts >= 0 ? 'bg-emerald-500' : 'bg-[#E5484D]')} />
+              <span className={clsx('flex items-center gap-1 text-[11px] font-medium tabular-nums leading-none', dayChangePts >= 0 ? 'text-emerald-500' : 'text-[#E5484D]')}>
+                {dayChangePts >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <span className="text-text-secondary">{dayChangePts >= 0 ? '+' : ''}{dayChangePts}</span>
+              </span>
+            </div>
+            {symbolPickerOpen && (
+              <div className="relative" ref={dropdownRef}>
+                <div className="absolute left-0 top-0 z-50 w-full rounded-lg border border-border-primary bg-bg-secondary shadow-2xl overflow-hidden">
+                  <OrderPanelSymbolPicker
+                    onPick={(sym) => { setSelectedSymbol(sym); setSymbolPickerOpen(false); }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Order type tabs */}
+            <div className="flex items-center border-b border-border-primary">
+              {([
+                { k: 'market' as const, label: 'Market' },
+                { k: 'limit' as const, label: 'Limit' },
+                { k: 'stop' as const, label: 'Stop' },
+                { k: 'stop_limit' as const, label: 'Stop-Limit' },
+              ]).map(({ k, label }) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => selectTicketTab(k)}
+                  className={clsx(
+                    'relative px-2 py-1.5 text-[12px] font-medium transition-colors',
+                    ticketTab === k ? 'text-text-primary' : 'text-text-tertiary hover:text-text-secondary',
+                  )}
+                >
+                  {label}
+                  {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#ccff00]" />}
+                </button>
+              ))}
+              <span
+                className="ml-auto text-text-tertiary"
+                title="Market: fills at the current price. Limit: fills at your price or better. Stop: triggers once price passes your level."
+              >
+                <Info size={15} />
+              </span>
+            </div>
+
+            {/* Price card */}
+            {ticketTab === 'market' ? (
+              <div className="rounded-xl bg-card-nested px-3.5 py-2.5 text-[13px] font-medium text-text-tertiary">
+                Fill at market price
+              </div>
+            ) : (
+              <div>
+                <div className={clsx('flex items-center rounded-xl bg-card-nested px-3.5 py-1.5', triggerOutOfBounds && 'ring-1 ring-[#E5484D]')}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-text-tertiary">{ticketTab === 'limit' ? 'Limit Price' : 'Stop Price'}</p>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={triggerPrice}
+                      onChange={(e) => setTriggerPrice(e.target.value)}
+                      placeholder={execPrice ? execPrice.toFixed(digits) : '—'}
+                      className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-text-primary placeholder:text-text-tertiary focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 border-l border-border-primary pl-3">
+                    <button type="button" onClick={() => stepTrigger(-1)} aria-label="Decrease price" className="flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Minus size={14} /></button>
+                    <button type="button" onClick={() => stepTrigger(1)} aria-label="Increase price" className="flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Plus size={14} /></button>
+                  </div>
+                </div>
+                {triggerBound && (
+                  <p className={clsx('mt-1.5 text-[12px]', triggerOutOfBounds ? 'text-[#E5484D]' : 'text-text-tertiary')}>
+                    {triggerBound.kind === 'min' ? 'Min' : 'Max'} value: {triggerBound.v.toFixed(digits)}
+                  </p>
+                )}
+                {ticketTab === 'stop_limit' && (
+                  <div className="mt-1.5 flex items-center rounded-xl bg-card-nested px-3.5 py-1.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-text-tertiary">Limit Price</p>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={stopLimitPrice}
+                        onChange={(e) => setStopLimitPrice(e.target.value)}
+                        placeholder={Number.isFinite(trig) ? (side === 'buy' ? trig * 0.999 : trig * 1.001).toFixed(digits) : '—'}
+                        className="ticket-input w-full bg-transparent p-0 text-[16px] font-bold tabular-nums text-text-primary placeholder:text-text-tertiary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Volume card */}
+            <div data-tour={TOUR_TARGETS.ORDER_VOLUME} className="flex items-center rounded-xl bg-card-nested px-3.5 py-1.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-text-tertiary">Volume</p>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={lots}
+                  onChange={(e) => { const v = e.target.value; if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) setLots(v); }}
+                  onBlur={() => {
+                    const n = parseFloat(lots);
+                    if (!Number.isFinite(n) || n <= 0) setLots(minLots.toFixed(2));
+                    else setLots(Math.min(n, maxLots).toFixed(2));
+                  }}
+                  className="ticket-input w-full bg-transparent p-0 text-[18px] font-bold tabular-nums text-text-primary focus:outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => adjustLots(-0.01)} aria-label="Decrease volume" className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Minus size={16} /></button>
+                <button type="button" onClick={() => adjustLots(0.01)} aria-label="Increase volume" className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:bg-bg-hover"><Plus size={16} /></button>
+                <span className="ml-1.5 border-l border-border-primary pl-2.5 text-[12px] text-text-primary">Lots</span>
+              </div>
+            </div>
+
+            {/* Lot slider */}
+            <div className="px-1">
+              <input
+                type="range"
+                min={minLots}
+                max={maxLots}
+                step={0.01}
+                value={Math.min(Math.max(lotsNum || minLots, minLots), maxLots)}
+                onChange={(e) => setLots(parseFloat(e.target.value).toFixed(2))}
+                aria-label="Volume"
+                className="crx-range w-full"
+                style={{ '--pct': `${Math.min(100, Math.max(0, ((lotsNum - minLots) / (maxLots - minLots)) * 100))}%` } as React.CSSProperties}
+              />
+              <div className="-mt-0.5 flex items-center justify-between text-[11px] text-text-tertiary">
+                <span>0</span>
+                <span>Max open {maxLots.toFixed(2)} Lots</span>
+              </div>
+            </div>
+
+            {/* TP / SL */}
+            <label data-tour={TOUR_TARGETS.ORDER_SL_TP} className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-text-primary">
+              <input
+                type="checkbox"
+                checked={slEnabled || tpEnabled}
+                onChange={(e) => {
+                  setSlEnabled(e.target.checked);
+                  setTpEnabled(e.target.checked);
+                  if (!e.target.checked) { setStopLoss(''); setTakeProfit(''); }
+                }}
+                className="h-4 w-4 rounded border-border-primary accent-[#ccff00]"
+              />
+              TP/SL
+            </label>
+            {(slEnabled || tpEnabled) && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-card-nested px-3 py-1.5">
+                  <p className="text-[11px] text-text-tertiary">Take Profit</p>
+                  <input type="text" inputMode="decimal" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder={execPrice ? (execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits) : '—'} className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-buy placeholder:text-text-tertiary focus:outline-none" />
+                </div>
+                <div className="rounded-xl bg-card-nested px-3 py-1.5">
+                  <p className="text-[11px] text-text-tertiary">Stop Loss</p>
+                  <input type="text" inputMode="decimal" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder={execPrice ? (execPrice * (side === 'buy' ? 0.99 : 1.01)).toFixed(digits) : '—'} className="ticket-input w-full bg-transparent p-0 text-[15px] font-bold tabular-nums text-[#E5484D] placeholder:text-text-tertiary focus:outline-none" />
+                </div>
+              </div>
+            )}
+
+            {/* Fully Funded — FXArtha-only. No leverage, no overnight fee. */}
+            <label className={clsx('flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 border', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-transparent bg-card-nested')} title="No leverage. No overnight cost.">
+              <span className="flex flex-col">
+                <span className="text-[12px] font-medium text-text-primary">Fully Funded</span>
+                <span className="text-[11px] text-text-tertiary leading-tight">No leverage · No overnight fee</span>
+              </span>
+              <span
+                onClick={() => setFullyFunded((p) => !p)}
+                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary shrink-0"
+                style={{ background: fullyFunded ? 'var(--buy, #16a34a)' : 'var(--bg-secondary)' }}
+              >
+                <span className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm block" style={{ left: fullyFunded ? '18px' : '3px' }} />
+              </span>
+            </label>
+
+            {/* Trade Insurance — FXArtha-only, market orders only. */}
+            {orderTab === 'market' && activeAccount && (
+              <InsuranceTierPicker
+                accountId={activeAccount.id}
+                symbol={selectedSymbol}
+                side={side}
+                lots={lotsNum}
+                leverage={activeAccount.leverage || 100}
+                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
+                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
+                onSelect={setInsuranceSelection}
+              />
+            )}
+
+            {/* Action */}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitDisabled}
+              className={clsx(
+                'w-full rounded-xl py-2.5 text-[15px] font-semibold text-white transition-[transform,opacity] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45',
+                side === 'buy' ? 'bg-[#1E66F5] hover:bg-[#1a58d6]' : 'bg-[#E5484D] hover:bg-[#d23b40]',
+              )}
+            >
+              {submitting ? 'Placing…' : side === 'buy' ? 'Buy' : 'Sell'}
+            </button>
+            {!hasEnoughMargin && <p className="text-center text-[12px] font-semibold text-[#E5484D]">Insufficient margin</p>}
+            {hasEnoughMargin && !meetsMinBalance && (
+              <p className="text-center text-[12px] font-semibold text-[#E5484D]">
+                Min ${minDepositGate.toFixed(0)} balance required
+              </p>
+            )}
+            {!marketStatus.isOpen && orderTab === 'market' && (
+              <p className="rounded-xl px-3 py-2 text-center text-[12px] text-[#E5484D]" style={{ background: 'rgba(229,72,77,0.1)' }}>
+                {marketStatus.reason}
+              </p>
+            )}
+
+            {/* Margin rows */}
+            <dl className="text-[12px] leading-none">
+              {[
+                ['Margin', usd(marginRequired)],
+                ['Free Margin', usd(freeMargin)],
+                ['Margin Level After Trading', marginAfter != null ? `${marginAfter.toLocaleString('en-US', { maximumFractionDigits: 2 })} %` : '--'],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
+                  <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                  <dd className="tabular-nums font-medium text-text-primary">{v}</dd>
+                </div>
+              ))}
+              <div className="flex items-center justify-between gap-3 py-[3.5px]">
+                <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">Leverage</dt>
+                <dd className="tabular-nums font-medium text-text-primary">
+                  {activeAccount ? <LeveragePicker account={activeAccount} onChanged={() => { void refreshAccount(); }} /> : '—'}
+                </dd>
+              </div>
+            </dl>
+
+            {/* Assets */}
+            <div className="-mx-3 border-t border-border-primary px-3 pt-2">
+              <h3 className="text-[13px] font-bold text-text-primary">Assets</h3>
+              <dl className="mt-1 text-[12px] leading-none">
+                {[
+                  ['Equity', usd(equityVal)],
+                  ['Balance', usd(balanceVal)],
+                  ['Floating PnL', `${floatingPnl >= 0 ? '' : '-'}${Math.abs(floatingPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD (${balanceVal > 0 ? ((floatingPnl / balanceVal) * 100).toFixed(2) : '0.00'} %)`],
+                  ['Credit', usd(creditVal)],
+                  ['Margin Level', marginLevelNow != null ? `${marginLevelNow.toLocaleString('en-US', { maximumFractionDigits: 2 })} %` : '--'],
+                  ['Margin Used', usd(marginUsedVal)],
+                  ['Free Margin', usd(freeMargin)],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
+                    <dt className="shrink-0 text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                    <dd className="flex items-center gap-1.5 text-right tabular-nums font-medium text-text-primary">
+                      {k === 'Margin Level' && <Gauge size={13} className="shrink-0 text-emerald-500" />}{v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full min-h-0 flex flex-col overflow-hidden bg-bg-base">
@@ -787,25 +1135,8 @@ export default function OrderPanel() {
                 );
               })}
             </div>
-            {/* Volume slider — drag to size the order anywhere between the
-                instrument's min and max lot, like the reference terminal.
-                Writes the same `lots` state the stepper and chips use. */}
-            <div className="mt-2">
-              <input
-                type="range"
-                min={volMin}
-                max={volMax}
-                step={volStep}
-                value={Math.min(Math.max(lotsNum || volMin, volMin), volMax)}
-                onChange={(e) => setLots(Number(e.target.value).toFixed(2))}
-                aria-label="Order volume"
-                className="w-full cursor-pointer accent-[#2962FF]"
-              />
-              <div className="mt-0.5 flex items-center justify-between text-[9px] text-text-tertiary tabular-nums">
-                <span>{volMin}</span>
-                <span>Max open {volMax.toFixed(2)} Lots</span>
-              </div>
-            </div>
+            {/* The lot slider is part of the terminal ticket above; the
+                dashboard panel keeps the stepper + quick chips. */}
           </div>
 
           {/* Pending order — trigger price (+ stop-limit target). Only renders
@@ -973,60 +1304,6 @@ export default function OrderPanel() {
             </>
           ) : null}
 
-          {/* Margin preview + account assets — the reference terminal keeps
-              these under the ticket so a trader can size an order against live
-              equity without leaving the panel. Read-only; nothing here feeds
-              the order path. */}
-          {isTradingTerminal && activeAccount ? (
-            <div className="space-y-2 pt-2">
-              <div className="space-y-1">
-                <StatRow label="Margin" value={`${marginRequired.toFixed(2)} USD`} />
-                <StatRow
-                  label="Free Margin"
-                  value={`${freeMargin.toFixed(2)} USD`}
-                  tone={hasEnoughMargin ? undefined : 'text-[#ef5350]'}
-                />
-                <StatRow
-                  label="Margin Level After Trading"
-                  value={marginLevelAfter == null ? '—' : `${marginLevelAfter.toFixed(2)} %`}
-                />
-                <StatRow label="Leverage" value={`1:${activeAccount.leverage || 100}`} />
-              </div>
-
-              <div className="border-t border-border-primary pt-2">
-                <p className="mb-1.5 text-[11px] font-bold text-text-primary">Assets</p>
-                <div className="space-y-1">
-                  <StatRow label="Equity" value={`${(activeAccount.equity || 0).toFixed(2)} USD`} />
-                  <StatRow label="Balance" value={`${(activeAccount.balance || 0).toFixed(2)} USD`} />
-                  {(() => {
-                    // equity = balance + credit + gross unrealised P&L, so the
-                    // floating figure is what's left after backing those out.
-                    const bal = activeAccount.balance || 0;
-                    const floating = (activeAccount.equity || 0) - bal - (activeAccount.credit || 0);
-                    const pct = bal > 0 ? (floating / bal) * 100 : 0;
-                    return (
-                      <StatRow
-                        label="Floating PnL"
-                        value={`${floating.toFixed(2)} USD (${pct.toFixed(2)} %)`}
-                        tone={floating < 0 ? 'text-[#ef5350]' : 'text-[#ccff00]'}
-                      />
-                    );
-                  })()}
-                  <StatRow label="Credit" value={`${(activeAccount.credit || 0).toFixed(2)} USD`} />
-                  <StatRow
-                    label="Margin Level"
-                    value={
-                      (activeAccount.margin_used || 0) > 0
-                        ? `${(activeAccount.margin_level || 0).toFixed(2)} %`
-                        : '—'
-                    }
-                  />
-                  <StatRow label="Margin Used" value={`${(activeAccount.margin_used || 0).toFixed(2)} USD`} />
-                  <StatRow label="Free Margin" value={`${freeMargin.toFixed(2)} USD`} />
-                </div>
-              </div>
-            </div>
-          ) : null}
           </div>
         </div>
 

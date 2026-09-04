@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { CandlestickChart, Home, List, Minimize2, Search, Wallet as WalletIcon, X } from 'lucide-react';
+import { CandlestickChart, Home, List, Minimize2, Moon, Search, Sun, Wallet as WalletIcon, X, Zap } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -55,6 +55,10 @@ export default function TradingTerminalPage() {
     setOrderPanelWidth,
     setBottomPanelHeight,
     toggleTerminalMarkets,
+    oneClickTrading,
+    setOneClickTrading,
+    theme,
+    toggleTheme,
   } = useUIStore();
 
   useDocumentTitle();
@@ -679,9 +683,34 @@ export default function TradingTerminalPage() {
           <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />
           <span className="hidden sm:inline">Trade</span>
         </button>
+        {/* One-click trading + theme moved here: the order ticket has no
+            header of its own on the terminal any more. */}
+        <button
+          type="button"
+          onClick={() => setOneClickTrading(!oneClickTrading)}
+          aria-pressed={oneClickTrading}
+          title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
+          className={clsx(
+            'grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-colors',
+            oneClickTrading
+              ? 'border-accent/50 bg-accent/15 text-accent'
+              : 'border-border-primary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
+          )}
+        >
+          <Zap className="w-4 h-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border-primary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden /> : <Moon className="w-4 h-4" aria-hidden />}
+        </button>
       </>
     ),
-    [terminalMarketsOpen, onPanelsSelectMarkets, onPanelsSelectOrder],
+    [terminalMarketsOpen, onPanelsSelectMarkets, onPanelsSelectOrder, oneClickTrading, setOneClickTrading, theme, toggleTheme],
   );
 
   return (

@@ -20,9 +20,15 @@ import { useLayoutEffect, useRef } from 'react';
  * storm even with dozens of instances (watchlist, mobile) on a weak device.
  */
 interface AnimatedPriceProps {
-  value: number;
+  /** Undefined/NaN renders `placeholder` instead of a number. */
+  value: number | undefined;
   digits: number;
   className?: string;
+  /** Shown until a real price arrives. */
+  placeholder?: string;
+  /** Reserve room for `digits` + separators so the row can't jitter as the
+   *  number changes width. */
+  lockWidth?: boolean;
   /** Smooth number roll between ticks. Off = snap to the real value (use for an
    *  exact "execution price" field where the shown value must equal the quote). */
   glide?: boolean;
@@ -36,12 +42,14 @@ export function AnimatedPrice({
   value,
   digits,
   className = '',
+  placeholder = '—',
+  lockWidth = false,
   glide = true,
   flash = true,
   duration = 150,
 }: AnimatedPriceProps) {
   const spanRef = useRef<HTMLSpanElement>(null);
-  const shownRef = useRef<number>(value);       // last number painted
+  const shownRef = useRef<number>(Number.isFinite(value) ? (value as number) : 0); // last number painted
   const rafRef = useRef<number | null>(null);
   const flashRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(false);
@@ -50,16 +58,23 @@ export function AnimatedPrice({
     const el = spanRef.current;
     if (!el) return;
 
-    // First paint: just show the value, no flash/glide.
+    // No real price yet — show the placeholder and wait.
+    if (!Number.isFinite(value)) {
+      el.textContent = placeholder;
+      return;
+    }
+
+    // First paint (or first real price after a placeholder): show it straight,
+    // no flash/glide.
     if (!mounted.current) {
       mounted.current = true;
-      shownRef.current = Number.isFinite(value) ? value : 0;
+      shownRef.current = value as number;
       el.textContent = shownRef.current.toFixed(digits);
       return;
     }
 
     const from = shownRef.current;
-    const to = Number.isFinite(value) ? value : from;
+    const to = value as number;
     if (to === from) return;
 
     // Flash (background tint — never touches text color, so it can't fight an
@@ -100,7 +115,7 @@ export function AnimatedPrice({
       }
     };
     rafRef.current = requestAnimationFrame(step);
-  }, [value, digits, glide, flash, duration]);
+  }, [value, digits, glide, flash, duration, placeholder]);
 
   useLayoutEffect(() => () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -109,5 +124,12 @@ export function AnimatedPrice({
 
   // Childless span: text is managed imperatively above. suppressHydrationWarning
   // because the server renders it empty and the client fills it before paint.
-  return <span ref={spanRef} className={className} suppressHydrationWarning />;
+  return (
+    <span
+      ref={spanRef}
+      className={className}
+      style={lockWidth ? { minWidth: `${digits + 5}ch`, display: 'inline-block', textAlign: 'center' } : undefined}
+      suppressHydrationWarning
+    />
+  );
 }

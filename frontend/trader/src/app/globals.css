@@ -1038,3 +1038,30 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 @media (prefers-reduced-motion: reduce) {
   .price-flash-up, .price-flash-down { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ORDER-TICKET CONTROLS (ported from the reference terminal)
+   A thin tick-marked track with a diamond thumb, and a reset for the
+   value inputs that sit inside their own card (no inner chrome).
+   ═══════════════════════════════════════════════════════════════════ */
+.crx-range { -webkit-appearance: none; appearance: none; height: 20px; background: transparent; cursor: pointer; }
+.crx-range::-webkit-slider-runnable-track {
+  height: 2px; border-radius: 2px;
+  background:
+    radial-gradient(circle, var(--text-tertiary) 0 2.5px, transparent 3px) 0 50% / 25% 100% repeat-x,
+    linear-gradient(#ccff00, #ccff00) 0 0 / var(--pct, 0%) 100% no-repeat,
+    var(--border-primary);
+}
+.crx-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px;
+  background: var(--text-primary); border-radius: 3px; transform: rotate(45deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+.crx-range::-moz-range-track { height: 2px; background: var(--border-primary); border-radius: 2px; }
+.crx-range::-moz-range-progress { height: 2px; background: #ccff00; }
+.crx-range::-moz-range-thumb { width: 16px; height: 16px; border: 0; background: var(--text-primary); border-radius: 3px; transform: rotate(45deg); }
+
+.ticket-input {
+  border: 0 !important; box-shadow: none !important; background: transparent !important;
+  padding: 0 !important; border-radius: 0 !important;
+}
