@@ -261,6 +261,84 @@ export default function TradingTerminalPage() {
     setTerminalMarketsOpen(false);
     setTerminalCalcOpen(true);
   }, [terminalCalcOpen, terminalNewsOpen, chartExpanded, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
+  // Terminal actions that ride at the end of the ticker row: Home / Deposit /
+  // Markets / Trade, matching the reference terminal. Memoised so the memo()
+  // on TerminalTicker still holds — an inline fragment would be a new node
+  // every render and defeat it on a page that re-renders with the price feed.
+  const tickerActions = useMemo(
+    () => (
+      <>
+        <Link
+          href="/dashboard"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
+          title="Back to dashboard"
+        >
+          <Home className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden lg:inline">Home</span>
+        </Link>
+        <Link
+          href="/wallet"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
+          title="Deposit funds"
+        >
+          <WalletIcon className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden lg:inline">Deposit</span>
+        </Link>
+        {/* Markets — opens the instruments list in the right column. Toggle. */}
+        <button
+          type="button"
+          onClick={onPanelsSelectMarkets}
+          className={clsx(
+            'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-[13px] font-semibold transition-colors whitespace-nowrap',
+            terminalMarketsOpen
+              ? 'bg-accent/20 border-accent/60 text-accent'
+              : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
+          )}
+          title="Browse instruments"
+        >
+          <List className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden sm:inline">Markets</span>
+        </button>
+        {/* Trade — closes any side panel so the order ticket is showing. */}
+        <button
+          type="button"
+          onClick={onPanelsSelectOrder}
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#ccff00] px-5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
+          title="Show the order ticket"
+        >
+          <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />
+          <span className="hidden sm:inline">Trade</span>
+        </button>
+        {/* One-click trading + theme moved here: the order ticket has no
+            header of its own on the terminal any more. */}
+        <button
+          type="button"
+          onClick={() => setOneClickTrading(!oneClickTrading)}
+          aria-pressed={oneClickTrading}
+          title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
+          className={clsx(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors',
+            oneClickTrading
+              ? 'border-accent/50 bg-accent/15 text-accent'
+              : 'border-border-primary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
+          )}
+        >
+          <Zap className="w-4 h-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border-primary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden /> : <Moon className="w-4 h-4" aria-hidden />}
+        </button>
+      </>
+    ),
+    [terminalMarketsOpen, onPanelsSelectMarkets, onPanelsSelectOrder, oneClickTrading, setOneClickTrading, theme, toggleTheme],
+  );
+
   const [lotSize, setLotSize] = useState('0.01');
   const [chartTabs, setChartTabs] = useState<string[]>([]);
   // orderSubmitting removed — MT5-style: never block rapid-fire clicks
@@ -635,83 +713,6 @@ export default function TradingTerminalPage() {
     );
   }
 
-  // Terminal actions that ride at the end of the ticker row: Home / Deposit /
-  // Markets / Trade, matching the reference terminal. Memoised so the memo()
-  // on TerminalTicker still holds — an inline fragment would be a new node
-  // every render and defeat it on a page that re-renders with the price feed.
-  const tickerActions = useMemo(
-    () => (
-      <>
-        <Link
-          href="/dashboard"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
-          title="Back to dashboard"
-        >
-          <Home className="w-4 h-4 shrink-0" aria-hidden />
-          <span className="hidden lg:inline">Home</span>
-        </Link>
-        <Link
-          href="/wallet"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border-primary bg-bg-secondary px-4 text-[13px] font-semibold text-text-primary transition-colors hover:bg-bg-hover whitespace-nowrap"
-          title="Deposit funds"
-        >
-          <WalletIcon className="w-4 h-4 shrink-0" aria-hidden />
-          <span className="hidden lg:inline">Deposit</span>
-        </Link>
-        {/* Markets — opens the instruments list in the right column. Toggle. */}
-        <button
-          type="button"
-          onClick={onPanelsSelectMarkets}
-          className={clsx(
-            'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-[13px] font-semibold transition-colors whitespace-nowrap',
-            terminalMarketsOpen
-              ? 'bg-accent/20 border-accent/60 text-accent'
-              : 'bg-accent/10 border-accent/40 text-accent hover:bg-accent/15',
-          )}
-          title="Browse instruments"
-        >
-          <List className="w-4 h-4 shrink-0" aria-hidden />
-          <span className="hidden sm:inline">Markets</span>
-        </button>
-        {/* Trade — closes any side panel so the order ticket is showing. */}
-        <button
-          type="button"
-          onClick={onPanelsSelectOrder}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#ccff00] px-5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
-          title="Show the order ticket"
-        >
-          <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />
-          <span className="hidden sm:inline">Trade</span>
-        </button>
-        {/* One-click trading + theme moved here: the order ticket has no
-            header of its own on the terminal any more. */}
-        <button
-          type="button"
-          onClick={() => setOneClickTrading(!oneClickTrading)}
-          aria-pressed={oneClickTrading}
-          title={oneClickTrading ? 'One-click trading on' : 'One-click trading off'}
-          className={clsx(
-            'grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors',
-            oneClickTrading
-              ? 'border-accent/50 bg-accent/15 text-accent'
-              : 'border-border-primary text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
-          )}
-        >
-          <Zap className="w-4 h-4" aria-hidden />
-        </button>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border-primary text-text-tertiary transition-colors hover:text-text-primary hover:bg-bg-hover"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden /> : <Moon className="w-4 h-4" aria-hidden />}
-        </button>
-      </>
-    ),
-    [terminalMarketsOpen, onPanelsSelectMarkets, onPanelsSelectOrder, oneClickTrading, setOneClickTrading, theme, toggleTheme],
-  );
 
   return (
     <div className="flex-1 flex overflow-hidden min-h-0 relative pt-[env(safe-area-inset-top,0px)] bg-bg-base">
