@@ -15,6 +15,7 @@ from packages.common.src.models import (
     TradeHistory, AllocationCopyType, Transaction,
     Referral, AccountGroup, Instrument,
 )
+from packages.common.src.copy_fees import apply_hwm_fee
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
@@ -749,9 +750,12 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             cross_rate=await cross_rate_for(instrument),
         )
 
+        # Same high-water mark as the mirror-close path.
         perf_fee = Decimal("0")
-        if gross > 0 and master:
-            perf_fee = gross * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
+        if master:
+            perf_fee = apply_hwm_fee(
+                allocation, gross, master.performance_fee_pct or Decimal("0")
+            )
         net = gross - perf_fee
         total_pnl += net
 
@@ -979,8 +983,10 @@ async def withdraw_managed_account(
         )
 
         perf_fee = Decimal("0")
-        if gross > 0 and master:
-            perf_fee = gross * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
+        if master:
+            perf_fee = apply_hwm_fee(
+                allocation, gross, master.performance_fee_pct or Decimal("0")
+            )
 
         net = gross - perf_fee
         total_closed_pnl += net

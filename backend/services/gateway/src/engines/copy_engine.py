@@ -29,6 +29,7 @@ from packages.common.src.models import (
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
 from packages.common.src.admin_fees import credit_admin_fee
+from packages.common.src.copy_fees import apply_hwm_fee
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.notify import create_notification
 
@@ -673,13 +674,19 @@ class CopyTradeEngine:
             cross_rate=await cross_rate_for(instrument),
         )
 
+        # High-water mark: charge only on profit ABOVE the follower's
+        # previous peak, so losses must be earned back before the master
+        # is paid again (compute_hwm_fee also advances the mark).
         performance_fee = Decimal("0")
         admin_fee = Decimal("0")
-        if gross_profit > 0:
-            perf_pct = master.performance_fee_pct or Decimal("0")
-            performance_fee = gross_profit * perf_pct / Decimal("100")
-            admin_pct = master.admin_commission_pct or Decimal("0")
-            admin_fee = performance_fee * admin_pct / Decimal("100")
+        alloc_for_fee = await db.get(InvestorAllocation, copy.investor_allocation_id)
+        if alloc_for_fee is not None:
+            performance_fee = apply_hwm_fee(
+                alloc_for_fee, gross_profit, master.performance_fee_pct or Decimal("0")
+            )
+            if performance_fee > 0:
+                admin_pct = master.admin_commission_pct or Decimal("0")
+                admin_fee = performance_fee * admin_pct / Decimal("100")
 
         net_profit = gross_profit - performance_fee
 
