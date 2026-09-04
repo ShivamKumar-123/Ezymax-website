@@ -501,11 +501,28 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   }, [activeAccount?.id]);
 
   useEffect(() => {
-    // Re-fetch when either the tab opens OR the user switches accounts
-    // while the tab is open — the dependency on activeAccount?.id is
-    // baked into loadHistory's identity.
-    if (activeTab === 'history') void loadHistory();
+    // Load on mount and on every account switch, NOT only when the History tab
+    // is open: the tab label carries the closed-trade count, and gating the
+    // fetch on the tab meant it read "Closed Positions (0)" until you clicked
+    // it. Silent unless History is the tab actually being looked at, so the
+    // background load never flashes a "Loading history…" placeholder.
+    void loadHistory({ silent: activeTab !== 'history' });
   }, [activeTab, loadHistory]);
+
+  // A position leaving the open list almost always means it just closed, so
+  // pull the history again to keep the tab's count honest without waiting for
+  // the user to open it. Skips the first run — the effect above already
+  // loaded once on mount.
+  const openCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (openCountRef.current === null) {
+      openCountRef.current = positions.length;
+      return;
+    }
+    if (openCountRef.current === positions.length) return;
+    openCountRef.current = positions.length;
+    void loadHistory({ silent: true });
+  }, [positions.length, loadHistory]);
 
   // Live refresh while the History tab is open. Without this, when a
   // trade closes via SL/TP (or admin action) the user has to manually
