@@ -768,7 +768,12 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
           current-price label occupy roughly the right 70px, so at right-3 the
           two overlapped whenever price sat near the top of the range. */}
       <div
-        className="pointer-events-none absolute top-14 right-20 z-10 flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
+        /* Hidden below md (768px — the same width the terminal switches to its
+           phone layout at). The pill is ~240px wide, so on a phone-width chart
+           it lands straight on top of the OHLC legend; and the phone layout
+           already shows this exact bid/ask on its SELL / BUY bar, so nothing
+           is lost by dropping it there. */
+        className="pointer-events-none absolute top-14 right-20 z-10 hidden md:flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
         aria-label="Broker quote — actual execution price"
       >
         <span className="text-text-tertiary uppercase tracking-wider">Broker</span>
