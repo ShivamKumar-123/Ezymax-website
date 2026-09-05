@@ -92,6 +92,12 @@ class InfowayFeed:
         # Data-silence watchdog state (per business socket).
         self._last_data_ts: Dict[str, float] = {}  # set ONLY on real data frames
         self._ws_ref: Dict[str, object] = {}        # live socket per business
+        # When the silence watchdog last recycled each socket. Without this the
+        # watchdog re-fires on every tick of its own interval for as long as the
+        # silence lasts, because reconnecting does not make data appear: a market
+        # that is simply closed (forex, all weekend) gets its socket torn down
+        # over and over. Debouncing on this makes it at most one recycle per fuse.
+        self._last_force_close: Dict[str, float] = {}
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -421,13 +427,20 @@ class InfowayFeed:
                     continue  # never received data yet (boot / market closed)
                 silent = now - last
                 limit = SILENT_RECONNECT_SEC.get(business, SILENT_RECONNECT_DEFAULT)
-                if silent > limit:
-                    logger.warning(
-                        "Infoway [%s] DATA-silent %.0fs (>%ds) — forcing reconnect",
-                        business, silent, limit,
-                    )
-                    with contextlib.suppress(Exception):
-                        await ws.close()
+                if silent <= limit:
+                    continue
+                # One recycle per fuse, not one per check interval. `last` only
+                # advances on real data, so a closed market keeps this condition
+                # true indefinitely.
+                if now - self._last_force_close.get(business, 0.0) < limit:
+                    continue
+                logger.warning(
+                    "Infoway [%s] DATA-silent %.0fs (>%ds) — forcing reconnect",
+                    business, silent, limit,
+                )
+                self._last_force_close[business] = now
+                with contextlib.suppress(Exception):
+                    await ws.close()
 
     async def _backfill_gap(self, business: str, codes: List[str]) -> None:
         """After a reconnect, heal the blind window from InfoWay REST klines
