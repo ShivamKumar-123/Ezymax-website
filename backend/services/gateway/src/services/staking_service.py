@@ -2,13 +2,17 @@
 
 Money flow (no on-chain layer in this build):
   Open  : user.main_wallet_balance -= principal; if trading_bonus_active,
-          a 'staking_bonus' credit equal to principal × bonus_bps / 10000
-          is added to a tagged TradingAccount (one is auto-created per
-          opening if needed).
+          principal × bonus_bps / 10000 lands in user.bonus_balance — the
+          non-withdrawable Bonus Wallet the trader already sees, from which
+          they move it into whichever live account they trade on as `credit`
+          (wallet_service.transfer_bonus_to_trading).
   Daily : a scheduler hits accrue_daily(), which inserts a reward row per
           active position for the just-elapsed 24h window.
   Claim : sums unpaid rows, marks them paid, credits user.main_wallet_balance.
   Exit  : flexible plans only; restores principal to the wallet.
+
+Every one of those movements writes a Transaction so it appears in the
+trader's history and can be audited.
 """
 from __future__ import annotations
 
@@ -24,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     StakingPlan, StakingPosition, StakingRewardAccrual,
-    User, TradingAccount, Referral, RewardsTransaction, RewardsUserState,
+    User, Referral, RewardsTransaction, RewardsUserState,
     Transaction,
 )
 
@@ -300,6 +304,14 @@ async def open_position(
 
     # Debit principal
     user.main_wallet_balance = bal - amount
+    db.add(Transaction(
+        user_id=user_id,
+        account_id=None,
+        type="transfer",
+        amount=-amount,
+        balance_after=user.main_wallet_balance,
+        description=f"Staked in {plan.label}",
+    ))
 
     pos = StakingPosition(
         user_id=user_id,
@@ -315,30 +327,26 @@ async def open_position(
     db.add(pos)
     await db.flush()
 
-    # Credit trading bonus to the user's primary live trading account (or the
-    # most recently active one). If they have none, skip the credit — the user
-    # can re-bind the bonus later via support; the position record still notes
-    # the credited amount so accounting is intact.
+    # Credit the trading bonus to the Bonus Wallet, which is where the trader
+    # looks for it and which already knows how to become tradable margin: they
+    # transfer it into the live account of their choice as `credit`
+    # (non-withdrawable, counts toward margin, consumed before real balance).
+    #
+    # This used to write ta.credit directly on whichever live account was
+    # created most recently. That target drifts — open a new account after
+    # staking and the bonus is stranded on the old one — the trader was never
+    # told which account got it, and no Transaction was written, so the money
+    # was invisible in history and unauditable.
     if pos.trading_bonus_active and bonus_amount > 0:
-        ta = (await db.execute(
-            select(TradingAccount)
-            .where(
-                TradingAccount.user_id == user_id,
-                TradingAccount.is_active.is_(True),
-                TradingAccount.is_demo.is_(False),
-            )
-            .order_by(TradingAccount.created_at.desc())
-            .limit(1)
-        )).scalar_one_or_none()
-        if ta is not None:
-            ta.credit = (ta.credit or Decimal("0")) + bonus_amount
-            ta.equity = (ta.equity or Decimal("0")) + bonus_amount
-            ta.free_margin = (ta.free_margin or Decimal("0")) + bonus_amount
-        else:
-            logger.warning(
-                "stake %s opened with trading_bonus_active but no live trading account exists for user %s",
-                pos.id, user_id,
-            )
+        user.bonus_balance = Decimal(str(user.bonus_balance or 0)) + bonus_amount
+        db.add(Transaction(
+            user_id=user_id,
+            account_id=None,
+            type="bonus",
+            amount=bonus_amount,
+            balance_after=user.bonus_balance,
+            description=f"Trading bonus from {plan.label} stake",
+        ))
 
     # Staking referral payout — best-effort; never block the stake.
     try:
@@ -388,6 +396,14 @@ async def withdraw_position(db: AsyncSession, user_id: UUID, position_id: UUID) 
     if user is None:
         raise HTTPException(status_code=404, detail="user_not_found")
     user.main_wallet_balance = Decimal(str(user.main_wallet_balance or 0)) + Decimal(str(position.principal))
+    db.add(Transaction(
+        user_id=user_id,
+        account_id=None,
+        type="transfer",
+        amount=Decimal(str(position.principal)),
+        balance_after=user.main_wallet_balance,
+        description=f"Stake closed — principal returned from {plan.label}",
+    ))
     position.state = "withdrawn"
     position.ended_at = datetime.now(timezone.utc)
 
@@ -432,6 +448,14 @@ async def claim_rewards(db: AsyncSession, user_id: UUID, position_id: UUID) -> d
     if user is None:
         raise HTTPException(status_code=404, detail="user_not_found")
     user.main_wallet_balance = Decimal(str(user.main_wallet_balance or 0)) + total
+    db.add(Transaction(
+        user_id=user_id,
+        account_id=None,
+        type="bonus",
+        amount=total,
+        balance_after=user.main_wallet_balance,
+        description=f"Staking rewards claimed ({len(rows)} day(s))",
+    ))
 
     return {
         "position_id": str(pos.id),

@@ -307,7 +307,7 @@ function Inner() {
                 />
                 <span>
                   Activate {selectedPlan.trading_bonus_pct.toFixed(0)}% trading bonus
-                  <span className="text-text-tertiary"> — credits an equivalent amount to your live trading account. Funds stay locked until the term ends.</span>
+                  <span className="text-text-tertiary"> — an equivalent amount lands in your Bonus Wallet. Move it to any live account from Accounts to trade with it; it counts as margin but cannot be withdrawn. Your stake stays locked until the term ends.</span>
                 </span>
               </label>
             )}
