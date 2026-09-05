@@ -645,19 +645,24 @@ export default function OrderPanel() {
             )}
 
             {/* Margin rows */}
-            <dl className="text-[12px] leading-none">
+            {/* leading-[1.4], not leading-none: the labels are underlined with
+                underline-offset-4, which draws 4px BELOW the baseline. In a
+                12px line box with 12px line-height that underline lands
+                outside the row and, across only 3.5px of padding, on top of
+                the next label. A real line box keeps it inside its own row. */}
+            <dl className="text-[12px] leading-[1.4]">
               {[
                 ['Margin', usd(marginRequired)],
                 ['Free Margin', usd(freeMargin)],
                 ['Margin Level After Trading', marginAfter != null ? `${marginAfter.toLocaleString('en-US', { maximumFractionDigits: 2 })} %` : '--'],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
-                  <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                  <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-2">{k}</dt>
                   <dd className="tabular-nums font-medium text-text-primary">{v}</dd>
                 </div>
               ))}
               <div className="flex items-center justify-between gap-3 py-[3.5px]">
-                <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">Leverage</dt>
+                <dt className="text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-2">Leverage</dt>
                 <dd className="tabular-nums font-medium text-text-primary">
                   {activeAccount ? <LeveragePicker account={activeAccount} onChanged={() => { void refreshAccount(); }} /> : '—'}
                 </dd>
@@ -667,7 +672,7 @@ export default function OrderPanel() {
             {/* Assets */}
             <div className="-mx-3 border-t border-border-primary px-3 pt-2">
               <h3 className="text-[13px] font-bold text-text-primary">Assets</h3>
-              <dl className="mt-1 text-[12px] leading-none">
+              <dl className="mt-1 text-[12px] leading-[1.4]">
                 {[
                   ['Equity', usd(equityVal)],
                   ['Balance', usd(balanceVal)],
@@ -678,7 +683,7 @@ export default function OrderPanel() {
                   ['Free Margin', usd(freeMargin)],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between gap-3 py-[3.5px]">
-                    <dt className="shrink-0 text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-4">{k}</dt>
+                    <dt className="shrink-0 text-text-tertiary underline decoration-dotted decoration-border-primary underline-offset-2">{k}</dt>
                     <dd className="flex items-center gap-1.5 text-right tabular-nums font-medium text-text-primary">
                       {k === 'Margin Level' && <Gauge size={13} className="shrink-0 text-emerald-500" />}{v}
                     </dd>
