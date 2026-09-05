@@ -267,7 +267,8 @@ export default function AdminInsurancePage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Trade Insurance</h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Premium rules, coverage caps, anti-abuse, and dynamic adjustments.
+              Per-trade cover — these settings price the &ldquo;Insure this trade&rdquo; toggle on the
+              order ticket. Premium rules, coverage caps, anti-abuse and dynamic adjustments.
             </p>
           </div>
         </div>

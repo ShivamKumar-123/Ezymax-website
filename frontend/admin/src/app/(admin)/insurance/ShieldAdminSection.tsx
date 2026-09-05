@@ -116,7 +116,10 @@ export default function ShieldAdminSection() {
           <div>
             <h2 className="text-lg md:text-xl font-bold text-text-primary">FXArtha Shield — Period Plans</h2>
             <p className="text-xs text-text-secondary mt-0.5">
-              Aggregate insurance: one plan covers a share of the user&apos;s cumulative loss over Daily / Weekly / Monthly windows.
+              A <strong>separate product</strong> from the per-trade cover above: users buy a plan that
+              covers a share of their cumulative loss over a Daily / Weekly / Monthly window.
+              These plans do <strong>not</strong> affect what the order ticket charges — that is priced
+              by the Trade Insurance settings at the top of this page.
             </p>
           </div>
         </div>
