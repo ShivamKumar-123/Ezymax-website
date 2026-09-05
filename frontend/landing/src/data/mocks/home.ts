@@ -193,49 +193,42 @@ export const tradingModes = {
 
 export const tradeInsurance = {
   eyebrow: "Trade insurance",
-  heading: "Switch on a cushion before you enter.",
+  heading: "Cover a week of losses, not just one trade.",
   intro:
-    "Choose a tier before placing an eligible trade. If it goes against you, the contract covers part of the loss up to the cap. No hedging, no separate account, no claim form.",
-  // Mirrors the live product config (system_settings: insurance_coverage_pct
-  // and insurance_max_cap_rules). The cap is min(flat, pct x trade size), so
-  // the dollar figure is a ceiling a small trade will not reach — hence the
-  // second line on each card.
+    "FXArtha Shield is a plan you buy for a day, a week or a month. It covers a share of everything you lose across that whole window — no per-trade toggle, no claim form, and the payout is worked out automatically when the window closes.",
+  // Mirrors the live plan table (insurance_shield_plans). Tiers are the same
+  // four at every duration; only the cap and the premium change.
   tiers: [
-    { tier: "Basic", cover: "20%", cap: "up to $100", capNote: "or 10% of trade size" },
-    { tier: "Advanced", cover: "30%", cap: "up to $300", capNote: "or 20% of trade size" },
-    { tier: "Pro", cover: "40%", cap: "up to $600", capNote: "or 30% of trade size" },
-    { tier: "Elite", cover: "50%", cap: "up to $1,000", capNote: "or 50% of trade size" },
+    { tier: "Basic", cover: "20%", cap: "up to $1,000", capNote: "from $19 a day" },
+    { tier: "Plus", cover: "30%", cap: "up to $2,500", capNote: "from $45 a day" },
+    { tier: "Pro", cover: "40%", cap: "up to $7,500", capNote: "from $149 a day" },
+    { tier: "Elite", cover: "50%", cap: "up to $15,000", capNote: "from $399 a day" },
   ],
-  activateTitle: "Activate before placing a trade",
+  activateTitle: "One plan, the whole window",
   activateBody:
-    "Toggle cover on the ticket of any eligible trade. The premium is shown before you confirm; the payout is automatic at close.",
-  points: ["Partial loss coverage", "Automatic payout at close", "No claim form"],
+    "Pick a tier and a duration in the app. Every trade you place while the plan is live counts toward the same cover — the premium is charged once, up front, from your main wallet.",
+  points: ["Daily, weekly or monthly", "Covers cumulative loss", "No claim form"],
   cta: "Explore trade protection",
   ctaHref: "/protection",
-  footnote: "Applicable on eligible trades · Trade conditions apply",
+  footnote: "Cap shown is the monthly maximum · Trade conditions apply",
+  quote: "One plan. Every trade in the window. Paid out automatically.",
   faq: [
     {
-      question: "Who pays for the cover?",
+      question: "How is this different from insuring one trade?",
       answer:
-        "An insurance pool funded by a share of platform trading fees. The pool sits on-chain and its balance is publicly visible.",
+        "Shield covers the total you lose over the plan's window rather than a single position. One purchase protects every eligible trade you place until the window closes.",
     },
     {
       question: "What does it cost me?",
       answer:
-        "A per-trade premium in Platform Credits, priced by tier and position size — shown on the ticket before you confirm.",
+        "A single premium, charged from your main wallet when you buy the plan. It depends on the tier and the duration — from $19 for a day at Basic to $999 for a month at Elite. The exact figure is shown before you confirm.",
     },
     {
-      question: "Which trades qualify?",
+      question: "When do I get paid?",
       answer:
-        "Eligible instruments carry an insurable badge. Instrument list, minimum hold time and per-day limits are published in-app.",
-    },
-    {
-      question: "When does it pay out?",
-      answer:
-        "Automatically at close, in the same settlement transaction as your P&L. Nothing to file.",
+        "Automatically at the end of the plan's window. Your covered share of the period's net loss is credited up to the plan's cap — there is nothing to file and nothing to chase.",
     },
   ],
-  quote: "Trade with awareness. Not uncertainty.",
 } as const;
 
 export const rewards = {
@@ -368,7 +361,7 @@ export const whyArtha = {
     {
       kicker: "04",
       title: "Losses can be partly insured",
-      body: "Switch on cover before you enter, up to 50%.",
+      body: "Buy a plan for a day, a week or a month — covers up to 50%.",
     },
     {
       kicker: "05",

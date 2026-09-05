@@ -7,27 +7,34 @@ export const protectionHero = {
   eyebrow: "Protection",
   heading: "Cap a loss before you take it.",
   intro:
-    "Insurance tiers cover part of a losing trade automatically, and the risk tools show the full downside before you confirm. Protection here is a mechanic, not a promise.",
+    "A Shield plan covers part of what you lose over its window automatically, and the risk tools show the full downside before you confirm. Protection here is a mechanic, not a promise.",
   backLabel: "Back to home",
 } as const;
 
 export const protectionInsurance = {
   id: "insurance",
   eyebrow: "Trade insurance",
-  heading: "Switch on a cushion before you enter.",
+  heading: "Cover a whole window, not one position.",
   intro:
-    "Choose a tier before placing an eligible trade. If it goes against you, the contract covers part of the loss up to the cap. No hedging, no separate account, no claim form.",
-  columns: ["Tier", "Loss covered", "Cap"],
-  // Mirrors the live product config (system_settings: insurance_coverage_pct
-  // and insurance_max_cap_rules).
+    "FXArtha Shield is bought for a day, a week or a month. It covers a share of everything you lose across that window, up to the plan's cap. No per-trade toggle, no hedging, no claim form.",
+  columns: ["Plan", "Loss covered", "Max payout", "Premium"],
+  // Mirrors the live plan table (insurance_shield_plans).
   rows: [
-    ["Basic", "20%", "up to $100 or 10% of trade size"],
-    ["Advanced", "30%", "up to $300 or 20% of trade size"],
-    ["Pro", "40%", "up to $600 or 30% of trade size"],
-    ["Elite", "50%", "up to $1,000 or 50% of trade size"],
+    ["Daily · Basic", "20%", "$200", "$19"],
+    ["Daily · Plus", "30%", "$500", "$45"],
+    ["Daily · Pro", "40%", "$2,000", "$149"],
+    ["Daily · Elite", "50%", "$5,000", "$399"],
+    ["Weekly · Basic", "20%", "$500", "$39"],
+    ["Weekly · Plus", "30%", "$1,000", "$79"],
+    ["Weekly · Pro", "40%", "$5,000", "$299"],
+    ["Weekly · Elite", "50%", "$10,000", "$699"],
+    ["Monthly · Basic", "20%", "$1,000", "$89"],
+    ["Monthly · Plus", "30%", "$2,500", "$199"],
+    ["Monthly · Pro", "40%", "$7,500", "$549"],
+    ["Monthly · Elite", "50%", "$15,000", "$999"],
   ],
   footnote:
-    "The cap is whichever is smaller — the flat ceiling or the percentage of your trade size. All four tiers are quoted on every eligible trade.",
+    "The premium is charged once, up front, from your main wallet. Cover applies to your cumulative loss over the plan's window and is paid out automatically when it closes.",
 } as const;
 
 export const protectionFaq = {
@@ -45,7 +52,7 @@ export const protectionFaq = {
     {
       question: "What does it cost me?",
       answer:
-        "A per-trade premium in Platform Credits, priced by tier and position size. The exact premium is shown on the ticket before you confirm. If you don't toggle cover on, you pay nothing.",
+        "A single premium for the plan, charged from your main wallet when you buy it — from $19 for a day at Basic to $999 for a month at Elite. The exact figure is shown before you confirm.",
     },
     {
       question: "Which trades qualify?",

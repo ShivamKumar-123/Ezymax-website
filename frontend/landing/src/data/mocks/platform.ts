@@ -22,7 +22,7 @@ export const platformWeb = {
   points: [
     "Live locked vs free balance",
     "Full cost preview on every ticket",
-    "Insurance toggle on eligible trades",
+    "Shield plans covering a period of trading",
   ],
 } as const;
 
