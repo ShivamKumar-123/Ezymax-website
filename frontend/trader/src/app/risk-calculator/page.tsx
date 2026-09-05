@@ -192,6 +192,15 @@ function InputField({
 }
 
 /* ─── Result panel ─── */
+function EmptyResult({ message }: { message: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border-primary/60 bg-bg-secondary/30 flex flex-col items-center justify-center p-6 sm:p-8 min-h-[220px] text-center">
+      <Calculator size={22} className="text-text-tertiary mb-3" />
+      <span className="text-sm text-text-tertiary max-w-[220px]">{message}</span>
+    </div>
+  );
+}
+
 function ResultPanel({ label, value, details }: { label: string; value: string; details?: { l: string; v: string }[] }) {
   return (
     <div className="rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent flex flex-col items-center justify-center p-6 sm:p-8 min-h-[220px]">
@@ -365,11 +374,29 @@ export default function RiskCalculatorPage() {
     return { dailySwap, totalSwap, days };
   }, [lots, daysHeld, tick, pipSize, contractSize]);
 
+  // ── Calculate gating ──────────────────────────────────────────────
+  // The four results above are pure derivations, so they recompute on every
+  // keystroke. Rendering them straight away made the Calculate button look
+  // broken — the number appeared before it was pressed, and a stale figure
+  // sat next to inputs the user had since changed. We therefore remember
+  // WHICH inputs were calculated and only show a result while the form
+  // still matches; touching any field hides it until Calculate is pressed
+  // again. (Signature, not a boolean, so no effect can race the auto-fill.)
+  const inputSignature = (entry: string) =>
+    [tab, selectedAccountId, symbol, side, lots, entry, exitPrice, riskPercent, stopLoss, daysHeld].join('|');
+
+  const [calculatedSig, setCalculatedSig] = useState<string | null>(null);
+  const showResult = calculatedSig !== null && calculatedSig === inputSignature(entryPrice);
+
   const handleCalculate = () => {
-    // Auto-fill entry from live if empty
-    if (!entryPrice && tick) {
-      setEntryPrice((side === 'buy' ? tick.ask : tick.bid).toFixed(digits));
+    // Auto-fill entry from live if empty, and sign against the value we
+    // actually used so the fill itself doesn't invalidate the result.
+    let entry = entryPrice;
+    if (!entry && tick) {
+      entry = (side === 'buy' ? tick.ask : tick.bid).toFixed(digits);
+      setEntryPrice(entry);
     }
+    setCalculatedSig(inputSignature(entry));
   };
 
   return (
@@ -559,7 +586,7 @@ export default function RiskCalculatorPage() {
             {/* RIGHT — Result */}
             <div className="lg:col-span-2 flex items-stretch">
               <div className="flex-1 flex items-center justify-center p-5 sm:p-6">
-                {tab === 'margin' && marginResult && (
+                {showResult && tab === 'margin' && marginResult && (
                   <ResultPanel
                     label="Required Margin"
                     value={`$${marginResult.margin.toFixed(2)}`}
@@ -571,7 +598,7 @@ export default function RiskCalculatorPage() {
                     ]}
                   />
                 )}
-                {tab === 'pnl' && pnlResult && (
+                {showResult && tab === 'pnl' && pnlResult && (
                   <ResultPanel
                     label={pnlResult.pnl >= 0 ? 'Profit' : 'Loss'}
                     value={`${pnlResult.pnl >= 0 ? '+' : '-'}$${Math.abs(pnlResult.pnl).toFixed(2)}`}
@@ -582,7 +609,7 @@ export default function RiskCalculatorPage() {
                     ]}
                   />
                 )}
-                {tab === 'lotsize' && lotResult && (
+                {showResult && tab === 'lotsize' && lotResult && (
                   <ResultPanel
                     label="Recommended Lot Size"
                     value={lotResult.lotSize.toFixed(2)}
@@ -593,7 +620,7 @@ export default function RiskCalculatorPage() {
                     ]}
                   />
                 )}
-                {tab === 'swap' && swapResult && (
+                {showResult && tab === 'swap' && swapResult && (
                   <ResultPanel
                     label="Estimated Swap"
                     value={`$${swapResult.totalSwap.toFixed(2)}`}
@@ -604,10 +631,25 @@ export default function RiskCalculatorPage() {
                     ]}
                   />
                 )}
-                {!marginResult && tab === 'margin' && <ResultPanel label="Result" value="$0.00" />}
-                {!pnlResult && tab === 'pnl' && <ResultPanel label="Result" value="$0.00" />}
-                {!lotResult && tab === 'lotsize' && <ResultPanel label="Result" value="0.00" />}
-                {!swapResult && tab === 'swap' && <ResultPanel label="Result" value="$0.00" />}
+                {/* Nothing to show yet. A "$0.00" panel here read as a
+                    computed answer and was the other half of the confusion —
+                    say what the user needs to do instead. */}
+                {(() => {
+                  const result = tab === 'margin' ? marginResult
+                    : tab === 'pnl' ? pnlResult
+                    : tab === 'lotsize' ? lotResult
+                    : swapResult;
+                  if (showResult && result) return null;
+                  return (
+                    <EmptyResult
+                      message={
+                        !result
+                          ? 'Fill in the fields to calculate'
+                          : 'Press Calculate to see your result'
+                      }
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>
