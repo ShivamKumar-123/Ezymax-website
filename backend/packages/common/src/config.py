@@ -126,7 +126,14 @@ class Settings(BaseSettings):
     # symbols and a Binance bookTicker stream supplies them. Public market-data
     # needs NO API key. Non-crypto (forex/metals/indices/oil) stays on the
     # primary feed. Set false to keep crypto on the primary feed.
-    CRYPTO_FEED_BINANCE: bool = True
+    #
+    # Defaults to FALSE at the client's request: crypto now comes from Infoway
+    # like everything else, and nothing connects to Binance. Infoway opens its
+    # own `crypto` socket for every instrument with category='crypto'
+    # (infoway_feed.py), so no symbol is left without a source. Flip to true
+    # (or set CRYPTO_FEED_BINANCE=true in .env) to put crypto back on Binance
+    # — the BinanceCryptoFeed code is still here and unchanged.
+    CRYPTO_FEED_BINANCE: bool = False
 
     # Corecen LP (primary market data source). When CORECEN_LP_ENABLED=true the
     # market-data service stops running its own Infoway / simulator feed and
