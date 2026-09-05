@@ -231,7 +231,7 @@ function TerminalPositionStaticCard({
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
-            {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+            {fmtPnl(pnl)}
           </div>
           <div className="flex justify-end gap-0.5 mt-1">
             <span className="text-[8px] font-semibold uppercase px-1 py-0.5 rounded bg-bg-secondary text-text-tertiary">
@@ -320,6 +320,19 @@ function TerminalPositionStaticCard({
       </div>
     </div>
   );
+}
+
+/** P&L with enough precision to be visible.
+ *
+ *  A 0.01-lot BTCUSD position is 0.01 BTC (contract size 1), so a $1 move is
+ *  one cent of P&L and a typical tick is a fraction of that. At two decimals
+ *  such a position reads "-$0.00" and looks frozen even while it changes on
+ *  every tick, which is exactly what it looked like. Small figures therefore
+ *  get four decimals; anything a trader would call a real number keeps two. */
+function fmtPnl(v: number): string {
+  const a = Math.abs(v);
+  const dp = a > 0 && a < 0.1 ? 4 : 2;
+  return `${v >= 0 ? '+' : '-'}$${a.toFixed(dp)}`;
 }
 
 export default function PositionsPanel({ variant = 'default' }: PositionsPanelProps) {
@@ -978,7 +991,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           <div className="min-w-0 flex-1 space-y-1.5">
                             {([
                               ['Balance', `$${activeAccount.balance.toFixed(2)}`, undefined],
-                              ['Floating P&L', `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`, totalPnl >= 0 ? 'text-[#ccff00]' : 'text-[#ef5350]'],
+                              ['Floating P&L', fmtPnl(totalPnl), totalPnl >= 0 ? 'text-[#ccff00]' : 'text-[#ef5350]'],
                               ['Equity', `$${equity.toFixed(2)}`, undefined],
                               ['Margin Used', `$${activeAccount.margin_used.toFixed(2)}`, undefined],
                               ['Free Margin', `$${freeMarginCalc.toFixed(2)}`, undefined],
@@ -1248,9 +1261,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <span
                               className="font-mono text-sm font-bold tabular-nums"
                               style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
-                              title={`Floating (gross) ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} · commission -$${charges.toFixed(2)} · net if closed now ${net >= 0 ? '+' : ''}$${net.toFixed(2)}`}
+                              title={`Floating (gross) ${fmtPnl(pnl)} · commission -$${charges.toFixed(2)} · net if closed now ${fmtPnl(net)}`}
                             >
-                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                              {fmtPnl(pnl)}
                             </span>
                           </div>
                           <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
@@ -1380,9 +1393,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td
                               className={clsx(td, 'font-mono font-bold tabular-nums')}
                               style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
-                              title={`Floating (gross) ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} · commission -$${charges.toFixed(2)} · net if closed now ${net >= 0 ? '+' : ''}$${net.toFixed(2)}`}
+                              title={`Floating (gross) ${fmtPnl(pnl)} · commission -$${charges.toFixed(2)} · net if closed now ${fmtPnl(net)}`}
                             >
-                              {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                              {fmtPnl(pnl)}
                             </td>
                             <td className={clsx(td, 'text-[10px]')}>
                               {sltpEdit && sltpEdit.positionId === pos.id ? (
