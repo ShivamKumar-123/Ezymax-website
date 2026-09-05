@@ -125,6 +125,15 @@ class StatsEngine:
         initial_balance = float(account.balance or 0)
         total_profit = sum(float(t.profit or 0) for t in trades)
 
+        # Equity at the start of the trade series: the balance today less
+        # every realised profit inside it. Bound HERE, unconditionally,
+        # because the drawdown curve below needs it on every path — it used
+        # to be assigned only inside the legacy ROI fallback, so any master
+        # priced by the NAV or gross-funding method reached the curve with
+        # the name unbound and the whole recalc raised, leaving that
+        # master's drawdown and Sharpe frozen.
+        starting_equity = initial_balance - total_profit
+
         total_return_pct: float | None = None
         if (master.master_type or "").lower() == "pamm":
             units_q = await db.execute(
@@ -151,7 +160,6 @@ class StatsEngine:
                 total_return_pct = (total_profit / gross_in) * 100
             else:
                 # Legacy fallback: the old balance-based estimate.
-                starting_equity = initial_balance - total_profit
                 if starting_equity > 0:
                     total_return_pct = (total_profit / starting_equity) * 100
                 elif total_profit > 0:
