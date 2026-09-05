@@ -40,6 +40,7 @@ interface SettingsResponse {
   insurance_fee_cap_high_volume?: number | null;
   insurance_high_volume_lots?: number | null;
   insurance_max_cap_rules?: Record<string, [number, number]> | null;
+  insurance_duration_fee_multipliers?: Record<string, number> | null;
   insurance_min_trade_duration_seconds?: number | null;
   insurance_anti_abuse_daily_claims?: number | null;
   insurance_anti_abuse_daily_payout?: number | null;
@@ -78,6 +79,9 @@ const DEFAULTS = {
   high_volume_lots: 5.0,
   caps_usd: { basic: 100, advanced: 300, pro: 600, elite: 1000 } as Record<Tier, number>,
   caps_pct: { basic: 0.10, advanced: 0.20, pro: 0.30, elite: 0.50 } as Record<Tier, number>,
+  // Cover-duration pricing: the ticket's 1 Day / 1 Week / 1 Month chips
+  // multiply the capped fee by these.
+  duration_mult: { '1d': 1.0, '1w': 1.5, '1m': 2.5 } as Record<string, number>,
   min_trade_duration_seconds: 300,
   daily_claims: 2,
   daily_payout: 2000,
@@ -108,6 +112,7 @@ export default function AdminInsurancePage() {
     insurance_base_constant: DEFAULTS.base_constant,
     multipliers: { ...DEFAULTS.multipliers },
     coverage: { ...DEFAULTS.coverage },
+    duration_mult: DEFAULTS.duration_mult,
     insurance_fee_cap: DEFAULTS.fee_cap,
     insurance_fee_cap_high_volume: DEFAULTS.fee_cap_high_volume,
     insurance_high_volume_lots: DEFAULTS.high_volume_lots,
@@ -154,6 +159,11 @@ export default function AdminInsurancePage() {
           advanced: s.insurance_coverage_pct?.advanced ?? DEFAULTS.coverage.advanced,
           pro: s.insurance_coverage_pct?.pro ?? DEFAULTS.coverage.pro,
           elite: s.insurance_coverage_pct?.elite ?? DEFAULTS.coverage.elite,
+        },
+        duration_mult: {
+          '1d': s.insurance_duration_fee_multipliers?.['1d'] ?? DEFAULTS.duration_mult['1d'],
+          '1w': s.insurance_duration_fee_multipliers?.['1w'] ?? DEFAULTS.duration_mult['1w'],
+          '1m': s.insurance_duration_fee_multipliers?.['1m'] ?? DEFAULTS.duration_mult['1m'],
         },
         insurance_fee_cap: s.insurance_fee_cap ?? DEFAULTS.fee_cap,
         insurance_fee_cap_high_volume: s.insurance_fee_cap_high_volume ?? DEFAULTS.fee_cap_high_volume,
@@ -218,6 +228,7 @@ export default function AdminInsurancePage() {
           pro: [form.caps_usd.pro, form.caps_pct.pro],
           elite: [form.caps_usd.elite, form.caps_pct.elite],
         },
+        insurance_duration_fee_multipliers: form.duration_mult,
         insurance_min_trade_duration_seconds: form.insurance_min_trade_duration_seconds,
         insurance_anti_abuse_daily_claims: form.insurance_anti_abuse_daily_claims,
         insurance_anti_abuse_daily_payout: form.insurance_anti_abuse_daily_payout,
@@ -370,6 +381,35 @@ export default function AdminInsurancePage() {
             help="Trades ≥ this lots use the higher cap."
           />
         </Row>
+
+        {/* Cover duration — the 1 Day / 1 Week / 1 Month chips on the order
+            ticket. The capped fee is multiplied by these, which is why a
+            $6.00 day premium shows as $9.00 for a week at 1.5x. */}
+        <Row>
+          <Num
+            label="Cover duration — 1 Day"
+            value={form.duration_mult['1d']}
+            step={0.1}
+            onChange={(v) => setForm((f) => ({ ...f, duration_mult: { ...f.duration_mult, '1d': v } }))}
+            help="Multiplies the capped fee. 1.0 = the base price."
+          />
+          <Num
+            label="Cover duration — 1 Week"
+            value={form.duration_mult['1w']}
+            step={0.1}
+            onChange={(v) => setForm((f) => ({ ...f, duration_mult: { ...f.duration_mult, '1w': v } }))}
+          />
+          <Num
+            label="Cover duration — 1 Month"
+            value={form.duration_mult['1m']}
+            step={0.1}
+            onChange={(v) => setForm((f) => ({ ...f, duration_mult: { ...f.duration_mult, '1m': v } }))}
+          />
+        </Row>
+        <p className="text-[11px] text-text-tertiary -mt-1 mb-4">
+          Ticket premium = <span className="font-mono">min(tier fee, fee cap) × duration multiplier</span>.
+          At a $6 cap that is <span className="font-mono">$6.00 / $9.00 / $15.00</span> for day / week / month.
+        </p>
       </Section>
 
       {/* Per-tier table */}

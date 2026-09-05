@@ -25,6 +25,10 @@ INSURANCE_KEYS = (
     "insurance_coverage_pct",
     "insurance_fee_cap",
     "insurance_fee_cap_high_volume",
+    # Cover-duration pricing: the ticket's 1 Day / 1 Week / 1 Month chips
+    # multiply the capped fee by these. Was missing from the allowlist, so it
+    # silently fell back to code defaults and no admin could change it.
+    "insurance_duration_fee_multipliers",
     "insurance_high_volume_lots",
     "insurance_max_cap_rules",
     "insurance_min_trade_duration_seconds",
