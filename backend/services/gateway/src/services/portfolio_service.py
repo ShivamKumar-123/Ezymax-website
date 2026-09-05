@@ -353,6 +353,17 @@ async def trade_history(
                 float(tp) if tp is not None else None,
             )
 
+    # Which of these trades came from an AI strategy. Open positions already
+    # carry an "AI" tag (via /ai-strategies/position-ids) but history rows had
+    # no way to show it, so a strategy's own trade became indistinguishable
+    # from a hand-placed one the moment it closed. One batched lookup.
+    ai_pos_ids: set = set()
+    if pos_ids:
+        from packages.common.src.models import AIStrategyTrade as _AITrade
+        ai_pos_ids = set((await db.execute(
+            select(_AITrade.position_id).where(_AITrade.position_id.in_(pos_ids))
+        )).scalars().all())
+
     items = []
     for t in trades:
         side_val = t.side.value if hasattr(t.side, 'value') else str(t.side)
@@ -360,7 +371,8 @@ async def trade_history(
             select(CopyTrade).where(CopyTrade.investor_position_id == t.position_id)
         )
         copy_trade = copy_trade_q.scalar_one_or_none()
-        trade_type = "copy_trade" if copy_trade else "self_trade"
+        is_ai = t.position_id in ai_pos_ids
+        trade_type = "copy_trade" if copy_trade else ("ai_strategy" if is_ai else "self_trade")
         sl_val, tp_val = pos_sltp.get(t.position_id, (None, None))
         items.append({
             "id": str(t.id), "symbol": t.instrument.symbol if t.instrument else None,
@@ -382,6 +394,7 @@ async def trade_history(
             # clicked Close themselves.
             "close_reason": _public_close_reason(t.close_reason),
             "trade_type": trade_type,
+            "is_ai": is_ai,
             "opened_at": t.opened_at.isoformat() if t.opened_at else None,
             "close_time": t.closed_at.isoformat() if t.closed_at else None,
         })

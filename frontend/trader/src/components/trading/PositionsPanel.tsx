@@ -8,6 +8,7 @@ import api from '@/lib/api/client';
 import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import { netPnl, sumNetPnl } from '@/lib/pnl';
+import { closeReasonLabel, tradeTypeChip } from '@/lib/closeReason';
 import {
   RefreshCw,
   Download,
@@ -51,6 +52,8 @@ interface ClosedTrade {
   close_time: string;
   close_reason?: string;
   trade_type?: string;
+  /** Trade came from an AI strategy instance (link table join, server-side). */
+  is_ai?: boolean;
 }
 
 type CloseModal = { id: string; symbol: string; side: string; lots: number; closeLots: string; selectedPct: number | null } | null;
@@ -59,29 +62,11 @@ type BulkCloseType = 'all' | 'profit' | 'loss';
 
 type TabId = 'open' | 'pending' | 'history';
 
-/** Maps API close_reason (sl, tp, manual, …) to a short label + badge style for history.
- *  When a trigger price is available (SL/TP hits close at the level itself), the label
- *  includes "@ <price>" so the user sees exactly where it fired. */
-function closeReasonBadge(
-  reason: string | null | undefined,
-  triggerPrice?: number,
-  digits: number = 5,
-): { label: string; className: string } {
-  const r = (reason || 'manual').toLowerCase();
-  const priceStr = triggerPrice != null && Number.isFinite(triggerPrice)
-    ? ` @ ${Number(triggerPrice).toFixed(digits)}`
-    : '';
-  if (r === 'sl' || r === 'stop_loss')
-    return { label: `Stop loss${priceStr}`, className: 'bg-sell/15 text-sell border border-sell/25' };
-  if (r === 'tp' || r === 'take_profit')
-    return { label: `Take profit${priceStr}`, className: 'bg-buy/15 text-buy border border-buy/25' };
-  if (r === 'admin')
-    return { label: 'Admin', className: 'bg-warning/15 text-warning border border-warning/25' };
-  if (r === 'margin' || r === 'liquidation' || r === 'margin_call')
-    return { label: 'Margin', className: 'bg-sell/20 text-sell border border-sell/30' };
-  // Treat copy_close / copy / manual / anything else as manual close for clarity.
-  return { label: 'Manual close', className: 'bg-text-tertiary/15 text-text-tertiary border border-border-glass' };
-}
+/** Maps API close_reason (sl, tp, ai_strategy, stop_out, …) to a label + badge
+ *  style for history. Shared with the portfolio page and the PDF statement so
+ *  a reason can't read one way here and another way there — see
+ *  lib/closeReason.ts for why the old local copy was wrong. */
+const closeReasonBadge = closeReasonLabel;
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
   const esc = (c: string | number) => {
@@ -1092,8 +1077,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <span className="text-sm font-bold text-text-primary">{pos.symbol}</span>
                               {aiPositionIds.has(pos.id) && <AiBadge />}
                               <span className={clsx('text-[10px] font-bold uppercase', pos.side === 'buy' ? 'text-buy' : 'text-sell')}>{pos.side}</span>
-                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
+                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', tradeTypeChip(pos.trade_type, aiPositionIds.has(pos.id)).className)}>
+                                {tradeTypeChip(pos.trade_type, aiPositionIds.has(pos.id)).label}
                               </span>
                             </div>
                             <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
@@ -1186,8 +1171,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               </span>
                             </td>
                             <td className={td}>
-                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {pos.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
+                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', tradeTypeChip(pos.trade_type, aiPositionIds.has(pos.id)).className)}>
+                                {tradeTypeChip(pos.trade_type, aiPositionIds.has(pos.id)).label}
                               </span>
                             </td>
                             <td className={td}>
@@ -1513,6 +1498,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const charges = trade.commission || 0;
                         const net = pnl - charges + (trade.swap || 0);
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
+                        const typeChip = tradeTypeChip(trade.trade_type, trade.is_ai);
                         // Re-use the same Position shape that ShareTradeModal
                         // expects so a closed trade can be shared from this
                         // card too. Open positions had a share button on
@@ -1539,8 +1525,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-text-primary">{trade.symbol}</span>
                                 <span className={clsx('text-[10px] font-bold uppercase', trade.side === 'buy' ? 'text-buy' : 'text-sell')}>{trade.side}</span>
-                                <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                  {trade.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
+                                <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', typeChip.className)}>
+                                  {typeChip.label}
                                 </span>
                               </div>
                               <div className="inline-flex items-center gap-2">
@@ -1616,12 +1602,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const charges = trade.commission || 0;
                         const net = pnl - charges + (trade.swap || 0);
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
+                        const typeChip = tradeTypeChip(trade.trade_type, trade.is_ai);
                         return (
                           <tr key={trade.id} className={tbodyRowClass}>
                             <td className={clsx(td, 'font-bold')}>{trade.symbol}</td>
                             <td className={td}>
-                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', trade.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
-                                {trade.trade_type === 'copy_trade' ? 'Copy' : 'Manual'}
+                              <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', typeChip.className)}>
+                                {typeChip.label}
                               </span>
                             </td>
                             <td className={td}>

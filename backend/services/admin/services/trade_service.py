@@ -224,6 +224,18 @@ async def list_trade_history(
     result = await db.execute(query)
     trades = result.scalars().all()
 
+    # AI-originated positions on this page, in one batched lookup, so the
+    # admin can tell a strategy's trade from a hand-placed one. Previously
+    # the history view rendered every non-copy trade as "Manual".
+    ai_pos_ids: set = set()
+    _pos_ids = [t.position_id for t in trades if t.position_id is not None]
+    if _pos_ids:
+        from packages.common.src.models import AIStrategyTrade
+        ai_pos_ids = set((await db.execute(
+            select(AIStrategyTrade.position_id)
+            .where(AIStrategyTrade.position_id.in_(_pos_ids))
+        )).scalars().all())
+
     items = []
     for t in trades:
         inst_q = await db.execute(select(Instrument).where(Instrument.id == t.instrument_id))
@@ -268,6 +280,7 @@ async def list_trade_history(
             commission=float(t.commission or 0),
             profit=float(t.profit or 0),
             close_reason=getattr(t, 'close_reason', None) or "manual",
+            is_ai=t.position_id in ai_pos_ids,
             opened_at=t.opened_at,
             closed_at=t.closed_at,
             user_email=user_email,

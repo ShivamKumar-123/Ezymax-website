@@ -25,6 +25,8 @@ import api from '@/lib/api/client';
 
 import { getDigits } from '@/lib/utils';
 
+import { closeReasonLabel } from '@/lib/closeReason';
+
 import { FileDown } from 'lucide-react';
 
 import { downloadTradeStatementPdf } from '@/lib/pdf/tradeStatementPdf';
@@ -146,26 +148,16 @@ function fmt(n: number) {
 
 }
 
+// Thin adapter over the shared mapping in lib/closeReason.ts. The local
+// copy this replaces ended in a catch-all that reported every unrecognised
+// reason — ai_strategy, algo_close, stop_out — as "Manual close".
 function tradeExitLabel(
   reason: string | null | undefined,
   triggerPrice?: number,
   digits: number = 5,
 ): { text: string; className: string } {
-
-  const r = (reason || 'manual').toLowerCase();
-  const priceStr = triggerPrice != null && Number.isFinite(triggerPrice)
-    ? ` @ ${Number(triggerPrice).toFixed(digits)}`
-    : '';
-
-  if (r === 'sl') return { text: `Stop loss (SL)${priceStr}`, className: 'text-sell bg-sell/10 border-sell/20' };
-
-  if (r === 'tp') return { text: `Take profit (TP)${priceStr}`, className: 'text-buy bg-buy/10 border-buy/20' };
-
-  if (r === 'admin') return { text: 'Admin', className: 'text-warning bg-warning/10 border-warning/20' };
-
-  // copy_close / copy / manual / anything else → show as Manual close.
-  return { text: 'Manual close', className: 'text-text-tertiary bg-bg-hover border-border-glass' };
-
+  const { label, className } = closeReasonLabel(reason, triggerPrice, digits);
+  return { text: label, className };
 }
 
 

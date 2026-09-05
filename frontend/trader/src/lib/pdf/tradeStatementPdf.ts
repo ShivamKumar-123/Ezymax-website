@@ -3,6 +3,8 @@
  * Uses dynamic import so jspdf is not loaded until export.
  */
 
+import { closeReasonInfo } from '@/lib/closeReason';
+
 export type TradeStatementRow = {
   close_time?: string | null;
   open_time?: string | null;
@@ -29,14 +31,10 @@ function fmtUsd(n: number): string {
   }).format(n);
 }
 
+// Shared mapping — the statement must name an exit exactly the way the
+// portfolio and terminal do, or a downloaded PDF contradicts the screen.
 function exitReasonText(reason: string | null | undefined): string {
-  const r = (reason || 'manual').toLowerCase();
-  if (r === 'sl' || r === 'stop_loss') return 'Stop loss';
-  if (r === 'tp' || r === 'take_profit') return 'Take profit';
-  if (r === 'manual') return 'Manual close';
-  if (r === 'copy_close' || r === 'copy') return 'Copy close';
-  if (r === 'admin') return 'Admin';
-  return r.replace(/_/g, ' ');
+  return closeReasonInfo(reason).label;
 }
 
 function priceDigits(symbol: string): number {

@@ -226,6 +226,10 @@ class TradeHistoryOut(BaseModel):
     commission: float = 0
     profit: float
     close_reason: Optional[str] = "manual"
+    # True when the position was opened by an AI strategy instance
+    # (ai_strategy_trades link table). Without it the admin history view
+    # had no way to tell a strategy's trade from a hand-placed one.
+    is_ai: bool = False
     opened_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     user_email: Optional[str] = None

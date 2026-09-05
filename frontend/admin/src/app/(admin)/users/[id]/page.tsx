@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { closeReasonInfo, CLOSE_REASON_CLASS } from '@/lib/closeReason';
 import { formatNumber, formatDateTime } from '@/lib/formatters';
 import { downloadReportPdf, fmtMoney, fmtWhen } from '@/lib/pdf';
 import {
@@ -478,7 +479,10 @@ export default function UserDetailPage() {
               <span className={cn('font-mono tabular-nums', t.stop_loss != null ? 'text-sell' : 'text-text-tertiary')}>{t.stop_loss ?? '—'}</span>,
               <span className={cn('font-mono tabular-nums', t.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>{t.take_profit ?? '—'}</span>,
               <span className={cn('font-mono tabular-nums font-semibold', t.profit >= 0 ? 'text-success' : 'text-danger')}>{t.profit >= 0 ? '+' : ''}${fmt(t.profit)}</span>,
-              <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold capitalize', typeColor(t.close_reason || 'manual'))}>{t.close_reason || 'manual'}</span>,
+              /* Was rendering the raw DB value capitalized ("Ai_strategy",
+                 "Stop_out"). Shared mapping gives the same names the trades
+                 table and the trader's own history use. */
+              <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold', CLOSE_REASON_CLASS[closeReasonInfo(t.close_reason).tone])}>{closeReasonInfo(t.close_reason).label}</span>,
             ])}
           />
         </>

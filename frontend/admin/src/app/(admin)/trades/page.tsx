@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
+import { closeReasonInfo, CLOSE_REASON_CLASS, CLOSE_REASON_CLASS_BORDERED } from '@/lib/closeReason';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import {
@@ -89,6 +90,7 @@ interface ClosedTrade {
   swap?: number;
   profit: number;
   close_reason: string;
+  is_ai?: boolean;
   opened_at?: string | null;
   closed_at: string;
 }
@@ -778,9 +780,11 @@ export default function TradesPage() {
                         return true;
                       })
                       .map(t => {
-                      const reason = t.close_reason || 'manual';
-                      const reasonLabel = reason === 'sl' ? 'SL' : reason === 'tp' ? 'TP' : reason === 'admin' ? 'Admin' : 'Manual';
-                      const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger' : reason === 'tp' ? 'bg-success/15 text-success' : reason === 'admin' ? 'bg-warning/15 text-warning' : 'bg-text-tertiary/15 text-text-tertiary';
+                      // Shared mapping — the old ternary here reported
+                      // ai_strategy / algo_close / stop_out as "Manual".
+                      const reasonInfo = closeReasonInfo(t.close_reason);
+                      const reasonLabel = reasonInfo.short;
+                      const reasonColor = CLOSE_REASON_CLASS[reasonInfo.tone];
                       // SL/TP cells: dim em-dash when not set, sell color
                       // for SL, buy color for TP — visually mirrors the
                       // Open Positions tab so admins read both views the
@@ -796,7 +800,17 @@ export default function TradesPage() {
                       >
                         <td className="px-4 py-2.5 text-xxs text-text-tertiary font-mono tabular-nums">{formatDate(t.closed_at)}</td>
                         <td className="px-4 py-2.5 text-xs text-text-primary">{t.user_email || t.account_number || '—'}</td>
-                        <td className="px-4 py-2.5 text-xs text-text-primary font-medium">{t.instrument_symbol}</td>
+                        <td className="px-4 py-2.5 text-xs text-text-primary font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {t.instrument_symbol}
+                            {/* Origin tag: without it a strategy's trade was
+                                indistinguishable from a hand-placed one once
+                                closed. Backed by the ai_strategy_trades join. */}
+                            {t.is_ai && (
+                              <span className="rounded px-1 text-xxs font-semibold bg-violet-500/15 text-violet-500 leading-4">AI</span>
+                            )}
+                          </span>
+                        </td>
                         <td className="px-4 py-2.5"><span className={cn('text-xs font-medium', t.side?.toLowerCase() === 'buy' ? 'text-buy' : 'text-sell')}>{t.side?.toUpperCase()}</span></td>
                         <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">{t.lots}</td>
                         <td className="px-4 py-2.5 text-xs text-text-secondary text-right font-mono tabular-nums">{t.open_price}</td>
@@ -1193,9 +1207,9 @@ export default function TradesPage() {
         {selectedTrade && (() => {
           const t = selectedTrade;
           const isBuy = t.side?.toLowerCase() === 'buy';
-          const reason = t.close_reason || 'manual';
-          const reasonLabel = reason === 'sl' ? 'Stop Loss' : reason === 'tp' ? 'Take Profit' : reason === 'admin' ? 'Admin closed' : 'Manual close';
-          const reasonColor = reason === 'sl' ? 'bg-danger/15 text-danger border-danger/30' : reason === 'tp' ? 'bg-success/15 text-success border-success/30' : reason === 'admin' ? 'bg-warning/15 text-warning border-warning/30' : 'bg-text-tertiary/15 text-text-tertiary border-text-tertiary/30';
+          const reasonInfo = closeReasonInfo(t.close_reason);
+          const reasonLabel = reasonInfo.label;
+          const reasonColor = CLOSE_REASON_CLASS_BORDERED[reasonInfo.tone];
           const profitPositive = (t.profit || 0) >= 0;
           // Duration calc — when we have both timestamps, render a
           // friendly "5m 23s" style string. Falls back to em-dash.
