@@ -609,28 +609,6 @@ export default function OrderPanel() {
               </div>
             </div>
 
-            {/* Lot slider — the track sits inside a pill so it reads as a
-                control rather than a hairline, as in the reference. */}
-            <div>
-              <div className="flex items-center rounded-full border border-border-primary bg-bg-base px-3 py-0.5">
-              <input
-                type="range"
-                min={minLots}
-                max={maxLots}
-                step={0.01}
-                value={Math.min(Math.max(lotsNum || minLots, minLots), maxLots)}
-                onChange={(e) => setLots(parseFloat(e.target.value).toFixed(2))}
-                aria-label="Volume"
-                className="crx-range w-full"
-                style={{ '--pct': `${Math.min(100, Math.max(0, ((lotsNum - minLots) / (maxLots - minLots)) * 100))}%` } as React.CSSProperties}
-              />
-              </div>
-              <div className="mt-1 flex items-center justify-between px-1 text-[11px] text-text-tertiary">
-                <span>0</span>
-                <span>Max open {maxLots.toFixed(2)} Lots</span>
-              </div>
-            </div>
-
             {/* TP / SL */}
             <label data-tour={TOUR_TARGETS.ORDER_SL_TP} className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-text-primary">
               <input

@@ -351,11 +351,30 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   // Account-summary popover (Balance / Equity / Margin …) — closes on an
   // outside click or Escape like the other menus in this panel.
   const [acctSummaryOpen, setAcctSummaryOpen] = useState(false);
-  const acctSummaryRef = useRef<HTMLDivElement>(null);
+  const acctTriggerRef = useRef<HTMLButtonElement>(null);
+  const acctPanelRef = useRef<HTMLDivElement>(null);
+  // The toolbar sits inside a clipping context, so an absolutely-positioned
+  // panel was cut off and never appeared. Portal it to the body at fixed
+  // coordinates instead — the same trick the Close All menu already uses.
+  const [acctSummaryPos, setAcctSummaryPos] = useState<{ bottom: number; right: number } | null>(null);
+  const openAcctSummary = () => {
+    if (acctSummaryOpen) { setAcctSummaryOpen(false); return; }
+    const r = acctTriggerRef.current?.getBoundingClientRect();
+    if (r) {
+      setAcctSummaryPos({
+        // Opens upward: this row lives at the bottom of the viewport.
+        bottom: Math.max(8, window.innerHeight - r.top + 8),
+        right: Math.max(8, window.innerWidth - r.right),
+      });
+    }
+    setAcctSummaryOpen(true);
+  };
   useEffect(() => {
     if (!acctSummaryOpen) return;
     const onDown = (e: MouseEvent) => {
-      if (!acctSummaryRef.current?.contains(e.target as Node)) setAcctSummaryOpen(false);
+      const t = e.target as Node;
+      if (acctTriggerRef.current?.contains(t) || acctPanelRef.current?.contains(t)) return;
+      setAcctSummaryOpen(false);
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAcctSummaryOpen(false); };
     document.addEventListener('mousedown', onDown);
@@ -919,12 +938,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   opens a popover (upward: this row sits at the bottom of the
                   viewport). */}
               <div data-tour={TOUR_TARGETS.POSITIONS_BALANCE} className="flex items-center gap-2 shrink-0">
-                <div className="relative shrink-0" ref={acctSummaryRef}>
+                <div className="relative shrink-0">
                 {activeAccount ? (
                   <>
                     <button
+                      ref={acctTriggerRef}
                       type="button"
-                      onClick={() => setAcctSummaryOpen((o) => !o)}
+                      onClick={openAcctSummary}
                       aria-haspopup="dialog"
                       aria-expanded={acctSummaryOpen}
                       title="Account summary"
@@ -946,11 +966,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       />
                     </button>
 
-                    {acctSummaryOpen && (
+                    {acctSummaryOpen && acctSummaryPos && typeof document !== 'undefined' && createPortal(
                       <div
+                        ref={acctPanelRef}
                         role="dialog"
                         aria-label="Account summary"
-                        className="absolute bottom-full right-0 z-[70] mb-2 w-[290px] rounded-xl border border-border-primary bg-bg-secondary p-3 shadow-2xl"
+                        className="fixed w-[290px] rounded-xl border border-border-primary bg-bg-secondary p-3 shadow-2xl"
+                        style={{ bottom: acctSummaryPos.bottom, right: acctSummaryPos.right, zIndex: 2147483646 }}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1 space-y-1.5">
@@ -978,7 +1000,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             />
                           )}
                         </div>
-                      </div>
+                      </div>,
+                      document.body,
                     )}
                   </>
                 ) : null}

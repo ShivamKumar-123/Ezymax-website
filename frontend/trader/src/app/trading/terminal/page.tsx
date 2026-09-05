@@ -19,7 +19,6 @@ import InstrumentsTable from '@/components/trading/InstrumentsTable';
 import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import OrderPanel from '@/components/trading/OrderPanel';
 import RiskCalculator from '@/components/trading/RiskCalculator';
-import { ChartTradeWidget } from '@/components/charts/ChartTradeWidget';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
@@ -776,14 +775,6 @@ export default function TradingTerminalPage() {
               <ChartErrorBoundary>
                 <TradingViewChart onRequestFullscreen={enterFullscreen} />
               </ChartErrorBoundary>
-              {/* On-chart quick trade — live SELL (bid) / lot / BUY (ask).
-                  top-24 clears BOTH TV's toolbar and the OHLC legend under it;
-                  at top-2 it sat on the Indicators button. */}
-              {!chartExpanded && (
-                <div className="pointer-events-none absolute left-2 top-24 z-10">
-                  <ChartTradeWidget />
-                </div>
-              )}
             </div>
           </div>
 

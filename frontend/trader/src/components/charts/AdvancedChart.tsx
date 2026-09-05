@@ -797,26 +797,6 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
           the recovery path for a stalled datafeed is still one click away
           without a pill sitting on the candles. */}
 
-      {/* Broker-quote overlay — the actual executable bid/ask (the chart plots
-          our broker candles, but this anchors the user to the live tick). */}
-      {/* right-20 keeps this clear of the price scale: the axis and its
-          current-price label occupy roughly the right 70px, so at right-3 the
-          two overlapped whenever price sat near the top of the range. */}
-      <div
-        /* Hidden below md (768px — the same width the terminal switches to its
-           phone layout at). The pill is ~240px wide, so on a phone-width chart
-           it lands straight on top of the OHLC legend; and the phone layout
-           already shows this exact bid/ask on its SELL / BUY bar, so nothing
-           is lost by dropping it there. */
-        className="pointer-events-none absolute top-14 right-20 z-10 hidden md:flex items-center gap-2 rounded-md border border-border-primary/70 bg-bg-secondary/95 px-2.5 py-1 text-[11px] shadow-md backdrop-blur"
-        aria-label="Broker quote — actual execution price"
-      >
-        <span className="text-text-tertiary uppercase tracking-wider">Broker</span>
-        <span className="text-sell font-mono tabular-nums">Bid {tick?.bid != null ? <AnimatedPrice value={tick.bid} digits={digits} flash={false} /> : fmt(tick?.bid)}</span>
-        <span className="text-text-tertiary">·</span>
-        <span className="text-buy font-mono tabular-nums">Ask {tick?.ask != null ? <AnimatedPrice value={tick.ask} digits={digits} flash={false} /> : fmt(tick?.ask)}</span>
-      </div>
-
       {/* Confirm / input modal for the on-chart SL / TP / close buttons. */}
       {dialog && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 p-0" style={{ zIndex: 2147483646, isolation: 'isolate' }}>
