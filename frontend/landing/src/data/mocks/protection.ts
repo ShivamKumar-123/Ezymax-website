@@ -57,12 +57,12 @@ export const protectionFaq = {
     {
       question: "Which trades qualify?",
       answer:
-        "Eligible instruments carry an insurable badge on the ticket. The eligibility rules — instrument list, minimum hold time, maximum position size and insured trades per day — are published in-app and applied automatically.",
+        "Every trade you open and close in loss while the plan is running, on any instrument. Three rules keep it honest: the trade must be opened after the plan starts, held at least five minutes, and not hedged by an open opposite position on the same instrument. Nothing to tick — it is applied automatically at close.",
     },
     {
       question: "When does it pay out?",
       answer:
-        "Automatically, at the moment the trade closes, in the same settlement transaction as your P&L. There is no claim form and nothing to file.",
+        "As you go. Each qualifying loss is added to your running total for the window and the cover on it is credited to your main wallet in the same transaction as the close — until the plan's maximum payout is reached. There is no claim form and nothing to file.",
     },
   ],
 } as const;

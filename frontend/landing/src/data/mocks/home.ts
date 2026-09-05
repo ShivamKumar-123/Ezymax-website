@@ -195,7 +195,7 @@ export const tradeInsurance = {
   eyebrow: "Trade insurance",
   heading: "Cover a week of losses, not just one trade.",
   intro:
-    "FXArtha Shield is a plan you buy for a day, a week or a month. It covers a share of everything you lose across that whole window — no per-trade toggle, no claim form, and the payout is worked out automatically when the window closes.",
+    "FXArtha Shield is a plan you buy for a day, a week or a month. It covers a share of everything you lose across that whole window — no per-trade toggle, no claim form, and the cover lands in your wallet as the losses happen.",
   // Mirrors the live plan table (insurance_shield_plans). Tiers are the same
   // four at every duration; only the cap and the premium change.
   tiers: [
@@ -226,7 +226,7 @@ export const tradeInsurance = {
     {
       question: "When do I get paid?",
       answer:
-        "Automatically at the end of the plan's window. Your covered share of the period's net loss is credited up to the plan's cap — there is nothing to file and nothing to chase.",
+        "As you go. Each qualifying loss is added to your running total for the window and your covered share of it is credited to your main wallet the moment the trade closes, up to the plan's cap — there is nothing to file and nothing to chase.",
     },
   ],
 } as const;
