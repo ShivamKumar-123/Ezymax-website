@@ -241,12 +241,45 @@ export default function RiskCalculator() {
 
   // ── Swap ──
   const swapResult = useMemo(() => {
+    // Priced off the entry field (live only as a fallback) like every other
+    // tab — reading `tick` directly made the figure drift on each incoming
+    // tick after Calculate, with no input having changed.
+    const ep = parseFloat(entryPrice) || livePrice;
     const lot = parseFloat(lots) || 0;
     const days = parseInt(daysHeld) || 1;
-    if (!lot) return null;
-    const dailySwap = lot * 0.5 * ((pipSize / (tick?.bid || 1)) * contractSize);
+    if (!lot || !ep) return null;
+    const dailySwap = lot * 0.5 * ((pipSize / ep) * contractSize);
     return { dailySwap, totalSwap: dailySwap * days, days };
-  }, [lots, daysHeld, tick, pipSize, contractSize]);
+  }, [lots, daysHeld, entryPrice, livePrice, pipSize, contractSize]);
+
+  // The result panel used to render straight off the useMemos, so a figure
+  // appeared while the user was still typing and Calculate did nothing but
+  // auto-fill the entry price. We remember WHICH inputs were calculated and
+  // show the result only while the form still matches them; touching any
+  // field hides it until Calculate is pressed again. (A signature rather
+  // than a boolean, so the auto-fill can't race its own invalidation.)
+  // Mirrors /risk-calculator — keep the two in step.
+  const inputSignature = (entry: string) =>
+    [tab, selectedAccountId, symbol, side, lots, entry, exitPrice, riskPercent, stopLoss, daysHeld].join('|');
+
+  const [calculatedSig, setCalculatedSig] = useState<string | null>(null);
+  const showResult = calculatedSig !== null && calculatedSig === inputSignature(entryPrice);
+
+  const handleCalculate = () => {
+    // Sign against the entry we actually used, not the one in state, so the
+    // fill below doesn't immediately invalidate the result it just produced.
+    let entry = entryPrice;
+    if (!entry && livePrice > 0) {
+      entry = livePrice.toFixed(digits);
+      setEntryPrice(entry);
+    }
+    setCalculatedSig(inputSignature(entry));
+  };
+
+  const activeResult =
+    tab === 'margin' ? marginResult :
+    tab === 'pnl' ? pnlResult :
+    tab === 'lotsize' ? lotResult : swapResult;
 
   // Current result
   const resultLabel =
@@ -280,6 +313,7 @@ export default function RiskCalculator() {
     ] : [];
 
   const handleReset = () => {
+    setCalculatedSig(null);
     setEntryPrice('');
     setExitPrice('');
     setLots('0.01');
@@ -432,29 +466,38 @@ export default function RiskCalculator() {
           {/* Calculate button */}
           <button
             type="button"
-            onClick={() => {
-              if (!entryPrice && livePrice > 0) setEntryPrice(livePrice.toFixed(digits));
-            }}
+            onClick={handleCalculate}
             className="w-full rounded-xl bg-accent py-2.5 text-[15px] font-semibold text-white transition-[transform,opacity] hover:opacity-90 active:scale-[0.98]"
           >
             Calculate
           </button>
 
-          {/* ─── Result panel ─── */}
-          <div className="rounded-2xl p-4 text-white ring-1 ring-[#E94E1B]/35 shadow-[0_14px_40px_-12px_rgba(233,78,27,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[linear-gradient(165deg,#E94E1B_0%,#7a2a0e_28%,#1a0b06_62%,#0a0a0a_100%)]">
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/70">{resultLabel}</p>
-            <p className="mt-1 text-[26px] font-bold leading-none tabular-nums">{resultValue}</p>
-            {resultDetails.length > 0 && (
-              <dl className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[12px] leading-none">
-                {resultDetails.map((d) => (
-                  <div key={d.l} className="flex items-center justify-between gap-3 py-[3px]">
-                    <dt className="text-white/60">{d.l}</dt>
-                    <dd className="font-medium tabular-nums text-white">{d.v}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </div>
+          {/* ─── Result panel ─── shown only for inputs that were actually
+              calculated. Otherwise a placeholder that says what to do next,
+              never a $0.00 that reads like a real answer. */}
+          {showResult && activeResult ? (
+            <div className="rounded-2xl p-4 text-white ring-1 ring-[#E94E1B]/35 shadow-[0_14px_40px_-12px_rgba(233,78,27,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[linear-gradient(165deg,#E94E1B_0%,#7a2a0e_28%,#1a0b06_62%,#0a0a0a_100%)]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/70">{resultLabel}</p>
+              <p className="mt-1 text-[26px] font-bold leading-none tabular-nums">{resultValue}</p>
+              {resultDetails.length > 0 && (
+                <dl className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[12px] leading-none">
+                  {resultDetails.map((d) => (
+                    <div key={d.l} className="flex items-center justify-between gap-3 py-[3px]">
+                      <dt className="text-white/60">{d.l}</dt>
+                      <dd className="font-medium tabular-nums text-white">{d.v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-primary/60 bg-bg-secondary/30 px-4 py-6 text-center">
+              <Calculator size={20} className="mb-2 text-text-tertiary" />
+              <span className="max-w-[200px] text-[12px] leading-relaxed text-text-tertiary">
+                {activeResult ? 'Press Calculate to see your result' : 'Fill in the fields to calculate'}
+              </span>
+            </div>
+          )}
 
           <p className="pb-1 text-center text-[10px] leading-relaxed text-text-tertiary">
             Approximate values — may vary with market conditions.
