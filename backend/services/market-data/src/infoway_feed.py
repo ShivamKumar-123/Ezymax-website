@@ -26,8 +26,13 @@ INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
 # the provider's push subscription silently dies — so at the next market open
 # nothing streams and nobody reconnects (the classic zombie-subscription bug).
 # If no DATA frame (not a heartbeat) arrives for this long, force-reconnect.
-SILENT_RECONNECT_SEC = 900       # 15 min
-SILENCE_CHECK_SEC = 60           # watchdog cadence
+# Per-business, because "silent" means different things per market. Crypto
+# trades 24/7 — two minutes without a frame is a dead subscription. The
+# `common` book (forex, metals, indices) is legitimately silent all weekend and
+# every night, so it keeps the long fuse.
+SILENT_RECONNECT_SEC = {"crypto": 120, "common": 900}
+SILENT_RECONNECT_DEFAULT = 900   # 15 min
+SILENCE_CHECK_SEC = 30           # watchdog cadence
 BACKFILL_CLAMP_SEC = 6 * 3600    # cap the reconnect blind-window backfill at 6h
 BACKFILL_TFS = ("1m", "5m")      # higher TFs heal via history serving / reconcile
 BACKFILL_SPACING = 1.0           # space REST calls ≥1s
@@ -299,10 +304,19 @@ class InfowayFeed:
             hb_task: Optional[asyncio.Task] = None
             try:
                 logger.info("Infoway [%s] connecting…", business)
+                # No protocol-level keepalive. Infoway answers our app-level
+                # heartbeat (code 10010) but does not reliably PONG a WebSocket
+                # ping frame, so the library's keepalive was tearing down
+                # perfectly healthy sockets every few minutes with
+                # "sent 1011 (internal error) keepalive ping timeout" — on the
+                # crypto business that meant a reconnect + resubscribe gap
+                # roughly every 2-4 minutes, all day. Liveness is the silence
+                # watchdog's job instead: it recycles a socket only when actual
+                # DATA stops, which is the condition we care about.
                 async with websockets.connect(
                     url,
-                    ping_interval=20,
-                    ping_timeout=25,
+                    ping_interval=None,
+                    ping_timeout=None,
                     close_timeout=10,
                 ) as ws:
                     sub = json.dumps(
@@ -405,10 +419,11 @@ class InfowayFeed:
                 if last <= 0:
                     continue  # never received data yet (boot / market closed)
                 silent = now - last
-                if silent > SILENT_RECONNECT_SEC:
+                limit = SILENT_RECONNECT_SEC.get(business, SILENT_RECONNECT_DEFAULT)
+                if silent > limit:
                     logger.warning(
                         "Infoway [%s] DATA-silent %.0fs (>%ds) — forcing reconnect",
-                        business, silent, SILENT_RECONNECT_SEC,
+                        business, silent, limit,
                     )
                     with contextlib.suppress(Exception):
                         await ws.close()
