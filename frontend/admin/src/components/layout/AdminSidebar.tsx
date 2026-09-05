@@ -72,7 +72,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Audit logs', href: '/audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Admin audit logs', href: '/admin-audit-logs', icon: ScrollText, perm: 'audit_logs.view' },
   { label: 'Bonus', href: '/bonus', icon: Gift, perm: 'bonus.view' },
-  { label: 'Trade Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
+  { label: 'Shield Insurance', href: '/insurance', icon: Shield, perm: 'config.view' },
   { label: 'FXA Coins', href: '/fxa-coins', icon: Coins, perm: '*' },
   { label: 'Coin Tasks', href: '/rewards-tasks', icon: CheckSquare, perm: '*' },
   { label: 'Reward Store', href: '/reward-store', icon: Store, perm: '*' },

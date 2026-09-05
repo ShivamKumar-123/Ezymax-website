@@ -14,8 +14,6 @@ import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
-import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
-import { insuranceApi, type InsuranceDuration, type InsuranceTier } from '@/lib/api/insurance';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
 
 type OrderSide = 'buy' | 'sell';
@@ -82,7 +80,6 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [symbolPickerOpen, setSymbolPickerOpen] = useState(false);
-  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; duration: InsuranceDuration; fee: number } | null>(null);
   const [wsStatus, setWsStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -374,7 +371,6 @@ export default function OrderPanel() {
       rollback = () => setPositions(prev);
     }
 
-    const insuranceChoice = insuranceSelection;
 
     api.post<{ id: string; position_id: string | null }>('/orders/', {
       account_id: activeAccount.id,
@@ -401,18 +397,6 @@ export default function OrderPanel() {
       // unmount/remount flicker. Swapping the id here would just churn
       // the key between this microtask and the next poll.
 
-      // Insurance — only for market orders that immediately produced a position_id.
-      if (insuranceChoice && resp?.position_id) {
-        try {
-          await insuranceApi.activate(resp.position_id, insuranceChoice.tier, insuranceChoice.duration);
-          toast.success(`Insured ($${insuranceChoice.fee.toFixed(2)} fee)`);
-        } catch (e: any) {
-          const detail = e?.response?.data?.detail || e?.message || 'insurance_failed';
-          toast.error(`Insurance not activated: ${detail}`);
-        }
-      }
-      // Reset the picker so the next order starts fresh.
-      setInsuranceSelection(null);
       // refreshAccount updates balance/margin numbers. refreshPositions
       // would tear down + rebuild the row we just swapped — skip it,
       // the periodic poll already syncs server-side fields without
@@ -438,7 +422,7 @@ export default function OrderPanel() {
      an angled Sell / spread / Buy strip, a day-change bar, flat order-type
      tabs, card-style price + volume inputs, a lot slider, one TP/SL
      checkbox, then Margin and Assets readouts. FXArtha's own Fully Funded
-     and Trade Insurance controls are kept, placed where they fit.
+     control is kept, placed where it fits.
      The dashboard layout below is untouched.
      ══════════════════════════════════════════════════════════════════ */
   if (isTradingTerminal) {
@@ -721,19 +705,6 @@ export default function OrderPanel() {
               </span>
             </label>
 
-            {/* Trade Insurance — FXArtha-only, market orders only. */}
-            {orderTab === 'market' && activeAccount && (
-              <InsuranceTierPicker
-                accountId={activeAccount.id}
-                symbol={selectedSymbol}
-                side={side}
-                lots={lotsNum}
-                leverage={activeAccount.leverage || 100}
-                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
-                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
-                onSelect={setInsuranceSelection}
-              />
-            )}
             </div>
           </div>
         </div>
@@ -1225,21 +1196,6 @@ export default function OrderPanel() {
             </div>
           )}
 
-          {/* Trade Insurance — only on market orders */}
-          {orderTab === 'market' && activeAccount && (
-            <div className="pt-2">
-              <InsuranceTierPicker
-                accountId={activeAccount.id}
-                symbol={selectedSymbol}
-                side={side}
-                lots={lotsNum}
-                leverage={activeAccount.leverage || 100}
-                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
-                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
-                onSelect={setInsuranceSelection}
-              />
-            </div>
-          )}
 
           {!isTradingTerminal ? (
             <>
