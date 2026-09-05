@@ -26,13 +26,14 @@ INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
 # the provider's push subscription silently dies — so at the next market open
 # nothing streams and nobody reconnects (the classic zombie-subscription bug).
 # If no DATA frame (not a heartbeat) arrives for this long, force-reconnect.
-# Per-business, because "silent" means different things per market. Crypto
-# trades 24/7 — two minutes without a frame is a dead subscription. The
-# `common` book (forex, metals, indices) is legitimately silent all weekend and
-# every night, so it keeps the long fuse.
-SILENT_RECONNECT_SEC = {"crypto": 120, "common": 900}
+# Per-business, because "silent" means different things per market. The crypto
+# book streams ~10 frames/s around the clock, so 30s of total silence is already
+# a dead subscription and not a quiet tape — measured, not guessed. The `common`
+# book (forex, metals, indices) is legitimately silent every night and all
+# weekend, so it keeps the long fuse.
+SILENT_RECONNECT_SEC = {"crypto": 30, "common": 900}
 SILENT_RECONNECT_DEFAULT = 900   # 15 min
-SILENCE_CHECK_SEC = 30           # watchdog cadence
+SILENCE_CHECK_SEC = 10           # watchdog cadence — bounds crypto recovery at ~40s
 BACKFILL_CLAMP_SEC = 6 * 3600    # cap the reconnect blind-window backfill at 6h
 BACKFILL_TFS = ("1m", "5m")      # higher TFs heal via history serving / reconcile
 BACKFILL_SPACING = 1.0           # space REST calls ≥1s
