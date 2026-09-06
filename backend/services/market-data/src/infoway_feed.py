@@ -26,14 +26,21 @@ INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
 # the provider's push subscription silently dies — so at the next market open
 # nothing streams and nobody reconnects (the classic zombie-subscription bug).
 # If no DATA frame (not a heartbeat) arrives for this long, force-reconnect.
-# Per-business, because "silent" means different things per market. The crypto
-# book streams ~10 frames/s around the clock, so 30s of total silence is already
-# a dead subscription and not a quiet tape — measured, not guessed. The `common`
-# book (forex, metals, indices) is legitimately silent every night and all
+# Per-business, because "silent" means different things per market.
+#
+# Crypto: Infoway's crypto socket stops pushing every 2-3 minutes with the
+# connection still open, and it never resumes on that socket — measured on a
+# dedicated connection carrying nothing else, so this is theirs, not contention
+# on our side. Reconnecting is the only remedy we have, which makes detection
+# latency the entire cost of the fault. The stream runs at 13-100 frames/s
+# around the clock, so 10s of total silence is hundreds of missing frames and
+# cannot be a quiet tape.
+#
+# Common (forex, metals, indices): legitimately silent every night and all
 # weekend, so it keeps the long fuse.
-SILENT_RECONNECT_SEC = {"crypto": 30, "common": 900}
+SILENT_RECONNECT_SEC = {"crypto": 10, "common": 900}
 SILENT_RECONNECT_DEFAULT = 900   # 15 min
-SILENCE_CHECK_SEC = 10           # watchdog cadence — bounds crypto recovery at ~40s
+SILENCE_CHECK_SEC = 3            # watchdog cadence — bounds crypto recovery at ~13s
 BACKFILL_CLAMP_SEC = 6 * 3600    # cap the reconnect blind-window backfill at 6h
 BACKFILL_TFS = ("1m", "5m")      # higher TFs heal via history serving / reconcile
 BACKFILL_SPACING = 1.0           # space REST calls ≥1s
@@ -98,6 +105,12 @@ class InfowayFeed:
         # that is simply closed (forex, all weekend) gets its socket torn down
         # over and over. Debouncing on this makes it at most one recycle per fuse.
         self._last_force_close: Dict[str, float] = {}
+        # Businesses the watchdog just recycled on purpose. Closing a socket
+        # Infoway has stopped answering raises out of the read loop like any
+        # other failure, and the generic handler then sits out a 2s backoff and
+        # logs an error — for a recycle we asked for. On crypto that is 2s of
+        # the ~13s the whole fault costs.
+        self._forced_recycle: set = set()
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -309,6 +322,10 @@ class InfowayFeed:
 
         while self._running:
             hb_task: Optional[asyncio.Task] = None
+            # Clear here rather than only in the handler: closing a socket does
+            # not always raise, and a flag left set would make the next genuine
+            # failure look like a recycle we asked for.
+            self._forced_recycle.discard(business)
             try:
                 logger.info("Infoway [%s] connecting…", business)
                 # No protocol-level keepalive. Infoway answers our app-level
@@ -392,6 +409,12 @@ class InfowayFeed:
             except asyncio.CancelledError:
                 break
             except Exception as exc:
+                if business in self._forced_recycle:
+                    # We closed it. Expected, and the sooner we are back the
+                    # shorter the price freeze — no backoff, no error log.
+                    self._forced_recycle.discard(business)
+                    reconnect_attempts = 0
+                    continue
                 reconnect_attempts += 1
                 delay = min(60.0, 2.0 ** min(reconnect_attempts, 6))
                 if reconnect_attempts % 5 == 0:
@@ -439,6 +462,7 @@ class InfowayFeed:
                     business, silent, limit,
                 )
                 self._last_force_close[business] = now
+                self._forced_recycle.add(business)
                 with contextlib.suppress(Exception):
                     await ws.close()
 
