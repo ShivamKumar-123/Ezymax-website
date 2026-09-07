@@ -1,0 +1,63 @@
+name: Deploy
+
+# Deliberately NOT `on: push`. This ships code that moves client money — an
+# auto-deploy on every commit to main means a bad merge reaches live accounts
+# before anyone has looked at it. Someone picks the moment, and the
+# `production` environment can require an approver on top (Settings →
+# Environments → production → Required reviewers).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit, tag or branch to deploy'
+        required: false
+        default: 'origin/main'
+      force_all:
+        description: 'Rebuild every service, ignoring the change diff'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false      # never interrupt a deploy that is mid-flight
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://fxartha.com
+    steps:
+      - name: Check out (for the workflow's own scripts)
+        uses: actions/checkout@v4
+
+      - name: Open an SSH session to the host
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust the host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          REF: ${{ inputs.ref }}
+          FORCE_ALL: ${{ inputs.force_all && '1' || '0' }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$USER@$HOST" \
+            "FORCE_ALL=$FORCE_ALL /opt/fxartha/deploy/deploy.sh '$REF'"
+
+      - name: Report what is live
+        if: always()
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$USER@$HOST" \
+            "cd /opt/fxartha && git --no-pager log -1 --format='%h %s'"

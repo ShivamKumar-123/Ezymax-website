@@ -1,0 +1,22 @@
+# Secret scanning for FXArtha.
+#
+# This repo has already had a credential handed around outside it, so the point
+# of this file is narrow: stop a NEW secret from being committed. It extends the
+# default rule set rather than replacing it, and allowlists only findings that
+# have been read and shown to be prose or deliberate stubs — never a whole
+# directory, and never a rule turned off wholesale.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "CI's own throwaway JWT stubs — the workflow needs *a* value at import time, and these are visibly fake."
+regexes = ['''ci-stub-secret-\d+''']
+
+[[allowlists]]
+description = "Trading-education copy. 'Key concepts: premium/discount zones...' trips the generic-api-key rule on the word 'Key'."
+paths = ['''frontend/trader/src/data/academy\.ts''']
+
+[[allowlists]]
+description = "Templates are meant to show the shape of a value, not carry one."
+paths = ['''.*\.env\.example$''', '''.*\.env\.template$''']

@@ -11,6 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Working tree only, not history: the job's purpose is to stop a NEW
+      # credential from landing. Scanning history would fail every run on
+      # whatever is already back there and teach everyone to ignore it.
+      - name: gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz             | tar -xz gitleaks
+          ./gitleaks detect --source . --no-git --redact --no-banner --config .gitleaks.toml
+
   backend:
     name: Backend — syntax + import smoke test
     runs-on: ubuntu-latest
@@ -110,26 +124,68 @@ jobs:
           PY
 
   frontend:
-    name: Frontend — typecheck both apps
+    name: Frontend
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false          # one broken app should not hide the others
       matrix:
-        app: [trader, admin]
+        # Package manager per app, because they genuinely differ: landing is on
+        # yarn and the other three on npm. CI installs the way each app's
+        # Dockerfile does, so a green run means the dependency tree that
+        # production will actually build.
+        include:
+          - app: trader
+            pm: npm
+            lock: package-lock.json
+          - app: admin
+            pm: npm
+            lock: package-lock.json
+          - app: ib
+            pm: npm
+            lock: package-lock.json
+          - app: landing
+            pm: yarn
+            lock: yarn.lock
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
-          cache-dependency-path: frontend/${{ matrix.app }}/package-lock.json
+          cache: ${{ matrix.pm }}
+          cache-dependency-path: frontend/${{ matrix.app }}/${{ matrix.lock }}
+
       - name: Install dependencies
         working-directory: frontend/${{ matrix.app }}
-        run: npm ci --legacy-peer-deps
+        run: |
+          if [ "${{ matrix.pm }}" = "yarn" ]; then
+            yarn install --frozen-lockfile
+          else
+            npm ci --legacy-peer-deps
+          fi
+
+      # tsc and next build both exhaust Node's default heap on the larger apps
+      # and die with SIGABRT (exit 134), which reads like a compile failure but
+      # is not one.
       - name: Typecheck
         working-directory: frontend/${{ matrix.app }}
-        # The trader app is large enough that tsc exhausts Node's default
-        # heap on a runner and dies with SIGABRT (exit 134), which reads
-        # like a compile failure but is not one. Admin fits either way.
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         run: npx tsc --noEmit
+
+      # Typecheck alone is not enough: a missing field on a content object
+      # typechecks clean and still breaks the page at build time.
+      - name: Build
+        working-directory: frontend/${{ matrix.app }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: npx next build
+
+      # Only the trader app has tests today.
+      - name: Unit tests
+        if: matrix.app == 'trader'
+        working-directory: frontend/trader
+        run: npx vitest run
+
+# Not run here, deliberately: `next lint`. No app has an ESLint config, so it
+# drops into an interactive setup prompt and would hang the runner. Worth
+# adding once a config exists.
