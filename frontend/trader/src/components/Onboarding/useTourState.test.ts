@@ -15,7 +15,10 @@ const { pushMock, postMock, driverMock, fakeDriver } = vi.hoisted(() => {
   return {
     pushMock: vi.fn(),
     postMock: vi.fn(() => Promise.resolve({})),
-    driverMock: vi.fn(() => fake),
+    // Declares the config argument it actually receives. Without it the mock
+    // types as zero-arity, mock.calls is the empty tuple, and reading [0]
+    // off a call is a type error.
+    driverMock: vi.fn((_config: unknown) => fake),
     fakeDriver: fake,
   };
 });

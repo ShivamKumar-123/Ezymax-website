@@ -24,11 +24,15 @@ jobs:
 
       - name: Install minimal deps
         # Just enough to import the models + schemas packages.
+        # pydantic-settings ships separately from pydantic in v2, and
+        # config.py imports BaseSettings from it — leaving it out failed the
+        # import step before it reached a single model.
         run: |
           pip install \
             'sqlalchemy[asyncio]>=2.0.30' \
             'pydantic>=2.7.0' \
             'pydantic[email]>=2.7.0' \
+            'pydantic-settings>=2.2.0' \
             'asyncpg>=0.29.0' \
             'fastapi>=0.111.0'
 
@@ -123,4 +127,9 @@ jobs:
         run: npm ci --legacy-peer-deps
       - name: Typecheck
         working-directory: frontend/${{ matrix.app }}
+        # The trader app is large enough that tsc exhausts Node's default
+        # heap on a runner and dies with SIGABRT (exit 134), which reads
+        # like a compile failure but is not one. Admin fits either way.
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npx tsc --noEmit
