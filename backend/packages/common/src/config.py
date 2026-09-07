@@ -57,6 +57,13 @@ class Settings(BaseSettings):
     # sets `azp` = the native client that requested it. These are allowed azp
     # values so mobile Google sign-in isn't rejected. Leave empty for web-only.
     GOOGLE_NATIVE_CLIENT_IDS: str = ""
+    # Additional accepted `aud` values, comma-separated. The mobile app does not
+    # have to live in the same Google Cloud project as the website: an app built
+    # against its own project sends an id_token whose `aud` is that project's web
+    # client id. Listing it here lets both verify, so the mobile side can be
+    # moved to a project we control without touching the website's credential —
+    # no web rebuild, and no risk to sign-ins that already work.
+    GOOGLE_EXTRA_CLIENT_IDS: str = ""
 
     ADMIN_JWT_SECRET: str = ""
     ADMIN_JWT_ALGORITHM: str = "HS256"

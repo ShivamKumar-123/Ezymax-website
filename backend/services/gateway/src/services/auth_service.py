@@ -857,6 +857,15 @@ async def google_oauth(
     except ImportError:
         raise AuthServiceError("Google sign-in dependency missing on server", 503)
 
+    # Accepted audiences. google-auth takes either a string or a list here, and
+    # a list is what lets the mobile app live in its own Google Cloud project:
+    # its id_token carries that project's web client id as `aud`, while the
+    # website keeps sending the original one. Both verify, so moving the mobile
+    # side needs no change to the website's credential.
+    audiences = [st.GOOGLE_CLIENT_ID, *(
+        c.strip() for c in (st.GOOGLE_EXTRA_CLIENT_IDS or "").split(",") if c.strip()
+    )]
+
     # `verify_oauth2_token` does a sync HTTPS roundtrip to Google's JWKS
     # (200-500ms). Inside an async handler this blocks the entire event
     # loop, which is the gateway's bottleneck under burst signups.
@@ -867,7 +876,7 @@ async def google_oauth(
             google_id_token.verify_oauth2_token,
             id_token_str,
             google_requests.Request(),
-            st.GOOGLE_CLIENT_ID,
+            audiences if len(audiences) > 1 else st.GOOGLE_CLIENT_ID,
         )
     except ValueError as e:
         # Defensive: log without echoing the raw token payload back to the client.
@@ -885,7 +894,7 @@ async def google_oauth(
     # while `aud` stays the web client (already pinned by verify_oauth2_token
     # above). Allow our web client + any configured native client ids; still
     # belt-and-braces against a token minted for an unrelated client.
-    allowed_azp = {st.GOOGLE_CLIENT_ID, *(
+    allowed_azp = {*audiences, *(
         c.strip() for c in (st.GOOGLE_NATIVE_CLIENT_IDS or "").split(",") if c.strip()
     )}
     azp = claims.get("azp")
