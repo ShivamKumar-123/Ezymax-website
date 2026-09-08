@@ -365,16 +365,30 @@ function Inner() {
                       Claim
                     </button>
                   )}
-                  {p.state === 'active' && (
-                    <button
-                      type="button"
-                      onClick={() => handleWithdraw(p)}
-                      disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#ccff00]/45 disabled:opacity-60"
-                    >
-                      {p.plan.mode === 'flexible' ? 'Withdraw' : 'Withdraw at unlock'}
-                    </button>
-                  )}
+                  {p.state === 'active' && (() => {
+                    // Don't offer a button the server will refuse. A locked
+                    // position rejects withdrawal with 403 until unlocks_at, and
+                    // every plan is locked now, so this said "Withdraw at unlock"
+                    // and then failed on every click. Say when instead.
+                    const unlockMs = p.unlocks_at ? new Date(p.unlocks_at).getTime() : 0;
+                    const stillLocked = p.plan.mode === 'locked' && unlockMs > Date.now();
+                    const unlockLabel = unlockMs
+                      ? new Date(unlockMs).toLocaleDateString(undefined, {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                        })
+                      : '';
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handleWithdraw(p)}
+                        disabled={busyPosId === p.id || stillLocked}
+                        title={stillLocked ? `This stake unlocks on ${unlockLabel}` : undefined}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#ccff00]/45 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:text-text-secondary disabled:hover:border-border-primary"
+                      >
+                        {stillLocked ? `Unlocks ${unlockLabel}` : 'Withdraw'}
+                      </button>
+                    );
+                  })()}
                   {p.state !== 'active' && (
                     <span className="px-3 py-1.5 rounded-md text-[11px] uppercase tracking-wider text-text-tertiary border border-border-primary">
                       {p.state.replace('_', ' ')}
