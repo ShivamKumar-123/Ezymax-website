@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Hover } from "@/components/animation/springs/hover";
@@ -16,6 +17,19 @@ export const Header = () => {
   const ready = useUi((state) => state.ready);
   const setMenuOpen = useUi((state) => state.setMenuOpen);
 
+  // Backdrop only once the page has moved. Fixed alone would leave the bar
+  // transparent over whatever scrolls beneath it, so the logo and Menu control
+  // end up sitting on top of body copy. Over the hero it stays clear, which is
+  // how the hero was designed. Lenis drives the native window scroll here (no
+  // transformed wrapper), so scrollY is accurate and `fixed` behaves normally.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <Inview
       tag="header"
@@ -25,7 +39,11 @@ export const Header = () => {
       from={{ opacity: 0, y: -14 }}
       to={{ opacity: 1, y: 0 }}
       config={{ tension: 210, friction: 26 }}
-      className="absolute inset-x-0 top-0 z-50"
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-[var(--duration-fast)] ease-entrance ${
+        scrolled
+          ? "border-b border-line bg-background/80 backdrop-blur-md"
+          : "border-b border-transparent"
+      }`}
     >
       <div className="shell flex items-center justify-between gap-6 px-5 py-5 sm:px-8 sm:py-6">
         <Link href="/" aria-label="FX Artha home">
