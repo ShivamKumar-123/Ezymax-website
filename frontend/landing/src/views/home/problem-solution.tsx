@@ -89,7 +89,19 @@ const SplitRow = ({ card, index }: { card: Card; index: number }) => {
             alt=""
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover object-center opacity-70 transition-opacity duration-[var(--duration-normal)] ease-entrance group-hover:opacity-90"
+            className={`object-cover object-center opacity-70 transition-opacity duration-[var(--duration-normal)] ease-entrance group-hover:opacity-90 ${
+              // The broker panel's art is the one image on the page that is not
+              // in the site's warm-gold range — measured, it sits at a 2 degree
+              // hue against roughly 30-40 for every other section image — and
+              // that red reads as a different brand rather than as this one.
+              //
+              // Desaturated rather than tinted: lime is the positive accent, and
+              // painting the "traditional broker" side in it would say the
+              // opposite of what the section is arguing. Muted grey is what a
+              // panel about the old way should look like next to the accented
+              // FX Artha card.
+              isSolution ? "" : "grayscale-[0.9] contrast-[1.05]"
+            }`}
           />
           <span
             aria-hidden
