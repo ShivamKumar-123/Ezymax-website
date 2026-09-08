@@ -561,10 +561,19 @@
 
   .auth-right {
     padding: 32px 20px 40px;
+    /* Stack, because the topline stops being absolute below. .auth-right is a
+       flex row: while the topline is out of flow the form is its only item and
+       centres; the moment the topline joins the flow it becomes a second item
+       beside the form, which is what pushed "New here? Create account" against
+       the inputs on a phone. */
+    flex-direction: column;
+    justify-content: flex-start;
   }
 
   .auth-topline {
     position: static;
+    /* Full width of the column so text-align has something to align within. */
+    align-self: stretch;
     text-align: right;
     margin-bottom: 14px;
   }
