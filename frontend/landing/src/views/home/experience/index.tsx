@@ -15,10 +15,10 @@ import { homeContent } from "./content";
 
 /**
  * The ported "New Era" intro experience, wired into the FX Artha home in place
- * of the old hero. On desktop a fixed WebGL stage (particle morph + the four
+ * of the old hero. A fixed WebGL stage (particle morph + the four
  * scroll-revealed overlays) plays over a tall scroll driver, then fades out to
- * hand off to the normal FX Artha sections below. On mobile (WebGL off) it
- * collapses to a simple centred hero.
+ * hand off to the normal FX Artha sections below. Phones get the same thing at
+ * a lower particle budget; only reduced-motion collapses to a plain hero.
  */
 export const NewEraExperience = () => {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -46,8 +46,10 @@ export const NewEraExperience = () => {
 
   return (
     <section id="home" aria-label="Introduction">
-      {/* Desktop: fixed particle-experience stage. */}
-      <div ref={stageRef} className="fixed inset-0 z-0 hidden md:block">
+      {/* The fixed particle-experience stage, on every size. The overlays
+          inside it are plain DOM and already carry mobile layout rules, and
+          particle-canvas now scales its own cost down on small screens. */}
+      <div ref={stageRef} className="fixed inset-0 z-0 block motion-reduce:hidden">
         <ParticleCanvas />
         <HeroSection content={homeContent.hero} />
         <DnaCards cards={homeContent.cards} />
@@ -61,11 +63,15 @@ export const NewEraExperience = () => {
           the first FX Artha section). */}
       <div
         aria-hidden="true"
-        className="hidden md:block"
+        className="block motion-reduce:hidden"
         style={{ height: `${(EXPERIENCE_SCREENS + 2.5) * 100}vh` }}
       />
 
-      {/* Mobile fallback: a simple centred hero (no WebGL).
+      {/* Reduced-motion fallback: a simple centred hero, no stage and no scroll
+          driver. It used to be the mobile path as well; phones now get the real
+          experience, so this is left for people who have asked the OS not to
+          animate. Gated in CSS rather than on a mounted media query so there is
+          no flash of the wrong hero before hydration.
 
           relative z-10 like every other section, and for the same reason: the
           TubesCursor canvas is `fixed inset-0 z-0`, and a positioned element at
@@ -73,7 +79,7 @@ export const NewEraExperience = () => {
           so as a plain static div this hero rendered *under* the canvas and the
           phone showed an empty black screen. Desktop was unaffected because its
           hero is itself a positioned `fixed z-0` stage. */}
-      <div className="relative z-10 flex min-h-lvh flex-col items-center justify-center px-5 text-center md:hidden">
+      <div className="relative z-10 hidden min-h-lvh flex-col items-center justify-center px-5 text-center motion-reduce:flex">
         <div className="mb-8">
           <Eyebrow>{homeContent.hero.eyebrow}</Eyebrow>
         </div>

@@ -41,13 +41,19 @@ export const ParticleCanvas = () => {
     const glow = glowRef.current;
     if (!container || !glow) return;
 
-    // Skip the WebGL loop on small screens / reduced-motion — the experience is
-    // a desktop-only flourish (the wrapper hides the whole stage there).
-    if (
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      window.innerWidth < 768
-    )
-      return;
+    // Reduced-motion still opts out entirely.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // Phones run this too now, but not at desktop cost. The sphere below is
+    // rendered as one point per vertex, so segment counts are the whole budget:
+    // 200x600 is ~121k points, which is fine on a desktop GPU and is not what
+    // you want a mid-range phone driving alongside a bloom pass. A third of the
+    // points and a lower pixel-ratio ceiling keep the same look at a size where
+    // the moire rings read anyway.
+    const small = window.innerWidth < 768;
+    const segW = small ? 120 : 200;
+    const segH = small ? 300 : 600;
+    const maxDpr = small ? 1.5 : 2;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -62,7 +68,7 @@ export const ParticleCanvas = () => {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr));
     renderer.autoClear = false;
     container.appendChild(renderer.domElement);
 
@@ -88,7 +94,7 @@ export const ParticleCanvas = () => {
     bgScene.add(bgQuad);
 
     // Dense SphereGeometry rendered as Points — the moiré rings come for free.
-    const geometry = new THREE.SphereGeometry(4.2, 200, 600);
+    const geometry = new THREE.SphereGeometry(4.2, segW, segH);
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
