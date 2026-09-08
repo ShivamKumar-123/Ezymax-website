@@ -339,8 +339,12 @@ function BrokerHome() {
           transition={{ type: 'spring', stiffness: 220, damping: 26 }}
           className="flex items-center gap-3 xl:justify-end"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-primary rounded-[22px] bg-bg-card ring-1 ring-[#E94E1B]/25 shadow-[0_22px_50px_-20px_rgba(233,78,27,0.55),0_6px_18px_-10px_rgba(233,78,27,0.35)] backdrop-blur">
-            <div className="px-5 py-3.5 sm:px-6">
+          {/* Columns size to their own content instead of three forced equal
+              thirds. With equal thirds a large balance could not fit its cell
+              and, having nothing to clip it, painted straight over the next
+              stat's icon — while the clock cell sat on unused slack. */}
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_auto_auto] max-w-full overflow-x-auto divide-y sm:divide-y-0 sm:divide-x divide-border-primary rounded-[22px] bg-bg-card ring-1 ring-[#E94E1B]/25 shadow-[0_22px_50px_-20px_rgba(233,78,27,0.55),0_6px_18px_-10px_rgba(233,78,27,0.35)] backdrop-blur">
+            <div className="px-5 py-3.5 sm:px-6 min-w-0">
               <BigStat
                 icon={<WalletIcon strokeWidth={1.9} />}
                 value={<AnimatedMoney value={totalBalance} />}
@@ -348,7 +352,7 @@ function BrokerHome() {
                 tone="brand"
               />
             </div>
-            <div className="px-5 py-3.5 sm:px-6">
+            <div className="px-5 py-3.5 sm:px-6 min-w-0">
               <BigStat
                 icon={todaysPnl >= 0 ? <TrendingUp strokeWidth={1.9} /> : <TrendingDown strokeWidth={1.9} />}
                 value={<AnimatedMoney value={todaysPnl} signed />}
@@ -357,7 +361,7 @@ function BrokerHome() {
                 pulse={todaysPnl !== 0}
               />
             </div>
-            <div className="px-5 py-3.5 sm:px-6">
+            <div className="px-5 py-3.5 sm:px-6 min-w-0">
               <LocalClock />
             </div>
           </div>
