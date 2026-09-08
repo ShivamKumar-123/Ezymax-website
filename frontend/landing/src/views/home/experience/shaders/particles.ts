@@ -317,9 +317,13 @@ export const particleVertexShader = /* glsl */ `
         vEdgeFade *= smoothstep(0.0, 0.2, uIntro);
 
         // --- COLORS ---
-        // Original, pure blue-to-orange gradient exactly as it is on the wave and sphere
-        vec3 cBottom = vec3(0.2, 0.4, 1.0); // Deep Blue
-        vec3 cTop = vec3(1.0, 0.3, 0.2);    // Blazing Orange
+        // FX Artha's palette, not the source project's blue-to-orange. Both ends
+        // are tokens from globals.css so the ring reads as the same brand as the
+        // rest of the page:
+        //   emerald-500 #10b981 -> the deep end
+        //   lime-300    #deff4d -> the bright end (the site accent family)
+        vec3 cBottom = vec3(0.063, 0.725, 0.506); // emerald-500
+        vec3 cTop = vec3(0.871, 1.000, 0.302);    // lime-300
 
         // 1. Base color mix (used for sphere, DNA, wave)
         float baseColorMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);

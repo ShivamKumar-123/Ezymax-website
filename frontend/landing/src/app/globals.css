@@ -235,8 +235,11 @@ body {
    Artha's display face) instead of the source's Assistant.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --accent-warm: #ffa091;
-  --accent-cool: #8da9fc;
+  /* Ported from the source project as salmon/periwinkle; retuned to the FX
+     Artha palette so the intro experience matches the rest of the site.
+     Warm = the lime accent family, cool = emerald. */
+  --accent-warm: var(--raw-color-lime-300);
+  --accent-cool: var(--raw-color-emerald-500);
 }
 
 @theme {
