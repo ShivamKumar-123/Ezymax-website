@@ -65,8 +65,15 @@ export const NewEraExperience = () => {
         style={{ height: `${(EXPERIENCE_SCREENS + 2.5) * 100}vh` }}
       />
 
-      {/* Mobile fallback: a simple centred hero (no WebGL). */}
-      <div className="flex min-h-lvh flex-col items-center justify-center px-5 text-center md:hidden">
+      {/* Mobile fallback: a simple centred hero (no WebGL).
+
+          relative z-10 like every other section, and for the same reason: the
+          TubesCursor canvas is `fixed inset-0 z-0`, and a positioned element at
+          z-index 0 paints above a non-positioned one whatever the DOM order —
+          so as a plain static div this hero rendered *under* the canvas and the
+          phone showed an empty black screen. Desktop was unaffected because its
+          hero is itself a positioned `fixed z-0` stage. */}
+      <div className="relative z-10 flex min-h-lvh flex-col items-center justify-center px-5 text-center md:hidden">
         <div className="mb-8">
           <Eyebrow>{homeContent.hero.eyebrow}</Eyebrow>
         </div>
