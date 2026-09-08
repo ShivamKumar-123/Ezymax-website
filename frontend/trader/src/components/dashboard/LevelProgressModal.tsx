@@ -177,7 +177,7 @@ export default function LevelProgressModal({
           <div className="relative" style={{ width: MAX_LEVEL * COL }}>
             {/* Rail: dim base + gold fill (with shimmer) + leading glow-head */}
             <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: RAIL_TOP - 2.5 }}>
-              <div className="h-[5px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.12)' }} />
+              <div className="h-[5px] w-full rounded-full" style={{ background: 'var(--border-primary)' }} />
               <div
                 className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
                 style={{
@@ -252,10 +252,10 @@ export default function LevelProgressModal({
                         style={{
                           background: on
                             ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #a6d600)`
-                            : 'rgba(255,255,255,0.03)',
+                            : 'var(--bg-tertiary)',
                           border: on
                             ? '1.5px solid rgba(255,255,255,0.35)'
-                            : `1.5px solid ${next ? 'rgba(204,255,0,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                            : `1.5px solid ${next ? 'rgba(204,255,0,0.55)' : 'var(--border-primary)'}`,
                           boxShadow: current
                             ? '0 0 0 5px rgba(204,255,0,0.14), 0 0 26px rgba(204,255,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55)'
                             : passed
@@ -271,7 +271,7 @@ export default function LevelProgressModal({
                         ) : current ? (
                           <Sparkles size={17} style={{ color: ON_ACCENT }} />
                         ) : (
-                          <Lock size={14} style={{ color: next ? ACCENT : 'rgba(255,255,255,0.35)' }} />
+                          <Lock size={14} style={{ color: next ? ACCENT : 'var(--text-tertiary)' }} />
                         )}
                       </div>
                     </div>
