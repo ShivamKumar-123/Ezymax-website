@@ -45,8 +45,8 @@ export const Header = () => {
       config={{ tension: 210, friction: 26 }}
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-[var(--duration-fast)] ease-entrance ${
         scrolled
-          ? "border-b border-line bg-background/80 backdrop-blur-md"
-          : "border-b border-transparent bg-gradient-to-b from-background/85 via-background/45 to-transparent"
+          ? "bg-background/80 backdrop-blur-md"
+          : "bg-gradient-to-b from-background/85 via-background/45 to-transparent"
       }`}
     >
       <div className="shell flex items-center justify-between gap-6 px-5 py-5 sm:px-8 sm:py-6">

@@ -102,6 +102,11 @@ export const NavMenu = ({ groups, labels, pages }: NavMenuProps) => {
 
         <nav
           aria-label="Site"
+          // Lenis preventDefaults wheel/touch on the window while it is
+          // stopped, which is exactly when this drawer is open — so a nested
+          // overflow-y-auto cannot scroll unless Lenis is told to ignore
+          // events from inside it.
+          data-lenis-prevent
           className="flex flex-1 flex-col justify-center overflow-y-auto px-6 sm:px-10"
         >
           <ul className="flex flex-col">

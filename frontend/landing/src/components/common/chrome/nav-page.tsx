@@ -302,7 +302,7 @@ export const NavPage = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain">
           <header className="shell px-5 pt-14 sm:px-8">
             <Eyebrow>{pages[page].hero.eyebrow}</Eyebrow>
             <h2 className="mt-4 max-w-[18ch] text-4xl leading-display font-bold tracking-display sm:text-5xl">

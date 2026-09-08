@@ -138,8 +138,19 @@ export default function LevelLadderCard({
 
       {/* Track */}
       <div ref={scrollRef} className="mt-5 overflow-x-auto pb-2 pt-1 [scrollbar-width:thin]">
-        <div className="relative" style={{ width: MAX_LEVEL * COL }}>
-          <div className="absolute" style={{ left: COL / 2, right: COL / 2, top: RAIL_TOP - 2.5 }}>
+        {/* Fill the card, but never below the width the ten columns need —
+           past that the wrapper above scrolls. It used to be a fixed
+           MAX_LEVEL * COL, which on a wide dashboard left the whole right
+           half of the card empty. */}
+        <div className="relative w-full" style={{ minWidth: MAX_LEVEL * COL }}>
+          <div
+            className="absolute"
+            style={{
+              left: `${50 / MAX_LEVEL}%`,
+              right: `${50 / MAX_LEVEL}%`,
+              top: RAIL_TOP - 2.5,
+            }}
+          >
             <div className="h-[5px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.12)' }} />
             <div
               className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
@@ -162,7 +173,12 @@ export default function LevelLadderCard({
               const locked = num > level;
               const on = passed || current;
               return (
-                <div key={lv.label} ref={current ? currentRef : undefined} className="flex shrink-0 flex-col items-center" style={{ width: COL }}>
+                <div
+                  key={lv.label}
+                  ref={current ? currentRef : undefined}
+                  className="flex flex-1 flex-col items-center"
+                  style={{ minWidth: COL }}
+                >
                   <div className="flex items-end justify-center" style={{ height: YOU_ROW }}>
                     {current && (
                       <span

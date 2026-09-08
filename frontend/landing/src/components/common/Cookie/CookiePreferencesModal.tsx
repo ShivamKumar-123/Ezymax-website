@@ -149,7 +149,10 @@ export const CookiePreferencesModal = () => {
             .
           </p>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
+          <div
+            data-lenis-prevent
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1"
+          >
             {CATEGORIES.map((c) => {
               const value =
                 c.key === "necessary"
