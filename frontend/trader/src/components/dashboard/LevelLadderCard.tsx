@@ -151,7 +151,7 @@ export default function LevelLadderCard({
               top: RAIL_TOP - 2.5,
             }}
           >
-            <div className="h-[5px] w-full rounded-full" style={{ background: 'rgba(204,255,0,0.12)' }} />
+            <div className="h-[5px] w-full rounded-full" style={{ background: 'var(--border-primary)' }} />
             <div
               className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
               style={{
@@ -202,8 +202,8 @@ export default function LevelLadderCard({
                     <div
                       className="grid size-full place-items-center rounded-full"
                       style={{
-                        background: on ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #a6d600)` : 'rgba(255,255,255,0.03)',
-                        border: on ? '1.5px solid rgba(255,255,255,0.35)' : `1.5px solid ${next ? 'rgba(204,255,0,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                        background: on ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #a6d600)` : 'var(--bg-tertiary)',
+                        border: on ? '1.5px solid rgba(255,255,255,0.35)' : `1.5px solid ${next ? 'rgba(204,255,0,0.55)' : 'var(--border-primary)'}`,
                         boxShadow: current
                           ? '0 0 0 5px rgba(204,255,0,0.14), 0 0 22px rgba(204,255,0,0.55), inset 0 1px 0 rgba(255,255,255,0.5)'
                           : passed ? '0 5px 14px rgba(204,255,0,0.25), inset 0 1px 0 rgba(255,255,255,0.45)' : 'none',
@@ -214,7 +214,7 @@ export default function LevelLadderCard({
                     >
                       {passed ? <Check size={17} style={{ color: ON_ACCENT }} strokeWidth={3.2} />
                         : current ? <Sparkles size={16} style={{ color: ON_ACCENT }} />
-                        : <Lock size={13} style={{ color: next ? ACCENT : 'rgba(255,255,255,0.35)' }} />}
+                        : <Lock size={13} style={{ color: next ? ACCENT : 'var(--text-tertiary)' }} />}
                     </div>
                   </div>
 
