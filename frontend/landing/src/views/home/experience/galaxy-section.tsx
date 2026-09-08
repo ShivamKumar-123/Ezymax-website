@@ -21,6 +21,15 @@ export const GalaxySection = ({ content }: GalaxySectionProps) => {
       aria-label="Our product ecosystem"
       className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-between px-5 py-[15vh] text-center"
     >
+      {/* A dark wash under the copy. The stage behind it went from the
+          source project's blue/orange to the brand lime, which is a much
+          brighter ring, and white text stopped reading against it. Radial
+          so the glow still shows at the edges — it darkens where the words
+          are, not the whole frame. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 [background:radial-gradient(60%_45%_at_50%_50%,rgba(0,0,0,0.72),rgba(0,0,0,0.45)_55%,transparent_80%)]"
+      />
       <div className="flex flex-col items-center">
         <Reveal state={state} className="mb-10">
           <Eyebrow>{content.eyebrow}</Eyebrow>
