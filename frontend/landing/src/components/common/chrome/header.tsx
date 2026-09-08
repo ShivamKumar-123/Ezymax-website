@@ -17,11 +17,15 @@ export const Header = () => {
   const ready = useUi((state) => state.ready);
   const setMenuOpen = useUi((state) => state.setMenuOpen);
 
-  // Backdrop only once the page has moved. Fixed alone would leave the bar
-  // transparent over whatever scrolls beneath it, so the logo and Menu control
-  // end up sitting on top of body copy. Over the hero it stays clear, which is
-  // how the hero was designed. Lenis drives the native window scroll here (no
-  // transformed wrapper), so scrollY is accurate and `fixed` behaves normally.
+  // Two states, both about keeping the logo and Menu readable over whatever is
+  // behind them. Scrolled: a solid blurred bar, so they never sit directly on
+  // body copy. At rest: a soft top-down scrim rather than nothing — the intro
+  // stage now runs on phones, where its glow reaches the very top of the screen
+  // and washed both controls out. A gradient keeps the hero looking open in a
+  // way a full bar would not.
+  //
+  // Lenis drives the native window scroll here (no transformed wrapper), so
+  // scrollY is accurate and `fixed` behaves normally.
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -42,7 +46,7 @@ export const Header = () => {
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-[var(--duration-fast)] ease-entrance ${
         scrolled
           ? "border-b border-line bg-background/80 backdrop-blur-md"
-          : "border-b border-transparent"
+          : "border-b border-transparent bg-gradient-to-b from-background/85 via-background/45 to-transparent"
       }`}
     >
       <div className="shell flex items-center justify-between gap-6 px-5 py-5 sm:px-8 sm:py-6">
