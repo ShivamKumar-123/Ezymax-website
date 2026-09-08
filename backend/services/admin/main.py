@@ -77,6 +77,15 @@ async def _apply_startup_ddl():
             # constraint predates the insurance products, so 'insurance_fee'
             # (premium charge) and 'insurance_payout' (claim credit) were
             # rejected — breaking both per-trade insurance and Shield purchases.
+            #
+            # Same story for the bonus-wallet and withdrawal-refund types: the
+            # code writes 'bonus_transfer' (bonus wallet -> trading account
+            # credit), 'bonus_grant' (admin grant), 'bonus_release' (wagering
+            # met) and 'withdrawal_refund' (admin rejects a withdrawal), none of
+            # which the constraint permitted — so every one of those flows died
+            # with a CheckViolation on commit. The table has zero rows of these
+            # types, which is the tell: they never once succeeded.
+            #
             # Re-create the constraint with them included (superset of the old).
             await conn.execute(text(
                 "ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check"
@@ -85,7 +94,8 @@ async def _apply_startup_ddl():
                 "ALTER TABLE transactions ADD CONSTRAINT transactions_type_check CHECK ("
                 "type IN ('deposit','withdrawal','commission','swap','bonus','credit',"
                 "'adjustment','ib_commission','profit','loss','transfer','admin_commission',"
-                "'performance_fee','master_commission','refund','insurance_fee','insurance_payout'))"
+                "'performance_fee','master_commission','refund','insurance_fee','insurance_payout',"
+                "'bonus_transfer','bonus_grant','bonus_release','withdrawal_refund'))"
             ))
             # Waitlist (invite-only access gate). Mirrors migration 0061 so the
             # admin waitlist endpoints work even where Alembic hasn't run.

@@ -35,7 +35,7 @@ export default function StakingPlanCard({
         <Icon size={20} className="text-[#ccff00]" />
         {plan.trading_bonus_multiplier_bps > 0 && (
           <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-wider text-[#ccff00] border border-[#ccff00]/40 bg-[#ccff00]/10 px-2 py-0.5 rounded-full">
-            <Sparkles size={10} /> 1× bonus
+            <Sparkles size={10} /> {plan.trading_bonus_pct.toFixed(0)}% bonus
           </span>
         )}
       </div>
