@@ -77,18 +77,39 @@ export default function StreakStrip() {
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-1.5">
+      {/* A progress meter, not controls. Check-in fires automatically when this
+          page mounts and the server has no per-day endpoint to call, so there is
+          nothing behind an individual day. The boxes read as buttons though, so
+          they say so: no pointer cursor, no text selection, and a title that
+          names each day's state on hover. */}
+      <div
+        className="flex items-center gap-1.5"
+        role="img"
+        aria-label={`Daily streak: ${filled} of ${total} days`}
+      >
         {Array.from({ length: total }, (_, i) => {
           const idx = i + 1;
           const done = idx <= filled;
+          // The day in play: the last filled box once today is checked in,
+          // otherwise the next one along.
+          const isToday = idx === (today ? filled : filled + 1);
           return (
             <div
               key={idx}
+              title={
+                done
+                  ? `Day ${idx} — checked in`
+                  : isToday
+                    ? `Day ${idx} — today, not checked in yet`
+                    : `Day ${idx} — upcoming`
+              }
               className={
-                'flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-medium ' +
+                'flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-medium cursor-default select-none ' +
                 (done
                   ? 'border-[#ccff00]/55 bg-[#ccff00]/15 text-[#ccff00]'
-                  : 'border-border-primary bg-bg-base text-text-tertiary')
+                  : isToday
+                    ? 'border-[#ccff00]/45 bg-[#ccff00]/[0.04] text-[#ccff00]/80'
+                    : 'border-border-primary bg-bg-base text-text-tertiary')
               }
             >
               {done ? <Check size={13} /> : `D${idx}`}
