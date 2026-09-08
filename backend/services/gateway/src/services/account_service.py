@@ -705,7 +705,10 @@ async def delete_trading_account(
                     pos.profit = Decimal("0")
                     pos.closed_at = datetime.utcnow()
 
-                refund = (inv_acct.balance or Decimal("0")) + (inv_acct.credit or Decimal("0"))
+                # Cash refunds to the main wallet; credit is bonus and goes back
+                # to the bonus wallet, so closing a master can't cash it out.
+                refund = inv_acct.balance or Decimal("0")
+                refund_bonus = inv_acct.credit or Decimal("0")
                 inv_acct.balance = Decimal("0")
                 inv_acct.credit = Decimal("0")
                 inv_acct.equity = Decimal("0")
@@ -723,6 +726,17 @@ async def delete_trading_account(
                         amount=refund,
                         balance_after=investor.main_wallet_balance,
                         description="Master account closed by owner — copy trade refund to main wallet",
+                    ))
+
+                if investor and refund_bonus > 0:
+                    investor.bonus_balance = (investor.bonus_balance or Decimal("0")) + refund_bonus
+                    db.add(Transaction(
+                        user_id=investor.id,
+                        account_id=inv_acct.id,
+                        type="bonus",
+                        amount=refund_bonus,
+                        balance_after=investor.bonus_balance,
+                        description="Master account closed by owner — credit returned to bonus wallet",
                     ))
 
             alloc.status = "closed"
@@ -752,17 +766,33 @@ async def delete_trading_account(
     for alloc in follower_alloc_q.scalars().all():
         alloc.status = "closed"
 
-    # 5. Sweep own balance + credit to owner's main wallet.
-    sweep = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
-    if sweep > 0:
-        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + sweep
+    # 5. Return the money, but not into the same place. Real balance goes to the
+    #    main wallet, which is withdrawable. Credit must not: it is bonus, it was
+    #    never withdrawable, and sweeping it here turned it into cash — stake,
+    #    move the bonus onto an account, close the account, and the bonus came
+    #    out as spendable money. It goes back to the Bonus Wallet instead: still
+    #    the user's, still only usable as margin.
+    cash = account.balance or Decimal("0")
+    bonus = account.credit or Decimal("0")
+    if cash > 0:
+        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + cash
         db.add(Transaction(
             user_id=user.id,
             account_id=account.id,
             type="transfer",
-            amount=sweep,
+            amount=cash,
             balance_after=user.main_wallet_balance,
             description="Trading account closed — balance returned to main wallet",
+        ))
+    if bonus > 0:
+        user.bonus_balance = (user.bonus_balance or Decimal("0")) + bonus
+        db.add(Transaction(
+            user_id=user.id,
+            account_id=account.id,
+            type="bonus",
+            amount=bonus,
+            balance_after=user.bonus_balance,
+            description="Trading account closed — credit returned to bonus wallet",
         ))
 
     account.balance = Decimal("0")
@@ -774,13 +804,17 @@ async def delete_trading_account(
 
     await db.commit()
 
+    bonus_note = (
+        f" ${float(bonus):.2f} of bonus credit returned to your bonus wallet."
+        if bonus > 0 else ""
+    )
     if master and followers_refunded:
         return MessageResponse(
             message=(
-                f"Account closed — ${float(sweep):.2f} returned to your main wallet. "
+                f"Account closed — ${float(cash):.2f} returned to your main wallet.{bonus_note} "
                 f"{followers_refunded} follower(s) refunded (${float(total_refunded):.2f})."
             )
         )
     return MessageResponse(
-        message=f"Account closed — ${float(sweep):.2f} returned to your main wallet."
+        message=f"Account closed — ${float(cash):.2f} returned to your main wallet.{bonus_note}"
     )

@@ -892,18 +892,34 @@ async def delete_master(
             pos.profit = Decimal("0")
             pos.closed_at = datetime.utcnow()
 
-        master_sweep = (master_acct.balance or Decimal("0")) + (master_acct.credit or Decimal("0"))
-        if master_user and master_sweep > 0:
+        # Balance and credit go back to different places: the main wallet is
+        # withdrawable, and credit is bonus that never was. Folding credit into
+        # the main wallet would turn it into cash on the way out.
+        master_cash = master_acct.balance or Decimal("0")
+        master_bonus = master_acct.credit or Decimal("0")
+        if master_user and master_cash > 0:
             master_user.main_wallet_balance = (
                 master_user.main_wallet_balance or Decimal("0")
-            ) + master_sweep
+            ) + master_cash
             db.add(Transaction(
                 user_id=master_user.id,
                 account_id=master_acct.id,
                 type="transfer",
-                amount=master_sweep,
+                amount=master_cash,
                 balance_after=master_user.main_wallet_balance,
                 description="Master account closed by admin — funds returned to main wallet",
+            ))
+        if master_user and master_bonus > 0:
+            master_user.bonus_balance = (
+                master_user.bonus_balance or Decimal("0")
+            ) + master_bonus
+            db.add(Transaction(
+                user_id=master_user.id,
+                account_id=master_acct.id,
+                type="bonus",
+                amount=master_bonus,
+                balance_after=master_user.bonus_balance,
+                description="Master account closed by admin — credit returned to bonus wallet",
             ))
         master_acct.balance = Decimal("0")
         master_acct.credit = Decimal("0")
@@ -943,8 +959,12 @@ async def delete_master(
                 pos.closed_at = datetime.utcnow()
 
         refund_amount = Decimal("0")
+        refund_bonus = Decimal("0")
         if investor_acct:
-            refund_amount = (investor_acct.balance or Decimal("0")) + (investor_acct.credit or Decimal("0"))
+            # Same split as above: cash refunds, bonus credit goes home to the
+            # bonus wallet rather than becoming withdrawable on the way out.
+            refund_amount = investor_acct.balance or Decimal("0")
+            refund_bonus = investor_acct.credit or Decimal("0")
             investor_acct.balance = Decimal("0")
             investor_acct.credit = Decimal("0")
             investor_acct.equity = Decimal("0")
@@ -966,6 +986,17 @@ async def delete_master(
                 amount=refund_amount,
                 balance_after=investor.main_wallet_balance,
                 description="Master deleted by admin — copy trade refund to main wallet",
+            ))
+
+        if investor and refund_bonus > 0:
+            investor.bonus_balance = (investor.bonus_balance or Decimal("0")) + refund_bonus
+            db.add(Transaction(
+                user_id=investor.id,
+                account_id=investor_acct.id if investor_acct else None,
+                type="bonus",
+                amount=refund_bonus,
+                balance_after=investor.bonus_balance,
+                description="Master deleted by admin — credit returned to bonus wallet",
             ))
 
         alloc.status = "closed"
