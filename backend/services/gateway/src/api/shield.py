@@ -219,29 +219,81 @@ async def purchase(
     return {"shield": _shield_dict(shield)}
 
 
+# A denial is recorded as an EVENT, not a claim row, so a trade that missed a
+# gate left no trace anywhere the trader could see: they lost money, got
+# nothing, and the claim list stayed empty. These are the plain-English
+# reasons, keyed by the `detail` the engine writes.
+DENIAL_REASONS: dict[str, str] = {
+    "min_duration": "Held under 5 minutes — Shield needs a trade open at least that long.",
+    "pre_existing_position": "Opened before this plan started, so it was not covered.",
+    "hedge": "An opposite position on the same symbol was open, which cancelled the loss.",
+    "cap_exhausted": "This plan had already paid out its maximum.",
+}
+
+
 @router.get("/claims")
 async def list_claims(
     limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    user_id = current_user["user_id"]
+    capped = max(1, min(limit, 200))
+
     rows = (await db.execute(
         select(InsuranceShieldClaim)
-        .where(InsuranceShieldClaim.user_id == current_user["user_id"])
+        .where(InsuranceShieldClaim.user_id == user_id)
         .order_by(desc(InsuranceShieldClaim.created_at))
-        .limit(max(1, min(limit, 200)))
+        .limit(capped)
     )).scalars().all()
+
+    # Denials + payouts from the audit trail. Without these the trader can only
+    # see settlements that paid, which is exactly the case they are NOT asking
+    # about when they come looking.
+    events = (await db.execute(
+        select(InsuranceShieldEvent)
+        .where(
+            InsuranceShieldEvent.user_id == user_id,
+            InsuranceShieldEvent.type.in_(
+                ("claim_denied", "claim_paid", "expired", "purchase", "replace", "cancelled")
+            ),
+        )
+        .order_by(desc(InsuranceShieldEvent.created_at))
+        .limit(capped)
+    )).scalars().all()
+
+    claims = [
+        {
+            "id": str(c.id),
+            "position_id": str(c.position_id) if c.position_id else None,
+            "trade_loss": float(c.trade_loss),
+            "cumulative_eligible_loss": float(c.cumulative_eligible_loss),
+            "payout_amount": float(c.payout_amount),
+            "status": c.status,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in rows
+    ]
+
+    total_paid = sum(c["payout_amount"] for c in claims)
+    denied = [e for e in events if e.type == "claim_denied"]
+
     return {
-        "claims": [
+        "claims": claims,
+        "events": [
             {
-                "id": str(c.id),
-                "position_id": str(c.position_id) if c.position_id else None,
-                "trade_loss": float(c.trade_loss),
-                "cumulative_eligible_loss": float(c.cumulative_eligible_loss),
-                "payout_amount": float(c.payout_amount),
-                "status": c.status,
-                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "id": str(e.id),
+                "type": e.type,
+                "detail": e.detail,
+                "reason": DENIAL_REASONS.get((e.detail or "").strip())
+                if e.type == "claim_denied" else None,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
             }
-            for c in rows
-        ]
+            for e in events
+        ],
+        "summary": {
+            "total_paid": round(total_paid, 2),
+            "paid_count": sum(1 for c in claims if c["payout_amount"] > 0),
+            "denied_count": len(denied),
+        },
     }

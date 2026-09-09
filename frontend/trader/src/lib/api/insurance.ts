@@ -102,6 +102,24 @@ export interface ShieldState {
   expires_at: string | null;
 }
 
+/** A row from the Shield audit trail. Denials only ever existed here, never as
+ *  claim rows, which is why a trade that missed a gate used to leave the trader
+ *  with nothing on screen at all. */
+export interface ShieldEvent {
+  id: string;
+  type: 'claim_denied' | 'claim_paid' | 'expired' | 'purchase' | 'replace' | 'cancelled';
+  detail: string | null;
+  /** Plain-English explanation, present on denials. */
+  reason: string | null;
+  created_at: string | null;
+}
+
+export interface ShieldClaimsResponse {
+  claims: ShieldClaim[];
+  events: ShieldEvent[];
+  summary: { total_paid: number; paid_count: number; denied_count: number };
+}
+
 export interface ShieldClaim {
   id: string;
   position_id: string | null;
@@ -117,5 +135,6 @@ export const shieldApi = {
   status: () => api.get<{ active: ShieldState | null; history: ShieldState[] }>('/insurance/shield/status'),
   purchase: (planId: string, replace = false) =>
     api.post<{ shield: ShieldState }>('/insurance/shield/purchase', { plan_id: planId, replace }),
-  claims: (limit = 50) => api.get<{ claims: ShieldClaim[] }>(`/insurance/shield/claims?limit=${limit}`),
+  claims: (limit = 50) =>
+    api.get<ShieldClaimsResponse>(`/insurance/shield/claims?limit=${limit}`),
 };

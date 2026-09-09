@@ -16,6 +16,7 @@ import {
   type ShieldPlan,
   type ShieldState,
   type ShieldClaim,
+  type ShieldEvent,
   type ShieldPeriod,
   type ShieldTier,
 } from '@/lib/api/insurance';
@@ -54,6 +55,8 @@ export default function ShieldPanel() {
   const [plans, setPlans] = useState<ShieldPlan[] | null>(null);
   const [active, setActive] = useState<ShieldState | null>(null);
   const [claims, setClaims] = useState<ShieldClaim[] | null>(null);
+  const [events, setEvents] = useState<ShieldEvent[] | null>(null);
+  const [summary, setSummary] = useState<{ total_paid: number; paid_count: number; denied_count: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState<string | null>(null);
 
@@ -67,6 +70,8 @@ export default function ShieldPanel() {
       setPlans(p.plans);
       setActive(s.active);
       setClaims(c.claims);
+      setEvents(c.events ?? []);
+      setSummary(c.summary ?? null);
     } catch {
       /* ignore — surfaced by empty states */
     } finally {
@@ -167,47 +172,111 @@ export default function ShieldPanel() {
         );
       })}
 
-      {/* Shield claim history */}
-      <div
-        className="rounded-2xl p-4 md:p-5"
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
-      >
-        <h2 className="text-base font-bold text-text-primary mb-3">Shield claim history</h2>
-        {!claims || claims.length === 0 ? (
-          <p className="text-sm text-text-secondary text-center py-6">
-            No Shield settlements yet. When an eligible trade closes in loss while a plan is active,
-            the incremental payout shows here.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border-primary">
-            {claims.map((c) => {
-              const paid = c.payout_amount > 0;
-              return (
-                <li key={c.id} className="py-3 flex items-center gap-3">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: paid ? '#22c55e' : '#888' }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-text-primary">
-                      Loss ${c.trade_loss.toFixed(2)} →{' '}
-                      {paid ? (
-                        <span className="font-bold text-green-500">+${c.payout_amount.toFixed(2)}</span>
-                      ) : (
-                        <span className="text-text-tertiary">no payout ({c.status})</span>
-                      )}
-                    </p>
-                    <p className="text-[10px] text-text-tertiary">
-                      cumulative loss ${c.cumulative_eligible_loss.toFixed(2)}
-                      {c.created_at ? ` · ${new Date(c.created_at).toLocaleString()}` : ''}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <ShieldActivity claims={claims} events={events} summary={summary} />
+    </div>
+  );
+}
+
+/**
+ * Cover activity — payouts AND refusals in one list.
+ *
+ * A denial was only ever written to the audit-event table, never as a claim
+ * row, so a trader whose losing trade missed a gate (held under five minutes,
+ * opened before the plan, hedged) saw an empty history and no explanation.
+ * They lost money, got nothing, and the screen said nothing happened. Both
+ * streams are merged here and every refusal carries its reason.
+ */
+function ShieldActivity({
+  claims, events, summary,
+}: {
+  claims: ShieldClaim[] | null;
+  events: ShieldEvent[] | null;
+  summary: { total_paid: number; paid_count: number; denied_count: number } | null;
+}) {
+  type Row = {
+    key: string;
+    at: number;
+    paid: boolean;
+    title: string;
+    sub: string;
+    amount?: number;
+  };
+
+  const rows: Row[] = [];
+  for (const c of claims ?? []) {
+    if (c.payout_amount <= 0) continue; // the refusal side comes from events
+    rows.push({
+      key: `c-${c.id}`,
+      at: c.created_at ? new Date(c.created_at).getTime() : 0,
+      paid: true,
+      title: `Loss $${c.trade_loss.toFixed(2)} covered`,
+      sub: `Cumulative loss $${c.cumulative_eligible_loss.toFixed(2)}`,
+      amount: c.payout_amount,
+    });
+  }
+  for (const e of events ?? []) {
+    if (e.type !== 'claim_denied') continue;
+    rows.push({
+      key: `e-${e.id}`,
+      at: e.created_at ? new Date(e.created_at).getTime() : 0,
+      paid: false,
+      title: 'Trade not covered',
+      sub: e.reason || e.detail || 'Did not meet the cover conditions.',
+    });
+  }
+  rows.sort((a, b) => b.at - a.at);
+
+  return (
+    <div
+      className="rounded-2xl p-4 md:p-5"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+    >
+      <h2 className="text-base font-bold text-text-primary">Cover activity</h2>
+      <p className="text-[11px] text-text-tertiary mt-0.5">
+        Every losing trade Shield looked at — what it paid, and what it did not.
+      </p>
+
+      {summary && (summary.paid_count > 0 || summary.denied_count > 0) && (
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <Stat label="Paid to you" value={`$${summary.total_paid.toFixed(2)}`} accent={LIME} />
+          <Stat label="Trades covered" value={String(summary.paid_count)} />
+          <Stat label="Not covered" value={String(summary.denied_count)} />
+        </div>
+      )}
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-text-secondary text-center py-6">
+          Nothing yet. When a losing trade closes while a plan is active, the payout — or the
+          reason there wasn&apos;t one — appears here.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border-primary mt-2">
+          {rows.map((r) => (
+            <li key={r.key} className="py-3 flex items-start gap-3">
+              <span
+                className="w-2 h-2 rounded-full shrink-0 mt-1.5"
+                style={{ background: r.paid ? '#22c55e' : 'var(--text-tertiary)' }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-sm text-text-primary">{r.title}</p>
+                  {r.paid && r.amount !== undefined && (
+                    <span className="text-sm font-bold text-green-500 font-mono tabular-nums shrink-0">
+                      +${r.amount.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-text-tertiary mt-0.5">{r.sub}</p>
+                {r.at > 0 && (
+                  <p className="text-[10px] text-text-tertiary mt-0.5">
+                    {new Date(r.at).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
