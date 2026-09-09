@@ -55,6 +55,12 @@ class UserOut(BaseModel):
     date_of_birth: Optional[date] = None
     country: Optional[str] = None
     address: Optional[str] = None
+    # The users table has carried these since the profile form was built, but
+    # they were never put on the admin payload, so support saw a street line
+    # with no city, state or postcode next to it.
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
     role: str
     status: str
     kyc_status: str
