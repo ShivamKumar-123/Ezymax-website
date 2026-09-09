@@ -160,12 +160,12 @@ export default function LevelProgressModal({
             </span>
           </h2>
           {isMax ? (
-            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: ACCENT }}>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: 'var(--accent-ink)' }}>
               <Sparkles size={15} /> Max rank — you&apos;ve topped the ladder! 🏆
             </p>
           ) : (
             <p className="mt-1 text-sm text-text-secondary">
-              <span className="font-extrabold tabular-nums" style={{ color: ACCENT }}>{remainingCount.toLocaleString()}</span>
+              <span className="font-extrabold tabular-nums" style={{ color: 'var(--accent-ink)' }}>{remainingCount.toLocaleString()}</span>
               {' '}XP to reach{' '}
               <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
             </p>
@@ -311,7 +311,7 @@ export default function LevelProgressModal({
                   }}
                 >
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(204,255,0,0.12)' }}>
-                    <w.icon size={16} style={{ color: ACCENT }} />
+                    <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-text-primary">{w.title}</p>

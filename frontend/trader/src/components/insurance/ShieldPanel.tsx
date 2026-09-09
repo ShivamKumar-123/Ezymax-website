@@ -136,7 +136,7 @@ export default function ShieldPanel() {
           className="rounded-2xl p-4 md:p-5 flex items-center gap-3"
           style={{ background: 'var(--bg-card)', border: `1px solid ${LIME}33` }}
         >
-          <ShieldCheck size={20} style={{ color: LIME }} />
+          <ShieldCheck size={20} style={{ color: 'var(--accent-ink)' }} />
           <p className="text-sm text-text-secondary">
             No active Shield plan. Pick one below to cover a share of your losses over a full period.
           </p>
@@ -238,7 +238,7 @@ function ShieldActivity({
 
       {summary && (summary.paid_count > 0 || summary.denied_count > 0) && (
         <div className="grid grid-cols-3 gap-3 mt-4">
-          <Stat label="Paid to you" value={`$${summary.total_paid.toFixed(2)}`} accent={LIME} />
+          <Stat label="Paid to you" value={`$${summary.total_paid.toFixed(2)}`} accent="var(--accent-ink)" />
           <Stat label="Trades covered" value={String(summary.paid_count)} />
           <Stat label="Not covered" value={String(summary.denied_count)} />
         </div>
@@ -294,7 +294,7 @@ function ActivePlanCard({ plan }: { plan: ShieldState }) {
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: `${LIME}1f` }}
           >
-            <ShieldCheck size={20} style={{ color: LIME }} />
+            <ShieldCheck size={20} style={{ color: 'var(--accent-ink)' }} />
           </div>
           <div>
             <p className="text-sm font-bold text-text-primary">
@@ -325,7 +325,7 @@ function ActivePlanCard({ plan }: { plan: ShieldState }) {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mt-4">
-        <Stat label="Remaining cover" value={`$${plan.coverage_remaining.toFixed(2)}`} accent={LIME} />
+        <Stat label="Remaining cover" value={`$${plan.coverage_remaining.toFixed(2)}`} accent="var(--accent-ink)" />
         <Stat
           label="Cumulative loss"
           value={`$${plan.cumulative_eligible_loss.toFixed(2)}`}

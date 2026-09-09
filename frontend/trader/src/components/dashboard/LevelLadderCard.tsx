@@ -124,15 +124,15 @@ export default function LevelLadderCard({
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Your rank</p>
           <h2 className="mt-0.5 text-lg font-extrabold tracking-tight text-text-primary sm:text-xl">
-            Level {level} · <span style={{ color: ACCENT }}>{levelLabel}</span>
+            Level {level} · <span style={{ color: 'var(--accent-ink)' }}>{levelLabel}</span>
           </h2>
           {!isMax ? (
             <p className="mt-0.5 text-xs text-text-secondary">
-              <span className="font-bold tabular-nums" style={{ color: ACCENT }}>{remainingCount.toLocaleString()}</span>
+              <span className="font-bold tabular-nums" style={{ color: 'var(--accent-ink)' }}>{remainingCount.toLocaleString()}</span>
               {' '}XP to <span className="font-semibold text-text-primary">Level {level + 1} · {nextLabel}</span>
             </p>
           ) : (
-            <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold" style={{ color: ACCENT }}>
+            <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold" style={{ color: 'var(--accent-ink)' }}>
               <Sparkles size={13} /> Max rank reached 🏆
             </p>
           )}
@@ -140,7 +140,7 @@ export default function LevelLadderCard({
         <Link
           href="/rewards"
           className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent/[0.06] px-3 py-1.5 text-xs font-bold transition-colors hover:bg-accent/12"
-          style={{ color: ACCENT }}
+          style={{ color: 'var(--accent-ink)' }}
         >
           Rewards <ArrowRight size={13} />
         </Link>
@@ -165,7 +165,7 @@ export default function LevelLadderCard({
                     : undefined
                 }
               >
-                <span className="tabular-nums font-bold" style={{ color: ACCENT }}>{pct}%</span>
+                <span className="tabular-nums font-bold" style={{ color: 'var(--accent-ink)' }}>{pct}%</span>
                 <span>off {label.toLowerCase()}</span>
               </span>
             ))}
@@ -250,12 +250,12 @@ export default function LevelLadderCard({
                     >
                       {passed ? <Check size={17} style={{ color: ON_ACCENT }} strokeWidth={3.2} />
                         : current ? <Sparkles size={16} style={{ color: ON_ACCENT }} />
-                        : <Lock size={13} style={{ color: next ? ACCENT : 'var(--text-tertiary)' }} />}
+                        : <Lock size={13} style={{ color: next ? 'var(--accent-ink)' : 'var(--text-tertiary)' }} />}
                     </div>
                   </div>
 
                   <p className="mt-2 px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide"
-                    style={{ color: on ? ACCENT : next ? 'rgba(204,255,0,0.75)' : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}>
+                    style={{ color: on ? 'var(--accent-ink)' : next ? 'color-mix(in srgb, var(--accent-ink) 75%, transparent)' : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)' }}>
                     {lv.label}
                   </p>
                   <p className="mt-0.5 text-center text-[9px] font-semibold tabular-nums text-text-tertiary">
