@@ -78,8 +78,10 @@ export default function LevelBenefitsPage() {
             value={value}
             onChange={e => updateRow(r.level, field, parseFloat(e.target.value) || 0)}
             className={cn(
-              'w-16 px-1.5 py-1 text-xs bg-bg-input border rounded font-mono tabular-nums text-text-primary',
-              over ? 'border-warning' : 'border-border-primary',
+              'w-16 px-1.5 py-1 text-xs border rounded font-mono tabular-nums text-text-primary',
+              over
+                ? 'border-warning bg-warning/10'
+                : 'border-border-primary bg-bg-input',
             )}
             title={over ? `Capped at ${HARD_CAP_PCT}% when applied` : undefined}
           />
@@ -106,10 +108,13 @@ export default function LevelBenefitsPage() {
             XP level discounts on trading costs. Applied per user at execution time.
           </p>
         </div>
+        {/* Ink is hardcoded dark rather than a theme token: the button sits on
+            lime in BOTH themes, so a token that flips with the theme — or a
+            missing one, which is how this shipped — leaves pale text on lime. */}
         <button
           onClick={save}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-bg-base rounded hover:brightness-110 disabled:opacity-60 transition-fast"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-[#0a0a0a] rounded hover:brightness-110 disabled:opacity-60 transition-fast"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           Save changes
