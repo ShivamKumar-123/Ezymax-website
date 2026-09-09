@@ -122,6 +122,13 @@ export interface ShieldRules {
   items: { title: string; body: string }[];
   /** How the payout itself behaves — closing order, cap, cumulative total. */
   notes?: { title: string; body: string }[];
+  /** Worked scenario for the hedge rule, which is the one people misread. */
+  example?: {
+    title: string;
+    intro: string;
+    rows: { action: string; result: string; covered: boolean }[];
+    footer: string;
+  };
 }
 
 export interface ShieldClaimsResponse {

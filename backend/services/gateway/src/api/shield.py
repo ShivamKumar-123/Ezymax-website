@@ -111,9 +111,48 @@ async def list_plans(
                 },
                 {
                     "title": "No opposite trade open on the same symbol",
-                    "body": "Checked at the moment you close. If a BUY and a SELL on one symbol are both open, the loss on one is offset by the gain on the other, so there is nothing to cover.",
+                    "body": "Checked at the moment you close, on that account. Holding a BUY and a SELL on one symbol means the loss on one is offset by the gain on the other, so there is nothing to cover.",
                 },
             ],
+            # Rule 4 is the one people get wrong, because the answer depends on
+            # something the sentence does not mention: which position you close
+            # first. Spelling it out with real numbers is the difference
+            # between a rule someone reads and a rule someone understands.
+            "example": {
+                "title": "If you hold both sides",
+                "intro": (
+                    "Say you hold BUY 2 lots and SELL 3 lots on XAUUSD. The sizes make no "
+                    "difference — the check only asks whether an opposite position is still open."
+                ),
+                "rows": [
+                    {
+                        "action": "Close the SELL while the BUY is open",
+                        "result": "Refused. An opposite position was open against it.",
+                        "covered": False,
+                    },
+                    {
+                        "action": "Then close the BUY",
+                        "result": "Nothing is open against it now, so it is judged on its own.",
+                        "covered": True,
+                    },
+                    {
+                        "action": "Or close the BUY first, in profit",
+                        "result": "A winning trade is never a claim, so Shield does not look at it.",
+                        "covered": False,
+                    },
+                    {
+                        "action": "Then close the SELL at a loss",
+                        "result": "Nothing is open against it — this loss can be covered.",
+                        "covered": True,
+                    },
+                ],
+                "footer": (
+                    "Whichever side you close last is the only one that can be covered. "
+                    "That holds even if both sides lose: the first one closed is refused, "
+                    "the second can be covered. A partial close does not help — whatever "
+                    "is left open still blocks the other side."
+                ),
+            },
             # The detail that decides real outcomes and was written down
             # nowhere: the hedge test runs per close, so with two opposing
             # positions the one closed LAST is the only one that can be

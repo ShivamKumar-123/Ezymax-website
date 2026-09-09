@@ -327,6 +327,44 @@ function RulesCard({ rules }: { rules: ShieldRules | null }) {
         ))}
       </ul>
 
+      {/* Rule 4 in practice. The sentence above is true but the outcome turns
+          on which position you close first, which no wording of the rule
+          alone conveys — so it is shown, with numbers. */}
+      {rules.example && (
+        <div
+          className="mt-4 rounded-xl p-3.5"
+          style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
+        >
+          <p className="text-sm font-bold text-text-primary">{rules.example.title}</p>
+          <p className="text-[11.5px] text-text-secondary mt-1 leading-relaxed">
+            {rules.example.intro}
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {rules.example.rows.map((r) => (
+              <li key={r.action} className="flex items-start gap-2.5">
+                <span
+                  className="mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 tabular-nums"
+                  style={
+                    r.covered
+                      ? { background: 'rgba(34,197,94,0.12)', color: '#16a34a' }
+                      : { background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }
+                  }
+                >
+                  {r.covered ? 'COVERED' : 'NO'}
+                </span>
+                <p className="text-[11.5px] leading-relaxed text-text-secondary">
+                  <span className="font-semibold text-text-primary">{r.action} — </span>
+                  {r.result}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11.5px] text-text-secondary mt-3 leading-relaxed">
+            {rules.example.footer}
+          </p>
+        </div>
+      )}
+
       {!!rules.notes?.length && (
         <>
           <h3 className="text-sm font-bold text-text-primary mt-5">How the payout works</h3>
