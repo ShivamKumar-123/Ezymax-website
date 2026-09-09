@@ -39,24 +39,7 @@
 
     // Diagnostic stage readout — disabled in production (kept as a no-op so the
     // stage() calls below don't need removing; re-enable to debug loading).
-    // Reports each boot step to the RN host. The app renders these over the
-    // chart while it is still loading — a bare spinner cannot say whether the
-    // page failed, the library failed, or the widget stalled, and that
-    // ambiguity is what kept this bug alive. Costs one postMessage per step.
-    function stage(s) {
-      try {
-        var el = document.getElementById('tv_chart');
-        post({
-          type: 'stage',
-          s: String(s),
-          w: el ? el.clientWidth : -1,
-          h: el ? el.clientHeight : -1,
-        });
-      } catch (e) {}
-    }
-    window.addEventListener('unhandledrejection', function (e) {
-      try { post({ type: 'jserror', message: 'unhandled: ' + String((e && e.reason && e.reason.message) || e.reason).slice(0, 150) }); } catch (x) {}
-    });
+    function stage(s) { /* no-op */ }
     window.onerror = function (m) { try { post({ type: 'jserror', message: String(m).slice(0, 200) }); } catch (e) {} };
 
     // --- config injected by RN before the chart boots -----------------
