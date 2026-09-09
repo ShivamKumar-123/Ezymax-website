@@ -27,6 +27,27 @@ class RewardsUserState(Base):
     last_updated = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
 
+class LevelBenefit(Base):
+    """Per-level trading-cost discounts, editable by admins.
+
+    One row per XP level (1..10, mirroring LEVEL_THRESHOLDS in
+    rewards_service). Values are percentages off the resolved cost, so 15
+    means "15% cheaper". These used to be constants in instrument_pricing
+    (1% commission per level, nothing for spread or swap); moving them into
+    a table lets the desk retune the ladder without a deploy and leaves an
+    audit trail on every change.
+    """
+    __tablename__ = "level_benefits"
+
+    level = Column(Integer, primary_key=True)
+    spread_discount_pct = Column(Numeric(5, 2), nullable=False, default=Decimal("0"), server_default="0")
+    swap_discount_pct = Column(Numeric(5, 2), nullable=False, default=Decimal("0"), server_default="0")
+    commission_discount_pct = Column(Numeric(5, 2), nullable=False, default=Decimal("0"), server_default="0")
+    is_enabled = Column(Boolean, nullable=False, default=True, server_default="true")
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class RewardsMission(Base):
     """Mission template (catalogue), shared by all users for a given period."""
     __tablename__ = "rewards_missions"

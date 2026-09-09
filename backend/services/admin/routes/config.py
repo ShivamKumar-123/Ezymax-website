@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import get_db
 from dependencies import require_permission
 from packages.common.src.models import User, SystemSetting, SpreadConfig
-from packages.common.src.admin_schemas import BulkChargeUpdate, BulkSpreadUpdate, BulkSwapUpdate
+from packages.common.src.admin_schemas import (
+    BulkChargeUpdate, BulkSpreadUpdate, BulkSwapUpdate, BulkLevelBenefitUpdate,
+)
 from services import config_service
 
 router = APIRouter(prefix="/config", tags=["Configuration"])
@@ -250,6 +252,27 @@ async def update_spreads(
     db: AsyncSession = Depends(get_db),
 ):
     return await config_service.update_spreads(
+        body=body, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.get("/level-benefits")
+async def list_level_benefits(
+    admin: User = Depends(require_permission("config.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await config_service.list_level_benefits(db=db)
+
+
+@router.put("/level-benefits")
+async def update_level_benefits(
+    body: BulkLevelBenefitUpdate,
+    request: Request,
+    admin: User = Depends(require_permission("config.update")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await config_service.update_level_benefits(
         body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )

@@ -25,7 +25,7 @@ import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
 import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
 import XpDetailsModal from '@/components/dashboard/XpDetailsModal';
 import PsDetailsModal from '@/components/dashboard/PsDetailsModal';
-import LevelLadderCard from '@/components/dashboard/LevelLadderCard';
+import LevelLadderCard, { type LevelBenefits } from '@/components/dashboard/LevelLadderCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -167,6 +167,8 @@ function BrokerHome() {
     xp?: number; xp_into_level?: number; xp_for_next_level?: number;
     ac_balance?: number;
     ps?: number; ps_rank?: string;
+    benefits?: LevelBenefits | null;
+    next_level_benefits?: LevelBenefits | null;
   } | null>(null);
   // Level-progress popup (opened from the "Lvl N" badge).
   const [showLevel, setShowLevel] = useState(false);
@@ -420,6 +422,8 @@ function BrokerHome() {
           levelLabel={levelLabel}
           xpIntoLevel={rewardsState?.xp_into_level ?? 0}
           xpForNextLevel={rewardsState?.xp_for_next_level ?? 100}
+          benefits={rewardsState?.benefits}
+          nextLevelBenefits={rewardsState?.next_level_benefits}
         />
       </div>
 

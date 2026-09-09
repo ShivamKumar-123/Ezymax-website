@@ -234,8 +234,12 @@ async def place_order(
         # Apply this user's per-user spread override (if admin set one) to the
         # fill price — rebuilds bid/ask around mid with the user's spread. Users
         # without an override fill at the normal feed price.
-        from packages.common.src.instrument_pricing import apply_user_spread_quote
+        from packages.common.src.instrument_pricing import (
+            apply_user_spread_quote, apply_level_spread_discount,
+        )
         u_bid, u_ask = await apply_user_spread_quote(db, user_id, instrument, bid, ask)
+        # XP-level loyalty perk: narrow the quote the trader actually fills on.
+        u_bid, u_ask = await apply_level_spread_discount(db, user_id, instrument, u_bid, u_ask)
         fill_price = u_ask if req.side == "buy" else u_bid
 
         if req.stop_loss:
@@ -938,10 +942,16 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     sv = side_val(pos.side)
     # Apply the user's per-user spread override to the close too, so the full
     # round-trip spread reflects their configured spread (open already did).
-    from packages.common.src.instrument_pricing import apply_user_spread_quote
+    from packages.common.src.instrument_pricing import (
+        apply_user_spread_quote, apply_level_spread_discount,
+    )
     _cb, _ca = await apply_user_spread_quote(
         db, user_id, pos.instrument, Decimal(str(tick["bid"])), Decimal(str(tick["ask"])),
     )
+    # The level discount has to apply on both legs. Discounting only the open
+    # would hand the trader a tighter entry and then charge full spread to get
+    # out — worse than not discounting at all, and invisible until they close.
+    _cb, _ca = await apply_level_spread_discount(db, user_id, pos.instrument, _cb, _ca)
     close_price = _cb if sv == "buy" else _ca
     contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 

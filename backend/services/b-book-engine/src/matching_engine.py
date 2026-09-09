@@ -182,8 +182,12 @@ class MatchingEngine:
         # user's per-user spread override (if any) to the fill — the trigger
         # already fired on the global price; only the fill price reflects the
         # user's spread.
-        from packages.common.src.instrument_pricing import apply_user_spread_quote
+        from packages.common.src.instrument_pricing import (
+            apply_user_spread_quote, apply_level_spread_discount,
+        )
         bid, ask = await apply_user_spread_quote(db, account.user_id, instrument, bid, ask)
+        # XP-level loyalty perk: narrow the quote the trader actually fills on.
+        bid, ask = await apply_level_spread_discount(db, account.user_id, instrument, bid, ask)
         fill_price = ask if order.side == OrderSide.BUY else bid
         margin = (order.lots * instrument.contract_size * fill_price) / Decimal(str(account.leverage))
 

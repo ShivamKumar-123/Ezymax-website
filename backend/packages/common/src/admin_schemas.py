@@ -449,6 +449,18 @@ class SpreadConfigOut(BaseModel):
         from_attributes = True
 
 
+class LevelBenefitIn(BaseModel):
+    level: int
+    spread_discount_pct: float = 0
+    swap_discount_pct: float = 0
+    commission_discount_pct: float = 0
+    is_enabled: bool = True
+
+
+class BulkLevelBenefitUpdate(BaseModel):
+    levels: list[LevelBenefitIn]
+
+
 class SwapConfigIn(BaseModel):
     scope: str
     segment_id: Optional[str] = None

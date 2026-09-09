@@ -11,16 +11,132 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     ChargeConfig, SpreadConfig, Instrument, InstrumentConfig,
-    AccountGroup, RewardsUserState, VipPass, StakingPosition,
+    AccountGroup, RewardsUserState, VipPass, StakingPosition, LevelBenefit,
 )
 
 
-# ─── XP-tier brokerage discount ─────────────────────────────────────
-# Per XP_Reward_mechanism slide 7: higher XP levels reduce brokerage. We
-# apply a 1% discount per level above L1, capped at 9% at L10. Modest by
-# design — the smart-fee engine and account tier do most of the work.
+# ─── XP-tier trading-cost discount ──────────────────────────────────
+# Per XP_Reward_mechanism slide 7: higher XP levels make trading cheaper.
+# The ladder lives in the `level_benefits` table (migration 0067) so the
+# desk can retune it from the admin panel; these constants remain only as
+# the fallback used when the table is missing or unreadable, and they
+# reproduce the original behaviour exactly: 1% off commission per level
+# above L1, capped at 9%, and nothing off spread or swap.
 XP_DISCOUNT_PER_LEVEL = Decimal("0.01")
 XP_DISCOUNT_MAX_LEVELS = 9  # so max discount = 9% at level 10
+
+# Hard ceiling on any single level discount, whatever the table says. A
+# fat-fingered 95% in the admin panel would otherwise hand out near-free
+# execution on the B-book's main revenue line; this clamps the damage to
+# something survivable while still letting the row be saved and noticed.
+MAX_LEVEL_DISCOUNT = Decimal("0.50")
+
+# XP thresholds per level — mirrors LEVEL_THRESHOLDS in rewards_service.py,
+# duplicated here so this module keeps no service-layer dependency.
+_LEVEL_THRESHOLDS = [0, 500, 1500, 3000, 5000, 8000, 12000, 18000, 26000, 36000]
+
+# The pricing path runs on every quote and every fill, so neither the ladder
+# nor the user's level may cost a query per tick. Both are cached in-process
+# with a short TTL — the same idiom as _FLOAT_PARAMS below. Each worker keeps
+# its own copy; an admin edit is live everywhere within one TTL.
+_LADDER_TTL = 60.0
+_LEVEL_TTL = 60.0
+_ladder_cache: dict = {"ts": 0.0, "rows": None}
+_user_level_cache: dict = {}
+
+
+def _level_for_xp(xp: int) -> int:
+    level = 1
+    for i, threshold in enumerate(_LEVEL_THRESHOLDS):
+        if (xp or 0) >= threshold:
+            level = i + 1
+    return level
+
+
+def _fallback_multipliers(level: int) -> Tuple[Decimal, Decimal, Decimal]:
+    """Pre-table behaviour: commission only, 1% per level above L1."""
+    steps = max(0, min(XP_DISCOUNT_MAX_LEVELS, level - 1))
+    return (
+        Decimal("1"),
+        Decimal("1"),
+        Decimal("1") - (XP_DISCOUNT_PER_LEVEL * Decimal(steps)),
+    )
+
+
+def _mult(pct) -> Decimal:
+    """Percentage off → multiplier, clamped to [1 - MAX_LEVEL_DISCOUNT, 1]."""
+    d = Decimal(str(pct or 0)) / Decimal("100")
+    if d < 0:
+        d = Decimal("0")
+    if d > MAX_LEVEL_DISCOUNT:
+        d = MAX_LEVEL_DISCOUNT
+    return Decimal("1") - d
+
+
+async def _load_ladder(db: AsyncSession) -> dict:
+    """{level: (spread_mult, swap_mult, commission_mult)}, cached."""
+    now = _time.time()
+    if _ladder_cache["rows"] is not None and (now - _ladder_cache["ts"]) < _LADDER_TTL:
+        return _ladder_cache["rows"]
+    rows = (await db.execute(
+        select(LevelBenefit).where(LevelBenefit.is_enabled == True)
+    )).scalars().all()
+    ladder = {
+        int(r.level): (
+            _mult(r.spread_discount_pct),
+            _mult(r.swap_discount_pct),
+            _mult(r.commission_discount_pct),
+        )
+        for r in rows
+    }
+    _ladder_cache["rows"] = ladder
+    _ladder_cache["ts"] = now
+    return ladder
+
+
+async def _user_level(db: AsyncSession, user_id: UUID) -> int:
+    now = _time.time()
+    hit = _user_level_cache.get(user_id)
+    if hit is not None and (now - hit[0]) < _LEVEL_TTL:
+        return hit[1]
+    xp = (await db.execute(
+        select(RewardsUserState.xp).where(RewardsUserState.user_id == user_id)
+    )).scalar_one_or_none()
+    level = _level_for_xp(int(xp or 0))
+    # Bound the cache so a long-lived worker can't grow it without limit.
+    if len(_user_level_cache) > 5000:
+        _user_level_cache.clear()
+    _user_level_cache[user_id] = (now, level)
+    return level
+
+
+async def level_multipliers(
+    db: AsyncSession, user_id: Optional[UUID]
+) -> Tuple[Decimal, Decimal, Decimal]:
+    """(spread, swap, commission) multipliers for this user's XP level.
+
+    Never raises: any failure returns "no discount" rather than blocking a
+    fill or a swap run, because a loyalty perk must not be able to stop
+    someone trading.
+    """
+    if user_id is None:
+        return (Decimal("1"), Decimal("1"), Decimal("1"))
+    try:
+        level = await _user_level(db, user_id)
+        ladder = await _load_ladder(db)
+        row = ladder.get(level)
+        if row is None:
+            return _fallback_multipliers(level)
+        return row
+    except Exception:
+        return (Decimal("1"), Decimal("1"), Decimal("1"))
+
+
+def invalidate_level_cache() -> None:
+    """Called by the admin save path so an edited ladder takes effect at once
+    in this process (other workers pick it up within _LADDER_TTL)."""
+    _ladder_cache["rows"] = None
+    _ladder_cache["ts"] = 0.0
 
 
 # ─── VIP brokerage discount ─────────────────────────────────────────
@@ -51,21 +167,9 @@ STAKING_DISCOUNT_TIERS: tuple[tuple[Decimal, Decimal], ...] = (
 
 
 async def _xp_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
-    """Returns a multiplier in [0.91, 1.00]. 1.00 means no discount."""
-    state = (await db.execute(
-        select(RewardsUserState.xp).where(RewardsUserState.user_id == user_id)
-    )).scalar_one_or_none()
-    if state is None:
-        return Decimal("1")
-    # Inline level lookup (mirrors LEVEL_THRESHOLDS in rewards_service.py
-    # but kept here so this module has no service-layer dependency).
-    thresholds = [0, 500, 1500, 3000, 5000, 8000, 12000, 18000, 26000, 36000]
-    level = 1
-    for i, t in enumerate(thresholds):
-        if (state or 0) >= t:
-            level = i + 1
-    levels_above_one = max(0, min(XP_DISCOUNT_MAX_LEVELS, level - 1))
-    return Decimal("1") - (XP_DISCOUNT_PER_LEVEL * Decimal(levels_above_one))
+    """Commission multiplier from the level_benefits ladder. 1.00 = no discount."""
+    _spread, _swap, commission = await level_multipliers(db, user_id)
+    return commission
 
 
 async def _vip_discount_for_user(db: AsyncSession, user_id: UUID) -> Decimal:
@@ -348,6 +452,45 @@ async def apply_user_spread_quote(
     digits = int(getattr(instrument, "digits", None) or 5)
     q = Decimal("1") / (Decimal(10) ** max(digits, 0))
     return (mid - half).quantize(q), (mid + half).quantize(q)
+
+
+async def apply_level_spread_discount(
+    db: AsyncSession, user_id: Optional[UUID], instrument: Instrument,
+    bid: Decimal, ask: Decimal,
+) -> Tuple[Decimal, Decimal]:
+    """Tighten an executable quote by the user's XP-level spread discount.
+
+    The platform spread is baked into the published tick per SYMBOL, not per
+    user — market-data builds bid/ask around mid from spread_configs before
+    anyone's identity is known. So a per-user discount cannot live in the
+    spread resolver; it has to narrow the quote at execution time, which is
+    what this does: keep mid fixed, shrink the half-spread.
+
+    Run it AFTER apply_user_spread_quote so an explicit per-user override is
+    the thing being discounted, and so users without an override are covered
+    too (that function returns the feed quote untouched for them).
+    """
+    if user_id is None:
+        return bid, ask
+    spread_mult, _swap, _commission = await level_multipliers(db, user_id)
+    if spread_mult >= 1:
+        return bid, ask
+    bid = Decimal(str(bid))
+    ask = Decimal(str(ask))
+    half = (ask - bid) / Decimal("2")
+    if half <= 0:
+        return bid, ask
+    mid = (bid + ask) / Decimal("2")
+    half = half * spread_mult
+    digits = int(getattr(instrument, "digits", None) or 5)
+    q = Decimal("1") / (Decimal(10) ** max(digits, 0))
+    new_bid = (mid - half).quantize(q)
+    new_ask = (mid + half).quantize(q)
+    # Never invert or collapse the quote: a discount that rounds the two sides
+    # onto the same tick would let a user open and close at one price.
+    if new_ask <= new_bid:
+        new_ask = new_bid + q
+    return new_bid, new_ask
 
 
 def symmetric_quote_from_mid(

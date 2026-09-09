@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.models import ChargeConfig, SpreadConfig, SwapConfig
+from packages.common.src.models import ChargeConfig, SpreadConfig, SwapConfig, LevelBenefit
 from packages.common.src.redis_client import publish_instrument_config_reload
 from packages.common.src.admin_schemas import (
     ChargeConfigOut, SpreadConfigOut, SwapConfigOut,
@@ -194,3 +194,86 @@ async def update_swaps(
     )
     await db.commit()
     return {"message": f"{len(body.configs)} swap configs saved"}
+
+
+# ─── Level benefits (XP-tier trading-cost discounts) ─────────────────
+
+LEVEL_LABELS = [
+    "Novice", "Apprentice", "Skilled Trader", "Veteran", "Expert",
+    "Master", "Champion", "Legend", "Sovereign", "Mythic",
+]
+LEVEL_XP_THRESHOLDS = [0, 500, 1500, 3000, 5000, 8000, 12000, 18000, 26000, 36000]
+
+
+async def list_level_benefits(db: AsyncSession) -> list:
+    """Always returns all 10 levels. Rows the table is missing come back as
+    zeros so the admin page can render a complete ladder on a fresh install
+    instead of a short list the desk has to guess at."""
+    rows = (await db.execute(
+        select(LevelBenefit).order_by(LevelBenefit.level)
+    )).scalars().all()
+    by_level = {int(r.level): r for r in rows}
+    out = []
+    for lvl in range(1, 11):
+        r = by_level.get(lvl)
+        out.append({
+            "level": lvl,
+            "label": LEVEL_LABELS[lvl - 1],
+            "xp_required": LEVEL_XP_THRESHOLDS[lvl - 1],
+            "spread_discount_pct": float(r.spread_discount_pct or 0) if r else 0.0,
+            "swap_discount_pct": float(r.swap_discount_pct or 0) if r else 0.0,
+            "commission_discount_pct": float(r.commission_discount_pct or 0) if r else 0.0,
+            "is_enabled": bool(r.is_enabled) if r else True,
+        })
+    return out
+
+
+async def update_level_benefits(
+    body, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Upsert the ladder. Unlike spreads/swaps this does NOT delete-then-insert:
+    the ladder is a fixed set of 10 rows, and wiping it mid-request would leave
+    the pricing path with no discounts if the insert half failed."""
+    old = {r["level"]: r for r in await list_level_benefits(db)}
+
+    for item in body.levels:
+        lvl = int(item.level)
+        if lvl < 1 or lvl > 10:
+            raise HTTPException(status_code=400, detail=f"Invalid level {lvl}: must be 1-10")
+        for field in ("spread_discount_pct", "swap_discount_pct", "commission_discount_pct"):
+            v = float(getattr(item, field) or 0)
+            if v < 0 or v > 100:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{field} for level {lvl} must be between 0 and 100",
+                )
+
+        row = (await db.execute(
+            select(LevelBenefit).where(LevelBenefit.level == lvl)
+        )).scalar_one_or_none()
+        if row is None:
+            row = LevelBenefit(level=lvl)
+            db.add(row)
+        row.spread_discount_pct = Decimal(str(item.spread_discount_pct or 0))
+        row.swap_discount_pct = Decimal(str(item.swap_discount_pct or 0))
+        row.commission_discount_pct = Decimal(str(item.commission_discount_pct or 0))
+        row.is_enabled = bool(item.is_enabled)
+        row.updated_by = admin_id
+
+    await db.commit()
+
+    # Drop this process's cached ladder so the change is live immediately here;
+    # the gateway / b-book / risk-engine workers refresh within their own TTL.
+    try:
+        from packages.common.src.instrument_pricing import invalidate_level_cache
+        invalidate_level_cache()
+    except Exception:
+        pass
+
+    await write_audit_log(
+        db, admin_id, "update_level_benefits", "config", None,
+        old_values={"levels": list(old.values())},
+        new_values={"levels": [i.model_dump() for i in body.levels]},
+        ip_address=ip_address,
+    )
+    return {"message": "Level benefits updated", "levels": await list_level_benefits(db)}

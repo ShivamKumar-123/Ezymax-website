@@ -429,9 +429,23 @@ class RiskEngine:
                             if now.weekday() == triple_day:
                                 swap_amount *= 3
 
+                            account = await db.get(TradingAccount, pos.account_id)
+
+                            # XP-level loyalty perk: shrink the overnight CHARGE
+                            # only. swap_amount is added to the balance, so a
+                            # negative value is what the trader pays; a positive
+                            # one is swap they earn. Scaling both would quietly
+                            # cut a payout in the name of a discount.
+                            if account is not None and swap_amount < 0:
+                                try:
+                                    from packages.common.src.instrument_pricing import level_multipliers
+                                    _spr, swap_mult, _com = await level_multipliers(db, account.user_id)
+                                    swap_amount = swap_amount * Decimal(str(swap_mult))
+                                except Exception as e:
+                                    logger.warning("level swap discount skipped for %s: %s", pos.id, e)
+
                             pos.swap += swap_amount
 
-                            account = await db.get(TradingAccount, pos.account_id)
                             if account:
                                 account.balance += swap_amount
 

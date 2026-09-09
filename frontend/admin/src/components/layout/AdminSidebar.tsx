@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Charges', href: '/config/charges' },
       { label: 'Spreads', href: '/config/spreads' },
       { label: 'Swaps', href: '/config/swaps' },
+      { label: 'Level Benefits', href: '/config/level-benefits' },
       { label: 'Time Rules', href: '/config/time-rules' },
     ],
   },

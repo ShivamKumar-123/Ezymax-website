@@ -196,7 +196,41 @@ async def get_state(db: AsyncSession, user_id) -> dict:
         "streak_bonus_days": STREAK_BONUS_DAYS,
         "streak_bonus_xp": STREAK_BONUS_XP,
         "streak_bonus_ac": float(STREAK_BONUS_AC),
+        # What this level is actually worth at the trading desk. Without this
+        # the perk is invisible: the discount is applied inside the fill price,
+        # where nobody can see it.
+        **(await _level_benefit_payload(db, level)),
     }
+
+
+async def _level_benefit_payload(db: AsyncSession, level: int) -> dict:
+    """Current and next-level trading-cost discounts, for the rank card.
+    Best-effort — a missing table must not break the rewards page."""
+    try:
+        from packages.common.src.models import LevelBenefit
+        rows = (await db.execute(
+            select(LevelBenefit).where(
+                LevelBenefit.is_enabled == True,
+                LevelBenefit.level.in_([level, level + 1]),
+            )
+        )).scalars().all()
+        by_level = {int(r.level): r for r in rows}
+
+        def _pack(r):
+            if r is None:
+                return None
+            return {
+                "spread_discount_pct": float(r.spread_discount_pct or 0),
+                "swap_discount_pct": float(r.swap_discount_pct or 0),
+                "commission_discount_pct": float(r.commission_discount_pct or 0),
+            }
+
+        return {
+            "benefits": _pack(by_level.get(level)),
+            "next_level_benefits": _pack(by_level.get(level + 1)),
+        }
+    except Exception:
+        return {"benefits": None, "next_level_benefits": None}
 
 
 # ─────────────────────────────────────────────────────────────────────

@@ -97,6 +97,37 @@ async def _apply_startup_ddl():
                 "'performance_fee','master_commission','refund','insurance_fee','insurance_payout',"
                 "'bonus_transfer','bonus_grant','bonus_release','withdrawal_refund'))"
             ))
+            # Per-level trading-cost discounts (migration 0067). Mirrored here
+            # so the admin Level Benefits page and the pricing resolver work on
+            # hosts where Alembic has not been run. The seed matches the old
+            # hard-coded commission ladder exactly (level - 1, capped at 9), so
+            # bringing the table into existence changes nobody's costs.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS level_benefits (
+                    level                    INTEGER PRIMARY KEY,
+                    spread_discount_pct      NUMERIC(5,2) NOT NULL DEFAULT 0,
+                    swap_discount_pct        NUMERIC(5,2) NOT NULL DEFAULT 0,
+                    commission_discount_pct  NUMERIC(5,2) NOT NULL DEFAULT 0,
+                    is_enabled               BOOLEAN NOT NULL DEFAULT TRUE,
+                    updated_by               UUID,
+                    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT level_benefits_level_range CHECK (level BETWEEN 1 AND 10),
+                    CONSTRAINT level_benefits_pct_range CHECK (
+                        spread_discount_pct     BETWEEN 0 AND 100 AND
+                        swap_discount_pct       BETWEEN 0 AND 100 AND
+                        commission_discount_pct BETWEEN 0 AND 100
+                    )
+                )
+            """))
+            for _lvl, _spr, _swp, _com in (
+                (1, 0, 0, 0), (2, 1, 1, 1), (3, 2, 2, 2), (4, 3, 3, 3), (5, 5, 5, 4),
+                (6, 6, 6, 5), (7, 8, 8, 6), (8, 10, 10, 7), (9, 12, 12, 8), (10, 15, 15, 9),
+            ):
+                await conn.execute(text(
+                    "INSERT INTO level_benefits (level, spread_discount_pct, "
+                    "swap_discount_pct, commission_discount_pct) VALUES "
+                    f"({_lvl}, {_spr}, {_swp}, {_com}) ON CONFLICT (level) DO NOTHING"
+                ))
             # Waitlist (invite-only access gate). Mirrors migration 0061 so the
             # admin waitlist endpoints work even where Alembic hasn't run.
             await conn.execute(text("""

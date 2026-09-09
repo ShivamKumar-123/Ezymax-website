@@ -61,16 +61,26 @@ function useCountUp(value: number, run: boolean, ms = 900) {
   return n;
 }
 
+export interface LevelBenefits {
+  spread_discount_pct: number;
+  swap_discount_pct: number;
+  commission_discount_pct: number;
+}
+
 export default function LevelLadderCard({
   level,
   levelLabel,
   xpIntoLevel,
   xpForNextLevel,
+  benefits,
+  nextLevelBenefits,
 }: {
   level: number;
   levelLabel: string;
   xpIntoLevel: number;
   xpForNextLevel: number;
+  benefits?: LevelBenefits | null;
+  nextLevelBenefits?: LevelBenefits | null;
 }) {
   const isMax = level >= MAX_LEVEL || xpForNextLevel <= 0;
   const intoPct = xpForNextLevel > 0 ? Math.min(1, Math.max(0, xpIntoLevel / xpForNextLevel)) : 1;
@@ -135,6 +145,32 @@ export default function LevelLadderCard({
           Rewards <ArrowRight size={13} />
         </Link>
       </div>
+
+      {/* What this level is worth at the desk */}
+      {benefits && (benefits.spread_discount_pct > 0 || benefits.swap_discount_pct > 0 || benefits.commission_discount_pct > 0) && (
+        <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
+          {([
+            ['Spread', benefits.spread_discount_pct, nextLevelBenefits?.spread_discount_pct],
+            ['Swap', benefits.swap_discount_pct, nextLevelBenefits?.swap_discount_pct],
+            ['Commission', benefits.commission_discount_pct, nextLevelBenefits?.commission_discount_pct],
+          ] as const)
+            .filter(([, pct]) => pct > 0)
+            .map(([label, pct, next]) => (
+              <span
+                key={label}
+                className="inline-flex items-baseline gap-1 rounded-full border border-accent/25 bg-accent/[0.07] px-2.5 py-1 text-[11px] font-semibold text-text-secondary"
+                title={
+                  typeof next === 'number' && next > pct
+                    ? `${next}% at Level ${level + 1}`
+                    : undefined
+                }
+              >
+                <span className="tabular-nums font-bold" style={{ color: ACCENT }}>{pct}%</span>
+                <span>off {label.toLowerCase()}</span>
+              </span>
+            ))}
+        </div>
+      )}
 
       {/* Track */}
       <div ref={scrollRef} className="mt-5 overflow-x-auto pb-2 pt-1 [scrollbar-width:thin]">
