@@ -103,15 +103,47 @@ async def list_plans(
                 },
                 {
                     "title": f"Hold it at least {SHIELD_MIN_DURATION_SECONDS // 60} minutes",
-                    "body": f"A trade closed under {SHIELD_MIN_DURATION_SECONDS // 60} minutes after opening is skipped, and its loss does not count toward your cumulative total either.",
+                    "body": f"Measured from open to close. A trade closed under {SHIELD_MIN_DURATION_SECONDS // 60} minutes is skipped entirely.",
                 },
                 {
                     "title": "Open it after buying the plan",
                     "body": "Positions already open when the plan starts are not covered — you cannot insure a trade that is already losing.",
                 },
                 {
-                    "title": "No opposite trade on the same symbol",
-                    "body": "If you hold a BUY and a SELL on one symbol, the loss on one is offset by the gain on the other, so there is nothing to cover.",
+                    "title": "No opposite trade open on the same symbol",
+                    "body": "Checked at the moment you close. If a BUY and a SELL on one symbol are both open, the loss on one is offset by the gain on the other, so there is nothing to cover.",
+                },
+            ],
+            # The detail that decides real outcomes and was written down
+            # nowhere: the hedge test runs per close, so with two opposing
+            # positions the one closed LAST is the only one that can be
+            # covered. Two traders with identical positions and identical
+            # losses get different answers purely from the order they closed
+            # in. Better they read that here than discover it after paying.
+            "notes": [
+                {
+                    "title": "Only the last one closed can be covered",
+                    "body": "Closing order matters when you hold both sides of a symbol. Close the first and the other is still open, so that one is refused; close the second and nothing is open against it, so it can be covered. A partial close does not help — the remainder still counts as open.",
+                },
+                {
+                    "title": "A refused trade does not count at all",
+                    "body": "Its loss is not added to your cumulative total either, so it neither pays out nor moves you toward the cap.",
+                },
+                {
+                    "title": "Cover is on your cumulative loss, not per trade",
+                    "body": "Every eligible loss in the window adds up, and each payout tops you up to your coverage share of that running total.",
+                },
+                {
+                    "title": "Payouts arrive on their own",
+                    "body": "Nothing to claim or file. The amount lands in your main wallet the moment the trade closes, and shows in Cover activity below.",
+                },
+                {
+                    "title": "The cap is for the whole window",
+                    "body": "Once total payouts reach the plan cap, the plan is spent — further losses in that window are not covered.",
+                },
+                {
+                    "title": "Cover ends when the window does",
+                    "body": "A plan protects only trades closed before it expires. The premium is not refunded if you never claim.",
                 },
             ],
         },

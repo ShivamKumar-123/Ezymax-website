@@ -118,7 +118,10 @@ export interface ShieldEvent {
  *  from the engine that enforces it. */
 export interface ShieldRules {
   min_hold_seconds: number;
+  /** The four conditions a losing trade must meet. */
   items: { title: string; body: string }[];
+  /** How the payout itself behaves — closing order, cap, cumulative total. */
+  notes?: { title: string; body: string }[];
 }
 
 export interface ShieldClaimsResponse {

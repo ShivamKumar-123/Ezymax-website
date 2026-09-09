@@ -312,17 +312,40 @@ function RulesCard({ rules }: { rules: ShieldRules | null }) {
         A losing trade has to meet all four to be covered. Worth reading before you buy.
       </p>
       <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
-        {rules.items.map((r) => (
+        {rules.items.map((r, i) => (
           <li
             key={r.title}
             className="rounded-xl p-3"
             style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
           >
-            <p className="text-sm font-semibold text-text-primary">{r.title}</p>
+            <p className="text-sm font-semibold text-text-primary">
+              <span className="text-text-tertiary font-mono mr-1.5">{i + 1}.</span>
+              {r.title}
+            </p>
             <p className="text-[11.5px] text-text-secondary mt-1 leading-relaxed">{r.body}</p>
           </li>
         ))}
       </ul>
+
+      {!!rules.notes?.length && (
+        <>
+          <h3 className="text-sm font-bold text-text-primary mt-5">How the payout works</h3>
+          <ul className="mt-2 space-y-2">
+            {rules.notes.map((n) => (
+              <li key={n.title} className="flex gap-2.5">
+                <span
+                  className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: 'var(--accent-ink)' }}
+                />
+                <p className="text-[11.5px] leading-relaxed text-text-secondary">
+                  <span className="font-semibold text-text-primary">{n.title}. </span>
+                  {n.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
