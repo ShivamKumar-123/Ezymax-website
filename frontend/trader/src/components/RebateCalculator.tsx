@@ -119,12 +119,12 @@ export default function RebateCalculator() {
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">
           Estimated Monthly Rebate
         </div>
-        <div className="my-1.5 text-5xl font-black leading-none" style={{ color: LIME }}>
+        <div className="my-1.5 text-5xl font-black leading-none" style={{ color: 'var(--accent-ink)' }}>
           ${Math.round(rebate).toLocaleString()}
         </div>
         <p className="mx-auto max-w-md text-[11px] leading-relaxed text-white/55">
           Illustrative estimate on {totalLots.toLocaleString()} closed lots at the{' '}
-          <span className="font-semibold capitalize" style={{ color: LIME }}>{tier?.tier}</span> tier
+          <span className="font-semibold capitalize" style={{ color: 'var(--accent-ink)' }}>{tier?.tier}</span> tier
           (${tier?.rate}/lot). Actual rebates depend on client activity and closed volume, and
           exclude any sub-IB share.
         </p>

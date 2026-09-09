@@ -107,7 +107,7 @@ export default function PsDetailsModal({
           >
             <Gem size={24} style={{ color: ON_ACCENT }} />
           </div>
-          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: ACCENT }}>
+          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: 'var(--accent-ink)' }}>
             {Math.round(shown).toLocaleString()}
             <span className="ml-1 text-lg font-bold text-text-secondary">PS</span>
           </p>
@@ -117,7 +117,7 @@ export default function PsDetailsModal({
           {rank && (
             <span
               className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
-              style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.25)', color: ACCENT }}
+              style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.25)', color: 'var(--accent-ink)' }}
             >
               <Trophy size={12} /> {rank}
             </span>
@@ -143,7 +143,7 @@ export default function PsDetailsModal({
                 }}
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(204,255,0,0.12)' }}>
-                  <w.icon size={16} style={{ color: ACCENT }} />
+                  <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-text-primary">{w.title}</p>
@@ -159,7 +159,7 @@ export default function PsDetailsModal({
           className="mt-3 flex items-center gap-3 rounded-2xl p-3"
           style={{ background: 'rgba(204,255,0,0.06)', border: '1px solid rgba(204,255,0,0.22)' }}
         >
-          <Trophy size={16} style={{ color: ACCENT }} className="shrink-0" />
+          <Trophy size={16} style={{ color: 'var(--accent-ink)' }} className="shrink-0" />
           <p className="text-[11px] text-text-secondary">
             Your Prestige Score sets your position on the <span className="font-semibold text-text-primary">Leaderboard</span> — climb the ranks to stand out.
           </p>

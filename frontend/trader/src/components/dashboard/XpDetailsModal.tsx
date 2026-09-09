@@ -116,7 +116,7 @@ export default function XpDetailsModal({
           >
             <Zap size={26} style={{ color: ON_ACCENT }} />
           </div>
-          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: ACCENT }}>
+          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: 'var(--accent-ink)' }}>
             {Math.round(shown).toLocaleString()}
             <span className="ml-1 text-lg font-bold text-text-secondary">XP</span>
           </p>
@@ -169,7 +169,7 @@ export default function XpDetailsModal({
                 }}
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(204,255,0,0.12)' }}>
-                  <w.icon size={16} style={{ color: ACCENT }} />
+                  <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-text-primary">{w.title}</p>

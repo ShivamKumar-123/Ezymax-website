@@ -971,7 +971,11 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 }
 .theme-light,
 [data-theme="light"] {
-  --accent-ink: #4f6d00;
+  /* Black, not a dark lime. The olive read as a washed-out green next to real
+     black text and still sat at the edge of legible on white; the client asked
+     for accent TEXT to be plain black on the light theme. Lime fills, borders
+     and buttons are untouched — this token only ever colours foregrounds. */
+  --accent-ink: #0a0a0a;
 }
 
 .theme-light .text-accent,

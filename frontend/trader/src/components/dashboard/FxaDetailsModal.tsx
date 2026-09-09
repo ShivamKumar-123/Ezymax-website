@@ -105,7 +105,7 @@ export default function FxaDetailsModal({
           >
             <Coins size={26} style={{ color: ON_ACCENT }} />
           </div>
-          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: ACCENT }}>
+          <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: 'var(--accent-ink)' }}>
             {shown.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             <span className="ml-1 text-lg font-bold text-text-secondary">FXA</span>
           </p>
@@ -133,7 +133,7 @@ export default function FxaDetailsModal({
                 }}
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(204,255,0,0.12)' }}>
-                  <w.icon size={16} style={{ color: ACCENT }} />
+                  <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-text-primary">{w.title}</p>
@@ -149,7 +149,7 @@ export default function FxaDetailsModal({
           className="mt-3 flex items-center gap-3 rounded-2xl p-3"
           style={{ background: 'rgba(204,255,0,0.06)', border: '1px solid rgba(204,255,0,0.22)' }}
         >
-          <ShoppingBag size={16} style={{ color: ACCENT }} className="shrink-0" />
+          <ShoppingBag size={16} style={{ color: 'var(--accent-ink)' }} className="shrink-0" />
           <p className="text-[11px] text-text-secondary">
             Spend FXA on perks, discounts and prizes in the <span className="font-semibold text-text-primary">Rewards Store</span>.
           </p>
