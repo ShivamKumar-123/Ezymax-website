@@ -9,7 +9,7 @@
  * + usage, the buyable catalog, and the Shield claim history.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, ShieldCheck, Clock, TrendingDown, Check } from 'lucide-react';
+import { Loader2, ShieldCheck, Clock, TrendingDown, Check, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   shieldApi,
@@ -17,6 +17,7 @@ import {
   type ShieldState,
   type ShieldClaim,
   type ShieldEvent,
+  type ShieldRules,
   type ShieldPeriod,
   type ShieldTier,
 } from '@/lib/api/insurance';
@@ -53,6 +54,7 @@ function timeLeft(iso: string | null): string {
 
 export default function ShieldPanel() {
   const [plans, setPlans] = useState<ShieldPlan[] | null>(null);
+  const [rules, setRules] = useState<ShieldRules | null>(null);
   const [active, setActive] = useState<ShieldState | null>(null);
   const [claims, setClaims] = useState<ShieldClaim[] | null>(null);
   const [events, setEvents] = useState<ShieldEvent[] | null>(null);
@@ -68,6 +70,7 @@ export default function ShieldPanel() {
         shieldApi.claims(100),
       ]);
       setPlans(p.plans);
+      setRules(p.rules ?? null);
       setActive(s.active);
       setClaims(c.claims);
       setEvents(c.events ?? []);
@@ -142,6 +145,8 @@ export default function ShieldPanel() {
           </p>
         </div>
       )}
+
+      <RulesCard rules={rules} />
 
       {/* Catalog */}
       {PERIOD_ORDER.map((period) => {
@@ -277,6 +282,47 @@ function ShieldActivity({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/**
+ * What Shield actually covers, shown before the Buy buttons.
+ *
+ * Every denial in production so far has been the same rule — a trade closed
+ * inside five minutes — by traders who had already paid the premium. The
+ * conditions existed only in the engine, so the first time anyone learned them
+ * was after being refused.
+ *
+ * The copy comes from the API rather than being written here, so it cannot
+ * drift from the engine that enforces it.
+ */
+function RulesCard({ rules }: { rules: ShieldRules | null }) {
+  if (!rules?.items?.length) return null;
+  return (
+    <div
+      className="rounded-2xl p-4 md:p-5"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}
+    >
+      <div className="flex items-center gap-2">
+        <Info size={16} className="text-text-tertiary shrink-0" />
+        <h2 className="text-base font-bold text-text-primary">What Shield covers</h2>
+      </div>
+      <p className="text-[11px] text-text-tertiary mt-0.5">
+        A losing trade has to meet all four to be covered. Worth reading before you buy.
+      </p>
+      <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
+        {rules.items.map((r) => (
+          <li
+            key={r.title}
+            className="rounded-xl p-3"
+            style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}
+          >
+            <p className="text-sm font-semibold text-text-primary">{r.title}</p>
+            <p className="text-[11.5px] text-text-secondary mt-1 leading-relaxed">{r.body}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

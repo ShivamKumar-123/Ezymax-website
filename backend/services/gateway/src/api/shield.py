@@ -28,7 +28,7 @@ from packages.common.src.models import (
     InsuranceShieldClaim, InsuranceShieldEvent, InsuranceShieldPlan,
     UserInsuranceShield,
 )
-from packages.common.src.insurance.shield import PERIOD_DAYS
+from packages.common.src.insurance.shield import PERIOD_DAYS, SHIELD_MIN_DURATION_SECONDS
 
 from ..services import wallet_service
 
@@ -87,7 +87,35 @@ async def list_plans(
         rows,
         key=lambda p: (_PERIOD_ORDER.get(p.period, 9), _TIER_ORDER.get(p.tier, 9)),
     )
-    return {"plans": [_plan_dict(p) for p in rows]}
+    # Ship the eligibility rules with the catalogue rather than letting the
+    # clients hardcode them. The five-minute hold is a constant in the engine;
+    # if the desk ever changes it, copy that repeats it from memory starts
+    # lying to the buyer — which is exactly the sort of thing people notice
+    # only after they have paid a premium and been refused.
+    return {
+        "plans": [_plan_dict(p) for p in rows],
+        "rules": {
+            "min_hold_seconds": SHIELD_MIN_DURATION_SECONDS,
+            "items": [
+                {
+                    "title": "The trade has to be closed",
+                    "body": "Cover settles on realised loss. A position still open, however far down, is not covered yet.",
+                },
+                {
+                    "title": f"Hold it at least {SHIELD_MIN_DURATION_SECONDS // 60} minutes",
+                    "body": f"A trade closed under {SHIELD_MIN_DURATION_SECONDS // 60} minutes after opening is skipped, and its loss does not count toward your cumulative total either.",
+                },
+                {
+                    "title": "Open it after buying the plan",
+                    "body": "Positions already open when the plan starts are not covered — you cannot insure a trade that is already losing.",
+                },
+                {
+                    "title": "No opposite trade on the same symbol",
+                    "body": "If you hold a BUY and a SELL on one symbol, the loss on one is offset by the gain on the other, so there is nothing to cover.",
+                },
+            ],
+        },
+    }
 
 
 @router.get("/status")

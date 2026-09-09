@@ -114,6 +114,13 @@ export interface ShieldEvent {
   created_at: string | null;
 }
 
+/** Eligibility rules, served with the catalogue so the copy can never drift
+ *  from the engine that enforces it. */
+export interface ShieldRules {
+  min_hold_seconds: number;
+  items: { title: string; body: string }[];
+}
+
 export interface ShieldClaimsResponse {
   claims: ShieldClaim[];
   events: ShieldEvent[];
@@ -131,7 +138,7 @@ export interface ShieldClaim {
 }
 
 export const shieldApi = {
-  plans: () => api.get<{ plans: ShieldPlan[] }>('/insurance/shield/plans'),
+  plans: () => api.get<{ plans: ShieldPlan[]; rules?: ShieldRules }>('/insurance/shield/plans'),
   status: () => api.get<{ active: ShieldState | null; history: ShieldState[] }>('/insurance/shield/status'),
   purchase: (planId: string, replace = false) =>
     api.post<{ shield: ShieldState }>('/insurance/shield/purchase', { plan_id: planId, replace }),
