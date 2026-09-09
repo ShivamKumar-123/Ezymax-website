@@ -482,12 +482,21 @@ async def apply_level_spread_discount(
         return bid, ask
     mid = (bid + ask) / Decimal("2")
     half = half * spread_mult
+    # Quantize FINER than the instrument's own tick. Rounding to `digits` threw
+    # the whole discount away on coarse instruments: XAUUSD quotes to 2dp, so a
+    # 30-point spread has a half of $0.15 and 3% of that is $0.0045 — under half
+    # a tick, which rounds straight back to $0.15. The trader saw an identical
+    # fill and the perk did nothing. A discount is only meaningless below one
+    # tick if we force it onto the tick grid; the fill price column is
+    # NUMERIC(18,8), so two extra places cost nothing and make every level on
+    # the ladder actually pay out. 30 points at 3% now really is 29.1 points,
+    # half of it on the way in and half on the way out.
     digits = int(getattr(instrument, "digits", None) or 5)
-    q = Decimal("1") / (Decimal(10) ** max(digits, 0))
+    q = Decimal("1") / (Decimal(10) ** max(digits + 2, 0))
     new_bid = (mid - half).quantize(q)
     new_ask = (mid + half).quantize(q)
     # Never invert or collapse the quote: a discount that rounds the two sides
-    # onto the same tick would let a user open and close at one price.
+    # onto the same price would let a user open and close at one price.
     if new_ask <= new_bid:
         new_ask = new_bid + q
     return new_bid, new_ask

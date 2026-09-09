@@ -135,4 +135,17 @@ async def list_user_spread_overrides(db: AsyncSession, user_id) -> dict:
         from packages.common.src.instrument_pricing import get_floating_params
         fp = await get_floating_params(db)
         out["_floating"] = {"markup": fp["markup"], "max_mult": fp["max_mult"]}
+
+    # The XP-level spread discount applies to EVERY symbol, not just ones with
+    # an override, and it is applied at fill time inside the price. Send the
+    # multiplier so the terminal can show the spread the trader will actually
+    # get. Without it the badge keeps reading the rack spread and the perk is
+    # invisible exactly where the trader is looking at it.
+    try:
+        from packages.common.src.instrument_pricing import level_multipliers
+        spread_mult, _swap, _commission = await level_multipliers(db, user_id)
+        if spread_mult < 1:
+            out["_level"] = {"spread_mult": float(spread_mult)}
+    except Exception:
+        pass
     return out

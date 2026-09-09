@@ -122,6 +122,10 @@ interface TradingState {
       When present the terminal shows that user their own spread (fills already
       apply it on the backend). */
   spreadOverrides: Record<string, { value: number; type: string }>;
+  /** XP-level spread discount as a multiplier (0.97 = 3% off). Applies to
+   *  every symbol, so the terminal shows the spread the fill will use. 1 = no
+   *  discount. */
+  levelSpreadMult: number;
   /** Global floating-spread knobs (markup %, max mult), used when a per-user
    *  override is type "floating" to compute the live spread from the tick. */
   floatingParams: { markup: number; max_mult: number };
@@ -187,6 +191,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
   watchlist: DEFAULT_WATCHLIST,
   instruments: [],
   spreadOverrides: {},
+  levelSpreadMult: 1,
   floatingParams: { markup: 15, max_mult: 4 },
   orderFormCloneDraft: null,
 
@@ -207,14 +212,18 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       // symbol override — pull it out into floatingParams.
       const fp = map['_floating'];
       delete map['_floating'];
+      // `_level` is the XP-level spread discount, not a symbol override.
+      const lvl = map['_level'];
+      delete map['_level'];
       set({
         spreadOverrides: map,
+        levelSpreadMult: lvl ? (Number(lvl.spread_mult) || 1) : 1,
         floatingParams: fp
           ? { markup: Number(fp.markup) || 15, max_mult: Number(fp.max_mult) || 4 }
           : { markup: 15, max_mult: 4 },
       });
     } catch {
-      set({ spreadOverrides: {} });
+      set({ spreadOverrides: {}, levelSpreadMult: 1 });
     }
   },
   setOrderFormCloneDraft: (d) => set({ orderFormCloneDraft: d }),
@@ -397,6 +406,17 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         // `spread` is stored in PRICE units (ask − bid); the UI divides it by
         // pip_size to show pips.
         normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: adj };
+      }
+    }
+    // XP-level spread discount. Unlike the override above this applies to every
+    // symbol, and it mirrors apply_level_spread_discount on the backend: hold
+    // mid, shrink the half-spread. Shown here so the badge matches the fill —
+    // 30 points at 3% reads 29.1, half of it charged on entry and half on exit.
+    if (state.levelSpreadMult < 1 && normalized.bid && normalized.ask) {
+      const mid = (normalized.bid + normalized.ask) / 2;
+      const half = ((normalized.ask - normalized.bid) / 2) * state.levelSpreadMult;
+      if (half > 0) {
+        normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: half * 2 };
       }
     }
     const prev = state.prices[sym];
