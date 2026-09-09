@@ -983,6 +983,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 .theme-light .text-accent\/70,
 .theme-light .text-accent\/60,
 .theme-light .text-\[\#ccff00\],
+.theme-light .text-\[\#ccff00\]\/80,
 .theme-light .text-\[\#ccff00\]\/85,
 .theme-light .text-\[\#ccff00\]\/70,
 .theme-light .text-\[\#ccff00\]\/60,
@@ -991,6 +992,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 [data-theme="light"] .text-accent\/70,
 [data-theme="light"] .text-accent\/60,
 [data-theme="light"] .text-\[\#ccff00\],
+[data-theme="light"] .text-\[\#ccff00\]\/80,
 [data-theme="light"] .text-\[\#ccff00\]\/85,
 [data-theme="light"] .text-\[\#ccff00\]\/70,
 [data-theme="light"] .text-\[\#ccff00\]\/60 {
