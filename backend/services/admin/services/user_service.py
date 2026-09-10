@@ -285,6 +285,29 @@ async def add_fund(
     )
     db.add(txn)
 
+    # Record it as a deposit too. Every deposit figure in the platform reads
+    # the deposits table — the dashboard's Deposits Today and revenue chart,
+    # the analytics totals, the user's total_deposit on their detail page, and
+    # the trader's own deposit total. Admin-credited funds wrote ONLY a
+    # Transaction, so money that had genuinely entered the platform was
+    # missing from all five, and a day of nothing but admin credits reported
+    # Deposits Today: 0.
+    #
+    # method='admin' keeps it distinguishable from money a client actually
+    # sent, so reporting can separate the two whenever it needs to. Approved
+    # on the spot because the balance has already moved — there is nothing
+    # left to review.
+    now = datetime.utcnow()
+    db.add(Deposit(
+        user_id=user_id,
+        account_id=None,
+        amount=amt,
+        method="admin",
+        status="approved",
+        approved_by=admin_id,
+        approved_at=now,
+    ))
+
     await write_audit_log(
         db, admin_id, "add_fund", "user", user_id,
         old_values={"main_wallet_balance": float(old_balance)},
@@ -361,6 +384,19 @@ async def deduct_fund(
             created_by=admin_id,
         )
         db.add(txn)
+        # Mirror of add_fund: an admin debit is money leaving, so it belongs in
+        # withdrawals. Recording only the credit side would inflate every net
+        # figure on the platform — deposits would rise on admin action while
+        # admin debits stayed invisible.
+        db.add(Withdrawal(
+            user_id=user_id,
+            account_id=None,
+            amount=amt,
+            method="admin",
+            status="completed",
+            approved_by=admin_id,
+            approved_at=datetime.utcnow(),
+        ))
         await write_audit_log(
             db, admin_id, "deduct_fund", "user", user_id,
             old_values={"main_wallet_balance": float(main_bal)},
@@ -416,6 +452,19 @@ async def deduct_fund(
         created_by=admin_id,
     )
     db.add(txn)
+    # Mirror of add_fund: an admin debit is money leaving, so it belongs in
+    # withdrawals. Recording only the credit side would inflate every net
+    # figure on the platform — deposits would rise on admin action while
+    # admin debits stayed invisible.
+    db.add(Withdrawal(
+        user_id=user_id,
+        account_id=account.id,
+        amount=amt,
+        method="admin",
+        status="completed",
+        approved_by=admin_id,
+        approved_at=datetime.utcnow(),
+    ))
     await write_audit_log(
         db, admin_id, "deduct_fund", "trading_account", account.id,
         old_values={"balance": float(old_balance)},
