@@ -172,8 +172,10 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
     }
   }, [isLight])
 
+  // English is the business language for a B2B platform vendor; the French
+  // default was a leftover from the template this site was ported from.
   return (
-    <LangProvider defaultLang="fr">
+    <LangProvider defaultLang="en">
     <PopupProvider>
       <ScrollProgress />
       {/* Wrapper attributes per mode:

@@ -30,7 +30,7 @@ interface LangProviderProps {
   defaultLang?: Lang
 }
 
-export function LangProvider({ children, defaultLang = 'fr' }: LangProviderProps) {
+export function LangProvider({ children, defaultLang = 'en' }: LangProviderProps) {
   const [lang, setLangState] = useState<Lang>(defaultLang)
 
   useEffect(() => {
