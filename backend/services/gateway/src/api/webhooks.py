@@ -156,3 +156,34 @@ async def nowpayments_webhook(
     )
 
     return {"status": "ok"}
+
+
+@router.post("/didit")
+async def didit_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Identity-verification result from Didit.
+
+    The body is authenticated before it is read: HMAC-SHA256 over the raw
+    bytes, keyed with the webhook secret, plus a freshness window so a
+    captured request cannot be replayed later. A body that fails either check
+    is refused — this endpoint can approve KYC, which is what stands between
+    an account and a payout.
+    """
+    raw = await request.body()
+    sig = request.headers.get("x-signature", "")
+    ts = request.headers.get("x-timestamp", "")
+
+    from ..services import didit_service
+    if not didit_service.verify_webhook_signature(raw, sig, ts):
+        logger.warning("Didit webhook: signature rejected")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
+    import json as _json
+    try:
+        payload = _json.loads(raw)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    return await didit_service.handle_webhook(payload, db)

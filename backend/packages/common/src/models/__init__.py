@@ -32,6 +32,7 @@ from .users import (
     IPLog, AuditLog, UserAuditLog, Employee, WalletAuthNonce,
     FundMoveApproval, TwoFactorBackupCode, IdempotencyKey,
     EmailOtpCode, SensitiveActionChallenge,
+    KycSession,
 )
 from .instruments import (
     InstrumentSegment, Instrument, InstrumentConfig, InstrumentConfigAudit,
@@ -82,6 +83,7 @@ from .ib_rebate import IbRebatePeriod, IbRebateSettlement
 
 
 __all__ = [
+    "KycSession",
     "Base",
     # enums
     "OrderType", "OrderSide", "OrderStatus", "PositionStatus", "AllocationCopyType",

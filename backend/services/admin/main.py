@@ -97,6 +97,27 @@ async def _apply_startup_ddl():
                 "'performance_fee','master_commission','refund','insurance_fee','insurance_payout',"
                 "'bonus_transfer','bonus_grant','bonus_release','withdrawal_refund'))"
             ))
+            # Didit verification sessions. Separate from kyc_documents: that
+            # holds files a human reviews, this holds the state machine of an
+            # automated check, and the session id is what lets a webhook be
+            # matched to a user without trusting the body to say who it is.
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS kyc_sessions (
+                    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    session_id  VARCHAR(64) NOT NULL UNIQUE,
+                    session_url TEXT,
+                    status      VARCHAR(32) NOT NULL DEFAULT 'Not Started',
+                    decision    JSONB,
+                    aml_status  VARCHAR(32),
+                    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_kyc_sessions_user ON kyc_sessions (user_id, created_at DESC)"
+            ))
+
             # Per-level trading-cost discounts (migration 0067). Mirrored here
             # so the admin Level Benefits page and the pricing resolver work on
             # hosts where Alembic has not been run. The seed matches the old

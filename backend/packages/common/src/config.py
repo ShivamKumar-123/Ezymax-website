@@ -200,6 +200,20 @@ class Settings(BaseSettings):
     NOWPAYMENTS_SANDBOX: bool = False
     NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
 
+    # Didit identity verification (KYC + AML).
+    # Contract confirmed against the live API before this was written:
+    #   POST {base}/v2/session/                  -> 201 {session_id, url, status}
+    #   GET  {base}/v2/session/{id}/decision/    -> 200 {status, id_verification, aml, ...}
+    # Both authenticate with the `x-api-key` header.
+    DIDIT_API_KEY: str = ""
+    DIDIT_WORKFLOW_ID: str = ""
+    DIDIT_WEBHOOK_SECRET: str = ""
+    DIDIT_BASE_URL: str = "https://verification.didit.me"
+    DIDIT_KYC_REQUIRED: bool = False
+    DIDIT_AML_REQUIRED: bool = False
+    # Where Didit sends the user back after they finish.
+    DIDIT_RETURN_URL: str = ""
+
     # Decentralized USDT deposit flow — per-chain explorer + RPC config.
     # All optional: with no keys the chain_verifier_engine falls back to
     # public free endpoints (rate-limited but functional for low traffic).

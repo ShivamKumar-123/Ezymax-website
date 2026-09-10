@@ -288,6 +288,27 @@ class KYCDocument(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 
+class KycSession(Base):
+    """One Didit verification session.
+
+    Kept separately from KYCDocument: that table holds files a human reviews,
+    this holds the state machine of an automated check. Storing the session id
+    is what lets a webhook be matched back to a user without trusting the body
+    to say who it belongs to.
+    """
+    __tablename__ = "kyc_sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(String(64), nullable=False, unique=True, index=True)
+    session_url = Column(Text)
+    status = Column(String(32), nullable=False, default="Not Started")
+    decision = Column(JSONB)
+    aml_status = Column(String(32))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class IPLog(Base):
     __tablename__ = "ip_logs"
 

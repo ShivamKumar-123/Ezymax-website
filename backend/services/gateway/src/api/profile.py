@@ -134,6 +134,46 @@ async def submit_kyc(
     )
 
 
+@router.post("/kyc/didit/session")
+async def start_didit_session(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Open an automated identity check and return the URL to send the user to.
+
+    Replaces nothing: the manual upload route stays for users the automated
+    flow cannot handle, and for the desk to override.
+    """
+    from ..services import didit_service
+    return await didit_service.create_session(user_id=current_user["user_id"], db=db)
+
+
+@router.post("/kyc/didit/refresh")
+async def refresh_didit_session(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-read the decision from Didit for this user's latest session.
+
+    The webhook is the normal path. This exists because a webhook that never
+    arrives — a dropped delivery, a URL misconfigured for an afternoon — would
+    otherwise leave a verified user stuck on the old status with no way out
+    but a support ticket.
+    """
+    from sqlalchemy import select
+    from packages.common.src.models import KycSession
+    from ..services import didit_service
+
+    row = (await db.execute(
+        select(KycSession)
+        .where(KycSession.user_id == current_user["user_id"])
+        .order_by(KycSession.created_at.desc())
+    )).scalars().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="No verification session yet")
+    return await didit_service.refresh_session(session_id=row.session_id, db=db)
+
+
 @router.get("/kyc/file/{doc_id}")
 async def get_kyc_file(
     doc_id: UUID,
