@@ -63,8 +63,33 @@ def _trace() -> str:
     return secrets.token_hex(16)
 
 
+
+# How long to stay off the socket after a 429. Deliberately far longer than
+# the ordinary ladder: the upstream is refusing us BECAUSE of connection
+# frequency, so the usual "try again in 2s" makes the outage last longer.
+RATE_LIMIT_BACKOFF_SEC = 180.0
+
+
+def _is_rate_limited(exc: Exception) -> bool:
+    """True when the upstream rejected us with HTTP 429.
+
+    websockets surfaces this as a rejection string rather than a typed
+    error, and the exact class differs across versions, so match on both the
+    status attribute and the message.
+    """
+    status = getattr(exc, "status_code", None) or getattr(exc, "status", None)
+    if status == 429:
+        return True
+    return "429" in str(exc)
+
+
 class InfowayFeed:
     """Streams depth (best bid/ask) from Infoway `common` + `crypto` sockets."""
+
+    @property
+    def rate_limited_for(self) -> float:
+        """Seconds still to wait before the upstream will accept us, 0 if none."""
+        return max(0.0, self._rate_limited_until - time.monotonic())
 
     def __init__(self, api_key: str, instruments: Dict[str, dict]):
         self._api_key = api_key.strip()
@@ -73,6 +98,10 @@ class InfowayFeed:
 
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
+        # Monotonic deadline set when the upstream returns 429. The recovery
+        # probe in main.py reads it so it does not spawn a fresh connection
+        # attempt straight into a rate limit we are already serving.
+        self._rate_limited_until: float = 0.0
         self._tasks: List[asyncio.Task] = []
         # Monotonic timestamp of the last REAL data frame per socket. Set ONLY
         # on code-10005 depth frames — never on heartbeats/acks — so the
@@ -396,6 +425,21 @@ class InfowayFeed:
             except Exception as exc:
                 reconnect_attempts += 1
                 delay = min(60.0, 2.0 ** min(reconnect_attempts, 6))
+                # A 429 is the upstream telling us we are connecting too
+                # often. Retrying it on the ordinary 2s/4s/8s ladder is the
+                # one response guaranteed to keep the door shut — the feed
+                # was rate-limited out for five minutes on 2026-09-10, during
+                # which every forex/metal/index order was refused with "no
+                # live price" while crypto (a separate socket) traded fine.
+                # Back off hard instead, and let the caller know why.
+                if _is_rate_limited(exc):
+                    delay = max(delay, RATE_LIMIT_BACKOFF_SEC)
+                    self._rate_limited_until = time.monotonic() + delay
+                    logger.warning(
+                        "Infoway [%s] RATE LIMITED (429) — backing off %.0fs "
+                        "instead of retrying immediately",
+                        business, delay,
+                    )
                 if reconnect_attempts % 5 == 0:
                     logger.error(
                         "Infoway [%s] still down after %d attempts: %s",

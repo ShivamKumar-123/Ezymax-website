@@ -1,5 +1,6 @@
 """Market Data Service — Connects to price feeds, normalizes, distributes via Redis pub/sub and stores in TimescaleDB."""
 import asyncio
+import contextlib
 import json
 import logging
 import signal
@@ -553,6 +554,22 @@ class MarketDataService:
                     await asyncio.sleep(1.0)
             except Exception as exc:
                 logger.warning("Infoway recovery probe error: %s", exc)
+
+            # If that probe was refused with a 429, the upstream is telling
+            # us we are connecting too often — probing again in 120s is what
+            # keeps the limit in force. Wait out the feed's own backoff first.
+            cooldown = getattr(candidate, "rate_limited_for", 0.0)
+            if first_tick is None and cooldown > 0:
+                logger.warning(
+                    "Infoway probe rate limited — holding off %.0fs before the next attempt",
+                    cooldown,
+                )
+                probe_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await probe_task
+                await candidate.stop()
+                await asyncio.sleep(cooldown)
+                continue
 
             if first_tick is not None:
                 # Re-enqueue the popped probe tick so it isn't lost, then
