@@ -196,3 +196,30 @@ async def require_super_admin(current_user: dict = Depends(get_current_user)) ->
     if current_user["role"] != "super_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
     return current_user
+
+
+# ─── KYC gate for money leaving the platform ─────────────────────────
+
+KYC_APPROVED_STATES = ("approved", "verified")
+
+
+async def require_kyc_for_withdrawal(db, user_id) -> None:
+    """Raise 403 KYC_REQUIRED unless this user's KYC is approved.
+
+    Withdrawals had no identity check at all: an unverified account could
+    take money off the platform. Opening a live trading account already
+    required KYC, so the platform verified who could trade but not who
+    could be paid — which is backwards.
+
+    Kept in one place, called by every withdrawal path, so a fourth path
+    cannot quietly ship without it.
+    """
+    from fastapi import HTTPException
+    from sqlalchemy import select
+    from packages.common.src.models import User
+
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if (user.kyc_status or "pending").lower() not in KYC_APPROVED_STATES:
+        raise HTTPException(status_code=403, detail="KYC_REQUIRED")

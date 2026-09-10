@@ -1255,6 +1255,9 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
 
+    from packages.common.src.auth import require_kyc_for_withdrawal
+    await require_kyc_for_withdrawal(db, user_id)
+
     user_q = await db.execute(select(User).where(User.id == user_id))
     user_row = user_q.scalar_one_or_none()
     if not user_row:
@@ -1343,6 +1346,9 @@ async def create_manual_withdrawal(
     from packages.common.src.settings_store import get_bool_setting
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
+
+    from packages.common.src.auth import require_kyc_for_withdrawal
+    await require_kyc_for_withdrawal(db, user_id)
 
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")

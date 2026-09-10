@@ -493,7 +493,7 @@ function WalletPageContent() {
         setWithdrawCryptoAddress('');
         void fetchData(true);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+        toast.error(withdrawErrorMessage(err));
       } finally {
         setWithdrawSubmitting(false);
       }
@@ -539,7 +539,7 @@ function WalletPageContent() {
       toast.success(`Manual withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
       void fetchData(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
+      toast.error(withdrawErrorMessage(err));
     } finally {
       setWithdrawSubmitting(false);
     }
@@ -1723,6 +1723,17 @@ function WalletPageContent() {
 
     </DashboardShell>
   );
+}
+
+
+/** Turn the server's 403 KYC_REQUIRED into something a trader can act on. */
+function withdrawErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err ?? '');
+  if (raw.includes('KYC_REQUIRED')) {
+    return 'Payouts are only released to verified accounts. Complete your identity '
+      + 'verification from Profile → KYC and try again once it is approved.';
+  }
+  return raw || 'Withdrawal failed';
 }
 
 export default function WalletPage() {

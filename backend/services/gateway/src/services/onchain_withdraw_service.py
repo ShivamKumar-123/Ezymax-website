@@ -106,6 +106,9 @@ async def create_onchain_withdrawal(
             detail=f"Minimum withdrawal is ${MIN_USD_AMOUNT}",
         )
 
+    from packages.common.src.auth import require_kyc_for_withdrawal
+    await require_kyc_for_withdrawal(db, user_id)
+
     user = (await db.execute(
         select(User).where(User.id == user_id).with_for_update()
     )).scalar_one_or_none()
