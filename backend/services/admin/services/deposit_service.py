@@ -351,6 +351,20 @@ async def approve_deposit(
             )
         )
 
+    # CPA to the referring IB, if their plan carries one. This is the only
+    # trigger for it: the commission engine was previously only ever called
+    # from the fill path, so IBCommissionPlan.cpa_per_deposit could be set in
+    # admin and would never pay anything. Charged once per referred trader.
+    # Best-effort — a CPA problem must never block crediting a deposit.
+    try:
+        from packages.common.src.ib_commission import distribute_ib_cpa
+        await distribute_ib_cpa(db, deposit.user_id, deposit.amount)
+    except Exception as _cpa_exc:
+        import logging as _lg
+        _lg.getLogger("admin-deposits").error(
+            "IB CPA accrual failed for deposit %s: %s", deposit.id, _cpa_exc
+        )
+
     bonus_msg = ""
     applied_bonuses: list[tuple[str, Decimal]] = []
     now = datetime.utcnow()

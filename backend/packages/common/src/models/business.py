@@ -72,7 +72,12 @@ class IBCommission(Base):
     commission_type = Column(String(30))
     amount = Column(Numeric(18, 8), nullable=False)
     mlm_level = Column(Integer, default=1)
+    # pending → an admin has not released it yet (the engine only ever writes
+    # this) | paid → released and credited | rejected → voided, never credited.
     status = Column(String(20), default="pending")
+    # Stamped when an admin releases the payout, not when the commission was
+    # earned. NULL on rows that predate the approval flow (alembic 0065).
+    paid_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
 

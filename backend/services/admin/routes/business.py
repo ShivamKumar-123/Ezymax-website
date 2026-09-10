@@ -91,6 +91,50 @@ async def reject_active_ib(
     )
 
 
+@router.get("/ib/payouts/pending")
+async def list_pending_ib_payouts(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=200),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """IBs with commission waiting to be released."""
+    return await business_service.list_pending_ib_payouts(page=page, per_page=per_page, db=db)
+
+
+@router.post("/ib/payouts/{agent_id}/approve")
+async def approve_ib_payout(
+    agent_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(require_permission("ib.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Release this IB's pending commission into their live trading account.
+
+    This is the ONLY place IB commission money moves. The engine accrues it
+    as pending and credits nothing.
+    """
+    return await business_service.approve_ib_payout(
+        ib_id=agent_id, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.post("/ib/payouts/{agent_id}/reject")
+async def reject_ib_payout(
+    agent_id: uuid.UUID,
+    request: Request,
+    reason: str | None = Query(None),
+    admin: User = Depends(require_permission("ib.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Void this IB's pending commission. Nothing is credited."""
+    return await business_service.reject_ib_payout(
+        ib_id=agent_id, reason=reason, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
 @router.get("/ib/commission-plans")
 async def list_commission_plans(
     admin: User = Depends(require_permission("ib.view")),

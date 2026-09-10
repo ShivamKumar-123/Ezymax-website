@@ -74,7 +74,20 @@ interface UnassignedUser {
   created_at: string | null;
 }
 
-type Tab = 'applications' | 'active' | 'tree';
+type Tab = 'applications' | 'active' | 'payouts' | 'tree';
+
+/** An IB with commission accrued and waiting for an admin to release it.
+ *  Commissions no longer credit themselves — the engine accrues them as
+ *  pending and this screen is the only place the money actually moves. */
+type PendingPayout = {
+  ib_id: string;
+  user_email: string;
+  user_name: string;
+  referral_code: string;
+  pending_payout: number;
+  pending_count: number;
+  total_earned: number;
+};
 
 function formatMoney(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -84,6 +97,10 @@ export default function IBPage() {
   const [tab, setTab] = useState<Tab>('applications');
   const [applications, setApplications] = useState<IBApplication[]>([]);
   const [agents, setAgents] = useState<IBAgent[]>([]);
+  const [payouts, setPayouts] = useState<PendingPayout[]>([]);
+  const [payoutBusy, setPayoutBusy] = useState<string | null>(null);
+  const [rejectPayoutModal, setRejectPayoutModal] = useState<PendingPayout | null>(null);
+  const [rejectPayoutReason, setRejectPayoutReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [approveModal, setApproveModal] = useState<IBApplication | null>(null);
   const [rejectModal, setRejectModal] = useState<IBApplication | null>(null);
@@ -129,6 +146,9 @@ export default function IBPage() {
       } else if (tab === 'active') {
         const res = await adminApi.get<{ items: IBAgent[] }>('/business/ib/agents');
         setAgents(res.items || []);
+      } else if (tab === 'payouts') {
+        const res = await adminApi.get<{ items: PendingPayout[] }>('/business/ib/payouts/pending');
+        setPayouts(res.items || []);
       } else if (tab === 'tree') {
         setTreeLoading(true);
         setUnassignedLoading(true);
@@ -405,7 +425,7 @@ export default function IBPage() {
 
         <div className="bg-bg-secondary border border-border-primary rounded-md">
           <div className="flex gap-1 p-1 border-b border-border-primary">
-            {([['applications', 'Applications'], ['active', 'Active IBs'], ['tree', 'IB Tree']] as const).map(([id, label]) => (
+            {([['applications', 'Applications'], ['active', 'Active IBs'], ['payouts', 'Payouts'], ['tree', 'IB Tree']] as const).map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -513,6 +533,72 @@ export default function IBPage() {
                                 </button>
                                 <button onClick={() => setRejectAgentModal(agent)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xxs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-fast">
                                   <XCircle size={12} /> Reject
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            ) : tab === 'payouts' ? (
+              /* ── Payouts Tab ─────────────────────────────────────────────
+                 IB commission accrues as PENDING and credits nothing on its
+                 own. This screen is the only place it becomes money. */
+              payouts.length === 0 ? (
+                <div className="text-center text-xs text-text-tertiary py-12">Nothing awaiting payout</div>
+              ) : (
+                <div className="border border-border-primary rounded-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[860px]">
+                      <thead>
+                        <tr className="border-b border-border-primary bg-bg-tertiary/40">
+                          {['IB', 'Referral Code', 'Commissions', 'Pending', 'Already Paid', 'Actions'].map((col) => (
+                            <th key={col} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Pending', 'Already Paid'].includes(col) && 'text-right', col === 'Actions' && 'text-right')}>
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payouts.map((p) => (
+                          <tr key={p.ib_id} className="border-b border-border-primary/50 hover:bg-bg-hover transition-fast">
+                            <td className="px-4 py-2.5">
+                              <div className="text-xs text-text-primary font-medium">{p.user_name || '—'}</div>
+                              <div className="text-xxs text-text-tertiary">{p.user_email}</div>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs font-mono text-text-secondary">{p.referral_code}</td>
+                            <td className="px-4 py-2.5 text-xs text-text-secondary">{p.pending_count}</td>
+                            <td className="px-4 py-2.5 text-right text-xs font-semibold tabular-nums text-warning">${formatMoney(p.pending_payout)}</td>
+                            <td className="px-4 py-2.5 text-right text-xs tabular-nums text-text-tertiary">${formatMoney(p.total_earned)}</td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  disabled={payoutBusy === p.ib_id}
+                                  onClick={async () => {
+                                    setPayoutBusy(p.ib_id);
+                                    try {
+                                      const r = await adminApi.post<{ amount: number; commissions_paid: number; account_number: string }>(`/business/ib/payouts/${p.ib_id}/approve`, {});
+                                      toast.success(`Released $${formatMoney(r.amount)} to ${r.account_number}`);
+                                      fetchData();
+                                    } catch (e: any) {
+                                      toast.error(e.message || 'Payout failed');
+                                    } finally {
+                                      setPayoutBusy(null);
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 rounded text-xxs font-semibold bg-success/15 text-success hover:bg-success/25 transition-fast disabled:opacity-50"
+                                >
+                                  {payoutBusy === p.ib_id ? 'Releasing…' : 'Release'}
+                                </button>
+                                <button
+                                  disabled={payoutBusy === p.ib_id}
+                                  onClick={() => { setRejectPayoutModal(p); setRejectPayoutReason(''); }}
+                                  className="px-2.5 py-1 rounded text-xxs font-semibold bg-danger/15 text-danger hover:bg-danger/25 transition-fast disabled:opacity-50"
+                                >
+                                  Void
                                 </button>
                               </div>
                             </td>
@@ -781,6 +867,56 @@ export default function IBPage() {
               <button onClick={() => setRejectAgentModal(null)} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
               <button onClick={handleRejectAgent} disabled={submitting || !rejectReason.trim()} className="px-3 py-1.5 rounded-md text-xs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-fast disabled:opacity-50">
                 {submitting ? 'Rejecting...' : 'Reject IB'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Void pending payout — nothing is credited, the rows are marked
+          rejected. Deliberately a separate action from Release so an admin
+          cannot void money by mis-clicking a single button. */}
+      {rejectPayoutModal && (
+        <div className="fixed inset-0 z-50 bg-bg-base/70 flex items-center justify-center p-4" onClick={() => setRejectPayoutModal(null)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-md shadow-modal w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border-primary">
+              <h3 className="text-sm font-semibold text-text-primary">Void Pending Commission</h3>
+              <p className="text-xxs text-text-tertiary mt-0.5">{rejectPayoutModal.user_name} — {rejectPayoutModal.user_email}</p>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div className="bg-danger/10 border border-danger/30 rounded-md p-3">
+                <p className="text-xxs text-danger">
+                  ${formatMoney(rejectPayoutModal.pending_payout)} across {rejectPayoutModal.pending_count} commission(s)
+                  will be marked rejected. Nothing is credited and this cannot be undone from here.
+                </p>
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Reason (optional)</label>
+                <textarea value={rejectPayoutReason} onChange={(e) => setRejectPayoutReason(e.target.value)} rows={3} placeholder="Why is this being voided?" className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md resize-none" />
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-border-primary flex justify-end gap-2">
+              <button onClick={() => setRejectPayoutModal(null)} className="px-3 py-1.5 rounded-md text-xs text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button
+                disabled={payoutBusy === rejectPayoutModal.ib_id}
+                onClick={async () => {
+                  const target = rejectPayoutModal;
+                  setPayoutBusy(target.ib_id);
+                  try {
+                    const q = rejectPayoutReason.trim() ? `?reason=${encodeURIComponent(rejectPayoutReason.trim())}` : '';
+                    const r = await adminApi.post<{ voided: number; commissions: number }>(`/business/ib/payouts/${target.ib_id}/reject${q}`, {});
+                    toast.success(`Voided $${formatMoney(r.voided)} (${r.commissions} commission(s))`);
+                    setRejectPayoutModal(null);
+                    fetchData();
+                  } catch (e: any) {
+                    toast.error(e.message || 'Void failed');
+                  } finally {
+                    setPayoutBusy(null);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-md text-xs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-fast disabled:opacity-50"
+              >
+                {payoutBusy === rejectPayoutModal.ib_id ? 'Voiding…' : 'Void Commission'}
               </button>
             </div>
           </div>

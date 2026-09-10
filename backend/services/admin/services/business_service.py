@@ -974,3 +974,154 @@ async def delete_master(
         "followers_refunded": follower_count,
         "total_refunded_to_followers": float(total_refunded),
     }
+
+
+# ── IB payout approval ────────────────────────────────────────────────────
+# Commissions accrue as PENDING (packages/common/src/ib_commission.py) and no
+# money moves until an admin releases it here. Before this existed the engine
+# wrote status="paid" and credited the IB's trading account inside the same
+# transaction as the trade fill — an unattended payout path out of the
+# platform, with pending_payout defined on the model but never used.
+
+async def list_pending_ib_payouts(page: int, per_page: int, db: AsyncSession) -> dict:
+    """IBs with something waiting to be released, largest owed first."""
+    base = (
+        select(IBProfile, User.email, User.first_name, User.last_name)
+        .join(User, IBProfile.user_id == User.id)
+        .where(IBProfile.pending_payout > 0)
+    )
+    total = (await db.execute(select(func.count()).select_from(base.subquery()))).scalar() or 0
+    rows = (await db.execute(
+        base.order_by(IBProfile.pending_payout.desc())
+        .offset((page - 1) * per_page).limit(per_page)
+    )).all()
+
+    items = []
+    for ib, email, fn, ln in rows:
+        pending_count = (await db.execute(
+            select(func.count()).select_from(
+                select(IBCommission.id).where(
+                    IBCommission.ib_id == ib.id, IBCommission.status == "pending"
+                ).subquery()
+            )
+        )).scalar() or 0
+        items.append({
+            "ib_id": str(ib.id),
+            "user_email": email,
+            "user_name": f"{fn or ''} {ln or ''}".strip(),
+            "referral_code": ib.referral_code,
+            "pending_payout": float(ib.pending_payout or 0),
+            "pending_count": pending_count,
+            "total_earned": float(ib.total_earned or 0),
+        })
+    return {"items": items, "total": total, "page": page, "per_page": per_page}
+
+
+async def approve_ib_payout(
+    ib_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Release everything pending for one IB into their live trading account."""
+    ib = (await db.execute(
+        select(IBProfile).where(IBProfile.id == ib_id).with_for_update()
+    )).scalar_one_or_none()
+    if not ib:
+        raise HTTPException(status_code=404, detail="IB not found")
+
+    pending = (await db.execute(
+        select(IBCommission).where(
+            IBCommission.ib_id == ib_id, IBCommission.status == "pending"
+        ).with_for_update()
+    )).scalars().all()
+    if not pending:
+        raise HTTPException(status_code=400, detail="Nothing pending for this IB")
+
+    # Sum the rows rather than trusting pending_payout: the rows are the ledger,
+    # the column is a running convenience total. If they ever disagree the rows win.
+    amount = sum((Decimal(str(c.amount or 0)) for c in pending), Decimal("0"))
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Pending total is zero")
+
+    account = (await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.user_id == ib.user_id,
+            TradingAccount.is_demo == False,  # noqa: E712
+            TradingAccount.is_active == True,  # noqa: E712
+        ).limit(1)
+    )).scalar_one_or_none()
+    if not account:
+        raise HTTPException(
+            status_code=400,
+            detail="IB has no active live trading account to credit",
+        )
+
+    account.balance = (account.balance or Decimal("0")) + amount
+    account.equity = account.balance + (account.credit or Decimal("0"))
+    account.free_margin = account.equity - (account.margin_used or Decimal("0"))
+
+    db.add(Transaction(
+        user_id=ib.user_id,
+        account_id=account.id,
+        type="ib_commission",
+        amount=amount,
+        balance_after=account.balance,
+        description=f"IB payout released — {len(pending)} commission(s)",
+        created_by=admin_id,
+    ))
+
+    now = datetime.utcnow()
+    for c in pending:
+        c.status = "paid"
+        c.paid_at = now
+
+    ib.total_earned = (ib.total_earned or Decimal("0")) + amount
+    # Recomputed from the ledger, not decremented, so it cannot drift.
+    ib.pending_payout = Decimal("0")
+
+    await write_audit_log(
+        db, admin_id=admin_id, action="ib_payout_approved",
+        entity_type="ib_profile", entity_id=ib_id,
+        new_values={"amount": float(amount), "commissions": len(pending)},
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return {
+        "success": True,
+        "ib_id": str(ib_id),
+        "amount": float(amount),
+        "commissions_paid": len(pending),
+        "account_number": account.account_number,
+    }
+
+
+async def reject_ib_payout(
+    ib_id: uuid.UUID, reason: str | None, admin_id: uuid.UUID,
+    ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Void everything pending for one IB. Nothing is credited."""
+    ib = (await db.execute(
+        select(IBProfile).where(IBProfile.id == ib_id).with_for_update()
+    )).scalar_one_or_none()
+    if not ib:
+        raise HTTPException(status_code=404, detail="IB not found")
+
+    pending = (await db.execute(
+        select(IBCommission).where(
+            IBCommission.ib_id == ib_id, IBCommission.status == "pending"
+        ).with_for_update()
+    )).scalars().all()
+    if not pending:
+        raise HTTPException(status_code=400, detail="Nothing pending for this IB")
+
+    amount = sum((Decimal(str(c.amount or 0)) for c in pending), Decimal("0"))
+    for c in pending:
+        c.status = "rejected"
+    ib.pending_payout = Decimal("0")
+
+    await write_audit_log(
+        db, admin_id=admin_id, action="ib_payout_rejected",
+        entity_type="ib_profile", entity_id=ib_id,
+        new_values={"amount": float(amount), "commissions": len(pending), "reason": reason},
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return {"success": True, "ib_id": str(ib_id), "voided": float(amount), "commissions": len(pending)}
