@@ -20,8 +20,7 @@ const PUBLIC_EXACT_PATHS = new Set<string>([
   '/careers', '/collaboration', '/group', '/institutional',
   '/introducing-brokers', '/money-managers', '/partners',
   // home/page marketing rebuild pages
-  '/policy', '/markets', '/cfds', '/currency-pairs',
-  '/precious-metals', '/demo-account',
+  '/policy', '/how-it-works', '/white-label',
   // Legacy marketing routes still in the (landing) group
   '/trading/overview', '/protocol',
   '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto',

@@ -200,9 +200,32 @@ const nextConfig = {
       },
     ];
   },
-  /* `redirects()` removed — its single entry pointed `/platforms/earn`
-   *  at `/earning`, both of which were retired with the earning-page
-   *  purge. Re-add this hook when there's a real redirect to register. */
+  /* Retired broker-product routes.
+   *
+   * The site used to sell trading to retail clients, so it carried pages for
+   * currency pairs, precious metals, CFDs, account tiers and a demo account.
+   * SetupFX sells the platform to the businesses that run those markets, so
+   * none of them describe anything we offer.
+   *
+   * They are redirected rather than deleted outright: the pages were linked
+   * from the footer, the marketing sections and each other, and a 404 for a
+   * visitor who followed an old link is a worse outcome than landing on the
+   * page that now answers their question. Permanent, so search engines drop
+   * the old URLs instead of keeping them indexed against us. */
+  async redirects() {
+    const gone = [
+      '/markets', '/cfds', '/currency-pairs', '/precious-metals',
+      '/demo-account', '/trading/overview', '/trading/forex',
+      '/trading/crypto', '/trading/indices', '/trading/commodities',
+      '/accounts/standard', '/accounts/pro', '/accounts/demo',
+      '/company/why-swisscresta',
+    ];
+    return gone.map((source) => ({
+      source,
+      destination: '/platforms',
+      permanent: true,
+    }));
+  },
 };
 
 export default nextConfig;

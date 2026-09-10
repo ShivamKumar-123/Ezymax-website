@@ -12,10 +12,6 @@ import { LangProvider } from '@/landing/i18n/LangProvider'
 type NavKey = 'private' | 'partners' | 'institutional' | 'careers' | 'group' | 'markets' | 'platforms' | 'white-label' | 'about' | 'contact' | 'policy'
 
 const ACTIVE_PAGE_BY_PATH: Record<string, NavKey> = {
-  '/markets': 'markets',
-  '/precious-metals': 'markets',
-  '/currency-pairs': 'markets',
-  '/cfds': 'markets',
   '/platforms': 'platforms',
   '/about': 'about',
   '/contact': 'contact',
@@ -127,11 +123,8 @@ const LIGHT_MARKETING_PATHS = new Set<string>([
   '/partners',
   // home/page marketing rebuild pages
   '/policy',
-  '/markets',
-  '/cfds',
-  '/currency-pairs',
-  '/precious-metals',
-  '/demo-account',
+  '/how-it-works',
+  '/white-label',
 ])
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {

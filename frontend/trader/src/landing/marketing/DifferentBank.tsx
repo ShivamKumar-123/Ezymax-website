@@ -8,9 +8,9 @@ import { HEADING_SECTION } from './ui/headings'
 import { useLang } from '@/landing/i18n/LangProvider'
 
 const CARD_KEYS = [
-  { id: 'metals', href: '/precious-metals' },
-  { id: 'currency', href: '/currency-pairs' },
-  { id: 'cfds', href: '/cfds' },
+  { id: 'metals', href: '/platforms' },
+  { id: 'currency', href: '/platforms' },
+  { id: 'cfds', href: '/platforms' },
 ] as const
 
 export default function DifferentBank() {

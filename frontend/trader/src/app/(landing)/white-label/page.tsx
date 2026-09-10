@@ -1,167 +1,100 @@
-import { Building2, Zap, Users, Shield, TrendingUp, Clock } from 'lucide-react'
+import {
+  Code2, Palette, Smartphone, Plug, Figma, LifeBuoy,
+  CreditCard, ShieldCheck, Waves, LineChart, Users2, MessageSquare, BarChart4, Braces,
+  ArrowRight,
+} from 'lucide-react'
+import Disclaimer from '@/landing/marketing/Disclaimer'
 
-export const metadata = { title: 'White Label Solutions — SwissCresta' }
+export const metadata = { title: 'Trading Software Development Services — SetupFX' }
 
-export default function WhiteLabelPage() {
+/**
+ * Services page, rewritten from setupfx24.com (previously "White Label
+ * Solutions", written as a broker's enterprise pitch).
+ */
+
+const SERVICES = [
+  { n: '01', icon: Code2, title: 'Custom trading software', desc: 'Purpose-built systems designed around your instruments, workflows and revenue model.' },
+  { n: '02', icon: Palette, title: 'White-label deployment', desc: 'Complete branding, configuration and launch of any of our platforms under your identity.' },
+  { n: '03', icon: Smartphone, title: 'Mobile app development', desc: 'Native Android and iOS trading apps, built for performance and published under your accounts.' },
+  { n: '04', icon: Plug, title: 'API & third-party integration', desc: 'Liquidity feeds, market data, payment gateways, KYC providers, CRM systems and internal tools.' },
+  { n: '05', icon: Figma, title: 'UI/UX for trading products', desc: 'Interfaces designed for dense data and fast decisions. Tested with traders, not just designers.' },
+  { n: '06', icon: LifeBuoy, title: 'Maintenance & support', desc: 'Uptime monitoring, issue resolution, security updates and scheduled feature releases.' },
+]
+
+const INTEGRATIONS = [
+  { icon: CreditCard, label: 'Payment gateways' },
+  { icon: ShieldCheck, label: 'KYC & AML providers' },
+  { icon: Waves, label: 'Liquidity providers' },
+  { icon: LineChart, label: 'Market data feeds' },
+  { icon: Users2, label: 'CRM systems' },
+  { icon: MessageSquare, label: 'SMS & email services' },
+  { icon: BarChart4, label: 'Analytics tools' },
+  { icon: Braces, label: 'Custom APIs' },
+]
+
+export default function ServicesPage() {
   return (
     <div className="bg-white text-gray-900">
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-[#FCE6DD] text-[#E94E1B] text-sm font-semibold px-4 py-2 rounded-full mb-6">
-              <Building2 className="w-4 h-4" />
-              Enterprise Solutions
-            </div>
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-              Launch Your Brand<br />
-              <span className="text-[#E94E1B]">in 72 Hours</span>
-            </h1>
-            <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-2xl mx-auto">
-              Build your own branded brokerage with SwissCresta&apos;s institutional-grade white-label solution. Full technology stack, liquidity, and 24/7 support included.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 mb-12">
-              <a
-                href="/auth/register"
-                className="bg-[#E94E1B] hover:bg-[#C73E11] text-white font-semibold px-8 py-3.5 rounded-lg transition-colors inline-flex items-center gap-2"
-              >
-                Request Demo
-              </a>
-              <a
-                href="/contact"
-                className="border border-gray-300 hover:border-[#E94E1B] text-gray-900 font-semibold px-8 py-3.5 rounded-lg transition-colors"
-              >
-                Contact Sales
-              </a>
-            </div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#E94E1B] mb-5">What we build</p>
+          <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+            Development services<br />
+            <span className="text-[#E94E1B]">beyond the platform</span>
+          </h1>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            When your business model needs something our standard products don&rsquo;t cover, we build it.
+          </p>
+          <div className="mt-9 flex flex-wrap justify-center gap-3">
+            <a href="/contact" className="inline-flex items-center gap-2 bg-[#E94E1B] text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition">
+              Request a proposal <ArrowRight className="w-4 h-4" />
+            </a>
+            <a href="/platforms" className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition">
+              View platforms
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* Services */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Complete White-Label Solution</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">
-              Everything you need to launch and scale your brokerage business.
-            </p>
+            <h2 className="text-3xl font-extrabold text-gray-900">Six things we deliver well</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Building2,
-                title: 'Custom Branding',
-                desc: 'Your logo, colors, and domain. Fully customized client experience.',
-              },
-              {
-                icon: Zap,
-                title: 'Fast Launch',
-                desc: 'Go live in 72 hours with our streamlined setup process.',
-              },
-              {
-                icon: Users,
-                title: 'Dedicated Support',
-                desc: '24/7 technical support and account management for your business.',
-              },
-              {
-                icon: Shield,
-                title: 'Regulatory Compliance',
-                desc: 'Built-in compliance tools and documentation for major jurisdictions.',
-              },
-              {
-                icon: TrendingUp,
-                title: 'Revenue Sharing',
-                desc: 'Competitive revenue split with transparent reporting.',
-              },
-              {
-                icon: Clock,
-                title: 'Real-time Reporting',
-                desc: 'Comprehensive analytics and reporting dashboard.',
-              },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-[#FCE6DD] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-6 h-6 text-[#E94E1B]" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SERVICES.map(({ n, icon: Icon, title, desc }) => (
+              <div key={n} className="rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-[#FCE6DD] rounded-lg flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[#E94E1B]" />
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
-                    <p className="text-gray-600 text-sm">{desc}</p>
-                  </div>
+                  <span className="text-xs font-semibold text-gray-300">{n}</span>
                 </div>
+                <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* What's Included */}
+      {/* Integrations */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">What's Included</h2>
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 mb-3">Connected during the build</p>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">We handle the plumbing</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              Integrations are part of the project, not left as your problem afterwards.
+            </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Technology Stack</h3>
-              <ul className="space-y-3">
-                {[
-                  'Trading Platform (Web, Desktop, Mobile)',
-                  'CRM & Client Management',
-                  'Payment Processing Gateway',
-                  'Risk Management System',
-                  'Reporting & Analytics Dashboard',
-                  'Admin Back Office',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-[#E94E1B] rounded-full" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Business Services</h3>
-              <ul className="space-y-3">
-                {[
-                  'Tier-1 Liquidity Access',
-                  'Multi-Bank Payment Processing',
-                  'Regulatory Documentation',
-                  'Marketing Materials',
-                  'Training & Onboarding',
-                  'Ongoing Technical Support',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-[#E94E1B] rounded-full" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Process */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Launch Process</h2>
-          </div>
-          <div className="grid md:grid-cols-4 gap-8">
-            {[
-              { step: '1', title: 'Consultation', desc: 'We discuss your requirements and business goals.' },
-              { step: '2', title: 'Customization', desc: 'Brand customization and feature configuration.' },
-              { step: '3', title: 'Integration', desc: 'Technical setup and testing.' },
-              { step: '4', title: 'Launch', desc: 'Go live with training and support.' },
-            ].map(({ step, title, desc }) => (
-              <div key={title} className="text-center">
-                <div className="w-12 h-12 bg-[#E94E1B] text-white rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-4">
-                  {step}
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-gray-600 text-sm">{desc}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {INTEGRATIONS.map(({ icon: Icon, label }) => (
+              <div key={label} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
+                <Icon className="w-6 h-6 text-[#E94E1B] mx-auto mb-3" />
+                <div className="text-sm font-medium text-gray-700">{label}</div>
               </div>
             ))}
           </div>
@@ -169,28 +102,21 @@ export default function WhiteLabelPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Ready to Launch Your Brokerage?</h2>
-          <p className="text-gray-500 text-lg mb-8">
-            Join successful brokers using our white-label solution. Schedule a consultation today.
+      <section className="py-20 bg-white">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 mb-3">Next step</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Tell us what you need built</h2>
+          <p className="text-gray-500 leading-relaxed mb-8">
+            Send us the requirement. We&rsquo;ll come back with a scope, a timeline and an
+            honest answer on whether we&rsquo;re the right team for it.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a
-              href="/auth/register"
-              className="bg-[#E94E1B] hover:bg-[#C73E11] text-white font-semibold px-8 py-3.5 rounded-lg transition-colors inline-flex items-center gap-2"
-            >
-              Schedule Consultation
-            </a>
-            <a
-              href="/contact"
-              className="border border-gray-300 hover:border-[#E94E1B] text-gray-900 font-semibold px-8 py-3.5 rounded-lg transition-colors"
-            >
-              Learn More
-            </a>
-          </div>
+          <a href="/contact" className="inline-flex items-center gap-2 bg-[#E94E1B] text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition">
+            Contact us <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
       </section>
+
+      <Disclaimer />
     </div>
   )
 }

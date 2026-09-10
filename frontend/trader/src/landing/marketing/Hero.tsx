@@ -31,8 +31,8 @@ export default function Hero() {
             </Reveal>
             <Reveal delay={0.32}>
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Button variant="primary" href="/auth/register">{t('hero.ctaOpen')}</Button>
-                <Button variant="outline" href="/demo-account">{t('hero.ctaDemo')}</Button>
+                <Button variant="primary" href="/contact">{t('hero.ctaOpen')}</Button>
+                <Button variant="outline" href="/platforms">{t('hero.ctaDemo')}</Button>
               </div>
             </Reveal>
           </div>
