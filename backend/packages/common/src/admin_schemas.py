@@ -61,6 +61,11 @@ class UserOut(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     postal_code: Optional[str] = None
+    # KYC identifiers. Aadhaar is exposed ONLY as the masked form
+    # ("XXXX XXXX 1234") — the full number is not stored, so there is nothing
+    # else to expose. PAN is a tax identifier and is shown in full.
+    pan_number: Optional[str] = None
+    aadhaar_masked: Optional[str] = None
     role: str
     status: str
     kyc_status: str

@@ -34,6 +34,8 @@ interface UserDetail {
     city: string | null;
     state: string | null;
     postal_code: string | null;
+    pan_number: string | null;
+    aadhaar_masked: string | null;
     role: string;
     status: string;
     kyc_status: string;
@@ -399,6 +401,15 @@ export default function UserDetailPage() {
             {/* Full address. The street line was the only part ever shown, so
                 support saw an address with no city, state or postcode beside
                 it even though all three were on the user record. */}
+            {/* KYC identifiers. Aadhaar shows masked because only the last
+                four digits are stored — the full number is deliberately never
+                held, so there is nothing further to reveal. */}
+            <h3 className="text-sm font-semibold text-text-primary mt-6 mb-3">Identity Documents</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <InfoRow label="PAN" value={user.pan_number || '—'} />
+              <InfoRow label="Aadhaar" value={user.aadhaar_masked || '—'} />
+            </div>
+
             <h3 className="text-sm font-semibold text-text-primary mt-6 mb-3">Address</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <InfoRow label="Street" value={user.address || '—'} icon={MapPin} />

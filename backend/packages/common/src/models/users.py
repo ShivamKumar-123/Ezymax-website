@@ -37,6 +37,18 @@ class User(Base):
     city = Column(String(100))
     state = Column(String(100))
     postal_code = Column(String(20))
+
+    # ── KYC identifiers (alembic 0066) ──────────────────────────────────
+    # PAN is held in full: a tax identifier a broker is expected to keep.
+    pan_number = Column(String(10))
+    # Aadhaar deliberately is NOT. Only the last four digits — the part
+    # regulators and clients expect to see — plus a keyed HMAC of the full
+    # number. The HMAC answers "is this Aadhaar already on another account?"
+    # through a unique index, while a leak of these columns yields nothing
+    # reusable and we never hold a full Aadhaar we would then have to
+    # protect. The number cannot be recovered from either column.
+    aadhaar_last4 = Column(String(4))
+    aadhaar_hash = Column(String(64))
     # Profile avatar — JSON string for a preset avatar, or a data-URI / URL for
     # a user photo. Null = use the default app avatar.
     avatar = Column(Text, nullable=True)

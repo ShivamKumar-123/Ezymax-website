@@ -36,6 +36,7 @@ from packages.common.src.admin_schemas import (
     UserOut, UserDetailOut, TradingAccountOut,
     FundRequest, CreditRequest,
 )
+from packages.common.src.kyc_identifiers import mask_aadhaar
 from dependencies import write_audit_log
 
 settings = get_settings()
@@ -54,6 +55,8 @@ def _user_to_out(u: User) -> dict:
         "city": u.city,
         "state": u.state,
         "postal_code": u.postal_code,
+        "pan_number": u.pan_number,
+        "aadhaar_masked": mask_aadhaar(u.aadhaar_last4),
         "role": u.role,
         "status": u.status,
         "kyc_status": u.kyc_status,

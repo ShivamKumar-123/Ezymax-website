@@ -159,6 +159,8 @@ async def submit_kyc(
     city: str | None = Form(None),
     postal_code: str | None = Form(None),
     country_of_residence: str | None = Form(None),
+    pan_number: str | None = Form(None),
+    aadhaar_number: str | None = Form(None),
 ):
     """Upload one or two KYC documents (multipart). Optional address fields update the user profile.
 
@@ -179,6 +181,8 @@ async def submit_kyc(
         city=city,
         postal_code=postal_code,
         country_of_residence=country_of_residence,
+        pan_number=pan_number,
+        aadhaar_number=aadhaar_number,
         db=db,
     )
 

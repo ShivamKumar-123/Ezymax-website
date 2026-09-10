@@ -107,6 +107,11 @@ export default function KycPage() {
   const [city, setCity] = useState('');
   const [postal, setPostal] = useState('');
   const [country, setCountry] = useState('');
+  // Document numbers. Optional so an existing user is never blocked, but
+  // captured here because nothing in the platform recorded them before —
+  // admin could see the uploaded image and not one identifying number.
+  const [pan, setPan] = useState('');
+  const [aadhaar, setAadhaar] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProfile = useCallback(async () => {
@@ -156,6 +161,10 @@ export default function KycPage() {
     if (city.trim()) fd.append('city', city.trim());
     if (postal.trim()) fd.append('postal_code', postal.trim());
     if (country.trim()) fd.append('country_of_residence', country.trim());
+    if (pan.trim()) fd.append('pan_number', pan.trim().toUpperCase());
+    // Sent as digits only; the server keeps just the last four and a keyed
+    // hash — the full number is never stored.
+    if (aadhaar.trim()) fd.append('aadhaar_number', aadhaar.replace(/\D/g, ''));
 
     setSubmitting(true);
     try {
@@ -593,6 +602,30 @@ export default function KycPage() {
                   placeholder="Country"
                   className={inputCls}
                 />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <input
+                    type="text"
+                    value={pan}
+                    onChange={(e) => setPan(e.target.value.toUpperCase())}
+                    placeholder="PAN (ABCDE1234F)"
+                    maxLength={10}
+                    autoCapitalize="characters"
+                    className={inputCls}
+                  />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={aadhaar}
+                    onChange={(e) => setAadhaar(e.target.value.replace(/[^0-9]/g, '').slice(0, 12))}
+                    placeholder="Aadhaar (12 digits)"
+                    maxLength={12}
+                    className={inputCls}
+                  />
+                </div>
+                <p className="text-[11px] text-text-tertiary">
+                  We store only the last 4 digits of your Aadhaar — never the full number.
+                </p>
               </div>
 
               <button

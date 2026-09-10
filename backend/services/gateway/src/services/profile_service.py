@@ -7,6 +7,8 @@ from uuid import UUID
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
+
+from packages.common.src.kyc_identifiers import normalise_pan, prepare_aadhaar
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -279,6 +281,8 @@ async def submit_kyc(
     city: str | None,
     postal_code: str | None,
     country_of_residence: str | None,
+    pan_number: str | None,
+    aadhaar_number: str | None,
     db: AsyncSession,
 ) -> dict:
     result = await db.execute(select(User).where(User.id == user_id))
@@ -364,18 +368,49 @@ async def submit_kyc(
             db.add(doc)
             saved_docs.append(doc)
 
-        addr_parts: list[str] = []
+        # City and postcode go in THEIR OWN columns. They used to be folded
+        # into user.address as a text blob, which left users.city and
+        # users.postal_code empty forever and gave admin one unstructured line
+        # it could neither search nor break apart.
         if residential_address and residential_address.strip():
-            addr_parts.append(residential_address.strip())
-        line2 = ", ".join(
-            p for p in [(city or "").strip(), (postal_code or "").strip()] if p
-        )
-        if line2:
-            addr_parts.append(line2)
-        if addr_parts:
-            user.address = "\n".join(addr_parts)
+            user.address = residential_address.strip()
+        if city and city.strip():
+            user.city = city.strip()
+        if postal_code and postal_code.strip():
+            user.postal_code = postal_code.strip()
         if country_of_residence and country_of_residence.strip():
             user.country = country_of_residence.strip()
+
+        # Document numbers. A malformed PAN or Aadhaar is rejected at
+        # submission rather than swallowed, so the user fixes it now instead
+        # of an admin finding it days later.
+        try:
+            pan = normalise_pan(pan_number)
+            aadhaar_last4, aadhaar_hash = prepare_aadhaar(aadhaar_number)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        if pan:
+            dupe = (await db.execute(
+                select(User).where(User.pan_number == pan, User.id != user_id)
+            )).scalar_one_or_none()
+            if dupe is not None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This PAN is already registered to another account.",
+                )
+            user.pan_number = pan
+        if aadhaar_hash:
+            dupe = (await db.execute(
+                select(User).where(User.aadhaar_hash == aadhaar_hash, User.id != user_id)
+            )).scalar_one_or_none()
+            if dupe is not None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This Aadhaar is already registered to another account.",
+                )
+            user.aadhaar_last4 = aadhaar_last4
+            user.aadhaar_hash = aadhaar_hash
 
         user.kyc_status = "submitted"
 
