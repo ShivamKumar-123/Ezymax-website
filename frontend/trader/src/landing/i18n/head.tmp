@@ -1,0 +1,30 @@
+export type Lang = 'fr' | 'en' | 'ja' | 'zh'
+
+export const LANG_STORAGE_KEY = 'swisscresta-lang'
+
+/** Menu order + display metadata for the language picker. */
+export const LANGS: { code: Lang; label: string; nativeName: string }[] = [
+  { code: 'en', label: 'EN', nativeName: 'English' },
+  { code: 'fr', label: 'FR', nativeName: 'Français' },
+  { code: 'ja', label: 'JA', nativeName: '日本語' },
+  { code: 'zh', label: 'ZH', nativeName: '中文' },
+]
+
+type DictNode = string | { [key: string]: DictNode }
+
+interface Dict {
+  fr: Record<string, DictNode>
+  en: Record<string, DictNode>
+  ja: Record<string, DictNode>
+  zh: Record<string, DictNode>
+}
+
+// One copy set, served for every language code.
+//
+// The site was ported from a template that shipped French, Japanese and
+// Chinese translations of BROKER marketing — "Swiss bank, publicly listed",
+// "backed by Swiss regulation". Those claims are not true of SetupFX (and
+// were not true before), so they are not left standing in three languages
+// while the English is corrected. Until real translations exist, every code
+// resolves to the English copy: showing an English page is a UX cost;
+// serving a false one is not a trade worth making.

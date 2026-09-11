@@ -1,6 +1,5 @@
 /**
- * SwissCresta marketing home — full broker landing port from the
- * legacy Swistrade Next 14 site. Keep the file as a thin composer —
+ * SetupFX marketing home. Keep the file as a thin composer —
  * each section lives in `@/landing/marketing/*` and is independently
  * editable.
  *
@@ -22,6 +21,7 @@ import Steps from '@/landing/marketing/Steps'
 import AboutUs from '@/landing/marketing/AboutUs'
 import FollowUs from '@/landing/marketing/FollowUs'
 import FooterLinks from '@/landing/marketing/FooterLinks'
+import CapabilityNote from '@/landing/marketing/CapabilityNote'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export default function LandingHomePage() {
@@ -30,10 +30,12 @@ export default function LandingHomePage() {
       <main>
         <Hero />
         <DifferentBank />
+        <CapabilityNote />
         <Platforms />
         <Pricing />
         <Securities />
         <Crypto />
+        <CapabilityNote />
         <Steps />
         <AboutUs />
         <FollowUs />

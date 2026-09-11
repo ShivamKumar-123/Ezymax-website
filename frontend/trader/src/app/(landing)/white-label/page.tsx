@@ -1,7 +1,7 @@
 import {
   Code2, Palette, Smartphone, Plug, Figma, LifeBuoy,
   CreditCard, ShieldCheck, Waves, LineChart, Users2, MessageSquare, BarChart4, Braces,
-  ArrowRight,
+  ArrowRight, Info,
 } from 'lucide-react'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
@@ -116,6 +116,24 @@ export default function ServicesPage() {
         </div>
       </section>
 
+
+      {/* Stated next to the features, not only in the footer. A list naming
+          liquidity routing, MAM/PAMM and copy trading is what a brokerage's
+          own site would show; this is where a reader could otherwise conclude
+          we run those services rather than build them. */}
+      <section className="pb-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-5 py-4">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-gray-400" aria-hidden />
+            <p className="text-sm leading-relaxed text-gray-500">
+              <span className="font-semibold text-gray-900">These are platform capabilities, not services we run.</span>{' '}
+              Every feature listed here is something we build into your platform and hand over with it.
+              SetupFX does not operate a brokerage, hold client funds, route client orders or execute
+              trades — your own licensed entity does, under your brand.
+            </p>
+          </div>
+        </div>
+      </section>
       <Disclaimer />
     </div>
   )

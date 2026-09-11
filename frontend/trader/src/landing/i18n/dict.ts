@@ -33,6 +33,10 @@ interface Dict {
  */
 
 const en: Record<string, DictNode> = {
+  capabilityNote: {
+    lead: 'These are platform capabilities, not services we run.',
+    body: 'Every feature listed here is something we build into your platform and hand over with it. SetupFX does not operate a brokerage, hold client funds, route client orders or execute trades — your own licensed entity does, under your brand.',
+  },
   nav: {
     markets: 'Solutions',
     platforms: 'Platforms',
@@ -152,6 +156,10 @@ const en: Record<string, DictNode> = {
 }
 
 const fr: Record<string, DictNode> = {
+  capabilityNote: {
+    lead: 'Ce sont des fonctionnalités de la plateforme, pas des services que nous exploitons.',
+    body: 'Chaque fonctionnalité listée ici est intégrée à votre plateforme et vous est livrée avec elle. SetupFX n’exploite aucun courtier, ne détient aucun fonds client, ne route aucun ordre et n’exécute aucune transaction — c’est votre propre entité agréée qui le fait, sous votre marque.',
+  },
   nav: {
     markets: 'Solutions',
     platforms: 'Plateformes',
@@ -271,6 +279,10 @@ const fr: Record<string, DictNode> = {
 }
 
 const ja: Record<string, DictNode> = {
+  capabilityNote: {
+    lead: 'これらはプラットフォームの機能であり、当社が運営するサービスではありません。',
+    body: 'ここに挙げた機能はすべて、御社のプラットフォームに組み込んでお渡しするものです。SetupFX はブローカー業務を行わず、顧客資金の預託、注文のルーティング、取引の執行のいずれも行いません。それらを行うのは、御社のブランドのもとで免許を持つ御社の事業体です。',
+  },
   nav: {
     markets: 'ソリューション',
     platforms: 'プラットフォーム',
@@ -390,6 +402,10 @@ const ja: Record<string, DictNode> = {
 }
 
 const zh: Record<string, DictNode> = {
+  capabilityNote: {
+    lead: '以下均为平台功能，而非我们运营的服务。',
+    body: '此处列出的每一项功能，都是我们内置于您的平台并随平台一并交付的。SetupFX 不经营经纪业务，不持有客户资金，不进行订单路由，也不执行交易——这些均由您自己持牌的实体以您的品牌开展。',
+  },
   nav: {
     markets: '解决方案',
     platforms: '平台',
