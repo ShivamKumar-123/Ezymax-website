@@ -19,7 +19,7 @@ export default function Securities() {
             <Eyebrow>{t('securities.eyebrow')}</Eyebrow>
             <h2 className={`mt-4 ${HEADING_SECTION}`}>
               {t('securities.titleA')}{' '}
-              <span className="text-tx-faint">{t('securities.titleB')}</span>
+              <span className="text-tx-muted">{t('securities.titleB')}</span>
             </h2>
           </Reveal>
           <Reveal delay={0.08}>

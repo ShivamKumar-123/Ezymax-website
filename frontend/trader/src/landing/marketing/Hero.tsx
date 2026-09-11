@@ -20,7 +20,7 @@ export default function Hero() {
             <h1 className="mt-6 font-semibold tracking-[-0.04em] leading-[1.08] text-tx-strong text-[clamp(2.8rem,5.8vw,5.75rem)]">
               <TextReveal delay={0.05}>{t('hero.headlineA')}</TextReveal>
               <TextReveal delay={0.12}>
-                <span className="text-tx-faint">{t('hero.headlineB')}</span>
+                <span className="text-tx-muted">{t('hero.headlineB')}</span>
               </TextReveal>
               <TextReveal delay={0.19}>{t('hero.headlineC')}</TextReveal>
             </h1>

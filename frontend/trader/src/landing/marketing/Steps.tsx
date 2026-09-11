@@ -25,7 +25,7 @@ export default function Steps() {
         <div className="max-w-3xl mx-auto text-center">
           <Reveal>
             <h2 className={HEADING_SECTION}>
-              {t('steps.titleA')} <span className="text-tx-faint">{t('steps.titleB')}</span>
+              {t('steps.titleA')} <span className="text-tx-muted">{t('steps.titleB')}</span>
             </h2>
           </Reveal>
         </div>

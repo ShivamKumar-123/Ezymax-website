@@ -246,7 +246,7 @@ interface LinkGroupProps {
 function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
   return (
     <div>
-      <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-faint mb-4">{title}</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-muted mb-4">{title}</h4>
       <ul className="flex flex-col gap-3">
         {items.map((label) => (
           <li key={label}>
@@ -261,7 +261,7 @@ function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
       </ul>
       {extraTitle && extraItems && extraItems.length > 0 && (
         <>
-          <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-faint mt-7 mb-4">
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-tx-muted mt-7 mb-4">
             {extraTitle}
           </h4>
           <ul className="flex flex-col gap-3">
@@ -471,7 +471,7 @@ export default function MarketingNavbar({
                   role="menu"
                   className="absolute right-0 top-full mt-2 z-50 w-60 rounded-xl border border-tx-line bg-white p-1.5 shadow-xl"
                 >
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-tx-faint">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-tx-muted">
                     Desktop Terminal
                   </div>
                   {/* Windows */}

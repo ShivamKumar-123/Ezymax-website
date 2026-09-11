@@ -17,7 +17,7 @@ export default function Platforms() {
               <Eyebrow>{t('platforms.eyebrow')}</Eyebrow>
             </div>
             <h2 className={`mt-4 ${HEADING_SECTION}`}>
-              {t('platforms.titleA')} <span className="text-tx-faint">{t('platforms.titleB')}</span>
+              {t('platforms.titleA')} <span className="text-tx-muted">{t('platforms.titleB')}</span>
             </h2>
           </Reveal>
           <Reveal delay={0.08}>

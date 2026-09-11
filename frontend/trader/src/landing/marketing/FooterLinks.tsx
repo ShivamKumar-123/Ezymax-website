@@ -35,7 +35,7 @@ export default function FooterLinks() {
         >
           {cols.map((col) => (
             <div key={col.id} className="flex flex-col gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-tx-faint">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-tx-muted">
                 {col.heading}
               </h3>
               <ul className="flex flex-col gap-2">

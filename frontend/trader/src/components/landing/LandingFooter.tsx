@@ -75,8 +75,8 @@ export default function LandingFooter() {
         </div>
 
         <div className="border-t border-tx-line pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-tx-faint text-sm">&copy; {new Date().getFullYear()} SetupFX. All rights reserved.</p>
-          <div className="flex items-center gap-5 text-sm text-tx-faint">
+          <p className="text-tx-muted text-sm">&copy; {new Date().getFullYear()} SetupFX. All rights reserved.</p>
+          <div className="flex items-center gap-5 text-sm text-tx-muted">
             <Link href="/privacy" className="hover:text-tx-strong transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-tx-strong transition-colors">Terms of Service</Link>
             <Link href="/risk" className="hover:text-tx-strong transition-colors">Disclaimer</Link>

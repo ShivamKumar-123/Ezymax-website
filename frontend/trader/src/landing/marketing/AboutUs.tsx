@@ -18,7 +18,7 @@ export default function AboutUs() {
               <Eyebrow>{t('about.eyebrow')}</Eyebrow>
               <h2 className={`mt-4 ${HEADING_SECTION}`}>
                 {t('about.titleA')}{' '}
-                <span className="text-tx-faint">{t('about.titleB')}</span>
+                <span className="text-tx-muted">{t('about.titleB')}</span>
               </h2>
             </Reveal>
             <Reveal delay={0.08}>

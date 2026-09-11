@@ -50,7 +50,7 @@ export default function Crypto() {
                 <Eyebrow>{t('crypto.eyebrow')}</Eyebrow>
               </div>
               <h2 className={`mt-4 ${HEADING_SECTION}`}>
-                {t('crypto.titleA')} <span className="text-tx-faint">{t('crypto.titleB')}</span>
+                {t('crypto.titleA')} <span className="text-tx-muted">{t('crypto.titleB')}</span>
               </h2>
             </Reveal>
             <Reveal delay={0.08}>

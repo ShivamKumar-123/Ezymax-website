@@ -38,7 +38,7 @@ export default function DifferentBank() {
             <div className="md:col-span-7 order-1 md:order-2">
               <Reveal>
                 <h2 className={HEADING_SECTION}>
-                  {t('bank.titleA')} <span className="text-tx-faint">{t('bank.titleB')}</span>
+                  {t('bank.titleA')} <span className="text-tx-muted">{t('bank.titleB')}</span>
                 </h2>
               </Reveal>
               <Reveal delay={0.08}>

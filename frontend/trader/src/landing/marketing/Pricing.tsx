@@ -32,14 +32,14 @@ export default function Pricing() {
               <Eyebrow>{t('pricing.eyebrow')}</Eyebrow>
               <h2 className={`mt-4 ${HEADING_SECTION}`}>
                 {t('pricing.titleA')}{' '}
-                <span className="text-tx-faint">{t('pricing.titleB')}</span>
+                <span className="text-tx-muted">{t('pricing.titleB')}</span>
               </h2>
             </Reveal>
             <Reveal delay={0.08}>
               <p className="mt-6 text-base md:text-lg text-tx-muted leading-relaxed">
                 {t('pricing.lead')}
               </p>
-              <p className="mt-3 text-sm text-tx-faint">{t('pricing.sub')}</p>
+              <p className="mt-3 text-sm text-tx-muted">{t('pricing.sub')}</p>
             </Reveal>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
