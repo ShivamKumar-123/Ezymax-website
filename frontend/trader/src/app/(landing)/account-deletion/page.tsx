@@ -17,6 +17,22 @@ export default function AccountDeletionPage() {
       <section className="py-12 bg-white">
         <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
+          {/* This page exists because Google Play requires an account-deletion
+              route for any app that lets users create an account, and it
+              describes the SwissCresta trading application — not SetupFX. Left
+              accurate rather than rewritten into the vendor's voice, because a
+              user looking for how to delete their account needs the real
+              procedure. The banner scopes it so the rest of the site is not
+              read as SetupFX holding anyone's balance. */}
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4 mb-2">
+            <p className="text-sm leading-relaxed text-gray-600">
+              <span className="font-semibold text-gray-900">This page is for users of the SwissCresta trading application.</span>{' '}
+              SetupFX is a software development company and does not operate that application,
+              hold its users&rsquo; funds or maintain their accounts. The procedure below is
+              handled by the operator of the app.
+            </p>
+          </div>
+
           <Section title="Overview">
             This page explains how you, as a SwissCresta user, can request deletion of your
             account and the personal data associated with it. It also describes which data is

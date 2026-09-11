@@ -1,141 +1,113 @@
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ShieldOff } from 'lucide-react'
 
-export const metadata = { title: 'Risk Disclosure — SwissCresta' }
+export const metadata = { title: 'Disclaimer — SetupFX' }
 
-export default function RiskPage() {
+/**
+ * Disclaimer, rewritten for a software development company.
+ *
+ * This route held a full retail trading risk disclosure — leverage risk,
+ * margin calls, negative balance protection, counterparty risk. Those are the
+ * disclosures a BROKER owes its clients about money they have placed with it.
+ * We hold no client money and are nobody's counterparty, so publishing them
+ * claimed a relationship with the reader that does not exist.
+ *
+ * What belongs here instead is the boundary of what we do, stated once and
+ * without hedging.
+ */
+export default function DisclaimerPage() {
   return (
     <div className="bg-white text-gray-900">
       <section className="bg-white pt-16 pb-12">
         <div className="w-full px-3 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Risk Disclosure</h1>
-          <p className="text-gray-500">Last updated: March 2026</p>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Disclaimer</h1>
+          <p className="text-gray-500">Last updated: September 2026</p>
         </div>
       </section>
 
       <section className="py-12 bg-white">
         <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
-          {/* Warning banner */}
-          <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-4">
-            <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-4">
+            <ShieldOff className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-red-900 mb-1">Important Risk Warning</h3>
-              <p className="text-red-800 text-sm leading-relaxed">
-                Trading foreign exchange, cryptocurrencies, and other leveraged instruments carries a high level of risk and may not be suitable for all investors. You may lose some or all of your invested capital. Past performance is not indicative of future results.
+              <p className="font-bold text-gray-900 mb-1">SetupFX is a software company, not a broker.</p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                We build and license trading technology. We do not trade, broker, hold, manage
+                or handle client funds, and we provide no financial, investment or advisory
+                services.
               </p>
             </div>
           </div>
 
-          <Section title="1. Leverage Risk">
-            SwissCresta offers leverage up to 1:500 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 text-sm text-gray-500">
-              <strong className="text-gray-800">Example:</strong> With 1:100 leverage, a 1% adverse price movement results in a 100% loss of your margin.
+          <Section title="1. What we do">
+            Setupfx Softech OPC Pvt Ltd, trading as SetupFX, develops software: trading
+            terminals, administrative back offices, risk engines, client portals, reporting
+            suites and the integrations that connect them. We license that software to
+            businesses — brokerages, proprietary trading firms and similar operators — who
+            deploy it under their own brand and their own authorisation.
+          </Section>
+
+          <Section title="2. What we do not do">
+            <List items={[
+              'We are not a broker, dealer, exchange, custodian, payment institution or financial institution of any kind, and we are not registered as one.',
+              'We do not hold, manage, transmit or handle client funds at any point.',
+              'We do not route, match or execute orders, and we are never counterparty to a trade.',
+              'We do not accept deposits, process withdrawals or maintain trading accounts for members of the public.',
+              'We do not provide financial, investment, tax, accounting or legal advice.',
+              'We do not solicit or accept investments, and we do not manage money on anyone’s behalf.',
+            ]} />
+          </Section>
+
+          <Section title="3. Platforms operated by our clients">
+            Where a client operates a trading platform we developed, that platform is theirs.
+            They hold the licence, they carry the regulatory obligations, they hold any client
+            money, and they are responsible for their own clients, their conduct and their
+            marketing. Our role ended at delivering and supporting the software. A platform
+            carrying a client&rsquo;s branding is not a SetupFX service, and SetupFX is not a party
+            to any relationship between that client and their customers.
+          </Section>
+
+          <Section title="4. Features described on this site">
+            Capabilities described anywhere on this site — liquidity routing, managed-account
+            structures, copy trading, algorithmic execution, IB and affiliate management and
+            similar — are features we build into a client&rsquo;s platform for that client to
+            operate. Describing them is not an offer of those services by us.
+          </Section>
+
+          <Section title="5. Trading carries risk">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-4 mb-4">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Trading leveraged products carries a significant risk of loss and is not
+                suitable for everyone. Losses can exceed the amount initially placed.
+              </p>
             </div>
+            We say this not because you can trade with us — you cannot — but because our
+            software is used to run trading businesses, and anyone evaluating one should
+            understand what they are entering. Nothing on this site is an offer, solicitation
+            or recommendation to trade, nor a representation that any strategy, platform
+            feature or business model will be profitable.
           </Section>
 
-          <Section title="2. Market Risk">
-            Financial markets are volatile and unpredictable. Prices can move rapidly due to:
-            <List items={[
-              'Economic data releases and central bank announcements',
-              'Geopolitical events and political instability',
-              'Market sentiment shifts and investor behavior',
-              'Supply and demand imbalances',
-              'Regulatory changes and policy decisions',
-              'Cryptocurrency volatility and technological changes',
-            ]} />
+          <Section title="6. No guarantee of regulatory outcome">
+            Our software includes features intended to support compliance workflows. Providing
+            them is not a representation that a deployment satisfies the requirements of any
+            regulator in any jurisdiction. Licensing, registration and regulatory compliance
+            remain entirely the operator&rsquo;s responsibility, and anyone planning a trading
+            business should take independent legal and regulatory advice where they intend to
+            operate.
           </Section>
 
-          <Section title="3. Liquidity Risk">
-            While major currency pairs are highly liquid, some instruments may have limited liquidity. During periods of low liquidity, you may experience:
-            <List items={[
-              'Wider bid-ask spreads',
-              'Slippage on order execution',
-              'Difficulty closing positions at desired prices',
-              'Increased trading costs',
-            ]} />
+          <Section title="7. Information on this site">
+            Content here is provided for general information about our services and may be
+            updated without notice. Delivery timeframes, capability descriptions and comparisons
+            are indicative and depend on the scope of an individual engagement.
           </Section>
 
-          <Section title="4. Counterparty Risk">
-            Your trades are executed through SwissCresta&apos;s liquidity providers. If a liquidity provider defaults or experiences financial difficulties, your funds may be at risk despite our segregated account structure.
-          </Section>
-
-          <Section title="5. Technology Risk">
-            Trading platforms are subject to technical failures, including:
-            <List items={[
-              'Server outages and connectivity issues',
-              'Platform bugs and software errors',
-              'Cyber attacks and security breaches',
-              'Internet connection failures on your end',
-              'Mobile app crashes and malfunctions',
-            ]} />
-            <p className="mt-4">While we maintain redundant systems and backups, we cannot guarantee 100% uptime. Trading during periods of technical difficulty may result in losses.</p>
-          </Section>
-
-          <Section title="6. Cryptocurrency Risk">
-            Cryptocurrency trading carries additional risks:
-            <List items={[
-              'Extreme price volatility (50%+ daily moves are possible)',
-              'Regulatory uncertainty and potential bans',
-              'Wallet and exchange security risks',
-              'Blockchain network congestion and delays',
-              'Limited historical data and price discovery',
-              'Potential for total loss of investment',
-            ]} />
-          </Section>
-
-          <Section title="7. Operational Risk">
-            Risks related to our operations include:
-            <List items={[
-              'Human error in order processing',
-              'System failures and data loss',
-              'Fraud and unauthorized access',
-              'Regulatory enforcement actions',
-              'Changes in business operations',
-            ]} />
-          </Section>
-
-          <Section title="8. Regulatory Risk">
-            Financial regulations are subject to change. Changes in regulations could:
-            <List items={[
-              'Restrict trading in certain instruments',
-              'Reduce maximum leverage available',
-              'Increase trading costs through new fees',
-              'Require account closure for certain jurisdictions',
-              'Affect platform availability in your country',
-            ]} />
-          </Section>
-
-          <Section title="9. Negative Balance Protection">
-            While SwissCresta offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:
-            <List items={[
-              'Extreme market gaps and flash crashes',
-              'System failures during market volatility',
-              'Violations of our terms of service',
-            ]} />
-          </Section>
-
-          <Section title="10. Risk Management Best Practices">
-            To manage trading risks:
-            <List items={[
-              'Only trade with capital you can afford to lose',
-              'Use stop-loss orders to limit potential losses',
-              'Diversify your portfolio across multiple instruments',
-              'Avoid over-leveraging your account',
-              'Keep up with economic news and market developments',
-              'Develop and follow a trading plan',
-              'Avoid emotional decision-making',
-              'Start with a demo account to practice',
-              'Educate yourself about markets and trading',
-            ]} />
-          </Section>
-
-          <Section title="11. Acknowledgment">
-            By opening an account with SwissCresta, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that SwissCresta is not responsible for any losses incurred.
-          </Section>
-
-          <Section title="12. Contact Information">
-            For questions about risk management or this disclosure, please contact:
-            <ContactBox team="Risk Management Team" email="risk@swisscresta.com" />
+          <Section title="8. Contact">
+            Questions about this disclaimer can be sent to setupfx24@gmail.com, or to
+            Setupfx Softech OPC Pvt Ltd, 4012, 4th Floor, Currency Tower, Vishal Nagar,
+            Raipur, Chhattisgarh 492001.
           </Section>
         </div>
       </section>
@@ -154,24 +126,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function List({ items }: { items: string[] }) {
   return (
-    <ul className="list-disc list-inside space-y-1.5 mt-2 text-gray-500">
-      {items.map((item) => <li key={item}>{item}</li>)}
+    <ul className="list-disc list-inside space-y-2 mt-3 text-gray-500">
+      {items.map((item, i) => <li key={i}>{item}</li>)}
     </ul>
-  )
-}
-
-function ContactBox({ team, email }: { team: string; email: string }) {
-  return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">SwissCresta {team}</p>
-      <p className="text-gray-500">Email: {email}</p>
-      <p className="text-gray-500">
-        Phone:{' '}
-        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#E94E1B] transition-colors">
-          +33 7 59 15 99 87
-        </a>
-      </p>
-      <p className="text-gray-500">Address: Rue de la Tour-de-l&apos;Île 4, 1204 Genève</p>
-    </div>
   )
 }

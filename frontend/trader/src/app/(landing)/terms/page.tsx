@@ -1,7 +1,17 @@
 import { FileText } from 'lucide-react'
 
-export const metadata = { title: 'Terms and Conditions — SwissCresta' }
+export const metadata = { title: 'Terms of Service — SetupFX' }
 
+/**
+ * Terms of Service, rewritten for a software development company.
+ *
+ * What was here were the terms of a RETAIL BROKERAGE: account eligibility to
+ * "engage in financial trading", deposits and withdrawals, bonus terms,
+ * affiliate rebates, PAMM investments, trading risk. None of it described
+ * anything this business does, and unlike marketing copy a terms page is the
+ * document someone would be held to — so it was the most dangerous page on
+ * the site to leave pointing at a service we do not provide.
+ */
 export default function TermsPage() {
   return (
     <div className="bg-white text-gray-900">
@@ -11,99 +21,124 @@ export default function TermsPage() {
             <div className="w-10 h-10 rounded-xl bg-[#FCE6DD] flex items-center justify-center">
               <FileText className="w-5 h-5 text-[#E94E1B]" />
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Terms and Conditions</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900">Terms of Service</h1>
           </div>
-          <p className="text-lg font-semibold text-gray-900 mt-6 mb-1">SwissCresta — Terms and Conditions</p>
-          <p className="text-sm text-gray-500">Last updated: February 2026</p>
+          <p className="text-lg font-semibold text-gray-900 mt-6 mb-1">
+            Setupfx Softech OPC Pvt Ltd (&ldquo;SetupFX&rdquo;) — Terms of Service
+          </p>
+          <p className="text-sm text-gray-500">Last updated: September 2026</p>
         </div>
       </section>
 
       <section className="py-12 bg-white">
         <div className="w-full px-3 sm:px-6 lg:px-8 space-y-8">
-          <Section title="1. Acceptance of Terms">
-            By creating an account and using the SwissCresta platform, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.
+          <Section title="1. Who we are">
+            SetupFX is the trading name of Setupfx Softech OPC Pvt Ltd, a company registered
+            in India with its office at 4012, 4th Floor, Currency Tower, Vishal Nagar, Raipur,
+            Chhattisgarh 492001 (GST 22ABSCS5663H1ZX). We are a software development company.
+            We design, build and license trading technology to businesses.
           </Section>
 
-          <Section title="2. Eligibility">
-            You must be at least 18 years of age and legally permitted to engage in financial trading in your jurisdiction. You are responsible for ensuring compliance with all applicable laws and regulations.
+          <Section title="2. What these terms cover">
+            These terms govern your use of this website and any enquiry you send through it.
+            They are not a contract for development work. Any engagement to build, license or
+            support software is governed by a separate written agreement signed by both
+            parties; where that agreement and these terms conflict, that agreement prevails.
           </Section>
 
-          <Section title="3. Account Responsibilities">
-            You are solely responsible for maintaining the confidentiality of your account credentials. All activities conducted under your account are your responsibility. You agree to provide accurate and truthful information during registration and to keep your information up to date.
-          </Section>
-
-          <Section title="4. Trading Risks">
-            Trading forex and other financial instruments involves substantial risk of loss and is not suitable for all investors. Past performance is not indicative of future results. You should carefully consider your financial situation and risk tolerance before trading.
-          </Section>
-
-          <Section title="5. Deposits and Withdrawals">
-            All deposits are subject to the platform&apos;s processing policies. Cryptocurrency deposits are subject to a 2.5% processing fee. Withdrawals require email verification for security purposes. Processing times may vary depending on the payment method.
-          </Section>
-
-          <Section title="6. Bonus Terms">
-            Promotional bonuses, including the welcome bonus, are subject to specific terms and conditions. Bonus funds may have trading volume requirements and withdrawal restrictions. SwissCresta reserves the right to modify or discontinue bonus programs at any time.
-          </Section>
-
-          <Section title="7. Prohibited Conduct">
-            You agree not to engage in any of the following:
+          <Section title="3. The nature of our services">
+            This is the most important section on this page, so it is stated plainly:
             <List items={[
-              'Market manipulation, fraud, or any form of abusive trading practices.',
-              'Using the platform for money laundering or any illegal activity.',
-              'Attempting to exploit system vulnerabilities or interfere with platform operations.',
-              'Creating multiple accounts to circumvent platform rules or bonus limitations.',
-              'Engaging in defamatory, malicious, or harmful attacks against SwissCresta, its brand, employees, partners, or other users. This includes but is not limited to spreading false information, making threatening communications, filing fraudulent complaints, or conducting coordinated campaigns intended to damage the company’s reputation.',
-              'Making false or unsubstantiated accusations against SwissCresta, including but not limited to publicly or privately labeling the platform as a “scam,” “fraud,” or similar defamatory terms without legitimate basis. Such conduct undermines trust and will not be tolerated, and may result in immediate account suspension or termination.',
+              'We build and license software. We are not a broker, dealer, exchange, custodian or financial institution of any kind.',
+              'We do not hold, manage, transmit or handle client funds.',
+              'We do not route, match or execute orders, and we are never counterparty to a trade.',
+              'We do not provide financial, investment, tax, accounting or legal advice, and nothing on this site or in any conversation with us constitutes such advice.',
+              'We do not solicit or accept investments, and we make no representation about the returns any trading activity may produce.',
+              'Where one of our clients operates a trading platform we built, that platform is operated by that client, under their own licence and their own regulatory obligations. It is not operated by us, and we are not responsible for their conduct or their clients.',
             ]} />
           </Section>
 
-          <Section title="8. Account Suspension and Termination">
-            SwissCresta reserves the right to suspend, restrict, or terminate any account at its sole discretion, including but not limited to cases where a user:
-            <List items={[
-              'Violates any provision of these Terms and Conditions.',
-              'Engages in malicious conduct against the brand, its affiliates, or other users.',
-              'Provides false or misleading information.',
-              'Is suspected of fraudulent or illegal activity.',
-            ]} />
-            <p className="mt-3">Upon suspension or termination, access to trading and withdrawal functions may be restricted pending investigation.</p>
+          <Section title="4. Using this website">
+            You may use this site to learn about our services and to contact us. You may not
+            attempt to gain unauthorised access to it, interfere with its operation, scrape it
+            at a scale that degrades service for others, or use it to transmit unlawful or
+            malicious content.
           </Section>
 
-          <Section title="9. Affiliate Program">
-            Participation in the affiliate program is subject to additional terms. Affiliates must promote SwissCresta responsibly and in compliance with all applicable advertising standards. Commissions are subject to review and may be adjusted or revoked in cases of abuse.
+          <Section title="5. Enquiries and demonstrations">
+            Sending an enquiry does not create a contract or oblige either party to proceed.
+            Demonstrations, scopes, timelines and quotations we provide before a signed
+            agreement are indicative and provided without charge or obligation. Figures given
+            for delivery timeframes are estimates based on the scope described to us at the
+            time.
           </Section>
 
-          <Section title="10. PAMM Investments">
-            PAMM (Percentage Allocation Management Module) investments carry inherent risks. Past performance of a PAMM manager does not guarantee future results. Investors should conduct their own due diligence before allocating funds.
+          <Section title="6. Intellectual property">
+            The software we develop, together with our underlying frameworks, libraries, tooling
+            and know-how, remains our intellectual property unless a signed agreement expressly
+            assigns specific rights. A white-label deployment grants the client the right to
+            operate and brand the platform on the terms of that agreement; it does not transfer
+            ownership of the underlying technology. Content on this site — text, design, logos
+            and images — belongs to us or our licensors.
           </Section>
 
-          <Section title="11. Privacy and Data Protection">
-            Your personal data is processed in accordance with our Privacy Policy. By using our services, you consent to the collection, processing, and storage of your data as described therein. We implement industry-standard security measures to protect your information.
+          <Section title="7. Your responsibilities as a client">
+            Obtaining and maintaining every licence, registration, authorisation and regulatory
+            permission required to operate a trading business in your jurisdiction is your
+            responsibility, not ours. The same applies to your obligations on client onboarding,
+            AML, client-money handling, reporting, marketing conduct and data protection.
+            <br /><br />
+            Our software includes features intended to support compliance workflows — KYC
+            document capture, audit logging, reporting and similar. Providing those features is
+            not a representation that any particular deployment satisfies the requirements of
+            any particular regulator. We are a technology company, not a legal or compliance
+            consultancy, and you should take specialist advice for your jurisdiction.
           </Section>
 
-          <Section title="12. Limitation of Liability">
-            SwissCresta shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount of funds deposited in your account.
+          <Section title="8. Confidentiality">
+            Business information you share with us while scoping a project is treated as
+            confidential and used only to evaluate and deliver that project. We expect the same
+            of anything we share with you about how our systems are built.
           </Section>
 
-          <Section title="13. Modifications">
-            SwissCresta reserves the right to modify these Terms and Conditions at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms. Users will be notified of material changes via email or platform notification.
+          <Section title="9. Third-party services">
+            Deployments commonly integrate third-party services — payment gateways, KYC and AML
+            providers, liquidity venues, market-data feeds, CRM and messaging platforms. Those
+            services are supplied by their own providers under their own terms. We integrate
+            them; we do not control their availability, pricing, data or conduct.
           </Section>
 
-          <Section title="14. Governing Law">
-            These Terms and Conditions shall be governed by and construed in accordance with applicable laws. Any disputes shall be resolved through the appropriate legal channels.
+          <Section title="10. Warranties and disclaimers">
+            This website is provided as-is. We make no warranty that it will be uninterrupted or
+            error-free, and any information on it may be updated without notice. Warranties
+            relating to delivered software are set out in the applicable signed agreement and
+            not here.
           </Section>
 
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-gray-500 text-sm leading-relaxed">
-              By checking the box and creating your account, you confirm that you have read, understood, and agree to these Terms and Conditions in their entirety.
-            </p>
-          </div>
+          <Section title="11. Limitation of liability">
+            To the fullest extent permitted by law, we are not liable for indirect, incidental,
+            special or consequential loss, or for loss of profit, revenue, goodwill or data,
+            arising out of your use of this website. Liability arising under a development or
+            licensing engagement is governed by the limits set out in that agreement. Nothing
+            here excludes liability that cannot lawfully be excluded.
+          </Section>
 
-          {/* Risk Disclaimer */}
-          <div className="rounded-xl p-6 bg-gray-50 border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Risk Disclaimer</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Trading foreign exchange (forex) and other leveraged financial products carries a high level of risk and may not be suitable for all investors. Leverage can work both for and against you — while it amplifies potential profits, it equally amplifies potential losses. You could sustain a loss of some or all of your initial investment and should not invest money that you cannot afford to lose. You should be aware of all the risks associated with leveraged trading and seek independent financial advice if you have any doubts. Past performance is not indicative of future results.
-            </p>
-          </div>
+          <Section title="12. Changes to these terms">
+            We may update these terms as our services change. The revision date at the top of
+            this page reflects the current version, and continued use of the site after a change
+            constitutes acceptance of it.
+          </Section>
+
+          <Section title="13. Governing law">
+            These terms are governed by the laws of India, and the courts at Raipur,
+            Chhattisgarh have exclusive jurisdiction over any dispute arising from them, unless
+            a signed agreement between us specifies otherwise.
+          </Section>
+
+          <Section title="14. Contact">
+            Questions about these terms can be sent to setupfx24@gmail.com, or to the registered
+            office address in section 1.
+          </Section>
         </div>
       </section>
     </div>

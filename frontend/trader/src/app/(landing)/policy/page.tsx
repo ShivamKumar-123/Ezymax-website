@@ -3,28 +3,40 @@ import { Shield, FileText, AlertTriangle, BugPlay, ArrowRight, Scale } from 'luc
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = {
-  title: 'Policies & Legal — SwissCresta',
+  title: 'Policies & Legal — SetupFX',
   description:
-    'Privacy, terms of service, risk disclosure, and vulnerability reporting policies for SwissCresta clients and partners.',
+    'Terms of service, privacy policy, disclaimer and vulnerability reporting for SetupFX, a trading platform development company.',
 }
+
+/**
+ * Policies hub, rewritten for a software development company.
+ *
+ * The "Regulatory framework" band on this page claimed a multi-jurisdictional
+ * licensing structure and that "client money is held in segregated accounts at
+ * our banking partners". We hold no client money and no such licences. That
+ * was the single most serious misstatement on the site — every other page
+ * could be read as loose marketing, but a claimed licence and a claimed
+ * segregated client-money arrangement are assertions a regulator treats as
+ * representations of fact.
+ */
 
 const DOCS = [
   {
     icon: Shield,
     title: 'Privacy Policy',
-    body: 'How we collect, store, and process your personal data — and the rights you have under Swiss and EU/UK data-protection law.',
+    body: 'What we collect when you enquire or become a client, how long we keep it, and — importantly — who controls the data on platforms we build for others.',
     href: '/privacy',
   },
   {
     icon: FileText,
     title: 'Terms of Service',
-    body: 'The agreement that governs your use of the SwissCresta platform, the trading account, and our public marketing site.',
+    body: 'What governs your use of this website and our enquiry process, and where the boundary of our services sits.',
     href: '/terms',
   },
   {
     icon: AlertTriangle,
-    title: 'Risk Disclosure',
-    body: 'Full disclosure of the risks associated with leveraged trading, margin requirements, and CFD-specific considerations.',
+    title: 'Disclaimer',
+    body: 'What SetupFX is and is not: a software company that builds trading platforms, never a broker, and never a holder of client funds.',
     href: '/risk',
   },
   {
@@ -37,13 +49,13 @@ const DOCS = [
 
 const REGULATORY = [
   {
-    label: 'Client funds segregation',
-    body: 'Client money is held in segregated accounts at our banking partners, separated from corporate funds.',
+    label: 'We hold no client funds',
+    body: 'There is no segregated client account here because there are no client funds. We license software; money, where it exists, sits with the licensed operator running the platform.',
     image: '/assets/Policy_icon1.png',
   },
   {
-    label: 'AML / KYC',
-    body: 'Onboarding, transaction monitoring, and politically-exposed-person screening aligned with industry standards.',
+    label: 'AML / KYC is a feature we build',
+    body: 'Our platforms include onboarding, document capture, screening hooks and audit logging. Operating those controls, and satisfying a regulator that they are adequate, is the operator’s obligation.',
     image: '/assets/Policy_icon2.png',
   },
 ]
@@ -174,8 +186,9 @@ export default function PolicyPage() {
               Regulatory framework
             </h2>
             <p className="mt-3 text-sm md:text-base text-gray-600">
-              SwissCresta operates under a multi-jurisdictional licensing structure designed for
-              both retail and professional clients.
+              SetupFX is a software development company registered in India. We hold no
+              financial-services licence in any jurisdiction, and we do not need one — we build
+              technology, we do not operate a trading business.
             </p>
           </div>
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
