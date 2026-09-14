@@ -248,6 +248,13 @@ export default function TradesPage() {
   // Initialized from the position's current side; only sent in the
   // PUT body when it actually differs from the original.
   const [modifySide, setModifySide] = useState<'buy' | 'sell'>('buy');
+  // Close modal: admin can book a custom close price. The backend
+  // (ClosePositionRequest.close_price) has always honoured this; the modal
+  // just never exposed it and closed at live market. Spread is an optional
+  // points adjustment that shifts the close against the user; the modal shows
+  // the resulting effective price so whatever gets booked is never a surprise.
+  const [closePriceInput, setClosePriceInput] = useState('');
+  const [closeSpread, setCloseSpread] = useState('');
   const [actionReason, setActionReason] = useState('');
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
@@ -389,6 +396,14 @@ export default function TradesPage() {
   const openCloseModal = (pos: Position) => {
     setSelectedPosition(pos);
     setActionReason('');
+    // Seed the close-price field with the live market for this side (bid for a
+    // buy, ask for a sell) so the default matches a plain market close; admin
+    // edits from there. Spread starts empty (no adjustment).
+    const tick = pos.instrument_symbol ? pricesRef.current[pos.instrument_symbol] : null;
+    const isBuy = (pos.side || '').toLowerCase() === 'buy';
+    const mkt = tick ? (isBuy ? tick.bid : tick.ask) : null;
+    setClosePriceInput(mkt != null ? String(mkt) : '');
+    setCloseSpread('');
     setModalType('close');
     setOpenActionsId(null);
   };
@@ -464,11 +479,41 @@ export default function TradesPage() {
     }
   };
 
+  // Effective close price the Close modal will book. Base is the admin's
+  // typed price, or live market for the side when the field is empty; an
+  // optional spread (in points, same 1/100000 convention as the Spread column)
+  // then shifts it AGAINST the user — a buy closes lower, a sell higher.
+  // Returns null when there is nothing usable to close at.
+  const effectiveClosePrice = (
+    pos: Position, priceStr: string, spreadStr: string,
+  ): number | null => {
+    const isBuy = (pos.side || '').toLowerCase() === 'buy';
+    let base = parseFloat(priceStr);
+    if (!Number.isFinite(base)) {
+      const tick = pos.instrument_symbol ? pricesRef.current[pos.instrument_symbol] : null;
+      base = tick ? (isBuy ? tick.bid : tick.ask) : NaN;
+    }
+    if (!Number.isFinite(base)) return null;
+    const sp = parseFloat(spreadStr);
+    if (Number.isFinite(sp) && sp !== 0) {
+      const shift = Math.abs(sp) / 100000;
+      base = isBuy ? base - shift : base + shift;
+    }
+    return base;
+  };
+
   const submitClose = async () => {
     if (!selectedPosition) return;
     setModalSubmitting(true);
     try {
-      await adminApi.post(`/trades/position/${selectedPosition.id}/close`, { reason: actionReason });
+      const body: Record<string, unknown> = { reason: actionReason };
+      // Send the effective close price the modal is showing. When the admin
+      // leaves the field on the live market and no spread, this equals a plain
+      // market close; the backend falls back to market only if close_price is
+      // omitted, so we send it explicitly whenever it is a valid number.
+      const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
+      if (eff != null && Number.isFinite(eff)) body.close_price = eff;
+      await adminApi.post(`/trades/position/${selectedPosition.id}/close`, body);
       toast.success('Position closed');
       closeModal();
       fetchPositions();
@@ -846,11 +891,16 @@ export default function TradesPage() {
             const tick = selectedPosition.instrument_symbol ? pricesRef.current[selectedPosition.instrument_symbol] : null;
             const isBuy = selectedPosition.side?.toLowerCase() === 'buy';
             const cp = tick ? (isBuy ? tick.bid : tick.ask) : null;
+            // Live spread in points (same 1/100000 convention as the trades
+            // table). Shown here because the edit modal never surfaced it,
+            // even though the table and the create modal both do.
+            const spread = tick ? ((tick.ask - tick.bid) * 100000).toFixed(1) : '—';
             return (
-              <div className="grid grid-cols-3 gap-2 p-3 bg-bg-tertiary/50 border border-border-primary rounded-md text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-bg-tertiary/50 border border-border-primary rounded-md text-xs">
                 <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{selectedPosition.user_email}</p></div>
                 <div><p className="text-xxs text-text-tertiary">Side</p><p className={cn('font-bold', isBuy ? 'text-buy' : 'text-sell')}>{selectedPosition.side?.toUpperCase()}</p></div>
                 <div><p className="text-xxs text-text-tertiary">Current Price</p><p className="text-text-primary font-mono">{cp?.toFixed(5) || '—'}</p></div>
+                <div><p className="text-xxs text-text-tertiary">Spread</p><p className="text-text-primary font-mono">{spread}</p></div>
               </div>
             );
           })()}
@@ -967,6 +1017,52 @@ export default function TradesPage() {
               <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss != null ? selectedPosition.stop_loss : '—'}</p></div>
               <div><p className="text-xxs text-text-tertiary">TP</p><p className="text-buy font-mono">{selectedPosition.take_profit != null ? selectedPosition.take_profit : '—'}</p></div>
             </div>
+            );
+          })()}
+          {/* Close price + spread. Backend has always accepted a custom
+              close_price; the modal used to close silently at live market. */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xxs text-text-tertiary mb-1">Close Price</label>
+              <input
+                type="number" step="any" value={closePriceInput}
+                onChange={e => setClosePriceInput(e.target.value)}
+                placeholder="Market"
+                className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-danger transition-fast"
+              />
+            </div>
+            <div>
+              <label className="block text-xxs text-text-tertiary mb-1">Spread (points)</label>
+              <input
+                type="number" step="any" value={closeSpread}
+                onChange={e => setCloseSpread(e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-danger transition-fast"
+              />
+            </div>
+          </div>
+          {selectedPosition && (() => {
+            const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
+            if (eff == null) return null;
+            const isBuy = (selectedPosition.side || '').toLowerCase() === 'buy';
+            const contractSize = selectedPosition.contract_size
+              ?? (selectedPosition.instrument_symbol?.match(/BTC|ETH/) ? 1
+                : selectedPosition.instrument_symbol?.match(/XAU/) ? 100
+                : selectedPosition.instrument_symbol?.match(/XAG/) ? 50
+                : selectedPosition.instrument_symbol?.match(/OIL/) ? 1000
+                : selectedPosition.instrument_symbol?.match(/US30|US500|NAS/) ? 1
+                : 100000);
+            const pnl = (isBuy ? (eff - selectedPosition.open_price) : (selectedPosition.open_price - eff))
+              * selectedPosition.lots * contractSize;
+            return (
+              <div className="flex items-center justify-between px-3 py-2 rounded-md bg-bg-tertiary/50 border border-border-primary text-xs">
+                <span className="text-text-tertiary">Effective close</span>
+                <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(5)}</span>
+                <span className="text-text-tertiary">Booked P&amp;L</span>
+                <span className={cn('font-mono tabular-nums font-bold', pnl >= 0 ? 'text-success' : 'text-danger')}>
+                  {pnl >= 0 ? '+' : ''}{formatMoney(pnl)}
+                </span>
+              </div>
             );
           })()}
           <div>

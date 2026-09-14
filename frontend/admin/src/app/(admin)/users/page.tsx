@@ -22,7 +22,6 @@ import {
   Loader2,
   LogIn,
   Minus,
-  MoreHorizontal,
   Plus,
   Power,
   Search,
@@ -555,12 +554,22 @@ export default function UsersPage() {
                       <span className={cn('inline-flex px-2 py-0.5 rounded text-[10px] font-semibold', statusBadge(u.status))}>{u.status}</span>
                     </td>
                     <td className="px-2 py-3 text-center whitespace-nowrap" data-actions-menu>
+                      {/* Labelled trigger instead of a bare 3-dot icon — the
+                          actions (View Profile, funds, ban, login-as…) were
+                          hidden behind an unlabelled ⋯ that admins had to
+                          discover. Opens the same menu. */}
                       <button
                         type="button"
                         onClick={(e) => toggleActions(u.id, e)}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border-primary text-text-secondary transition-fast hover:bg-bg-hover hover:text-text-primary hover:border-border-secondary"
+                        className={cn(
+                          'inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-lg border text-xs font-medium transition-fast',
+                          openActionsId === u.id
+                            ? 'border-buy text-buy bg-buy/10'
+                            : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary hover:border-border-secondary',
+                        )}
                       >
-                        <MoreHorizontal size={15} />
+                        Actions
+                        <ChevronDown size={13} className={cn('transition-transform', openActionsId === u.id && 'rotate-180')} />
                       </button>
                     </td>
                   </tr>
@@ -595,9 +604,15 @@ export default function UsersPage() {
                     <button
                       type="button"
                       onClick={(e) => toggleActions(u.id, e)}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border-primary text-text-secondary transition-fast hover:bg-bg-hover hover:text-text-primary"
+                      className={cn(
+                        'inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-lg border text-xs font-medium transition-fast',
+                        openActionsId === u.id
+                          ? 'border-buy text-buy bg-buy/10'
+                          : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+                      )}
                     >
-                      <MoreHorizontal size={15} />
+                      Actions
+                      <ChevronDown size={13} className={cn('transition-transform', openActionsId === u.id && 'rotate-180')} />
                     </button>
                   </div>
                 </div>
