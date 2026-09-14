@@ -490,6 +490,9 @@ async def _apply_startup_ddl():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _apply_startup_ddl()
+    # Cross-currency P&L rates for admin closes and RMS figures.
+    from packages.common.src import fx_rates
+    await fx_rates.start()
     yield
     await engine.dispose()
 

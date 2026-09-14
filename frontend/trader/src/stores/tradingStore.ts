@@ -468,9 +468,17 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         if (quote && quote !== 'USD') {
           if (base === 'USD' && cp) {
             pnl = pnl / cp;
+          } else {
+            // Cross pair (EURJPY, GER40 in EUR…): convert through the quote
+            // currency's own USD quote. Left raw, 1 JPY showed as $1.
+            const direct = nextPrices[`${quote}USD`];
+            const inverse = nextPrices[`USD${quote}`];
+            if (direct?.bid && direct?.ask) {
+              pnl = pnl * ((direct.bid + direct.ask) / 2);
+            } else if (inverse?.bid && inverse?.ask) {
+              pnl = pnl / ((inverse.bid + inverse.ask) / 2);
+            }
           }
-          // cross pair (no USD on either side) — leave raw until we have a
-          // cross-rate feed; backend will reconcile on close.
         }
         return { ...pos, current_price: cp, profit: pnl };
       }),

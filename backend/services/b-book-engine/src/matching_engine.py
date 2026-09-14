@@ -37,6 +37,9 @@ class MatchingEngine:
     async def start(self):
         self._running = True
         logger.info("B-Book Matching Engine started")
+        # Cross-currency P&L rates, before the first SL/TP can close anything.
+        from packages.common.src import fx_rates
+        await fx_rates.start()
 
         await asyncio.gather(
             self._monitor_pending_orders(),

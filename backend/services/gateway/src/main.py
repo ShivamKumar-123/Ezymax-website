@@ -210,6 +210,9 @@ async def lifespan(app: FastAPI):
     # engines so they hit a warm cache instead of falling through to
     # Redis on first-tick reads (which would defeat the point).
     await price_cache.start()
+    # Cross-currency P&L conversion rates, before any engine closes a position.
+    from packages.common.src import fx_rates
+    await fx_rates.start()
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()

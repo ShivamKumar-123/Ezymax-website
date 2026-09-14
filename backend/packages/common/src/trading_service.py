@@ -157,7 +157,18 @@ def quote_to_account_pnl(
         if ref_price and ref_price != 0:
             return quote_pnl / ref_price
         return quote_pnl
-    # Cross pair: no cross rate available here; fall back to raw quote pnl.
+    # Cross pair (EURJPY, GER40 in EUR, UK100 in GBP): convert through the
+    # quote currency's live USD rate. Booking the raw figure as dollars
+    # overstated EURJPY P&L ~150x — 1 JPY counted as $1.
+    if acct == "USD":
+        from .fx_rates import usd_per
+        rate = usd_per(quote)
+        if rate:
+            return quote_pnl * Decimal(str(rate))
+    logger.error(
+        "No %s rate to convert %s P&L from %s — booking unconverted",
+        acct, symbol or "?", quote,
+    )
     return quote_pnl
 
 

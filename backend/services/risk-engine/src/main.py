@@ -47,6 +47,9 @@ class RiskEngine:
     async def start(self):
         self._running = True
         logger.info("Risk Engine started")
+        # Cross-currency P&L rates, before the first stop-out can close anything.
+        from packages.common.src import fx_rates
+        await fx_rates.start()
 
         await asyncio.gather(
             self._margin_monitor(),
