@@ -75,7 +75,7 @@ function Inner() {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Spin &amp; Win</h1>
-            <p className="text-sm text-text-tertiary">Spend FXArtha Coins to spin the wheel and win cashback or bonus FXA.</p>
+            <p className="text-sm text-text-tertiary">Spend AC Coins to spin the wheel and win cashback or bonus AC.</p>
           </div>
         </div>
         <div
@@ -83,7 +83,7 @@ function Inner() {
           style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.25)' }}
         >
           <Coins size={16} className="text-[#ccff00]" />
-          <span className="text-sm font-bold text-text-primary tabular-nums">{fmt(acBalance)} <span className="text-text-tertiary font-medium">FXA</span></span>
+          <span className="text-sm font-bold text-text-primary tabular-nums">{fmt(acBalance)} <span className="text-text-tertiary font-medium">AC</span></span>
         </div>
       </header>
 
@@ -169,7 +169,7 @@ function Inner() {
                             (won ? 'text-[#ccff00]' : 'text-text-tertiary')
                           }
                         >
-                          {won ? `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'FXA'}` : '—'}
+                          {won ? `+${fmt(r.payout_amount)} ${r.payout_kind === 'xp' ? 'XP' : 'AC'}` : '—'}
                         </span>
                       </li>
                     );

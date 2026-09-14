@@ -2,7 +2,7 @@
 
 ``rewards_missions`` is the shared task catalogue behind the trader's Rewards →
 Tasks screen: daily / weekly / bonus / flash / achievement entries, each with a
-target count and a payout (``xp_reward`` XP and ``ac_reward`` FXA coins).
+target count and a payout (``xp_reward`` XP and ``ac_reward`` AC coins).
 
 Until now those rows could only be changed with SQL, so a task's wording or its
 daily earning could not be tuned from the admin panel. This exposes list / edit
@@ -42,8 +42,8 @@ def _row(m: RewardsMission) -> dict:
         "action_kind": m.action_kind,
         "target_count": int(m.target_count or 0),
         "xp_reward": int(m.xp_reward or 0),
-        # ac_reward is the FXA payout — named "ac" in the schema from before the
-        # coin was rebranded to FXA.
+        # ac_reward is the AC (Artha Coin) payout. The UI briefly called the coin
+        # "FXA"; AC is the one name used everywhere now.
         "fxa_reward": float(m.ac_reward) if m.ac_reward is not None else 0.0,
         # Power Score paid on claim. Defaults to 100 — the flat amount every
         # claim paid before this became per-task.
@@ -128,7 +128,7 @@ def _apply(m: RewardsMission, req: TaskPayload) -> None:
         m.xp_reward = int(req.xp_reward)
     if req.fxa_reward is not None:
         if req.fxa_reward < 0:
-            raise HTTPException(status_code=400, detail="FXA-AC coins cannot be negative")
+            raise HTTPException(status_code=400, detail="AC coins cannot be negative")
         m.ac_reward = Decimal(str(req.fxa_reward)).quantize(Decimal("0.01"))
     if req.ps_reward is not None:
         if req.ps_reward < 0:

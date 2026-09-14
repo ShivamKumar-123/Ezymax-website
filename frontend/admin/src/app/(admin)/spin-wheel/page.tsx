@@ -174,7 +174,7 @@ export default function AdminSpinWheelPage() {
       {/* Cost + weight summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-xl border border-border-primary bg-bg-secondary p-4">
-          <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-bold block mb-1.5">Cost per spin (FXA)</label>
+          <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-bold block mb-1.5">Cost per spin (AC)</label>
           <input type="number" className="inp text-lg font-bold" value={spinCost} onChange={(e) => setSpinCost(Number(e.target.value))} />
         </div>
         <div className="rounded-xl border border-border-primary bg-bg-secondary p-4">

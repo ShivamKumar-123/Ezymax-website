@@ -1,6 +1,6 @@
-"""Admin editor for user reward-coin balances (FXA / XP / PS).
+"""Admin editor for user reward-coin balances (AC / XP / PS).
 
-A dedicated page to view EVERY user's FXA coin balance (FXA = ``ac_balance`` in
+A dedicated page to view EVERY user's AC coin balance (AC = ``ac_balance`` in
 ``rewards_user_state``) alongside XP and PS, and edit any of them. Each change is
 written to ``rewards_transactions`` (type='adjust', source='admin_edit:<admin>')
 so a manual edit is auditable and consistent with how coins are normally credited.
@@ -42,7 +42,7 @@ async def list_user_coins(
     per_page: int = Query(25, ge=1, le=100),
     search: Optional[str] = Query(None),
 ) -> dict:
-    """Every user with their FXA / XP / PS, searchable by email or name."""
+    """Every user with their AC / XP / PS, searchable by email or name."""
     base = select(User, RewardsUserState).join(
         RewardsUserState, RewardsUserState.user_id == User.id, isouter=True,
     )
@@ -68,7 +68,7 @@ async def list_user_coins(
 
 
 class UpdateCoinsRequest(BaseModel):
-    fxa: Optional[float] = None   # absolute new FXA (ac_balance)
+    fxa: Optional[float] = None   # absolute new AC (ac_balance)
     xp: Optional[int] = None      # absolute new XP
     ps: Optional[int] = None      # absolute new PS
 
@@ -80,7 +80,7 @@ async def update_user_coins(
     admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Set a user's FXA / XP / PS to absolute values. Missing state is created;
+    """Set a user's AC / XP / PS to absolute values. Missing state is created;
     the net change is logged to the rewards ledger."""
     if req.fxa is None and req.xp is None and req.ps is None:
         raise HTTPException(status_code=400, detail="Nothing to update")
@@ -101,7 +101,7 @@ async def update_user_coins(
     if req.fxa is not None:
         new_ac = Decimal(str(req.fxa)).quantize(Decimal("0.01"))
         if new_ac < 0:
-            raise HTTPException(status_code=400, detail="FXA cannot be negative")
+            raise HTTPException(status_code=400, detail="AC cannot be negative")
         ac_delta = new_ac - Decimal(str(st.ac_balance or 0))
         st.ac_balance = new_ac
 

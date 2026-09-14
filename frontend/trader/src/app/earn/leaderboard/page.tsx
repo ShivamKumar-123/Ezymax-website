@@ -53,7 +53,7 @@ function Inner() {
   useEffect(() => { void load(); }, [load]);
 
   const scoreOf = (r: Row) =>
-    tab === 'earners' ? `${fmt(r.ac_balance ?? 0)} FXA` : fmtUsd(r.roi_30d_usd ?? 0);
+    tab === 'earners' ? `${fmt(r.ac_balance ?? 0)} AC` : fmtUsd(r.roi_30d_usd ?? 0);
 
   const top3 = rows.slice(0, 3);
   const rest = rows.slice(3);

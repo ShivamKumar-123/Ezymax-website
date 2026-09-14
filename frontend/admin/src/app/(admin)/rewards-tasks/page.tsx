@@ -4,7 +4,7 @@
  * Admin · Coin Tasks.
  *
  * Edits `rewards_missions` — the catalogue behind the trader's Rewards → Tasks
- * screen. Wording, target count, the daily earning (FXA + XP), scheduling and
+ * screen. Wording, target count, the daily earning (AC + XP), scheduling and
  * the active flag are all editable here; the slug is not, because the seeder
  * and any hard-coded hooks match on it.
  *
@@ -214,7 +214,7 @@ export default function AdminRewardTasksPage() {
         </div>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit the tasks users see under Rewards → Tasks, including the FXA-AC, XP and PS coins each one pays out.
+        Edit the tasks users see under Rewards → Tasks, including the AC, XP and PS coins each one pays out.
         Changes apply to future completions; coins already credited are not affected.
       </p>
 
@@ -293,7 +293,7 @@ export default function AdminRewardTasksPage() {
                       <div className="grid w-[390px] shrink-0 grid-cols-3 gap-2">
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                            FXA-AC Coins
+                            AC Coins
                           </span>
                           <input
                             type="number" step="0.01" min="0"
@@ -489,7 +489,7 @@ function CreateTaskModal({
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">FXA-AC Coins</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">AC Coins</span>
             <input type="number" step="0.01" min="0" value={fxa} onChange={(e) => setFxa(e.target.value)} className={`${cls} font-mono`} />
           </label>
           <label className="block">

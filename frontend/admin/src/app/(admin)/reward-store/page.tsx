@@ -4,7 +4,7 @@
  * Admin · Reward Store.
  *
  * Edits every item the trader sees under /earn/store (reward_store_items):
- * label, description, category, AC (FXA) price, PS requirement, ordering and
+ * label, description, category, AC price, PS requirement, ordering and
  * active state — plus add / remove. Backed by
  *   GET/PUT/POST /api/v1/admin/reward-store/items
  *   DELETE       /api/v1/admin/reward-store/items/{id}
@@ -149,7 +149,7 @@ export default function AdminRewardStorePage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Reward Store</h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Click any field below to edit inline (label, category, FXA price, PS, order), then <b className="text-text-primary">Save changes</b>.
+              Click any field below to edit inline (label, category, AC price, PS, order), then <b className="text-text-primary">Save changes</b>.
             </p>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function AdminRewardStorePage() {
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="FXA price"><input type="number" className="inp" value={draft.ac_price} onChange={(e) => setDraft({ ...draft, ac_price: Number(e.target.value) })} /></Field>
+            <Field label="AC price"><input type="number" className="inp" value={draft.ac_price} onChange={(e) => setDraft({ ...draft, ac_price: Number(e.target.value) })} /></Field>
             <Field label="Min PS (lifestyle)"><input type="number" className="inp" value={draft.min_ps} onChange={(e) => setDraft({ ...draft, min_ps: Number(e.target.value) })} /></Field>
             <Field label="Display order"><input type="number" className="inp" value={draft.display_order} onChange={(e) => setDraft({ ...draft, display_order: Number(e.target.value) })} /></Field>
           </div>
@@ -202,7 +202,7 @@ export default function AdminRewardStorePage() {
             <tr className="border-b border-border-primary">
               <th className="text-left py-3 px-3 font-bold">Item</th>
               <th className="text-left py-3 px-2 font-bold">Category</th>
-              <th className="text-right py-3 px-2 font-bold">FXA price</th>
+              <th className="text-right py-3 px-2 font-bold">AC price</th>
               <th className="text-right py-3 px-2 font-bold">Min PS</th>
               <th className="text-right py-3 px-2 font-bold">Order</th>
               <th className="text-center py-3 px-2 font-bold">Active</th>
@@ -254,7 +254,7 @@ export default function AdminRewardStorePage() {
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary">
-        FXA price = Artha Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
+        AC price = Artha Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
         applies to <span style={{ color: CAT_COLOR.lifestyle }}>lifestyle</span> items (Power-Score gate). Turn
         <b> Active</b> off to hide an item from the store. Edits are live after <b>Save changes</b>.
       </p>

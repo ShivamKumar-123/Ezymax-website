@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 
 /**
- * "Where do my FXA come from?" popup, opened from the dashboard FXA chip.
- * FXA (FXArtha Coins) = rewards `ac_balance`. It's earned from streak check-ins,
+ * "Where do my AC come from?" popup, opened from the dashboard AC chip.
+ * AC Coins = rewards `ac_balance`. It's earned from streak check-ins,
  * missions and reward events, and spent in the Rewards Store — so this explains
  * the sources and links to earn / spend. Landing "Obsidian & Lime" theme.
  */
@@ -17,9 +17,9 @@ const ACCENT_HI = '#eaff8a';
 const ON_ACCENT = '#0a0a0a';
 
 const EARN = [
-  { icon: Flame, title: 'Daily check-ins', desc: 'Keep your streak alive to earn FXA every day.' },
-  { icon: CheckSquare, title: 'Complete missions', desc: 'Daily & weekly missions pay out FXA.' },
-  { icon: Gift, title: 'Rewards & bonuses', desc: 'Promotions, milestones and level-ups drop FXA.' },
+  { icon: Flame, title: 'Daily check-ins', desc: 'Keep your streak alive to earn AC every day.' },
+  { icon: CheckSquare, title: 'Complete missions', desc: 'Daily & weekly missions pay out AC.' },
+  { icon: Gift, title: 'Rewards & bonuses', desc: 'Promotions, milestones and level-ups drop AC.' },
   { icon: TrendingUp, title: 'Trading activity', desc: 'Stay active on the platform to keep earning.' },
 ];
 
@@ -69,7 +69,7 @@ export default function FxaDetailsModal({
     <div
       role="dialog"
       aria-modal
-      aria-label="FXA coins"
+      aria-label="AC coins"
       onClick={onClose}
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
     >
@@ -107,17 +107,17 @@ export default function FxaDetailsModal({
           </div>
           <p className="mt-3 text-2xl sm:text-3xl font-extrabold tabular-nums truncate" style={{ color: 'var(--accent-ink)' }}>
             {shown.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="ml-1 text-lg font-bold text-text-secondary">FXA</span>
+            <span className="ml-1 text-lg font-bold text-text-secondary">AC</span>
           </p>
           <p className="mt-1 text-xs text-text-tertiary">
-            FXArtha Coins — your on-platform reward currency
+            AC Coins — your on-platform reward currency
           </p>
         </div>
 
-        {/* ── How you earn FXA ── */}
+        {/* ── How you earn AC ── */}
         <div className="mt-5">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-            Where your FXA come from
+            Where your AC come from
           </p>
           <div className="grid grid-cols-1 gap-2">
             {EARN.map((w, i) => (
@@ -151,7 +151,7 @@ export default function FxaDetailsModal({
         >
           <ShoppingBag size={16} style={{ color: 'var(--accent-ink)' }} className="shrink-0" />
           <p className="text-[11px] text-text-secondary">
-            Spend FXA on perks, discounts and prizes in the <span className="font-semibold text-text-primary">Rewards Store</span>.
+            Spend AC on perks, discounts and prizes in the <span className="font-semibold text-text-primary">Rewards Store</span>.
           </p>
         </div>
 

@@ -88,11 +88,11 @@ function Inner() {
     setBusyId(item.id);
     try {
       const res = await api.post<{ redeemed: string; ac_spent: number }>(`/rewards/store/${item.id}/redeem`, {});
-      toast.success(`Redeemed ${res.redeemed} (−${formatInteger(res.ac_spent)} FXA)`);
+      toast.success(`Redeemed ${res.redeemed} (−${formatInteger(res.ac_spent)} AC)`);
       await load();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      if (detail === 'insufficient_ac') toast.error('Not enough FXArtha Coins');
+      if (detail === 'insufficient_ac') toast.error('Not enough AC Coins');
       else if (detail === 'insufficient_ps') toast.error('Not enough Power Score for this lifestyle reward');
       else toast.error(detail || err?.message || 'Could not redeem');
     } finally {
@@ -115,7 +115,7 @@ function Inner() {
         </div>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-text-primary">Rewards Store</h1>
-          <p className="text-sm text-text-tertiary">Spend FXArtha Coins on cashback, perks, tools, and lifestyle rewards.</p>
+          <p className="text-sm text-text-tertiary">Spend AC Coins on cashback, perks, tools, and lifestyle rewards.</p>
         </div>
       </header>
 
@@ -133,7 +133,7 @@ function Inner() {
           style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
         />
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* FXA balance */}
+          {/* AC balance */}
           <div className="flex items-center gap-3">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -144,7 +144,7 @@ function Inner() {
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Coin Balance</p>
               <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary truncate">
-                {state ? formatInteger(acBalance) : '—'} <span className="text-sm font-medium text-text-tertiary">FXA</span>
+                {state ? formatInteger(acBalance) : '—'} <span className="text-sm font-medium text-text-tertiary">AC</span>
               </p>
             </div>
           </div>
@@ -204,7 +204,7 @@ function Inner() {
             const cta = !meetsPs
               ? `Locked · needs ${formatInteger(psGate)} PS`
               : !canAffordAc
-                ? 'Not enough FXA'
+                ? 'Not enough AC'
                 : 'Redeem';
             const CatIcon = CATEGORY_ICON[it.category] ?? Star;
             return (

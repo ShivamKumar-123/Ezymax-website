@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Admin · FXA Coins.
+ * Admin · AC Coins.
  *
- * View EVERY user's reward-coin balance — FXA (ac_balance), plus XP and PS —
+ * View EVERY user's reward-coin balance — AC (ac_balance), plus XP and PS —
  * and edit any of them. Each save writes a rewards_transactions 'adjust' entry
  * so the manual change is auditable. Backed by
  *   GET /api/v1/admin/rewards-coins?search=&page=&per_page=
@@ -111,7 +111,7 @@ export default function AdminFxaCoinsPage() {
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-2">
           <Coins size={22} style={{ color: LIME }} />
-          <h1 className="text-xl font-bold text-text-primary">FXA Coins</h1>
+          <h1 className="text-xl font-bold text-text-primary">AC Coins</h1>
         </div>
         <button
           type="button"
@@ -122,7 +122,7 @@ export default function AdminFxaCoinsPage() {
         </button>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit any user&apos;s FXA (Artha Coin) balance, XP and PS. Every change is logged to the rewards ledger.
+        Edit any user&apos;s AC (Artha Coin) balance, XP and PS. Every change is logged to the rewards ledger.
       </p>
 
       <form onSubmit={submitSearch} className="flex items-center gap-2 mb-4">
@@ -154,7 +154,7 @@ export default function AdminFxaCoinsPage() {
           <thead className="text-[10px] uppercase tracking-wider text-text-tertiary">
             <tr className="border-b border-border-primary">
               <th className="text-left py-3 px-3 font-bold">User</th>
-              <th className="text-right py-3 px-2 font-bold" style={{ color: LIME }}>FXA</th>
+              <th className="text-right py-3 px-2 font-bold" style={{ color: LIME }}>AC</th>
               <th className="text-right py-3 px-2 font-bold">XP</th>
               <th className="text-right py-3 px-2 font-bold">PS</th>
               <th className="py-3 px-3" />

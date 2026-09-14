@@ -157,10 +157,10 @@ function BrokerHome() {
   const [movers, setMovers] = useState<{ symbol: string; pct: number; price: number }[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  // Rewards state for Level + FXArtha Coin (FXA) display.
+  // Rewards state for Level + AC Coin display.
   // Field names mirror /rewards/state exactly (get_state in rewards_service):
   // coins = ac_balance, next-level XP = xp_for_next_level. The old names
-  // (artha_coins / xp_next_level) don't exist on the response, so the FXA
+  // (artha_coins / xp_next_level) don't exist on the response, so the AC
   // chip read undefined and always showed 0.
   const [rewardsState, setRewardsState] = useState<{
     level?: number; level_label?: string;
@@ -172,7 +172,7 @@ function BrokerHome() {
   } | null>(null);
   // Level-progress popup (opened from the "Lvl N" badge).
   const [showLevel, setShowLevel] = useState(false);
-  // FXA details popup (opened from the FXA chip).
+  // AC details popup (opened from the AC chip).
   const [showFxa, setShowFxa] = useState(false);
   // XP details popup (opened from the XP chip).
   const [showXp, setShowXp] = useState(false);
@@ -372,14 +372,14 @@ function BrokerHome() {
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
             <Zap size={13} /> {xpTotal.toLocaleString()} XP
           </button>
-          {/* FXA — reward coins. Opens the "where FXA come from" popup. */}
+          {/* AC — reward coins. Opens the "where AC come from" popup. */}
           <button
             type="button"
             onClick={() => setShowFxa(true)}
-            title="Where your FXA come from"
+            title="Where your AC come from"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
-            <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} FXA
+            <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} AC
           </button>
           {/* PS — prestige score + rank. Opens the PS details popup. */}
           <button
@@ -1020,7 +1020,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-text-primary">Reward balance</p>
-            <p className="text-xs text-text-tertiary mt-0.5">Redeem your FXA coins in the rewards store.</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Redeem your AC coins in the rewards store.</p>
           </div>
           <Link href="/rewards" className="text-xs font-semibold text-[#ccff00] hover:underline shrink-0">Open →</Link>
         </div>
