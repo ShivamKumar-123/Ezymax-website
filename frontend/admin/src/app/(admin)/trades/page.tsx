@@ -389,6 +389,16 @@ export default function TradesPage() {
     setModifySwap(pos.swap ? String(pos.swap) : '');
     setModifyOpenTime(pos.created_at ? new Date(pos.created_at).toISOString().slice(0, 16) : '');
     setModifySide((pos.side?.toLowerCase() === 'sell' ? 'sell' : 'buy'));
+    // Seed the close-at-price controls too — the Edit modal carries a
+    // separate "Close at price" section so admin can set close price / spread
+    // in the same place, without those touching the Save Changes (modify) flow.
+    {
+      const tick = pos.instrument_symbol ? pricesRef.current[pos.instrument_symbol] : null;
+      const isBuy = (pos.side || '').toLowerCase() === 'buy';
+      const mkt = tick ? (isBuy ? tick.bid : tick.ask) : null;
+      setClosePriceInput(mkt != null ? String(mkt) : '');
+      setCloseSpread('');
+    }
     setActionReason('');
     setModalType('modify');
     setOpenActionsId(null);
@@ -1036,6 +1046,57 @@ export default function TradesPage() {
               {modalSubmitting ? <Loader2 size={14} className="animate-spin" /> : 'Save Changes'}
             </button>
           </div>
+
+          {/* Close-at-price — separate section with its OWN button, so it never
+              rides on Save Changes (which only modifies the open trade). A
+              position has no editable spread of its own, so spread here is a
+              points adjustment that worsens the close price against the user;
+              close price itself is backed by ClosePositionRequest.close_price.
+              The live readout shows exactly what will be booked. */}
+          {selectedPosition && !selectedPosition.is_lp_forwarded && (
+            <div className="mt-1 border-t border-border-primary pt-3 space-y-3">
+              <p className="text-xxs font-semibold uppercase tracking-wide text-text-tertiary">Close at a price</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Close Price</label>
+                  <input type="number" step="any" value={closePriceInput} onChange={e => setClosePriceInput(e.target.value)} placeholder="Market" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-danger transition-fast" />
+                </div>
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Spread (points)</label>
+                  <input type="number" step="any" value={closeSpread} onChange={e => setCloseSpread(e.target.value)} placeholder="0" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-danger transition-fast" />
+                </div>
+              </div>
+              {(() => {
+                const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
+                if (eff == null) return null;
+                const isBuy = (selectedPosition.side || '').toLowerCase() === 'buy';
+                const contractSize = selectedPosition.contract_size
+                  ?? (selectedPosition.instrument_symbol?.match(/BTC|ETH/) ? 1
+                    : selectedPosition.instrument_symbol?.match(/XAU/) ? 100
+                    : selectedPosition.instrument_symbol?.match(/XAG/) ? 50
+                    : selectedPosition.instrument_symbol?.match(/OIL/) ? 1000
+                    : selectedPosition.instrument_symbol?.match(/US30|US500|NAS/) ? 1
+                    : 100000);
+                const pnl = (isBuy ? (eff - selectedPosition.open_price) : (selectedPosition.open_price - eff))
+                  * selectedPosition.lots * contractSize;
+                return (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-md bg-bg-tertiary/50 border border-border-primary text-xs">
+                    <span className="text-text-tertiary">Effective close</span>
+                    <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(5)}</span>
+                    <span className="text-text-tertiary">Booked P&amp;L</span>
+                    <span className={cn('font-mono tabular-nums font-bold', pnl >= 0 ? 'text-success' : 'text-danger')}>
+                      {pnl >= 0 ? '+' : ''}{formatMoney(pnl)}
+                    </span>
+                  </div>
+                );
+              })()}
+              <div className="flex justify-end">
+                <button onClick={submitClose} disabled={modalSubmitting} className="px-4 py-1.5 rounded-md text-xs font-medium bg-danger text-white hover:opacity-90 disabled:opacity-50 transition-fast">
+                  {modalSubmitting ? <Loader2 size={14} className="animate-spin" /> : 'Close at Price'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 
