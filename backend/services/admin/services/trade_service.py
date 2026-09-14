@@ -77,6 +77,7 @@ async def list_positions(
         acc = acc_q.scalar_one_or_none()
 
         user_email = None
+        user_id = None
         account_number = None
         book_type = None
         is_demo = False
@@ -87,6 +88,7 @@ async def list_positions(
             usr = user_q.scalar_one_or_none()
             if usr:
                 user_email = usr.email
+                user_id = str(usr.id)
                 book_type = (usr.book_type or "B").upper()
         # LP-forwarded when a LIVE account belongs to an A-book user —
         # demo trades always stay internal (b-book engine), never hit LP.
@@ -131,6 +133,7 @@ async def list_positions(
             is_admin_modified=pos.is_admin_modified or False,
             created_at=pos.created_at,
             user_email=user_email,
+            user_id=user_id,
             account_number=account_number,
             book_type=book_type,
             is_demo=is_demo,

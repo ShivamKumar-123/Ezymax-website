@@ -40,6 +40,7 @@ interface Position {
   is_admin_modified: boolean;
   created_at: string;
   user_email?: string;
+  user_id?: string;
   account_number?: string;
   book_type?: string;
   is_demo?: boolean;
@@ -502,6 +503,32 @@ export default function TradesPage() {
     return base;
   };
 
+  // Flip the owner's book between A and B, straight from the trades view.
+  // Routing is per-user (there is no per-position book type), so this moves
+  // ALL of that user's trades — the confirm says so plainly. Reuses the same
+  // endpoint the Book-management screen uses.
+  const [bookFlipping, setBookFlipping] = useState<string | null>(null);
+  const flipBook = async (p: Position) => {
+    if (!p.user_id) { toast.error('Cannot switch book — user id missing'); return; }
+    const current = (p.book_type || 'B').toUpperCase();
+    const next = current === 'A' ? 'B' : 'A';
+    const ok = window.confirm(
+      `Move ${p.user_email || 'this user'} from ${current}-Book to ${next}-Book?\n\n`
+      + `Book routing is per user, so this moves ALL of their trades to ${next}-Book, not just this one.`,
+    );
+    if (!ok) return;
+    setBookFlipping(p.id);
+    try {
+      await adminApi.put(`/book/users/${p.user_id}/book-type`, { book_type: next });
+      toast.success(`${p.user_email || 'User'} → ${next}-Book`);
+      fetchPositions();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Book switch failed');
+    } finally {
+      setBookFlipping(null);
+    }
+  };
+
   const submitClose = async () => {
     if (!selectedPosition) return;
     setModalSubmitting(true);
@@ -731,12 +758,32 @@ export default function TradesPage() {
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <div className="flex items-center gap-1">
+                            {/* A⇄B switch straight from the trade row. Flips the
+                                owner's book (routing is per-user) with a confirm
+                                that spells out it moves all their trades. */}
+                            {p.user_id && !p.is_demo && (
+                              <button
+                                onClick={() => flipBook(p)}
+                                disabled={bookFlipping === p.id}
+                                title={`Switch to ${(p.book_type || 'B').toUpperCase() === 'A' ? 'B' : 'A'}-Book (moves the whole user)`}
+                                className={cn(
+                                  'px-2 py-1 text-xxs font-bold uppercase tracking-wide rounded border transition-fast disabled:opacity-50',
+                                  (p.book_type || 'B').toUpperCase() === 'A'
+                                    ? 'text-info bg-info/10 border-info/30 hover:bg-info/20'
+                                    : 'text-warning bg-warning/10 border-warning/30 hover:bg-warning/20',
+                                )}
+                              >
+                                {bookFlipping === p.id
+                                  ? <Loader2 size={11} className="inline animate-spin" />
+                                  : <>{(p.book_type || 'B').toUpperCase()}-Book <span className="opacity-60">⇄</span></>}
+                              </button>
+                            )}
                             {p.is_lp_forwarded ? (
                               <span
                                 className="px-2 py-1 text-xxs font-bold uppercase tracking-wide text-info bg-info/10 border border-info/30 rounded"
                                 title="A-book trade — forwarded to LP, admin cannot edit"
                               >
-                                A-book · LP
+                                LP
                               </span>
                             ) : (
                               <button onClick={() => openModifyModal(p)} className="px-2 py-1 text-xxs font-medium text-text-secondary bg-bg-hover border border-border-primary rounded hover:text-buy hover:border-buy/30 transition-fast" title="Edit Trade">

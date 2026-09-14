@@ -180,6 +180,9 @@ class PositionOut(BaseModel):
     is_admin_modified: bool = False
     created_at: Optional[datetime] = None
     user_email: Optional[str] = None
+    # Owner id — lets the trades view flip the owner's book type (routing is
+    # per-user, not per-position) without a second lookup.
+    user_id: Optional[str] = None
     account_number: Optional[str] = None
     book_type: Optional[str] = None       # 'A' (forwarded to LP) or 'B'
     is_demo: bool = False
