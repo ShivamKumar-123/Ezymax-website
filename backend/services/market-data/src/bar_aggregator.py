@@ -1,5 +1,6 @@
 """Bar Aggregator — Aggregates ticks into OHLCV bars for multiple timeframes."""
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from collections import defaultdict
@@ -18,6 +19,13 @@ TIMEFRAMES = {
     "4h": 14400,
     "1d": 86400,
 }
+
+# Closed bars are written through this many concurrent writers. Every symbol's
+# bars close on the same boundary, so at midnight all seven timeframes of every
+# symbol close at once — with hundreds of symbols that is thousands of writes
+# arriving together, against a Timescale pool of 25 connections. Unbounded,
+# they time out waiting for a connection and those bars are lost.
+STORE_CONCURRENCY = 8
 
 
 class BarData:
@@ -43,11 +51,15 @@ class BarAggregator:
     def __init__(self):
         self._bars: dict[str, dict[str, BarData]] = defaultdict(dict)
         self._bar_timestamps: dict[str, dict[str, int]] = defaultdict(dict)
+        # Symbols whose forming bars changed since the last publish.
+        self._dirty: set[str] = set()
+        self._store_sem = asyncio.Semaphore(STORE_CONCURRENCY)
 
     def update(self, symbol: str, bid: float, ask: float, timestamp: str):
         mid = (bid + ask) / 2
         now = datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc)
         epoch = int(now.timestamp())
+        self._dirty.add(symbol)
 
         for tf_name, tf_seconds in TIMEFRAMES.items():
             bar_start = (epoch // tf_seconds) * tf_seconds
@@ -72,48 +84,50 @@ class BarAggregator:
                     self._bars[symbol][tf_name].update(mid)
 
     async def _store_bar(self, symbol: str, timeframe: str, bar: BarData, bar_start: int):
-        import json
-        bar_data = {
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "time": bar_start,
-            "open": bar.open,
-            "high": bar.high,
-            "low": bar.low,
-            "close": bar.close,
-            "volume": bar.volume,
-            "tick_count": bar.tick_count,
-        }
+        async with self._store_sem:
+            bar_data = json.dumps({
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "time": bar_start,
+                "open": bar.open,
+                "high": bar.high,
+                "low": bar.low,
+                "close": bar.close,
+                "volume": bar.volume,
+                "tick_count": bar.tick_count,
+            })
 
-        bar_key = f"bar:{symbol}:{timeframe}"
-        await redis_client.set(bar_key, json.dumps(bar_data))
+            try:
+                pipe = redis_client.pipeline(transaction=False)
+                pipe.set(f"bar:{symbol}:{timeframe}", bar_data)
+                list_key = f"bars:{symbol}:{timeframe}"
+                pipe.lpush(list_key, bar_data)
+                pipe.ltrim(list_key, 0, 999)
+                await pipe.execute()
+            except Exception as exc:
+                logger.debug("Redis bar write failed %s %s: %s", symbol, timeframe, exc)
 
-        list_key = f"bars:{symbol}:{timeframe}"
-        await redis_client.lpush(list_key, json.dumps(bar_data))
-        await redis_client.ltrim(list_key, 0, 999)
+            # Durable persistence — every CLOSED bar is upserted into ohlcv_<tf> so
+            # chart history is deep and survives restarts. Redis is just a 1000-bar
+            # cache on top; the durable store is the real history the bars API reads
+            # first. Guarded internally (no-op until ohlc_store.init() ran).
+            try:
+                await ohlc_store.upsert(
+                    symbol, timeframe, int(bar_start),
+                    bar.open, bar.high, bar.low, bar.close,
+                    bar.volume, bar.tick_count,
+                )
+            except Exception as exc:
+                logger.debug("durable OHLC upsert failed %s %s: %s", symbol, timeframe, exc)
 
-        # Durable persistence — every CLOSED bar is upserted into ohlcv_<tf> so
-        # chart history is deep and survives restarts. Redis is just a 1000-bar
-        # cache on top; the durable store is the real history the bars API reads
-        # first. Guarded internally (no-op until ohlc_store.init() ran).
-        try:
-            await ohlc_store.upsert(
-                symbol, timeframe, int(bar_start),
-                bar.open, bar.high, bar.low, bar.close,
-                bar.volume, bar.tick_count,
-            )
-        except Exception as exc:
-            logger.debug("durable OHLC upsert failed %s %s: %s", symbol, timeframe, exc)
-
-        # ATR(14) — used by trade insurance pricing. Computed only on 1m bars
-        # because that's the timeframe insurance quotes care about.
-        if timeframe == "1m":
-            await self._update_atr14(symbol)
+            # ATR(14) — used by trade insurance pricing. Computed only on 1m bars
+            # because that's the timeframe insurance quotes care about.
+            if timeframe == "1m":
+                await self._update_atr14(symbol)
 
     async def _update_atr14(self, symbol: str):
         """Compute the 14-period True-Range average from the most recent 1m
         bars and cache at `atr:<SYMBOL>:14` with a 5-minute TTL."""
-        import json
         try:
             raw = await redis_client.lrange(f"bars:{symbol}:1m", 0, 14)
             if len(raw) < 15:
@@ -136,22 +150,32 @@ class BarAggregator:
             logger.debug("ATR update failed for %s: %s", symbol, exc)
 
     async def run_aggregation_loop(self):
-        """Periodically publish current bar state to Redis for chart consumers."""
-        import json
+        """Publish forming bars to Redis for chart consumers, once a second.
+
+        Only symbols that ticked since the last pass, in one pipeline. This was
+        an awaited SET per symbol per timeframe for every symbol every second —
+        fine for 29 symbols, thousands of round trips a second for 500.
+        """
         while True:
-            for symbol, timeframes in list(self._bars.items()):
-                for tf_name, bar in list(timeframes.items()):
-                    bar_data = {
-                        "symbol": symbol,
-                        "timeframe": tf_name,
-                        "open": bar.open,
-                        "high": bar.high,
-                        "low": bar.low,
-                        "close": bar.close,
-                        "volume": bar.volume,
-                        "tick_count": bar.tick_count,
-                    }
-                    bar_key = f"bar:current:{symbol}:{tf_name}"
-                    await redis_client.set(bar_key, json.dumps(bar_data))
+            dirty, self._dirty = self._dirty, set()
+            if dirty:
+                pipe = redis_client.pipeline(transaction=False)
+                for symbol in dirty:
+                    for tf_name, bar in list(self._bars.get(symbol, {}).items()):
+                        pipe.set(f"bar:current:{symbol}:{tf_name}", json.dumps({
+                            "symbol": symbol,
+                            "timeframe": tf_name,
+                            "open": bar.open,
+                            "high": bar.high,
+                            "low": bar.low,
+                            "close": bar.close,
+                            "volume": bar.volume,
+                            "tick_count": bar.tick_count,
+                        }))
+                try:
+                    await pipe.execute()
+                except Exception as exc:
+                    logger.warning("Forming-bar publish failed (%d symbols): %s", len(dirty), exc)
+                    self._dirty |= dirty
 
             await asyncio.sleep(1)

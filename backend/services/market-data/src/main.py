@@ -11,16 +11,17 @@ from packages.common.src.redis_client import (
     CONFIG_INSTRUMENTS_RELOAD_CHANNEL,
     PriceChannel,
     redis_client,
-    publish_price,
+    publish_prices,
 )
 from packages.common.src.kafka_client import close_producer
 
-from .feed_handler import FeedSimulator, NullFeed, INSTRUMENTS
+from .feed_handler import FeedSimulator, NullFeed
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
 from .corecen_lp_feed import CorecenLPFeed
 from .binance_feed import BinanceCryptoFeed, covered_symbols as binance_covered_symbols
 from .bar_aggregator import BarAggregator
+from .instrument_universe import load_universe
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
 from .store import TickStore, ohlc_store
@@ -41,6 +42,14 @@ settings = get_settings()
 STALE_TICK_AFTER_SEC = 90.0
 STALE_REFRESH_INTERVAL_SEC = 30.0
 
+# Ticks are drained continuously but published on a fixed cadence, keeping
+# only the latest price per symbol. With the full Infoway catalogue the feeds
+# deliver ~700 frames/s; publishing each one meant three Redis round trips per
+# frame, and the gateway already coalesces to 50 ms per symbol, so the extra
+# frames never reached a screen. Candles still see every tick.
+PUBLISH_INTERVAL_SEC = 0.1
+MAX_TICKS_PER_CYCLE = 50_000
+
 # --- Durable-write watchdog ---------------------------------------------------
 # Catches a SILENT stall of the durable OHLC persistence (the class of bug that
 # froze chart history for 5 days: ticks kept flowing + the forming candle kept
@@ -54,18 +63,43 @@ DURABLE_STALE_SEC = 600.0            # no durable write this long (feed alive) �
 DURABLE_HEALTH_KEY = "health:ohlc_durable_write"
 
 
+def _now_iso() -> str:
+    ts = datetime.now(timezone.utc)
+    return ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
+
+
+def _universe_signature(universe: dict) -> tuple:
+    return tuple(sorted(
+        (s, i.get("business"), i.get("code"), i.get("decimals"))
+        for s, i in universe.items()
+    ))
+
+
 class MarketDataService:
     def __init__(self):
-        raw_key = (settings.INFOWAY_API_KEY or "").strip()
+        self._raw_key = (settings.INFOWAY_API_KEY or "").strip()
         self._tick_count = 0
         self._infoway_watchdog_armed = False
+        self.feed = NullFeed()
+        self.crypto_feed = None
+        # Active instruments from the database; replaced on reload.
+        self.universe: dict[str, dict] = {}
+        self._universe_sig: tuple = ()
+        self.aggregator = BarAggregator()
+        self.store = TickStore()
+        self.spread_cache = StreamSpreadCache()
+        self.running = True
+        self._last_mid: dict[str, float] = {}
+        self._last_live_mono: dict[str, float] = {}
+        self._service_start_mono = time.monotonic()
+        self._durable_alert_active = False  # edge-trigger so we alert once per incident
 
+    def _build_feeds(self, universe: dict[str, dict]) -> None:
         # Crypto from Binance's public WS (deep real liquidity) when enabled and
         # a real primary feed is active. The primary feed then drops the crypto
         # symbols so each has exactly one source; forex/metals/etc stay primary.
-        self.crypto_feed = None
         binance_crypto = getattr(settings, "CRYPTO_FEED_BINANCE", True)
-        crypto_syms = set(binance_covered_symbols(INSTRUMENTS)) if binance_crypto else set()
+        crypto_syms = set(binance_covered_symbols(universe)) if binance_crypto else set()
 
         if getattr(settings, "CORECEN_LP_ENABLED", False):
             if not settings.CORECEN_LP_API_KEY or not settings.CORECEN_LP_API_SECRET:
@@ -76,12 +110,12 @@ class MarketDataService:
             self.feed = CorecenLPFeed()
             logger.info("Price feed: Corecen LP (receiving pushes on /api/lp/prices/batch)")
             if crypto_syms:
-                self.crypto_feed = BinanceCryptoFeed(INSTRUMENTS)
-        elif usable_infoway_api_key(raw_key):
-            self.feed = InfowayFeed(raw_key, INSTRUMENTS, exclude_symbols=crypto_syms)
+                self.crypto_feed = BinanceCryptoFeed(universe)
+        elif usable_infoway_api_key(self._raw_key):
+            self.feed = InfowayFeed(self._raw_key, universe, exclude_symbols=crypto_syms)
             self._infoway_watchdog_armed = True
             if crypto_syms:
-                self.crypto_feed = BinanceCryptoFeed(INSTRUMENTS)
+                self.crypto_feed = BinanceCryptoFeed(universe)
                 logger.info("Price feed: Infoway WebSocket (forex/metals) + Binance (crypto)")
             else:
                 logger.info("Price feed: Infoway WebSocket (depth)")
@@ -99,14 +133,6 @@ class MarketDataService:
                 "No real price feed (Infoway/Corecen) configured and ALLOW_SIMULATED_FEED is off — "
                 "NOT publishing simulated prices. Prices freeze at their last real value."
             )
-        self.aggregator = BarAggregator()
-        self.store = TickStore()
-        self.spread_cache = StreamSpreadCache()
-        self.running = True
-        self._last_mid: dict[str, float] = {}
-        self._last_live_mono: dict[str, float] = {}
-        self._service_start_mono = time.monotonic()
-        self._durable_alert_active = False  # edge-trigger so we alert once per incident
 
     async def start(self):
         logger.info("Starting Market Data Service...")
@@ -119,6 +145,11 @@ class MarketDataService:
         # history is deep and survives restarts (replaces the Redis-only cache
         # + simulated seed as the source of truth for history).
         await ohlc_store.init()
+
+        self.universe = await load_universe(fallback=True) or {}
+        self._universe_sig = _universe_signature(self.universe)
+        logger.info("Instrument universe: %d active symbols", len(self.universe))
+        self._build_feeds(self.universe)
 
         await self.spread_cache.reload_if_stale(force=True)
         await self._seed_last_mid_from_redis()
@@ -140,11 +171,31 @@ class MarketDataService:
 
         await asyncio.gather(*tasks)
 
+    async def _reload_universe(self) -> None:
+        """Pick up instruments an admin added, removed or re-routed, without a
+        restart. Only the Infoway sockets whose code list changed resubscribe."""
+        new = await load_universe(fallback=False)
+        if not new:
+            return
+        sig = _universe_signature(new)
+        if sig == self._universe_sig:
+            return
+        added = len(set(new) - set(self.universe))
+        removed = len(set(self.universe) - set(new))
+        self.universe = new
+        self._universe_sig = sig
+        logger.info(
+            "Instrument universe changed: +%d / -%d -> %d symbols", added, removed, len(new),
+        )
+        if isinstance(self.feed, InfowayFeed):
+            await self.feed.update_instruments(new)
+
     async def _spread_reload_loop(self):
         while self.running:
             await asyncio.sleep(RELOAD_INTERVAL_SEC)
             if self.running:
                 await self.spread_cache.reload_if_stale(force=True)
+                await self._reload_universe()
 
     async def _spread_config_subscriber(self):
         """Reload spread cache when admin saves spreads (same channel as instrument config)."""
@@ -158,8 +209,11 @@ class MarketDataService:
                         ignore_subscribe_messages=True, timeout=1.0
                     )
                     if msg and msg.get("type") == "message":
-                        logger.info("Config reload signal — refreshing spread cache")
+                        logger.info("Config reload signal — refreshing spread cache + instruments")
+                        # Spreads first: a new symbol must have its spread
+                        # loaded before its first tick is published.
                         await self.spread_cache.reload_if_stale(force=True)
+                        await self._reload_universe()
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -204,16 +258,22 @@ class MarketDataService:
                 break
             await self.spread_cache.reload_if_stale(force=False)
             now = time.monotonic()
-            ts_dt = datetime.now(timezone.utc)
-            ts = ts_dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts_dt.microsecond // 1000:03d}Z"
+            ts = _now_iso()
+            batch = []
             for symbol, mid in list(self._last_mid.items()):
                 if now - self._last_live_mono.get(symbol, 0) < STALE_TICK_AFTER_SEC:
                     continue
                 try:
                     bid, ask = self.spread_cache.widen(symbol, mid)
-                    await publish_price(symbol, bid, ask, ts)
                 except Exception as exc:
                     logger.debug("Stale quote refresh failed for %s: %s", symbol, exc)
+                    continue
+                batch.append((symbol, bid, ask, ts, None))
+            if batch:
+                try:
+                    await publish_prices(batch)
+                except Exception as exc:
+                    logger.debug("Stale quote publish failed (%d symbols): %s", len(batch), exc)
 
     async def _durable_write_watchdog(self):
         """Alarm when durable OHLC persistence silently stalls while the market
@@ -291,41 +351,61 @@ class MarketDataService:
             logger.debug("ops email failed: %s", exc)
 
     async def _process_ticks(self):
-        logger.info("Tick processor started")
+        logger.info("Tick processor started (publishing every %d ms)", int(PUBLISH_INTERVAL_SEC * 1000))
         while self.running:
-            tick = await self.feed.get_tick()
-            if tick is None and self.crypto_feed is not None:
-                tick = await self.crypto_feed.get_tick()
-            if tick is None:
-                await asyncio.sleep(0.01)
-                continue
+            # symbol -> (mid, provider market spread | None, timestamp)
+            pending: dict[str, tuple[float, float | None, str]] = {}
+            drained = 0
+            # Re-read the feed attributes each cycle: the fallback watchdog
+            # can swap self.feed out.
+            for feed in (self.feed, self.crypto_feed):
+                if feed is None:
+                    continue
+                while drained < MAX_TICKS_PER_CYCLE:
+                    tick = await feed.get_tick()
+                    if tick is None:
+                        break
+                    drained += 1
 
-            symbol = str(tick["symbol"] or "").strip().upper()
-            if not symbol:
-                continue
-            bid = float(tick["bid"])
-            ask = float(tick["ask"])
-            ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
+                    symbol = str(tick.get("symbol") or "").strip().upper()
+                    if not symbol:
+                        continue
+                    try:
+                        bid = float(tick["bid"])
+                        ask = float(tick["ask"])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    ts = tick.get("timestamp") or _now_iso()
 
-            mid = (bid + ask) / 2.0
-            # Provider's own live spread (0 when the feed collapses to mid,
-            # e.g. Binance trade stream) — the floating-spread mode's signal.
-            raw_spread = ask - bid
-            self._last_mid[symbol] = mid
-            self._last_live_mono[symbol] = time.monotonic()
-            _mkt_spread = raw_spread if raw_spread > 0 else None
-            bid, ask = self.spread_cache.widen(
-                symbol, mid, raw_spread=_mkt_spread,
-            )
+                    mid = (bid + ask) / 2.0
+                    # Provider's own live spread (0 when the feed collapses to mid,
+                    # e.g. Binance trade stream) — the floating-spread mode's signal.
+                    raw_spread = ask - bid
+                    self._last_mid[symbol] = mid
+                    self._last_live_mono[symbol] = time.monotonic()
+                    # Candles see every tick, so a spike between two publishes
+                    # still lands in that bar's high/low. The published quote is
+                    # symmetric around mid, so feeding mid directly gives the bar
+                    # the same price it got from the widened bid/ask.
+                    self.aggregator.update(symbol, mid, mid, ts)
+                    pending[symbol] = (mid, raw_spread if raw_spread > 0 else None, ts)
 
-            # Carry the provider's live market spread so a per-user FLOATING
-            # spread can be computed downstream (frontend + execution).
-            await publish_price(symbol, bid, ask, ts, market_spread=_mkt_spread)
+            if pending:
+                batch = []
+                for symbol, (mid, mkt_spread, ts) in pending.items():
+                    bid, ask = self.spread_cache.widen(symbol, mid, raw_spread=mkt_spread)
+                    # Carry the provider's live market spread so a per-user FLOATING
+                    # spread can be computed downstream (frontend + execution).
+                    batch.append((symbol, bid, ask, ts, mkt_spread))
+                try:
+                    await publish_prices(batch)
+                except Exception as exc:
+                    logger.warning("Price publish failed for %d symbols: %s", len(batch), exc)
+                for symbol, bid, ask, ts, _mkt in batch:
+                    await self.store.insert_tick(symbol, bid, ask, ts)
+                self._tick_count += drained
 
-            await self.store.insert_tick(symbol, bid, ask, ts)
-
-            self.aggregator.update(symbol, bid, ask, ts)
-            self._tick_count += 1
+            await asyncio.sleep(PUBLISH_INTERVAL_SEC)
 
     async def _infoway_fallback_watchdog(self) -> None:
         """If Infoway never delivers ticks (bad key, network, symbol mismatch), use simulator."""

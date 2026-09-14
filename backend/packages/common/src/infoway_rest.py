@@ -25,6 +25,8 @@ from typing import Optional
 
 import httpx
 
+from .infoway_routes import cached_routes, route_for
+
 logger = logging.getLogger("infoway_rest")
 
 _BASE = "https://data.infoway.io"
@@ -40,24 +42,23 @@ _TF_TO_KLINETYPE = {
 #   • forex / metals / indices / oil → /common/  + identity code
 #   • crypto                          → /crypto/  + <BASE>USDT
 #   • US stocks                       → /stock/   + <TICKER>.US
-# A couple of platform codes also differ from InfoWay's (NATGAS→NGAS, US100→
-# NAS100). Anything else falls through to /common/ + identity.
+# The authoritative table is the one market-data derives from each instrument's
+# segment (infoway_routes). These sets are only the fallback for when that table
+# is not in Redis yet, e.g. the gateway starting before market-data.
 _CRYPTO = {"BTCUSD", "ETHUSD", "LTCUSD", "XRPUSD", "SOLUSD", "ADAUSD", "BNBUSD", "DOGEUSD"}
 _STOCKS = {"AAPL", "AMZN", "GOOGL", "META", "MSFT", "NFLX", "NVDA", "TSLA"}
-_CODE_OVERRIDE = {"NATGAS": "NGAS", "US100": "NAS100"}
 
 
-def _route(symbol: str) -> tuple[str, str]:
+def _route(symbol: str, routes: dict | None = None) -> tuple[str, str]:
     """Return (business, infoway_code) for a platform symbol."""
     s = (symbol or "").strip().upper()
+    if routes and s in routes:
+        return routes[s]
     if s in _CRYPTO:
-        base = s[:-3] if s.endswith("USD") else s
-        return "crypto", base + "USDT"
+        return route_for(s, "crypto")
     if s in _STOCKS:
-        return "stock", s + ".US"
-    if s in _CODE_OVERRIDE:
-        return "common", _CODE_OVERRIDE[s]
-    return "common", s
+        return route_for(s, "stocks")
+    return route_for(s, None)
 
 
 async def fetch_klines(
@@ -76,7 +77,7 @@ async def fetch_klines(
     if not kline_type or not (symbol or "").strip() or not (token or "").strip():
         return []
 
-    business, infoway_code = _route(symbol)
+    business, infoway_code = _route(symbol, await cached_routes())
 
     body: dict = {
         "klineType": kline_type,
@@ -143,10 +144,11 @@ async def fetch_latest_close_batch(
     if not kline_type or not (token or "").strip():
         return {}
 
+    routes = await cached_routes()
     ordered_syms: list[str] = []
     codes: list[str] = []
     for s in symbols:
-        business, code = _route(s)
+        business, code = _route(s, routes)
         if business != "common":       # crypto/stocks aren't batched here
             continue
         ordered_syms.append(s)

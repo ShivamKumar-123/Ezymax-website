@@ -10,11 +10,12 @@ import secrets
 import time
 import urllib.parse
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import websockets
 
 from packages.common.src.infoway_rest import fetch_klines
+from packages.common.src.infoway_routes import route_for
 from packages.common.src.redis_client import redis_client
 from .store import ohlc_store
 
@@ -36,24 +37,15 @@ INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
 # around the clock, so 10s of total silence is hundreds of missing frames and
 # cannot be a quiet tape.
 #
-# Common (forex, metals, indices): legitimately silent every night and all
-# weekend, so it keeps the long fuse.
-SILENT_RECONNECT_SEC = {"crypto": 10, "common": 900}
+# Common (forex, metals, indices) and stock: legitimately silent every night
+# and all weekend, so they keep the long fuse.
+SILENT_RECONNECT_SEC = {"crypto": 10, "common": 900, "stock": 900}
 SILENT_RECONNECT_DEFAULT = 900   # 15 min
 SILENCE_CHECK_SEC = 3            # watchdog cadence — bounds crypto recovery at ~13s
 BACKFILL_CLAMP_SEC = 6 * 3600    # cap the reconnect blind-window backfill at 6h
 BACKFILL_TFS = ("1m", "5m")      # higher TFs heal via history serving / reconcile
 BACKFILL_SPACING = 1.0           # space REST calls ≥1s
 _BACKFILL_TF_SEC = {"1m": 60, "5m": 300}
-
-# Platform symbol -> Infoway product code (crypto uses *USDT on Infoway).
-CRYPTO_INFOWAY_CODES: Dict[str, str] = {
-    "BTCUSD": "BTCUSDT",
-    "ETHUSD": "ETHUSDT",
-    "LTCUSD": "LTCUSDT",
-    "XRPUSD": "XRPUSDT",
-    "SOLUSD": "SOLUSDT",
-}
 
 # Infoway may use alternate product codes vs our DB symbols.
 INFOWAY_SYMBOL_ALIASES: Dict[str, str] = {
@@ -64,17 +56,12 @@ INFOWAY_SYMBOL_ALIASES: Dict[str, str] = {
 }
 
 
-# Infoway push symbol -> platform symbol (handles USDT pairs and aliases).
-def _build_infoway_to_platform(instruments: Dict[str, dict]) -> Dict[str, str]:
-    m: Dict[str, str] = {}
-    for plat, _info in instruments.items():
-        code = CRYPTO_INFOWAY_CODES.get(plat, plat)
-        m[code.upper()] = plat
-        m[plat.upper()] = plat
-    for infoway_sym, plat in INFOWAY_SYMBOL_ALIASES.items():
-        if plat in instruments:
-            m[infoway_sym.upper()] = plat
-    return m
+def _route_of(symbol: str, info: dict) -> Tuple[str, str]:
+    """(business, code) for an instrument entry. Entries from the database
+    carry their route; the built-in fallback list is routed by category."""
+    if info.get("business") and info.get("code"):
+        return info["business"], info["code"]
+    return route_for(symbol, "crypto" if info.get("category") == "crypto" else None)
 
 
 def _trace() -> str:
@@ -82,20 +69,33 @@ def _trace() -> str:
 
 
 class InfowayFeed:
-    """Streams depth (best bid/ask) from Infoway `common` + `crypto` sockets."""
+    """Streams depth + trades from one Infoway socket per business
+    (`common`, `crypto`, `stock`), each carrying every code for that business.
+
+    Infoway does not cap codes per connection on this plan — a single socket
+    was measured carrying the full catalogue (115 common, 197 crypto) — so
+    there is no sharding. The symbol set can change at runtime: a socket whose
+    codes changed is recycled and resubscribes with the new list.
+    """
 
     def __init__(self, api_key: str, instruments: Dict[str, dict],
                  exclude_symbols: Optional[set] = None):
         self._api_key = api_key.strip()
-        self._instruments = instruments
         # Platform symbols another feed owns (e.g. crypto served from Binance) —
         # never subscribed here so each symbol has exactly one live source.
         self._exclude_symbols = {s.upper() for s in (exclude_symbols or set())}
-        self._infoway_to_platform = _build_infoway_to_platform(instruments)
+        self._instruments: Dict[str, dict] = {}
+        # business -> sorted codes to subscribe
+        self._codes: Dict[str, List[str]] = {}
+        # Infoway push code -> platform symbols. A list, because two platform
+        # symbols can share one code (US100 and NAS100 are both NAS100).
+        self._code_to_platform: Dict[str, List[str]] = {}
+        self._apply(instruments)
 
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
+        self._socket_tasks: Dict[str, asyncio.Task] = {}
         # Data-silence watchdog state (per business socket).
         self._last_data_ts: Dict[str, float] = {}  # set ONLY on real data frames
         self._ws_ref: Dict[str, object] = {}        # live socket per business
@@ -111,6 +111,29 @@ class InfowayFeed:
         # logs an error — for a recycle we asked for. On crypto that is 2s of
         # the ~13s the whole fault costs.
         self._forced_recycle: set = set()
+        # One gap backfill per business at a time. With hundreds of symbols a
+        # backfill runs for minutes, and a second reconnect inside that window
+        # must not start another one on top of it.
+        self._backfilling: set = set()
+
+    def _apply(self, instruments: Dict[str, dict]) -> None:
+        codes: Dict[str, set] = {}
+        c2p: Dict[str, List[str]] = {}
+        for sym, info in instruments.items():
+            if sym.upper() in self._exclude_symbols:
+                continue
+            business, code = _route_of(sym, info)
+            code = code.upper()
+            codes.setdefault(business, set()).add(code)
+            c2p.setdefault(code, []).append(sym)
+        for alias, plat in INFOWAY_SYMBOL_ALIASES.items():
+            if plat in instruments and plat.upper() not in self._exclude_symbols:
+                targets = c2p.setdefault(alias.upper(), [])
+                if plat not in targets:
+                    targets.append(plat)
+        self._instruments = instruments
+        self._codes = {b: sorted(c) for b, c in codes.items()}
+        self._code_to_platform = c2p
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -118,41 +141,15 @@ class InfowayFeed:
 
     async def start(self) -> None:
         self._running = True
-        common_codes = [
-            CRYPTO_INFOWAY_CODES.get(s, s)
-            for s, info in self._instruments.items()
-            if info["category"] != "crypto" and s.upper() not in self._exclude_symbols
-        ]
-        crypto_codes = [
-            CRYPTO_INFOWAY_CODES[s]
-            for s in self._instruments
-            if self._instruments[s]["category"] == "crypto"
-            and s.upper() not in self._exclude_symbols
-        ]
         logger.info(
-            "Infoway feed starting — common=%d symbols, crypto=%d symbols",
-            len(common_codes),
-            len(crypto_codes),
+            "Infoway feed starting — %s",
+            ", ".join(f"{b}={len(c)} symbols" for b, c in sorted(self._codes.items())) or "no symbols",
         )
-
-        if common_codes:
-            self._tasks.append(
-                asyncio.create_task(
-                    self._run_socket("common", common_codes),
-                    name="infoway-common",
-                )
-            )
-        if crypto_codes:
-            self._tasks.append(
-                asyncio.create_task(
-                    self._run_socket("crypto", crypto_codes),
-                    name="infoway-crypto",
-                )
-            )
-
-        if not self._tasks:
+        if not self._codes:
             logger.error("No instruments configured for Infoway")
-            return
+
+        for business in self._codes:
+            self._spawn(business)
 
         # Data-silence watchdog — force-reconnects a socket whose subscription
         # went zombie (healthy TCP, no data). Keeps market-open streaming alive.
@@ -160,15 +157,50 @@ class InfowayFeed:
             asyncio.create_task(self._silence_monitor(), name="infoway-silence")
         )
 
-        await asyncio.gather(*self._tasks, return_exceptions=True)
+        # Sockets can be added later by update_instruments, so this waits on
+        # the feed's lifetime rather than on a fixed set of tasks.
+        with contextlib.suppress(asyncio.CancelledError):
+            while self._running:
+                await asyncio.sleep(1.0)
+
+    def _spawn(self, business: str) -> None:
+        task = self._socket_tasks.get(business)
+        if task is not None and not task.done():
+            return
+        self._socket_tasks[business] = asyncio.create_task(
+            self._run_socket(business), name=f"infoway-{business}",
+        )
+
+    async def update_instruments(self, instruments: Dict[str, dict]) -> None:
+        """Switch to a new symbol set, resubscribing only the sockets whose
+        codes changed. The others keep streaming untouched."""
+        previous = self._codes
+        self._apply(instruments)
+        for business in sorted(set(previous) | set(self._codes)):
+            if previous.get(business) == self._codes.get(business):
+                continue
+            logger.info(
+                "Infoway [%s] symbol set changed %d -> %d — resubscribing",
+                business, len(previous.get(business, [])), len(self._codes.get(business, [])),
+            )
+            if not self._running:
+                continue
+            ws = self._ws_ref.get(business)
+            if ws is not None:
+                self._forced_recycle.add(business)
+                with contextlib.suppress(Exception):
+                    await ws.close()
+            self._spawn(business)
 
     async def stop(self) -> None:
         self._running = False
-        for t in self._tasks:
+        tasks = self._tasks + list(self._socket_tasks.values())
+        for t in tasks:
             t.cancel()
-        if self._tasks:
-            await asyncio.gather(*self._tasks, return_exceptions=True)
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
         self._tasks.clear()
+        self._socket_tasks.clear()
         logger.info("Infoway feed stopped")
 
     async def get_tick(self) -> Optional[dict]:
@@ -191,16 +223,24 @@ class InfowayFeed:
                 pass
             self._tick_queue.put_nowait(tick)
 
-    def _platform_symbol(self, raw: str) -> Optional[str]:
+    def _platform_symbols(self, raw: str) -> List[str]:
         if not raw:
-            return None
-        key = raw.strip().upper()
-        return self._infoway_to_platform.get(key)
+            return []
+        return self._code_to_platform.get(raw.strip().upper(), [])
+
+    @staticmethod
+    def _timestamp(ts_ms) -> str:
+        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
+            sec = int(ts_ms // 1000)
+            ms = int(ts_ms % 1000)
+            dt = datetime.fromtimestamp(sec, tz=timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
+        now = datetime.now(timezone.utc)
+        return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
 
     def _emit_depth(self, data: dict) -> None:
-        raw_sym = data.get("s") or ""
-        symbol = self._platform_symbol(str(raw_sym))
-        if not symbol or symbol not in self._instruments:
+        symbols = self._platform_symbols(str(data.get("s") or ""))
+        if not symbols:
             return
 
         b = data.get("b") or []
@@ -218,27 +258,7 @@ class InfowayFeed:
         if bid <= 0 or ask <= 0 or ask < bid:
             return
 
-        info = self._instruments[symbol]
-        decimals = int(info["decimals"])
-        # Pass the provider's real bid/ask through. The platform NEVER shows
-        # these raw values — market-data main always recomputes the published
-        # quote from the mid via spread_cache.widen(). Carrying the raw spread
-        # lets the floating-spread mode use live market width as its signal;
-        # with floating off, widen() collapses to mid exactly as before.
-        bid_r = round(bid, decimals)
-        ask_r = round(ask, decimals)
-        if ask_r < bid_r:
-            ask_r = bid_r
-
-        ts_ms = data.get("t")
-        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
-            sec = int(ts_ms // 1000)
-            ms = int(ts_ms % 1000)
-            dt = datetime.fromtimestamp(sec, tz=timezone.utc)
-            timestamp = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
-        else:
-            ts = datetime.now(timezone.utc)
-            timestamp = ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
+        timestamp = self._timestamp(data.get("t"))
 
         vol_b = b[1] if len(b) > 1 and b[1] else []
         vol_a = a[1] if len(a) > 1 and a[1] else []
@@ -247,14 +267,27 @@ class InfowayFeed:
         except (TypeError, ValueError, IndexError):
             volume = 0
 
-        tick = {
-            "symbol": symbol,
-            "bid": bid_r,
-            "ask": ask_r,
-            "timestamp": timestamp,
-            "volume": max(volume, 1),
-        }
-        self._enqueue(tick)
+        for symbol in symbols:
+            info = self._instruments.get(symbol)
+            if info is None:
+                continue
+            decimals = int(info["decimals"])
+            # Pass the provider's real bid/ask through. The platform NEVER shows
+            # these raw values — market-data main always recomputes the published
+            # quote from the mid via spread_cache.widen(). Carrying the raw spread
+            # lets the floating-spread mode use live market width as its signal;
+            # with floating off, widen() collapses to mid exactly as before.
+            bid_r = round(bid, decimals)
+            ask_r = round(ask, decimals)
+            if ask_r < bid_r:
+                ask_r = bid_r
+            self._enqueue({
+                "symbol": symbol,
+                "bid": bid_r,
+                "ask": ask_r,
+                "timestamp": timestamp,
+                "volume": max(volume, 1),
+            })
 
     def _emit_trade(self, data: dict) -> None:
         """A TRADE tick (push code 10002) carries only the last traded price
@@ -263,9 +296,8 @@ class InfowayFeed:
         depth makes those prices move fluidly. We treat `p` as the mid; market-
         data main re-spreads it from config via spread_cache.widen(), exactly
         like a depth mid — so the published quote is consistent with depth."""
-        raw_sym = data.get("s") or ""
-        symbol = self._platform_symbol(str(raw_sym))
-        if not symbol or symbol not in self._instruments:
+        symbols = self._platform_symbols(str(data.get("s") or ""))
+        if not symbols:
             return
         try:
             price = float(data.get("p"))
@@ -273,27 +305,21 @@ class InfowayFeed:
             return
         if price <= 0:
             return
-        decimals = int(self._instruments[symbol]["decimals"])
-        px = round(price, decimals)
+        timestamp = self._timestamp(data.get("t"))
 
-        ts_ms = data.get("t")
-        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
-            sec = int(ts_ms // 1000)
-            ms = int(ts_ms % 1000)
-            dt = datetime.fromtimestamp(sec, tz=timezone.utc)
-            timestamp = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
-        else:
-            now = datetime.now(timezone.utc)
-            timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
-
-        # bid == ask == last price (mid). widen() applies the configured spread.
-        self._enqueue({
-            "symbol": symbol,
-            "bid": px,
-            "ask": px,
-            "timestamp": timestamp,
-            "volume": 1,
-        })
+        for symbol in symbols:
+            info = self._instruments.get(symbol)
+            if info is None:
+                continue
+            px = round(price, int(info["decimals"]))
+            # bid == ask == last price (mid). widen() applies the configured spread.
+            self._enqueue({
+                "symbol": symbol,
+                "bid": px,
+                "ask": px,
+                "timestamp": timestamp,
+                "volume": 1,
+            })
 
     async def _heartbeat_loop(self, ws) -> None:
         while self._running:
@@ -307,20 +333,23 @@ class InfowayFeed:
                 logger.debug("Infoway heartbeat send failed: %s", exc)
                 break
 
-    async def _run_socket(self, business: str, codes: List[str]) -> None:
-        if not codes:
-            return
-        # One depth subscription per connection; comma-separated codes.
-        codes_str = ",".join(sorted(set(codes)))
-        url = self._ws_url(business)
-
+    async def _run_socket(self, business: str) -> None:
         # Exponential reconnect backoff: 2 → 4 → 8 → 16 → 32 → 60 (cap)
         # seconds. Counter resets to 0 on a successful subscribe so transient
         # blips don't pile up into a long sleep. Cap prevents the gateway
         # waiting forever; CRITICAL log every 5 attempts so operators know.
         reconnect_attempts = 0
+        url = self._ws_url(business)
 
         while self._running:
+            # Read the code list on every connect: update_instruments swaps it
+            # and recycles the socket, and this is where the new list is picked up.
+            codes = self._codes.get(business) or []
+            if not codes:
+                await asyncio.sleep(5.0)
+                continue
+            codes_str = ",".join(codes)
+
             hb_task: Optional[asyncio.Task] = None
             # Clear here rather than only in the handler: closing a socket does
             # not always raise, and a flag left set would make the next genuine
@@ -366,7 +395,7 @@ class InfowayFeed:
                     logger.info(
                         "Infoway [%s] subscribed depth+trade for %d codes",
                         business,
-                        len(set(codes)),
+                        len(codes),
                     )
                     # Healthy subscribe — reset the backoff counter so the
                     # next failure starts at 2s, not wherever we ended up.
@@ -376,7 +405,7 @@ class InfowayFeed:
                     # A reconnect (we had data before) → backfill the blind
                     # window from the SAME provider's REST so the chart has no
                     # hole. Fire-and-forget so it never delays resubscription.
-                    if self._last_data_ts.get(business, 0.0) > 0:
+                    if self._last_data_ts.get(business, 0.0) > 0 and business not in self._backfilling:
                         asyncio.create_task(self._backfill_gap(business, list(codes)))
 
                     hb_task = asyncio.create_task(self._heartbeat_loop(ws))
@@ -470,6 +499,15 @@ class InfowayFeed:
         """After a reconnect, heal the blind window from InfoWay REST klines
         (same provider → no price-basis seam). Best-effort: never raises into
         the feed loop. Only 1m + 5m, closed bars only, clamped to 6h."""
+        if business in self._backfilling:
+            return
+        self._backfilling.add(business)
+        try:
+            await self._backfill_gap_inner(business, codes)
+        finally:
+            self._backfilling.discard(business)
+
+    async def _backfill_gap_inner(self, business: str, codes: List[str]) -> None:
         token = self._api_key
         if not token:
             return
@@ -483,10 +521,10 @@ class InfowayFeed:
         syms: List[str] = []
         seen: set = set()
         for code in set(codes):
-            plat = self._platform_symbol(code)
-            if plat and plat not in seen:
-                seen.add(plat)
-                syms.append(plat)
+            for plat in self._platform_symbols(code):
+                if plat not in seen:
+                    seen.add(plat)
+                    syms.append(plat)
         if not syms:
             return
 

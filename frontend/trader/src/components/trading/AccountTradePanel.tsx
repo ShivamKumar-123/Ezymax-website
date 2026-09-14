@@ -38,7 +38,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
     prices,
     instruments,
     watchlist,
-    updatePrice,
+    updatePrices,
     setInstruments,
     setActiveAccount,
     loadSpreadOverrides,
@@ -87,10 +87,25 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
     setActiveAccount(account);
 
     // 1. Connect WebSocket prices
+    // Buffered like the terminal layout: one store update per 100 ms, latest
+    // tick per symbol, instead of one per tick across hundreds of symbols.
+    let pendingTicks = new Map<string, ReturnType<typeof extractTicksFromPayload>[number]>();
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushTicks = () => {
+      flushTimer = null;
+      if (pendingTicks.size === 0) return;
+      const batch = Array.from(pendingTicks.values());
+      pendingTicks = new Map();
+      updatePrices(batch);
+    };
     wsManager.connect();
     const unsubMsg = wsManager.onMessage((data) => {
-      const ticks = extractTicksFromPayload(data);
-      for (const t of ticks) updatePrice(t);
+      for (const t of extractTicksFromPayload(data)) {
+        pendingTicks.set(String(t.symbol || '').toUpperCase(), t);
+      }
+      if (pendingTicks.size > 0 && flushTimer === null) {
+        flushTimer = setTimeout(flushTicks, 100);
+      }
     });
     const unsubStatus = wsManager.onStatusChange(setWsStatus);
     setWsStatus(wsManager.status);
@@ -127,7 +142,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       try {
         const raw = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
         if (!pollActive) return;
-        for (const t of extractTicksFromPayload(raw)) updatePrice(t);
+        updatePrices(extractTicksFromPayload(raw));
       } catch {}
     };
     void pollPrices();
@@ -137,6 +152,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       pollActive = false;
       unsubMsg();
       unsubStatus();
+      if (flushTimer !== null) clearTimeout(flushTimer);
       clearInterval(pricePoll);
     };
   }, []);

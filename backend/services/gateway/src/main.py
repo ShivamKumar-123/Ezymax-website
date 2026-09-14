@@ -1,5 +1,6 @@
 """FXArtha Gateway — REST + WebSocket API Server."""
 import asyncio
+import contextlib
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -373,8 +374,63 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
 
+    import json as _json
+
+    # Which symbols this client wants. None means every symbol — what a client
+    # that never sends a subscribe message gets, so app builds from before
+    # subscriptions existed keep working. With hundreds of instruments, a
+    # client that shows twenty should not be sent five hundred.
+    #
+    #   {"action": "subscribe", "symbols": ["EURUSD", ...]}  replace the set
+    #   {"action": "subscribe_all"}                           back to everything
+    wanted: set[str] | None = None
+    latest: dict[str, str] = {}
+
+    async def _read_client() -> None:
+        nonlocal wanted
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                msg = _json.loads(raw)
+            except Exception:
+                continue
+            if not isinstance(msg, dict):
+                continue
+            action = str(msg.get("action") or "").lower()
+            if action == "subscribe_all":
+                wanted = None
+                continue
+            if action != "subscribe":
+                continue
+            syms = msg.get("symbols", msg.get("channels"))
+            if not isinstance(syms, list):
+                continue
+            new = {
+                str(s).strip().upper().removeprefix("PRICES:")
+                for s in syms[:_WS_MAX_SUBSCRIBED] if s
+            }
+            if "*" in new:
+                wanted = None
+                continue
+            previous = wanted
+            wanted = new
+            # Send the last known price of newly added symbols straight away.
+            # A symbol whose market is closed may not tick for hours, and the
+            # client should not show an empty row until then.
+            fresh = sorted(new if previous is None else new - previous)
+            if previous is not None and fresh:
+                try:
+                    for data in await redis_client.mget(
+                        [PriceChannel.tick_key(s) for s in fresh]
+                    ):
+                        if data:
+                            latest[_ws_symbol_of(data)] = data
+                except Exception:
+                    pass
+
+    reader = asyncio.create_task(_read_client())
+
     try:
-        import json as _json
         ping_interval = 30
         # Coalesce per symbol and flush every 50 ms. The old loop read ONE
         # message then slept 10 ms — capping forwarding at ~100 msg/s across ALL
@@ -387,24 +443,28 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         flush_interval = 0.05
         last_ping = asyncio.get_event_loop().time()
         last_flush = last_ping
-        latest: dict[str, str] = {}
-        while True:
+        while not reader.done():
             message = await pubsub.get_message(
                 ignore_subscribe_messages=True, timeout=flush_interval
             )
-            if message and message["type"] == "message":
-                data = message["data"]
-                try:
-                    sym = str(_json.loads(data).get("symbol") or "")
-                except Exception:
-                    sym = ""
-                latest[sym] = data
+            drained = 0
+            while message is not None and drained < 5000:
+                if message["type"] == "message":
+                    data = message["data"]
+                    sym = _ws_symbol_of(data)
+                    if wanted is None or sym in wanted:
+                        latest[sym] = data
+                drained += 1
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=0
+                )
 
             now = asyncio.get_event_loop().time()
             if latest and now - last_flush >= flush_interval:
-                for d in latest.values():
-                    await websocket.send_text(d)
+                out = list(latest.values())
                 latest.clear()
+                for d in out:
+                    await websocket.send_text(d)
                 last_flush = now
 
             if now - last_ping >= ping_interval:
@@ -413,8 +473,34 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     except WebSocketDisconnect:
         pass
     finally:
+        reader.cancel()
+        with contextlib.suppress(BaseException):
+            await reader
         await pubsub.unsubscribe(PriceChannel.PRICE_CHANNEL)
         await pubsub.close()
+
+
+# Upper bound on one client's subscription list.
+_WS_MAX_SUBSCRIBED = 1000
+
+
+def _ws_symbol_of(data: str) -> str:
+    """Symbol of a published price payload.
+
+    Every client's socket sees every message on the shared channel, so this runs
+    (clients x messages) times a second. market-data always writes `symbol` as
+    the first key; reading it off the front avoids a full JSON parse each time.
+    """
+    prefix = '{"symbol": "'
+    if data.startswith(prefix):
+        end = data.find('"', len(prefix))
+        if end > 0:
+            return data[len(prefix):end]
+    try:
+        import json as _json
+        return str(_json.loads(data).get("symbol") or "")
+    except Exception:
+        return ""
 
 
 @app.websocket("/ws/trades/{account_id}")

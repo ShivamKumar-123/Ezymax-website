@@ -136,6 +136,7 @@ interface TradingState {
   setPendingOrders: (o: PendingOrder[]) => void;
   setSelectedSymbol: (s: string) => void;
   updatePrice: (t: TickData) => void;
+  updatePrices: (ticks: TickData[]) => void;
   addToWatchlist: (s: string) => void;
   removeFromWatchlist: (s: string) => void;
   setInstruments: (i: InstrumentInfo[]) => void;
@@ -368,66 +369,85 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     } catch {}
   },
 
-  updatePrice: (tick) => set((state) => {
-    const sym = String(tick.symbol || '').trim().toUpperCase();
-    if (!sym) return state;
-    let normalized: TickData = { ...tick, symbol: sym };
-    // Per-user spread override: rebuild bid/ask around mid so this user SEES
-    // (and is charged at fill) their own spread. Only when an override exists
-    // for this symbol (or a user-global "*"); otherwise the feed quote — which
-    // already carries the default/floating spread — is used unchanged.
-    const ov = state.spreadOverrides[sym] || state.spreadOverrides['*'];
-    if (ov && tick.bid && tick.ask) {
-      const inst = state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
-      const pip = inst?.pip_size || 0.0001;
-      const mid = (tick.bid + tick.ask) / 2;
-      const ovType = String(ov.type).toLowerCase();
-      let adj: number;
-      if (ovType === 'floating') {
-        // Live market spread × (1 + markup), clamped to [floor, floor × cap].
-        // floor = the override's value in price units. No market signal → keep
-        // the feed quote (matches the backend fallback in apply_user_spread_quote).
-        const floor = ov.value * pip;
-        const ms = Number(tick.market_spread) || 0;
-        if (ms > 0 && floor > 0) {
-          const { markup, max_mult } = state.floatingParams;
-          const target = ms * (1 + (markup || 0) / 100);
-          adj = Math.min(Math.max(target, floor), floor * Math.max(1, max_mult || 1));
+  updatePrice: (tick) => get().updatePrices([tick]),
+
+  // One store update for a whole batch of ticks. With hundreds of symbols on
+  // the stream, a set() per tick re-rendered every price subscriber hundreds of
+  // times a second; callers now buffer ticks and hand them over together.
+  updatePrices: (ticks) => set((state) => {
+    let prices: Record<string, TickData> | null = null;
+    let prevPrices = state.prevPrices;
+    const touched = new Set<string>();
+    for (const tick of ticks) {
+      const sym = String(tick.symbol || '').trim().toUpperCase();
+      if (!sym) continue;
+      let normalized: TickData = { ...tick, symbol: sym };
+      // Per-user spread override: rebuild bid/ask around mid so this user SEES
+      // (and is charged at fill) their own spread. Only when an override exists
+      // for this symbol (or a user-global "*"); otherwise the feed quote — which
+      // already carries the default/floating spread — is used unchanged.
+      const ov = state.spreadOverrides[sym] || state.spreadOverrides['*'];
+      if (ov && tick.bid && tick.ask) {
+        const inst = state.instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+        const pip = inst?.pip_size || 0.0001;
+        const mid = (tick.bid + tick.ask) / 2;
+        const ovType = String(ov.type).toLowerCase();
+        let adj: number;
+        if (ovType === 'floating') {
+          // Live market spread × (1 + markup), clamped to [floor, floor × cap].
+          // floor = the override's value in price units. No market signal → keep
+          // the feed quote (matches the backend fallback in apply_user_spread_quote).
+          const floor = ov.value * pip;
+          const ms = Number(tick.market_spread) || 0;
+          if (ms > 0 && floor > 0) {
+            const { markup, max_mult } = state.floatingParams;
+            const target = ms * (1 + (markup || 0) / 100);
+            adj = Math.min(Math.max(target, floor), floor * Math.max(1, max_mult || 1));
+          } else {
+            adj = 0; // fall through to the feed quote unchanged
+          }
+        } else if (ovType === 'percentage') {
+          adj = mid * (ov.value / 100);
         } else {
-          adj = 0; // fall through to the feed quote unchanged
+          adj = ov.value * pip;
         }
-      } else if (ovType === 'percentage') {
-        adj = mid * (ov.value / 100);
-      } else {
-        adj = ov.value * pip;
+        if (adj > 0) {
+          const half = adj / 2;
+          // `spread` is stored in PRICE units (ask − bid); the UI divides it by
+          // pip_size to show pips.
+          normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: adj };
+        }
       }
-      if (adj > 0) {
-        const half = adj / 2;
-        // `spread` is stored in PRICE units (ask − bid); the UI divides it by
-        // pip_size to show pips.
-        normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: adj };
+      // XP-level spread discount. Unlike the override above this applies to every
+      // symbol, and it mirrors apply_level_spread_discount on the backend: hold
+      // mid, shrink the half-spread. Shown here so the badge matches the fill —
+      // 30 points at 3% reads 29.1, half of it charged on entry and half on exit.
+      if (state.levelSpreadMult < 1 && normalized.bid && normalized.ask) {
+        const mid = (normalized.bid + normalized.ask) / 2;
+        const half = ((normalized.ask - normalized.bid) / 2) * state.levelSpreadMult;
+        if (half > 0) {
+          normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: half * 2 };
+        }
       }
+      if (prices === null) {
+        prices = { ...state.prices };
+        prevPrices = { ...state.prevPrices };
+      }
+      const prev = prices[sym];
+      if (prev) prevPrices[sym] = prev.bid;
+      prices[sym] = normalized;
+      touched.add(sym);
     }
-    // XP-level spread discount. Unlike the override above this applies to every
-    // symbol, and it mirrors apply_level_spread_discount on the backend: hold
-    // mid, shrink the half-spread. Shown here so the badge matches the fill —
-    // 30 points at 3% reads 29.1, half of it charged on entry and half on exit.
-    if (state.levelSpreadMult < 1 && normalized.bid && normalized.ask) {
-      const mid = (normalized.bid + normalized.ask) / 2;
-      const half = ((normalized.ask - normalized.bid) / 2) * state.levelSpreadMult;
-      if (half > 0) {
-        normalized = { ...normalized, bid: mid - half, ask: mid + half, spread: half * 2 };
-      }
-    }
-    const prev = state.prices[sym];
+    if (prices === null) return state;
+    const nextPrices = prices;
     return {
-      prevPrices: prev
-        ? { ...state.prevPrices, [sym]: prev.bid }
-        : state.prevPrices,
-      prices: { ...state.prices, [sym]: normalized },
+      prevPrices,
+      prices: nextPrices,
       positions: state.positions.map((pos) => {
         const pSym = String(pos.symbol || '').trim().toUpperCase();
-        if (pSym !== sym) return pos;
+        if (!touched.has(pSym)) return pos;
+        const sym = pSym;
+        const normalized = nextPrices[sym];
         // Open positions mark at MID so the platform spread is split between
         // open and close (half shows while open, half realizes at close). The
         // actual close still executes at bid/ask on the backend.

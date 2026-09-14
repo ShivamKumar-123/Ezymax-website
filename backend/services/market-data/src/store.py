@@ -25,17 +25,29 @@ def _parse_tick_time(ts: str) -> datetime:
         return datetime.now(timezone.utc)
 
 
+# At most one stored tick per symbol per this many seconds. Nothing reads the
+# ticks table back — charts come from ohlcv_* — and it is already the largest
+# table on a disk that is 83% full (20 GB at 30-day retention). Sampling keeps
+# its growth roughly flat while the instrument count grows twentyfold.
+TICK_SAMPLE_SEC = 2.0
+
+
 class TickStore:
     def __init__(self):
         self._batch: list[tuple] = []
-        self._batch_size = 100
+        self._batch_size = 200
         self._initialized = False
+        self._last_kept: dict[str, float] = {}
 
     async def init(self):
         self._initialized = True
-        logger.info("Tick store initialized")
+        logger.info("Tick store initialized (1 tick per symbol per %.0fs)", TICK_SAMPLE_SEC)
 
     async def insert_tick(self, symbol: str, bid: float, ask: float, timestamp: str):
+        now = time.monotonic()
+        if now - self._last_kept.get(symbol, 0.0) < TICK_SAMPLE_SEC:
+            return
+        self._last_kept[symbol] = now
         self._batch.append((_parse_tick_time(timestamp), symbol, bid, ask))
 
         if len(self._batch) >= self._batch_size:
@@ -45,19 +57,22 @@ class TickStore:
         if not self._batch:
             return
 
-        batch = self._batch[:]
-        self._batch.clear()
+        batch = self._batch
+        self._batch = []
 
         try:
             async with TimescaleSessionLocal() as session:
-                for ts, symbol, bid, ask in batch:
-                    await session.execute(
-                        text(
-                            "INSERT INTO ticks (time, symbol, bid, ask) "
-                            "VALUES (:time, :symbol, :bid, :ask)"
-                        ),
-                        {"time": ts, "symbol": symbol, "bid": bid, "ask": ask},
-                    )
+                # One executemany instead of a round trip per row.
+                await session.execute(
+                    text(
+                        "INSERT INTO ticks (time, symbol, bid, ask) "
+                        "VALUES (:time, :symbol, :bid, :ask)"
+                    ),
+                    [
+                        {"time": ts, "symbol": symbol, "bid": bid, "ask": ask}
+                        for ts, symbol, bid, ask in batch
+                    ],
+                )
                 await session.commit()
         except Exception as e:
             logger.error(f"Failed to flush ticks: {e}")

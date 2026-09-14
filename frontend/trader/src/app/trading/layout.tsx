@@ -46,7 +46,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
   const accountQueryId = searchParams.get('account');
 
   const {
-    updatePrice,
+    updatePrices,
     setActiveAccount,
     setAccounts,
     setPositions,
@@ -133,13 +133,30 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     // and the poll is only a fallback for when the WS is stalled.
     let lastWsTickAt = 0;
 
+    // Ticks are buffered and handed to the store together, at most every
+    // 100 ms, latest per symbol. The socket carries hundreds of symbols, and
+    // one store update per tick re-rendered the terminal hundreds of times a
+    // second for price changes no one could see.
+    let pendingTicks = new Map<string, ReturnType<typeof extractTicksFromPayload>[number]>();
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushTicks = () => {
+      flushTimer = null;
+      if (pendingTicks.size === 0) return;
+      const batch = Array.from(pendingTicks.values());
+      pendingTicks = new Map();
+      updatePrices(batch);
+    };
+
     wsManager.connect();
     const unsub = wsManager.onMessage((data) => {
       const ticks = extractTicksFromPayload(data);
       if (ticks.length > 0) {
         lastWsTickAt = Date.now();
       }
-      for (const t of ticks) updatePrice(t);
+      for (const t of ticks) pendingTicks.set(String(t.symbol || '').toUpperCase(), t);
+      if (pendingTicks.size > 0 && flushTimer === null) {
+        flushTimer = setTimeout(flushTicks, 100);
+      }
     });
 
     let pollCancelled = false;
@@ -151,7 +168,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       try {
         const raw = await api.get<unknown>('/instruments/prices/all', undefined, { timeoutMs: 15000 });
         if (pollCancelled) return;
-        for (const t of extractTicksFromPayload(raw)) updatePrice(t);
+        updatePrices(extractTicksFromPayload(raw));
       } catch {
         /* ignore */
       }
@@ -189,10 +206,11 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       cancelled = true;
       pollCancelled = true;
       unsub();
+      if (flushTimer !== null) clearTimeout(flushTimer);
       clearInterval(positionPoll);
       clearInterval(pricePoll);
     };
-  }, [setAccounts, setInstruments, updatePrice, refreshPositions, refreshPendingOrders, refreshAccount, loadSpreadOverrides]);
+  }, [setAccounts, setInstruments, updatePrices, refreshPositions, refreshPendingOrders, refreshAccount, loadSpreadOverrides]);
 
   /* Auto-sync admin-side changes without a manual refresh. A per-user spread
      override (incl. floating on/off) is otherwise only fetched on mount, so an
