@@ -5,6 +5,7 @@ import { FinalCta } from "@/views/home/final-cta";
 import { HowItWorks } from "@/views/home/how-it-works";
 import { MarginCalculator } from "@/views/home/margin-calculator";
 import { ProblemSolution } from "@/views/home/problem-solution";
+import { RebateLadder } from "@/views/home/rebate-ladder";
 import { Referral } from "@/views/home/referral";
 import { Rewards } from "@/views/home/rewards";
 import { Staking } from "@/views/home/staking";
@@ -19,6 +20,7 @@ import {
   howItWorks,
   marginCalculator,
   problemSolution,
+  rebateLadder,
   referral,
   rewards,
   staking,
@@ -41,6 +43,9 @@ export const HomeView = () => {
         <NewEraExperience />
         <ProblemSolution content={problemSolution} />
         <TickerBand content={tickerBand} />
+        {/* Partner rates sit here, above the margin calculator — the pitch a
+            partner is scrolling for, before the trader-side maths. */}
+        <RebateLadder content={rebateLadder} />
         <MarginCalculator content={marginCalculator} />
         <HowItWorks content={howItWorks} />
         <SectionCards

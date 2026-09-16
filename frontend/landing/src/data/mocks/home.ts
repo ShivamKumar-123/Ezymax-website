@@ -338,6 +338,44 @@ export const referral = {
   quote: "Growth driven by participation, not promises.",
 } as const;
 
+/**
+ * Rebate tiers shown on the partner section. These are the same thresholds and
+ * rates the IB portal's calculator pays out on — if they change there, change
+ * them here too.
+ */
+export const rebateLadder = {
+  heading: "The Rebate Ladder",
+  intro:
+    "Four tiers, one rate each. Reach both the closed lots and the active clients of a tier and every lot you closed that month pays at the higher rate.",
+  tiers: [
+    {
+      label: "Entry tier",
+      name: "Starter",
+      rule: "0 to 200 closed lots this month. No active clients needed.",
+      rate: "$3 per closed lot",
+    },
+    {
+      label: "Junior tier",
+      name: "Builder",
+      rule: "200 to 500 closed lots this month, plus 3 active clients.",
+      rate: "$5 per closed lot",
+    },
+    {
+      label: "Master tier",
+      name: "Pro",
+      rule: "500 closed lots and above this month, plus 10 active clients.",
+      rate: "$7 per closed lot",
+    },
+    {
+      label: "Grand master",
+      name: "Custom",
+      rule: "By invitation or on request. Every request is reviewed one by one.",
+      rate: "Agreed privately",
+    },
+  ],
+  note: "Your tier is worked out again every month, from that month's closed lots and active clients.",
+} as const;
+
 export const whyArtha = {
   id: "why",
   eyebrow: "Why traders choose FX Artha",
