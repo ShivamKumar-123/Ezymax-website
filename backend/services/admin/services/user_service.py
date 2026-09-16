@@ -8,7 +8,7 @@ from decimal import Decimal
 import jwt
 import redis.asyncio as aioredis
 from fastapi import HTTPException
-from sqlalchemy import select, func, or_, case
+from sqlalchemy import select, func, or_, case, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Presence keys are written by the gateway (which uses Redis db 0). Admin-api
@@ -937,6 +937,27 @@ async def delete_user(
         await db.execute(sql_delete(Position).where(Position.account_id.in_(acc_ids)))
         await db.execute(sql_delete(Order).where(Order.account_id.in_(acc_ids)))
 
+    # ── 4b. Rows pointing at this user's transactions ──
+    # These FKs are NO ACTION, so the transaction delete below fails while any
+    # of them still points at one and the whole request comes back as a 500 —
+    # which is exactly what an insurance shield claim did.
+    user_txns = "SELECT id FROM transactions WHERE user_id = :uid"
+    await db.execute(
+        text(f"DELETE FROM insurance_shield_claims WHERE user_id = :uid OR transaction_id IN ({user_txns})"),
+        {"uid": user_id},
+    )
+    await db.execute(text("DELETE FROM insurance_shield_events WHERE user_id = :uid"), {"uid": user_id})
+    await db.execute(
+        text(f"DELETE FROM insurance_claims WHERE user_id = :uid OR transaction_id IN ({user_txns})"),
+        {"uid": user_id},
+    )
+    # An IB rebate settlement belongs to that IB, not to this user. Keep their
+    # payout record and only unlink the transaction that is about to go.
+    await db.execute(
+        text(f"UPDATE ib_rebate_settlements SET transaction_id = NULL WHERE transaction_id IN ({user_txns})"),
+        {"uid": user_id},
+    )
+
     # ── 5. Money rows (Deposits, Withdrawals, Transactions, UserBonus) ──
     await db.execute(sql_delete(UserBonus).where(UserBonus.user_id == user_id))
     await db.execute(sql_delete(Deposit).where(Deposit.user_id == user_id))
@@ -993,6 +1014,20 @@ async def delete_user(
     await db.execute(update(InstrumentConfigAudit).where(InstrumentConfigAudit.changed_by == user_id).values(changed_by=None))
     await db.execute(update(SystemSetting).where(SystemSetting.updated_by == user_id).values(updated_by=None))
     await db.execute(update(AuditLog).where(AuditLog.admin_id == user_id).values(admin_id=None))
+    await db.execute(
+        text("UPDATE lifestyle_fulfillments SET handled_by = NULL WHERE handled_by = :uid"), {"uid": user_id}
+    )
+    await db.execute(
+        text("UPDATE fund_move_approvals SET approved_by = NULL WHERE approved_by = :uid"), {"uid": user_id}
+    )
+    await db.execute(
+        text("UPDATE fund_move_approvals SET rejected_by = NULL WHERE rejected_by = :uid"), {"uid": user_id}
+    )
+    # requested_by is NOT NULL, so an approval record cannot outlive its requester.
+    await db.execute(text("DELETE FROM fund_move_approvals WHERE requested_by = :uid"), {"uid": user_id})
+    # Pricing overrides that exist only for this user.
+    await db.execute(text("DELETE FROM spread_configs WHERE user_id = :uid"), {"uid": user_id})
+    await db.execute(text("DELETE FROM swap_configs WHERE user_id = :uid"), {"uid": user_id})
 
     # ── 10. Finally the user row ──
     await db.execute(sql_delete(User).where(User.id == user_id))
