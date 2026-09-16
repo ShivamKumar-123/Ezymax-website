@@ -29,8 +29,14 @@ async def get_kyc_file(document_id: uuid.UUID, db: AsyncSession) -> FileResponse
     return FileResponse(str(file_path), filename=file_path.name)
 
 
+# Waiting on a human. "under_review" is what the automated check leaves behind
+# when identity passed but the AML screen flagged something — those users are
+# not submitted, and without this they sat in no queue at all.
+AWAITING_REVIEW = ("submitted", "under_review")
+
+
 async def list_kyc_pending(page: int, per_page: int, db: AsyncSession) -> dict:
-    query = select(User).where(User.kyc_status == "submitted")
+    query = select(User).where(User.kyc_status.in_(AWAITING_REVIEW))
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -163,8 +169,8 @@ async def approve_kyc(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.kyc_status != "submitted":
-        raise HTTPException(status_code=400, detail="KYC is not in submitted status")
+    if user.kyc_status not in AWAITING_REVIEW:
+        raise HTTPException(status_code=400, detail="KYC is not awaiting review")
 
     user.kyc_status = "approved"
     user.updated_at = datetime.utcnow()
@@ -222,8 +228,8 @@ async def reject_kyc(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.kyc_status != "submitted":
-        raise HTTPException(status_code=400, detail="KYC is not in submitted status")
+    if user.kyc_status not in AWAITING_REVIEW:
+        raise HTTPException(status_code=400, detail="KYC is not awaiting review")
 
     user.kyc_status = "rejected"
     user.updated_at = datetime.utcnow()

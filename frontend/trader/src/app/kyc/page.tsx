@@ -108,6 +108,8 @@ export default function KycPage() {
   const [country, setCountry] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [startingDidit, setStartingDidit] = useState(false);
+
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
@@ -123,8 +125,34 @@ export default function KycPage() {
   }, []);
 
   useEffect(() => {
-    void fetchProfile();
+    // The provider sends the user back to this page. Their decision normally
+    // arrives on the webhook, but pull it too so someone who lands here a
+    // second later sees the new status instead of the old one.
+    void (async () => {
+      try {
+        await api.post('/profile/kyc/didit/refresh');
+      } catch {
+        /* nothing started yet — the normal case */
+      }
+      await fetchProfile();
+    })();
   }, [fetchProfile]);
+
+  /** Open the hosted ID + liveness check. */
+  const startDidit = async () => {
+    setStartingDidit(true);
+    try {
+      const res = await api.post<{ url?: string }>('/profile/kyc/didit/session');
+      const url = String(res?.url ?? '');
+      if (!/^https:\/\/([a-z0-9-]+\.)*didit\.me\//i.test(url)) {
+        throw new Error('That verification link looks wrong. Please contact support.');
+      }
+      window.location.href = url;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not start verification');
+      setStartingDidit(false);
+    }
+  };
 
   const kycStatus = normalizeKycStatus(profile?.kyc_status ?? '');
   const isVerified = kycStatus === 'verified' || kycStatus === 'approved';
@@ -325,6 +353,23 @@ export default function KycPage() {
                     Your documents are under review. This usually takes <span className="text-text-primary font-medium">24–48 hours</span>.
                     We&apos;ll notify you when the decision is ready.
                   </p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void fetchProfile()}
+                      className="text-xs font-semibold text-text-secondary hover:text-text-primary underline underline-offset-4 transition-colors"
+                    >
+                      Check status
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void startDidit()}
+                      disabled={startingDidit}
+                      className="text-xs font-semibold text-[#ccff00] hover:text-[#a6d600] disabled:opacity-60 underline underline-offset-4 transition-colors"
+                    >
+                      Verify instantly instead
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -352,17 +397,37 @@ export default function KycPage() {
                   <div>
                     <h2 className="text-lg font-bold text-text-primary">Start Verification</h2>
                     <p className="text-sm text-text-secondary mt-2 max-w-sm mx-auto leading-relaxed">
-                      Complete a quick identity verification to unlock deposits, withdrawals, and live trading features.
+                      Scan your ID and take a selfie. Most checks finish in about a minute, with no wait for a
+                      manual review.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={openForm}
-                    className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-xl text-sm font-semibold bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-all shadow-[0_0_24px_rgba(204,255,0,0.35)]"
-                  >
-                    <ShieldCheck size={18} strokeWidth={2.5} />
-                    {isRejected ? 'Re-submit KYC' : 'Start KYC Verification'}
-                  </button>
+                  <div className="flex flex-col items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void startDidit()}
+                      disabled={startingDidit}
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-xl text-sm font-semibold bg-[#ccff00] hover:bg-[#a6d600] disabled:opacity-60 text-[#0a0a0a] transition-all shadow-[0_0_24px_rgba(204,255,0,0.35)]"
+                    >
+                      {startingDidit ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-[#0a0a0a]/30 border-t-[#0a0a0a] rounded-full animate-spin" />
+                          Opening…
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={18} strokeWidth={2.5} />
+                          Verify instantly
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openForm}
+                      className="text-xs font-semibold text-text-secondary hover:text-text-primary underline underline-offset-4 transition-colors"
+                    >
+                      {isRejected ? 'Re-submit documents instead' : 'Upload documents for manual review instead'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
