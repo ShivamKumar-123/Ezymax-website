@@ -3,6 +3,7 @@ import { Users, BarChart2, Settings, ShieldCheck, ArrowLeft } from 'lucide-react
 import Card from '../components/Card'
 import Button from '../components/Button'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
+import { BRAND_NAME } from '@/lib/brand'
 
 const adminCards = [
   {
@@ -50,7 +51,7 @@ const SuperAdmin = () => {
                 Super Admin Panel
               </h1>
               <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-                Manage and monitor all SwissCresta operations from one central dashboard.
+                Manage and monitor all {BRAND_NAME} operations from one central dashboard.
               </p>
             </div>
           </ScrollReveal>

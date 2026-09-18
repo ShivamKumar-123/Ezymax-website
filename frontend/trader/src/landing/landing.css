@@ -3,41 +3,34 @@
 @tailwind utilities;
 
 /* ============================================================
-   SwissCresta — Landing Design System
-   Brand: indigo + amber on deep navy-black. Modern fintech.
+   Landing Design System
+   Light institutional broker skin: white canvas, near-black ink,
+   a single red action colour.
    Tokens are scoped under .landing-root so they never leak
-   into the trader app shell. The variable names still read
-   `--fx-gold*` for backward compat with all the components
-   that already reference them — the hex values are now the
-   SwissCresta indigo palette.
+   into the trader app shell.
+
+   2026-09-01 redesign: inverted from the previous near-black /
+   coral skin. The --fx-gold-* names are kept (they feed ~60 rules
+   further down this file plus a handful of inner pages) but now
+   carry the red action colour, so the retheme lands everywhere
+   without renaming call sites.
    ============================================================ */
 
 .landing-root {
-  /* Surface palette — deeper than the old near-black, with a
-     subtle blue undertone so the indigo accent reads cleanly. */
-  --fx-bg:           #0B0F1A;   /* deep navy-black canvas */
-  --fx-bg-elev:      #151B2C;   /* card / panel */
-  --fx-bg-elev-2:    #1C2440;   /* nested card / modal */
-  --fx-line:         rgba(255, 255, 255, 0.06);
-  --fx-line-strong:  rgba(255, 255, 255, 0.10);
+  --fx-bg:           #ffffff;   /* page canvas */
+  --fx-bg-elev:      #f1f2f5;   /* card / panel */
+  --fx-bg-elev-2:    #e7e9ee;   /* nested card */
+  --fx-line:         rgba(11, 11, 12, 0.10);
+  --fx-line-strong:  rgba(11, 11, 12, 0.20);
 
-  /* Accent palette — indigo primary, amber highlight.
-     Names kept as --fx-gold* so existing components still
-     compile without a per-file rewrite. */
-  --fx-gold:         #E94E1B;   /* primary accent — SwissCresta indigo */
-  --fx-gold-light:   #F58A60;   /* highlight / hover */
-  --fx-gold-dark:    #C73E11;   /* deep indigo (pressed / borders) */
-  --fx-gold-soft:    rgba(99, 102, 241, 0.12);
+  --fx-gold:         #e32219;   /* primary action colour */
+  --fx-gold-light:   #f0342b;   /* highlight */
+  --fx-gold-dark:    #c11a12;   /* pressed / deep */
+  --fx-gold-soft:    rgba(227, 34, 25, 0.07);
 
-  /* Secondary accent for "earn" / highlight chips. Used by
-     the gamification + rewards sections to break up the
-     indigo without introducing a third hue. */
-  --fx-amber:        #F59E0B;
-  --fx-amber-soft:   rgba(245, 158, 11, 0.12);
-
-  --fx-text:         #f5f5f5;
-  --fx-text-2:       rgba(245, 245, 245, 0.72);
-  --fx-text-3:       rgba(245, 245, 245, 0.48);
+  --fx-text:         #0b0b0c;
+  --fx-text-2:       rgba(11, 11, 12, 0.68);
+  --fx-text-3:       rgba(11, 11, 12, 0.45);
 
   /* Trader-app shell overrides */
   --text-primary:    var(--fx-text);
@@ -77,85 +70,52 @@
 @layer utilities {
   /* ── Cards ─────────────────────────────────────────────── */
   .fx-card {
-    position: relative;
-    background: linear-gradient(180deg, #15161a 0%, #0d0e11 100%);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 0.875rem;
-    overflow: hidden;
-    transition: transform .35s cubic-bezier(.2,.7,.2,1),
-                border-color .35s ease, box-shadow .35s ease;
-  }
-  .fx-card::before {
-    /* luminous top edge — shrinks at rest, expands full-width on hover */
-    content: '';
-    position: absolute;
-    top: 0; left: 18%; right: 18%;
-    height: 1px;
-    background: linear-gradient(90deg,
-      transparent,
-      rgba(99, 102, 241,0.55) 25%,
-      rgba(129, 140, 248,0.95) 50%,
-      rgba(99, 102, 241,0.55) 75%,
-      transparent);
-    opacity: .55;
-    pointer-events: none;
-    transition: left .4s cubic-bezier(.2,.7,.2,1),
-                right .4s cubic-bezier(.2,.7,.2,1),
-                opacity .35s ease;
-  }
-  .fx-card::after {
-    /* soft halo glow above the top edge */
-    content: '';
-    position: absolute;
-    top: -1px; left: 0; right: 0;
-    height: 36px;
-    background: radial-gradient(60% 100% at 50% 0%, rgba(99, 102, 241,0.22), transparent 80%);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity .35s ease;
+    background: var(--fx-bg-elev);
+    border: 1px solid var(--fx-line);
+    border-radius: 1rem;
+    transition: border-color .25s ease, transform .25s ease;
   }
   .fx-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(99, 102, 241,0.28);
-    box-shadow:
-      0 26px 55px -22px rgba(0,0,0,0.75),
-      0 0 0 1px rgba(99, 102, 241,0.08) inset;
+    border-color: var(--fx-line-strong);
   }
-  .fx-card:hover::before { left: 0; right: 0; opacity: 1; }
-  .fx-card:hover::after  { opacity: 1; }
 
   .fx-card-gold {
-    background: linear-gradient(180deg, rgba(99, 102, 241,0.06) 0%, rgba(99, 102, 241,0) 60%), var(--fx-bg-elev);
-    border: 1px solid rgba(99, 102, 241, 0.18);
+    background: var(--fx-gold-soft);
+    border: 1px solid rgba(227, 34, 25, 0.18);
     border-radius: 1rem;
   }
 
-  /* ── Buttons ───────────────────────────────────────────── */
+  /* ── Buttons ───────────────────────────────────────────────
+     Flat fills, not gradients: the reference's CTAs are solid
+     red pills. The old inset highlight + drop glow read as a
+     3D consumer button against white. */
   .fx-btn-primary {
     display: inline-flex; align-items: center; gap: .5rem;
-    background: linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%);
+    background: var(--fx-gold);
     color: #ffffff;
     font-weight: 600;
-    padding: .75rem 1.4rem;
+    padding: .8rem 1.6rem;
     border-radius: 9999px;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(99, 102, 241,0.25);
-    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    border: 1px solid transparent;
+    transition: background .2s ease, box-shadow .2s ease, transform .15s ease;
   }
-  .fx-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-  .fx-btn-primary:active { transform: translateY(0); }
+  .fx-btn-primary:hover {
+    background: var(--fx-gold-dark);
+    box-shadow: 0 8px 22px rgba(227, 34, 25, 0.22);
+  }
+  .fx-btn-primary:active { transform: scale(.985); }
 
   .fx-btn-ghost {
     display: inline-flex; align-items: center; gap: .5rem;
-    background: transparent;
+    background: #ffffff;
     color: var(--fx-text);
-    font-weight: 500;
-    padding: .75rem 1.4rem;
+    font-weight: 600;
+    padding: .8rem 1.6rem;
     border-radius: 9999px;
     border: 1px solid var(--fx-line-strong);
     transition: background .2s ease, border-color .2s ease;
   }
-  .fx-btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(99, 102, 241,0.4); }
+  .fx-btn-ghost:hover { background: var(--fx-bg-elev); border-color: var(--fx-text); }
 
   .fx-btn-link {
     display: inline-flex; align-items: center; gap: .35rem;
@@ -164,34 +124,6 @@
     transition: color .15s ease;
   }
   .fx-btn-link:hover { color: var(--fx-gold); }
-
-  /* ── Squishy 3D "Explore" pill ─────────────────────────────
-     Cream face sitting on a solid orange base + soft drop, so it
-     reads as a physical, pressable button. On :active the face
-     drops into its base (the "squish"). Orange theme = #E94E1B;
-     base/drop use a darker orange (#B23A12) instead of black. */
-  .fx-explore-btn {
-    display: inline-flex; align-items: center; gap: .5rem;
-    background: #FBF8F2;
-    color: #E94E1B;
-    font-weight: 700;
-    line-height: 1;
-    padding: .7rem 1.5rem;
-    border-radius: 9999px;
-    border: 2px solid #E94E1B;
-    box-shadow: 0 2px 0 0 #B23A12,
-                0 6px 12px -5px rgba(178,58,18,0.45);
-    transform: translateY(0);
-    transition: transform .12s cubic-bezier(.2,.8,.3,1.2),
-                box-shadow .12s ease, background .12s ease;
-    cursor: pointer;
-  }
-  .fx-explore-btn:hover { background: #FFFDF8; }
-  .fx-explore-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 0 0 0 #B23A12,
-                0 2px 6px -2px rgba(178,58,18,0.40);
-  }
 
   /* ── Type ──────────────────────────────────────────────── */
   .fx-eyebrow {
@@ -226,282 +158,25 @@
   /* ── Layout ────────────────────────────────────────────── */
   .fx-container {
     width: 100%;
-    max-width: 1320px;
+    max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    position: relative;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
   @media (min-width: 768px) {
-    .fx-container { padding-left: 2.5rem; padding-right: 2.5rem; }
+    .fx-container { padding-left: 2rem; padding-right: 2rem; }
   }
   @media (min-width: 1280px) {
-    .fx-container { padding-left: 3rem; padding-right: 3rem; }
-  }
-
-  .fx-section,
-  .section-padding {
-    position: relative;
-    isolation: isolate;
-  }
-  .fx-section::before,
-  .section-padding::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(60% 50% at 85% 0%,  rgba(99, 102, 241,0.06) 0%, rgba(99, 102, 241,0) 60%),
-      radial-gradient(45% 40% at 10% 100%, rgba(99, 102, 241,0.05) 0%, rgba(99, 102, 241,0) 60%);
-  }
-  .fx-section > *,
-  .section-padding > * { position: relative; z-index: 1; }
-
-  /* Hairline gold dividers between consecutive sections */
-  .landing-root .fx-section + .fx-section::after,
-  .landing-root .fx-section + .section-padding::after,
-  .landing-root .section-padding + .fx-section::after,
-  .landing-root .section-padding + .section-padding::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 10%;
-    right: 10%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(99, 102, 241,0.35), transparent);
-    pointer-events: none;
-    z-index: 1;
+    .fx-container { padding-left: 2.5rem; padding-right: 2.5rem; }
   }
 
   .fx-section {
-    padding-top: 5rem;
-    padding-bottom: 5rem;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
   }
-  @media (min-width: 768px)  { .fx-section { padding-top: 7rem;  padding-bottom: 7rem; } }
-  @media (min-width: 1280px) { .fx-section { padding-top: 9rem;  padding-bottom: 9rem; } }
-
-  /* ── Section Frame ──────────────────────────────────────────
-     The rounded outer container that wraps the body of each
-     mid-page section. Modeled on the "Flexible Funds" /
-     "Much more than just a payment card" blocks in the
-     reference design. */
-  .fx-section-frame {
-    position: relative;
-    border-radius: 1.5rem;
-    padding: 2rem 1.5rem;
-    background:
-      radial-gradient(120% 90% at 0% 0%, rgba(99, 102, 241,0.05), rgba(99, 102, 241,0) 55%),
-      radial-gradient(110% 80% at 100% 100%, rgba(99, 102, 241,0.03), rgba(99, 102, 241,0) 60%),
-      linear-gradient(180deg, rgba(22,24,28,0.96) 0%, rgba(13,14,17,0.96) 100%);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.04) inset,
-      0 30px 80px -40px rgba(0,0,0,0.85),
-      0 0 0 1px rgba(99, 102, 241,0.04);
-    overflow: hidden;
-  }
-  .fx-section-frame::before {
-    /* Top-edge hairline highlight — like glass-card but wider */
-    content: '';
-    position: absolute;
-    top: 0; left: 22%; right: 22%;
-    height: 1px;
-    background: linear-gradient(90deg,
-      transparent,
-      rgba(99, 102, 241,0.45) 30%,
-      rgba(129, 140, 248,0.7) 50%,
-      rgba(99, 102, 241,0.45) 70%,
-      transparent);
-    opacity: .55;
-    pointer-events: none;
-  }
-  @media (min-width: 768px)  { .fx-section-frame { padding: 3rem 2.5rem; border-radius: 1.75rem; } }
-  @media (min-width: 1280px) { .fx-section-frame { padding: 3.5rem 3rem; border-radius: 2rem; } }
-
-  /* Tighter section frame for shorter / banner-style sections. */
-  .fx-section-frame-tight {
-    padding: 1.75rem 1.5rem;
-  }
-  @media (min-width: 768px)  { .fx-section-frame-tight { padding: 2.5rem 2.25rem; } }
-  @media (min-width: 1280px) { .fx-section-frame-tight { padding: 3rem 2.75rem; } }
-
-  /* When the frame contains an inline visual (image space) on
-     one side, this lets the content sit comfortably without
-     gutter. */
-  .fx-section-frame > * { position: relative; z-index: 1; }
-
-  /* ── Image Placeholder ─────────────────────────────────────
-     A styled empty box that holds the place where a real
-     photo/render would go. Used wherever the reference design
-     shows a product visual but we don't have the asset yet.
-     The corner brackets and the dim "IMAGE" label make it
-     clear it's intentional, not broken. */
-  .fx-image-slot {
-    position: relative;
-    width: 100%;
-    border-radius: 1rem;
-    background:
-      radial-gradient(110% 80% at 50% 30%, rgba(99, 102, 241,0.10), rgba(99, 102, 241,0) 65%),
-      linear-gradient(180deg, rgba(28,30,34,1) 0%, rgba(16,17,20,1) 100%);
-    border: 1px solid rgba(255,255,255,0.06);
-    overflow: hidden;
-    transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
-  }
-  .fx-image-slot::before,
-  .fx-image-slot::after {
-    content: '';
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    border-color: rgba(99, 102, 241,0.45);
-    border-style: solid;
-    border-width: 0;
-    pointer-events: none;
-  }
-  .fx-image-slot::before {
-    top: 14px; left: 14px;
-    border-top-width: 1.5px;
-    border-left-width: 1.5px;
-    border-top-left-radius: 6px;
-  }
-  .fx-image-slot::after {
-    bottom: 14px; right: 14px;
-    border-bottom-width: 1.5px;
-    border-right-width: 1.5px;
-    border-bottom-right-radius: 6px;
-  }
-  .fx-image-slot:hover {
-    transform: translateY(-2px);
-    border-color: rgba(99, 102, 241,0.25);
-    box-shadow: 0 24px 60px -28px rgba(99, 102, 241,0.20);
-  }
-  /* Aspect ratios for slot variants. */
-  .fx-image-slot-4x3   { aspect-ratio: 4 / 3; }
-  .fx-image-slot-3x2   { aspect-ratio: 3 / 2; }
-  .fx-image-slot-16x9  { aspect-ratio: 16 / 9; }
-  .fx-image-slot-21x9  { aspect-ratio: 21 / 9; }
-  .fx-image-slot-3x1   { aspect-ratio: 3 / 1; }
-  .fx-image-slot-4x1   { aspect-ratio: 4 / 1; }
-  .fx-image-slot-1x1   { aspect-ratio: 1 / 1; }
-  .fx-image-slot-9x16  { aspect-ratio: 9 / 16; }
-
-  /* Section banner — a wide slim image placeholder that sits
-     between the SectionHeader and the section content. Slim
-     enough not to dominate, wide enough to feel like a real
-     banner space when a 3:1 product render or hero shot lands
-     in it. */
-  .fx-section-banner {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 3 / 1;
-    border-radius: 1rem;
-    background:
-      radial-gradient(120% 90% at 50% 0%, rgba(99, 102, 241,0.10), rgba(99, 102, 241,0) 60%),
-      linear-gradient(180deg, rgba(20,22,26,1) 0%, rgba(12,13,16,1) 100%);
-    border: 1px dashed rgba(99, 102, 241,0.22);
-    overflow: hidden;
-    margin: 2rem 0 0;
-    transition: transform .35s cubic-bezier(.2,.7,.2,1), border-color .35s ease, box-shadow .35s ease;
-  }
-  @media (min-width: 768px) {
-    .fx-section-banner {
-      aspect-ratio: 4 / 1;
-      margin-top: 2.5rem;
-    }
-  }
-  .fx-section-banner::before,
-  .fx-section-banner::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-color: rgba(99, 102, 241,0.45);
-    border-style: solid;
-    border-width: 0;
-    pointer-events: none;
-  }
-  .fx-section-banner::before {
-    top: 12px; left: 12px;
-    border-top-width: 1.5px;
-    border-left-width: 1.5px;
-    border-top-left-radius: 6px;
-  }
-  .fx-section-banner::after {
-    bottom: 12px; right: 12px;
-    border-bottom-width: 1.5px;
-    border-right-width: 1.5px;
-    border-bottom-right-radius: 6px;
-  }
-  .fx-section-banner:hover {
-    border-color: rgba(99, 102, 241,0.40);
-    transform: translateY(-2px);
-    box-shadow: 0 24px 60px -28px rgba(99, 102, 241,0.20);
-  }
-  .fx-section-banner > span {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(99, 102, 241,0.55);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    pointer-events: none;
-  }
-
-  /* Centred label inside an image slot ("IMAGE", "PRODUCT SHOT", etc.) */
-  .fx-image-slot-label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: rgba(99, 102, 241,0.55);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    pointer-events: none;
-  }
-
-  /* ── Stats Row ─────────────────────────────────────────────
-     The 3-column stat strip from the reference image. Thin
-     gold hairline on top of each cell with a small numeric
-     index label. */
-  .fx-stats-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  @media (min-width: 768px) {
-    .fx-stats-row { grid-template-columns: repeat(3, 1fr); }
-  }
-  .fx-stats-cell {
-    position: relative;
-    padding: 1.5rem 1.25rem;
-  }
-  .fx-stats-cell + .fx-stats-cell {
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-  @media (min-width: 768px) {
-    .fx-stats-cell + .fx-stats-cell {
-      border-top: none;
-      border-left: 1px solid rgba(255,255,255,0.06);
-    }
-  }
-  .fx-stats-cell::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 30%;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(99, 102, 241,0.45), rgba(99, 102, 241,0));
-  }
+  @media (min-width: 768px) { .fx-section { padding-top: 6rem; padding-bottom: 6rem; } }
+  @media (min-width: 1280px) { .fx-section { padding-top: 8rem; padding-bottom: 8rem; } }
 
   /* ── Decorative ────────────────────────────────────────── */
   .fx-divider-gold {
@@ -510,22 +185,27 @@
     opacity: .5;
   }
 
+  /* Ambient bloom. On black this carried a lot of the depth; on white a
+     coloured wash reads as a rendering fault, so it drops to a barely
+     perceptible neutral tint that just stops large empty bands from
+     going flat. */
   .fx-glow-gold {
     position: absolute;
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(60% 50% at 80% 30%, rgba(99, 102, 241,0.18) 0%, rgba(99, 102, 241,0) 60%),
-      radial-gradient(40% 40% at 20% 90%, rgba(99, 102, 241,0.08) 0%, rgba(99, 102, 241,0) 60%);
+      radial-gradient(60% 50% at 80% 30%, rgba(227, 34, 25, 0.035) 0%, rgba(227, 34, 25, 0) 60%),
+      radial-gradient(40% 40% at 20% 90%, rgba(11, 11, 12, 0.03) 0%, rgba(11, 11, 12, 0) 60%);
   }
 
+  /* Grid lines have to invert: white-on-white was invisible. */
   .fx-grid-bg {
     position: absolute;
     inset: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      linear-gradient(rgba(11, 11, 12, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(11, 11, 12, 0.035) 1px, transparent 1px);
     background-size: 64px 64px;
     mask-image: radial-gradient(ellipse 60% 80% at 50% 30%, black 50%, transparent 100%);
     -webkit-mask-image: radial-gradient(ellipse 60% 80% at 50% 30%, black 50%, transparent 100%);
@@ -534,161 +214,102 @@
   /* ── Legacy compat (older sections still use these names) ─ */
   .container-custom {
     width: 100%;
-    max-width: 1320px;
+    max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    position: relative;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
-  @media (min-width: 768px)  { .container-custom { padding-left: 2.5rem; padding-right: 2.5rem; } }
-  @media (min-width: 1280px) { .container-custom { padding-left: 3rem; padding-right: 3rem; } }
+  @media (min-width: 768px)  { .container-custom { padding-left: 2rem; padding-right: 2rem; } }
+  @media (min-width: 1280px) { .container-custom { padding-left: 2.5rem; padding-right: 2.5rem; } }
 
-  .section-padding { padding-top: 5rem; padding-bottom: 5rem; position: relative; }
-  @media (min-width: 768px)  { .section-padding { padding-top: 7rem; padding-bottom: 7rem; } }
-  @media (min-width: 1280px) { .section-padding { padding-top: 9rem; padding-bottom: 9rem; } }
+  .section-padding { padding-top: 4rem; padding-bottom: 4rem; }
+  @media (min-width: 768px)  { .section-padding { padding-top: 6rem; padding-bottom: 6rem; } }
+  @media (min-width: 1280px) { .section-padding { padding-top: 8rem; padding-bottom: 8rem; } }
 
   .glass-card {
-    position: relative;
-    background: linear-gradient(180deg, #15161a 0%, #0d0e11 100%);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 0.875rem;
-    overflow: hidden;
-    transition: transform .35s cubic-bezier(.2,.7,.2,1),
-                border-color .35s ease, box-shadow .35s ease;
-  }
-  .glass-card::before {
-    /* luminous top edge — shrinks at rest, expands full-width on hover */
-    content: '';
-    position: absolute;
-    top: 0; left: 18%; right: 18%;
-    height: 1px;
-    background: linear-gradient(90deg,
-      transparent,
-      rgba(99, 102, 241,0.55) 25%,
-      rgba(129, 140, 248,0.95) 50%,
-      rgba(99, 102, 241,0.55) 75%,
-      transparent);
-    opacity: .55;
-    pointer-events: none;
-    transition: left .4s cubic-bezier(.2,.7,.2,1),
-                right .4s cubic-bezier(.2,.7,.2,1),
-                opacity .35s ease;
-  }
-  .glass-card::after {
-    /* soft halo glow above the top edge */
-    content: '';
-    position: absolute;
-    top: -1px; left: 0; right: 0;
-    height: 36px;
-    background: radial-gradient(60% 100% at 50% 0%, rgba(99, 102, 241,0.22), transparent 80%);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity .35s ease;
+    background: var(--fx-bg-elev);
+    border: 1px solid var(--fx-line);
+    border-radius: 1rem;
+    transition: border-color .25s ease, transform .25s ease, background .25s ease;
   }
   .glass-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(99, 102, 241,0.28);
-    box-shadow:
-      0 26px 55px -22px rgba(0,0,0,0.75),
-      0 0 0 1px rgba(99, 102, 241,0.08) inset;
+    border-color: rgba(232, 93, 61, 0.32);
+    background: linear-gradient(180deg, rgba(232, 93, 61,0.04), rgba(232, 93, 61,0)) , var(--fx-bg-elev);
   }
-  .glass-card:hover::before { left: 0; right: 0; opacity: 1; }
-  .glass-card:hover::after  { opacity: 1; }
 
   .feature-icon {
-    position: relative;
-    width: 3rem; height: 3rem;
-    border-radius: 0.875rem;
+    width: 2.5rem; height: 2.5rem;
+    border-radius: 0.5rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background:
-      radial-gradient(120% 90% at 0% 0%, rgba(99, 102, 241,0.22), rgba(99, 102, 241,0.06) 60%),
-      rgba(99, 102, 241,0.08);
+    background: var(--fx-gold-soft);
     color: var(--fx-gold-light);
-    border: 1px solid rgba(99, 102, 241,0.28);
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.06) inset,
-      0 8px 24px -10px rgba(99, 102, 241,0.30);
-  }
-  .feature-icon::after {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent 40%);
-    pointer-events: none;
+    border: 1px solid rgba(232, 93, 61,0.22);
   }
 
   .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.85rem;
+    padding: 0.25rem 0.625rem;
     border-radius: 9999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background:
-      linear-gradient(180deg, rgba(99, 102, 241,0.18), rgba(99, 102, 241,0.06));
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--fx-gold-soft);
     color: var(--fx-gold-light);
-    border: 1px solid rgba(99, 102, 241,0.32);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+    border: 1px solid rgba(232, 93, 61,0.22);
   }
 
   .btn-primary {
     display: inline-flex; align-items: center; gap: .5rem;
-    background: linear-gradient(180deg, var(--fx-gold-light) 0%, var(--fx-gold) 100%);
+    background: var(--fx-gold);
     color: #ffffff;
     font-weight: 600;
-    padding: .625rem 1.25rem;
+    padding: .7rem 1.4rem;
     border-radius: 9999px;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 24px rgba(99, 102, 241,0.25);
+    border: 1px solid transparent;
     font-size: 0.875rem;
-    transition: transform .15s ease, filter .15s ease;
+    transition: background .2s ease, box-shadow .2s ease, transform .15s ease;
   }
-  .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .btn-primary:hover {
+    background: var(--fx-gold-dark);
+    box-shadow: 0 8px 22px rgba(227, 34, 25, 0.22);
+  }
+  .btn-primary:active { transform: scale(.985); }
 
   .btn-ghost,
   .btn-outline {
     display: inline-flex; align-items: center; gap: .5rem;
-    background: transparent;
+    background: #ffffff;
     color: var(--fx-text);
-    font-weight: 500;
-    padding: .625rem 1.25rem;
+    font-weight: 600;
+    padding: .7rem 1.4rem;
     border-radius: 9999px;
     border: 1px solid var(--fx-line-strong);
     font-size: 0.875rem;
     transition: background .2s ease, border-color .2s ease;
   }
   .btn-ghost:hover, .btn-outline:hover {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(99, 102, 241,0.4);
+    background: var(--fx-bg-elev);
+    border-color: var(--fx-text);
   }
 
+  /* Flat, not gradient-filled: a vertical gradient inside glyphs muddies
+     the counters at headline weight and reads as decoration rather than
+     emphasis. Solid accent keeps the highlight, drops the sheen. */
   .gradient-text {
-    background: linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold) 60%, var(--fx-gold-dark));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: var(--fx-gold);
   }
 
   .neon-divider {
-    background: linear-gradient(90deg, transparent, var(--fx-gold) 50%, transparent);
-    opacity: 0.5;
+    background: var(--fx-line);
+    opacity: 1;
   }
 
   .hero-banner {
-    /* Bitmap layer (was url('/images/banner3.png')) removed with the
-       page-banner purge — pure-CSS radial glow + dark gradient gives
-       the section depth without an asset dependency. */
-    background:
-      radial-gradient(ellipse 70% 55% at 50% 30%, rgba(233,78,27,0.18), transparent 65%),
-      linear-gradient(to bottom, rgba(8,9,11,0.65), rgba(8,9,11,0.95)),
-      var(--fx-bg);
+    background: var(--fx-bg-elev);
   }
 
   /* ── Animations ────────────────────────────────────────── */
@@ -724,17 +345,47 @@
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); }
   }
+
+  /* Modal entrance — card springs in, tick draws itself after it lands. */
+  .fx-pop-in { animation: fxPopIn .32s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes fxPopIn {
+    from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.94); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+
+  .fx-tick-draw {
+    stroke-dasharray: 26;
+    stroke-dashoffset: 26;
+    animation: fxTickDraw .4s cubic-bezier(.6,0,.3,1) .18s both;
+  }
+  @keyframes fxTickDraw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .fx-ring-pulse { animation: fxRingPulse 1.6s ease-out .3s infinite; }
+  @keyframes fxRingPulse {
+    0%   { opacity: .5; transform: scale(1); }
+    100% { opacity: 0;  transform: scale(1.5); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fx-pop-in, .fx-tick-draw, .fx-ring-pulse { animation: none; }
+    .fx-tick-draw { stroke-dashoffset: 0; }
+    .fx-ring-pulse { opacity: 0; }
+  }
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
 .landing-root ::-webkit-scrollbar { width: 8px; height: 8px; }
 .landing-root ::-webkit-scrollbar-track { background: var(--fx-bg); }
 .landing-root ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--fx-gold), var(--fx-gold-dark));
+  /* A red scrollbar is a lot of brand for a utility affordance — neutral
+     grey on the light canvas, matching the reference. */
+  background: rgba(11, 11, 12, 0.20);
   border-radius: 4px;
 }
 .landing-root ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold));
+  background: rgba(11, 11, 12, 0.34);
 }
 
 canvas { display: block; }

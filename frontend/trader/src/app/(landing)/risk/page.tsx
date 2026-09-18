@@ -1,133 +1,154 @@
-import { AlertTriangle, ShieldOff } from 'lucide-react'
-
-export const metadata = { title: 'Disclaimer — SetupFX' }
+import Link from 'next/link';
+import { Section, PageHero, CtaBanner } from '@/marketing/components';
+import {
+  LegalDoc, LegalSection, LegalP, LegalCallout, legalAnchor,
+} from '../_legal/LegalDoc';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 /**
- * Disclaimer, rewritten for a software development company.
- *
- * This route held a full retail trading risk disclosure — leverage risk,
- * margin calls, negative balance protection, counterparty risk. Those are the
- * disclosures a BROKER owes its clients about money they have placed with it.
- * We hold no client money and are nobody's counterparty, so publishing them
- * claimed a relationship with the reader that does not exist.
- *
- * What belongs here instead is the boundary of what we do, stated once and
- * without hedging.
+ * Risk Disclaimer — public legal page.
+ * Linked from footer. Boilerplate adapted to the platform's product mix
+ * (forex, CFDs, crypto). Restyled onto the shared marketing design
+ * system; every clause is carried over verbatim.
  */
-export default function DisclaimerPage() {
+
+const SECTIONS = [
+  {
+    h: '1. General Risk Warning',
+    p: `Trading forex, contracts-for-difference (CFDs), and crypto-assets carries a high level of risk and can result in losses that exceed your initial
+    deposit. These products may not be suitable for every investor. You should only trade with
+    capital you can afford to lose, and seek independent advice if you do not fully understand
+    the risks involved.`,
+  },
+  {
+    h: '2. Leverage',
+    p: `Leverage allows you to control a position size larger than your account balance — and
+    amplifies both gains and losses. A relatively small adverse market move can wipe out your
+    margin and trigger a stop-out. ${BRAND_NAME} offers leverage up to 1:1000 across most pairs;
+    leverage is a tool, not free capital. Size positions to your stop-loss, not to the maximum
+    leverage available.`,
+  },
+  {
+    h: '3. Volatility & Liquidity',
+    p: `Crypto markets are open 24/7 and can move several percent in minutes during news or
+    liquidations. Forex majors, indices, and energies have well-defined session hours; outside
+    those hours spreads widen and liquidity thins. Order execution at the published market price
+    is NOT guaranteed during gaps, slippage, or low-liquidity windows.`,
+  },
+  {
+    h: '4. CFD-Specific Risks',
+    p: `CFDs are derivative products — you do not own the underlying asset. P&L mirrors the price
+    movement of the underlying but is settled in cash. Holding CFDs overnight incurs swap charges
+    that compound. A negative-balance protection mechanism applies to retail accounts where
+    available, but slippage during extreme moves can still wipe out the entire margin.`,
+  },
+  {
+    h: '5. Crypto-Asset Risks',
+    p: `Crypto-assets are subject to regulatory uncertainty, smart-contract risk, exchange-rate
+    risk, and operational risk from custodians and bridges. On-chain transactions are
+    irreversible. ${BRAND_NAME} DEX trades settle through smart-contracts that have been audited but
+    are not guaranteed to be free of exploits. Do not deposit crypto you cannot afford to lose.`,
+  },
+  {
+    h: '6. Bonus Credit',
+    p: `${BRAND_NAME} does not currently run a deposit-bonus promotion. Where bonus credit does reach
+    an account — through a partner arrangement, for example — it is credited as tradeable balance
+    and is absorbed by losing trades before your deposited capital. Its terms and unlock conditions
+    are disclosed in your dashboard at the time it is granted, and bonus credit is not in itself
+    withdrawable.`,
+  },
+  {
+    h: '7. Trade Insurance',
+    p: `Trade Insurance, where activated on the order ticket, refunds a stated percentage of any
+    covered losing trade up to the policy cap disclosed at the time of opt-in. The fee is
+    deducted on trade open and is non-refundable. Insurance payouts are subject to minimum trade
+    duration and the policy conditions visible at activation.`,
+  },
+  {
+    h: '8. AI & Algo Trading',
+    p: `Our AI-driven auto-trading and algorithmic strategies analyse historical and live market
+    data but cannot anticipate every market condition. Past back-tested or live performance is
+    not indicative of future results. You are responsible for monitoring positions, setting
+    risk limits, and pausing strategies during high-impact news.`,
+  },
+  {
+    h: '9. Tax Treatment',
+    p: `The tax treatment of trading profits, swap interest, and bonus equity varies by
+    jurisdiction. You are responsible for declaring and paying any applicable tax. ${BRAND_NAME} does
+    not provide tax advice — consult a qualified tax adviser for your situation.`,
+  },
+  {
+    h: '10. No Investment Advice',
+    p: `Information published on our website, in market commentary, and inside the platform is
+    general in nature and does not constitute personalised investment advice. We do not consider
+    your individual objectives, financial situation, or needs.`,
+  },
+  {
+    h: '11. Jurisdictional Restrictions',
+    p: `${BRAND_NAME} Services are not available to residents of jurisdictions where the offering of
+    CFD, forex, or crypto-derivative trading is prohibited under local law. You are responsible
+    for ensuring your use of the Services complies with the laws of your jurisdiction.`,
+  },
+  {
+    h: '12. Acknowledgement',
+    p: `By opening a ${BRAND_NAME} account you confirm you have read, understood, and accepted this Risk
+    Disclaimer alongside our Terms of Service and Privacy Policy. You trade at your own risk.`,
+  },
+];
+
+const TOC = SECTIONS.map((s) => ({ id: legalAnchor(s.h), label: s.h }));
+
+export default function RiskPage() {
   return (
-    <div className="bg-white text-gray-900">
-      <section className="bg-white pt-16 pb-12">
-        <div className="w-full px-3 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Disclaimer</h1>
-          <p className="text-gray-500">Last updated: September 2026</p>
-        </div>
-      </section>
+    <main>
+      <PageHero
+        kicker="Legal"
+        title="Risk Disclaimer"
+        lead="Plain-English warnings about the risks of trading forex, CFDs, and crypto."
+      />
 
-      <section className="py-12 bg-white">
-        <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
+      <Section raised>
+        <LegalDoc toc={TOC}>
+          <LegalCallout tone="warn">
+            <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>Important:</span> Trading
+            carries significant risk. Past performance is not indicative of future results. You may
+            lose some or all of your invested capital — only trade with money you can afford to lose.
+          </LegalCallout>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-4">
-            <ShieldOff className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-gray-900 mb-1">SetupFX is a software company, not a broker.</p>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                We build and license trading technology. We do not trade, broker, hold, manage
-                or handle client funds, and we provide no financial, investment or advisory
-                services.
-              </p>
-            </div>
-          </div>
+          {SECTIONS.map(({ h, p }) => (
+            <LegalSection key={h} id={legalAnchor(h)} heading={h}>
+              <LegalP>{p}</LegalP>
+            </LegalSection>
+          ))}
 
-          <Section title="1. What we do">
-            Setupfx Softech OPC Pvt Ltd, trading as SetupFX, develops software: trading
-            terminals, administrative back offices, risk engines, client portals, reporting
-            suites and the integrations that connect them. We license that software to
-            businesses — brokerages, proprietary trading firms and similar operators — who
-            deploy it under their own brand and their own authorisation.
-          </Section>
+          <LegalP>
+            Cross-read with our{' '}
+            <Link href="/terms" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+              Privacy Policy
+            </Link>
+            . Risk queries can be sent to{' '}
+            <a
+              href={`mailto:${BRAND_SUPPORT_EMAIL}`}
+              className="hover:underline"
+              style={{ color: 'var(--mk-accent)' }}
+            >
+              {BRAND_SUPPORT_EMAIL}
+            </a>
+            .
+          </LegalP>
+        </LegalDoc>
+      </Section>
 
-          <Section title="2. What we do not do">
-            <List items={[
-              'We are not a broker, dealer, exchange, custodian, payment institution or financial institution of any kind, and we are not registered as one.',
-              'We do not hold, manage, transmit or handle client funds at any point.',
-              'We do not route, match or execute orders, and we are never counterparty to a trade.',
-              'We do not accept deposits, process withdrawals or maintain trading accounts for members of the public.',
-              'We do not provide financial, investment, tax, accounting or legal advice.',
-              'We do not solicit or accept investments, and we do not manage money on anyone’s behalf.',
-            ]} />
-          </Section>
-
-          <Section title="3. Platforms operated by our clients">
-            Where a client operates a trading platform we developed, that platform is theirs.
-            They hold the licence, they carry the regulatory obligations, they hold any client
-            money, and they are responsible for their own clients, their conduct and their
-            marketing. Our role ended at delivering and supporting the software. A platform
-            carrying a client&rsquo;s branding is not a SetupFX service, and SetupFX is not a party
-            to any relationship between that client and their customers.
-          </Section>
-
-          <Section title="4. Features described on this site">
-            Capabilities described anywhere on this site — liquidity routing, managed-account
-            structures, copy trading, algorithmic execution, IB and affiliate management and
-            similar — are features we build into a client&rsquo;s platform for that client to
-            operate. Describing them is not an offer of those services by us.
-          </Section>
-
-          <Section title="5. Trading carries risk">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-4 mb-4">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Trading leveraged products carries a significant risk of loss and is not
-                suitable for everyone. Losses can exceed the amount initially placed.
-              </p>
-            </div>
-            We say this not because you can trade with us — you cannot — but because our
-            software is used to run trading businesses, and anyone evaluating one should
-            understand what they are entering. Nothing on this site is an offer, solicitation
-            or recommendation to trade, nor a representation that any strategy, platform
-            feature or business model will be profitable.
-          </Section>
-
-          <Section title="6. No guarantee of regulatory outcome">
-            Our software includes features intended to support compliance workflows. Providing
-            them is not a representation that a deployment satisfies the requirements of any
-            regulator in any jurisdiction. Licensing, registration and regulatory compliance
-            remain entirely the operator&rsquo;s responsibility, and anyone planning a trading
-            business should take independent legal and regulatory advice where they intend to
-            operate.
-          </Section>
-
-          <Section title="7. Information on this site">
-            Content here is provided for general information about our services and may be
-            updated without notice. Delivery timeframes, capability descriptions and comparisons
-            are indicative and depend on the scope of an individual engagement.
-          </Section>
-
-          <Section title="8. Contact">
-            Questions about this disclaimer can be sent to setupfx24@gmail.com, or to
-            Setupfx Softech OPC Pvt Ltd, 4012, 4th Floor, Currency Tower, Vishal Nagar,
-            Raipur, Chhattisgarh 492001.
-          </Section>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
-      <div className="text-gray-500 leading-relaxed space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function List({ items }: { items: string[] }) {
-  return (
-    <ul className="list-disc list-inside space-y-2 mt-3 text-gray-500">
-      {items.map((item, i) => <li key={i}>{item}</li>)}
-    </ul>
-  )
+      <CtaBanner
+        title="Trade Responsibly"
+        lead="Open an account only after reading and accepting all our risk disclosures."
+        primary={{ label: 'Open Account', href: '/auth/register' }}
+        secondary={{ label: 'Read the Risk Warning', href: '/risk-warning' }}
+      />
+    </main>
+  );
 }

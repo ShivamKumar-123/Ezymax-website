@@ -1,163 +1,207 @@
-import { FileText } from 'lucide-react'
-
-export const metadata = { title: 'Terms of Service — SetupFX' }
+import Link from 'next/link';
+import { Section, PageHero, CtaBanner } from '@/marketing/components';
+import {
+  LegalDoc, LegalSection, LegalClause, LegalP, LegalCallout, legalAnchor,
+} from '../_legal/LegalDoc';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 /**
- * Terms of Service, rewritten for a software development company.
+ * Terms & Conditions — public legal page.
  *
- * What was here were the terms of a RETAIL BROKERAGE: account eligibility to
- * "engage in financial trading", deposits and withdrawals, bonus terms,
- * affiliate rebates, PAMM investments, trading risk. None of it described
- * anything this business does, and unlike marketing copy a terms page is the
- * document someone would be held to — so it was the most dangerous page on
- * the site to leave pointing at a service we do not provide.
+ * Section copy is preserved verbatim from the client-supplied PDF
+ * "terms and condition.pdf" (delivered 2026-06-09). The 14-section
+ * structure + numbered clauses match the PDF; only the visual chrome
+ * follows the shared marketing design system. No clause has been
+ * reworded, reordered, merged or dropped.
  */
+
+/* Official PDF links live in the footer "Legal documents" row now —
+   the on-page PDF grid was removed per client request. */
+
+/**
+ * 14 numbered sections preserving the client-PDF wording verbatim.
+ * Each clause is rendered as `[number] body…` so the on-screen layout
+ * mirrors a typical legal contract.
+ */
+const SECTIONS: { h: string; clauses: { n: string; body: string }[] }[] = [
+  {
+    h: '1. Acceptance of Terms',
+    clauses: [
+      { n: '1.1', body: `By accessing or using any services, products, platforms, or tools offered by ${BRAND_NAME} (hereinafter referred to as "${BRAND_NAME}"), you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, you should not access or use any ${BRAND_NAME} services.` },
+      { n: '1.2', body: `These Terms & Conditions apply to all users, clients, visitors, and customers of ${BRAND_NAME}, whether registered or unregistered. By accessing or using the platform, you acknowledge and accept these Terms & Conditions.` },
+    ],
+  },
+  {
+    h: '2. Binding Agreement',
+    clauses: [
+      { n: '2.1', body: `By registering for an account or using ${BRAND_NAME} services, you enter into a legally binding agreement with ${BRAND_NAME}.` },
+      { n: '2.2', body: `You acknowledge that your continued use of ${BRAND_NAME} services constitutes acceptance of these Terms & Conditions and any additional policies, agreements, disclosures, or legal documentation published by ${BRAND_NAME}.` },
+    ],
+  },
+  {
+    h: '3. Eligibility and Age Requirement',
+    clauses: [
+      { n: '3.1', body: `To use ${BRAND_NAME} services, you must be at least eighteen (18) years old or the legal age required to enter into a binding agreement in your jurisdiction.` },
+      { n: '3.2', body: 'By opening an account, you confirm that all information provided is accurate and that you meet the eligibility requirements.' },
+      { n: '3.3', body: 'Providing false information regarding your identity, age, or residency is strictly prohibited and may result in immediate account suspension or termination.' },
+    ],
+  },
+  {
+    h: '4. Trading Risk Disclosure',
+    clauses: [
+      { n: '4.1', body: 'Forex, commodities, cryptocurrencies, indices, and CFD trading involve substantial risk and may not be suitable for all investors.' },
+      { n: '4.2', body: 'You acknowledge that you may lose part or all of your deposited funds and that past performance does not guarantee future results.' },
+      { n: '4.3', body: `${BRAND_NAME} does not guarantee profits, returns, or successful trading outcomes unless explicitly stated under a specific promotional program governed by separate terms.` },
+      { n: '4.4', body: 'Clients are solely responsible for their trading decisions and investment activities.' },
+    ],
+  },
+  {
+    h: '5. Account Registration and Security',
+    clauses: [
+      { n: '5.1', body: 'Clients must provide accurate, complete, and up-to-date information during registration.' },
+      { n: '5.2', body: 'You are responsible for maintaining the confidentiality of your account credentials, passwords, and security information.' },
+      { n: '5.3', body: `${BRAND_NAME} shall not be liable for losses arising from unauthorized access resulting from your failure to protect account credentials.` },
+    ],
+  },
+  {
+    h: '6. Deposits and Withdrawals',
+    clauses: [
+      { n: '6.1', body: `Clients may fund their accounts using payment methods approved by ${BRAND_NAME}.` },
+      { n: '6.2', body: 'Withdrawal requests are subject to verification, compliance checks, and anti-money laundering (AML) procedures.' },
+      { n: '6.3', body: `${BRAND_NAME} reserves the right to request additional identification documents before processing withdrawals.` },
+      { n: '6.4', body: 'Processing times may vary depending on the selected payment method and verification requirements.' },
+    ],
+  },
+  {
+    h: '7. Bonuses, Promotions, and Trade Insurance',
+    clauses: [
+      { n: '7.1', body: 'Any bonuses, deposit promotions, referral rewards, trade insurance programs, or special offers are subject to separate promotional terms.' },
+      { n: '7.2', body: `${BRAND_NAME} reserves the right to modify, suspend, or cancel promotional programs at any time without prior notice.` },
+      { n: '7.3', body: 'Abuse, manipulation, arbitrage, or fraudulent use of promotional programs may result in cancellation of rewards and account restrictions.' },
+    ],
+  },
+  {
+    h: '8. Referral and Introducing Broker (IB) Program',
+    clauses: [
+      { n: '8.1', body: 'Participants in the Referral Program and IB Program must comply with all applicable laws and ethical marketing standards.' },
+      { n: '8.2', body: `${BRAND_NAME} reserves the right to adjust, withhold, or revoke commissions generated through fraudulent, misleading, or prohibited activities.` },
+      { n: '8.3', body: 'Referral and IB commissions are subject to qualification requirements outlined in the relevant program documentation.' },
+    ],
+  },
+  {
+    h: '9. Anti-Money Laundering (AML) and Compliance',
+    clauses: [
+      { n: '9.1', body: `${BRAND_NAME} maintains strict AML and Know Your Customer (KYC) procedures.` },
+      { n: '9.2', body: 'Clients may be required to provide identification documents, proof of address, and other verification materials.' },
+      { n: '9.3', body: `${BRAND_NAME} reserves the right to suspend or terminate accounts involved in suspicious, illegal, or non-compliant activities.` },
+    ],
+  },
+  {
+    h: '10. Limitation of Liability',
+    clauses: [
+      { n: '10.1', body: `${BRAND_NAME} shall not be liable for any indirect, incidental, consequential, or special damages arising from the use of its services.` },
+      { n: '10.2', body: `${BRAND_NAME} is not responsible for losses resulting from market volatility, technical failures, internet disruptions, third-party service interruptions, or force majeure events.` },
+    ],
+  },
+  {
+    h: '11. Suspension and Termination',
+    clauses: [
+      { n: '11.1', body: `${BRAND_NAME} reserves the right to suspend, restrict, or terminate any account that violates these Terms & Conditions or applicable regulations.` },
+      { n: '11.2', body: `Upon termination, clients must immediately cease using ${BRAND_NAME} services.` },
+    ],
+  },
+  {
+    h: '12. Amendments',
+    clauses: [
+      { n: '12.1', body: `${BRAND_NAME} reserves the right to modify, update, or replace these Terms & Conditions at any time.` },
+      { n: '12.2', body: `Continued use of ${BRAND_NAME} services after updates become effective constitutes acceptance of the revised Terms & Conditions.` },
+    ],
+  },
+  {
+    h: '13. Governing Law',
+    clauses: [
+      { n: '13.1', body: `These Terms & Conditions shall be governed by and interpreted in accordance with the laws applicable to the jurisdiction under which ${BRAND_NAME} operates.` },
+      { n: '13.2', body: 'Any disputes arising from these Terms & Conditions shall be subject to the exclusive jurisdiction of the relevant courts or arbitration authorities.' },
+    ],
+  },
+];
+
+const CONTACT_HEADING = '14. Contact Information';
+const RISK_HEADING = 'Risk Disclaimer';
+
+const TOC = [
+  ...SECTIONS.map((s) => ({ id: legalAnchor(s.h), label: s.h })),
+  { id: legalAnchor(CONTACT_HEADING), label: CONTACT_HEADING },
+  { id: legalAnchor(RISK_HEADING), label: RISK_HEADING },
+];
+
 export default function TermsPage() {
   return (
-    <div className="bg-white text-gray-900">
-      <section className="bg-white pt-16 pb-12">
-        <div className="w-full px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-[#FCE6DD] flex items-center justify-center">
-              <FileText className="w-5 h-5 text-[#E94E1B]" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Terms of Service</h1>
-          </div>
-          <p className="text-lg font-semibold text-gray-900 mt-6 mb-1">
-            Setupfx Softech OPC Pvt Ltd (&ldquo;SetupFX&rdquo;) — Terms of Service
-          </p>
-          <p className="text-sm text-gray-500">Last updated: September 2026</p>
-        </div>
-      </section>
+    <main>
+      <PageHero
+        kicker="Legal"
+        title="Terms and Conditions"
+        lead={`The rules that govern your use of ${BRAND_NAME}. Read carefully before you trade.`}
+      />
 
-      <section className="py-12 bg-white">
-        <div className="w-full px-3 sm:px-6 lg:px-8 space-y-8">
-          <Section title="1. Who we are">
-            SetupFX is the trading name of Setupfx Softech OPC Pvt Ltd, a company registered
-            in India with its office at 4012, 4th Floor, Currency Tower, Vishal Nagar, Raipur,
-            Chhattisgarh 492001 (GST 22ABSCS5663H1ZX). We are a software development company.
-            We design, build and license trading technology to businesses.
-          </Section>
+      <Section raised>
+        <LegalDoc toc={TOC} updated="June 2026">
+          {SECTIONS.map(({ h, clauses }) => (
+            <LegalSection key={h} id={legalAnchor(h)} heading={h}>
+              {clauses.map(({ n, body }) => (
+                <LegalClause key={n} n={n}>{body}</LegalClause>
+              ))}
+            </LegalSection>
+          ))}
 
-          <Section title="2. What these terms cover">
-            These terms govern your use of this website and any enquiry you send through it.
-            They are not a contract for development work. Any engagement to build, license or
-            support software is governed by a separate written agreement signed by both
-            parties; where that agreement and these terms conflict, that agreement prevails.
-          </Section>
+          {/* Section 14 — Contact (special handling: includes contact card) */}
+          <LegalSection id={legalAnchor(CONTACT_HEADING)} heading={CONTACT_HEADING}>
+            <LegalP>
+              For any questions, support requests, or concerns regarding these Terms &amp; Conditions, please contact:
+            </LegalP>
+            <LegalCallout>
+              <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>{BRAND_NAME} Support Team</span>
+              <br />
+              Email:{' '}
+              <a
+                href={`mailto:${BRAND_SUPPORT_EMAIL}`}
+                className="hover:underline"
+                style={{ color: 'var(--mk-accent)' }}
+              >
+                {BRAND_SUPPORT_EMAIL}
+              </a>
+            </LegalCallout>
+            <LegalP>
+              By registering for an account and using {BRAND_NAME} services, you confirm that you have read, understood, and agreed to these Terms &amp; Conditions.
+            </LegalP>
+          </LegalSection>
 
-          <Section title="3. The nature of our services">
-            This is the most important section on this page, so it is stated plainly:
-            <List items={[
-              'We build and license software. We are not a broker, dealer, exchange, custodian or financial institution of any kind.',
-              'We do not hold, manage, transmit or handle client funds.',
-              'We do not route, match or execute orders, and we are never counterparty to a trade.',
-              'We do not provide financial, investment, tax, accounting or legal advice, and nothing on this site or in any conversation with us constitutes such advice.',
-              'We do not solicit or accept investments, and we make no representation about the returns any trading activity may produce.',
-              'Where one of our clients operates a trading platform we built, that platform is operated by that client, under their own licence and their own regulatory obligations. It is not operated by us, and we are not responsible for their conduct or their clients.',
-            ]} />
-          </Section>
+          {/* Risk Disclaimer — kept as the platform's standard trader-facing warning */}
+          <LegalSection id={legalAnchor(RISK_HEADING)} heading={RISK_HEADING}>
+            <LegalCallout tone="warn">
+              Trading foreign exchange (forex) and other leveraged financial products carries a high level of risk and may not be suitable for all investors. Leverage can work both for and against you — while it amplifies potential profits, it equally amplifies potential losses. You could sustain a loss of some or all of your initial investment and should not invest money that you cannot afford to lose. You should be aware of all the risks associated with leveraged trading and seek independent financial advice if you have any doubts. Past performance is not indicative of future results.
+            </LegalCallout>
+            <LegalP>
+              These Terms work alongside our{' '}
+              <Link href="/privacy" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+                Privacy Policy
+              </Link>{' '}
+              and{' '}
+              <Link href="/risk" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+                Risk Disclaimer
+              </Link>
+              .
+            </LegalP>
+          </LegalSection>
+        </LegalDoc>
+      </Section>
 
-          <Section title="4. Using this website">
-            You may use this site to learn about our services and to contact us. You may not
-            attempt to gain unauthorised access to it, interfere with its operation, scrape it
-            at a scale that degrades service for others, or use it to transmit unlawful or
-            malicious content.
-          </Section>
-
-          <Section title="5. Enquiries and demonstrations">
-            Sending an enquiry does not create a contract or oblige either party to proceed.
-            Demonstrations, scopes, timelines and quotations we provide before a signed
-            agreement are indicative and provided without charge or obligation. Figures given
-            for delivery timeframes are estimates based on the scope described to us at the
-            time.
-          </Section>
-
-          <Section title="6. Intellectual property">
-            The software we develop, together with our underlying frameworks, libraries, tooling
-            and know-how, remains our intellectual property unless a signed agreement expressly
-            assigns specific rights. A white-label deployment grants the client the right to
-            operate and brand the platform on the terms of that agreement; it does not transfer
-            ownership of the underlying technology. Content on this site — text, design, logos
-            and images — belongs to us or our licensors.
-          </Section>
-
-          <Section title="7. Your responsibilities as a client">
-            Obtaining and maintaining every licence, registration, authorisation and regulatory
-            permission required to operate a trading business in your jurisdiction is your
-            responsibility, not ours. The same applies to your obligations on client onboarding,
-            AML, client-money handling, reporting, marketing conduct and data protection.
-            <br /><br />
-            Our software includes features intended to support compliance workflows — KYC
-            document capture, audit logging, reporting and similar. Providing those features is
-            not a representation that any particular deployment satisfies the requirements of
-            any particular regulator. We are a technology company, not a legal or compliance
-            consultancy, and you should take specialist advice for your jurisdiction.
-          </Section>
-
-          <Section title="8. Confidentiality">
-            Business information you share with us while scoping a project is treated as
-            confidential and used only to evaluate and deliver that project. We expect the same
-            of anything we share with you about how our systems are built.
-          </Section>
-
-          <Section title="9. Third-party services">
-            Deployments commonly integrate third-party services — payment gateways, KYC and AML
-            providers, liquidity venues, market-data feeds, CRM and messaging platforms. Those
-            services are supplied by their own providers under their own terms. We integrate
-            them; we do not control their availability, pricing, data or conduct.
-          </Section>
-
-          <Section title="10. Warranties and disclaimers">
-            This website is provided as-is. We make no warranty that it will be uninterrupted or
-            error-free, and any information on it may be updated without notice. Warranties
-            relating to delivered software are set out in the applicable signed agreement and
-            not here.
-          </Section>
-
-          <Section title="11. Limitation of liability">
-            To the fullest extent permitted by law, we are not liable for indirect, incidental,
-            special or consequential loss, or for loss of profit, revenue, goodwill or data,
-            arising out of your use of this website. Liability arising under a development or
-            licensing engagement is governed by the limits set out in that agreement. Nothing
-            here excludes liability that cannot lawfully be excluded.
-          </Section>
-
-          <Section title="12. Changes to these terms">
-            We may update these terms as our services change. The revision date at the top of
-            this page reflects the current version, and continued use of the site after a change
-            constitutes acceptance of it.
-          </Section>
-
-          <Section title="13. Governing law">
-            These terms are governed by the laws of India, and the courts at Raipur,
-            Chhattisgarh have exclusive jurisdiction over any dispute arising from them, unless
-            a signed agreement between us specifies otherwise.
-          </Section>
-
-          <Section title="14. Contact">
-            Questions about these terms can be sent to setupfx24@gmail.com, or to the registered
-            office address in section 1.
-          </Section>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
-      <div className="text-gray-500 leading-relaxed space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function List({ items }: { items: string[] }) {
-  return (
-    <ul className="list-disc list-inside space-y-2 mt-3 text-gray-500">
-      {items.map((item, i) => <li key={i}>{item}</li>)}
-    </ul>
-  )
+      <CtaBanner
+        title="Ready to Begin?"
+        lead={`By opening a ${BRAND_NAME} account, you confirm you have read and accepted these Terms.`}
+        primary={{ label: 'Open Account', href: '/auth/register' }}
+        secondary={{ label: 'Contact Support', href: `mailto:${BRAND_SUPPORT_EMAIL}` }}
+      />
+    </main>
+  );
 }

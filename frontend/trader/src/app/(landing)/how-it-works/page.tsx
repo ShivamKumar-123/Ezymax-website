@@ -1,107 +1,213 @@
-import { Search, Palette, Code2, FlaskConical, Rocket, ArrowRight } from 'lucide-react'
-import Disclaimer from '@/landing/marketing/Disclaimer'
-
-export const metadata = { title: 'How It Works — From Requirement to Live Platform — SetupFX' }
+'use client';
 
 /**
- * Delivery process, rewritten from setupfx24.com.
- *
- * This page used to walk a retail trader through opening an account, funding
- * it and placing a first trade. The journey that matters to this business is
- * a client's project: scoping, branding, build, UAT, go-live.
+ * Public marketing page — How It Works.
+ * Copy adapted from DETAILED_CONTENT_HOW_IT_WORKS_PAGE.docx (May 2026 client deck).
+ * Restyled onto the shared marketing design system; every line of copy is
+ * carried over from the previous version of this page.
  */
+import { Wallet, ShieldCheck, Cpu, Check, Zap, Headphones, Users, Target, BarChart3 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Section, SectionHeading, PageHero, FeatureGrid, CtaBanner } from '@/marketing/components';
+import { BRAND_NAME } from '@/lib/brand';
 
 const STEPS = [
-  {
-    n: '01',
-    icon: Search,
-    title: 'Discovery & scoping',
-    desc: 'We map your business model, markets, instruments and revenue structure, then turn it into a technical scope.',
-  },
-  {
-    n: '02',
-    icon: Palette,
-    title: 'Branding & configuration',
-    desc: 'Your identity applied across terminal, admin, apps and emails. Trading rules and commercials configured.',
-  },
-  {
-    n: '03',
-    icon: Code2,
-    title: 'Development & integration',
-    desc: 'Core build plus payment, KYC, liquidity and CRM connections. Progress demos, not silence.',
-  },
-  {
-    n: '04',
-    icon: FlaskConical,
-    title: 'Testing & UAT',
-    desc: 'Functional testing, load testing and a full acceptance round with your team before any real client sees it.',
-  },
-  {
-    n: '05',
-    icon: Rocket,
-    title: 'Go live & support',
-    desc: 'Deployment, staff training, documentation handover — then continuous monitoring and support.',
-  },
-]
+  { eyebrow: 'Step', title: 'Connect Wallet', body: 'Securely connect your wallet to access the platform.' },
+  { eyebrow: 'Step', title: 'Access Your Dashboard', body: 'Manage your profile, settings, and activity through your CRM.' },
+  { eyebrow: 'Step', title: 'Create Trading Account', body: `Choose ${BRAND_NAME} native or an external integration.` },
+  { eyebrow: 'Step', title: 'Allocate Funds to Contract', body: 'Funds move into a secure smart contract layer, not a broker.' },
+  { eyebrow: 'Step', title: 'Execute Trades', body: 'Trade normally using your selected account.' },
+  { eyebrow: 'Step', title: 'Automatic P&L Settlement', body: 'Profits credit, losses deduct — automatically.' },
+  { eyebrow: 'Step', title: 'Withdraw Anytime', body: 'Funds settle directly back to your wallet.' },
+];
+
+const COMPARE: Array<[string, string, string]> = [
+  ['Fund Custody', 'Smart Contract Layer', 'Broker Holds Funds'],
+  ['Withdrawals', 'System-Based', 'Approval-Based'],
+  ['Execution', 'Automated Logic', 'Broker-Controlled'],
+  ['Transparency', 'Structured Flow', 'Limited Visibility'],
+  ['User Control', 'High', 'Limited'],
+];
+
+const WHY: Array<{ icon: LucideIcon; title: string; sub: string }> = [
+  { icon: Zap,        title: 'Deep Liquidity, Fast Execution',   sub: 'sub-millisecond order fills' },
+  { icon: Headphones, title: '24/7 Dedicated Support',           sub: 'live chat, phone & e-mail' },
+  { icon: Users,      title: 'Copy Successful Traders',          sub: 'with our Social Trading products' },
+  { icon: Target,     title: 'Raw, Institutional-Grade Spreads', sub: 'from 0.0 pips' },
+  { icon: BarChart3,  title: 'Advanced Order Types',             sub: 'limit, stop-limit, one-click trading' },
+];
 
 export default function HowItWorksPage() {
   return (
-    <div className="bg-white text-gray-900">
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#E94E1B] mb-5">Process</p>
-          <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-            From requirement to<br />
-            <span className="text-[#E94E1B]">live platform in five steps</span>
-          </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            No mystery phase where nothing is heard for weeks. You see the build as it happens.
-          </p>
-        </div>
-      </section>
+    <main>
+      <PageHero
+        kicker={`How ${BRAND_NAME} Works`}
+        title={<>Not a Broker.<br /><span style={{ color: 'var(--mk-accent)' }}>A Trading Protocol.</span></>}
+        lead={`${BRAND_NAME} does not hold your funds. Your trades operate through a structured smart contract system. Execution is automated. Control stays with you.`}
+        primary={{ label: 'See the Flow', href: '#flow' }}
+        secondary={{ label: 'Start Trading', href: '/auth/register' }}
+      />
 
-      {/* Steps */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <ol className="relative">
-            {STEPS.map(({ n, icon: Icon, title, desc }, i) => (
-              <li key={n} className="relative flex gap-6 pb-12 last:pb-0">
-                {/* connector */}
-                {i < STEPS.length - 1 && (
-                  <span aria-hidden className="absolute left-7 top-16 bottom-0 w-px bg-gray-200" />
-                )}
-                <div className="relative shrink-0">
-                  <div className="w-14 h-14 bg-[#FCE6DD] rounded-2xl flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-[#E94E1B]" />
-                  </div>
-                </div>
-                <div className="pt-1.5 min-w-0">
-                  <div className="text-xs font-semibold text-gray-300 mb-1">{n}</div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-                  <p className="text-gray-500 leading-relaxed">{desc}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+      {/* Broker vs Protocol */}
+      <Section raised>
+        <SectionHeading
+          align="left"
+          kicker="The Difference"
+          title={`Traditional Broker vs ${BRAND_NAME}`}
+          lead={'We don’t hold your money. The system manages execution.'}
+        />
+        <div className="grid md:grid-cols-2 gap-5 mt-12">
+          <ComparisonCard
+            title="Traditional Brokers"
+            tone="warn"
+            items={[
+              'Funds deposited into broker accounts',
+              'Withdrawal depends on approvals',
+              'Execution lacks transparency',
+              'Manual intervention possible',
+            ]}
+          />
+          <ComparisonCard
+            title={`${BRAND_NAME} Protocol`}
+            tone="ok"
+            items={[
+              'Funds interact with smart contract layer',
+              'No custody held by platform',
+              'Trades execute via system logic',
+              'Automatic P&L settlement',
+            ]}
+          />
         </div>
-      </section>
+      </Section>
 
-      {/* CTA */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-3xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Ready to start?</h2>
-          <p className="text-gray-500 leading-relaxed mb-8">
-            Tell us your business model and target market. We&rsquo;ll show you the platform
-            that fits and give you a straight answer on scope and timeline.
-          </p>
-          <a href="/contact" className="inline-flex items-center gap-2 bg-[#E94E1B] text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition">
-            Book a free demo <ArrowRight className="w-4 h-4" />
-          </a>
+      {/* 7-step flow */}
+      <Section id="flow">
+        <SectionHeading
+          align="left"
+          kicker="The Flow"
+          title="From Wallet to Trade — Step by Step"
+          lead="Every step is system-driven. No manual control involved."
+        />
+        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-12">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="mk-card mk-card--hover flex flex-col gap-2">
+              <div className="mk-kicker">
+                <span style={{ fontFamily: 'var(--mk-font-mono)' }}>{String(i + 1).padStart(2, '0')}</span>
+                <span>{s.eyebrow}</span>
+              </div>
+              <h3 className="mk-h3">{s.title}</h3>
+              <p className="mk-body" style={{ fontSize: 'var(--mk-text-sm)' }}>{s.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      {/* Security pillars */}
+      <Section raised>
+        <SectionHeading
+          align="left"
+          kicker="Principles"
+          title="Built for Transparency and Control"
+          lead="Designed to minimize trust dependency and maximize system-based execution."
+        />
+        <FeatureGrid
+          className="mt-12"
+          columns={3}
+          items={[
+            { icon: Wallet, title: 'No Custody', body: 'Funds never sit in a broker account. They interact with the contract layer only when you trade.' },
+            { icon: Cpu, title: 'Automated Execution', body: 'Trades are settled by the system on outcome — no manual approvals, no withdrawal delays.' },
+            { icon: ShieldCheck, title: 'Transparent Flow', body: 'Every step is observable: wallet → contract → engine → outcome → wallet.' },
+          ]}
+        />
+      </Section>
+
+      {/* Comparison table */}
+      <Section>
+        <SectionHeading align="left" kicker="Side by Side" title={`${BRAND_NAME} vs Traditional Brokers`} />
+        <div
+          className="mt-12 overflow-x-auto"
+          style={{ border: '1px solid var(--mk-line)', borderRadius: 'var(--mk-radius-lg)' }}
+        >
+          <table className="w-full min-w-[560px]" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Feature', BRAND_NAME, 'Traditional Broker'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-4"
+                    style={{
+                      background: 'var(--mk-surface)',
+                      color: 'var(--mk-accent)',
+                      fontSize: 'var(--mk-text-label)',
+                      letterSpacing: 'var(--mk-tracking-label)',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE.map((r) => (
+                <tr key={r[0]} style={{ borderTop: '1px solid var(--mk-line)' }}>
+                  <td className="px-5 py-4 font-semibold" style={{ fontSize: 'var(--mk-text-sm)', color: 'var(--mk-text)' }}>{r[0]}</td>
+                  <td className="px-5 py-4" style={{ fontSize: 'var(--mk-text-sm)', color: 'var(--mk-text-muted)' }}>{r[1]}</td>
+                  <td className="px-5 py-4" style={{ fontSize: 'var(--mk-text-sm)', color: 'var(--mk-text-muted)' }}>{r[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
+      </Section>
 
-      <Disclaimer />
+      {/* Why Trade section */}
+      <Section raised>
+        <SectionHeading kicker="Why Us" title={`Why Trade with ${BRAND_NAME}?`} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+          {WHY.map(({ icon: Icon, title, sub }) => (
+            <div key={title} className="mk-card mk-card--hover flex items-center gap-4">
+              <span
+                className="inline-flex h-12 w-12 items-center justify-center rounded-xl shrink-0"
+                style={{ background: 'var(--mk-accent-soft)', color: 'var(--mk-accent)' }}
+              >
+                <Icon size={22} />
+              </span>
+              <div className="min-w-0">
+                <h3 className="mk-h3" style={{ fontSize: 'var(--mk-text-body)' }}>{title}</h3>
+                <p className="mk-body" style={{ fontSize: 'var(--mk-text-sm)', color: 'var(--mk-text-faint)' }}>{sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <CtaBanner
+        title="Experience System-Driven Trading"
+        lead="No custody. No hidden control. Just structured execution."
+        primary={{ label: 'Start Trading', href: '/auth/register' }}
+        secondary={{ label: 'Connect Wallet', href: '/auth/login' }}
+      />
+    </main>
+  );
+}
+
+function ComparisonCard({
+  title, items, tone,
+}: { title: string; items: string[]; tone: 'ok' | 'warn' }) {
+  const accent = tone === 'ok' ? 'var(--mk-up)' : 'var(--mk-down)';
+  return (
+    <div className="mk-card flex flex-col gap-4">
+      <h3 className="mk-h3" style={{ color: accent }}>{title}</h3>
+      <ul className="flex flex-col gap-2.5">
+        {items.map((it) => (
+          <li key={it} className="flex items-start gap-2 mk-body" style={{ fontSize: 'var(--mk-text-sm)' }}>
+            <Check size={15} className="mt-1 shrink-0" style={{ color: accent }} />
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
     </div>
-  )
+  );
 }

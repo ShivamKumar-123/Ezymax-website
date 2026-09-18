@@ -1,155 +1,264 @@
-export const metadata = { title: 'Privacy Policy — SetupFX' }
+import Link from 'next/link';
+import { Section, PageHero, CtaBanner } from '@/marketing/components';
+import {
+  LegalDoc, LegalSection, LegalSubheading, LegalP, LegalList, LegalCallout, legalAnchor,
+} from '../_legal/LegalDoc';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 /**
- * Privacy Policy, rewritten for a software development company.
+ * Privacy Policy — public legal page.
  *
- * The previous version described collecting KYC documents, deposits,
- * withdrawals and trade records from retail traders — the data a brokerage
- * holds about its clients. We hold none of that. What we actually collect is
- * business enquiry details, and during a project, whatever a client shares
- * with us to get their platform built.
- *
- * The distinction that matters legally is in section 6: on a platform we
- * built and a client operates, the client is the data controller for their
- * users, not us.
+ * Section copy is preserved verbatim from the client-supplied PDF
+ * "privcy policy.pdf" (delivered 2026-06-09). The 15-section structure
+ * is preserved; only the visual chrome follows the shared marketing
+ * design system. Nothing has been reworded, reordered or dropped.
  */
+
+/**
+ * Each section has a heading + body. `body` can mix prose paragraphs,
+ * sub-sections (sub-heading + bullets), and plain bullet lists. This
+ * is the minimum structure needed to reproduce the PDF wording 1:1.
+ */
+type Subsection = { title: string; lead?: string; bullets?: string[]; trailing?: string };
+type PolicySection = {
+  h: string;
+  lead?: string[];          // top-level prose paragraphs
+  bullets?: string[];        // top-level bullets
+  subs?: Subsection[];       // sub-sections like "Identity Information"
+  trailing?: string[];       // closing paragraphs after bullets / subs
+};
+
+const INTRO: PolicySection = {
+  h: `Privacy Policy of ${BRAND_NAME}`,
+  lead: [
+    `At ${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us"), protecting your privacy and personal information is one of our highest priorities. We are committed to collecting, processing, storing, and protecting your personal data responsibly and in accordance with applicable data protection laws and industry best practices.`,
+    `By accessing our website, opening an account, or using any ${BRAND_NAME} products and services, you consent to the collection and processing of your personal information as described in this Privacy Policy.`,
+  ],
+};
+
+const SECTIONS: PolicySection[] = [
+  {
+    h: '1. Privacy Protection',
+    lead: [
+      `${BRAND_NAME} maintains appropriate administrative, technical, and organizational measures designed to protect personal information from unauthorized access, misuse, loss, alteration, or disclosure.`,
+      'Client information is stored securely and accessed only by authorized personnel who require such information for legitimate business, compliance, or support purposes.',
+      'While we implement reasonable security safeguards, no method of transmission over the internet or electronic storage system can be guaranteed to be completely secure.',
+      'Clients are responsible for maintaining the confidentiality of their account credentials, passwords, and authentication devices.',
+    ],
+  },
+  {
+    h: '2. Personal Information We Collect',
+    lead: [`When opening an account or using ${BRAND_NAME} services, we may collect the following information:`],
+    subs: [
+      { title: 'Identity Information', bullets: ['Full Name', 'Date of Birth', 'Nationality', 'Government Identification Details', 'Passport or National ID Copies', 'Selfie Verification Images'] },
+      { title: 'Contact Information', bullets: ['Email Address', 'Telephone Number', 'Residential Address'] },
+      { title: 'Financial Information', bullets: ['Source of Funds Information', 'Cryptocurrency Wallet Information', 'Deposit and Withdrawal Records', 'Transaction History'] },
+      { title: 'Technical Information', bullets: ['IP Address', 'Browser Information', 'Device Information', 'Operating System Information', 'Website Usage Data'] },
+      { title: 'Trading Information', bullets: ['Trading Activity', 'Trading Preferences', 'Account Performance', 'Trading History'] },
+    ],
+  },
+  {
+    h: '3. How We Use Your Personal Information',
+    lead: [`${BRAND_NAME} may process your personal information for the following purposes:`],
+    subs: [
+      { title: 'Account Registration and Management', lead: 'To:', bullets: ['Open and maintain trading accounts', 'Verify identity', 'Provide customer support', 'Manage account security'] },
+      { title: 'Compliance and Regulatory Requirements', lead: 'To:', bullets: ['Perform KYC verification', 'Conduct AML screening', 'Prevent fraud and financial crime', 'Comply with legal obligations'] },
+      { title: 'Service Delivery', lead: 'To:', bullets: ['Process deposits and withdrawals', 'Facilitate trading activities', 'Operate client accounts', 'Provide platform functionality'] },
+      { title: 'Risk Management', lead: 'To:', bullets: ['Monitor suspicious activity', 'Protect account security', 'Prevent abuse of promotions and bonuses', 'Detect unauthorized transactions'] },
+      { title: 'Communication', lead: 'To:', bullets: ['Respond to inquiries', 'Send service-related notifications', 'Deliver security alerts', 'Provide account updates'] },
+      { title: 'Marketing Communications', lead: `Subject to applicable laws and your preferences, ${BRAND_NAME} may send information regarding:`, bullets: ['New products', 'Platform updates', 'Promotions', 'Educational content', 'Market insights'], trailing: 'Clients may opt out of marketing communications at any time.' },
+    ],
+  },
+  {
+    h: '4. Legal Basis for Processing',
+    lead: ['We process personal information based on one or more of the following legal grounds:'],
+    subs: [
+      { title: 'Contract Performance', lead: 'Processing necessary to provide services requested by the client.' },
+      { title: 'Legal and Regulatory Obligations', lead: 'Processing required to comply with applicable laws, AML regulations, sanctions requirements, and compliance obligations.' },
+      { title: 'Legitimate Business Interests', lead: 'Processing necessary for:', bullets: ['Risk management', 'Fraud prevention', 'Service improvement', 'Security monitoring', 'Internal administration'] },
+      { title: 'Client Consent', lead: 'Where required by law, processing may be based on the client\'s consent, which may be withdrawn at any time.' },
+    ],
+  },
+  {
+    h: '5. KYC and AML Compliance',
+    lead: [
+      `${BRAND_NAME} is committed to maintaining robust Know Your Customer (KYC) and Anti-Money Laundering (AML) procedures.`,
+      'Clients may be required to provide:',
+    ],
+    bullets: ['Government-issued identification', 'Proof of address', 'Selfie verification', 'Source of funds documentation', 'Additional compliance information'],
+    trailing: ['Failure to complete verification requirements may result in account restrictions, deposit delays, or withdrawal limitations.'],
+  },
+  {
+    h: '6. Disclosure of Personal Information',
+    lead: [
+      `${BRAND_NAME} does not sell client personal information.`,
+      'Personal information may be shared only when necessary with:',
+    ],
+    subs: [
+      { title: 'Service Providers', lead: 'Including:', bullets: ['Technology providers', 'Hosting providers', 'Payment and crypto infrastructure providers', 'Security service providers'] },
+      { title: 'Compliance and Regulatory Authorities', lead: 'Where disclosure is required by law, regulation, court order, or government request.' },
+      { title: 'Professional Advisors', lead: 'Including:', bullets: ['Legal advisors', 'Auditors', 'Compliance consultants', 'Risk management providers'] },
+      { title: 'Business Partners', lead: 'Only where necessary for providing services or fulfilling contractual obligations.' },
+    ],
+    trailing: ['All third parties receiving personal information are expected to maintain appropriate confidentiality and security standards.'],
+  },
+  {
+    h: '7. Cryptocurrency Transactions',
+    lead: [`As ${BRAND_NAME} operates a crypto-funded trading environment:`],
+    bullets: [
+      'Deposit and withdrawal transactions may be recorded on public blockchain networks.',
+      'Blockchain transactions are transparent and may be publicly visible.',
+      `${BRAND_NAME} cannot control information recorded on public blockchains.`,
+    ],
+    trailing: ['Clients are responsible for protecting the privacy of their own cryptocurrency wallets and addresses.'],
+  },
+  {
+    h: '8. Cookies and Website Analytics',
+    lead: [`${BRAND_NAME} may use:`],
+    bullets: ['Cookies', 'Analytics tools', 'Pixel tags', 'Session tracking technologies'],
+    trailing: [
+      'These technologies help us:',
+      'Improve website performance · Enhance user experience · Analyze traffic patterns · Detect fraud and security risks',
+      'Clients may adjust browser settings to limit cookie usage, although some website functions may be affected.',
+    ],
+  },
+  {
+    h: '9. International Data Transfers',
+    lead: [
+      'Personal information may be processed or stored in countries outside the client\'s country of residence.',
+      `Where international transfers occur, ${BRAND_NAME} will take reasonable measures to ensure that personal information receives an appropriate level of protection consistent with applicable privacy requirements.`,
+    ],
+  },
+  {
+    h: '10. Data Retention',
+    lead: [`${BRAND_NAME} retains personal information only for as long as necessary to:`],
+    bullets: ['Provide services', 'Comply with legal obligations', 'Resolve disputes', 'Prevent fraud', 'Meet regulatory requirements'],
+    trailing: ['Client records, communications, transaction histories, and verification documents may be retained for a minimum period required by applicable AML and compliance regulations.'],
+  },
+  {
+    h: '11. Your Rights',
+    lead: ['Depending on applicable laws, clients may have the right to:'],
+    subs: [
+      { title: 'Access', lead: `Request a copy of personal information held by ${BRAND_NAME}.` },
+      { title: 'Correction', lead: 'Request correction of inaccurate or incomplete information.' },
+      { title: 'Deletion', lead: 'Request deletion of personal information where legally permitted.' },
+      { title: 'Restriction', lead: 'Request limitations on certain processing activities.' },
+      { title: 'Objection', lead: 'Object to specific processing activities.' },
+      { title: 'Data Portability', lead: 'Request transfer of personal information in a structured format where applicable.' },
+    ],
+    trailing: ['Requests may be submitted through our support team.'],
+  },
+  {
+    h: '12. Security Measures',
+    lead: [`${BRAND_NAME} implements security controls designed to protect personal information, including:`],
+    bullets: ['Secure data storage', 'Access control procedures', 'Encryption technologies where appropriate', 'Internal compliance monitoring', 'Security audits and reviews'],
+    trailing: ['Despite these measures, clients should understand that no electronic system is completely immune from security risks.'],
+  },
+  {
+    h: '13. Legal Disclosure',
+    lead: [`${BRAND_NAME} may disclose personal information when required to:`],
+    bullets: ['Comply with legal obligations', 'Respond to lawful requests', 'Protect company rights', 'Prevent fraud', 'Investigate suspicious activity', 'Enforce contractual agreements'],
+    trailing: ['Such disclosures will only occur when legally justified.'],
+  },
+  {
+    h: '14. Changes to This Privacy Policy',
+    lead: [
+      `${BRAND_NAME} reserves the right to modify this Privacy Policy at any time.`,
+      `Updated versions will become effective upon publication on the ${BRAND_NAME} website.`,
+      `Continued use of ${BRAND_NAME} services following any update constitutes acceptance of the revised Privacy Policy.`,
+    ],
+  },
+];
+
+const CONTACT_HEADING = '15. Contact Information';
+
+const TOC = [
+  { id: legalAnchor(INTRO.h), label: INTRO.h },
+  ...SECTIONS.map((s) => ({ id: legalAnchor(s.h), label: s.h })),
+  { id: legalAnchor(CONTACT_HEADING), label: CONTACT_HEADING },
+];
+
+/** Renders one policy section body — prose, bullets, sub-sections, trailing prose. */
+function SectionBody({ sec }: { sec: PolicySection }) {
+  return (
+    <>
+      {sec.lead?.map((p, i) => <LegalP key={`lead-${i}`}>{p}</LegalP>)}
+      {sec.bullets && <LegalList items={sec.bullets} />}
+      {sec.subs?.map((sub) => (
+        <div key={sub.title} className="flex flex-col gap-3">
+          <LegalSubheading>{sub.title}</LegalSubheading>
+          {sub.lead && <LegalP>{sub.lead}</LegalP>}
+          {sub.bullets && <LegalList items={sub.bullets} />}
+          {sub.trailing && <LegalP>{sub.trailing}</LegalP>}
+        </div>
+      ))}
+      {sec.trailing?.map((p, i) => <LegalP key={`tail-${i}`}>{p}</LegalP>)}
+    </>
+  );
+}
+
 export default function PrivacyPage() {
   return (
-    <div className="bg-white text-gray-900">
-      <section className="bg-white pt-16 pb-12">
-        <div className="w-full px-3 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Privacy Policy</h1>
-          <p className="text-gray-500">Last updated: September 2026</p>
-        </div>
-      </section>
+    <main>
+      <PageHero
+        kicker="Legal"
+        title="Privacy Policy"
+        lead="What personal data we collect, why we collect it, and how we keep it safe."
+      />
 
-      <section className="py-12 bg-white">
-        <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
-          <Section title="1. Who this covers">
-            This policy explains how Setupfx Softech OPC Pvt Ltd (&ldquo;SetupFX&rdquo;, &ldquo;we&rdquo;)
-            handles personal information collected through this website and in the course of
-            discussing or delivering a software project. We are a software development company;
-            we do not operate a trading service and we do not hold trading accounts, client
-            funds or trading records belonging to members of the public.
-          </Section>
+      <Section raised>
+        <LegalDoc toc={TOC} updated="June 2026">
+          <LegalSection id={legalAnchor(INTRO.h)} heading={INTRO.h}>
+            <SectionBody sec={INTRO} />
+          </LegalSection>
 
-          <Section title="2. What we collect">
-            <p className="font-semibold text-gray-900 mt-4 mb-1">When you contact us</p>
-            Your name, email address, phone or WhatsApp number, company name and whatever you
-            choose to tell us about the project you are planning.
-            <p className="font-semibold text-gray-900 mt-4 mb-1">Automatically, when you browse</p>
-            Standard server and analytics data: IP address, browser and device type, pages
-            visited and referring page. Used to keep the site working and to understand which
-            pages are useful.
-            <p className="font-semibold text-gray-900 mt-4 mb-1">During a project, if you become a client</p>
-            Business contact details for the people we work with, and technical and commercial
-            information needed to scope, build and support the platform. We ask clients not to
-            send us their own customers&rsquo; personal data unless a specific task genuinely
-            requires it.
-          </Section>
+          {SECTIONS.map((sec) => (
+            <LegalSection key={sec.h} id={legalAnchor(sec.h)} heading={sec.h}>
+              <SectionBody sec={sec} />
+            </LegalSection>
+          ))}
 
-          <Section title="3. Why we use it">
-            <List items={[
-              'To reply to your enquiry and arrange a demonstration.',
-              'To prepare a scope, timeline and quotation.',
-              'To deliver, support and maintain software under a signed agreement.',
-              'To send information about our services where you have asked for it — never bought lists, and every message carries an unsubscribe.',
-              'To meet our legal, tax and accounting obligations in India.',
-            ]} />
-            We do not sell personal information, and we do not share it for anyone else&rsquo;s
-            marketing.
-          </Section>
+          {/* Section 15 — Contact (special handling) */}
+          <LegalSection id={legalAnchor(CONTACT_HEADING)} heading={CONTACT_HEADING}>
+            <LegalP>
+              For questions, concerns, requests, or complaints regarding this Privacy Policy, please contact:
+            </LegalP>
+            <LegalCallout>
+              <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>{BRAND_NAME} Support Team</span>
+              <br />
+              Email:{' '}
+              <a
+                href={`mailto:${BRAND_SUPPORT_EMAIL}`}
+                className="hover:underline"
+                style={{ color: 'var(--mk-accent)' }}
+              >
+                {BRAND_SUPPORT_EMAIL}
+              </a>
+            </LegalCallout>
+            <LegalP>
+              {BRAND_NAME} is committed to protecting client privacy and maintaining the highest standards of data security and confidentiality.
+            </LegalP>
+            <LegalP>
+              Read this alongside our{' '}
+              <Link href="/terms" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/risk" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
+                Risk Disclaimer
+              </Link>
+              .
+            </LegalP>
+          </LegalSection>
+        </LegalDoc>
+      </Section>
 
-          <Section title="4. Who we share it with">
-            Only with service providers who help us run the business — email and hosting
-            providers, analytics, accounting — each bound to handle it on our instructions, and
-            with authorities where the law requires it.
-          </Section>
-
-          <Section title="5. How long we keep it">
-            Enquiries that do not become projects are kept while there is a live commercial
-            conversation and a reasonable period after, then deleted. Client project records are
-            kept for the life of the engagement and for as long as Indian tax and company law
-            requires afterwards.
-          </Section>
-
-          <Section title="6. Platforms we build for clients">
-            This is the part most often misunderstood, so it is stated directly. When a client
-            operates a trading platform we developed, any personal data their users provide —
-            identity documents, payment details, trading activity — is collected by that client,
-            for that client, under that client&rsquo;s own privacy policy. They are the data
-            controller. We act only as a processor, on their written instructions, where a
-            support or maintenance task requires it. If you are a user of a platform operated by
-            one of our clients, your rights lie with them, and their privacy policy is the one
-            that applies to you.
-          </Section>
-
-          <Section title="7. Your rights">
-            You may ask us for a copy of the personal information we hold about you, ask us to
-            correct it, or ask us to delete it where we have no continuing legal reason to keep
-            it. You may also withdraw consent to marketing at any time. Write to
-            setupfx24@gmail.com and we will respond within a reasonable period.
-          </Section>
-
-          <Section title="8. Cookies">
-            We use cookies that are necessary for the site to function, and analytics cookies to
-            see which pages are read. Your browser can block or delete cookies; the site will
-            still work, though some preferences will not persist.
-          </Section>
-
-          <Section title="9. Security">
-            Access to enquiry and project data is restricted to the people who need it, and
-            transport to this site is encrypted. No system is perfectly secure, and we do not
-            claim otherwise — but the narrower point is that we deliberately do not collect the
-            categories of data that would make us an attractive target: no client funds, no
-            payment credentials, no public trading accounts.
-          </Section>
-
-          <Section title="10. Changes">
-            We will update this policy as our practices change, and the revision date above will
-            change with it.
-          </Section>
-
-          {/* The footer has always linked to /privacy#vulnerability and the
-              anchor never existed, so "Vulnerability Disclosure" led to the
-              top of this page. */}
-          <div id="vulnerability" className="scroll-mt-24">
-            <Section title="11. Reporting a security vulnerability">
-              If you believe you have found a security flaw in this website or in software we
-              develop, tell us before telling anyone else. Email setupfx24@gmail.com with enough
-              detail to reproduce it — the affected URL or component, the steps, and what you
-              were able to access.
-              <br /><br />
-              We will acknowledge your report, keep you updated while we investigate, and we will
-              not pursue action against anyone who reports in good faith, stays within the scope
-              of demonstrating the issue, and does not access, modify or retain data belonging to
-              anyone else. Please give us reasonable time to fix an issue before publishing it.
-            </Section>
-          </div>
-
-          <Section title="12. Contact">
-            Setupfx Softech OPC Pvt Ltd, 4012, 4th Floor, Currency Tower, Vishal Nagar, Raipur,
-            Chhattisgarh 492001. Email setupfx24@gmail.com.
-          </Section>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
-      <div className="text-gray-500 leading-relaxed space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function List({ items }: { items: string[] }) {
-  return (
-    <ul className="list-disc list-inside space-y-2 mt-3 text-gray-500">
-      {items.map((item, i) => <li key={i}>{item}</li>)}
-    </ul>
-  )
+      <CtaBanner
+        title="Your Data, Your Control"
+        lead={`Open a ${BRAND_NAME} account confident that we treat your personal data with the same care we apply to your trading capital.`}
+        primary={{ label: 'Open Account', href: '/auth/register' }}
+        secondary={{ label: 'Delete My Account', href: '/delete-account' }}
+      />
+    </main>
+  );
 }

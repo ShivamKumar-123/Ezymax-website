@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Users, DollarSign, BarChart2, Award, Globe, Headphones, Check, ArrowRight, TrendingUp } from 'lucide-react'
 import Button from '../components/Button'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../components/animations/ScrollReveal'
+import { BRAND_NAME } from '@/lib/brand'
 
 const benefits = [
   { icon: DollarSign, title: 'Competitive Commissions', desc: 'Earn up to $12 per lot with our tiered rebate structure. The more clients you refer, the higher your earnings.' },
@@ -28,10 +29,10 @@ const IBManagement = () => {
               IB Management Program
             </h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              Partner with SwissCresta and earn competitive commissions by introducing new clients. Build your brokerage business with our support.
+              Partner with {BRAND_NAME} and earn competitive commissions by introducing new clients. Build your brokerage business with our support.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/contact"><Button variant="primary">Become an IB</Button></Link>
+              <Link to="/company/contact"><Button variant="primary">Become an IB</Button></Link>
               <Link to="/accounts/demo"><Button variant="ghost">Learn More</Button></Link>
             </div>
           </ScrollReveal>
@@ -126,7 +127,7 @@ const IBManagement = () => {
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">Unlimited Earning Potential</h3>
                   <p className="text-text-secondary mb-6">No caps on commissions. The more clients you bring, the more you earn — every month, for life.</p>
-                  <Link to="/contact">
+                  <Link to="/company/contact">
                     <Button variant="primary" className="inline-flex items-center gap-2">Apply Now <ArrowRight size={16} /></Button>
                   </Link>
                 </div>

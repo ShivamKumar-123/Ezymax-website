@@ -1,4 +1,5 @@
 import TradingPageTemplate from '../components/TradingPageTemplate'
+import { BRAND_NAME } from '@/lib/brand'
 
 const Indices = () => {
   const data = {
@@ -8,11 +9,11 @@ const Indices = () => {
       { label: 'Spread From', value: '0.4 pips' },
       { label: 'Leverage', value: '1:200' },
       { label: 'Indices', value: '20+' },
-      { label: 'Market Hours', value: '24/5' }
+      { label: 'Market Hours', value: '24/7' }
     ],
     about: {
       title: 'What are Index CFDs?',
-      description: 'Index trading allows you to speculate on the performance of entire markets or sectors without buying individual stocks. Trade popular indices like the S&P 500, NASDAQ 100, FTSE 100, and DAX 40 with SwissCresta. Benefit from lower margin requirements, extended trading hours, and the ability to go long or short on market movements.'
+      description: `Index trading allows you to speculate on the performance of entire markets or sectors without buying individual stocks. Trade popular indices like the S&P 500, NASDAQ 100, FTSE 100, and DAX 40 with ${BRAND_NAME}. Benefit from lower margin requirements, extended trading hours, and the ability to go long or short on market movements.`
     },
     instruments: [
       { symbol: 'US500 (S&P 500)', spread: '0.4 pips', leverage: '1:200', margin: '0.5%' },
@@ -36,7 +37,7 @@ const Indices = () => {
       {
         icon: '⏰',
         title: 'Extended Trading Hours',
-        description: 'Trade indices nearly 24/5 with access to both cash and futures contracts.'
+        description: 'Trade indices nearly 24/7 with access to both cash and futures contracts.'
       }
     ]
   }

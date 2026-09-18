@@ -1,4 +1,5 @@
 import TradingPageTemplate from '../components/TradingPageTemplate'
+import { BRAND_NAME } from '@/lib/brand'
 
 const Crypto = () => {
   const data = {
@@ -12,7 +13,7 @@ const Crypto = () => {
     ],
     about: {
       title: 'Why Trade Crypto CFDs?',
-      description: 'Cryptocurrency CFDs allow you to speculate on the price movements of Bitcoin, Ethereum, and other digital assets without the complexity of owning and storing them. Trade crypto 24/7 with leverage, go long or short, and benefit from SwissCresta\'s secure platform and competitive spreads. Perfect for traders who want exposure to the crypto market with the flexibility of traditional CFD trading.'
+      description: `Cryptocurrency CFDs allow you to speculate on the price movements of Bitcoin, Ethereum, and other digital assets without the complexity of owning and storing them. Trade crypto 24/7 with leverage, go long or short, and benefit from ${BRAND_NAME}'s secure platform and competitive spreads. Perfect for traders who want exposure to the crypto market with the flexibility of traditional CFD trading.`
     },
     instruments: [
       { symbol: 'BTC/USD (Bitcoin)', spread: '0.5%', leverage: '1:50', margin: '2.0%' },
