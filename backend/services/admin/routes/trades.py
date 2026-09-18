@@ -10,7 +10,7 @@ from sqlalchemy import select
 from dependencies import require_permission, broker_scope_ids, assert_broker_scope
 from packages.common.src.models import Position, TradingAccount
 from packages.common.src.models import User
-from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest
+from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest, ModifyHistoryRequest
 from services import trade_service
 
 router = APIRouter(prefix="/trades", tags=["Trades"])
@@ -108,6 +108,23 @@ async def close_position(
     await _assert_position_scope(admin, position_id, db)
     return await trade_service.close_position(
         position_id=position_id, body=body, admin_id=admin.id,
+        ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.put("/history/{history_id}/modify")
+async def modify_trade_history(
+    history_id: uuid.UUID,
+    body: ModifyHistoryRequest,
+    request: Request,
+    admin: User = Depends(require_permission("trades.modify")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit a closed trade. Any P&L change is reconciled to the account
+    balance as a delta (no wallet Transaction row — invisible to the trader,
+    same as a normal close)."""
+    return await trade_service.modify_trade_history(
+        history_id=history_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
     )
 

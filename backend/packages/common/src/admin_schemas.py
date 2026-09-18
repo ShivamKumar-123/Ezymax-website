@@ -270,6 +270,24 @@ class ModifyPositionRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class ModifyHistoryRequest(BaseModel):
+    """Edit a CLOSED trade (TradeHistory row).
+
+    Any P&L change is applied to the account balance as a delta, mirroring how
+    the original close credited it — no wallet Transaction row, exactly like a
+    normal close, so the edit is invisible in the trader's transaction list.
+    """
+    open_price: Optional[float] = None
+    close_price: Optional[float] = None
+    lots: Optional[float] = None
+    commission: Optional[float] = None
+    swap: Optional[float] = None
+    side: Optional[str] = None  # "buy" or "sell"
+    opened_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    reason: Optional[str] = None
+
+
 class ClosePositionRequest(BaseModel):
     close_price: Optional[float] = None
     reason: Optional[str] = None

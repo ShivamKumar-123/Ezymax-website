@@ -17,7 +17,7 @@ from packages.common.src.models import (
 from packages.common.src.admin_schemas import (
     PositionOut, OrderOut, TradeHistoryOut, PaginatedResponse,
     ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest,
-    BulkCreateTradeRequest,
+    BulkCreateTradeRequest, ModifyHistoryRequest,
 )
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.instrument_pricing import resolve_commission
@@ -531,6 +531,126 @@ async def close_position(
     )
     await db.commit()
     return {"message": "Position closed successfully", "profit": float(profit)}
+
+
+async def modify_trade_history(
+    history_id: uuid.UUID, body: ModifyHistoryRequest,
+    admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+) -> dict:
+    """Edit a CLOSED trade and reconcile the account balance.
+
+    A closed trade's `profit` was already credited to the balance at close
+    time (TradeHistory.profit == the amount added, no wallet Transaction row).
+    So editing it must move the balance by the P&L DELTA only, and must NOT
+    write a Transaction row — that mirrors how a normal close behaves and
+    keeps the change out of the trader's transaction list. P&L is recomputed
+    from the fields (never set directly), so the row's numbers always agree
+    with (close-open)*lots*contract_size.
+    """
+    from packages.common.src.trading_service import quote_to_account_pnl
+
+    def _sv(s) -> str:
+        return s.value if hasattr(s, "value") else str(s)
+
+    result = await db.execute(
+        select(TradeHistory).where(TradeHistory.id == history_id).with_for_update()
+    )
+    th = result.scalar_one_or_none()
+    if not th:
+        raise HTTPException(status_code=404, detail="Trade history record not found")
+
+    inst_q = await db.execute(select(Instrument).where(Instrument.id == th.instrument_id))
+    inst = inst_q.scalar_one_or_none()
+    contract_size = Decimal(str(inst.contract_size)) if inst and inst.contract_size else Decimal("100000")
+
+    old_profit = Decimal(str(th.profit or 0))
+    old_values = {
+        "open_price": float(th.open_price or 0),
+        "close_price": float(th.close_price or 0),
+        "lots": float(th.lots or 0),
+        "commission": float(th.commission or 0),
+        "swap": float(th.swap or 0),
+        "side": _sv(th.side) if th.side else None,
+        "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+        "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+        "profit": float(old_profit),
+    }
+
+    if body.open_price is not None:
+        th.open_price = Decimal(str(body.open_price))
+    if body.close_price is not None:
+        th.close_price = Decimal(str(body.close_price))
+    if body.lots is not None:
+        th.lots = Decimal(str(body.lots))
+    if body.commission is not None:
+        th.commission = Decimal(str(body.commission))
+    if body.swap is not None:
+        th.swap = Decimal(str(body.swap))
+    if body.side is not None:
+        s = body.side.strip().lower()
+        if s not in ("buy", "sell"):
+            raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
+        th.side = s
+    if body.opened_at is not None:
+        th.opened_at = body.opened_at
+    if body.closed_at is not None:
+        th.closed_at = body.closed_at
+
+    # Recompute realised P&L from the (possibly edited) fields, the same way
+    # the close path did — gross by side, then cross-rate adjusted to the
+    # account currency.
+    side_val = _sv(th.side)
+    open_p = Decimal(str(th.open_price or 0))
+    close_p = Decimal(str(th.close_price or 0))
+    lots = Decimal(str(th.lots or 0))
+    gross = (close_p - open_p) * lots * contract_size if side_val == "buy" \
+        else (open_p - close_p) * lots * contract_size
+    new_profit = quote_to_account_pnl(
+        gross,
+        getattr(inst, "base_currency", None),
+        getattr(inst, "quote_currency", None),
+        close_p,
+        symbol=getattr(inst, "symbol", None),
+    )
+    th.profit = new_profit
+
+    delta = Decimal(str(new_profit)) - old_profit
+
+    acc_q = await db.execute(
+        select(TradingAccount).where(TradingAccount.id == th.account_id).with_for_update()
+    )
+    acc = acc_q.scalar_one_or_none()
+    if acc and delta != 0:
+        # Balance delta ONLY — no Transaction row, exactly like the original
+        # close, so nothing surfaces in the trader's wallet history.
+        acc.balance = (acc.balance or Decimal("0")) + delta
+        acc.equity = (acc.balance or Decimal("0")) + (acc.credit or Decimal("0"))
+        acc.free_margin = acc.equity - (acc.margin_used or Decimal("0"))
+
+    await write_audit_log(
+        db, admin_id, "modify_trade_history", "trade_history", history_id,
+        old_values=old_values,
+        new_values={
+            "open_price": float(th.open_price or 0),
+            "close_price": float(th.close_price or 0),
+            "lots": float(th.lots or 0),
+            "commission": float(th.commission or 0),
+            "swap": float(th.swap or 0),
+            "side": side_val,
+            "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+            "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+            "profit": float(new_profit),
+            "balance_delta": float(delta),
+            "reason": body.reason,
+        },
+        ip_address=ip_address,
+    )
+    await db.commit()
+    return {
+        "message": "Trade history updated",
+        "profit": float(new_profit),
+        "balance_delta": float(delta),
+    }
 
 
 async def list_instruments(search: str | None, db: AsyncSession) -> dict:

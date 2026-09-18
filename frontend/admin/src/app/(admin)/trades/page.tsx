@@ -238,6 +238,19 @@ export default function TradesPage() {
   // modify/create/close modal flows above can't accidentally trample
   // the history detail (and vice versa).
   const [selectedTrade, setSelectedTrade] = useState<ClosedTrade | null>(null);
+  // Edit-closed-trade modal. A closed trade's P&L is already in the balance,
+  // so saving reconciles the balance by the delta on the backend.
+  const [editHist, setEditHist] = useState<ClosedTrade | null>(null);
+  const [ehOpen, setEhOpen] = useState('');
+  const [ehClose, setEhClose] = useState('');
+  const [ehLots, setEhLots] = useState('');
+  const [ehCommission, setEhCommission] = useState('');
+  const [ehSwap, setEhSwap] = useState('');
+  const [ehSide, setEhSide] = useState<'buy' | 'sell'>('buy');
+  const [ehOpenedAt, setEhOpenedAt] = useState('');
+  const [ehClosedAt, setEhClosedAt] = useState('');
+  const [ehReason, setEhReason] = useState('');
+  const [ehSaving, setEhSaving] = useState(false);
   const [modifySl, setModifySl] = useState('');
   const [modifyTp, setModifyTp] = useState('');
   const [modifyOpenPrice, setModifyOpenPrice] = useState('');
@@ -518,24 +531,85 @@ export default function TradesPage() {
   // ALL of that user's trades — the confirm says so plainly. Reuses the same
   // endpoint the Book-management screen uses.
   const [bookFlipping, setBookFlipping] = useState<string | null>(null);
-  const flipBook = async (p: Position) => {
+  // Explicitly route this user to A-Book or B-Book straight from the trade
+  // row. Routing is per-user, so it moves ALL of their trades — the confirm
+  // spells that out. No-op if they're already on the target book.
+  const setBook = async (p: Position, target: 'A' | 'B') => {
     if (!p.user_id) { toast.error('Cannot switch book — user id missing'); return; }
     const current = (p.book_type || 'B').toUpperCase();
-    const next = current === 'A' ? 'B' : 'A';
+    if (current === target) return; // already on this book
     const ok = window.confirm(
-      `Move ${p.user_email || 'this user'} from ${current}-Book to ${next}-Book?\n\n`
-      + `Book routing is per user, so this moves ALL of their trades to ${next}-Book, not just this one.`,
+      `Move ${p.user_email || 'this user'} to ${target}-Book?\n\n`
+      + `Book routing is per user, so this moves ALL of their trades to ${target}-Book, not just this one.`,
     );
     if (!ok) return;
     setBookFlipping(p.id);
     try {
-      await adminApi.put(`/book/users/${p.user_id}/book-type`, { book_type: next });
-      toast.success(`${p.user_email || 'User'} → ${next}-Book`);
+      await adminApi.put(`/book/users/${p.user_id}/book-type`, { book_type: target });
+      toast.success(`${p.user_email || 'User'} → ${target}-Book`);
       fetchPositions();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Book switch failed');
     } finally {
       setBookFlipping(null);
+    }
+  };
+
+  // ── Edit closed trade ──────────────────────────────────────────────
+  const openEditHistory = (t: ClosedTrade) => {
+    setEditHist(t);
+    setEhOpen(t.open_price != null ? String(t.open_price) : '');
+    setEhClose(t.close_price != null ? String(t.close_price) : '');
+    setEhLots(t.lots != null ? String(t.lots) : '');
+    setEhCommission(t.commission != null ? String(t.commission) : '');
+    setEhSwap(t.swap != null ? String(t.swap) : '');
+    setEhSide((t.side || '').toLowerCase() === 'sell' ? 'sell' : 'buy');
+    setEhOpenedAt(t.opened_at ? new Date(t.opened_at).toISOString().slice(0, 16) : '');
+    setEhClosedAt(t.closed_at ? new Date(t.closed_at).toISOString().slice(0, 16) : '');
+    setEhReason('');
+  };
+
+  const histContractSize = (sym?: string, apiCs?: number) =>
+    apiCs ?? (sym?.match(/BTC|ETH/) ? 1
+      : sym?.match(/XAU/) ? 100
+      : sym?.match(/XAG/) ? 5000
+      : sym?.match(/OIL/) ? 1000
+      : sym?.match(/US30|US500|NAS/) ? 1
+      : 100000);
+
+  // Live recomputed P&L preview for the edit modal — matches the backend's
+  // (close-open)*lots*contract by side. Cross-rate isn't applied here, so it
+  // is a preview; the backend books the authoritative figure.
+  const ehPreviewPnl = (): number | null => {
+    if (!editHist) return null;
+    const op = parseFloat(ehOpen), cl = parseFloat(ehClose), lo = parseFloat(ehLots);
+    if (![op, cl, lo].every(Number.isFinite)) return null;
+    const cs = histContractSize(editHist.instrument_symbol);
+    return (ehSide === 'buy' ? (cl - op) : (op - cl)) * lo * cs;
+  };
+
+  const submitEditHistory = async () => {
+    if (!editHist) return;
+    setEhSaving(true);
+    try {
+      const body: Record<string, unknown> = { reason: ehReason };
+      if (ehOpen) body.open_price = parseFloat(ehOpen);
+      if (ehClose) body.close_price = parseFloat(ehClose);
+      if (ehLots) body.lots = parseFloat(ehLots);
+      if (ehCommission !== '') body.commission = parseFloat(ehCommission);
+      if (ehSwap !== '') body.swap = parseFloat(ehSwap);
+      if (ehSide !== (editHist.side || '').toLowerCase()) body.side = ehSide;
+      if (ehOpenedAt) body.opened_at = new Date(ehOpenedAt).toISOString();
+      if (ehClosedAt) body.closed_at = new Date(ehClosedAt).toISOString();
+      const r = await adminApi.put<{ profit: number; balance_delta: number }>(
+        `/trades/history/${editHist.id}/modify`, body);
+      toast.success(`Saved — P&L ${r.profit >= 0 ? '+' : ''}${formatMoney(r.profit)}, balance Δ ${r.balance_delta >= 0 ? '+' : ''}${formatMoney(r.balance_delta)}`);
+      setEditHist(null);
+      fetchHistory();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Edit failed');
+    } finally {
+      setEhSaving(false);
     }
   };
 
@@ -767,26 +841,41 @@ export default function TradesPage() {
                         <td className="px-3 py-2 text-xs text-buy font-mono tabular-nums">{p.take_profit != null ? p.take_profit : '—'}</td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary whitespace-nowrap">{formatDate(p.created_at)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            {/* A⇄B switch straight from the trade row. Flips the
-                                owner's book (routing is per-user) with a confirm
-                                that spells out it moves all their trades. */}
+                          <div className="flex items-center justify-center gap-1">
+                            {/* A / B book toggle straight from the trade row — two
+                                explicit buttons instead of one flip. The active book
+                                is highlighted; clicking the other routes the owner's
+                                whole book (per-user) after a confirm. */}
                             {p.user_id && !p.is_demo && (
-                              <button
-                                onClick={() => flipBook(p)}
-                                disabled={bookFlipping === p.id}
-                                title={`Switch to ${(p.book_type || 'B').toUpperCase() === 'A' ? 'B' : 'A'}-Book (moves the whole user)`}
-                                className={cn(
-                                  'px-2 py-1 text-xxs font-bold uppercase tracking-wide rounded border transition-fast disabled:opacity-50',
-                                  (p.book_type || 'B').toUpperCase() === 'A'
-                                    ? 'text-info bg-info/10 border-info/30 hover:bg-info/20'
-                                    : 'text-warning bg-warning/10 border-warning/30 hover:bg-warning/20',
-                                )}
+                              <div
+                                className="inline-flex rounded border border-border-primary overflow-hidden shrink-0"
+                                title="Route this user's trades (per-user — moves ALL of their trades)"
                               >
-                                {bookFlipping === p.id
-                                  ? <Loader2 size={11} className="inline animate-spin" />
-                                  : <>{(p.book_type || 'B').toUpperCase()}-Book <span className="opacity-60">⇄</span></>}
-                              </button>
+                                {(['A', 'B'] as const).map((bk) => {
+                                  const active = (p.book_type || 'B').toUpperCase() === bk;
+                                  return (
+                                    <button
+                                      key={bk}
+                                      onClick={() => setBook(p, bk)}
+                                      disabled={bookFlipping === p.id}
+                                      title={active ? `Currently ${bk}-Book` : `Move this user to ${bk}-Book`}
+                                      className={cn(
+                                        'px-2.5 py-1 text-xxs font-bold uppercase tracking-wide transition-fast disabled:opacity-50',
+                                        bk === 'A' && 'border-r border-border-primary',
+                                        active
+                                          ? (bk === 'A'
+                                              ? 'text-info bg-info/15'
+                                              : 'text-warning bg-warning/15')
+                                          : 'text-text-tertiary bg-bg-hover hover:text-text-secondary hover:bg-bg-active',
+                                      )}
+                                    >
+                                      {bookFlipping === p.id && active
+                                        ? <Loader2 size={11} className="inline animate-spin" />
+                                        : `${bk} Book`}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
                             {p.is_lp_forwarded ? (
                               <span
@@ -869,8 +958,8 @@ export default function TradesPage() {
                 <table className="w-full min-w-[1040px]">
                   <thead>
                     <tr className="border-b border-border-primary bg-bg-tertiary/40">
-                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason'].map(c => (
-                        <th key={c} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'SL', 'TP', 'P&L'].includes(c) && 'text-right')}>{c}</th>
+                      {['Closed', 'User', 'Symbol', 'Side', 'Lots', 'Open', 'Close', 'SL', 'TP', 'P&L', 'Reason', ''].map((c, ci) => (
+                        <th key={c || `act${ci}`} className={cn('text-left px-4 py-2.5 text-xxs font-medium text-text-tertiary uppercase tracking-wide', ['Lots', 'Open', 'Close', 'SL', 'TP', 'P&L'].includes(c) && 'text-right')}>{c}</th>
                       ))}
                     </tr>
                   </thead>
@@ -925,13 +1014,22 @@ export default function TradesPage() {
                         <td className="px-4 py-2.5">
                           <span className={cn('inline-flex px-2 py-0.5 rounded text-xxs font-semibold', reasonColor)}>{reasonLabel}</span>
                         </td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditHistory(t); }}
+                            className="px-2 py-1 text-xxs font-medium text-text-secondary bg-bg-hover border border-border-primary rounded hover:text-buy hover:border-buy/30 transition-fast"
+                            title="Edit closed trade"
+                          >
+                            <Edit3 size={11} className="inline mr-0.5" />Edit
+                          </button>
+                        </td>
                       </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {histLoading && <TableSkeleton cols={11} />}
+              {histLoading && <TableSkeleton cols={12} />}
               {!histLoading && history.length === 0 && (
                 <div className="px-4 py-12 text-center text-xs text-text-tertiary">No closed trades</div>
               )}
@@ -1395,6 +1493,98 @@ export default function TradesPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit Closed Trade — changes P&L; backend reconciles the balance by
+          the delta with no wallet Transaction row, so it stays invisible to
+          the trader (same as a normal close). */}
+      <Modal
+        open={editHist != null}
+        onClose={() => setEditHist(null)}
+        title={editHist ? `Edit closed — ${editHist.instrument_symbol} ${editHist.side?.toUpperCase()} ${editHist.lots} lots` : 'Edit closed trade'}
+        wide
+      >
+        {editHist && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-bg-tertiary/50 border border-border-primary rounded-md text-xs">
+              <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{editHist.user_email}</p></div>
+              <div><p className="text-xxs text-text-tertiary">Symbol</p><p className="text-text-primary font-mono">{editHist.instrument_symbol}</p></div>
+              <div><p className="text-xxs text-text-tertiary">Current P&amp;L</p><p className={cn('font-mono font-bold', (editHist.profit || 0) >= 0 ? 'text-success' : 'text-danger')}>{(editHist.profit || 0) >= 0 ? '+' : ''}{formatMoney(editHist.profit)}</p></div>
+              <div><p className="text-xxs text-text-tertiary">Closed</p><p className="text-text-primary font-mono">{formatDate(editHist.closed_at)}</p></div>
+            </div>
+
+            <div>
+              <label className="block text-xxs text-text-tertiary mb-1">Side</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setEhSide('buy')} className={cn('px-3 py-2 text-xs font-bold rounded-md border transition-fast', ehSide === 'buy' ? 'bg-buy/20 border-buy text-buy' : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover')}>BUY</button>
+                <button type="button" onClick={() => setEhSide('sell')} className={cn('px-3 py-2 text-xs font-bold rounded-md border transition-fast', ehSide === 'sell' ? 'bg-sell/20 border-sell text-sell' : 'bg-bg-input border-border-primary text-text-tertiary hover:bg-bg-hover')}>SELL</button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Open Price</label>
+                <input type="number" step="any" value={ehOpen} onChange={e => setEhOpen(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums focus:border-buy transition-fast" />
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Close Price</label>
+                <input type="number" step="any" value={ehClose} onChange={e => setEhClose(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums focus:border-buy transition-fast" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Lots</label>
+                <input type="number" step="0.01" min="0.01" value={ehLots} onChange={e => setEhLots(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums focus:border-buy transition-fast" />
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Commission</label>
+                <input type="number" step="any" value={ehCommission} onChange={e => setEhCommission(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums focus:border-buy transition-fast" />
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Swap</label>
+                <input type="number" step="any" value={ehSwap} onChange={e => setEhSwap(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums focus:border-buy transition-fast" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Opened At</label>
+                <input type="datetime-local" value={ehOpenedAt} onChange={e => setEhOpenedAt(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md text-text-primary focus:border-buy transition-fast" />
+              </div>
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">Closed At</label>
+                <input type="datetime-local" value={ehClosedAt} onChange={e => setEhClosedAt(e.target.value)} className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md text-text-primary focus:border-buy transition-fast" />
+              </div>
+            </div>
+
+            {(() => {
+              const p = ehPreviewPnl();
+              if (p == null) return null;
+              const delta = p - (editHist.profit || 0);
+              return (
+                <div className="flex items-center justify-between px-3 py-2 rounded-md bg-bg-tertiary/50 border border-border-primary text-xs">
+                  <span className="text-text-tertiary">New P&amp;L</span>
+                  <span className={cn('font-mono tabular-nums font-bold', p >= 0 ? 'text-success' : 'text-danger')}>{p >= 0 ? '+' : ''}{formatMoney(p)}</span>
+                  <span className="text-text-tertiary">Balance Δ</span>
+                  <span className={cn('font-mono tabular-nums font-bold', delta >= 0 ? 'text-success' : 'text-danger')}>{delta >= 0 ? '+' : ''}{formatMoney(delta)}</span>
+                </div>
+              );
+            })()}
+            <p className="text-[10px] text-text-tertiary leading-snug">
+              Preview P&amp;L is price×lots×contract; the backend books the exact cross-rate figure and moves the balance by the delta. No wallet entry is created — the trader sees only the updated trade.
+            </p>
+
+            <div>
+              <label className="block text-xxs text-text-tertiary mb-1">Reason</label>
+              <textarea value={ehReason} onChange={e => setEhReason(e.target.value)} rows={2} placeholder="Reason for editing..." className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary focus:border-buy transition-fast resize-none" />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setEditHist(null)} className="px-3 py-1.5 rounded-md text-xs font-medium text-text-secondary border border-border-primary hover:bg-bg-hover transition-fast">Cancel</button>
+              <button onClick={submitEditHistory} disabled={ehSaving} className="px-4 py-1.5 rounded-md text-xs font-medium bg-buy text-white hover:bg-buy-light disabled:opacity-50 transition-fast">
+                {ehSaving ? <Loader2 size={14} className="animate-spin" /> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Trade Detail Modal — read-only, opens on row click in History. */}
