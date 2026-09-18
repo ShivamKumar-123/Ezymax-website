@@ -132,18 +132,33 @@ class SLTPEngine:
 
                 triggered = None
 
+                # Trigger purely on side + level. SL and TP are already
+                # distinct fields, so the direction is unambiguous without
+                # comparing to the open price.
+                #
+                # The old code guarded each with `sl < open_price` /
+                # `tp > open_price`. That silently broke every stop moved into
+                # profit — a break-even or trailing SL sits ABOVE entry on a
+                # buy, so `sl < open_price` was false and the stop NEVER fired
+                # even as price fell back through it. set-time validation
+                # (trading_service.check_sltp_levels) deliberately validates
+                # against the CURRENT price, not the open, precisely to allow
+                # those stops — so the trigger side must match, or a level the
+                # platform accepts can never execute. It also guarantees a level
+                # is never already-through when set, so comparing by side alone
+                # here cannot fire one prematurely.
                 if pos.stop_loss:
                     sl = Decimal(str(pos.stop_loss))
-                    if side == "buy" and sl < pos.open_price and bid <= sl:
+                    if side == "buy" and bid <= sl:
                         triggered = "sl"
-                    elif side == "sell" and sl > pos.open_price and ask >= sl:
+                    elif side == "sell" and ask >= sl:
                         triggered = "sl"
 
                 if not triggered and pos.take_profit:
                     tp = Decimal(str(pos.take_profit))
-                    if side == "buy" and tp > pos.open_price and bid >= tp:
+                    if side == "buy" and bid >= tp:
                         triggered = "tp"
-                    elif side == "sell" and tp < pos.open_price and ask <= tp:
+                    elif side == "sell" and ask <= tp:
                         triggered = "tp"
 
                 if triggered:
