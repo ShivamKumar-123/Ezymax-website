@@ -13,11 +13,34 @@ import OnboardingTourLazy from '@/components/Onboarding/OnboardingTourLazy';
 import TopLoader from '@/components/TopLoader';
 import PWARegister from '@/components/PWARegister';
 
+const SHARE_DESCRIPTION =
+  'Trade CFDs while your funds stay in a smart contract you control — only open-trade margin is locked, the rest stays withdrawable.';
+
 export const metadata: Metadata = {
+  // Makes the relative share image below resolve to an absolute URL, which
+  // every social scraper requires.
+  metadataBase: new URL('https://trade.fxartha.com'),
   title: 'FXArtha',
   description: 'FXArtha — professional forex and CFD trading platform',
   applicationName: 'FXArtha',
   manifest: '/manifest.webmanifest',
+  // Without these, a shared link showed whatever image the scraper found first
+  // on the page.
+  openGraph: {
+    type: 'website',
+    siteName: 'FXArtha',
+    title: 'FXArtha — trade with your funds still yours',
+    description: SHARE_DESCRIPTION,
+    url: '/',
+    images: [{ url: '/open-graph.png', width: 1200, height: 630 }],
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FXArtha — trade with your funds still yours',
+    description: SHARE_DESCRIPTION,
+    images: ['/open-graph.png'],
+  },
   // Drives iOS "Add to Home Screen": standalone launch, app title, status bar.
   appleWebApp: {
     capable: true,
