@@ -22,14 +22,14 @@ interface Pdf {
 }
 
 const PDFS: Pdf[] = [
-  { id: 'p1', title: 'The Beginner Forex Handbook',          description: 'Pip basics, lot sizing, margin, leverage and your first 30 days.', pages: 42, size: '3.1 MB', category: 'Guides'   },
-  { id: 'p2', title: 'Position Sizing Playbook',             description: 'Position sizing, stop-loss placement, and the math behind the 1% rule.', pages: 28, size: '1.8 MB', category: 'Guides'   },
-  { id: 'p3', title: 'Advanced Price Action Patterns',       description: 'Breakouts, retests, double tops, head & shoulders — high-probability setups.', pages: 56, size: '5.4 MB', category: 'Guides'   },
-  { id: 'p4', title: 'Crypto Trading: 0 → Pro',              description: 'BTC market structure, alt rotation, on-chain signals, and tax basics.', pages: 78, size: '6.9 MB', category: 'E-books'  },
-  { id: 'p5', title: 'Algorithmic Trading 101',              description: 'Python basics, backtesting, paper trading, and going live with capital.', pages: 64, size: '4.7 MB', category: 'E-books'  },
-  { id: 'p6', title: 'Q1 2026 Forex Outlook',                description: 'USD strength scenarios, ECB rate path, and major currency cross views.', pages: 18, size: '1.2 MB', category: 'Reports'  },
-  { id: 'p7', title: 'Gold & Commodities Monthly Brief',     description: 'XAU/USD positioning, oil flows, and key macro events this month.',     pages: 14, size: '0.9 MB', category: 'Reports'  },
-  { id: 'p8', title: 'Index CFD Strategy Guide',             description: 'US30, NAS100, GER40 — when to trend-follow vs. mean-revert.',           pages: 36, size: '2.6 MB', category: 'Guides'   },
+  { id: 'p1', title: 'White-Label Launch Handbook',          description: 'How a branded platform goes from kickoff to live on your domain, step by step.', pages: 42, size: '3.1 MB', category: 'Guides'   },
+  { id: 'p2', title: 'Risk & Back-Office Setup Playbook',    description: 'Configuring account groups, leverage tiers, margin and stop-out rules before launch.', pages: 28, size: '1.8 MB', category: 'Guides'   },
+  { id: 'p3', title: 'Platform Feature Reference',           description: 'Terminal, charting, order types and watchlists — a reference to what the platform ships.', pages: 56, size: '5.4 MB', category: 'Guides'   },
+  { id: 'p4', title: 'Integrations Field Guide',             description: 'Payments, KYC/AML, liquidity bridges and CRM — how the platform connects to the providers you use.', pages: 78, size: '6.9 MB', category: 'E-books'  },
+  { id: 'p5', title: 'AI & Algorithmic Trading Overview',    description: 'Strategy builder, backtesting and live algo — the modules the platform can offer clients.', pages: 64, size: '4.7 MB', category: 'E-books'  },
+  { id: 'p6', title: 'Copy Trading & Managed Accounts',      description: 'How copy trading, MAM and PAMM modules are delivered and run by the operator.', pages: 18, size: '1.2 MB', category: 'Reports'  },
+  { id: 'p7', title: 'IB & Partner Management Brief',        description: 'The IB, referral and partner modules the platform ships for operators to run.', pages: 14, size: '0.9 MB', category: 'Reports'  },
+  { id: 'p8', title: 'Multi-Asset Coverage Guide',           description: 'The asset classes and instruments the platform can support for your clients.', pages: 36, size: '2.6 MB', category: 'Guides'   },
 ];
 
 const TABS: Array<'All' | Cat> = ['All', 'Guides', 'E-books', 'Reports'];
@@ -45,7 +45,7 @@ export default function AcademyPdfsPage() {
       <PageHero
         kicker={`${BRAND_NAME} Academy`}
         title="Downloadable PDFs"
-        lead="Downloadable guides, e-books, and quarterly research — read offline, refer back any time."
+        lead="Downloadable guides, e-books, and reports on building and running a white-label trading platform — read offline, refer back any time."
         primary={{ label: 'Browse the Library', href: '#pdfs' }}
       />
 
@@ -165,9 +165,9 @@ export default function AcademyPdfsPage() {
       </Section>
 
       <CtaBanner
-        title="Read it, then trade it"
-        lead={`Open a ${BRAND_NAME} account and apply the playbooks on a live or demo account.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the platform in action"
+        lead={`Book a demo and see how ${BRAND_NAME} builds these features into your own branded platform.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Read the Academy Blog', href: '/academy/blogs' }}
       />
     </main>

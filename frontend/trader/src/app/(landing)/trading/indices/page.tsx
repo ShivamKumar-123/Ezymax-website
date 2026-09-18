@@ -30,10 +30,10 @@ export default function IndicesPage() {
     <main>
       <PageHero
         kicker="Indices"
-        title={"Trade the World's Top Indices"}
-        lead="Get exposure to US500, UK100, GER40 and more with low margin requirements."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Explore All Markets', href: '/markets' }}
+        title={'Indices support for your platform'}
+        lead="Give your clients exposure to US500, UK100, GER40 and more — index support built into the platform we deliver under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Explore market coverage', href: '/markets' }}
       />
 
       <Section raised>
@@ -64,7 +64,7 @@ export default function IndicesPage() {
         <div className="flex flex-col gap-4 mx-auto max-w-3xl mt-14 text-center">
           <h2 className="mk-h2">What are Index CFDs?</h2>
           <p className="mk-lead">
-            {`Index trading allows you to speculate on the performance of entire markets or sectors without buying individual stocks. Trade popular indices like the S&P 500, NASDAQ 100, FTSE 100, and DAX 40 with ${BRAND_NAME}. Benefit from lower margin requirements, extended trading hours, and the ability to go long or short on market movements.`}
+            {`Index trading lets clients speculate on the performance of entire markets or sectors without buying individual stocks. The ${BRAND_NAME} platform supports popular indices like the S&P 500, NASDAQ 100, FTSE 100 and DAX 40, with lower margin requirements, extended trading hours and the ability to go long or short on market movements — all under your brand.`}
           </p>
         </div>
       </Section>
@@ -113,7 +113,7 @@ export default function IndicesPage() {
       </Section>
 
       <Section raised>
-        <SectionHeading kicker="Why Trade Here" title={`Index Trading with ${BRAND_NAME}`} />
+        <SectionHeading kicker="Platform capability" title={`Indices on the ${BRAND_NAME} platform`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
@@ -121,27 +121,27 @@ export default function IndicesPage() {
             {
               icon: Globe,
               title: 'Global Market Access',
-              body: 'Trade major indices from the US, Europe, Asia, and Australia all from one platform.',
+              body: 'Clients reach major indices from the US, Europe, Asia and Australia, all from one platform.',
             },
             {
               icon: TrendingUp,
               title: 'Low Margin Requirements',
-              body: 'Access large market positions with competitive margin rates and flexible leverage up to 1:200.',
+              body: 'Support for large positions with configurable margin rates and flexible leverage up to 1:200.',
             },
             {
               icon: Clock,
               title: 'Extended Trading Hours',
-              body: 'Trade indices nearly 24/7 with access to both cash and futures contracts.',
+              body: 'Clients trade indices nearly around the clock, with access to both cash and futures contracts.',
             },
           ]}
         />
       </Section>
 
       <CtaBanner
-        title={"Trade the World's Top Indices"}
-        lead={`Open a ${BRAND_NAME} account and get exposure to the major US, European, and Asian indices.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare Account Types', href: '/account-types' }}
+        title={'Add indices to your platform'}
+        lead={`Book a demo and see how the ${BRAND_NAME} platform supports the major US, European and Asian indices under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
     </main>
   );

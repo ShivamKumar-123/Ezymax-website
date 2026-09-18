@@ -24,9 +24,9 @@ export function Rewards() {
   return (
     <Section raised>
       <SectionHeading
-        kicker="Rewards"
-        title="Earn more as you trade"
-        lead="Earn commissions by introducing other traders to the platform."
+        kicker="White label"
+        title="Launch under your own brand"
+        lead="A fully branded platform on your domain, delivered fast and supported after launch."
       />
 
       <div
@@ -81,7 +81,7 @@ export function Rewards() {
         style={{ gap: 'var(--mk-space-3)', marginTop: 'var(--mk-space-7)' }}
       >
         <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Start Trading</Link>
-        <Link href="/accounts/demo" className="mk-btn mk-btn--ghost">Open a demo account</Link>
+        <Link href="/how-it-works" className="mk-btn mk-btn--ghost">See how it works</Link>
       </div>
     </Section>
   );

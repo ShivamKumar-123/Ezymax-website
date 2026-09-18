@@ -213,18 +213,12 @@ const nextConfig = {
    * page that now answers their question. Permanent, so search engines drop
    * the old URLs instead of keeping them indexed against us. */
   async redirects() {
-    const gone = [
-      '/markets', '/cfds', '/currency-pairs', '/precious-metals',
-      '/demo-account', '/trading/overview', '/trading/forex',
-      '/trading/crypto', '/trading/indices', '/trading/commodities',
-      '/accounts/standard', '/accounts/pro', '/accounts/demo',
-      '/company/why-swisscresta',
-    ];
-    return gone.map((source) => ({
-      source,
-      destination: '/platforms',
-      permanent: true,
-    }));
+    /* The earlier SetupFX pass retired the broker marketing routes and
+     * redirected them to /platforms. Those routes are now live pages again
+     * (the full site was rebuilt on the new UI, with SetupFX content), and
+     * /platforms is not a page, so redirecting them would break the site.
+     * Nothing to redirect. */
+    return [];
   },
 };
 

@@ -10,13 +10,13 @@ import { Section, SectionHeading, PageHero, FeatureGrid, CtaBanner } from '@/mar
 
 const FEATURES = [
   'Priority 24/7 support',
-  'Raw spreads from 0.0 pips',
-  'Free VPS hosting',
-  'Dedicated account manager',
+  'Raw-spread pricing configuration',
+  'VPS hosting support',
+  'Dedicated account manager tooling',
   'Advanced trading tools',
-  'Institutional-grade execution',
-  'Premium market research',
-  'Exclusive trading signals',
+  'Institutional-grade execution routing',
+  'Market research module',
+  'Trading signals module',
 ];
 
 const SPECS = [
@@ -30,11 +30,11 @@ export default function ProAccountPage() {
   return (
     <main>
       <PageHero
-        kicker="For Experienced & Professional Traders"
+        kicker="A premium account tier"
         title="Pro Account"
-        lead="Experience professional-grade trading with raw spreads, priority support, and exclusive benefits designed for serious traders."
-        primary={{ label: 'Open Pro Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare All Accounts', href: '/account-types' }}
+        lead="The premium tier your desk can offer power users — raw spreads, priority support and advanced tooling, all configurable in the platform we build under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
 
       <Section raised>
@@ -84,28 +84,28 @@ export default function ProAccountPage() {
           items={[
             {
               icon: Crown,
-              title: 'Dedicated Manager',
-              body: 'Get a personal account manager who understands your trading needs and provides tailored support.',
+              title: 'Dedicated Manager Tooling',
+              body: 'Built-in tools so your desk can give top clients a dedicated account manager and tailored support.',
             },
             {
               icon: Monitor,
-              title: 'Free VPS Hosting',
-              body: 'Run your Expert Advisors 24/7 with our complimentary VPS hosting service.',
+              title: 'VPS Hosting Support',
+              body: 'Lets clients run Expert Advisors 24/7 with VPS hosting the platform supports.',
             },
             {
               icon: Zap,
               title: 'Raw Spreads',
-              body: 'Access institutional-grade pricing with spreads from 0.0 pips on major pairs.',
+              body: 'Wire in institutional-grade pricing with raw spreads on major pairs, configured to your liquidity.',
             },
           ]}
         />
       </Section>
 
       <CtaBanner
-        title="Elevate Your Trading"
-        lead="Join the elite. Open a Pro Account and experience professional-grade trading."
-        primary={{ label: 'Open Pro Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare All Accounts', href: '/account-types' }}
+        title="Offer a Pro tier under your brand"
+        lead="Configure a professional-grade Pro tier in the platform we build and launch it to your clients under your own brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
     </main>
   );

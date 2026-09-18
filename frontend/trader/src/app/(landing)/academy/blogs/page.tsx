@@ -22,17 +22,17 @@ interface Post {
 }
 
 const POSTS: Post[] = [
-  { id: 'b1', title: 'Why 2026 Is the Year of Range Trading on EUR/USD', excerpt: 'Central bank divergence has narrowed. Here is what mean reversion looks like at the end of a hiking cycle.', author: 'Daniel R.', date: 'Mar 18, 2026', category: 'Forex',     featured: true },
-  { id: 'b2', title: 'A Beginner Guide to Choosing Your First Trading Account', excerpt: 'Standard vs ECN, minimum deposits, and what spread actually costs you per round-trip.',                       author: 'Priya N.',  date: 'Mar 15, 2026', category: 'Guides'   },
-  { id: 'b3', title: 'On-Chain Indicators That Actually Predict BTC Tops',     excerpt: 'MVRV, SOPR, miner outflows — separating the signal from the noise on the most-watched cryptocurrency.',         author: 'James L.',  date: 'Mar 12, 2026', category: 'Crypto'   },
-  { id: 'b4', title: 'Three Mistakes Every Funded Trader Makes in Week One',   excerpt: 'Position sizing, news avoidance, and journaling — the boring stuff that decides who keeps the account.',         author: 'Sarah K.',  date: 'Mar 09, 2026', category: 'Strategy' },
-  { id: 'b5', title: 'How to Read a TradingView Heat Map Properly',             excerpt: 'Sector flows, relative strength, and a quick screening method that takes under five minutes a day.',              author: 'Liam T.',   date: 'Mar 06, 2026', category: 'Tools'    },
-  { id: 'b6', title: 'Hedging With Gold When the Dollar Wobbles',               excerpt: 'XAU/USD positioning against DXY, real yields, and why central banks keep buying.',                                author: 'Sophia M.', date: 'Mar 03, 2026', category: 'Commodities' },
-  { id: 'b7', title: 'Stop-Loss Hunting Is Real — Here Is How to Avoid It',     excerpt: 'Why your protective stop keeps getting tagged before the move resumes, and what to do about it.',                author: 'Michael R.',date: 'Feb 28, 2026', category: 'Strategy' },
+  { id: 'b1', title: 'Your Brand, Our Engine: How a White-Label Launch Works', excerpt: 'From kickoff to a branded platform live on your domain — what delivery looks like, and why it takes weeks not months.', author: 'Daniel R.', date: 'Mar 18, 2026', category: 'Platform',     featured: true },
+  { id: 'b2', title: 'A Buyer Guide to Choosing a Trading Platform Vendor',     excerpt: 'Built in-house vs. resold template, delivery time, and what post-launch support should actually cover.',                author: 'Priya N.',  date: 'Mar 15, 2026', category: 'Guides'       },
+  { id: 'b3', title: 'Wiring In Payments, KYC and Liquidity',                   excerpt: 'How platform integrations connect the providers an operator already works with — payments, KYC/AML, and liquidity bridges.', author: 'James L.',  date: 'Mar 12, 2026', category: 'Integrations' },
+  { id: 'b4', title: 'Three Things to Configure Before You Onboard Clients',    excerpt: 'Account groups, risk parameters, and reporting — the back-office setup that makes launch day smooth.',                    author: 'Sarah K.',  date: 'Mar 09, 2026', category: 'Product'      },
+  { id: 'b5', title: 'Inside the Admin Back Office',                            excerpt: 'Client management, risk controls, and reporting — a tour of the console operators run day to day.',                       author: 'Liam T.',   date: 'Mar 06, 2026', category: 'Back Office'   },
+  { id: 'b6', title: 'Copy Trading, MAM and PAMM Explained',                    excerpt: 'The managed-account and copy-trading modules the platform ships, and how operators put them in front of clients.',       author: 'Sophia M.', date: 'Mar 03, 2026', category: 'Copy Trading'  },
+  { id: 'b7', title: 'Shipping Mobile, Web and Desktop From One Platform',      excerpt: 'How a single multi-asset platform reaches clients on every device without maintaining three separate builds.',           author: 'Michael R.',date: 'Feb 28, 2026', category: 'Product'      },
 ];
 
 const PAGE_SIZE = 4;
-const CATEGORIES = ['Forex', 'Crypto', 'Strategy', 'Tools', 'Commodities', 'Guides'] as const;
+const CATEGORIES = ['Platform', 'Integrations', 'Product', 'Back Office', 'Copy Trading', 'Guides'] as const;
 
 export default function AcademyBlogsPage() {
   const [search, setSearch] = useState('');
@@ -65,7 +65,7 @@ export default function AcademyBlogsPage() {
       <PageHero
         kicker={`${BRAND_NAME} Academy`}
         title="Academy Blog"
-        lead="Market insights, strategy breakdowns, and platform tips from our trading desk."
+        lead="Guides, delivery notes, and product deep-dives on building white-label trading technology."
       />
 
       <Section raised>
@@ -254,7 +254,7 @@ export default function AcademyBlogsPage() {
             >
               <h3 className="mk-kicker" style={{ color: 'var(--mk-text-faint)' }}>Weekly Newsletter</h3>
               <p className="mk-body mt-2 mb-4" style={{ fontSize: 'var(--mk-text-xs)' }}>
-                One email every Friday. Trade ideas, market recap, no fluff.
+                One email every Friday. Product updates, delivery notes, no fluff.
               </p>
               <label className="block">
                 <span className="sr-only">Email address</span>
@@ -279,9 +279,9 @@ export default function AcademyBlogsPage() {
       </Section>
 
       <CtaBanner
-        title="Learn it, then trade it"
-        lead={`Open a ${BRAND_NAME} account and put the desk's research to work.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the platform in action"
+        lead={`Book a demo and see how ${BRAND_NAME} builds these features into your own branded platform.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Download the Guides', href: '/academy/pdfs' }}
       />
     </main>

@@ -20,7 +20,7 @@ import { TRADER_PATHS } from '../data';
 export function TraderPaths() {
   return (
     <Section raised>
-      <SectionHeading title="Everything you need to trade the markets" />
+      <SectionHeading title="Everything a trading business needs" />
 
       <div
         className="grid grid-cols-1 md:grid-cols-2"

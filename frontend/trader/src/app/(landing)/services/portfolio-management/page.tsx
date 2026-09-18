@@ -15,7 +15,7 @@ import { BRAND_NAME } from '@/lib/brand';
  * verbatim; the investor quote band is reused as-is.
  */
 
-const SIGNUP_HREF = '/auth/register';
+const SIGNUP_HREF = '/company/contact';
 
 const MAM_POINTS = [
   'Best for: investors who want a hands-off managed account',
@@ -47,10 +47,10 @@ export default function PortfolioManagementPage() {
   return (
     <main>
       <PageHero
-        kicker="Managed Accounts"
-        title="Portfolio Management"
-        lead="Professional asset allocation managed by verified strategists. Choose MAM for a fully managed account, or PAMM for proportional exposure to a master strategy."
-        primary={{ label: 'Open Account', href: SIGNUP_HREF }}
+        kicker="Managed-Account Tooling"
+        title="Portfolio-Management Tooling"
+        lead="MAM and PAMM tooling built into the platform — let approved strategists on your brokerage manage client capital by lot allocation or pooled equity, with the reporting and controls handled for you."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
         secondary={{ label: 'Compare MAM & PAMM', href: '#mam-pam' }}
       />
 
@@ -59,7 +59,7 @@ export default function PortfolioManagementPage() {
         <SectionHeading
           kicker="Two Allocation Models"
           title="MAM vs PAMM"
-          lead="Same expert managers, two ways to participate. Pick the model that fits your capital and control preferences."
+          lead="Two allocation models, one toolset. Give the strategists on your platform the model that fits your clients' capital and control preferences."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-12">
@@ -86,8 +86,9 @@ export default function PortfolioManagementPage() {
               </div>
             </div>
             <p className="mk-body">
-              A master manager trades a block account; trades are mirrored to your individual sub-account by
-              lot allocation. You retain full ownership of your account — deposit, withdraw, or close any time.
+              A master manager trades a block account, and trades are mirrored to each client&apos;s sub-account by
+              lot allocation. The module enforces trade-only permissions, so managers can place trades but never
+              initiate withdrawals.
             </p>
             <ul className="flex flex-col gap-2.5">
               {MAM_POINTS.map((b) => (
@@ -122,8 +123,9 @@ export default function PortfolioManagementPage() {
               </div>
             </div>
             <p className="mk-body">
-              Capital is pooled with other investors into a master strategy; gains and losses are credited to
-              your sub-account proportionally to your equity share. Simpler operations, lower entry minimum.
+              Client capital is pooled into a master strategy, and gains and losses are credited to each
+              sub-account in proportion to its equity share. Simpler operations, lower entry minimum — all
+              tracked by the module.
             </p>
             <ul className="flex flex-col gap-2.5">
               {PAMM_POINTS.map((b) => (
@@ -139,7 +141,7 @@ export default function PortfolioManagementPage() {
 
       {/* Investor quote — Warren Buffett "make money while you sleep" */}
       <QuoteSection
-        eyebrow="Why Managed Accounts"
+        eyebrow="Why Offer Managed Accounts"
         quote={
           <>
             &ldquo;If you don&rsquo;t find a way to{' '}
@@ -154,7 +156,7 @@ export default function PortfolioManagementPage() {
         <SectionHeading
           kicker="Fees"
           title="Transparent Fees"
-          lead="No hidden costs. Performance-only fees with a high-water mark — you only pay when your account hits a new equity peak."
+          lead="Performance-only fee logic with a high-water mark is built in — fees apply only when an account reaches a new equity peak. The example rates below are yours to configure."
         />
         <div className="overflow-x-auto mt-12">
           <div
@@ -249,17 +251,17 @@ export default function PortfolioManagementPage() {
 
       {/* Benefits grid */}
       <Section>
-        <SectionHeading kicker="Benefits" title="Why Choose Managed Portfolios" />
+        <SectionHeading kicker="Benefits" title="What the Portfolio Module Handles" />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: Award,       title: 'Verified Track Record', body: 'Every manager publishes audited live performance for at least 24 months before being listed.' },
-            { icon: ShieldCheck, title: 'Segregated Funds',      body: 'Your capital stays in your own sub-account. Managers can trade — they cannot withdraw.' },
-            { icon: Layers,      title: 'Multi-Strategy Mix',    body: 'Allocate across several managers to diversify across style, asset class, and volatility regime.' },
-            { icon: BarChart3,   title: 'Daily NAV & Reports',   body: 'Track equity, drawdown, fees, and attribution in real time. Export to CSV for your accountant.' },
-            { icon: Headphones,  title: 'Dedicated Onboarding',  body: 'A relationship manager walks you through manager selection, risk profiling, and allocation.' },
-            { icon: Target,      title: 'Performance-Aligned',   body: 'Managers earn only on profit above prior peak. No fee on flat or losing months — period.' },
+            { icon: Award,       title: 'Manager Vetting Controls', body: 'Set listing requirements — such as a minimum live track record — before a strategist can be offered to clients.' },
+            { icon: ShieldCheck, title: 'Trade-Only Permissions',   body: 'The module enforces role-based access — managers can place trades but can never initiate withdrawals or move client money.' },
+            { icon: Layers,      title: 'Multi-Strategy Allocation', body: 'Clients can allocate across several managers to diversify by style, asset class, and volatility regime.' },
+            { icon: BarChart3,   title: 'Daily NAV & Reporting',    body: 'Equity, drawdown, fees, and attribution tracked in real time, with CSV export for reconciliation.' },
+            { icon: Headphones,  title: 'Guided Onboarding Flows',  body: 'Built-in flows walk clients through manager selection, risk profiling, and allocation.' },
+            { icon: Target,      title: 'Performance-Aligned Fees', body: 'Managers earn only on profit above the prior peak — no fee on flat or losing periods.' },
           ]}
         />
       </Section>
@@ -269,10 +271,10 @@ export default function PortfolioManagementPage() {
         <SectionHeading kicker="Getting Started" title="How to Start" />
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
           {[
-            { n: '01', icon: Wallet,    title: 'Fund Your Account',  body: 'Deposit via crypto, wire, or card. Minimum $1,000 for PAMM, $5,000 for MAM.' },
-            { n: '02', icon: Users,     title: 'Choose a Manager',   body: 'Filter by style, AUM, drawdown, and CAGR. Read the prospectus, then allocate.' },
-            { n: '03', icon: FileText,  title: 'Sign the Agreement', body: 'E-sign the limited-power-of-attorney granting trading-only rights to the manager.' },
-            { n: '04', icon: BarChart3, title: 'Watch & Withdraw',   body: 'Track performance daily. Withdraw any time — anytime for MAM, monthly for PAMM.' },
+            { n: '01', icon: Wallet,    title: 'Client Funds Their Account', body: 'Clients deposit through the payment methods you enable. Example minimums: $1,000 for PAMM, $5,000 for MAM.' },
+            { n: '02', icon: Users,     title: 'Choose a Manager',   body: 'Clients filter managers by style, AUM, and drawdown, review the prospectus, then allocate.' },
+            { n: '03', icon: FileText,  title: 'Sign the Agreement', body: 'Clients e-sign a limited power of attorney granting trading-only rights to the manager.' },
+            { n: '04', icon: BarChart3, title: 'Track & Withdraw',   body: 'Clients track performance daily and withdraw on the schedule you set — anytime for MAM, monthly for PAMM.' },
           ].map(({ n, icon: Icon, title, body }) => (
             <li key={n} className="mk-card mk-card--hover flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -303,20 +305,20 @@ export default function PortfolioManagementPage() {
           <FaqAccordion
             items={[
               {
-                q: 'Can the manager withdraw my funds?',
-                a: <>No. The Limited Power of Attorney grants trading rights only. Deposits and withdrawals can only be initiated by you — managers can place trades but never move money out of your account.</>,
+                q: 'Can a manager withdraw client funds?',
+                a: <>No. The module grants managers trading rights only, through a limited power of attorney. Deposits and withdrawals can only be initiated by the client — managers can place trades but never move money.</>,
               },
               {
-                q: 'What happens if my manager underperforms?',
-                a: <>You can re-allocate at any time. PAMM allows monthly re-allocation; MAM is anytime. There are no penalties for changing or removing a manager.</>,
+                q: 'What if a manager underperforms?',
+                a: <>Clients can re-allocate at any time — monthly for PAMM, anytime for MAM. The module applies no penalty for changing or removing a manager.</>,
               },
               {
                 q: 'How is the performance fee calculated?',
-                a: <>On profits above the high-water mark only. If your account is at a new equity peak, the fee is charged on the gain above the prior peak. Drawdown periods carry no fee.</>,
+                a: <>On profits above the high-water mark only. When an account reaches a new equity peak, the fee applies to the gain above the prior peak. Drawdown periods carry no fee.</>,
               },
               {
-                q: 'Is my capital insured?',
-                a: <>Funds in segregated client accounts are held with tier-one banking partners. Each position is also covered by on-chain trade insurance up to the policy limit.</>,
+                q: 'How does the module protect client capital?',
+                a: <>Through software controls, not custody. Managers get trade-only permissions and can never withdraw, and managed accounts can be paired with the on-chain trade-insurance module for added cover.</>,
               },
             ]}
           />
@@ -324,9 +326,9 @@ export default function PortfolioManagementPage() {
       </Section>
 
       <CtaBanner
-        title="Get a Managed Account"
-        lead={`Open your ${BRAND_NAME} account, choose MAM or PAMM, and allocate to a verified manager in under 24 hours.`}
-        primary={{ label: 'Open Account', href: SIGNUP_HREF }}
+        title="See the Portfolio Module"
+        lead={`Book a demo to see how MAM and PAMM are configured, controlled, and reported inside the ${BRAND_NAME} platform.`}
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
       />
     </main>
   );

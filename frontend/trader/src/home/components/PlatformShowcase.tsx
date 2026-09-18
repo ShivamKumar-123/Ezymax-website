@@ -49,7 +49,7 @@ export function PlatformShowcase() {
           className="flex flex-col"
           style={{ gap: 'var(--mk-space-5)' }}
         >
-          <h2 className="mk-h2">Trade on a platform built for currencies</h2>
+          <h2 className="mk-h2">One platform, every surface</h2>
 
           <ul className="flex flex-col" style={{ gap: 'var(--mk-space-3)' }}>
             {PLATFORM_FEATURES.map((feature) => (

@@ -20,17 +20,17 @@ const PRINCIPLES = [
   {
     icon: Crosshair,
     title: 'Transparency',
-    body: 'Spreads, commission and required margin are shown on the order ticket before you confirm.',
+    body: 'Scope, timeline and pricing are agreed before any work starts — no surprises once the platform is under way.',
   },
   {
     icon: RefreshCw,
     title: 'Reliability',
-    body: 'Orders are held server-side and keep working through volatile sessions, whether or not you are signed in.',
+    body: 'The platforms we build run server-side and keep working through volatile sessions, so your clients never miss a fill.',
   },
   {
     icon: Sparkles,
     title: 'Focus',
-    body: 'One platform, one account, every device — built for currency trading rather than bolted together.',
+    body: 'One engine across web, mobile and desktop — built in-house for trading, not a resold template.',
   },
 ];
 
@@ -42,9 +42,9 @@ const PRINCIPLES = [
  */
 /* Sources are 1254×1254 — square, exactly the ratio the slot reserved. */
 const TEAM = [
-  { role: 'Trading Operations', body: 'Execution, pricing and market coverage.',           image: '/images/about_card1.png' },
-  { role: 'Client Support',     body: 'Account opening, funding and day-to-day questions.', image: '/images/about_card2.png' },
-  { role: 'Technology',         body: 'Platform, infrastructure and market data.',          image: '/images/about_card3.png' },
+  { role: 'Platform Engineering', body: 'Web, mobile and desktop terminals, plus the admin back office.', image: '/images/about_card1.png' },
+  { role: 'Delivery & Support',   body: 'Integrations, onboarding and support after you go live.',        image: '/images/about_card2.png' },
+  { role: 'Technology',           body: 'Infrastructure, market data and platform reliability.',          image: '/images/about_card3.png' },
 ];
 
 export default function AboutUsPage() {
@@ -53,32 +53,38 @@ export default function AboutUsPage() {
       {/* ── Hero: inset dark card with the title over it ──────────────── */}
       <section style={{ paddingTop: 'clamp(5.5rem, 4rem + 5vw, 7.5rem)' }}>
         <div className="mk-container">
-          {/* The banner alone — no overlaid title. The artwork already
-              carries the bullza wordmark across the middle of the frame,
-              so a headline on top of it read as the brand stated twice.
-              The scrim that used to sit here existed only to keep that
-              headline legible, so it went with it.
-
-              The <h1> stays for screen readers and search engines: a page
-              with no level-one heading is a real accessibility defect, and
-              this is the only h1 on the page — everything below is h2. */}
-          <h1 className="sr-only">About {BRAND_NAME}</h1>
+          {/* Text hero on a dark inset card. (The previous version used a
+              pre-baked banner image that carried another brand's wordmark,
+              so it was replaced with a real, on-brand headline.) */}
           <div
-            className="relative overflow-hidden"
+            className="relative overflow-hidden flex flex-col items-center justify-center text-center"
             style={{
               background: 'var(--mk-ink)',
               borderRadius: 'var(--mk-radius-lg)',
               minHeight: 'clamp(18rem, 12rem + 22vw, 30rem)',
+              padding: 'clamp(2rem, 1rem + 5vw, 5rem)',
             }}
           >
-            <Image
-              src="/images/about banner.png"
-              alt={`${BRAND_NAME} brand banner`}
-              fill
-              priority
-              sizes="(max-width: 1360px) 100vw, 1280px"
-              className="object-cover"
-            />
+            <span
+              className="mk-badge"
+              style={{ color: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.22)' }}
+            >
+              Who we are
+            </span>
+            <h1
+              className="mk-display"
+              style={{ color: '#ffffff', marginTop: '1rem', maxWidth: '18ch' }}
+            >
+              An in-house team. Not a reseller.
+            </h1>
+            <p
+              className="mk-lead"
+              style={{ color: 'rgba(255,255,255,0.7)', marginTop: '1rem', maxWidth: '52ch' }}
+            >
+              {BRAND_NAME} is a software development company. We build and license
+              trading platforms, back offices and risk engines for brokers and prop
+              firms — delivered white-label, under your own brand.
+            </p>
           </div>
         </div>
       </section>
@@ -102,9 +108,9 @@ export default function AboutUsPage() {
             }}
           >
             <span style={{ color: 'var(--mk-text)' }}>{BRAND_NAME} is built on a simple idea:</span>{' '}
-            trading should feel clear, not complicated.{' '}
+            your brand, our engine.{' '}
             <span style={{ color: 'var(--mk-text)' }}>
-              We focus on execution, pricing and the conditions that decide a trade.
+              We build and license the trading technology; you run the brokerage under your own licence.
             </span>
           </p>
 
@@ -144,7 +150,7 @@ export default function AboutUsPage() {
             className="mk-h2"
             style={{ marginTop: 'var(--mk-space-5)', maxWidth: '20ch' }}
           >
-            The people behind your trading environment
+            The people behind your platform
           </h2>
 
           <div
@@ -178,9 +184,9 @@ export default function AboutUsPage() {
       </section>
 
       <CtaBanner
-        title="Trade Global Markets with Confidence"
-        lead="Open an account and access the currency markets on a platform built for professional trading."
-        primary={{ label: 'Start Trading', href: '/auth/register' }}
+        title="Your brand, our engine"
+        lead="Book a demo and see the white-label trading platform we can launch under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

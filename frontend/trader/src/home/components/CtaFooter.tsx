@@ -104,8 +104,8 @@ export function CtaFooter() {
                   A footer blurb is a signature, not an About page — the
                   detail it repeated already lives on /company/about. */}
               <p className="max-w-xs font-body text-sm leading-relaxed text-white/60">
-                A forex and CFD trading platform built for serious traders — fast
-                execution, competitive spreads, transparent pricing.
+                A software development company building white-label trading
+                platforms, back offices and risk engines for brokers and prop firms.
               </p>
               <div className="mt-2 flex items-center gap-3">
                 {[
@@ -160,12 +160,9 @@ export function CtaFooter() {
             className="flex flex-wrap gap-x-6 gap-y-2 border-t border-white/12 pt-8"
           >
             {[
-              { name: 'Privacy Policy',              href: '/privacy' },
-              { name: 'Terms & Conditions',          href: '/terms' },
-              { name: 'Deposit & withdrawal Policy', href: '/deposit-withdrawal' },
-              { name: 'Restricted Countries',        href: '/restricted-countries' },
-              { name: 'Risk Warning',                href: '/risk-warning' },
-              { name: 'Risk Disclosure',             href: '/risk' },
+              { name: 'Privacy Policy',     href: '/privacy' },
+              { name: 'Terms of Service',   href: '/terms' },
+              { name: 'Disclaimer',         href: '/risk' },
             ].map((doc) => (
               <a
                 key={doc.name}
@@ -191,7 +188,7 @@ export function CtaFooter() {
                 <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="transition-colors hover:text-white/80">
                   {BRAND_SUPPORT_EMAIL}
                 </a>
-                {' · '}18 Young St, Edinburgh EH2 4JB, Scotland
+                {' · '}Software for trading businesses
               </span>
             </div>
             <p className="max-w-4xl font-body text-[11px] leading-relaxed text-white/40">

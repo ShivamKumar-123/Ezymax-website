@@ -25,7 +25,7 @@ const PORTAL_FEATURES = [
   'Custom referral links',
   'Detailed reporting & analytics',
   'Marketing resource library',
-  'Priority support channel',
+  'Built-in support channel',
 ];
 
 export default function IBManagementPage() {
@@ -33,28 +33,28 @@ export default function IBManagementPage() {
     <main>
       <PageHero
         kicker="Partners"
-        title="IB Management Program"
-        lead={`Partner with ${BRAND_NAME} and earn competitive commissions by introducing new clients. Build your brokerage business with our support.`}
-        primary={{ label: 'Become an IB', href: '/company/contact' }}
-        secondary={{ label: 'Learn More', href: '/accounts/demo' }}
+        title="IB & Partner Management"
+        lead={`An IB and partner-management module we build into your ${BRAND_NAME} platform. Onboard introducing brokers, track referrals, and automate payouts — under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
 
       <Section raised>
         <SectionHeading
-          kicker="Why Partner"
-          title="Why Partner With Us"
-          lead="Everything you need to build a successful introducing broker business."
+          kicker="Capabilities"
+          title="What the IB Module Delivers"
+          lead="Everything your operation needs to run an introducing-broker network."
         />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: DollarSign, title: 'Competitive Commissions', body: 'Earn up to $12 per lot with our tiered rebate structure. The more clients you refer, the higher your earnings.' },
-            { icon: Users,      title: 'Multi-Level Referrals',   body: 'Earn from sub-IBs under your network. Build a team and generate passive income from multiple levels.' },
-            { icon: BarChart2,  title: 'Real-Time Dashboard',     body: 'Track referrals, commissions, client activity, and payouts in real time through your dedicated IB portal.' },
-            { icon: Globe,      title: 'Marketing Materials',     body: 'Access banners, landing pages, tracking links, and promotional content to grow your client base.' },
-            { icon: Award,      title: 'Performance Bonuses',     body: 'Unlock bonus tiers based on monthly volume. Top-performing IBs receive additional rewards and incentives.' },
-            { icon: Headphones, title: 'Dedicated IB Manager',    body: 'Get a personal account manager to help you optimize your strategy, resolve issues, and scale your business.' },
+            { icon: DollarSign, title: 'Tiered Commissions',     body: 'Configure tiered rebate structures and set the rates your partners earn as their referred volume grows.' },
+            { icon: Users,      title: 'Multi-Level Referrals',   body: 'Support sub-IB networks. Partners build teams and earn across multiple levels, all tracked automatically.' },
+            { icon: BarChart2,  title: 'Real-Time Dashboard',     body: 'Partners track referrals, commissions, client activity, and payouts in real time through a dedicated IB portal.' },
+            { icon: Globe,      title: 'Marketing Materials',     body: 'Built-in banners, landing pages, tracking links, and promotional content for partners to grow their client base.' },
+            { icon: Award,      title: 'Performance Bonuses',     body: 'Bonus tiers based on monthly volume reward top-performing partners with configurable incentives.' },
+            { icon: Headphones, title: 'Account Manager Tools',   body: 'Assign account managers to partners inside the portal to help them optimize strategy, resolve issues, and scale.' },
           ]}
         />
       </Section>
@@ -88,10 +88,10 @@ export default function IBManagementPage() {
         <SectionHeading kicker="Onboarding" title="How to Get Started" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
           {[
-            { step: '01', title: 'Apply',            desc: 'Fill out the IB application form with your details.' },
-            { step: '02', title: 'Get Approved',     desc: 'Our team reviews and approves your application.' },
-            { step: '03', title: 'Share Your Link',  desc: 'Use your unique referral link to invite clients.' },
-            { step: '04', title: 'Earn Commissions', desc: 'Get paid for every trade your referred clients make.' },
+            { step: '01', title: 'Apply',            desc: 'Partners submit an application through your branded portal.' },
+            { step: '02', title: 'Get Approved',     desc: 'Your team reviews and approves applications in the admin console.' },
+            { step: '03', title: 'Share the Link',   desc: 'Approved partners share unique referral links to invite clients.' },
+            { step: '04', title: 'Earn Commissions', desc: 'Partners earn commissions on referred-client activity, with payouts automated.' },
           ].map((s) => (
             <article key={s.step} className="mk-card mk-card--hover text-center flex flex-col gap-3">
               <span
@@ -128,22 +128,22 @@ export default function IBManagementPage() {
               >
                 <TrendingUp size={28} />
               </span>
-              <h3 className="mk-h3">Unlimited Earning Potential</h3>
+              <h3 className="mk-h3">No Commission Caps</h3>
               <p className="mk-body">
-                No caps on commissions. The more clients you bring, the more you earn — every month,
-                for life.
+                Configure commissions with no ceiling in the module, so partners keep earning as
+                their networks grow.
               </p>
-              <Link href="/company/contact" className="mk-btn mk-btn--primary">Apply Now</Link>
+              <Link href="/company/contact" className="mk-btn mk-btn--primary">Book a demo</Link>
             </div>
           </div>
         </div>
       </Section>
 
       <CtaBanner
-        title="Build Your Brokerage Business"
-        lead={`Partner with ${BRAND_NAME} and earn competitive commissions by introducing new clients.`}
-        primary={{ label: 'Become an IB', href: '/company/contact' }}
-        secondary={{ label: 'Open Account', href: '/auth/register' }}
+        title="Run Your Own IB Network"
+        lead={`An IB and partner-management module, built into your ${BRAND_NAME} platform under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

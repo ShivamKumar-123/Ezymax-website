@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Education → Market News. Restyled onto the shared marketing design
- * system. The category filter logic and every line of copy are carried
- * over unchanged from the previous page.
+ * Platform Modules → News & Economic Calendar preview. Restyled onto the
+ * shared marketing design system. The category filter logic is carried
+ * over unchanged; the copy frames the page as a preview of the news module
+ * the platform can ship, shown with sample content.
  */
 import { useState } from 'react';
 import Link from 'next/link';
@@ -113,13 +114,13 @@ export default function MarketNewsPage() {
   return (
     <main>
       <PageHero
-        kicker="Education"
-        title="Market News"
-        lead="Stay updated with the latest market news and analysis from around the world."
+        kicker="Platform Modules"
+        title="News & Economic Calendar"
+        lead="A preview of the market-news and economic-calendar module the platform can offer your clients — shown here with sample content."
       />
 
       <Section raised>
-        <SectionHeading kicker="Headlines" title="What Moved the Markets" />
+        <SectionHeading kicker="Sample Feed" title="What the News Module Looks Like" />
 
         <div className="flex flex-wrap gap-3 justify-center mt-10">
           {CATEGORIES.map((category) => {
@@ -216,9 +217,9 @@ export default function MarketNewsPage() {
       </Section>
 
       <CtaBanner
-        title="Trade the news"
-        lead={`Open a ${BRAND_NAME} account and react to market-moving events as they land.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="Ship this module with your platform"
+        lead={`Book a demo and see how ${BRAND_NAME} wires a live news and economic-calendar feed into the platform you offer your clients.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Read the Blog', href: '/education/blog' }}
       />
     </main>

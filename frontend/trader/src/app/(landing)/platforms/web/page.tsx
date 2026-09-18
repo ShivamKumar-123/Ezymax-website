@@ -27,10 +27,10 @@ export default function WebPlatformPage() {
     <main>
       <PageHero
         kicker="Web Platform"
-        title={`${BRAND_NAME} Web Platform — Trade Instantly, Anywhere`}
-        lead="No download required. Launch the platform from any browser and start trading in seconds."
-        primary={{ label: 'Launch Platform', href: '/auth/register' }}
-        secondary={{ label: 'Try Demo Account', href: '/accounts/demo' }}
+        title={`The ${BRAND_NAME} Web Trading Platform — Browser-Based, White-Label`}
+        lead="A browser-based trading terminal we build for your brokerage. No downloads for your clients — they launch it from any browser, under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
 
       <Section raised>
@@ -39,10 +39,10 @@ export default function WebPlatformPage() {
           className="mt-12"
           columns={4}
           items={[
-            { icon: Globe,     title: 'Browser-Based Trading',  body: 'No downloads required. Access your account from any device with a web browser.' },
+            { icon: Globe,     title: 'Browser-Based Trading',  body: 'No downloads required. Your clients access their accounts from any device with a web browser.' },
             { icon: BarChart3, title: 'TradingView Integration', body: 'Full TradingView chart integration with 100+ indicators and drawing tools.' },
-            { icon: Zap,       title: 'One-Click Execution',    body: 'Execute trades instantly with our lightning-fast order execution system.' },
-            { icon: Bell,      title: 'Real-Time Alerts',       body: 'Set price alerts and get instant notifications on market movements.' },
+            { icon: Zap,       title: 'One-Click Execution',    body: 'A lightning-fast order execution engine, built into the platform.' },
+            { icon: Bell,      title: 'Real-Time Alerts',       body: 'Price alerts and instant notifications on market movements, built in.' },
           ]}
         />
       </Section>
@@ -53,9 +53,9 @@ export default function WebPlatformPage() {
             <span className="mk-kicker">Simplified</span>
             <h2 className="mk-h2">Professional Trading, Simplified</h2>
             <p className="mk-lead">
-              Our web platform combines powerful features with an intuitive interface. Whether
-              you&apos;re a beginner or experienced trader, you&apos;ll find everything you need to
-              succeed.
+              The web platform combines powerful features with an intuitive interface. Whether
+              your clients are new or experienced traders, they get everything they need — under
+              your brand.
             </p>
             <ul className="flex flex-col gap-2.5 mt-2">
               {HIGHLIGHTS.map((highlight) => (
@@ -89,11 +89,11 @@ export default function WebPlatformPage() {
             <div className="flex flex-col gap-4" style={{ padding: 'var(--mk-space-6)' }}>
               <h3 className="mk-h3">Access Anywhere</h3>
               <p className="mk-body">
-                Trade from your desktop, laptop, tablet, or smartphone. Your account syncs seamlessly
-                across all devices.
+                Your clients trade from desktop, laptop, tablet, or smartphone. Accounts sync
+                seamlessly across all devices.
               </p>
-              <Link href="/auth/register" className="mk-btn mk-btn--primary w-full">
-                Launch Web Platform
+              <Link href="/company/contact" className="mk-btn mk-btn--primary w-full">
+                Book a demo
               </Link>
             </div>
           </article>
@@ -101,10 +101,10 @@ export default function WebPlatformPage() {
       </Section>
 
       <CtaBanner
-        title="Start Trading in Seconds"
-        lead="No downloads, no installations. Just open your browser and start trading."
-        primary={{ label: 'Open Account Now', href: '/auth/register' }}
-        secondary={{ label: 'Try Demo Account', href: '/accounts/demo' }}
+        title="Launch Your Web Platform in Weeks"
+        lead="A browser-based terminal for your clients — no downloads, no installations — built and delivered under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

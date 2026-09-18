@@ -18,7 +18,7 @@ import { fontVariableClass } from '@/styles/fonts';
  */
 export const metadata: Metadata = {
   title: 'SwissCresta',
-  description: 'SwissCresta — professional forex and CFD trading platform',
+  description: 'SwissCresta — a software development company building white-label trading platforms, back offices and risk engines for brokers and prop firms.',
 };
 
 export const viewport: Viewport = {

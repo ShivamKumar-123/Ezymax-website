@@ -27,20 +27,20 @@ const SPECS = [
 ];
 
 const STEPS = [
-  { n: '1', title: 'Sign Up', body: 'Create your free demo account in seconds' },
-  { n: '2', title: 'Choose Platform', body: 'Select Web Platform or Copy Trading' },
-  { n: '3', title: 'Start Trading', body: 'Practice with $100,000 virtual funds' },
+  { n: '1', title: 'Client signs up', body: 'A client creates a free demo account in seconds' },
+  { n: '2', title: 'Choose platform', body: 'They pick Web Platform or Copy Trading' },
+  { n: '3', title: 'Start practising', body: 'They practise with $100,000 virtual funds' },
 ];
 
 export default function DemoAccountPage() {
   return (
     <main>
       <PageHero
-        kicker="Risk-Free Practice Account"
-        title="Practice Risk-Free with $100,000 Virtual Funds"
-        lead="Test your strategy on real market conditions without risking a cent. No credit card required."
-        primary={{ label: 'Open Demo Account Now', href: '/auth/register' }}
-        secondary={{ label: 'View Live Accounts', href: '/accounts/standard' }}
+        kicker="A risk-free demo tier"
+        title="Give clients a $100,000 virtual-funds demo tier"
+        lead="Let clients test strategies on live market conditions with virtual funds — a demo tier built into the platform we deliver under your brand. No credit card required."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View live tiers', href: '/accounts/standard' }}
       />
 
       <Section raised>
@@ -83,7 +83,7 @@ export default function DemoAccountPage() {
       </Section>
 
       <Section>
-        <SectionHeading kicker="Benefits" title="Why Use a Demo Account?" />
+        <SectionHeading kicker="Benefits" title="Why offer a demo tier?" />
         <FeatureGrid
           className="mt-12"
           columns={3}
@@ -91,24 +91,24 @@ export default function DemoAccountPage() {
             {
               icon: GraduationCap,
               title: 'Learn Risk-Free',
-              body: 'Practice trading strategies and test your skills without risking real money.',
+              body: 'Lets clients practise strategies and test their skills without risking real money.',
             },
             {
               icon: BarChart3,
               title: 'Real Market Conditions',
-              body: 'Experience live market prices and conditions identical to a real trading account.',
+              body: 'Live market prices and conditions identical to a funded account.',
             },
             {
               icon: RefreshCw,
               title: 'Unlimited Resets',
-              body: 'Reset your demo account anytime and start fresh with $100,000 virtual funds.',
+              body: 'Clients can reset the demo anytime and start fresh with $100,000 virtual funds.',
             },
           ]}
         />
       </Section>
 
       <Section raised>
-        <SectionHeading kicker="Getting Started" title="How to Get Started" />
+        <SectionHeading kicker="Getting Started" title="How clients get started" />
         <ol className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-12">
           {STEPS.map((s) => (
             <li key={s.n} className="mk-card mk-card--hover flex flex-col items-center text-center gap-3">
@@ -126,10 +126,10 @@ export default function DemoAccountPage() {
       </Section>
 
       <CtaBanner
-        title="Ready When You Are"
-        lead={'When you’re confident with your demo account, upgrade to a live account and start trading for real.'}
-        primary={{ label: 'Open Demo Account', href: '/auth/register' }}
-        secondary={{ label: 'View Live Accounts', href: '/accounts/standard' }}
+        title="See the platform for yourself"
+        lead={'Book a demo and see the demo tier and the live tiers running on the platform we build under your brand.'}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View live tiers', href: '/accounts/standard' }}
       />
     </main>
   );

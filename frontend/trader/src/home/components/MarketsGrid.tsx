@@ -23,14 +23,14 @@ export function MarketsGrid() {
     // as dead space.
     <Section id="markets" className="mk-section--tight-top">
       <SectionHeading
-        kicker="Markets"
-        title="Access global markets all in one account"
-        lead={`Trade major, minor and exotic currency pairs — plus indices, metals and digital assets — from a single ${BRAND_NAME} login.`}
+        kicker="What ships with it"
+        title="Everything a trading business runs on"
+        lead={`Liquidity routing, managed accounts and copy trading -- all administered from one back office, all shipped white-label under your brand.`}
       />
 
       <div className="mt-4 flex justify-center">
-        <Link href="/markets" className="mk-link">
-          View all markets
+        <Link href="/platforms/web" className="mk-link">
+          Explore platforms
           <ArrowUpRight size={15} />
         </Link>
       </div>

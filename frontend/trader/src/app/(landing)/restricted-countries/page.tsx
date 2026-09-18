@@ -27,39 +27,39 @@ const RESTRICTED = [
 const SECTIONS: { h: string; body: string; list?: string[]; trailing?: string }[] = [
   {
     h: '1. Overview',
-    body: `${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us") operates a regulated multi-asset trading platform. Due to local laws, sanctions regimes, regulatory requirements, and risk-management policies, our services are not available to citizens or residents of certain jurisdictions.`,
+    body: `${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us") is a software development company that builds and licenses trading technology to licensed operators. We assess every client engagement individually and comply with applicable export-control and sanctions laws. As a result, we do not provide software or services in connection with certain jurisdictions.`,
   },
   {
-    h: '2. Restricted Jurisdictions',
-    body: `${BRAND_NAME} does not provide services to citizens, residents, or persons located in the following jurisdictions:`,
+    h: '2. Sanctioned and High-Risk Jurisdictions',
+    body: `${BRAND_NAME} does not enter into software licensing or service engagements connected with jurisdictions subject to comprehensive sanctions or export restrictions, which currently include:`,
     list: RESTRICTED,
-    trailing: `The services of ${BRAND_NAME} are not intended for distribution to, or use by, any person in any country or jurisdiction where such distribution or use would be contrary to local law or regulation.`,
+    trailing: `${BRAND_NAME} software and services are not intended for supply to, or use by, any person or entity in any country or jurisdiction where such supply or use would be contrary to applicable law, regulation, or sanctions.`,
   },
   {
     h: '3. Client Responsibility',
-    body: `It is your responsibility to ensure that opening a trading account with ${BRAND_NAME} and using our services is lawful in the jurisdiction in which you are a citizen, resident, or physically located. By opening an account you confirm that you are not a citizen, resident, or person physically located in any restricted jurisdiction.`,
+    body: `It is the responsibility of each client to ensure that its licensing of ${BRAND_NAME} software, and the operation of any platform built with it, is lawful in every jurisdiction in which the client and its own customers are located. By engaging ${BRAND_NAME}, you confirm that you are not located in, and are not acting on behalf of any person in, a restricted jurisdiction.`,
   },
   {
     h: '4. Misrepresentation',
-    body: 'Any attempt to register an account from a restricted jurisdiction — including the use of a VPN, a false address, false identity documents, or any other method to misrepresent residency — constitutes a breach of these Terms and may result in:',
+    body: `Any attempt to obtain ${BRAND_NAME} software or services from a restricted jurisdiction — including through misrepresentation of location, identity, or ownership — constitutes a breach of these Terms and may result in:`,
     list: [
-      'Immediate account suspension or closure',
-      'Withholding of pending deposits, withdrawals, or balances pending compliance review',
+      'Immediate suspension or termination of access and licences',
+      'Suspension of any engagement pending a compliance review',
       'Reporting of activity to relevant authorities where required',
-      'Forfeiture of any bonuses, promotional credits, or referral commissions',
+      'Termination of any related agreements or commercial arrangements',
     ],
   },
   {
     h: '5. Updates to the Restricted List',
-    body: `${BRAND_NAME} reserves the right to add, remove, or modify the list of restricted jurisdictions at any time without prior notice. Updates will become effective immediately upon publication on the ${BRAND_NAME} website. Continued use of ${BRAND_NAME} services following any update constitutes acceptance of the revised list.`,
+    body: `${BRAND_NAME} reserves the right to add, remove, or modify the jurisdictions and restrictions described here at any time without prior notice. Updates will become effective immediately upon publication on the ${BRAND_NAME} website. Continued use of ${BRAND_NAME} services following any update constitutes acceptance of the revised terms.`,
   },
   {
     h: '6. Sanctions & Compliance',
-    body: `In addition to the country list above, ${BRAND_NAME} maintains AML and sanctions-screening procedures that may restrict, suspend, or terminate services for individuals or entities listed on any applicable sanctions list (including, without limitation, OFAC, UN, EU, and UK lists), regardless of country of residence.`,
+    body: `In addition to the jurisdictions above, ${BRAND_NAME} maintains sanctions-screening procedures that may restrict, suspend, or terminate engagements with individuals or entities listed on any applicable sanctions list (including, without limitation, OFAC, UN, EU, and UK lists), regardless of country of residence.`,
   },
   {
     h: '7. Contact',
-    body: `Questions about jurisdiction eligibility or sanctions compliance can be sent to ${BRAND_SUPPORT_EMAIL}. We aim to respond within five business days.`,
+    body: `Questions about engagement eligibility or sanctions compliance can be sent to ${BRAND_SUPPORT_EMAIL}. We aim to respond within five business days.`,
   },
 ];
 
@@ -71,7 +71,7 @@ export default function RestrictedCountriesPage() {
       <PageHero
         kicker="Legal"
         title="Restricted Countries"
-        lead={`Jurisdictions where ${BRAND_NAME} services are not offered.`}
+        lead={`How ${BRAND_NAME} approaches jurisdictional, export-control, and sanctions compliance.`}
       />
 
       <Section raised>
@@ -79,7 +79,7 @@ export default function RestrictedCountriesPage() {
           {/* Headline callout — quick-glance list of restricted countries */}
           <LegalCallout tone="warn">
             <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>
-              Services not available in:
+              Not available in connection with:
             </span>{' '}
             {RESTRICTED.join(' · ')}.
           </LegalCallout>
@@ -107,9 +107,9 @@ export default function RestrictedCountriesPage() {
       </Section>
 
       <CtaBanner
-        title="Eligible to Trade?"
-        lead={`If your jurisdiction isn't on the restricted list, open a ${BRAND_NAME} account in minutes.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="Ready to see the platform?"
+        lead={`If ${BRAND_NAME} can engage in your jurisdiction, book a walkthrough of the platform under your own brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Contact Compliance', href: `mailto:${BRAND_SUPPORT_EMAIL}` }}
       />
     </main>

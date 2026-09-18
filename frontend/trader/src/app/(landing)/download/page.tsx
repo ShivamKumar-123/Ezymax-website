@@ -21,8 +21,8 @@ import { BRAND_NAME } from '@/lib/brand';
  */
 
 export const metadata: Metadata = {
-  title: `Download & Install | ${BRAND_NAME}`,
-  description: `Trade with ${BRAND_NAME} straight from your browser, or install the platform to your home screen as an app on iOS and Android. No download required.`,
+  title: `Platform Apps & Install | ${BRAND_NAME}`,
+  description: `The ${BRAND_NAME} platform runs in any modern browser and installs to the home screen as an app on iOS and Android — web, mobile and desktop from one build. Book a demo to see it.`,
 };
 
 const IOS_STEPS = [
@@ -74,8 +74,8 @@ export default function DownloadPage() {
       <PageHero
         kicker="Get the platform"
         title="Nothing to download"
-        lead={`${BRAND_NAME} runs in any modern browser. Open it on desktop, or install it to your phone's home screen in a few taps — same account, same platform, no app store required.`}
-        primary={{ label: 'Trade in your browser', href: '/auth/register' }}
+        lead={`The ${BRAND_NAME} platform runs in any modern browser and installs to a phone's home screen in a few taps — same platform on desktop, tablet and mobile, no app store required. It's the platform we build for you to offer your clients.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'How it works', href: '/how-it-works' }}
       />
 
@@ -85,8 +85,8 @@ export default function DownloadPage() {
           <SectionHeading
             align="left"
             kicker="In your browser"
-            title="Trade from any modern browser"
-            lead={`The ${BRAND_NAME} platform is fully web-based. Sign in from Chrome, Safari, Edge or Firefox on desktop, tablet or phone — there is no installer, no update to chase, and your account, positions and watchlists follow you to whichever device you sign in from.`}
+            title="Runs in any modern browser"
+            lead={`The ${BRAND_NAME} platform is fully web-based. Your clients sign in from Chrome, Safari, Edge or Firefox on desktop, tablet or phone — there is no installer, no update to chase, and accounts, positions and watchlists follow them to whichever device they sign in from.`}
           />
           <div className="flex flex-col gap-5">
             <div className="mk-card flex flex-col gap-4">
@@ -98,15 +98,15 @@ export default function DownloadPage() {
               </span>
               <h3 className="mk-h3">Open the web platform</h3>
               <p className="mk-body">
-                Create an account and you are trading in the same session — no download step in
-                between.
+                One codebase, delivered white-label under your brand and domain — no download step
+                between opening the platform and using it.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/auth/register" className="mk-btn mk-btn--primary">
-                  Trade in your browser
+                <Link href="/company/contact" className="mk-btn mk-btn--primary">
+                  Book a demo
                 </Link>
-                <Link href="/auth/login" className="mk-btn mk-btn--ghost">
-                  Sign in
+                <Link href="/platforms/web" className="mk-btn mk-btn--ghost">
+                  View platforms
                 </Link>
               </div>
             </div>
@@ -119,7 +119,7 @@ export default function DownloadPage() {
         <SectionHeading
           kicker="Install as an app"
           title="Add it to your home screen"
-          lead={`${BRAND_NAME} is a Progressive Web App. Add it to your home screen and it launches full-screen from its own icon, straight to your dashboard — exactly like a native app, without waiting on a store download.`}
+          lead={`The ${BRAND_NAME} platform is a Progressive Web App. Add it to the home screen and it launches full-screen from its own icon, straight to the dashboard — exactly like a native app, without waiting on a store download.`}
         />
         <div className="grid md:grid-cols-2 gap-5 mt-12">
           <InstallSteps title="iPhone & iPad (Safari)" steps={IOS_STEPS} />
@@ -177,9 +177,9 @@ export default function DownloadPage() {
       </Section>
 
       <CtaBanner
-        title="Start in your browser"
-        lead={`Open a ${BRAND_NAME} account, then add the platform to your home screen whenever you want it a tap away.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the platform in action"
+        lead={`Book a demo and we'll show you the ${BRAND_NAME} platform running on web, mobile and desktop.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Read the FAQ', href: '/faq' }}
       />
     </main>

@@ -17,20 +17,20 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const SECTIONS: { h: string; body: string; list?: string[]; trailing?: string }[] = [
   {
-    h: '1. General Risk Warning',
-    body: `Please note that forex trading and trading in other leveraged products involves a significant level of risk and is not suitable for all investors. Trading in financial instruments may result in losses as well as profits, and your losses can be greater than your initial invested capital. Before undertaking any such transactions, you should ensure that you fully understand the risks involved and seek independent advice if necessary. ${BRAND_NAME} does not provide investment advice.`,
+    h: '1. Technology Vendor Disclaimer',
+    body: `${BRAND_NAME} is a software development company that builds and licenses trading technology to licensed brokers and proprietary trading firms. ${BRAND_NAME} is not a broker, exchange, or financial institution, does not provide investment advice, and does not solicit or accept investments. This notice is provided for general information.`,
   },
   {
-    h: '2. Leverage Risk',
-    body: 'Leverage allows a trader to control a position larger than the deposited margin and can magnify both profits and losses. A small adverse market move can result in losses that exceed the deposited margin. Clients are advised to size positions appropriately and use stop-loss orders.',
+    h: '2. Nothing Here Is an Offer',
+    body: `Nothing on the ${BRAND_NAME} website or in its materials is an offer, solicitation, or recommendation to buy or sell any financial product or to engage in any trading activity. Any references to trading describe the capabilities of software that ${BRAND_NAME} builds for licensed operators.`,
   },
   {
-    h: '3. Market Volatility',
-    body: 'Forex, CFD, indices, commodity, and cryptocurrency markets can move sharply due to economic releases, geopolitical events, central-bank actions, or sudden liquidity changes. Slippage, requotes, gapping, and price spikes may occur, particularly during low-liquidity hours and around scheduled news events.',
+    h: '3. Leveraged Trading Is High-Risk',
+    body: `Trading forex, CFDs, indices, commodities, and crypto-assets involves a significant level of risk and is not suitable for everyone. Where a platform built with ${BRAND_NAME} software offers such products, the operator of that platform is responsible for the risk warnings and disclosures given to its own clients.`,
   },
   {
-    h: '4. Cryptocurrency-Specific Risks',
-    body: 'Cryptocurrency trading carries additional risks including but not limited to:',
+    h: '4. Risks of the Underlying Markets',
+    body: `The markets that a platform built with ${BRAND_NAME} software may cover carry risks including but not limited to:`,
     list: [
       'Extreme intraday volatility',
       'Regulatory uncertainty in many jurisdictions',
@@ -41,28 +41,28 @@ const SECTIONS: { h: string; body: string; list?: string[]; trailing?: string }[
     trailing: 'Past price performance is not indicative of future results.',
   },
   {
-    h: '5. Liquidity Risk',
-    body: 'During periods of low liquidity, some instruments may be difficult to enter or exit at the displayed price. Spreads may widen materially, and orders may be filled at prices significantly different from the price shown at the time of order placement.',
+    h: '5. Client-Operated Platforms',
+    body: `Trading platforms built with ${BRAND_NAME} software and placed into production are operated by our clients under their own brand, licence, and regulatory authority. ${BRAND_NAME} does not execute, route, or manage trades for end users.`,
   },
   {
-    h: '6. Counterparty & Platform Risk',
-    body: `Trades placed on the ${BRAND_NAME} platform are subject to the operational performance of the platform and its third-party liquidity providers. Internet connectivity, platform outages, hardware faults, and force-majeure events may temporarily prevent the execution or modification of orders.`,
+    h: '6. Technology & Platform Risk',
+    body: `Any software may be affected by internet connectivity issues, hosting or third-party integration failures, hardware faults, and force-majeure events, which can temporarily prevent normal operation. ${BRAND_NAME} provides its software and support under the terms of the applicable agreement and does not guarantee uninterrupted or error-free operation.`,
   },
   {
-    h: '7. Bonus & Promotion Risks',
-    body: 'Promotional bonuses, deposit matches, referral rewards, and similar offers are subject to their own terms. Bonus equity is absorbed by losing trades before deposited capital and is generally non-withdrawable in isolation. Misuse of bonuses may result in bonus revocation, account restrictions, or closure.',
+    h: '7. Software Licensing',
+    body: `Access to ${BRAND_NAME} software is provided under a separate written licence agreement that sets out fees, scope, delivery, and support. Features shown on the website illustrate platform capabilities; their availability in production depends on the operator's configuration and obligations.`,
   },
   {
-    h: '8. Regulatory & Jurisdictional Risk',
-    body: `Services may be restricted, modified, or withdrawn in your jurisdiction at any time due to changes in local laws or regulatory guidance. See our Restricted Countries page for the current list of jurisdictions where ${BRAND_NAME} services are not available.`,
+    h: '8. Lawful Use & Availability',
+    body: `${BRAND_NAME} evaluates each client engagement individually and complies with applicable export-control and sanctions laws. Each operator is responsible for ensuring that any platform it runs is lawful in the jurisdictions in which it and its clients operate. See our Restricted Countries page for more on how ${BRAND_NAME} approaches jurisdictional and sanctions compliance.`,
   },
   {
     h: '9. No Investment Advice',
-    body: `Information provided on the ${BRAND_NAME} website, the trading platform, or through any ${BRAND_NAME} communication channel is for general informational purposes only and does not constitute investment, financial, tax, or legal advice. Clients should consult independent professional advisers before making any trading decision.`,
+    body: `Information provided on the ${BRAND_NAME} website or through any ${BRAND_NAME} communication channel is for general informational purposes only and does not constitute investment, financial, tax, or legal advice. ${BRAND_NAME} does not consider the circumstances of any individual trader.`,
   },
   {
     h: '10. Acknowledgement',
-    body: `By opening and funding a ${BRAND_NAME} account you confirm that you have read, understood, and accept this Risk Warning, alongside our Terms & Conditions, Privacy Policy, and Risk Disclaimer. You acknowledge that you are trading at your own risk.`,
+    body: `By using this website you confirm that you have read, understood, and accept this Risk Warning, alongside our Terms of Service, Privacy Policy, and Disclaimer, and that you understand ${BRAND_NAME} is a technology vendor and not a broker.`,
   },
 ];
 
@@ -74,17 +74,18 @@ export default function RiskWarningPage() {
       <PageHero
         kicker="Legal"
         title="Risk Warning"
-        lead="Trading carries a high level of risk. Read carefully before you fund an account."
+        lead={`${BRAND_NAME} is a software vendor, not a broker. This notice explains what that means and the risks of the markets our software can support.`}
       />
 
       <Section raised>
         <LegalDoc toc={TOC}>
           {/* Top alert — highlighted warning above the section list */}
           <LegalCallout tone="warn">
-            <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>Important:</span> Trading
-            forex, CFDs, cryptocurrencies, and other leveraged products is high-risk and may not be
-            suitable for every investor. You may lose some or all of your invested capital — only
-            trade with money you can afford to lose.
+            <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>Important:</span> We build and
+            license trading software; we are not a broker and do not provide investment advice. Nothing
+            here is an offer or solicitation. Trading leveraged products is high-risk, and any platform
+            built with our software is operated by a licensed third party responsible for its own client
+            disclosures.
           </LegalCallout>
 
           {SECTIONS.map(({ h, body, list, trailing }) => (
@@ -118,9 +119,9 @@ export default function RiskWarningPage() {
       </Section>
 
       <CtaBanner
-        title="Trade Responsibly"
-        lead="Open an account only after reading and accepting all our risk disclosures."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the platform"
+        lead="Book a walkthrough and see how the platform runs under your own brand and licence."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Restricted Countries', href: '/restricted-countries' }}
       />
     </main>

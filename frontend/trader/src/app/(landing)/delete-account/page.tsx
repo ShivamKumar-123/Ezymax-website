@@ -32,16 +32,16 @@ const TOC = Object.values(HEADINGS).map((h) => ({ id: legalAnchor(h), label: h }
 
 const DELETED = [
   'Profile & contact details (name, email, phone, address)',
-  'KYC documents & verification images',
+  'Identity or verification documents you provided',
   'Login credentials & active sessions',
-  'Trading accounts & preferences',
-  'Watchlists, settings, and app data',
+  'Account settings & preferences',
+  'Saved enquiries, demo data, and app data',
   'Marketing / communication preferences',
 ];
 
 const RETAINED = [
-  'Transaction, deposit & withdrawal records (financial/AML compliance) — typically up to 5–7 years.',
-  'Identity-verification records required by KYC/AML law for the mandated retention period.',
+  'Records of our business dealings with you (such as contracts, invoices, and correspondence) required for tax, accounting, or audit purposes — for the period required by applicable law.',
+  'Identity or verification records we are required to keep to meet a legal or regulatory obligation, for the mandated retention period.',
   'Records needed to resolve disputes, prevent fraud, or comply with a legal/regulatory order.',
 ];
 
@@ -86,7 +86,7 @@ export default function DeleteAccountPage() {
                     In the app / website:
                   </span>{' '}
                   Go to <span style={{ color: 'var(--mk-text)' }}>Settings → Account → Delete account</span>{' '}
-                  and follow the prompts, or contact 24/7 support from the help menu.
+                  and follow the prompts, or contact our support team from the help menu.
                 </span>
               </li>
               <li className="mk-body flex items-start gap-3">
@@ -123,18 +123,16 @@ export default function DeleteAccountPage() {
 
           <LegalSection id={legalAnchor(HEADINGS.deleted)} heading={HEADINGS.deleted}>
             <LegalP>
-              Once your request is verified and any open positions / pending balances are settled, we
-              permanently remove:
+              Once your request is verified, we permanently remove the following personal data:
             </LegalP>
             <LegalList items={DELETED} />
           </LegalSection>
 
           <LegalSection id={legalAnchor(HEADINGS.retained)} heading={HEADINGS.retained}>
             <LegalP>
-              As a financial services provider, we are legally required (anti-money-laundering, tax,
-              and audit regulations) to retain certain records even after account deletion. These are
-              kept only as long as the law requires, stored securely, and are not used for any other
-              purpose:
+              We may be legally required (for example, under tax, accounting, and record-keeping
+              regulations) to retain certain records even after account deletion. These are kept only
+              as long as the law requires, stored securely, and are not used for any other purpose:
             </LegalP>
             <LegalList items={RETAINED} />
             <p className="mk-body" style={{ fontSize: 'var(--mk-text-sm)', color: 'var(--mk-text-faint)' }}>
@@ -156,8 +154,8 @@ export default function DeleteAccountPage() {
                 <span className="shrink-0 rounded-full" style={{ width: '5px', height: '5px', marginTop: '0.62em', background: 'var(--mk-accent)' }} />
                 <span>
                   Before deletion, please{' '}
-                  <span style={{ color: 'var(--mk-text)' }}>withdraw any remaining balance</span> and
-                  close all open positions. We will contact you if action is needed.
+                  <span style={{ color: 'var(--mk-text)' }}>save anything you need</span> from your
+                  account. We will contact you if any action is needed.
                 </span>
               </li>
               <li className="mk-body flex items-start gap-3">

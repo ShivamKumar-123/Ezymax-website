@@ -20,7 +20,7 @@ export function Process() {
     <Section id="process">
       <SectionHeading
         kicker="How It Works"
-        title="Start trading in three steps"
+        title="From first call to live platform"
         lead="From registration to your first live position on the currency markets."
       />
 
@@ -61,7 +61,7 @@ export function Process() {
         style={{ gap: 'var(--mk-space-3)', marginTop: 'var(--mk-space-7)' }}
       >
         <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">
-          Start Trading
+          Book a Demo
           <ArrowUpRight size={16} />
         </Link>
         <Link href="/markets" className="mk-btn mk-btn--ghost">

@@ -38,7 +38,7 @@ export function JoinPanel() {
           >
             <div className="flex flex-col" style={{ gap: 'var(--mk-space-2)' }}>
               <h2 className="mk-h2">Join {BRAND_NAME}</h2>
-              <p className="mk-lead">Get started in three simple steps.</p>
+              <p className="mk-lead">From first call to live platform.</p>
             </div>
 
             <ol className="flex flex-col" style={{ gap: 'var(--mk-space-4)' }}>
@@ -68,7 +68,7 @@ export function JoinPanel() {
             </ol>
 
             <div>
-              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Start Trading</Link>
+              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Book a Demo</Link>
             </div>
           </motion.div>
 

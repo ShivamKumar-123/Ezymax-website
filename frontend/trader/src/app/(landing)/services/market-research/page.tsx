@@ -15,34 +15,34 @@ import { BRAND_NAME } from '@/lib/brand';
  * previous page unchanged.
  */
 
-const SIGNUP_HREF = '/auth/register';
+const SIGNUP_HREF = '/company/contact';
 
 export default function MarketResearchPage() {
   return (
     <main>
       <PageHero
-        kicker="Research Desk"
-        title="Market Research & Analysis"
-        lead="Daily technical and fundamental briefs from senior analysts — written for traders who actually have to put on the position."
-        primary={{ label: 'Get Daily Reports', href: SIGNUP_HREF }}
-        secondary={{ label: 'See Coverage', href: '#coverage' }}
+        kicker="Research Tooling"
+        title="Market Research Tooling"
+        lead="A research-desk module the platform can ship with — deliver daily technical and fundamental briefs, trade ideas, and calendars to your clients, under your own brand."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
+        secondary={{ label: 'See coverage', href: '#coverage' }}
       />
 
       {/* Intro */}
       <Section raised>
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-8 items-center">
           <div className="flex flex-col gap-4 items-start">
-            <span className="mk-kicker">Updated Daily</span>
+            <span className="mk-kicker">Delivered Daily</span>
             <h2 className="mk-h2">
               Sharper decisions. <span style={{ color: 'var(--mk-accent)' }}>Backed by data.</span>
             </h2>
             <p className="mk-lead">
-              The {BRAND_NAME} research desk publishes a pre-market brief at 06:00 GMT, intraday updates on
-              major catalysts, and a weekly outlook every Sunday. Every report includes specific
-              entries, invalidation levels, and a defined risk/reward.
+              The {BRAND_NAME} research module can publish a pre-market brief at 06:00 GMT, intraday updates on
+              major catalysts, and a weekly outlook — each report with specific levels and a defined
+              risk/reward, delivered to your clients inside your platform.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Get Daily Reports</Link>
+              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Book a demo</Link>
             </div>
           </div>
           {/* Research / chart-analysis stock photo. Swap for a branded
@@ -152,20 +152,20 @@ export default function MarketResearchPage() {
           <FaqAccordion
             items={[
               {
-                q: 'How do I receive the research?',
-                a: <>Reports are delivered to your dashboard, via email, and as in-platform push notifications. You can subscribe to any combination of desks (FX, Crypto, Metals, Indices).</>,
+                q: 'How is the research delivered?',
+                a: <>Reports are delivered inside the platform — to the client&apos;s dashboard, by email, and as in-platform push notifications. Desks can be split by asset class (FX, Crypto, Metals, Indices).</>,
               },
               {
-                q: 'Is the research free?',
-                a: <>Yes — daily briefs, weekly outlooks, and catalyst alerts are included with every funded {BRAND_NAME} account. There is no separate subscription fee.</>,
+                q: 'How is the research packaged commercially?',
+                a: <>That is up to you. The {BRAND_NAME} module lets you bundle research with your accounts or offer it as a paid add-on — pricing and packaging are yours to set.</>,
               },
               {
                 q: 'Are these recommendations to trade?',
-                a: <>No. The reports are analyst commentary and educational content. You are solely responsible for your own trading decisions. Always size positions to your own risk tolerance.</>,
+                a: <>No. The reports are analyst commentary and educational content, not personal advice. Each trader is responsible for their own decisions and should size positions to their own risk tolerance.</>,
               },
               {
-                q: 'Can I see the historical track record?',
-                a: <>Yes. Every published idea is archived with outcome (target hit, stop hit, manually closed) so you can review the desk&apos;s historical performance before subscribing.</>,
+                q: 'Is there a historical track record?',
+                a: <>Yes. The module archives every published idea with its outcome (target hit, stop hit, manually closed) so performance can be reviewed transparently.</>,
               },
             ]}
           />
@@ -173,9 +173,9 @@ export default function MarketResearchPage() {
       </Section>
 
       <CtaBanner
-        title="Start Reading the Desk"
-        lead="Open a free account to receive tomorrow morning's pre-market brief and the rest of the week's coverage."
-        primary={{ label: 'Subscribe Free', href: SIGNUP_HREF }}
+        title="See the Research Module"
+        lead="Book a demo to see how the research desk is built, branded, and delivered to your clients."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
       />
     </main>
   );

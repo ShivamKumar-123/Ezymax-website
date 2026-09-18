@@ -31,8 +31,8 @@ type PolicySection = {
 const INTRO: PolicySection = {
   h: `Privacy Policy of ${BRAND_NAME}`,
   lead: [
-    `At ${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us"), protecting your privacy and personal information is one of our highest priorities. We are committed to collecting, processing, storing, and protecting your personal data responsibly and in accordance with applicable data protection laws and industry best practices.`,
-    `By accessing our website, opening an account, or using any ${BRAND_NAME} products and services, you consent to the collection and processing of your personal information as described in this Privacy Policy.`,
+    `At ${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us"), protecting your privacy and personal information is one of our highest priorities. ${BRAND_NAME} is a software development company that builds and licenses trading technology to licensed operators. We are committed to collecting, processing, storing, and protecting personal data responsibly and in accordance with applicable data protection laws and industry best practices.`,
+    `This Privacy Policy explains how we handle the personal information of visitors to our website, prospective clients, and people who contact us or request a demonstration. By accessing our website or engaging with ${BRAND_NAME}, you consent to the collection and processing of your personal information as described in this Privacy Policy.`,
   ],
 };
 
@@ -41,32 +41,32 @@ const SECTIONS: PolicySection[] = [
     h: '1. Privacy Protection',
     lead: [
       `${BRAND_NAME} maintains appropriate administrative, technical, and organizational measures designed to protect personal information from unauthorized access, misuse, loss, alteration, or disclosure.`,
-      'Client information is stored securely and accessed only by authorized personnel who require such information for legitimate business, compliance, or support purposes.',
+      'Personal information is stored securely and accessed only by authorized personnel who require it for legitimate business, contractual, or support purposes.',
       'While we implement reasonable security safeguards, no method of transmission over the internet or electronic storage system can be guaranteed to be completely secure.',
-      'Clients are responsible for maintaining the confidentiality of their account credentials, passwords, and authentication devices.',
+      'You are responsible for maintaining the confidentiality of any account credentials, passwords, and authentication devices used to access our website or services.',
     ],
   },
   {
     h: '2. Personal Information We Collect',
-    lead: [`When opening an account or using ${BRAND_NAME} services, we may collect the following information:`],
+    lead: [`When you visit our website, request a demonstration, or engage ${BRAND_NAME} as a client, we may collect the following information:`],
     subs: [
-      { title: 'Identity Information', bullets: ['Full Name', 'Date of Birth', 'Nationality', 'Government Identification Details', 'Passport or National ID Copies', 'Selfie Verification Images'] },
-      { title: 'Contact Information', bullets: ['Email Address', 'Telephone Number', 'Residential Address'] },
-      { title: 'Financial Information', bullets: ['Source of Funds Information', 'Cryptocurrency Wallet Information', 'Deposit and Withdrawal Records', 'Transaction History'] },
+      { title: 'Identity & Business Information', bullets: ['Full Name', 'Job Title or Role', 'Company or Organisation Name', 'Nationality or Country of Operation', 'Government or Company Registration Details (where required for a client engagement)', 'Identity Documents (where required to verify a client or its representatives)'] },
+      { title: 'Contact Information', bullets: ['Email Address', 'Telephone Number', 'Business or Mailing Address'] },
+      { title: 'Billing Information', bullets: ['Billing Contact Details', 'Company Billing Address', 'Invoice and Payment Records', 'Tax or VAT Registration Details'] },
       { title: 'Technical Information', bullets: ['IP Address', 'Browser Information', 'Device Information', 'Operating System Information', 'Website Usage Data'] },
-      { title: 'Trading Information', bullets: ['Trading Activity', 'Trading Preferences', 'Account Performance', 'Trading History'] },
+      { title: 'Engagement Information', bullets: ['Products and Services You Enquire About', 'Demonstration and Meeting Records', 'Support and Correspondence History', 'Preferences You Share With Us'] },
     ],
   },
   {
     h: '3. How We Use Your Personal Information',
     lead: [`${BRAND_NAME} may process your personal information for the following purposes:`],
     subs: [
-      { title: 'Account Registration and Management', lead: 'To:', bullets: ['Open and maintain trading accounts', 'Verify identity', 'Provide customer support', 'Manage account security'] },
-      { title: 'Compliance and Regulatory Requirements', lead: 'To:', bullets: ['Perform KYC verification', 'Conduct AML screening', 'Prevent fraud and financial crime', 'Comply with legal obligations'] },
-      { title: 'Service Delivery', lead: 'To:', bullets: ['Process deposits and withdrawals', 'Facilitate trading activities', 'Operate client accounts', 'Provide platform functionality'] },
-      { title: 'Risk Management', lead: 'To:', bullets: ['Monitor suspicious activity', 'Protect account security', 'Prevent abuse of promotions and bonuses', 'Detect unauthorized transactions'] },
+      { title: 'Website Accounts and Enquiries', lead: 'To:', bullets: ['Create and manage website or demo accounts', 'Respond to enquiries and demo requests', 'Provide customer support', 'Manage account security'] },
+      { title: 'Compliance and Lawful Business', lead: 'To:', bullets: ['Verify the identity of clients and their representatives', 'Conduct sanctions and export-control screening', 'Prevent fraud and misuse of our services', 'Comply with legal obligations'] },
+      { title: 'Service Delivery', lead: 'To:', bullets: ['Deliver and configure licensed software', 'Provide integration and technical services', 'Administer client engagements', 'Provide and improve platform functionality'] },
+      { title: 'Security and Risk Management', lead: 'To:', bullets: ['Monitor for suspicious activity', 'Protect account and system security', 'Prevent abuse or misuse of our services', 'Detect unauthorized access'] },
       { title: 'Communication', lead: 'To:', bullets: ['Respond to inquiries', 'Send service-related notifications', 'Deliver security alerts', 'Provide account updates'] },
-      { title: 'Marketing Communications', lead: `Subject to applicable laws and your preferences, ${BRAND_NAME} may send information regarding:`, bullets: ['New products', 'Platform updates', 'Promotions', 'Educational content', 'Market insights'], trailing: 'Clients may opt out of marketing communications at any time.' },
+      { title: 'Marketing Communications', lead: `Subject to applicable laws and your preferences, ${BRAND_NAME} may send information regarding:`, bullets: ['New products and features', 'Platform updates', 'Company news', 'Educational content', 'Industry insights'], trailing: 'You may opt out of marketing communications at any time.' },
     ],
   },
   {
@@ -74,28 +74,28 @@ const SECTIONS: PolicySection[] = [
     lead: ['We process personal information based on one or more of the following legal grounds:'],
     subs: [
       { title: 'Contract Performance', lead: 'Processing necessary to provide services requested by the client.' },
-      { title: 'Legal and Regulatory Obligations', lead: 'Processing required to comply with applicable laws, AML regulations, sanctions requirements, and compliance obligations.' },
+      { title: 'Legal and Regulatory Obligations', lead: 'Processing required to comply with applicable laws, sanctions and export-control requirements, and other compliance obligations.' },
       { title: 'Legitimate Business Interests', lead: 'Processing necessary for:', bullets: ['Risk management', 'Fraud prevention', 'Service improvement', 'Security monitoring', 'Internal administration'] },
       { title: 'Client Consent', lead: 'Where required by law, processing may be based on the client\'s consent, which may be withdrawn at any time.' },
     ],
   },
   {
-    h: '5. KYC and AML Compliance',
+    h: '5. Client Verification and Compliance',
     lead: [
-      `${BRAND_NAME} is committed to maintaining robust Know Your Customer (KYC) and Anti-Money Laundering (AML) procedures.`,
-      'Clients may be required to provide:',
+      `${BRAND_NAME} carries out reasonable checks to verify the clients and representatives it does business with, and to comply with applicable sanctions and export-control laws.`,
+      'As part of a client engagement, we may ask you to provide:',
     ],
-    bullets: ['Government-issued identification', 'Proof of address', 'Selfie verification', 'Source of funds documentation', 'Additional compliance information'],
-    trailing: ['Failure to complete verification requirements may result in account restrictions, deposit delays, or withdrawal limitations.'],
+    bullets: ['Government or company-issued identification', 'Proof of business address', 'Confirmation of authority to act for the client', 'Company ownership or registration details', 'Additional information needed for compliance checks'],
+    trailing: ['Failure to complete these checks may delay or prevent a client engagement.'],
   },
   {
     h: '6. Disclosure of Personal Information',
     lead: [
-      `${BRAND_NAME} does not sell client personal information.`,
+      `${BRAND_NAME} does not sell personal information.`,
       'Personal information may be shared only when necessary with:',
     ],
     subs: [
-      { title: 'Service Providers', lead: 'Including:', bullets: ['Technology providers', 'Hosting providers', 'Payment and crypto infrastructure providers', 'Security service providers'] },
+      { title: 'Service Providers', lead: 'Including:', bullets: ['Technology providers', 'Hosting and infrastructure providers', 'Payment and billing providers', 'Security service providers'] },
       { title: 'Compliance and Regulatory Authorities', lead: 'Where disclosure is required by law, regulation, court order, or government request.' },
       { title: 'Professional Advisors', lead: 'Including:', bullets: ['Legal advisors', 'Auditors', 'Compliance consultants', 'Risk management providers'] },
       { title: 'Business Partners', lead: 'Only where necessary for providing services or fulfilling contractual obligations.' },
@@ -103,14 +103,14 @@ const SECTIONS: PolicySection[] = [
     trailing: ['All third parties receiving personal information are expected to maintain appropriate confidentiality and security standards.'],
   },
   {
-    h: '7. Cryptocurrency Transactions',
-    lead: [`As ${BRAND_NAME} operates a crypto-funded trading environment:`],
+    h: '7. Aggregated and De-identified Data',
+    lead: [`${BRAND_NAME} may create aggregated or de-identified data from the information it holds:`],
     bullets: [
-      'Deposit and withdrawal transactions may be recorded on public blockchain networks.',
-      'Blockchain transactions are transparent and may be publicly visible.',
-      `${BRAND_NAME} cannot control information recorded on public blockchains.`,
+      'Such data does not identify any individual.',
+      'It may be used to analyse and improve our products and services.',
+      'It may be shared with clients or partners in a form that does not identify individuals.',
     ],
-    trailing: ['Clients are responsible for protecting the privacy of their own cryptocurrency wallets and addresses.'],
+    trailing: ['Where data is fully anonymised, it is no longer treated as personal information under this Policy.'],
   },
   {
     h: '8. Cookies and Website Analytics',
@@ -125,15 +125,15 @@ const SECTIONS: PolicySection[] = [
   {
     h: '9. International Data Transfers',
     lead: [
-      'Personal information may be processed or stored in countries outside the client\'s country of residence.',
+      'Personal information may be processed or stored in countries other than your country of residence.',
       `Where international transfers occur, ${BRAND_NAME} will take reasonable measures to ensure that personal information receives an appropriate level of protection consistent with applicable privacy requirements.`,
     ],
   },
   {
     h: '10. Data Retention',
     lead: [`${BRAND_NAME} retains personal information only for as long as necessary to:`],
-    bullets: ['Provide services', 'Comply with legal obligations', 'Resolve disputes', 'Prevent fraud', 'Meet regulatory requirements'],
-    trailing: ['Client records, communications, transaction histories, and verification documents may be retained for a minimum period required by applicable AML and compliance regulations.'],
+    bullets: ['Provide our services', 'Comply with legal obligations', 'Resolve disputes', 'Prevent fraud', 'Meet record-keeping requirements'],
+    trailing: ['Business records, communications, and verification documents may be retained for the minimum period required by applicable law.'],
   },
   {
     h: '11. Your Rights',
@@ -255,8 +255,8 @@ export default function PrivacyPage() {
 
       <CtaBanner
         title="Your Data, Your Control"
-        lead={`Open a ${BRAND_NAME} account confident that we treat your personal data with the same care we apply to your trading capital.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        lead={`Get in touch with ${BRAND_NAME} confident that we treat your personal data with care.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Delete My Account', href: '/delete-account' }}
       />
     </main>

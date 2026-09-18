@@ -20,7 +20,7 @@ import { BRAND_NAME } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: `Frequently Asked Questions | ${BRAND_NAME}`,
-  description: `Answers to the most common questions about opening, funding, and trading a ${BRAND_NAME} account — minimum deposit, supported payment methods, withdrawals, KYC, and account security.`,
+  description: `Answers to the most common questions about ${BRAND_NAME} — what we build, how white-label delivery works, timelines, integrations, and support.`,
 };
 
 /* ── Getting started ───────────────────────────────────────────────────
@@ -28,23 +28,23 @@ export const metadata: Metadata = {
    cards; how-it-works STEPS. */
 const GETTING_STARTED: FaqItem[] = [
   {
-    q: 'What is the minimum deposit required to start trading?',
-    a: 'Only $50. A $50 first deposit unlocks the Standard live account or the IB partner account; ECN starts at $200. A free Demo account with $100,000 in virtual funds is also available — no commitment.',
+    q: 'How long does it take to launch a platform?',
+    a: 'Most white-label platforms go live in weeks, not months. The exact timeline depends on the modules and integrations you need — we agree it with you during scoping, before any work starts.',
   },
   {
-    q: `How is ${BRAND_NAME} different from a traditional broker?`,
+    q: `Is ${BRAND_NAME} a broker?`,
     a: (
       <>
         <p>
-          {BRAND_NAME} does not hold your funds. Your trades operate through a structured smart
-          contract system. Execution is automated. Control stays with you.
+          {BRAND_NAME} is a software company, not a broker. We build and license the trading
+          technology; you run the brokerage under your own licence, brand and domain.
         </p>
         <ul className="mt-3 flex flex-col gap-1.5">
           {[
-            'Funds interact with smart contract layer',
-            'No custody held by platform',
-            'Trades execute via system logic',
-            'Automatic P&L settlement',
+            'Web, mobile and desktop terminals',
+            'Admin back office, CRM and reporting',
+            'Risk controls and liquidity routing',
+            'Payments, KYC/AML and CRM integrations',
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
               <span
@@ -59,19 +59,19 @@ const GETTING_STARTED: FaqItem[] = [
     ),
   },
   {
-    q: 'What are the steps from wallet to trade?',
+    q: 'What are the steps from demo to launch?',
     a: (
       <>
-        <p>Every step is system-driven. No manual control involved.</p>
+        <p>A clear path from first demo to a platform live under your brand.</p>
         <ol className="mt-3 flex flex-col gap-1.5">
           {[
-            'Connect Wallet — securely connect your wallet to access the platform.',
-            'Access Your Dashboard — manage your profile, settings, and activity through your CRM.',
-            `Create Trading Account — choose ${BRAND_NAME} native or an external integration.`,
-            'Allocate Funds to Contract — funds move into a secure smart contract layer, not a broker.',
-            'Execute Trades — trade normally using your selected account.',
-            'Automatic P&L Settlement — profits credit, losses deduct, automatically.',
-            'Withdraw Anytime — funds settle directly back to your wallet.',
+            'Book a demo — see the platform and tell us what your brokerage needs.',
+            'Scope & plan — agree modules, integrations, branding and a launch timeline.',
+            'Brand & configure — your logo, domain and colours across every screen.',
+            'Wire integrations — payments, KYC/AML, liquidity and CRM connected to your setup.',
+            'Test & review — you review the platform end to end before go-live.',
+            'Go live — we launch on your domain, under your brand.',
+            'Ongoing support — the same team keeps it running after launch.',
           ].map((item, i) => (
             <li key={item} className="flex items-start gap-3">
               <span
@@ -93,78 +93,73 @@ const GETTING_STARTED: FaqItem[] = [
    Sources: deposit-withdrawal policy §2, §4.3, §7, §8, §10. */
 const FUNDING: FaqItem[] = [
   {
-    q: 'Which deposit and withdrawal methods are supported?',
+    q: 'Which payment integrations can the platform support?',
     a: (
       <>
-        <p>{BRAND_NAME} currently supports Cryptocurrency Deposits and Withdrawals Only.</p>
-        <p className="mt-3">Supported cryptocurrencies may include, but are not limited to:</p>
+        <p>The platforms we build can integrate a range of payment and wallet providers, wired to your setup.</p>
+        <p className="mt-3">Common integrations include:</p>
         <p className="mt-1">
-          Bitcoin (BTC) · Ethereum (ETH) · Tether (USDT) · USD Coin (USDC) · Other cryptocurrencies
-          approved by {BRAND_NAME}.
+          Card and bank-transfer processors · Cryptocurrency wallets (BTC, ETH, USDT, USDC) · KYC/AML
+          providers · CRM and liquidity bridges.
         </p>
         <p className="mt-3">
-          {BRAND_NAME} does not currently support bank transfers, credit cards, debit cards, or
-          third-party payment processors not approved by {BRAND_NAME}. The list of supported
-          cryptocurrencies may be updated at any time without prior notice.
+          The exact providers depend on your licence and jurisdiction. We wire in the integrations you
+          choose; your brokerage runs the payment flows under your own brand.
         </p>
       </>
     ),
   },
   {
-    q: 'How long do withdrawals take?',
-    a: (
-      <>
-        <p>Approved withdrawal requests are generally processed within 24 business hours.</p>
-        <p className="mt-3">
-          Actual receipt times depend on blockchain network conditions, the cryptocurrency selected,
-          and the required network confirmations.
-        </p>
-      </>
-    ),
-  },
-  {
-    q: 'Why might a withdrawal be delayed or declined?',
+    q: 'Can you integrate our existing providers?',
     a: (
       <>
         <p>
-          {BRAND_NAME} reserves the right to decline or delay withdrawals in the following
-          circumstances: incomplete KYC verification, ongoing AML review, security concerns,
-          suspected fraud, violation of Terms &amp; Conditions, account disputes, or technical issues
-          beyond the Company&apos;s control.
+          Yes. We can integrate the payment, KYC, liquidity and CRM providers you already use, or
+          recommend ones that fit your setup.
+        </p>
+        <p className="mt-3">
+          Integration work is scoped up front, so you know the timeline before we start.
         </p>
       </>
     ),
   },
   {
-    q: 'Can someone else deposit or withdraw on my behalf?',
+    q: 'What does the admin back office include?',
     a: (
       <>
         <p>
-          No. {BRAND_NAME} does not permit third-party deposits or withdrawals. The registered account
-          holder must be the beneficial owner of all funds transferred to and from the trading
-          account.
-        </p>
-        <p className="mt-3">
-          Any suspected third-party transaction may result in transaction rejection, account
-          suspension, compliance review, or account closure.
+          {BRAND_NAME} builds a full back office into your platform: client CRM, KYC/AML workflows,
+          risk controls, liquidity routing, reporting and partner management — everything your team
+          needs to run the brokerage.
         </p>
       </>
     ),
   },
   {
-    q: 'Can I get a refund on a deposit?',
+    q: 'Can we start with some modules and add more later?',
     a: (
       <>
         <p>
-          Clients who have deposited funds but have not engaged in any trading activity may request a
-          refund within 24 hours of the original deposit. Refund requests are reviewed on a
-          case-by-case basis and may require identity verification.
+          Yes. You can launch with the modules you need and add copy trading, prop trading, IB
+          management, MAM/PAMM and more as you grow.
         </p>
         <p className="mt-3">
-          Refunds will not be available where trading activity has occurred, positions have been
-          opened or closed, bonus abuse is suspected, or AML concerns exist. Approved refunds will be
-          returned only to the original cryptocurrency wallet used for the deposit whenever
-          technically possible.
+          Because the platform is built in-house, new modules fit the same system rather than being
+          bolted on.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: 'Who owns the branding and domain?',
+    a: (
+      <>
+        <p>
+          You do. Everything ships white-label: your name, logo, colours and domain across web, mobile
+          and desktop. Nothing carries our brand.
+        </p>
+        <p className="mt-3">
+          Your clients see your brokerage, not us.
         </p>
       </>
     ),
@@ -175,20 +170,20 @@ const FUNDING: FaqItem[] = [
    Sources: home/data.ts FAQ[4], FAQ[5], FAQ[6]. */
 const TRADING: FaqItem[] = [
   {
-    q: 'Which currency pairs can I trade?',
-    a: `${BRAND_NAME} quotes major pairs such as EUR/USD, GBP/USD and USD/JPY, minor crosses including EUR/GBP and AUD/JPY, and exotic pairs across emerging markets. Stock indices, gold and silver, and major digital assets are available from the same account.`,
+    q: 'Which asset classes can the platform support?',
+    a: `The platforms we build can support multi-asset trading — forex majors, minors and exotics, stock indices, commodities such as gold and silver, and major digital assets — all from a single account for your clients.`,
   },
   {
-    q: 'What spreads and leverage are available?',
-    a: 'Spreads start from 0.0 pips on ECN accounts and from 1.0 pip on Standard, with commission shown on the order ticket before you confirm. Leverage is adjustable up to 1:500 depending on account type and instrument. Higher leverage increases both potential gains and potential losses.',
+    q: 'Can we set our own spreads, leverage and pricing?',
+    a: 'Yes. Spreads, commissions, leverage and instrument settings are all configurable, so your team sets the trading conditions your clients see. Higher leverage increases both potential gains and potential losses for the end client.',
   },
   {
-    q: 'How is my order executed?',
-    a: 'Market orders are filled at the live quote with no dealing-desk intervention. Pending orders, stop-loss and take-profit levels are held server-side, so they stay active even when your browser is closed.',
+    q: 'How does order execution work on the platform?',
+    a: 'The engine fills market orders at the live quote and holds pending orders, stop-loss and take-profit levels server-side, so they stay active even when the client’s browser is closed. Execution runs under your brokerage’s setup, not ours.',
   },
   {
-    q: 'How do I apply for the IB programme?',
-    a: 'Open the IB Referral page from the footer and complete the short partner application (name, country, email, phone, and a brief note about your audience). Our partner team reviews and activates accounts within 24 hours. Once approved you receive a unique referral link plus a marketing kit, and you earn weekly per-lot commissions on every trade your referrals place.',
+    q: 'Does the platform include partner and IB management?',
+    a: 'Yes. IB and partner management ships as part of the platform: referral links, marketing kits, per-lot commission tracking and payouts, all run by your team from the admin back office. You configure the programme; your partners work under your brand.',
   },
 ];
 
@@ -197,66 +192,56 @@ const TRADING: FaqItem[] = [
    delete-account page. */
 const ACCOUNT: FaqItem[] = [
   {
-    q: 'What verification (KYC) do I need to complete?',
+    q: 'How is KYC/AML handled in the platform?',
     a: (
       <>
         <p>
-          Before deposits are available for trading and before withdrawals are approved, clients may
-          be required to complete identity verification procedures. Required documents may include a
-          government-issued photo ID, proof of address, selfie verification, and additional documents
-          requested by Compliance.
+          We build KYC and AML workflows into the platform — document capture, identity checks, selfie
+          verification and compliance review queues — wired to the providers you choose.
         </p>
         <p className="mt-3">
-          {BRAND_NAME} reserves the right to restrict account functionality until verification
-          requirements are completed.
+          Your compliance team runs these workflows under your licence; {BRAND_NAME} builds the
+          tooling.
         </p>
       </>
     ),
   },
   {
-    q: 'Why might my account be reviewed or frozen?',
+    q: 'What risk and compliance controls can we configure?',
     a: (
       <>
         <p>
-          {BRAND_NAME} maintains strict AML and Counter-Terrorist Financing procedures. The Company
-          reserves the right to request proof of source of funds, request blockchain transaction
-          evidence, delay transactions pending compliance review, reject suspicious transactions,
-          freeze accounts involved in unlawful activities, and report suspicious activity to relevant
-          authorities where required.
+          The back office includes configurable risk and compliance controls: source-of-funds checks,
+          transaction monitoring, review queues, account freezes and reporting. Your team sets the
+          rules and acts on them; we build the controls.
         </p>
       </>
     ),
   },
   {
-    q: 'Which countries are restricted?',
+    q: 'Can we restrict access by country?',
     a: (
       <>
         <p>
-          {BRAND_NAME} does not provide services to citizens, residents, or persons located in the
-          United States of America (USA), Cuba, Iraq, Myanmar, North Korea, and Sudan.
+          Yes. The platform can restrict sign-up and access by jurisdiction, so you enforce the list
+          your licence requires.
         </p>
         <p className="mt-3">
-          The services of {BRAND_NAME} are not intended for distribution to, or use by, any person in
-          any country or jurisdiction where such distribution or use would be contrary to local law
-          or regulation. See the Restricted Countries page for the full policy.
+          You control which countries are allowed; {BRAND_NAME} provides the tooling to enforce it.
         </p>
       </>
     ),
   },
   {
-    q: 'How do I delete my account and my data?',
+    q: 'What support do we get after launch?',
     a: (
       <>
         <p>
-          Go to Settings → Account → Delete account and follow the prompts, or send a deletion request
-          from your registered email address to our support team with the subject &quot;Account
-          Deletion Request&quot;.
+          The team that builds your platform supports it after go-live — by live chat, email and phone
+          — covering monitoring, updates and new modules as you grow.
         </p>
         <p className="mt-3">
-          Deletion is normally completed within 30 days of a verified request and is permanent. As a
-          financial services provider we are legally required to retain certain transaction and
-          identity-verification records after deletion — see the Delete Your Account page for the
-          full breakdown.
+          We do not disappear at launch; ongoing support is part of how we work.
         </p>
       </>
     ),
@@ -264,10 +249,10 @@ const ACCOUNT: FaqItem[] = [
 ];
 
 const GROUPS: { id: string; kicker: string; title: string; items: FaqItem[] }[] = [
-  { id: 'getting-started', kicker: 'Getting started', title: 'Opening an account', items: GETTING_STARTED },
-  { id: 'funding', kicker: 'Funding', title: 'Deposits & withdrawals', items: FUNDING },
-  { id: 'trading', kicker: 'Trading', title: 'Trading on the platform', items: TRADING },
-  { id: 'account-security', kicker: 'Account & security', title: 'Verification, compliance & your data', items: ACCOUNT },
+  { id: 'getting-started', kicker: 'Getting started', title: 'Working with us', items: GETTING_STARTED },
+  { id: 'funding', kicker: 'Platform', title: 'Platform & integrations', items: FUNDING },
+  { id: 'trading', kicker: 'Capabilities', title: 'Platform capabilities', items: TRADING },
+  { id: 'account-security', kicker: 'Delivery & support', title: 'Delivery, compliance & support', items: ACCOUNT },
 ];
 
 export default function FaqPage() {
@@ -276,9 +261,9 @@ export default function FaqPage() {
       <PageHero
         kicker="Support"
         title="Frequently Asked Questions"
-        lead={`Everything you need to know before your first deposit. Still have questions? Our team is live 24/7.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Contact Support', href: '/company/contact' }}
+        lead={`Everything you need to know about launching a white-label platform with ${BRAND_NAME}. Still have questions? Book a demo.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
 
       {GROUPS.map((group, i) => (
@@ -292,9 +277,9 @@ export default function FaqPage() {
 
       <CtaBanner
         title="Still have a question?"
-        lead={`Our support team answers around the clock — or open a ${BRAND_NAME} account and try the platform for yourself.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Contact Support', href: '/company/contact' }}
+        lead={`Our team is here to help — or book a demo and see the ${BRAND_NAME} platform for yourself.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

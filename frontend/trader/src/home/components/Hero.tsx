@@ -104,7 +104,7 @@ export function Hero() {
           style={{ borderRadius: 'clamp(16px, 1.6vw, 28px)' }}
         >
           <Image
-            src="/images/home banner 2.png"
+            src="/images/mobile img.png"
             alt={`${BRAND_NAME} trading platform shown on mobile`}
             width={1791}
             height={878}
@@ -164,8 +164,8 @@ export function Hero() {
       </div>
 
       <p className="sr-only">
-        {BRAND_NAME} — forex and CFD trading with major, minor and exotic
-        currency pairs, tight spreads and fast execution.
+        {BRAND_NAME} — a software development company building white-label
+        trading platforms, back offices and risk engines for brokers and prop firms.
       </p>
 
       {/* Real market data, straight from the TradingView tape. */}

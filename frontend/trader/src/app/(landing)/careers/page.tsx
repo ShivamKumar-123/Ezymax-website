@@ -22,7 +22,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: `Careers | ${BRAND_NAME}`,
-  description: `Work at ${BRAND_NAME} — how we build our trading platform, what we look for, and how to send us your CV.`,
+  description: `Work at ${BRAND_NAME} — how we build white-label trading platforms for brokers, what we look for, and how to send us your CV.`,
 };
 
 const CV_MAILTO = `mailto:${BRAND_SUPPORT_EMAIL}?subject=${encodeURIComponent(
@@ -36,8 +36,8 @@ export default function CareersPage() {
     <main>
       <PageHero
         kicker="Careers"
-        title={`Build the platform traders rely on`}
-        lead={`We are a small team shipping a live trading platform. We do not always have a published opening — but we always read a good CV.`}
+        title={`Build the platforms brokers rely on`}
+        lead={`We are a software team building white-label trading platforms for brokers and prop firms. We do not always have a published opening — but we always read a good CV.`}
         primary={{ label: 'Send us your CV', href: CV_MAILTO }}
         secondary={{ label: 'About the company', href: '/company/about' }}
       />
@@ -48,13 +48,14 @@ export default function CareersPage() {
           <SectionHeading align="left" kicker="What we do" title={`Inside ${BRAND_NAME}`} />
           <div className="flex flex-col gap-5" style={{ maxWidth: '68ch' }}>
             <p className="mk-lead">
-              {BRAND_NAME} is an institutional-grade forex, CFD broker, and decentralized exchange
-              built for serious traders. It offers fast execution, low spreads, transparent pricing,
-              insured trades, and fully automated trading with no human intervention.
+              {BRAND_NAME} is a software company building white-label trading technology for licensed
+              brokers and proprietary trading firms. We build web, mobile and desktop terminals, admin
+              back offices, risk engines and integrations — delivered under the client&apos;s brand, on
+              the client&apos;s domain.
             </p>
             <p className="mk-lead">
-              {BRAND_NAME} also provides a rewarding IB (Introducing Broker) program with
-              profit-sharing opportunities for partners and affiliates.
+              We also build partner and IB-management modules into the platforms we ship, so our
+              clients can run their own referral and profit-sharing programmes.
             </p>
             <p className="mk-body">
               That means the work spans real-time market data, order execution and risk, payments and
@@ -94,7 +95,7 @@ export default function CareersPage() {
             {
               icon: Handshake,
               title: 'Compliance is part of the craft',
-              body: 'Financial services carry real obligations. We treat KYC, AML and risk controls as product work, not paperwork bolted on at the end.',
+              body: 'Our clients are regulated. We treat KYC, AML and risk controls as core product work, not paperwork bolted on at the end.',
             },
             {
               icon: Globe,
@@ -104,7 +105,7 @@ export default function CareersPage() {
             {
               icon: GraduationCap,
               title: 'Room to learn the domain',
-              body: 'Nobody arrives knowing forex, CFDs, and on-chain settlement all at once. We expect people to grow into the domain, and we make time for it.',
+              body: 'Nobody arrives knowing forex, CFDs and market microstructure all at once. We expect people to grow into the domain, and we make time for it.',
             },
           ]}
         />
@@ -138,8 +139,8 @@ export default function CareersPage() {
 
       <CtaBanner
         title={`Want to see what you would be working on?`}
-        lead={`Open a ${BRAND_NAME} account and use the platform the way our clients do.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        lead={`Book a demo and see the white-label platform our clients launch under their own brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Send us your CV', href: CV_MAILTO }}
       />
     </main>

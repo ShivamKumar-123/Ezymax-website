@@ -30,10 +30,10 @@ export default function CommoditiesPage() {
     <main>
       <PageHero
         kicker="Commodities"
-        title="Trade Gold, Oil & More"
-        lead="Diversify your portfolio with top global commodities at competitive rates."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Explore All Markets', href: '/markets' }}
+        title="Commodities support for your platform"
+        lead="Give your clients top global commodities — metals, energy and more — with commodities support built into the platform we deliver under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Explore market coverage', href: '/markets' }}
       />
 
       <Section raised>
@@ -62,9 +62,9 @@ export default function CommoditiesPage() {
         </div>
 
         <div className="flex flex-col gap-4 mx-auto max-w-3xl mt-14 text-center">
-          <h2 className="mk-h2">Why Trade Commodities?</h2>
+          <h2 className="mk-h2">Why offer Commodities?</h2>
           <p className="mk-lead">
-            {`Commodities offer excellent diversification opportunities and act as a hedge against inflation. Trade precious metals like gold and silver, energy commodities like crude oil and natural gas, and agricultural products with ${BRAND_NAME}. Benefit from competitive spreads, flexible leverage, and access to global commodity markets 23 hours a day.`}
+            {`Commodities offer excellent diversification opportunities and act as a hedge against inflation. The ${BRAND_NAME} platform supports precious metals like gold and silver, energy commodities like crude oil and natural gas, and more — with configurable spreads, flexible leverage and access to global commodity markets nearly around the clock, all under your brand.`}
           </p>
         </div>
       </Section>
@@ -113,35 +113,35 @@ export default function CommoditiesPage() {
       </Section>
 
       <Section raised>
-        <SectionHeading kicker="Why Trade Here" title={`Commodity Trading with ${BRAND_NAME}`} />
+        <SectionHeading kicker="Platform capability" title={`Commodities on the ${BRAND_NAME} platform`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
             {
               icon: Medal,
-              title: 'Trade Precious Metals',
-              body: 'Access gold, silver, platinum, and palladium with tight spreads and flexible leverage options.',
+              title: 'Precious Metals',
+              body: 'Clients access gold, silver, platinum and palladium with configurable spreads and flexible leverage.',
             },
             {
               icon: Fuel,
               title: 'Energy Markets',
-              body: 'Trade WTI and Brent crude oil, natural gas, and other energy commodities with real-time pricing.',
+              body: 'Support for WTI and Brent crude oil, natural gas and other energy commodities with real-time pricing.',
             },
             {
               icon: BarChart3,
               title: 'Portfolio Diversification',
-              body: 'Hedge against market volatility and inflation by adding commodities to your trading portfolio.',
+              body: 'Lets clients diversify against volatility and inflation by adding commodities to their portfolio.',
             },
           ]}
         />
       </Section>
 
       <CtaBanner
-        title="Trade Gold, Oil & More"
-        lead={`Open a ${BRAND_NAME} account and diversify into metals, energy, and global commodity markets.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare Account Types', href: '/account-types' }}
+        title="Add commodities to your platform"
+        lead={`Book a demo and see how the ${BRAND_NAME} platform supports metals, energy and global commodity markets under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
     </main>
   );

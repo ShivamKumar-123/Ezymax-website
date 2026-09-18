@@ -25,8 +25,8 @@ export default function IcoComingSoonPage() {
     <main>
       <PageHero
         kicker="Coming Soon"
-        title={<>ICO &amp; Early-Stage <span style={{ color: 'var(--mk-accent)' }}>Investments</span></>}
-        lead={`Early access to promising blockchain projects, vetted by ${BRAND_NAME} before they hit the wider market. Coming soon — join the early-access list to be notified the moment the first round opens.`}
+        title={<>Token Launch &amp; ICO <span style={{ color: 'var(--mk-accent)' }}>Tooling</span></>}
+        lead={`A launchpad module for running vetted token sales on your platform — due-diligence workflow, multi-stage rounds, vesting, and on-chain claims. Coming soon — join the ${BRAND_NAME} early-access list to hear the moment it ships.`}
       >
         {/* Notify form */}
         <form onSubmit={onSubmit} className="w-full max-w-xl mt-4">
@@ -83,9 +83,9 @@ export default function IcoComingSoonPage() {
           className="mt-12"
           columns={3}
           items={[
-            { icon: ShieldCheck, title: 'Due-Diligence First', body: 'Every project undergoes a 6-stage review — team, tokenomics, audit, treasury, market fit, legal.' },
-            { icon: Layers,      title: 'Multi-Stage Rounds',  body: 'Seed, private, and public tranches with transparent pricing and vesting schedules.' },
-            { icon: Lock,        title: 'On-Chain Custody',    body: 'Allocations are claimed directly to your wallet — non-custodial from day one.' },
+            { icon: ShieldCheck, title: 'Built-In Due Diligence', body: 'A structured review workflow — team, tokenomics, audit, treasury, market fit, and legal — before a project can be listed.' },
+            { icon: Layers,      title: 'Multi-Stage Rounds',  body: 'Configure seed, private, and public tranches with transparent pricing and vesting schedules.' },
+            { icon: Lock,        title: 'On-Chain Claims',     body: 'Allocations settle straight to investor wallets, on-chain.' },
           ]}
         />
       </Section>
@@ -97,20 +97,20 @@ export default function IcoComingSoonPage() {
           className="mt-12"
           columns={3}
           items={[
-            { icon: Sparkles,    title: 'Curated Projects',     body: 'Hand-picked launchpad — quality over quantity. Expect 3–6 projects per quarter, not a daily firehose.' },
-            { icon: Users,       title: 'Early-Access Tiers',   body: `Loyalty-based allocation tiers. Active ${BRAND_NAME} traders get priority access and higher allocation caps.` },
-            { icon: Gem,         title: 'Discounted Entry',     body: `Strategic-round pricing for ${BRAND_NAME} investors — below public-sale rates, with vesting to align incentives.` },
-            { icon: ShieldCheck, title: 'Audited Contracts',    body: 'No project lists without a clean audit from a tier-one firm and a published bug-bounty programme.' },
-            { icon: Lock,        title: 'Vesting Transparency', body: 'Schedules published on-chain — see every team and investor unlock before you commit a dollar.' },
-            { icon: Layers,      title: 'Secondary Liquidity',  body: 'Tokens go straight to your wallet — trade on any DEX from the moment vesting unlocks.' },
+            { icon: Sparkles,    title: 'Curated Launchpad',    body: 'Quality over quantity — the module is built for a handful of vetted projects, not a daily firehose.' },
+            { icon: Users,       title: 'Loyalty-Based Tiers',  body: 'Reward your most active clients with priority access and higher allocation caps, tied to the loyalty rules you set.' },
+            { icon: Gem,         title: 'Strategic-Round Pricing', body: 'Offer strategic-round pricing to selected clients — below public-sale rates, with vesting to align incentives.' },
+            { icon: ShieldCheck, title: 'Audit Requirements',   body: 'Enforce listing rules — a clean contract audit and a published bug-bounty programme — before a project goes live.' },
+            { icon: Lock,        title: 'Vesting Transparency', body: 'Vesting schedules are published on-chain, so every team and investor unlock is visible before anyone commits.' },
+            { icon: Layers,      title: 'Secondary Liquidity',  body: 'Tokens settle to investor wallets — tradable on any DEX from the moment vesting unlocks.' },
           ]}
         />
       </Section>
 
       <CtaBanner
         title="Be First in Line"
-        lead={`Open a ${BRAND_NAME} account today — every trade you place between now and launch counts toward your early-access tier.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        lead={`Book a demo to see the ${BRAND_NAME} launchpad roadmap and how token-sale tooling will fit into your platform.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

@@ -10,12 +10,12 @@ import { Check } from 'lucide-react';
 import { Section, SectionHeading, PageHero, CtaBanner } from '@/marketing/components';
 
 const FEATURES = [
-  'Free educational content',
-  '24/7 customer support',
-  'Negative balance protection',
-  'Access to all trading platforms',
-  'No hidden fees',
-  'Free deposits & withdrawals',
+  'Education content modules',
+  '24/7 support from the team that builds it',
+  'Negative balance protection controls',
+  'Access to all platform surfaces',
+  'Transparent, configurable pricing',
+  'Deposit & withdrawal integrations',
   'Real-time market data',
   'Mobile trading apps',
 ];
@@ -40,11 +40,11 @@ export default function StandardAccountPage() {
   return (
     <main>
       <PageHero
-        kicker="For Beginners & Retail Traders"
+        kicker="A configurable account tier"
         title="Standard Account"
-        lead="Start your trading journey with our beginner-friendly Standard Account. Low minimum deposit, competitive spreads, and no commission."
-        primary={{ label: 'Open Standard Account', href: '/auth/register' }}
-        secondary={{ label: 'Try Demo First', href: '/accounts/demo' }}
+        lead="The entry-level tier your clients can start on — low minimum deposit, competitive spreads and no commission, all configurable in the platform we build under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
 
       <Section raised>
@@ -139,10 +139,10 @@ export default function StandardAccountPage() {
       </Section>
 
       <CtaBanner
-        title="Ready to Start Trading?"
-        lead="Open your Standard Account today with just $100 and start trading global markets."
-        primary={{ label: 'Open Standard Account', href: '/auth/register' }}
-        secondary={{ label: 'Try Demo First', href: '/accounts/demo' }}
+        title="Offer a Standard tier under your brand"
+        lead="Configure the Standard tier in the platform we build and launch it to your clients under your own brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Education → Trading Tutorials. Restyled onto the shared marketing design
- * system; every line of copy is carried over from the previous page.
+ * Education → Platform Tutorials. Restyled onto the shared marketing design
+ * system; the copy is written in the software-vendor voice.
  */
 import { Clock, BarChart, GraduationCap, Smartphone, Trophy } from 'lucide-react';
 import { Section, SectionHeading, PageHero, FeatureGrid, CtaBanner } from '@/marketing/components';
@@ -14,32 +14,32 @@ const COURSES: Array<{
   title: string; description: string; duration: string; level: Level; lessons: number; icon: string;
 }> = [
   {
-    title: 'Forex Basics 101',
-    description: 'Learn the fundamentals of forex trading from scratch. Perfect for complete beginners.',
+    title: 'Platform Onboarding 101',
+    description: 'Get up and running with the trading terminal — layout, order tickets, watchlists, and account setup.',
     duration: '2 hours',
     level: 'Beginner',
     lessons: 12,
     icon: '📚',
   },
   {
-    title: 'Technical Analysis Masterclass',
-    description: 'Master chart patterns, indicators, and technical analysis strategies used by professionals.',
+    title: 'Charting & Terminal Deep Dive',
+    description: 'Master the charting engine, indicators, and terminal features your clients use every day.',
     duration: '4 hours',
     level: 'Intermediate',
     lessons: 20,
     icon: '📊',
   },
   {
-    title: 'Position Sizing & Psychology',
-    description: 'Build the discipline and position-sizing habits that keep a trading account intact.',
+    title: 'Admin & Risk Controls',
+    description: 'Configure account groups, leverage tiers, margin and stop-out rules from the admin back office.',
     duration: '3 hours',
     level: 'Intermediate',
     lessons: 15,
     icon: '🧠',
   },
   {
-    title: 'Algorithmic & Copy Trading',
-    description: `Learn to set up automated strategies and copy trading on ${BRAND_NAME}.`,
+    title: 'Copy Trading & Algo Setup',
+    description: `Set up the copy-trading and algorithmic modules ${BRAND_NAME} builds into your platform.`,
     duration: '5 hours',
     level: 'Advanced',
     lessons: 25,
@@ -58,8 +58,8 @@ export default function TutorialsPage() {
     <main>
       <PageHero
         kicker="Education"
-        title="Trading Tutorials"
-        lead="Learn at your own pace with our comprehensive video courses and tutorials."
+        title="Platform Tutorials"
+        lead="Step-by-step guides to the platform and back office, for operators and their teams — learn it at your own pace."
         primary={{ label: 'Browse All Courses', href: '/academy' }}
       />
 
@@ -107,23 +107,23 @@ export default function TutorialsPage() {
       </Section>
 
       <Section>
-        <SectionHeading kicker="Why Learn Here" title={`Why Learn with ${BRAND_NAME}?`} />
+        <SectionHeading kicker="Why Learn Here" title={`Why Learn the ${BRAND_NAME} Platform?`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: GraduationCap, title: 'Expert Instructors', body: 'Learn from professional traders with years of experience' },
-            { icon: Smartphone,    title: 'Learn Anywhere',     body: 'Access courses on any device, anytime, anywhere' },
-            { icon: Trophy,        title: 'Practical Skills',   body: 'Apply what you learn immediately in your trading' },
+            { icon: GraduationCap, title: 'Built by the Platform Team', body: 'Learn the platform from the people who build and support it' },
+            { icon: Smartphone,    title: 'Learn Anywhere',            body: 'Access tutorials on any device, anytime, anywhere' },
+            { icon: Trophy,        title: 'Ready to Configure',        body: 'Apply each lesson directly in your platform and back office' },
           ]}
         />
       </Section>
 
       <CtaBanner
         title="Browse All Courses"
-        lead={`Work through the ${BRAND_NAME} curriculum at your own pace, then apply it on a live or demo account.`}
+        lead={`Work through the ${BRAND_NAME} platform tutorials at your own pace, then book a demo to see it live.`}
         primary={{ label: 'Browse All Courses', href: '/academy' }}
-        secondary={{ label: 'Open Account', href: '/auth/register' }}
+        secondary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

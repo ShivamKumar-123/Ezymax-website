@@ -14,7 +14,7 @@ import { BRAND_NAME } from '@/lib/brand';
  * over from the previous page untouched — only the presentation changed.
  */
 
-const SIGNUP_HREF = '/auth/register';
+const SIGNUP_HREF = '/company/contact';
 
 /** Wire shape from /api/v1/referral/tiers — kept lean: only the fields
  *  the marketing page actually renders. Admin owns the data in
@@ -156,34 +156,34 @@ export default function ReferralPage() {
   return (
     <main>
       <PageHero
-        kicker="Referral Program"
-        title="Referral Program"
-        lead="Share your link, earn instantly. Per-referral payouts that scale with your volume — paid the moment your friend qualifies."
-        primary={{ label: 'Get Your Link', href: SIGNUP_HREF }}
-        secondary={{ label: 'See Payouts', href: '#tiers' }}
+        kicker="Referral Module"
+        title="Referral & Loyalty, Built In"
+        lead="A configurable referral and loyalty module ships with the platform — so your brokerage can reward clients for bringing in new traders, with per-referral bounties that pay out automatically when your rules are met."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
+        secondary={{ label: 'See how payouts work', href: '#tiers' }}
       />
 
       {/* Intro */}
       <Section raised>
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-8 items-center">
           <div className="flex flex-col gap-4 items-start">
-            <span className="mk-kicker">Instant Per-Referral Bounty</span>
+            <span className="mk-kicker">Automated Per-Referral Bounties</span>
             <h2 className="mk-h2">
-              Refer. Activate. <span style={{ color: 'var(--mk-accent)' }}>Get Paid Instantly.</span>
+              Refer. Activate. <span style={{ color: 'var(--mk-accent)' }}>Rewarded automatically.</span>
             </h2>
             <p className="mk-lead">
-              Every time a friend signs up with your link, activates their account, and places their first 3 trades,
-              you receive a one-time referral bounty straight to your wallet. No waiting. No claw-back. The more
-              referrals you bring, the higher the per-referral payout.
+              When a referred client signs up, activates, and meets the trade threshold you set, the module credits
+              a one-time bounty to the referring client automatically. You define the rules, the tiers, and the
+              payout — the platform handles the rest.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Get Your Link</Link>
-              <Link href="#tiers" className="mk-btn mk-btn--ghost">See Payouts</Link>
+              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Book a demo</Link>
+              <Link href="#tiers" className="mk-btn mk-btn--ghost">See how payouts work</Link>
             </div>
           </div>
           {/* Reserved illustration area. The previous artwork came from the
               cloned site and was deleted with the rest of its images, so
-              this holds the exact footprint until Bullza artwork exists. */}
+              this holds the exact footprint until SwissCresta artwork exists. */}
           <div className="mk-media mk-media--ratio-3x2">
             Referral programme — 1120×740
           </div>
@@ -195,7 +195,7 @@ export default function ReferralPage() {
         <SectionHeading
           kicker="Payouts"
           title="Referral Payouts"
-          lead="Move up the ladder automatically as your active referrals grow — no manual upgrade."
+          lead="Reward your most active referrers with higher bounties. The module moves clients up the ladder automatically as their active referrals grow — the example figures below are yours to configure."
         />
 
         <div className="overflow-x-auto mt-12">
@@ -281,9 +281,10 @@ export default function ReferralPage() {
           className="mt-6 text-center mx-auto max-w-2xl"
           style={{ fontSize: 'var(--mk-text-xs)', lineHeight: 'var(--mk-leading-body)', color: 'var(--mk-text-faint)' }}
         >
-          You earn the reward of the highest tier you reach. A tier unlocks once your activations
-          cross its threshold. An activation = a referred client who completes KYC and at least 3 trades.
-          Top partners can be set a custom rate.
+          Each referrer earns the reward of the highest tier they reach; a tier unlocks once their
+          activations cross its threshold. An activation is a referred client who completes the
+          qualification you configure — for example KYC plus a minimum number of trades.
+          Top referrers can be set a custom rate.
         </p>
       </Section>
 
@@ -292,11 +293,11 @@ export default function ReferralPage() {
         <SectionHeading
           kicker="Terms & Conditions"
           title="How a Referral Qualifies"
-          lead="Two simple requirements — both must be met for a referral to count and trigger your payout."
+          lead="Qualification is fully configurable. In this example, two conditions must be met before a referral counts and a bounty is released."
         />
         <ol className="grid sm:grid-cols-2 gap-5 mt-12 mx-auto max-w-3xl">
           {[
-            { n: '1', title: 'Activation of user',  body: activationSentence },
+            { n: '1', title: 'Referral activation',  body: activationSentence },
             { n: '2', title: tradesTitle,           body: tradesBody },
           ].map((t) => (
             <li key={t.n} className="mk-card mk-card--hover flex flex-col gap-3">
@@ -318,14 +319,14 @@ export default function ReferralPage() {
 
       {/* Why refer */}
       <Section>
-        <SectionHeading kicker="Benefits" title={`Why Refer Friends to ${BRAND_NAME}`} />
+        <SectionHeading kicker="Benefits" title={`What the ${BRAND_NAME} Referral Module Gives You`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: Zap,    title: 'Instant Payout',      body: 'No weekly batching, no holding period. The bounty hits your wallet the moment your referral completes 3 trades.' },
-            { icon: Users,  title: 'No Cap on Referrals', body: 'Refer 5 or 5,000 friends — your per-referral payout only goes up as you grow.' },
-            { icon: Wallet, title: 'Stacks With IB',      body: 'If you upgrade to the IB partner programme later, your existing referrals stay credited to you for life.' },
+            { icon: Zap,    title: 'Automated Payouts',   body: 'No manual batching. Bounties are credited automatically the moment a referral meets the trade threshold you set.' },
+            { icon: Users,  title: 'No Referral Caps',    body: 'Whether a client refers five people or five thousand, the module scales — the per-referral payout only grows with volume.' },
+            { icon: Wallet, title: 'Works Alongside IB',  body: 'Runs side by side with the IB module, so referrals stay credited even when a client graduates to a full introducing-broker role.' },
           ]}
         />
       </Section>
@@ -337,20 +338,20 @@ export default function ReferralPage() {
           <FaqAccordion
             items={[
               {
-                q: 'How do I get my referral link?',
-                a: <>Open a {BRAND_NAME} account, head to the Dashboard → Referrals tab, and your unique link is ready to copy and share. You can also generate QR codes and tracked landing pages from the same screen.</>,
+                q: 'How do clients get their referral link?',
+                a: <>Once the module is enabled, each client finds a unique link in their dashboard under the Referrals tab, ready to copy and share. They can also generate QR codes and tracked landing pages from the same screen.</>,
               },
               {
-                q: 'When do I get paid?',
-                a: <>The moment your referred friend completes their 3rd trade after activation, the bounty for that referral is paid instantly to your {BRAND_NAME} wallet. You can withdraw it immediately or use it as trading equity.</>,
+                q: 'When are bounties paid out?',
+                a: <>As soon as a referred client meets the qualification you configure — for example completing a set number of trades — the module credits the bounty automatically to the referrer&apos;s balance.</>,
               },
               {
                 q: 'What counts as an active referral for the tier ladder?',
-                a: <>Any referral that has cleared both T&amp;C conditions (activated account + minimum 3 trades). Once you have 21+ active referrals, every subsequent referral pays $7 instead of $5. At 100+ actives, the per-referral payout jumps to $10.</>,
+                a: <>Any referral that clears the conditions you set — for example an activated account plus a minimum number of trades. Thresholds and rewards are configurable; in the example ladder, crossing 21+ actives lifts the per-referral payout to $7, and 100+ takes it to $10.</>,
               },
               {
-                q: "What's the difference between Referral and IB?",
-                a: <>Referral pays a one-time bounty per qualifying friend. IB (Introducing Broker) pays a recurring per-lot commission on every trade your network places, for life. You can run both side-by-side.</>,
+                q: "What's the difference between the Referral and IB modules?",
+                a: <>The referral module pays a one-time bounty per qualifying client. The IB module pays a recurring per-lot commission on every trade a partner&apos;s network places. Both ship with the platform and can run side by side.</>,
               },
             ]}
           />
@@ -358,9 +359,9 @@ export default function ReferralPage() {
       </Section>
 
       <CtaBanner
-        title="Start Earning From Day One"
-        lead={`Open a ${BRAND_NAME} account, grab your referral link, and share it with one friend today. Their first $5 bounty could land in your wallet by the end of the week.`}
-        primary={{ label: 'Open Account', href: SIGNUP_HREF }}
+        title="See the Referral Module in Action"
+        lead="Book a demo and we'll show you how to configure tiers, set qualification rules, and automate bounty payouts on your platform."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
       />
     </main>
   );

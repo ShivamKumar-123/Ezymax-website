@@ -20,8 +20,8 @@ import { MarketsGrid } from '@/home/components/MarketsGrid';
 import { Section, SectionHeading, PageHero } from '@/marketing/components';
 import { BRAND_NAME } from '@/lib/brand';
 
-const SIGNUP_HREF = '/auth/register';
-const DEMO_HREF = '/accounts/demo';
+const SIGNUP_HREF = '/company/contact';
+const DEMO_HREF = '/platforms/web';
 
 /* ── Content ─────────────────────────────────────────────────────────
    Every list below maps one-for-one onto a band in the layout, so the
@@ -49,7 +49,7 @@ const ANALYSIS_PRIMARY: Card[] = [
   },
   {
     title: 'Technical analysis',
-    body: 'Read price action with live charts, drawing tools and over 100 indicators on every instrument we quote.',
+    body: 'Read price action with live charts, drawing tools and over 100 indicators on every instrument the platform supports.',
     href: '/platforms/web',
     image: '/images/News2.png',
   },
@@ -79,16 +79,16 @@ const ANALYSIS_SECONDARY: Card[] = [
 /** Band 5 — the checklist inside the red panel beside the product shot. */
 const ACCOUNT_POINTS = [
   {
-    title: 'Trade a wide range of markets',
-    body: 'Over 50 currency pairs plus indices, commodities and digital assets, all from one login.',
+    title: 'Offer a wide range of markets',
+    body: 'Over 50 currency pairs plus indices, commodities and digital assets, all reachable from one client login.',
   },
   {
-    title: 'Deal seamlessly, wherever you are',
-    body: 'The same account on web, mobile and desktop browser, with your positions in sync across all three.',
+    title: 'One experience across every device',
+    body: 'The same account on web, mobile and desktop browser, with positions kept in sync across all three.',
   },
   {
-    title: 'Know the cost before you confirm',
-    body: 'Spread, leverage and margin are shown on the order ticket, with market execution and no dealing desk.',
+    title: 'Cost shown before the client confirms',
+    body: 'Spread, leverage and margin appear on the order ticket, with the execution model your desk configures.',
   },
 ];
 
@@ -97,17 +97,17 @@ const CONDITIONS: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: Gauge,
     title: 'Transparent spreads',
-    body: 'From 0.0 pips on ECN and 1.0 pip on Standard, quoted on the ticket before you confirm the order.',
+    body: 'Spreads your desk sets per account tier, shown on the ticket before the client confirms the order.',
   },
   {
     Icon: SlidersHorizontal,
     title: 'Adjustable leverage',
-    body: 'Up to 1:500 depending on account type and instrument, with the level set before the trade is placed.',
+    body: 'Leverage limits you define by account type and instrument, applied before each trade is placed.',
   },
   {
     Icon: Zap,
-    title: 'Market execution',
-    body: 'Orders fill at the next available price, with no dealing-desk intervention between you and the market.',
+    title: 'Flexible execution',
+    body: 'Route orders through the execution model you choose, with pricing wired to your liquidity providers.',
   },
 ];
 
@@ -118,19 +118,19 @@ const TOOLS_PRIMARY: ToolItem[] = [
   {
     Icon: CandlestickChart,
     title: 'Live charts',
-    body: 'Full charting on every instrument we quote, with the drawing tools and indicators you already use.',
+    body: 'Full charting on every instrument the platform supports, with the drawing tools and indicators traders expect.',
     href: '/platforms/web',
   },
   {
     Icon: ShieldCheck,
-    title: 'Managing your risk',
-    body: 'Stops, limits and position sizing built into the ticket so exposure is decided before you enter.',
+    title: 'Risk controls',
+    body: 'Stops, limits and position sizing built into the ticket so exposure is set before an order goes in.',
     href: '/risk',
   },
   {
     Icon: GraduationCap,
-    title: 'Education and tutorials',
-    body: 'Walkthroughs covering order types, margin and the mechanics of each market we offer.',
+    title: 'Education modules',
+    body: 'Ready-made walkthroughs covering order types, margin and the mechanics of each market the platform supports.',
     href: '/education/tutorials',
   },
 ];
@@ -139,7 +139,7 @@ const TOOLS_SECONDARY: ToolItem[] = [
   {
     Icon: Copy,
     title: 'Copy trading',
-    body: 'Follow the traders you rate and mirror their positions automatically on your own account.',
+    body: 'A built-in module that lets clients follow and mirror the positions of traders they choose.',
     href: '/platforms/copy-trading',
   },
   {
@@ -153,11 +153,11 @@ const TOOLS_SECONDARY: ToolItem[] = [
 /** Band 9 — the closing "you might be interested in" link list. */
 const INTERESTED = [
   { title: 'What are CFDs?', body: 'Discover the main features of trading on margin with contracts for difference.', href: '/how-it-works' },
-  { title: 'Risk management', body: 'Understand the risks of leveraged trading and the tools we offer to help you manage them.', href: '/risk' },
-  { title: `Learn about ${BRAND_NAME}`, body: 'Find out who we are, how we price and how the platform was built.', href: '/company/about' },
-  { title: 'Account types', body: 'Compare Standard, ECN and Pro side by side before you decide where to start.', href: '/account-types' },
-  { title: 'Deposits and withdrawals', body: 'See the funding methods we support, along with processing times and limits.', href: '/deposit-withdrawal' },
-  { title: 'Frequently asked questions', body: 'Answers to what traders ask most often before opening an account with us.', href: '/faq' },
+  { title: 'Risk management', body: 'See the risk-control tools the platform gives your desk to manage leveraged exposure.', href: '/risk' },
+  { title: `Learn about ${BRAND_NAME}`, body: 'Find out who we are and how the platform we build is put together.', href: '/company/about' },
+  { title: 'Account types', body: 'Compare the account tiers a broker can configure in the platform we build.', href: '/account-types' },
+  { title: 'Payment integrations', body: 'See the deposit and withdrawal methods the platform can wire in for your clients.', href: '/deposit-withdrawal' },
+  { title: 'Frequently asked questions', body: 'Answers to what operators ask most often before booking a demo.', href: '/faq' },
 ];
 
 /* ── Presentational pieces ───────────────────────────────────────────
@@ -228,12 +228,12 @@ export default function MarketsPage() {
     <main>
       {/* ── 1. Hero ─────────────────────────────────────────────────── */}
       <PageHero
-        title="Analyse and trade the markets"
-        lead={`Over 50 currency pairs alongside indices, commodities and digital assets — quoted with transparent spreads and market execution from a single ${BRAND_NAME} account.`}
-        primary={{ label: 'Create live account', href: SIGNUP_HREF }}
-        secondary={{ label: 'Try a demo account', href: DEMO_HREF }}
+        title="Market coverage for your platform"
+        lead={`Over 50 currency pairs alongside indices, commodities and digital assets — the instrument coverage ${BRAND_NAME} can build into the platform we deliver under your brand.`}
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
+        secondary={{ label: 'View platforms', href: DEMO_HREF }}
         image={{
-          src: '/images/market banner1.png',
+          src: '/images/web img.png',
           alt: 'The trading platform open on a laptop, showing the watchlist and an order ticket',
           width: 1536,
           height: 900,
@@ -312,7 +312,7 @@ export default function MarketsPage() {
               gap: 'var(--mk-space-5)',
             }}
           >
-            <h2 className="mk-h2">Open an account now</h2>
+            <h2 className="mk-h2">Account tiers you can offer</h2>
 
             <ul className="flex flex-col" style={{ gap: 'var(--mk-space-4)' }}>
               {ACCOUNT_POINTS.map(({ title, body }) => (
@@ -345,8 +345,8 @@ export default function MarketsPage() {
             </ul>
 
             <div className="flex flex-wrap items-center" style={{ gap: 'var(--mk-space-3)' }}>
-              <Link href={DEMO_HREF} className="mk-btn mk-btn--ghost">Create demo account</Link>
-              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Create live account</Link>
+              <Link href={DEMO_HREF} className="mk-btn mk-btn--ghost">View platforms</Link>
+              <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary">Book a demo</Link>
             </div>
           </div>
         </div>
@@ -355,8 +355,8 @@ export default function MarketsPage() {
       {/* ── 6. Trading conditions ───────────────────────────────────── */}
       <Section raised>
         <SectionHeading
-          title="Trading conditions you can check before you trade"
-          lead="Pricing, leverage and execution are published up front — and repeated on the order ticket before you confirm."
+          title="Trading conditions your desk controls"
+          lead="Pricing, leverage and execution are configured by the operator — and shown on the order ticket before the client confirms."
         />
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
           {CONDITIONS.map((item) => (
@@ -373,7 +373,7 @@ export default function MarketsPage() {
 
       {/* ── 7. Supporting tools (3 + 2) ─────────────────────────────── */}
       <Section>
-        <SectionHeading title="Tools that support your trading" />
+        <SectionHeading title="Tools the platform ships with" />
         <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
           {TOOLS_PRIMARY.map((item) => (
             <IconColumn key={item.title} {...item} cta="Find out more" />
@@ -389,12 +389,12 @@ export default function MarketsPage() {
       {/* ── 8. Full-width conversion band ───────────────────────────── */}
       <section className="mk-surface--accent mk-section">
         <div className="mk-container flex flex-col items-center gap-6 text-center">
-          <h2 className="mk-h2">Open an account now</h2>
+          <h2 className="mk-h2">See the platform under your brand</h2>
 
           <div className="grid max-w-3xl grid-cols-1 gap-6 text-left sm:grid-cols-2">
             {[
-              'Flexible access to over 50 currency pairs plus indices, commodities and digital assets.',
-              'Trade on the move from web, mobile or desktop browser on one synced account.',
+              'Instrument coverage spanning 50+ currency pairs plus indices, commodities and digital assets.',
+              'One synced experience for your clients across web, mobile and desktop browser.',
             ].map((line) => (
               <p key={line} className="flex items-start" style={{ gap: 'var(--mk-space-3)' }}>
                 <span
@@ -418,7 +418,7 @@ export default function MarketsPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center" style={{ gap: 'var(--mk-space-3)' }}>
-            <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary mk-btn--lg">Get Started</Link>
+            <Link href={SIGNUP_HREF} className="mk-btn mk-btn--primary mk-btn--lg">Book a demo</Link>
           </div>
         </div>
       </section>

@@ -14,16 +14,16 @@ import { BRAND_NAME } from '@/lib/brand';
  * curriculum, resource counts, links and FAQ copy carried over verbatim.
  */
 
-const SIGNUP_HREF = '/auth/register';
+const SIGNUP_HREF = '/company/contact';
 
 export default function EducationPage() {
   return (
     <main>
       <PageHero
-        kicker="Academy"
-        title="Educational Resources"
-        lead={`Beginner to advanced — a structured trading curriculum built by professional traders. Free with every ${BRAND_NAME} account.`}
-        primary={{ label: 'Open Free Account', href: SIGNUP_HREF }}
+        kicker="Academy Module"
+        title="Education & Academy Module"
+        lead={`Beginner to advanced — a structured trading academy that ships with the ${BRAND_NAME} platform, ready to brand as your own and offer to your clients.`}
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
         secondary={{ label: 'Browse the Library', href: '#library' }}
       />
 
@@ -77,7 +77,7 @@ export default function EducationPage() {
                 className="font-bold mt-2"
                 style={{ color: 'var(--mk-accent)', fontSize: 'var(--mk-text-sm)' }}
               >
-                Start track →
+                Book a demo →
               </Link>
             </article>
           ))}
@@ -126,17 +126,17 @@ export default function EducationPage() {
 
       {/* Benefits */}
       <Section raised>
-        <SectionHeading kicker="Why Us" title={`Why Train With ${BRAND_NAME}`} />
+        <SectionHeading kicker="Why Us" title={`Why Ship the ${BRAND_NAME} Academy`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: GraduationCap, title: 'Built by Working Traders', body: 'Every module is authored by an active trader with 10+ years of P&L on the screen — not a YouTube guru.' },
-            { icon: Award,         title: 'Earn a Certificate',       body: `Finish a track and pass the assessment to receive a ${BRAND_NAME} Academy certificate of completion.` },
-            { icon: Layers,        title: 'Progressive Curriculum',   body: 'Concepts build on each other. You unlock advanced material only after mastering the prerequisites.' },
-            { icon: Video,         title: 'Practical Demos',          body: `Every concept is shown live on the ${BRAND_NAME} platform — no abstract theory, all chart and order ticket.` },
-            { icon: Users,         title: 'Community Discord',        body: 'Discuss setups, share journals, and learn from peers. Moderated by the analyst desk.' },
-            { icon: BookOpen,      title: 'Always Free',              body: `No paywalls, no upgrades, no upsells. Every funded ${BRAND_NAME} account unlocks the full library.` },
+            { icon: GraduationCap, title: 'Built by Working Traders', body: 'Course modules are authored by experienced traders — not recycled from generic online content.' },
+            { icon: Award,         title: 'Branded Certificates',     body: 'Clients finish a track, pass the assessment, and receive an Academy certificate of completion under your brand.' },
+            { icon: Layers,        title: 'Progressive Curriculum',   body: 'Concepts build on each other, with advanced material unlocking only after the prerequisites are mastered.' },
+            { icon: Video,         title: 'Practical Demos',          body: `Every concept is demonstrated live on the ${BRAND_NAME} platform — chart and order ticket, not abstract theory.` },
+            { icon: Users,         title: 'Community Channels',       body: 'Give clients moderated spaces to discuss setups, share journals, and learn from peers.' },
+            { icon: BookOpen,      title: 'Yours to Package',         body: 'Bundle the academy with your accounts or gate it however you like — the packaging is yours to set.' },
           ]}
         />
       </Section>
@@ -148,12 +148,12 @@ export default function EducationPage() {
           <FaqAccordion
             items={[
               {
-                q: 'Is the Academy really free?',
-                a: <>Yes. The full library — videos, PDFs, blogs, webinars — is included with every {BRAND_NAME} account. No separate subscription or upgrade required. You also keep access if you withdraw and close your account.</>,
+                q: 'How is the Academy licensed?',
+                a: <>The academy module ships with the {BRAND_NAME} platform. You decide how to offer it — bundled with every account or gated to certain client tiers — and the content is delivered under your brand.</>,
               },
               {
-                q: 'Do I need a funded account to access it?',
-                a: <>A free demo account is enough to access most content. A small set of advanced strategy modules requires a funded live account so you can practise alongside real market conditions.</>,
+                q: 'Can clients access it on a demo account?',
+                a: <>That is up to you. Access rules are configurable — you can open most content to demo users and reserve advanced modules for funded clients.</>,
               },
               {
                 q: 'How long does each track take?',
@@ -169,9 +169,9 @@ export default function EducationPage() {
       </Section>
 
       <CtaBanner
-        title="Start Learning Today"
-        lead="Sign up and the first module is in your dashboard within minutes. No card required for the demo."
-        primary={{ label: 'Open Free Account', href: SIGNUP_HREF }}
+        title="See the Academy Module"
+        lead="Book a demo to see how the academy is branded, packaged, and delivered to your clients."
+        primary={{ label: 'Book a demo', href: SIGNUP_HREF }}
       />
     </main>
   );

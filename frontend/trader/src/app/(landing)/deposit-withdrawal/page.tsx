@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Deposit & Withdrawal Policy — verbatim from the client-supplied PDF
- * "deposit and withdrawal.pdf". 14 numbered sections with 2.x / 3.x
- * style sub-clauses. Linked from the footer "Legal documents" row.
+ * Payment & Wallet Integrations — describes the funding/withdrawal
+ * integrations the platform supports for operators to offer their own
+ * clients. 14 numbered sections with 2.x / 3.x style sub-clauses,
+ * mirroring the original document's hierarchy. Linked from the footer.
  */
 import Link from 'next/link';
 import { Wallet, ShieldCheck, Mail } from 'lucide-react';
@@ -24,26 +25,26 @@ const SECTIONS: PolicySection[] = [
   {
     h: '1. Introduction',
     blocks: [
-      { kind: 'p', text: `This Deposit & Withdrawal Policy governs all funding and withdrawal transactions conducted through ${BRAND_NAME} ("${BRAND_NAME}", "Company", "we", "our", or "us").` },
-      { kind: 'p', text: `By opening an account and using ${BRAND_NAME} services, clients agree to comply with this Deposit & Withdrawal Policy, as well as the Company's Terms & Conditions, AML Policy, and KYC requirements.` },
+      { kind: 'p', text: `This page describes the payment and wallet integrations the ${BRAND_NAME} platform supports, so operators can offer funding and withdrawal options to their own clients under their own licence.` },
+      { kind: 'p', text: `${BRAND_NAME} is a technology provider: we build and wire in these integrations. The operator running the platform is responsible for onboarding clients and for any handling of client funds under their own regulatory permissions.` },
     ],
   },
   {
-    h: '2. Supported Payment Methods',
+    h: '2. Supported Payment Integrations',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} currently supports Cryptocurrency Deposits and Withdrawals Only.` },
-      { kind: 'p', text: 'Supported cryptocurrencies may include, but are not limited to:' },
-      { kind: 'bullets', items: ['Bitcoin (BTC)', 'Ethereum (ETH)', 'Tether (USDT)', 'USD Coin (USDC)', `Other cryptocurrencies approved by ${BRAND_NAME}`] },
-      { kind: 'p', text: `${BRAND_NAME} does not currently support:` },
-      { kind: 'bullets', items: ['Bank Transfers', 'Credit Cards', 'Debit Cards', `Third-Party Payment Processors not approved by ${BRAND_NAME}`] },
-      { kind: 'p', text: 'The list of supported cryptocurrencies may be updated at any time without prior notice.' },
+      { kind: 'p', text: `The ${BRAND_NAME} platform ships with cryptocurrency payment and wallet integrations, and can extend to further methods during delivery.` },
+      { kind: 'p', text: 'Supported cryptocurrency integrations may include, but are not limited to:' },
+      { kind: 'bullets', items: ['Bitcoin (BTC)', 'Ethereum (ETH)', 'Tether (USDT)', 'USD Coin (USDC)', 'Other cryptocurrencies configured for the operator'] },
+      { kind: 'p', text: 'Integrations that can be added on request include:' },
+      { kind: 'bullets', items: ['Bank Transfers', 'Credit Cards', 'Debit Cards', 'Third-party payment processors the operator works with'] },
+      { kind: 'p', text: 'The set of available payment integrations can be updated as the platform evolves.' },
     ],
   },
   {
-    h: '3. Cryptocurrency Deposits',
+    h: '3. Deposit Flow Integration',
     blocks: [
       { kind: 'sub', n: '3.1', title: 'Deposit Wallet Address', blocks: [
-        { kind: 'p', text: `Clients must send cryptocurrency only to the wallet address generated inside their ${BRAND_NAME} Client Portal.` },
+        { kind: 'p', text: `The platform can generate a deposit wallet address for each client inside the operator's branded client portal built on ${BRAND_NAME}.` },
       ] },
       { kind: 'sub', n: '3.2', title: 'Deposit Confirmation', blocks: [
         { kind: 'p', text: 'Deposits are credited after the required blockchain network confirmations are completed.' },
@@ -51,112 +52,112 @@ const SECTIONS: PolicySection[] = [
         { kind: 'bullets', items: ['Blockchain network congestion', 'Cryptocurrency type', 'Network transaction fees'] },
       ] },
       { kind: 'sub', n: '3.3', title: 'Correct Network Usage', blocks: [
-        { kind: 'p', text: 'Clients are solely responsible for selecting the correct blockchain network when sending funds.' },
+        { kind: 'p', text: 'The flow surfaces the correct blockchain network for each transfer so clients select the right one.' },
         { kind: 'p', text: 'Examples:' },
         { kind: 'bullets', items: ['USDT (TRC20)', 'USDT (ERC20)', 'USDT (BEP20)'] },
-        { kind: 'p', text: 'Sending funds through an unsupported network may result in permanent loss of funds.' },
+        { kind: 'p', text: 'Sending funds through an unsupported network may result in permanent loss, so the integration flags the required network clearly.' },
       ] },
-      { kind: 'sub', n: '3.4', title: 'Minimum Deposit', blocks: [
-        { kind: 'p', text: 'Minimum deposit requirements are displayed in the Client Portal and may change without notice.' },
+      { kind: 'sub', n: '3.4', title: 'Minimum Amounts', blocks: [
+        { kind: 'p', text: 'Minimum amounts are configurable by the operator and displayed in the client portal.' },
       ] },
     ],
   },
   {
-    h: '4. Cryptocurrency Withdrawals',
+    h: '4. Withdrawal Flow Integration',
     blocks: [
       { kind: 'sub', n: '4.1', title: 'Withdrawal Requests', blocks: [
-        { kind: 'p', text: `Withdrawal requests must be submitted through the official ${BRAND_NAME} Client Portal.` },
+        { kind: 'p', text: `Clients submit withdrawal requests through the operator's branded client portal built on the ${BRAND_NAME} platform.` },
       ] },
       { kind: 'sub', n: '4.2', title: 'Security Verification', blocks: [
-        { kind: 'p', text: `${BRAND_NAME} may require:` },
+        { kind: 'p', text: 'The withdrawal flow can require, via integrated checks:' },
         { kind: 'bullets', items: ['KYC Verification', 'Identity Verification', 'Security Confirmation', 'Additional compliance checks'] },
-        { kind: 'p', text: 'before processing withdrawals.' },
+        { kind: 'p', text: 'before a request is released for the operator to process.' },
       ] },
       { kind: 'sub', n: '4.3', title: 'Processing Time', blocks: [
-        { kind: 'p', text: 'Approved withdrawal requests are generally processed within 24 business hours.' },
+        { kind: 'p', text: 'Operators configure processing windows; the platform can flag approved requests for same-day handling.' },
         { kind: 'p', text: 'Actual receipt times depend on:' },
         { kind: 'bullets', items: ['Blockchain network conditions', 'Cryptocurrency selected', 'Required network confirmations'] },
       ] },
       { kind: 'sub', n: '4.4', title: 'Withdrawal Wallet Ownership', blocks: [
-        { kind: 'p', text: 'Clients are responsible for providing the correct wallet address.' },
-        { kind: 'p', text: `${BRAND_NAME} is not responsible for losses resulting from:` },
+        { kind: 'p', text: 'The integration validates that a destination wallet address is provided before a request proceeds.' },
+        { kind: 'p', text: 'Common causes of irreversible transfer errors, which the flow warns against, include:' },
         { kind: 'bullets', items: ['Incorrect wallet addresses', 'Unsupported wallets', 'Wrong blockchain networks', 'User input errors'] },
         { kind: 'p', text: 'Transactions confirmed on the blockchain cannot be reversed.' },
       ] },
     ],
   },
   {
-    h: '5. Account Verification (KYC)',
+    h: '5. KYC/AML Integration',
     blocks: [
-      { kind: 'p', text: 'Before deposits are available for trading and before withdrawals are approved, clients may be required to complete identity verification procedures.' },
-      { kind: 'p', text: 'Required documents may include:' },
-      { kind: 'bullets', items: ['Government-issued Photo ID', 'Proof of Address', 'Selfie Verification', 'Additional documents requested by Compliance'] },
-      { kind: 'p', text: `${BRAND_NAME} reserves the right to restrict account functionality until verification requirements are completed.` },
+      { kind: 'p', text: 'The platform integrates identity-verification providers so operators can require verification before funding is enabled or withdrawals are released.' },
+      { kind: 'p', text: 'Documents an operator can require through the integration include:' },
+      { kind: 'bullets', items: ['Government-issued Photo ID', 'Proof of Address', 'Selfie Verification', 'Additional documents requested by the operator'] },
+      { kind: 'p', text: 'Operators can restrict account functionality until verification is completed; the platform enforces the rules they set.' },
     ],
   },
   {
-    h: '6. Anti-Money Laundering (AML)',
+    h: '6. AML & Compliance Tooling',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} maintains strict AML and Counter-Terrorist Financing procedures.` },
-      { kind: 'p', text: 'The Company reserves the right to:' },
-      { kind: 'bullets', items: ['Request proof of source of funds', 'Request blockchain transaction evidence', 'Delay transactions pending compliance review', 'Reject suspicious transactions', 'Freeze accounts involved in unlawful activities', 'Report suspicious activity to relevant authorities where required'] },
+      { kind: 'p', text: 'The platform provides AML and monitoring tooling operators can use to meet their own regulatory obligations.' },
+      { kind: 'p', text: 'The tooling can support operators who need to:' },
+      { kind: 'bullets', items: ['Request proof of source of funds', 'Request blockchain transaction evidence', 'Delay transactions pending compliance review', 'Reject suspicious transactions', 'Freeze accounts involved in unlawful activity', 'Report suspicious activity to relevant authorities where required'] },
     ],
   },
   {
     h: '7. Third-Party Payments',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} does not permit third-party deposits or withdrawals.` },
-      { kind: 'p', text: 'The registered account holder must be the beneficial owner of all funds transferred to and from the trading account.' },
-      { kind: 'p', text: 'Any suspected third-party transaction may result in:' },
+      { kind: 'p', text: 'The platform can enforce a rule that only the account holder funds and withdraws from their account, when the operator chooses.' },
+      { kind: 'p', text: 'When enabled, the registered account holder must be the beneficial owner of all funds moving through the account.' },
+      { kind: 'p', text: 'Any suspected third-party transaction can trigger:' },
       { kind: 'bullets', items: ['Transaction rejection', 'Account suspension', 'Compliance review', 'Account closure'] },
     ],
   },
   {
     h: '8. Withdrawal Restrictions',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} reserves the right to decline or delay withdrawals in the following circumstances:` },
-      { kind: 'bullets', items: ['Incomplete KYC verification', 'Ongoing AML review', 'Security concerns', 'Suspected fraud', 'Violation of Terms & Conditions', 'Account disputes', "Technical issues beyond the Company's control"] },
+      { kind: 'p', text: 'The platform lets operators decline or delay withdrawals in circumstances such as:' },
+      { kind: 'bullets', items: ['Incomplete KYC verification', 'Ongoing AML review', 'Security concerns', 'Suspected fraud', "Violation of the operator's terms", 'Account disputes', "Technical issues beyond the operator's control"] },
     ],
   },
   {
     h: '9. Internal Transfers',
     blocks: [
-      { kind: 'p', text: `Transfers between client accounts may be permitted only upon approval by ${BRAND_NAME} Compliance and Operations Departments.` },
-      { kind: 'p', text: 'Additional verification may be required before approval.' },
+      { kind: 'p', text: "The platform can allow transfers between client accounts subject to the operator's approval workflow." },
+      { kind: 'p', text: 'Additional verification can be required before approval.' },
     ],
   },
   {
-    h: '10. Refund Policy',
+    h: '10. Refund Handling',
     blocks: [
       { kind: 'sub', n: '10.1', title: 'Refund Eligibility', blocks: [
-        { kind: 'p', text: 'Clients who have deposited funds but have not engaged in any trading activity may request a refund within 24 hours of the original deposit.' },
+        { kind: 'p', text: 'Operators can configure a refund window — for example, allowing a refund request within 24 hours of a deposit where no trading activity has occurred.' },
       ] },
       { kind: 'sub', n: '10.2', title: 'Review Process', blocks: [
-        { kind: 'p', text: 'Refund requests are reviewed on a case-by-case basis and may require identity verification.' },
+        { kind: 'p', text: 'Refund requests can be routed for case-by-case review and may require identity verification.' },
       ] },
       { kind: 'sub', n: '10.3', title: 'Non-Refundable Situations', blocks: [
-        { kind: 'p', text: 'Refunds will not be available where:' },
+        { kind: 'p', text: 'Operators can define situations where refunds are not offered, such as where:' },
         { kind: 'bullets', items: ['Trading activity has occurred', 'Positions have been opened or closed', 'Bonus abuse is suspected', 'AML concerns exist'] },
       ] },
       { kind: 'sub', n: '10.4', title: 'Refund Destination', blocks: [
-        { kind: 'p', text: 'Approved refunds will be returned only to the original cryptocurrency wallet used for the deposit whenever technically possible.' },
+        { kind: 'p', text: 'The flow can return approved refunds to the original cryptocurrency wallet used for the deposit whenever technically possible.' },
       ] },
     ],
   },
   {
     h: '11. Fees',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} may charge withdrawal fees, blockchain network fees, or processing fees where applicable.` },
-      { kind: 'p', text: 'Current fees are displayed within the Client Portal and may change without prior notice.' },
+      { kind: 'p', text: 'The platform lets operators configure withdrawal fees, blockchain network fees, or processing fees where applicable.' },
+      { kind: 'p', text: 'Current fees are displayed within the client portal and are set by the operator.' },
     ],
   },
   {
-    h: '12. Disputes and Complaints',
+    h: '12. Support and Escalation',
     blocks: [
-      { kind: 'p', text: 'Any dispute relating to deposits, withdrawals, refunds, or payment processing must be submitted in writing to:' },
+      { kind: 'p', text: 'Questions about the payment and wallet integrations can be submitted in writing to:' },
       { kind: 'p', text: `Email: ${BRAND_SUPPORT_EMAIL}` },
-      { kind: 'p', text: 'Subject: Deposit & Withdrawal Complaint' },
-      { kind: 'p', text: `Complaints will be handled according to the ${BRAND_NAME} Complaints and Dispute Resolution Policy.` },
+      { kind: 'p', text: 'Subject: Payment Integrations' },
+      { kind: 'p', text: `We will route the enquiry to the ${BRAND_NAME} team responsible for the integration.` },
     ],
   },
   {
@@ -164,15 +165,15 @@ const SECTIONS: PolicySection[] = [
     blocks: [
       { kind: 'p', text: 'Cryptocurrency transactions are irreversible and subject to blockchain network risks, volatility, and technical limitations.' },
       { kind: 'p', text: 'Clients are responsible for verifying wallet addresses, network selections, and transaction details before submitting any transfer.' },
-      { kind: 'p', text: `${BRAND_NAME} shall not be liable for losses resulting from client errors, blockchain failures, or third-party wallet service disruptions.` },
+      { kind: 'p', text: `${BRAND_NAME} provides the software and is not liable for losses resulting from client errors, blockchain failures, or third-party wallet service disruptions.` },
     ],
   },
   {
-    h: '14. Policy Updates',
+    h: '14. Updates',
     blocks: [
-      { kind: 'p', text: `${BRAND_NAME} reserves the right to amend, modify, or replace this Deposit & Withdrawal Policy at any time.` },
-      { kind: 'p', text: `Any updates will become effective immediately upon publication on the ${BRAND_NAME} website.` },
-      { kind: 'p', text: `Continued use of ${BRAND_NAME} services constitutes acceptance of any revised policy.` },
+      { kind: 'p', text: `${BRAND_NAME} may update the payment and wallet integrations described here at any time.` },
+      { kind: 'p', text: `Any updates take effect when published on the ${BRAND_NAME} website.` },
+      { kind: 'p', text: `Continued use of the ${BRAND_NAME} platform constitutes acceptance of the current integration set.` },
     ],
   },
 ];
@@ -201,9 +202,9 @@ export default function DepositWithdrawalPage() {
   return (
     <main>
       <PageHero
-        kicker="Legal"
-        title="Deposit & Withdrawal Policy"
-        lead={`The rules for funding and withdrawing from your ${BRAND_NAME} account.`}
+        kicker="Platform"
+        title="Payment & Wallet Integrations"
+        lead={`The payment and wallet integrations the ${BRAND_NAME} platform supports, so operators can offer funding and withdrawals to their own clients.`}
       />
 
       <Section raised>
@@ -212,7 +213,7 @@ export default function DepositWithdrawalPage() {
             <Wallet size={16} className="shrink-0" style={{ color: 'var(--mk-accent)' }} />
             <span className="mk-body" style={{ fontSize: 'var(--mk-text-sm)' }}>
               <span className="font-bold" style={{ color: 'var(--mk-text)' }}>
-                {BRAND_NAME} — Deposit &amp; Withdrawal Policy
+                {BRAND_NAME} — Payment &amp; Wallet Integrations
               </span>{' '}
               · Last updated: June 2026
             </span>
@@ -250,9 +251,9 @@ export default function DepositWithdrawalPage() {
       </Section>
 
       <CtaBanner
-        title="Fund Your Account"
-        lead={`Open a ${BRAND_NAME} account and deposit via supported cryptocurrencies in minutes.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the integrations in action"
+        lead={`Book a demo and see the payment and wallet integrations ${BRAND_NAME} can wire into your platform.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Contact Support', href: '/company/contact' }}
       />
     </main>

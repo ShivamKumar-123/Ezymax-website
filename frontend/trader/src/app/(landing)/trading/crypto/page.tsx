@@ -30,10 +30,10 @@ export default function CryptoPage() {
     <main>
       <PageHero
         kicker="Crypto CFDs"
-        title="Crypto CFDs — Trade the Future"
-        lead="Trade Bitcoin, Ethereum, and top altcoins as CFDs without owning the asset."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Explore All Markets', href: '/markets' }}
+        title="Crypto CFD support for your platform"
+        lead="Let your clients trade Bitcoin, Ethereum and top altcoins as CFDs without owning the asset — crypto support built into the platform we deliver under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Explore market coverage', href: '/markets' }}
       />
 
       <Section raised>
@@ -62,9 +62,9 @@ export default function CryptoPage() {
         </div>
 
         <div className="flex flex-col gap-4 mx-auto max-w-3xl mt-14 text-center">
-          <h2 className="mk-h2">Why Trade Crypto CFDs?</h2>
+          <h2 className="mk-h2">Why offer Crypto CFDs?</h2>
           <p className="mk-lead">
-            {`Cryptocurrency CFDs allow you to speculate on the price movements of Bitcoin, Ethereum, and other digital assets without the complexity of owning and storing them. Trade crypto 24/7 with leverage, go long or short, and benefit from ${BRAND_NAME}'s secure platform and competitive spreads. Perfect for traders who want exposure to the crypto market with the flexibility of traditional CFD trading.`}
+            {`Cryptocurrency CFDs let clients speculate on the price movements of Bitcoin, Ethereum and other digital assets without the complexity of owning and storing them. The ${BRAND_NAME} platform supports crypto CFDs around the clock, long or short, with a secure engine and configurable spreads — ideal for the clients you serve who want crypto exposure with the flexibility of traditional CFD trading.`}
           </p>
         </div>
       </Section>
@@ -113,7 +113,7 @@ export default function CryptoPage() {
       </Section>
 
       <Section raised>
-        <SectionHeading kicker="Why Trade Here" title={`Crypto CFD Trading with ${BRAND_NAME}`} />
+        <SectionHeading kicker="Platform capability" title={`Crypto CFDs on the ${BRAND_NAME} platform`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
@@ -121,27 +121,27 @@ export default function CryptoPage() {
             {
               icon: ShieldCheck,
               title: 'No Wallet Needed',
-              body: 'Trade crypto CFDs without the hassle of managing wallets, private keys, or exchange accounts.',
+              body: 'Clients trade crypto CFDs without managing wallets, private keys or exchange accounts.',
             },
             {
               icon: Zap,
-              title: '24/7 Trading',
-              body: 'Access cryptocurrency markets around the clock, every day of the week with instant execution.',
+              title: '24/7 Markets',
+              body: 'Around-the-clock access to cryptocurrency markets, every day of the week, with instant execution.',
             },
             {
               icon: TrendingDown,
               title: 'Go Long or Short',
-              body: 'Profit from both rising and falling crypto prices with the ability to short sell any instrument.',
+              body: 'Clients can act on both rising and falling crypto prices, with the ability to short-sell any instrument.',
             },
           ]}
         />
       </Section>
 
       <CtaBanner
-        title="Crypto CFDs — Trade the Future"
-        lead={`Open a ${BRAND_NAME} account and trade Bitcoin, Ethereum, and top altcoins as CFDs.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare Account Types', href: '/account-types' }}
+        title="Add crypto CFDs to your platform"
+        lead={`Book a demo and see how the ${BRAND_NAME} platform supports Bitcoin, Ethereum and top altcoins as CFDs under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
     </main>
   );

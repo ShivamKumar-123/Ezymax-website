@@ -14,85 +14,86 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 const SECTIONS = [
   {
-    h: '1. General Risk Warning',
-    p: `Trading forex, contracts-for-difference (CFDs), and crypto-assets carries a high level of risk and can result in losses that exceed your initial
-    deposit. These products may not be suitable for every investor. You should only trade with
-    capital you can afford to lose, and seek independent advice if you do not fully understand
-    the risks involved.`,
+    h: '1. Technology Vendor, Not a Broker',
+    p: `${BRAND_NAME} is a software development company. We build and license trading technology to
+    licensed brokers and proprietary trading firms. ${BRAND_NAME} is not a broker, exchange, or
+    financial institution, and does not provide brokerage, investment, financial, tax, or advisory
+    services.`,
   },
   {
-    h: '2. Leverage',
-    p: `Leverage allows you to control a position size larger than your account balance — and
-    amplifies both gains and losses. A relatively small adverse market move can wipe out your
-    margin and trigger a stop-out. ${BRAND_NAME} offers leverage up to 1:1000 across most pairs;
-    leverage is a tool, not free capital. Size positions to your stop-loss, not to the maximum
-    leverage available.`,
+    h: '2. No Offer or Solicitation',
+    p: `Nothing on this website, in our marketing materials, or within any demonstration environment
+    constitutes an offer, solicitation, recommendation, or inducement to buy or sell any financial
+    product or to engage in any trading activity. ${BRAND_NAME} does not solicit or accept
+    investments.`,
   },
   {
-    h: '3. Volatility & Liquidity',
-    p: `Crypto markets are open 24/7 and can move several percent in minutes during news or
-    liquidations. Forex majors, indices, and energies have well-defined session hours; outside
-    those hours spreads widen and liquidity thins. Order execution at the published market price
-    is NOT guaranteed during gaps, slippage, or low-liquidity windows.`,
+    h: '3. Client-Operated Platforms',
+    p: `Trading platforms built with ${BRAND_NAME} software and placed into production are operated by
+    our clients under their own brand, licence, and regulatory authority. ${BRAND_NAME} does not
+    execute, route, or manage trades for any end user, and is not a party to any relationship between
+    a licensed operator and its clients.`,
   },
   {
-    h: '4. CFD-Specific Risks',
-    p: `CFDs are derivative products — you do not own the underlying asset. P&L mirrors the price
-    movement of the underlying but is settled in cash. Holding CFDs overnight incurs swap charges
-    that compound. A negative-balance protection mechanism applies to retail accounts where
-    available, but slippage during extreme moves can still wipe out the entire margin.`,
+    h: '4. Leveraged Trading Is Risky',
+    p: `Leveraged products such as forex, contracts-for-difference (CFDs), and crypto-assets carry a
+    high level of risk and can result in losses that exceed the amount originally committed. Where our
+    software supports such products, the decision to offer them, and the terms on which they are
+    offered to end users, rests entirely with the licensed operator of the platform.`,
   },
   {
-    h: '5. Crypto-Asset Risks',
-    p: `Crypto-assets are subject to regulatory uncertainty, smart-contract risk, exchange-rate
-    risk, and operational risk from custodians and bridges. On-chain transactions are
-    irreversible. ${BRAND_NAME} DEX trades settle through smart-contracts that have been audited but
-    are not guaranteed to be free of exploits. Do not deposit crypto you cannot afford to lose.`,
+    h: '5. No Investment or Financial Advice',
+    p: `Information published by ${BRAND_NAME} is general in nature, is directed at businesses evaluating
+    our technology, and does not constitute investment, financial, tax, or legal advice. ${BRAND_NAME}
+    does not consider the individual circumstances of any trader and is not responsible for trading
+    decisions made on platforms built with its software.`,
   },
   {
-    h: '6. Bonus Credit',
-    p: `${BRAND_NAME} does not currently run a deposit-bonus promotion. Where bonus credit does reach
-    an account — through a partner arrangement, for example — it is credited as tradeable balance
-    and is absorbed by losing trades before your deposited capital. Its terms and unlock conditions
-    are disclosed in your dashboard at the time it is granted, and bonus credit is not in itself
-    withdrawable.`,
+    h: '6. Software Provided Under Agreement',
+    p: `${BRAND_NAME} software is delivered and supported under a separate written agreement. Features
+    described on this website illustrate the capabilities of the platform; their availability,
+    configuration, and operation in production depend on the choices and obligations of the licensed
+    operator. Past performance of any strategy, tool, or market is not indicative of future results.`,
   },
   {
-    h: '7. Trade Insurance',
-    p: `Trade Insurance, where activated on the order ticket, refunds a stated percentage of any
-    covered losing trade up to the policy cap disclosed at the time of opt-in. The fee is
-    deducted on trade open and is non-refundable. Insurance payouts are subject to minimum trade
-    duration and the policy conditions visible at activation.`,
+    h: '7. AI & Algorithmic Trading Tools',
+    p: `Where ${BRAND_NAME} builds AI-driven or algorithmic trading tools into a platform, those tools
+    analyse historical and live market data but cannot anticipate every market condition. Back-tested
+    or historical performance is not indicative of future results. Responsibility for enabling,
+    monitoring, and setting risk limits on such tools lies with the operator and its users.`,
   },
   {
-    h: '8. AI & Algo Trading',
-    p: `Our AI-driven auto-trading and algorithmic strategies analyse historical and live market
-    data but cannot anticipate every market condition. Past back-tested or live performance is
-    not indicative of future results. You are responsible for monitoring positions, setting
-    risk limits, and pausing strategies during high-impact news.`,
+    h: '8. Technical & Operational Risk',
+    p: `No software is free from the risk of interruption. Internet connectivity, hosting, third-party
+    integrations, and force-majeure events may affect the availability or performance of any platform.
+    ${BRAND_NAME} provides its software and support on the terms set out in the applicable agreement
+    and does not guarantee uninterrupted or error-free operation.`,
   },
   {
-    h: '9. Tax Treatment',
-    p: `The tax treatment of trading profits, swap interest, and bonus equity varies by
-    jurisdiction. You are responsible for declaring and paying any applicable tax. ${BRAND_NAME} does
-    not provide tax advice — consult a qualified tax adviser for your situation.`,
+    h: '9. Tax & Legal Responsibility',
+    p: `The tax and legal treatment of trading activity varies by jurisdiction and is the
+    responsibility of the operator and its clients. ${BRAND_NAME} does not provide tax or legal
+    advice — consult a qualified adviser for your situation.`,
   },
   {
-    h: '10. No Investment Advice',
-    p: `Information published on our website, in market commentary, and inside the platform is
-    general in nature and does not constitute personalised investment advice. We do not consider
-    your individual objectives, financial situation, or needs.`,
+    h: '10. Third-Party Content & Market Data',
+    p: `Market data, charts, news, and other third-party content that may appear within our software or
+    on this website are provided for general information only. ${BRAND_NAME} does not warrant the
+    accuracy, completeness, or timeliness of such content and accepts no liability for reliance placed
+    on it.`,
   },
   {
-    h: '11. Jurisdictional Restrictions',
-    p: `${BRAND_NAME} Services are not available to residents of jurisdictions where the offering of
-    CFD, forex, or crypto-derivative trading is prohibited under local law. You are responsible
-    for ensuring your use of the Services complies with the laws of your jurisdiction.`,
+    h: '11. Lawful Use & Availability',
+    p: `${BRAND_NAME} evaluates each client engagement individually and complies with applicable
+    export-control and sanctions laws. It is the responsibility of each operator to ensure that any
+    platform it runs, and the markets it offers, are lawful in the jurisdictions in which it and its
+    clients operate.`,
   },
   {
     h: '12. Acknowledgement',
-    p: `By opening a ${BRAND_NAME} account you confirm you have read, understood, and accepted this Risk
-    Disclaimer alongside our Terms of Service and Privacy Policy. You trade at your own risk.`,
+    p: `By using this website you confirm that you have read and understood this Disclaimer, that you
+    understand ${BRAND_NAME} is a technology vendor and not a broker, and that nothing here constitutes
+    an offer, solicitation, or advice.`,
   },
 ];
 
@@ -103,16 +104,18 @@ export default function RiskPage() {
     <main>
       <PageHero
         kicker="Legal"
-        title="Risk Disclaimer"
-        lead="Plain-English warnings about the risks of trading forex, CFDs, and crypto."
+        title="Disclaimer"
+        lead={`How ${BRAND_NAME} works as a software vendor — and why nothing here is an offer, solicitation, or advice.`}
       />
 
       <Section raised>
         <LegalDoc toc={TOC}>
           <LegalCallout tone="warn">
-            <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>Important:</span> Trading
-            carries significant risk. Past performance is not indicative of future results. You may
-            lose some or all of your invested capital — only trade with money you can afford to lose.
+            <span style={{ color: 'var(--mk-text)', fontWeight: 700 }}>Important:</span> We build and
+            license trading software; we are not a broker and do not provide investment advice. Nothing
+            on this page is an offer or solicitation. Trading leveraged products is high-risk, and any
+            platform built with our software is operated by a licensed third party responsible for its
+            own client disclosures.
           </LegalCallout>
 
           {SECTIONS.map(({ h, p }) => (
@@ -130,7 +133,7 @@ export default function RiskPage() {
             <Link href="/privacy" className="hover:underline" style={{ color: 'var(--mk-accent)' }}>
               Privacy Policy
             </Link>
-            . Risk queries can be sent to{' '}
+            . Questions about this Disclaimer can be sent to{' '}
             <a
               href={`mailto:${BRAND_SUPPORT_EMAIL}`}
               className="hover:underline"
@@ -144,9 +147,9 @@ export default function RiskPage() {
       </Section>
 
       <CtaBanner
-        title="Trade Responsibly"
-        lead="Open an account only after reading and accepting all our risk disclosures."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        title="See the platform"
+        lead="Book a walkthrough and see how the platform runs under your own brand and licence."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
         secondary={{ label: 'Read the Risk Warning', href: '/risk-warning' }}
       />
     </main>

@@ -83,13 +83,13 @@ export default function ContactPage() {
 
   const getAutoReply = (text: string) => {
     const t = text.toLowerCase();
-    if (t.includes('account') || t.includes('open')) return 'You can open a free account in under 2 minutes from our Accounts page. Would you like me to send you the link?';
-    if (t.includes('deposit') || t.includes('fund')) return 'We support card, bank wire, and crypto deposits with zero fees. Minimum deposit is $100 for Standard and $5,000 for Pro.';
-    if (t.includes('spread') || t.includes('fee')) return 'Our spreads start from 0.0 pips on Pro accounts. Standard accounts have no commission with spreads from 1.1 pips.';
-    if (t.includes('platform')) return 'We offer our Web Platform, Copy Trading, Prop Trading, and IB Management tools. Visit the Platforms page to learn more.';
-    if (t.includes('hi') || t.includes('hello') || t.includes('hey')) return 'Hello! 👋 How can I assist you with your trading today?';
+    if (t.includes('account') || t.includes('open') || t.includes('demo')) return 'You can book a demo in under 2 minutes from our contact form below. Would you like me to walk you through it?';
+    if (t.includes('deposit') || t.includes('fund') || t.includes('payment')) return 'We wire payment, wallet, KYC/AML and liquidity integrations into the platforms we build. Which providers are you planning to use?';
+    if (t.includes('price') || t.includes('cost') || t.includes('fee')) return 'Pricing depends on the modules and integrations you need. Tell us about your setup and we will scope it for you.';
+    if (t.includes('platform')) return 'We build web, mobile and desktop terminals, copy trading, prop trading, and IB management tools. Visit the Platforms page to learn more.';
+    if (t.includes('hi') || t.includes('hello') || t.includes('hey')) return 'Hello! 👋 How can I help you with your white-label platform today?';
     if (t.includes('thank')) return 'You\'re welcome! Is there anything else I can help you with?';
-    return 'Thanks for your message! One of our support specialists will get back to you shortly. In the meantime, feel free to ask about accounts, platforms, spreads, or deposits.';
+    return 'Thanks for your message! One of our specialists will get back to you shortly. In the meantime, feel free to ask about platforms, integrations, delivery timelines, or booking a demo.';
   };
 
   const handleSendChat = (e: React.FormEvent) => {
@@ -186,7 +186,7 @@ export default function ContactPage() {
       <PageHero
         kicker="Contact"
         title="Get in Touch"
-        lead="Have a question? Our team is here to help. Reach out to us anytime."
+        lead="Book a demo or ask us anything about launching your white-label trading platform. Our team is here to help."
       />
 
       <Section raised>
@@ -294,7 +294,7 @@ export default function ContactPage() {
                 >
                   <option value="">Select a subject</option>
                   <option value="general">General Inquiry</option>
-                  <option value="account">Account Support</option>
+                  <option value="account">Book a demo</option>
                   <option value="technical">Technical Issue</option>
                   <option value="partnership">Partnership</option>
                 </select>

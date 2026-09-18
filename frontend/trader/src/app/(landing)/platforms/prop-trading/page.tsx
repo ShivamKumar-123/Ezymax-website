@@ -15,13 +15,14 @@ export default function PropTradingPage() {
     <main>
       <PageHero
         kicker="Coming Soon"
-        title={<>Prop Trading <span style={{ color: 'var(--mk-accent)' }}>Program</span></>}
+        title={<>Prop Trading <span style={{ color: 'var(--mk-accent)' }}>Module</span></>}
         lead={
           <>
-            Prove your skills, get funded, and trade with our capital — keep up to 90% of the profits with
-            zero personal risk. The {BRAND_NAME} Prop Program is launching in{' '}
+            Run funded-trader challenges under your brand. Our prop-trading module handles
+            evaluations, risk rules, profit splits, and scaling. The {BRAND_NAME} Prop module is
+            launching in{' '}
             <span style={{ color: 'var(--mk-accent)', fontWeight: 700 }}>Q3 2026</span>. Join the
-            early-access list to be the first to take the challenge.
+            early-access list to be the first to add it to your platform.
           </>
         }
       >
@@ -60,27 +61,27 @@ export default function PropTradingPage() {
       <Section raised>
         <SectionHeading
           kicker="At Launch"
-          title="What to Expect at Launch"
-          lead="A modern evaluation, fair rules, and an industry-leading 90% profit split when you get funded."
+          title="What the Module Delivers"
+          lead="A modern evaluation engine, configurable rules, and flexible profit splits you control."
         />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: Target,      title: 'Realistic Profit Targets',  body: 'Reach achievable profit targets without aggressive deadlines or hidden disqualification rules.' },
-            { icon: ShieldCheck, title: 'Transparent Risk Rules',    body: 'Clear daily and total drawdown limits — every rule visible on your dashboard at all times.' },
-            { icon: TrendingUp,  title: 'Up to 90% Profit Split',    body: 'Keep up to 90% of the profits you generate on your funded account. Withdraw weekly.' },
-            { icon: Award,       title: 'Scaling Plan',              body: 'Consistently profitable traders can scale their account up to $500,000 in funded capital.' },
-            { icon: Layers,      title: 'No Time Pressure (Funded)', body: 'Once funded there is no evaluation clock. Trade at your own pace, your own way.' },
-            { icon: Bell,        title: 'Early-Access Pricing',      body: 'Subscribers on the launch list receive a discounted challenge fee for the first 30 days.' },
+            { icon: Target,      title: 'Configurable Profit Targets', body: 'Set achievable profit targets without aggressive deadlines or hidden disqualification rules.' },
+            { icon: ShieldCheck, title: 'Transparent Risk Rules',    body: 'Clear daily and total drawdown limits — every rule visible on the trader dashboard at all times.' },
+            { icon: TrendingUp,  title: 'Flexible Profit Splits',    body: 'Set the profit split traders keep on funded accounts, with automated payout scheduling.' },
+            { icon: Award,       title: 'Scaling Plans',             body: 'Built-in scaling lets consistent traders grow their funded capital on the terms you define.' },
+            { icon: Layers,      title: 'Optional Evaluation Clocks', body: 'Offer funded traders no time limits, or set your own — the rules are yours to configure.' },
+            { icon: Bell,        title: 'Early Access',              body: 'Operators on the launch list get first access to the module and preferred onboarding terms.' },
           ]}
         />
       </Section>
 
       <CtaBanner
         title="Be First in Line"
-        lead={`Open a ${BRAND_NAME} account today — your trading history counts toward your early-access tier when the Prop Program goes live.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
+        lead={`Join the early-access list and be first to add a white-label prop-trading module to your ${BRAND_NAME} platform when it goes live.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

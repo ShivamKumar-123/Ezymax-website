@@ -14,26 +14,26 @@ const ADMIN_CARDS = [
   {
     icon: Users,
     title: 'User Management',
-    description: 'View, edit, and manage all trader accounts.',
-    cta: 'Manage Users',
+    description: 'View, edit, and manage every client account from one place.',
+    cta: 'Book a demo',
   },
   {
     icon: BarChart2,
     title: 'Trading Overview',
-    description: 'Monitor live trades, volume, and activity.',
-    cta: 'View Reports',
+    description: 'Monitor live trades, volume, and activity across the platform.',
+    cta: 'Book a demo',
   },
   {
     icon: Settings,
     title: 'Platform Settings',
     description: 'Configure platform rules, spreads, and leverage.',
-    cta: 'Open Settings',
+    cta: 'Book a demo',
   },
   {
     icon: ShieldCheck,
     title: 'Compliance & KYC',
     description: 'Review documents, approvals, and flagged accounts.',
-    cta: 'Review Cases',
+    cta: 'Book a demo',
   },
 ];
 
@@ -42,8 +42,8 @@ export default function SuperAdminPage() {
     <main>
       <PageHero
         kicker="Super Admin"
-        title="Super Admin Panel"
-        lead={`Manage and monitor all ${BRAND_NAME} operations from one central dashboard.`}
+        title="Admin & Back Office Console"
+        lead={`The admin and back office console we build into every platform — manage and monitor your entire ${BRAND_NAME} operation from one dashboard.`}
       />
 
       <Section raised>
@@ -67,7 +67,7 @@ export default function SuperAdminPage() {
               </span>
               <h3 className="mk-h3">{title}</h3>
               <p className="mk-body">{description}</p>
-              <Link href="/auth/login" className="mk-btn mk-btn--primary mt-2">{cta}</Link>
+              <Link href="/company/contact" className="mk-btn mk-btn--primary mt-2">{cta}</Link>
             </article>
           ))}
         </div>
@@ -75,9 +75,9 @@ export default function SuperAdminPage() {
 
       <CtaBanner
         title="One Console for the Whole Operation"
-        lead={`Sign in to manage and monitor every ${BRAND_NAME} operation from a single dashboard.`}
-        primary={{ label: 'Sign In', href: '/auth/login' }}
-        secondary={{ label: 'Contact Us', href: '/company/contact' }}
+        lead={`Book a demo to see how the admin console runs your entire ${BRAND_NAME} operation from a single dashboard.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

@@ -37,8 +37,8 @@ export function Pourquoi() {
     <Section id="why-choose" raised>
       <SectionHeading
         kicker={`Why Choose ${BRAND_NAME}`}
-        title="Built for forex traders"
-        lead="Fast execution, competitive pricing and a stable platform — the conditions that matter when you trade currencies."
+        title="Why brokers and prop firms build with us"
+        lead="In-house engineering, fast delivery and a platform branded entirely as yours -- the things that matter when you launch a trading business."
       />
       <div style={{ marginTop: 'var(--mk-space-7)' }}>
         <FeatureGrid items={items} columns={3} />

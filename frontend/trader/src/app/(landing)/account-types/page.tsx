@@ -35,7 +35,7 @@ const PLATFORMS = [
   {
     name: 'Mobile trading',
     href: '/download',
-    body: 'Install to your phone home screen and trade the same account, with positions and watchlists in sync.',
+    body: 'Installs to the phone home screen and reaches the same account, with positions and watchlists in sync.',
     image: '/images/mobile img.png',
   },
 ];
@@ -53,7 +53,7 @@ const FEATURE_TABS: { label: string; lead: string; points: string[]; image: stri
       'Server-side candle aggregation, so charts match the fills',
       'Full instrument directory across forex, indices, metals and crypto',
     ],
-    image: '/images/features1.png',
+    image: '/images/hero banner 4.png',
   },
   {
     label: 'Orders and alerts',
@@ -68,12 +68,12 @@ const FEATURE_TABS: { label: string; lead: string; points: string[]; image: stri
   },
   {
     label: 'Accounts',
-    lead: 'Run more than one account from a single login.',
+    lead: 'Clients can run more than one account from a single login.',
     points: [
       'Live and demo accounts side by side',
-      'Standard, ECN, IB and swap-free account types',
-      'Free demo funded with virtual balance',
-      'Transfer between your own accounts instantly',
+      'Standard, ECN, IB and swap-free account tiers you configure',
+      'Demo accounts funded with a virtual balance',
+      'Instant transfers between a client’s own accounts',
     ],
     image: '/images/features3.png',
   },
@@ -81,23 +81,23 @@ const FEATURE_TABS: { label: string; lead: string; points: string[]; image: stri
 
 /* ── Trading conditions (reference's "integration options" accordion) ── */
 const CONDITIONS = [
-  { q: 'Spreads and commission', a: 'Spreads start from 0.0 pips on ECN and from 1.0 pip on Standard. Commission, where it applies, is shown on the order ticket before you confirm — there is no hidden markup on the quotes you trade.' },
-  { q: 'Leverage and margin',    a: 'Leverage is adjustable up to 1:500 depending on account type and instrument. Required margin is calculated per position and shown before you confirm. Higher leverage increases both potential gains and potential losses.' },
-  { q: 'Execution',              a: 'Market orders are filled at the live quote with no dealing-desk intervention. Pending orders, stop-loss and take-profit levels are held server-side so they stay active whether or not you are signed in.' },
-  { q: 'Market hours',           a: 'Forex is quoted 24 hours a day, five days a week. Indices, metals and digital assets follow their own sessions, shown on each instrument in the platform.' },
+  { q: 'Spreads and commission', a: 'Spreads and commission are configured per account tier by the operator and shown on the order ticket before the client confirms. The platform wires pricing to your liquidity providers with no forced markup.' },
+  { q: 'Leverage and margin',    a: 'Leverage limits are set by the operator per account tier and instrument. Required margin is calculated per position and shown before the client confirms. Higher leverage increases both potential gains and potential losses for the end client.' },
+  { q: 'Execution',              a: 'The platform supports the execution models you choose, with orders filled against your configured pricing. Pending orders, stop-loss and take-profit levels are held server-side so they stay active whether or not the client is signed in.' },
+  { q: 'Market hours',           a: 'Forex can be quoted 24 hours a day, five days a week. Indices, metals and digital assets follow their own sessions, shown on each instrument in the platform.' },
 ];
 
 const TRADING_FAQ = [
-  { q: 'What is the minimum deposit?', a: 'A $50 first deposit opens a Standard live account or the IB partner account; ECN starts at $200. A free demo account with virtual funds is available with no deposit at all.' },
-  { q: 'Which account type should I choose?', a: 'Standard suits traders who prefer no commission and a slightly wider spread. ECN suits higher-volume and short-term traders who want the tightest raw spread and will pay a per-lot commission. Swap-free suits anyone holding positions overnight who cannot pay or receive rollover interest.' },
-  { q: 'Can I try the platform before funding an account?', a: 'Yes. The demo account runs the same platform, the same instruments and the same execution logic against live prices, funded with a virtual balance.' },
-  { q: 'Do I need to install anything?', a: `No. ${BRAND_NAME} is fully web-based and runs in any modern browser on desktop, tablet or phone. You can install it to your phone home screen for an app-like experience, but there is no download and nothing to update.` },
+  { q: 'Can we set our own minimum deposits?', a: 'Yes. Deposit thresholds are configured per account tier by the operator. The example tiers in the platform show a Standard tier from $50 and an ECN tier from $200, with a virtual-funds demo tier that needs no deposit — all adjustable to your rules.' },
+  { q: 'Which account tiers can we offer?', a: 'The platform ships with configurable tiers such as Standard (no commission, slightly wider spread), ECN (tightest raw spread with a per-lot commission), IB partner accounts, and swap-free accounts for clients who cannot pay or receive rollover interest. You decide which to enable.' },
+  { q: 'Can we see the platform before committing?', a: 'Yes. Book a demo and we will walk you through the platform, the instrument coverage and the execution logic running against live prices, with a virtual balance.' },
+  { q: 'Do clients need to install anything?', a: `No. ${BRAND_NAME} is fully web-based and runs in any modern browser on desktop, tablet or phone. Clients can install it to the phone home screen for an app-like experience, but there is no download and nothing to update.` },
 ];
 
 const NEXT_STEPS = [
-  { title: 'Explore markets',      body: 'See the currency pairs and other instruments available to trade.', href: '/markets' },
-  { title: 'Open a demo account',  body: 'Practise on the live platform with a virtual balance.',            href: '/accounts/demo' },
-  { title: 'Copy trading',         body: 'Follow and mirror the positions of experienced traders.',          href: '/platforms/copy-trading' },
+  { title: 'Explore markets',      body: 'See the instrument coverage the platform can offer your clients.',   href: '/markets' },
+  { title: 'Book a demo',          body: 'See the platform in action against live prices with a virtual balance.', href: '/company/contact' },
+  { title: 'Copy trading',         body: 'A module that lets clients follow and mirror experienced traders.',  href: '/platforms/copy-trading' },
 ];
 
 const INSTRUMENTS = ['Forex', 'Metal', 'Crypto', 'Energies', 'Stocks', 'Indices'];
@@ -149,11 +149,11 @@ export default function AccountTypesPage() {
   return (
     <main>
       <PageHero
-        kicker="Trading"
-        title="Trading platforms"
-        lead={`Access every platform and account type available through ${BRAND_NAME}, and find the combination that suits how you trade.`}
-        primary={{ label: 'Start Trading', href: '/auth/register' }}
-        secondary={{ label: 'Open a demo account', href: '/accounts/demo' }}
+        kicker="Platform"
+        title="Platforms and account tiers"
+        lead={`Every platform surface and account tier ${BRAND_NAME} can build into the trading system we deliver under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
         image={{
           src: '/images/trading page banner.png',
           alt: 'SwissCresta brand banner',
@@ -282,7 +282,7 @@ export default function AccountTypesPage() {
       <Section raised>
         <SectionHeading
           title="Trading conditions"
-          lead="Spreads, leverage and execution — the terms that apply to every position you open."
+          lead="Spreads, leverage and execution — the terms your desk configures for every position a client opens."
         />
         <div
           className="grid grid-cols-1 items-start lg:grid-cols-2"
@@ -381,7 +381,7 @@ export default function AccountTypesPage() {
 
       {/* ── FAQs ──────────────────────────────────────────────────────── */}
       <Section>
-        <SectionHeading title="FAQs about trading" />
+        <SectionHeading title="Platform FAQs" />
         <div className="mx-auto" style={{ maxWidth: 820, marginTop: 'var(--mk-space-7)' }}>
           <FaqAccordion items={TRADING_FAQ} />
         </div>
@@ -408,10 +408,10 @@ export default function AccountTypesPage() {
       </Section>
 
       <CtaBanner
-        title="Trade Global Markets with Confidence"
-        lead={`Every ${BRAND_NAME} account runs on the same platform and the same execution — pick the conditions that suit how you trade.`}
-        primary={{ label: 'Start Trading', href: '/auth/register' }}
-        secondary={{ label: 'Open a demo account', href: '/accounts/demo' }}
+        title="Your brand, our engine"
+        lead={`Every ${BRAND_NAME} account tier runs on the same platform and the same execution — configure the conditions that suit your business.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );

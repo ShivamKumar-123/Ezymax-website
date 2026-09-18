@@ -285,11 +285,11 @@ export function Navbar() {
                 href="/auth/login"
                 className="whitespace-nowrap rounded-full px-4 py-2.5 font-body text-[15px] font-medium text-foreground/70 transition-colors hover:text-foreground"
               >
-                Log in
+                Client Login
               </Link>
               <Button variant="hero" className="h-auto rounded-full px-5 py-2.5 text-sm" asChild>
                 <Link href={SIGNUP_HREF}>
-                  Get Started
+                  Book a Demo
                   <ArrowUpRight className="ml-1 size-4" />
                 </Link>
               </Button>
@@ -345,11 +345,11 @@ export function Navbar() {
                 onClick={() => setOpen(false)}
                 className="font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 block mt-4"
               >
-                Log in
+                Client Login
               </Link>
               <Button variant="hero" asChild className="mt-2">
                 <Link href={SIGNUP_HREF} onClick={() => setOpen(false)}>
-                  Get Started
+                  Book a Demo
                   <ArrowUpRight className="ml-1 size-4" />
                 </Link>
               </Button>

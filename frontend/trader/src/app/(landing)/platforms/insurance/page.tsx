@@ -31,17 +31,17 @@ export default function InsuranceMarketingPage() {
     <main>
       <PageHero
         kicker="Trade Insurance"
-        title={<>Trade With <span style={{ color: 'var(--mk-accent)' }}>Built-In Protection.</span></>}
-        lead="Activate insurance on the order ticket and get part of your loss back if a covered trade closes in the red. Flexible coverage. Controlled risk. Smarter trading."
-        primary={{ label: 'Activate Protection', href: '/auth/register' }}
-        secondary={{ label: 'View My Policies', href: '/insurance' }}
+        title={<>Ship Trade Insurance <span style={{ color: 'var(--mk-accent)' }}>Built Into the Platform.</span></>}
+        lead="A trade-insurance module we build into your platform. Clients activate coverage on the order ticket and get part of a covered loss back if the trade closes in the red. Flexible coverage. Controlled risk."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
 
       <Section raised>
         <SectionHeading
           kicker="Coverage"
-          title="Choose Your Coverage Level"
-          lead="A small fee applies per trade — fee scales with risk; coverage scales with the tier you pick."
+          title="Configurable Coverage Tiers"
+          lead="A configurable per-trade fee scales with risk; coverage scales with the tier — set the tiers your clients can pick."
         />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
           {TIERS.map((t) => (
@@ -100,14 +100,14 @@ export default function InsuranceMarketingPage() {
           ))}
         </ul>
         <div className="text-center mt-10">
-          <Link href="/auth/register" className="mk-btn mk-btn--primary">Start Trading</Link>
+          <Link href="/company/contact" className="mk-btn mk-btn--primary">Book a demo</Link>
         </div>
       </Section>
 
       <CtaBanner
-        title="Trade With Confidence and Control"
-        lead="Flexible protection designed to support your trading decisions."
-        primary={{ label: 'Start Trading', href: '/auth/register' }}
+        title="Ship Trade Insurance Under Your Brand"
+        lead="A flexible trade-insurance module, built into your platform and delivered under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

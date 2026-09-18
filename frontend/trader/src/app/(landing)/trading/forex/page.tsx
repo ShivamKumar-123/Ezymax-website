@@ -30,10 +30,10 @@ export default function ForexPage() {
     <main>
       <PageHero
         kicker="Forex"
-        title="Trade Forex with Confidence"
-        lead="Access 60+ currency pairs with spreads from 0.0 pips and leverage up to 1:500."
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Explore All Markets', href: '/markets' }}
+        title="Forex support for your platform"
+        lead="Give your clients 60+ currency pairs with configurable spreads and leverage — forex support built into the platform we deliver under your brand."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Explore market coverage', href: '/markets' }}
       />
 
       <Section raised>
@@ -64,7 +64,7 @@ export default function ForexPage() {
         <div className="flex flex-col gap-4 mx-auto max-w-3xl mt-14 text-center">
           <h2 className="mk-h2">What is Forex Trading?</h2>
           <p className="mk-lead">
-            {`Forex (foreign exchange) is the world's largest and most liquid financial market, with over $6 trillion traded daily. Trade major, minor, and exotic currency pairs with ${BRAND_NAME} and benefit from tight spreads, fast execution, and advanced trading tools. Whether you're a beginner or professional trader, our platform provides everything you need to succeed in the forex market.`}
+            {`Forex (foreign exchange) is the world's largest and most liquid financial market, with over $6 trillion traded daily. The platform ${BRAND_NAME} builds supports major, minor and exotic currency pairs, with tight configurable spreads, fast execution and advanced trading tools — everything your clients need in the forex market, delivered under your brand.`}
           </p>
         </div>
       </Section>
@@ -113,35 +113,35 @@ export default function ForexPage() {
       </Section>
 
       <Section raised>
-        <SectionHeading kicker="Why Trade Here" title={`Forex Trading with ${BRAND_NAME}`} />
+        <SectionHeading kicker="Platform capability" title={`Forex on the ${BRAND_NAME} platform`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
             {
               icon: Zap,
-              title: 'Lightning-Fast Execution',
-              body: 'Execute trades in under 30ms with our institutional-grade infrastructure and zero requotes.',
+              title: 'Fast Execution',
+              body: 'Low-latency execution on institutional-grade infrastructure with zero requotes.',
             },
             {
               icon: DollarSign,
-              title: 'Competitive Spreads',
-              body: 'Enjoy spreads from 0.0 pips on major pairs and transparent pricing with no hidden fees.',
+              title: 'Configurable Spreads',
+              body: 'Set spreads on major pairs with transparent pricing wired to your own liquidity providers.',
             },
             {
               icon: Lock,
-              title: 'Secure Trading',
-              body: 'Your funds are protected in segregated accounts with tier-1 banks and negative balance protection.',
+              title: 'Secure Platform',
+              body: 'Hardened infrastructure with negative balance protection controls and role-based access built in.',
             },
           ]}
         />
       </Section>
 
       <CtaBanner
-        title="Trade Forex with Confidence"
-        lead={`Open a ${BRAND_NAME} account and start trading major, minor, and exotic currency pairs.`}
-        primary={{ label: 'Open Account', href: '/auth/register' }}
-        secondary={{ label: 'Compare Account Types', href: '/account-types' }}
+        title="Add forex to your platform"
+        lead={`Book a demo and see how the ${BRAND_NAME} platform supports major, minor and exotic currency pairs under your brand.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'Compare account tiers', href: '/account-types' }}
       />
     </main>
   );

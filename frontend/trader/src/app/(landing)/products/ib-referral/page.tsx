@@ -54,24 +54,24 @@ export default function IbReferralPage() {
   return (
     <main>
       <PageHero
-        kicker="Partners"
-        title="Become an Introducing Broker"
-        lead={`Refer traders to ${BRAND_NAME} and earn lifetime per-lot commissions — up to $15 per standard lot, paid instantly.`}
-        primary={{ label: 'Apply Now', href: '/auth/register' }}
-        secondary={{ label: 'See Tiers', href: '#tiers' }}
+        kicker="Partner Management"
+        title="IB & Partner Management, Built In"
+        lead={`A full introducing-broker and partner-management module ships with the ${BRAND_NAME} platform — so your brokerage can run its own IB program, set per-lot commissions, and pay partners automatically.`}
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'See how tiers work', href: '#tiers' }}
       />
 
       {/* How it works */}
       <Section raised id="how-it-works">
         <SectionHeading
           kicker="How It Works"
-          title={<>Three steps. <span style={{ color: 'var(--mk-accent)' }}>Lifetime commissions.</span></>}
+          title={<>Three steps. <span style={{ color: 'var(--mk-accent)' }}>Your IB program, live.</span></>}
         />
         <ol className="grid sm:grid-cols-3 gap-5 mt-12" aria-label="How the IB program works">
           {[
-            { n: '01', icon: Users,  title: 'Apply & Get Approved', body: 'Submit the IB application. Our partner team reviews and activates your account, typically within 24 hours.' },
-            { n: '02', icon: Share2, title: 'Share Your Link',      body: 'Use your unique referral link, banner kit, or QR code. Every signup is automatically tagged to you for life.' },
-            { n: '03', icon: Wallet, title: 'Earn on Every Lot',    body: 'Get paid on every standard lot your referrals trade — across forex, crypto, indices, and commodities.' },
+            { n: '01', icon: Users,  title: 'Configure Your Tiers', body: 'Set commission rates, qualification thresholds, and tier rewards from the admin back office — no code, live in minutes.' },
+            { n: '02', icon: Share2, title: 'Onboard Partners',     body: 'Your partners get unique referral links, banner kits, and QR codes. Every signup is automatically attributed to the right partner.' },
+            { n: '03', icon: Wallet, title: 'Pay Automatically',    body: 'The module tracks every lot traded by the clients your partners refer — across the asset classes your platform offers — and settles commissions automatically.' },
           ].map(({ n, icon: Icon, title, body }) => (
             <li key={n} className="mk-card mk-card--hover flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -98,13 +98,14 @@ export default function IbReferralPage() {
       {/* IB Account Tiers — moved here from /products/insurance per client. */}
       <Section id="tiers">
         <SectionHeading
-          kicker="IB Account Tiers"
+          kicker="Commission Tiers"
           title={<>Bronze. Silver. <span style={{ color: 'var(--mk-accent)' }}>Gold.</span> Platinum.</>}
           lead={
             <>
-              Per-lot commission scales with the number of active traders you bring on.
-              Move up automatically — no manual upgrade. Top earners qualify for custom
+              Set per-lot commission tiers that scale with each partner&apos;s active-trader count.
+              Partners move up automatically — no manual upgrade. Top partners can unlock custom
               deals up to <span style={{ color: 'var(--mk-accent)', fontWeight: 700 }}>$15 per lot</span>.
+              The figures below are an example ladder — you configure your own.
             </>
           }
         />
@@ -141,7 +142,7 @@ export default function IbReferralPage() {
                       color: 'var(--mk-text-faint)',
                     }}
                   >
-                    IB Account Type
+                    Commission Tier
                   </div>
                 </div>
 
@@ -151,15 +152,15 @@ export default function IbReferralPage() {
                 >
                   <StatRow label="Active Traders"       value={traders} />
                   <StatRow label="Commission (per lot)" value={commission} accent={tone} />
-                  <StatRow label="Amount"               value={amount} />
+                  <StatRow label="Tier Reward"          value={amount} />
                 </div>
 
                 <Link
-                  href="/auth/register"
+                  href="/company/contact"
                   className="mk-btn mt-4"
                   style={{ background: tone, color: '#0a0a0a' }}
                 >
-                  Apply for IB
+                  Book a demo
                 </Link>
               </article>
             </div>
@@ -178,9 +179,9 @@ export default function IbReferralPage() {
         >
           <Sparkles size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--mk-accent)' }} />
           <p className="mk-body" style={{ color: 'var(--mk-text)' }}>
-            <span style={{ color: 'var(--mk-accent)', fontWeight: 700 }}>Top custom deals up to $15 per lot.</span>{' '}
-            Partners with consistent volume above the Platinum threshold can negotiate
-            bespoke commission, marketing budget, and bonus structures with our partner team.
+            <span style={{ color: 'var(--mk-accent)', fontWeight: 700 }}>Custom deals up to $15 per lot.</span>{' '}
+            The module lets you offer your top partners — those with consistent volume above your
+            highest tier — bespoke commission, marketing budgets, and bonus structures.
           </p>
         </div>
 
@@ -188,25 +189,25 @@ export default function IbReferralPage() {
           className="mt-6 text-center mx-auto max-w-2xl"
           style={{ fontSize: 'var(--mk-text-xs)', lineHeight: 'var(--mk-leading-body)', color: 'var(--mk-text-faint)' }}
         >
-          Tier qualification is reviewed monthly based on the active-trader count maintained
-          across the prior 30 days. Commissions settle instantly to your IB wallet.
+          Tier qualification, review windows, and payout timing are all configurable in the module.
+          Commissions can settle automatically to each partner&apos;s balance.
         </p>
       </Section>
 
       {/* Benefits grid */}
       <Section raised id="benefits">
-        <SectionHeading kicker="Benefits" title={`Why Partner With ${BRAND_NAME}`} />
+        <SectionHeading kicker="Benefits" title={`What the ${BRAND_NAME} IB Module Gives You`} />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: Wallet,     title: 'High Per-Lot Payouts', body: 'Up to $15 per standard lot — among the highest in the industry. No volume claw-back.' },
-            { icon: Layers,     title: 'Multi-Tier Earnings',  body: 'Earn from your direct referrals AND from IBs you bring in. Build a network, not a sales job.' },
-            { icon: Zap,        title: 'Instant Payouts',      body: 'Commissions hit your wallet the moment your referral closes a lot — no Monday queue, no holding period.' },
-            { icon: BarChart3,  title: 'Real-Time Dashboard',  body: 'Live earnings, trader activity, conversion funnel, lot volume — all in one panel.' },
-            { icon: Headphones, title: 'Dedicated Manager',    body: 'Gold + Platinum partners get a named account manager and direct WhatsApp support.' },
-            { icon: Award,      title: 'Marketing Kit',        body: 'Banners, landing pages, video assets, and email copy in 12 languages — ready to deploy.' },
-            { icon: Users,      title: 'No Cap on Referrals',  body: 'Refer 5 traders or 50,000 — your commission per lot only goes up as you grow.' },
+            { icon: Wallet,     title: 'Flexible Payout Rules', body: 'Configure per-lot rates, caps, and claw-back rules to fit your commercial model — no hard-coded limits.' },
+            { icon: Layers,     title: 'Multi-Tier Partner Trees', body: 'Support sub-IB structures out of the box — partners earn from their own referrals and from the IBs they introduce.' },
+            { icon: Zap,        title: 'Automated Settlement', body: 'Commissions are calculated and credited automatically the moment a qualifying lot closes — no manual reconciliation.' },
+            { icon: BarChart3,  title: 'Real-Time Dashboards', body: 'Give partners live earnings, trader activity, conversion funnels, and lot volume in one panel.' },
+            { icon: Headphones, title: 'Account-Manager Tools', body: 'Assign named account managers to your top partner tiers and route their requests through the built-in support workflow.' },
+            { icon: Award,      title: 'Marketing Kit',        body: 'Ships with banners, landing pages, and co-branded assets your partners can deploy in multiple languages.' },
+            { icon: Users,      title: 'No Referral Caps',     body: 'Whether a partner brings five clients or fifty thousand, the module scales — commissions only grow with volume.' },
           ]}
         />
       </Section>
@@ -216,12 +217,12 @@ export default function IbReferralPage() {
 
       {/* Testimonials */}
       <Section id="testimonials">
-        <SectionHeading kicker="Partners" title="What our partners say" />
+        <SectionHeading kicker="Operators" title="What operators say" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-12">
           {[
-            { name: 'Karan A.', region: 'India',   quote: 'The dashboard is exactly what I needed — I see every lot my network trades, payouts hit on Monday like clockwork.' },
-            { name: 'Maria L.', region: 'Spain',   quote: 'The co-branded marketing kit saved me weeks. Conversion from my Telegram group jumped 3x within a month.' },
-            { name: 'Tunde O.', region: 'Nigeria', quote: 'Multi-tier is what changed it for me. I bring in IBs, they bring in traders, and I earn from the whole tree.' },
+            { name: 'Karan A.', region: 'India',   quote: 'We launched our IB program on the platform in days. Partners get their own dashboards and payouts run automatically — no more spreadsheets.' },
+            { name: 'Maria L.', region: 'Spain',   quote: 'The co-branded marketing kit saved our partner team weeks of design work, and everything ships under our own brand.' },
+            { name: 'Tunde O.', region: 'Nigeria', quote: 'Multi-tier partner trees were the deciding feature for us — our top IBs build and earn from their own networks inside our platform.' },
           ].map((t) => (
             <article key={t.name} className="mk-card mk-card--hover flex flex-col gap-4">
               {/* Real partner-style photo via pravatar.cc. */}
@@ -250,20 +251,20 @@ export default function IbReferralPage() {
           <FaqAccordion
             items={[
               {
-                q: 'Do I need a trading account to become an IB?',
-                a: <>Yes. You need a {BRAND_NAME} account to join the IB program — that&apos;s how your unique referral link, commissions, and payouts are tied to you. Opening the account is free and you don&apos;t have to place a trade; we still recommend funding a small demo so you understand the product you are recommending.</>,
+                q: 'Is the IB module included with the platform?',
+                a: <>Yes. Introducing-broker and partner management ship with the {BRAND_NAME} platform — you configure commission rates, tiers, and payout rules from the admin back office. There is nothing extra to install.</>,
               },
               {
-                q: 'When are commissions paid?',
-                a: <>Commissions are paid instantly — the moment your referral closes a lot, the rebate hits your wallet. Payouts go to your preferred method — crypto, bank wire, or local rails.</>,
+                q: 'How are commissions paid out?',
+                a: <>You decide. The module can settle commissions automatically the moment a qualifying lot closes, or on a schedule you set, to each partner&apos;s balance.</>,
               },
               {
-                q: 'Can my referrals trade any product?',
-                a: <>Yes. You earn rebates on every lot your referrals trade across forex, metals, energies, indices, and crypto.</>,
+                q: 'Which asset classes does it track?',
+                a: <>Any the platform offers. Commissions can be tracked on every lot across the asset classes you enable — forex, metals, energies, indices, and crypto.</>,
               },
               {
-                q: 'What happens if my referral closes their account?',
-                a: <>Your reattribution is permanent. If the same person re-opens an account later under your link, you continue to earn.</>,
+                q: 'How is partner attribution handled?',
+                a: <>Attribution is persistent. Each client stays linked to the partner who introduced them, and the module keeps that link intact across the client&apos;s lifecycle.</>,
               },
             ]}
           />
@@ -271,9 +272,9 @@ export default function IbReferralPage() {
       </Section>
 
       <CtaBanner
-        title="Start Earning This Week"
-        lead="Apply now, get approved within 24 hours, and share your first referral link today."
-        primary={{ label: 'Apply Now', href: '/auth/register' }}
+        title="See the IB Module in Action"
+        lead="Book a demo and we'll walk you through configuring tiers, onboarding partners, and automating payouts on your platform."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
       />
     </main>
   );

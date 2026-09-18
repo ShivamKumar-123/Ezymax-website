@@ -5,33 +5,25 @@ import { openCookieSettings } from '@/home/components/CookieConsent'
 import { BRAND_NAME, BRAND_DOMAIN, BRAND_LOGO_LIGHT, BRAND_SUPPORT_EMAIL, BRAND_COPYRIGHT } from '@/lib/brand'
 
 const columns = {
-  Markets: [
-    { name: 'Forex',       path: '/trading/forex' },
-    { name: 'Indices',     path: '/trading/indices' },
-    { name: 'Commodities', path: '/trading/commodities' },
-    { name: 'Crypto',      path: '/trading/crypto' },
-  ],
-  Trading: [
-    { name: 'Account Types',     path: '/account-types' },
-    { name: 'Standard Account',  path: '/accounts/standard' },
-    { name: 'Pro Account',       path: '/accounts/pro' },
-    { name: 'Demo Account',      path: '/accounts/demo' },
-  ],
   Platforms: [
-    { name: 'Web Platform',  path: '/platforms/web' },
-    { name: 'Copy Trading',  path: '/platforms/copy-trading' },
-    { name: 'Download',      path: '/download' },
+    { name: 'Global Trading Platform', path: '/platforms/web' },
+    { name: 'Copy Trading',            path: '/platforms/copy-trading' },
+    { name: 'IB Management',           path: '/platforms/ib-management' },
+    { name: 'Prop Trading',            path: '/platforms/prop-trading' },
   ],
-  Partners: [
-    { name: 'IB Programme',    path: '/products/ib-referral' },
-    { name: 'Referral',        path: '/products/referral' },
-    { name: 'Trade Insurance', path: '/products/insurance' },
+  'Back Office': [
+    { name: 'Admin & Back Office', path: '/platforms/super-admin' },
+    { name: 'Download',            path: '/download' },
+  ],
+  Solutions: [
+    { name: 'Market Research',       path: '/services/market-research' },
+    { name: 'Portfolio Management',  path: '/services/portfolio-management' },
+    { name: 'Education',             path: '/services/education' },
   ],
   Resources: [
-    { name: 'Market Research', path: '/services/market-research' },
-    { name: 'Education',       path: '/services/education' },
-    { name: 'Guides',          path: '/academy/pdfs' },
-    { name: 'Blog',            path: '/academy/blogs' },
+    { name: 'Guides',    path: '/academy/pdfs' },
+    { name: 'Blog',      path: '/academy/blogs' },
+    { name: 'Tutorials', path: '/education/tutorials' },
   ],
   Company: [
     { name: 'About Us',  path: '/company/about' },
@@ -89,13 +81,13 @@ export default function Footer() {
                 )}
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                {BRAND_NAME} is a forex and CFD trading platform built for serious traders —
-                offering fast execution, competitive spreads and transparent pricing across
-                major, minor and exotic currency pairs.
+                {BRAND_NAME} is a software development company. We build and license
+                trading platforms, back offices and risk engines to brokers and prop
+                firms — delivered white-label, under your own brand.
               </p>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                Trade from the web, mobile or desktop browser on a single account, with an
-                Introducing Broker programme available for partners and affiliates.
+                One engineering team, from first call to live platform — and long after,
+                with the monitoring and enhancement cycles that follow launch.
               </p>
 
               <div className="flex items-center gap-2 text-sm mb-5" style={{ color: 'var(--fx-text-3)' }}>
@@ -176,30 +168,16 @@ export default function Footer() {
               className="text-lg md:text-xl font-semibold mb-3"
               style={{ color: 'var(--fx-text)' }}
             >
-              Risk Warning
+              Disclaimer
             </h3>
             <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
-              Please note that forex trading and trading in other leveraged products involves a
-              significant level of risk and is not suitable for all investors. Trading in financial
-              instruments may result in losses as well as profits and your losses can be greater than
-              your initial invested capital. Before undertaking any such transactions, you should
-              ensure that you fully understand the risks involved and seek independent advice if
-              necessary. {BRAND_NAME} does not provide investment advice.
-            </p>
-          </div>
-
-          <div>
-            <h3
-              className="text-lg md:text-xl font-semibold mb-3"
-              style={{ color: 'var(--fx-text)' }}
-            >
-              Restricted Regions
-            </h3>
-            <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
-              {BRAND_NAME} does not provide services for citizens/residents of the USA, Cuba, Iraq,
-              Myanmar, North Korea, and Sudan. The services of {BRAND_NAME} are not intended for
-              distribution to, or use by, any person in any country or jurisdiction where such
-              distribution or use would be contrary to local law or regulation.
+              {BRAND_NAME} is a software development company. We build and license trading
+              technology to licensed operators; we are not a broker, exchange or financial
+              institution and we do not provide financial, investment, tax or advisory
+              services. Any platform in production is operated by our client under their own
+              licence and their own regulatory obligations. Trading leveraged products carries
+              a significant level of risk. Nothing on this site is an offer, solicitation or
+              recommendation to trade.
             </p>
           </div>
         </div>
@@ -213,12 +191,9 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           {[
-            { name: 'Privacy Policy',              href: '/privacy' },
-            { name: 'Terms & Conditions',          href: '/terms' },
-            { name: 'Deposit & withdrawal Policy', href: '/deposit-withdrawal' },
-            { name: 'Restricted Countries',        href: '/restricted-countries' },
-            { name: 'Risk Warning',                href: '/risk-warning' },
-            { name: 'Risk Disclosure',             href: '/risk' },
+            { name: 'Privacy Policy',   href: '/privacy' },
+            { name: 'Terms of Service', href: '/terms' },
+            { name: 'Disclaimer',       href: '/risk' },
           ].map((doc) => (
             <a
               key={doc.name}
@@ -239,7 +214,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            {BRAND_COPYRIGHT} · Founded in 2010
+            {BRAND_COPYRIGHT} · Software for trading businesses since 2010
           </p>
           {/* Cookie Settings — surfaces the consent modal even after
               the user has already accepted/saved a preference, so the

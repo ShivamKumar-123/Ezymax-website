@@ -12,29 +12,29 @@ import { Section, SectionHeading, PageHero, FeatureGrid, CtaBanner } from '@/mar
 import { BRAND_NAME } from '@/lib/brand';
 
 const STEPS = [
-  { eyebrow: 'Step', title: 'Connect Wallet', body: 'Securely connect your wallet to access the platform.' },
-  { eyebrow: 'Step', title: 'Access Your Dashboard', body: 'Manage your profile, settings, and activity through your CRM.' },
-  { eyebrow: 'Step', title: 'Create Trading Account', body: `Choose ${BRAND_NAME} native or an external integration.` },
-  { eyebrow: 'Step', title: 'Allocate Funds to Contract', body: 'Funds move into a secure smart contract layer, not a broker.' },
-  { eyebrow: 'Step', title: 'Execute Trades', body: 'Trade normally using your selected account.' },
-  { eyebrow: 'Step', title: 'Automatic P&L Settlement', body: 'Profits credit, losses deduct — automatically.' },
-  { eyebrow: 'Step', title: 'Withdraw Anytime', body: 'Funds settle directly back to your wallet.' },
+  { eyebrow: 'Step', title: 'Book a Demo', body: 'See the platform and tell us what your brokerage needs.' },
+  { eyebrow: 'Step', title: 'Scope & Plan', body: 'We agree modules, integrations, branding and a launch timeline.' },
+  { eyebrow: 'Step', title: 'Brand & Configure', body: `Your logo, domain and colours across web, mobile and desktop.` },
+  { eyebrow: 'Step', title: 'Wire Integrations', body: 'Payments, KYC/AML, liquidity and CRM connected to your setup.' },
+  { eyebrow: 'Step', title: 'Test & Review', body: 'You review the platform end to end before anything goes live.' },
+  { eyebrow: 'Step', title: 'Go Live', body: 'We launch on your domain, under your brand — typically in weeks.' },
+  { eyebrow: 'Step', title: 'Ongoing Support', body: 'The same team keeps the platform running and evolving after launch.' },
 ];
 
 const COMPARE: Array<[string, string, string]> = [
-  ['Fund Custody', 'Smart Contract Layer', 'Broker Holds Funds'],
-  ['Withdrawals', 'System-Based', 'Approval-Based'],
-  ['Execution', 'Automated Logic', 'Broker-Controlled'],
-  ['Transparency', 'Structured Flow', 'Limited Visibility'],
-  ['User Control', 'High', 'Limited'],
+  ['Branding', 'Fully white-label', 'Their brand, not yours'],
+  ['Delivery', 'Live in weeks', 'Months of integration'],
+  ['Codebase', 'Built in-house', 'Resold template'],
+  ['Back Office', 'CRM, risk & reporting', 'Bolt-on add-ons'],
+  ['Support', 'From the build team', 'Ticket queue'],
 ];
 
 const WHY: Array<{ icon: LucideIcon; title: string; sub: string }> = [
-  { icon: Zap,        title: 'Deep Liquidity, Fast Execution',   sub: 'sub-millisecond order fills' },
-  { icon: Headphones, title: '24/7 Dedicated Support',           sub: 'live chat, phone & e-mail' },
-  { icon: Users,      title: 'Copy Successful Traders',          sub: 'with our Social Trading products' },
-  { icon: Target,     title: 'Raw, Institutional-Grade Spreads', sub: 'from 0.0 pips' },
-  { icon: BarChart3,  title: 'Advanced Order Types',             sub: 'limit, stop-limit, one-click trading' },
+  { icon: Zap,        title: 'Fast, Reliable Engine',   sub: 'built to stay responsive under load' },
+  { icon: Headphones, title: 'Support After Launch',    sub: 'live chat, phone & e-mail' },
+  { icon: Users,      title: 'Copy & Social Trading',   sub: 'built into the platform you launch' },
+  { icon: Target,     title: 'Multi-Asset Ready',       sub: 'forex, CFDs, crypto and more' },
+  { icon: BarChart3,  title: 'Advanced Order Types',    sub: 'limit, stop-limit, one-click trading' },
 ];
 
 export default function HowItWorksPage() {
@@ -42,10 +42,10 @@ export default function HowItWorksPage() {
     <main>
       <PageHero
         kicker={`How ${BRAND_NAME} Works`}
-        title={<>Not a Broker.<br /><span style={{ color: 'var(--mk-accent)' }}>A Trading Protocol.</span></>}
-        lead={`${BRAND_NAME} does not hold your funds. Your trades operate through a structured smart contract system. Execution is automated. Control stays with you.`}
-        primary={{ label: 'See the Flow', href: '#flow' }}
-        secondary={{ label: 'Start Trading', href: '/auth/register' }}
+        title={<>Your Brand.<br /><span style={{ color: 'var(--mk-accent)' }}>Our Engine.</span></>}
+        lead={`${BRAND_NAME} builds white-label trading platforms for brokers and prop firms. Your brand, your domain, our engine — typically live in weeks.`}
+        primary={{ label: 'See the Process', href: '#flow' }}
+        secondary={{ label: 'Book a demo', href: '/company/contact' }}
       />
 
       {/* Broker vs Protocol */}
@@ -53,28 +53,28 @@ export default function HowItWorksPage() {
         <SectionHeading
           align="left"
           kicker="The Difference"
-          title={`Traditional Broker vs ${BRAND_NAME}`}
-          lead={'We don’t hold your money. The system manages execution.'}
+          title={`Off-the-Shelf vs ${BRAND_NAME}`}
+          lead={'You bring the licence and the clients. We bring the platform.'}
         />
         <div className="grid md:grid-cols-2 gap-5 mt-12">
           <ComparisonCard
-            title="Traditional Brokers"
+            title="Off-the-Shelf Platforms"
             tone="warn"
             items={[
-              'Funds deposited into broker accounts',
-              'Withdrawal depends on approvals',
-              'Execution lacks transparency',
-              'Manual intervention possible',
+              'Generic template under a vendor’s brand',
+              'Slow, costly integration work',
+              'Limited control over the roadmap',
+              'Support through a ticket queue',
             ]}
           />
           <ComparisonCard
-            title={`${BRAND_NAME} Protocol`}
+            title={`The ${BRAND_NAME} Platform`}
             tone="ok"
             items={[
-              'Funds interact with smart contract layer',
-              'No custody held by platform',
-              'Trades execute via system logic',
-              'Automatic P&L settlement',
+              'Your brand, your domain, end to end',
+              'Built in-house since 2010',
+              'Web, mobile, desktop and back office',
+              'Typically live in weeks',
             ]}
           />
         </div>
@@ -85,8 +85,8 @@ export default function HowItWorksPage() {
         <SectionHeading
           align="left"
           kicker="The Flow"
-          title="From Wallet to Trade — Step by Step"
-          lead="Every step is system-driven. No manual control involved."
+          title="From Demo to Launch — Step by Step"
+          lead="A clear path from first demo to a platform live under your brand."
         />
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-12">
           {STEPS.map((s, i) => (
@@ -107,23 +107,23 @@ export default function HowItWorksPage() {
         <SectionHeading
           align="left"
           kicker="Principles"
-          title="Built for Transparency and Control"
-          lead="Designed to minimize trust dependency and maximize system-based execution."
+          title="Built In-House, Delivered White-Label"
+          lead="Engineered by our own team and shipped under your brand."
         />
         <FeatureGrid
           className="mt-12"
           columns={3}
           items={[
-            { icon: Wallet, title: 'No Custody', body: 'Funds never sit in a broker account. They interact with the contract layer only when you trade.' },
-            { icon: Cpu, title: 'Automated Execution', body: 'Trades are settled by the system on outcome — no manual approvals, no withdrawal delays.' },
-            { icon: ShieldCheck, title: 'Transparent Flow', body: 'Every step is observable: wallet → contract → engine → outcome → wallet.' },
+            { icon: Wallet, title: 'Your Brand', body: 'Your logo, domain and design across every screen — web, mobile and desktop.' },
+            { icon: Cpu, title: 'One Engine', body: 'A single platform powering the trading terminals, admin back office and integrations.' },
+            { icon: ShieldCheck, title: 'Supported After Launch', body: 'The team that builds your platform keeps it running and secure after go-live.' },
           ]}
         />
       </Section>
 
       {/* Comparison table */}
       <Section>
-        <SectionHeading align="left" kicker="Side by Side" title={`${BRAND_NAME} vs Traditional Brokers`} />
+        <SectionHeading align="left" kicker="Side by Side" title={`${BRAND_NAME} vs Off-the-Shelf`} />
         <div
           className="mt-12 overflow-x-auto"
           style={{ border: '1px solid var(--mk-line)', borderRadius: 'var(--mk-radius-lg)' }}
@@ -131,7 +131,7 @@ export default function HowItWorksPage() {
           <table className="w-full min-w-[560px]" style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Feature', BRAND_NAME, 'Traditional Broker'].map((h) => (
+                {['Feature', BRAND_NAME, 'Off-the-Shelf Template'].map((h) => (
                   <th
                     key={h}
                     className="text-left px-5 py-4"
@@ -164,7 +164,7 @@ export default function HowItWorksPage() {
 
       {/* Why Trade section */}
       <Section raised>
-        <SectionHeading kicker="Why Us" title={`Why Trade with ${BRAND_NAME}?`} />
+        <SectionHeading kicker="Why Us" title={`Why Build with ${BRAND_NAME}?`} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
           {WHY.map(({ icon: Icon, title, sub }) => (
             <div key={title} className="mk-card mk-card--hover flex items-center gap-4">
@@ -184,10 +184,10 @@ export default function HowItWorksPage() {
       </Section>
 
       <CtaBanner
-        title="Experience System-Driven Trading"
-        lead="No custody. No hidden control. Just structured execution."
-        primary={{ label: 'Start Trading', href: '/auth/register' }}
-        secondary={{ label: 'Connect Wallet', href: '/auth/login' }}
+        title="Launch on Your Own Brand"
+        lead="Your brand, your domain, our engine. Book a demo to see it live."
+        primary={{ label: 'Book a demo', href: '/company/contact' }}
+        secondary={{ label: 'View platforms', href: '/platforms/web' }}
       />
     </main>
   );
