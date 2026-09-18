@@ -157,6 +157,9 @@ export default function TradesPage() {
   const [activeTab, setActiveTab] = useState<TabId>('open');
   const [searchFilter, setSearchFilter] = useState('');
   const [symbolFilter, setSymbolFilter] = useState('');
+  // Centered book filter above the open-positions table: show all, only
+  // A-book, or only B-book trades. Clicking the active one clears it.
+  const [bookFilter, setBookFilter] = useState<'all' | 'A' | 'B'>('all');
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [posPage, setPosPage] = useState(1);
@@ -787,6 +790,44 @@ export default function TradesPage() {
           {/* Open Positions */}
           {activeTab === 'open' && (
             <div>
+              {/* Centered A-Book / B-Book view filter. Sits above the table
+                  in addition to the per-row A/B toggle. Filters the open
+                  positions to one book; clicking the active button clears it. */}
+              <div className="flex justify-center py-3 border-b border-border-primary">
+                <div className="inline-flex rounded-lg border border-border-primary overflow-hidden">
+                  <button
+                    onClick={() => setBookFilter('A')}
+                    className={cn(
+                      'px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-fast border-r border-border-primary',
+                      bookFilter === 'A'
+                        ? 'text-info bg-info/15'
+                        : 'text-text-secondary bg-bg-hover hover:text-text-primary hover:bg-bg-active',
+                    )}
+                  >
+                    A-Book Trades
+                  </button>
+                  <button
+                    onClick={() => setBookFilter('B')}
+                    className={cn(
+                      'px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-fast',
+                      bookFilter === 'B'
+                        ? 'text-warning bg-warning/15'
+                        : 'text-text-secondary bg-bg-hover hover:text-text-primary hover:bg-bg-active',
+                    )}
+                  >
+                    B-Book Trades
+                  </button>
+                </div>
+                {bookFilter !== 'all' && (
+                  <button
+                    onClick={() => setBookFilter('all')}
+                    className="ml-2 px-3 py-1.5 text-xs font-medium text-text-tertiary hover:text-text-primary transition-fast"
+                    title="Show all trades"
+                  >
+                    Show all
+                  </button>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -801,6 +842,7 @@ export default function TradesPage() {
                       .filter(p => {
                         if (searchFilter && !`${p.user_email || ''} ${p.account_number || ''}`.toLowerCase().includes(searchFilter.toLowerCase())) return false;
                         if (symbolFilter && !p.instrument_symbol?.toLowerCase().includes(symbolFilter.toLowerCase())) return false;
+                        if (bookFilter !== 'all' && (p.book_type || 'B').toUpperCase() !== bookFilter) return false;
                         return true;
                       })
                       .map(p => {
