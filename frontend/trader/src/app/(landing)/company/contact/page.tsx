@@ -170,8 +170,8 @@ export default function ContactPage() {
     {
       icon: WhatsAppIcon,
       title: 'WhatsApp',
-      content: '+44 7737119978',
-      link: 'https://wa.me/447737119978',
+      content: '+33 7 59 15 99 87',
+      link: 'https://wa.me/33759159987',
     },
     {
       icon: MapPin,
@@ -349,7 +349,7 @@ export default function ContactPage() {
               </p>
               <div className="flex flex-col gap-2">
                 <p className="mk-body">
-                  <span className="font-bold" style={{ color: 'var(--mk-text)' }}>WhatsApp:</span> +44 7737119978
+                  <span className="font-bold" style={{ color: 'var(--mk-text)' }}>WhatsApp:</span> +33 7 59 15 99 87
                 </p>
                 <p className="mk-body break-words">
                   <span className="font-bold" style={{ color: 'var(--mk-text)' }}>Email:</span> {BRAND_SUPPORT_EMAIL}
@@ -371,15 +371,15 @@ export default function ContactPage() {
             so visitors don't have to dig through the cards above. */}
         <div className="mt-10 flex flex-col items-center gap-2">
           <a
-            href="https://wa.me/447737119978"
+            href="https://wa.me/33759159987"
             target="_blank"
             rel="noopener noreferrer"
             className="mk-btn"
             style={{ background: '#25D366', color: '#fff' }}
-            aria-label="WhatsApp +44 7737 119978"
+            aria-label="WhatsApp +33 7 59 15 99 87"
           >
             <WhatsAppIcon className="h-5 w-5" />
-            WhatsApp: +44 7737 119978
+            WhatsApp: +33 7 59 15 99 87
           </a>
           <span style={{ fontSize: 'var(--mk-text-xs)', color: 'var(--mk-text-faint)' }}>
             Reply usually within minutes · Available 24/7
