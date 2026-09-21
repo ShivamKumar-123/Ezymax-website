@@ -327,12 +327,49 @@ async def ib_tree(user_id: UUID, max_depth: int, db: AsyncSession) -> dict:
 
     tree = build_tree(str(profile.id))
 
+    # ── Direct referred CLIENTS (not sub-IBs) ─────────────────────────────
+    # The CTE above only walks `parent_ib_id`, which only sub-IBs have — so an
+    # IB with plenty of referred traders but no sub-IBs saw an empty downline
+    # ("0 nodes"), even though those clients (and the commission they generate)
+    # are real. Append them as depth-1 leaf nodes flagged `is_client` so any
+    # existing tree UI (web + APK) shows the real network. Referred users who
+    # are themselves IBs already appear above as sub-IBs, so exclude them to
+    # avoid double-listing.
+    sub_ib_user_ids = {str(row.user_id) for row in rows}
+    client_result = await db.execute(
+        select(Referral.id, Referral.referred_id, Referral.created_at,
+               User.email, User.first_name, User.last_name)
+        .join(User, Referral.referred_id == User.id)
+        .where(Referral.ib_profile_id == profile.id)
+        .order_by(Referral.created_at.desc())
+    )
+    client_nodes = []
+    for ref_id, referred_id, ref_created, email, first_name, last_name in client_result.all():
+        if str(referred_id) in sub_ib_user_ids:
+            continue  # already shown as a sub-IB
+        client_nodes.append({
+            "id": f"client-{ref_id}", "user_id": str(referred_id),
+            "email": email,
+            "name": f"{first_name or ''} {last_name or ''}".strip(),
+            "referral_code": None, "level": (profile.level or 1) + 1,
+            "depth": 1, "total_earned": 0.0,
+            "is_active": True, "is_client": True,
+            "joined_at": ref_created.isoformat() if ref_created else None,
+            "children": [],
+        })
+
+    # Clients hang directly under the root IB, alongside any sub-IBs.
+    tree = tree + client_nodes
+
     return {
         "root": {
             "id": str(profile.id), "referral_code": profile.referral_code,
             "level": profile.level, "total_earned": float(profile.total_earned),
         },
-        "tree": tree, "total_nodes": len(rows),
+        "tree": tree,
+        "total_nodes": len(rows) + len(client_nodes),
+        "sub_ib_count": len(rows),
+        "direct_client_count": len(client_nodes),
     }
 
 

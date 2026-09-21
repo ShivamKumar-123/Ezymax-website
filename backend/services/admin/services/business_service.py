@@ -464,11 +464,31 @@ async def approve_sub_broker(
     if user:
         user.role = "sub_broker"
 
+    # Auto-detect parent IB — same as approve_ib_application. Without this a
+    # sub-broker who was themselves referred by an IB became a root node, so
+    # their referrer earned no upline commission and the sub-broker never
+    # appeared in the referrer's tree. Link them into the chain.
+    parent_ib_id = None
+    parent_level = 0
+    referral_q = await db.execute(
+        select(Referral).where(Referral.referred_id == app.user_id)
+    )
+    referral = referral_q.scalar_one_or_none()
+    if referral and referral.ib_profile_id:
+        parent_q = await db.execute(
+            select(IBProfile).where(IBProfile.id == referral.ib_profile_id, IBProfile.is_active == True)
+        )
+        parent_ib = parent_q.scalar_one_or_none()
+        if parent_ib:
+            parent_ib_id = parent_ib.id
+            parent_level = parent_ib.level or 1
+
     referral_code = "SB" + "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
     profile = IBProfile(
         user_id=app.user_id,
         referral_code=referral_code,
-        level=1,
+        level=parent_level + 1,
+        parent_ib_id=parent_ib_id,
     )
     db.add(profile)
 
