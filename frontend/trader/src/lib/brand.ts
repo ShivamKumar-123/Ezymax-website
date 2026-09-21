@@ -19,8 +19,8 @@ export const BRAND_LOGO = '';
  * The header sits on the white canvas so it takes the ink mark; the
  * footer bands are solid black so they take the reversed one.
  */
-export const BRAND_LOGO_DARK = '/images/logo.png';
-export const BRAND_LOGO_LIGHT = '/images/logo1.png';
+export const BRAND_LOGO_DARK = '/images/logo1.png';
+export const BRAND_LOGO_LIGHT = '/images/logo.png';
 
 /** Support inbox shown across the marketing site. */
 export const BRAND_SUPPORT_EMAIL = `support@${BRAND_DOMAIN}`;

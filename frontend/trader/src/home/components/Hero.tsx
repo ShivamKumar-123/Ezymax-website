@@ -104,7 +104,7 @@ export function Hero() {
           style={{ borderRadius: 'clamp(16px, 1.6vw, 28px)' }}
         >
           <Image
-            src="/images/mobile img.png"
+            src="/images/home banner 2fix.png"
             alt={`${BRAND_NAME} trading platform shown on mobile`}
             width={1791}
             height={878}
