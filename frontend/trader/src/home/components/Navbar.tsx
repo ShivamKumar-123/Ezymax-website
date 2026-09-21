@@ -5,9 +5,9 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Menu, X, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, Menu, X, ChevronDown, Download } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { NAV_ITEMS, BRAND, SIGNUP_HREF, type NavItem } from '../data';
+import { NAV_ITEMS, BRAND, SIGNUP_HREF, APK_HREF, type NavItem } from '../data';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -281,6 +281,16 @@ export function Navbar() {
             </div>
 
             <div className="ml-auto hidden shrink-0 items-center gap-2 lg:flex">
+              {/* Direct Android APK download. Plain <a download> so the file
+                  downloads instead of navigating. */}
+              <a
+                href={APK_HREF}
+                download
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[hsl(var(--border)/0.2)] px-4 py-2.5 font-body text-[15px] font-medium text-foreground/80 transition-colors hover:text-foreground hover:bg-[hsl(var(--muted))]"
+              >
+                <Download className="size-4" />
+                Download App
+              </a>
               <Link
                 href="/auth/login"
                 className="whitespace-nowrap rounded-full px-4 py-2.5 font-body text-[15px] font-medium text-foreground/70 transition-colors hover:text-foreground"
@@ -340,10 +350,19 @@ export function Navbar() {
                   <MobileNavRow item={item} onSelect={() => setOpen(false)} />
                 </motion.div>
               ))}
+              <a
+                href={APK_HREF}
+                download
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-2 font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 mt-4"
+              >
+                <Download className="size-5" />
+                Download App
+              </a>
               <Link
                 href="/auth/login"
                 onClick={() => setOpen(false)}
-                className="font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 block mt-4"
+                className="font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 block mt-2"
               >
                 Client Login
               </Link>

@@ -22,6 +22,9 @@ import {
 /** "Book a demo" target — the primary conversion across the site. */
 export const SIGNUP_HREF = '/company/contact';
 
+/** Direct Android APK download (served from public/downloads). */
+export const APK_HREF = '/downloads/swisscresta.apk';
+
 export const BRAND = {
   name: BRAND_NAME,
   tagline: 'Trading platforms, built for brokers and prop firms.',
