@@ -984,6 +984,11 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         partial_swap = (pos.swap or Decimal("0")) * ratio
 
         pos.lots -= close_lots
+        # Charges belong to the lots that are still open. Without this the
+        # closed half's commission and swap stayed on the position and were
+        # charged a second time when the rest of it closed.
+        pos.commission = (pos.commission or Decimal("0")) - partial_commission
+        pos.swap = (pos.swap or Decimal("0")) - partial_swap
 
         history = TradeHistory(
             position_id=pos.id,

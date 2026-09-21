@@ -21,7 +21,7 @@ from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig, ChargeConfig, Transaction, User,
+    SpreadConfig, ChargeConfig, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
@@ -325,13 +325,55 @@ class MatchingEngine:
         pos.profit = profit
         pos.closed_at = datetime.now(timezone.utc)
 
+        commission = pos.commission or Decimal("0")
+        swap = pos.swap or Decimal("0")
+        # NET the commission into the realized P&L at close, the same rule the
+        # gateway's manual and SL/TP close paths use. This path credited the
+        # gross profit, so whenever this engine won the race to an SL/TP the
+        # trader was handed their commission back.
+        net_profit = profit - commission
+
         account = await db.get(TradingAccount, pos.account_id)
         if account:
-            apply_realized_pnl(account, profit)  # bonus credit consumed before balance on loss
+            apply_realized_pnl(account, net_profit)  # bonus credit consumed before balance on loss
             margin_release = (pos.lots * instrument.contract_size * pos.open_price) / Decimal(str(account.leverage))
             account.margin_used = max(Decimal("0"), account.margin_used - margin_release)
             account.equity = account.balance + account.credit
             account.free_margin = account.equity - account.margin_used
+
+        # Every other close path writes these two rows; this one wrote neither.
+        # The position went to CLOSED and the money moved, but the trade was
+        # missing from the trader's history and from the ledger — the only
+        # trace left was the closed position itself.
+        db.add(TradeHistory(
+            position_id=pos.id,
+            account_id=pos.account_id,
+            instrument_id=pos.instrument_id,
+            side=pos.side,
+            lots=pos.lots,
+            open_price=pos.open_price,
+            close_price=close_price,
+            swap=swap,
+            commission=commission,
+            profit=profit,
+            close_reason=reason,
+            opened_at=pos.created_at,
+            closed_at=pos.closed_at,
+        ))
+
+        if account:
+            db.add(Transaction(
+                user_id=account.user_id,
+                account_id=pos.account_id,
+                type="profit" if net_profit >= 0 else "loss",
+                amount=net_profit,
+                balance_after=account.balance,
+                reference_id=pos.id,
+                description=(
+                    f"{reason.upper()} hit: {instrument.symbol} "
+                    f"{pos.side.value} {pos.lots} lots @ {close_price}"
+                ),
+            ))
 
         logger.info(
             f"Position {pos.id} closed by {reason}: {instrument.symbol} "
