@@ -211,7 +211,10 @@ export default function TradesSection() {
       const [positionsResults, ordersResults, historyRes] = await Promise.all([
         Promise.all(positionsPromises),
         Promise.all(ordersPromises),
-        api.get<{ items?: ClosedTrade[] }>('/portfolio/trades?per_page=200').catch(() => ({ items: [] })),
+        // This page filters by account in the browser, so it needs the whole
+        // history — at 200 an account with 520 closed trades showed only the
+        // newest ones and the rest looked missing.
+        api.get<{ items?: ClosedTrade[] }>('/portfolio/trades?per_page=1000').catch(() => ({ items: [] })),
       ]);
 
       if (id !== loadGen.current) return;

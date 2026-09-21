@@ -43,7 +43,10 @@ async def trade_history(
     date_from: datetime = Query(None),
     date_to: datetime = Query(None),
     page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200),
+    # Up to 1000: the balance-trend chart asks for a year of closed trades in
+    # one request, and at the old cap of 200 that request was rejected outright
+    # and the chart silently drew nothing.
+    per_page: int = Query(50, ge=1, le=1000),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

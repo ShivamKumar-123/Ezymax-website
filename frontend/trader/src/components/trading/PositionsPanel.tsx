@@ -63,6 +63,9 @@ type BulkCloseType = 'all' | 'profit' | 'loss';
 
 type TabId = 'open' | 'pending' | 'history';
 
+/** Closed trades fetched per request — the server's maximum for one page. */
+const HISTORY_PAGE_SIZE = 200;
+
 /** Maps API close_reason (sl, tp, manual, …) to a short label + badge style for history.
  *  When a trigger price is available (SL/TP hits close at the level itself), the label
  *  includes "@ <price>" so the user sees exactly where it fired. */
@@ -346,6 +349,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const [canScrollTabs, setCanScrollTabs] = useState(false);
   const [historyTrades, setHistoryTrades] = useState<ClosedTrade[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  // An account can hold thousands of closed trades, so history arrives a page
+  // at a time. `historyTotal` is the server's real count: the tab used to show
+  // how many rows had been fetched, so an account with 520 closed trades
+  // advertised "200" and the older 320 were unreachable.
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const historyPageRef = useRef(1);
   const [closeModal, setCloseModal] = useState<CloseModal>(null);
   const [closeSubmitting, setCloseSubmitting] = useState(false);
   const [toolbarBusy, setToolbarBusy] = useState(false);
@@ -455,10 +465,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return a?.account_number ?? accountId.slice(0, 8);
   };
 
-  const loadHistory = useCallback(async (opts: { silent?: boolean } = {}) => {
+  const loadHistory = useCallback(async (opts: { silent?: boolean; page?: number } = {}) => {
+    const page = opts.page ?? 1;
     // Silent polls skip the loading toggle so the list doesn't
     // flicker into a "Loading history…" placeholder every 4 s.
-    if (!opts.silent) setHistoryLoading(true);
+    if (page > 1) setHistoryLoadingMore(true);
+    else if (!opts.silent) setHistoryLoading(true);
     try {
       // Scope the history to the currently-selected trading account.
       // Without this, /portfolio/trades returns every trade the user
@@ -466,17 +478,30 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       // account would show the original account's 51 closed trades
       // even though no trade was ever placed on it. The backend
       // already supports the account_id filter (api/portfolio.py:40).
-      const params: Record<string, string> = { page: '1', per_page: '200' };
+      const params: Record<string, string> = { page: String(page), per_page: String(HISTORY_PAGE_SIZE) };
       if (activeAccount?.id) params.account_id = String(activeAccount.id);
-      const res = await api.get<{ items?: ClosedTrade[] } | ClosedTrade[]>('/portfolio/trades', params);
-      setHistoryTrades(
-        (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [],
+      const res = await api.get<{ items?: ClosedTrade[]; total?: number } | ClosedTrade[]>(
+        '/portfolio/trades',
+        params,
       );
+      const items =
+        (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [];
+      const total =
+        res && typeof res === 'object' && 'total' in res && typeof res.total === 'number'
+          ? res.total
+          : items.length;
+      historyPageRef.current = page;
+      setHistoryTotal(total);
+      setHistoryTrades((prev) => (page > 1 ? [...prev, ...items] : items));
     } catch {
       // Silent polls swallow errors — last-known list stays put.
-      if (!opts.silent) setHistoryTrades([]);
+      if (page === 1 && !opts.silent) {
+        setHistoryTrades([]);
+        setHistoryTotal(0);
+      }
     }
-    if (!opts.silent) setHistoryLoading(false);
+    if (page > 1) setHistoryLoadingMore(false);
+    else if (!opts.silent) setHistoryLoading(false);
   }, [activeAccount?.id]);
 
   useEffect(() => {
@@ -740,7 +765,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const tabs: { id: TabId; label: string; count: number }[] = [
     { id: 'open', label: 'Open', count: positions.length },
     { id: 'pending', label: 'Pending', count: pendingOrders.length },
-    { id: 'history', label: 'History', count: historyTrades.length },
+    { id: 'history', label: 'History', count: historyTotal || historyTrades.length },
   ];
 
   // Detect right-overflow of the terminal tab bar so the "more →" arrow is
@@ -1759,6 +1784,21 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     </tbody>
                   </table>
                   </div>
+
+                  {historyTrades.length < historyTotal && (
+                    <div className="shrink-0 border-t border-border-glass px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => void loadHistory({ page: historyPageRef.current + 1 })}
+                        disabled={historyLoadingMore}
+                        className="text-xs font-semibold text-accent hover:underline disabled:opacity-60"
+                      >
+                        {historyLoadingMore
+                          ? 'Loading…'
+                          : `Load older trades (${historyTrades.length} of ${historyTotal})`}
+                      </button>
+                    </div>
+                  )}
                   </>
                 )}
               </div>
