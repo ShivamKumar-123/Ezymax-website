@@ -24,6 +24,7 @@ import ProfileBonusCard from '@/components/profile/ProfileBonusCard';
 import { buildDashboardFromPortfolio } from '@/lib/trading-dashboard';
 
 import api from '@/lib/api/client';
+import { formatTradeDate, formatTradeTime } from '@/lib/tradeTime';
 
 import { getDigits } from '@/lib/utils';
 
@@ -846,7 +847,7 @@ function PortfolioPageContent() {
                         <div className="grid grid-cols-3 gap-x-3 text-[11px]">
                           <div><span className="text-text-tertiary">Lots</span> <span className="text-text-primary font-mono">{t.lots}</span></div>
                           <div><span className="text-text-tertiary">Dur.</span> <span className="text-text-secondary">{t.duration ?? '—'}</span></div>
-                          <div className="text-text-tertiary text-[10px]">{new Date(t.close_time || t.open_time).toLocaleDateString()}</div>
+                          <div className="text-text-tertiary text-[10px]">{formatTradeDate(t.close_time || t.open_time)}</div>
                         </div>
                       </div>
                     );
@@ -903,7 +904,7 @@ function PortfolioPageContent() {
 
                           <td className="px-4 py-3 text-text-secondary text-xs">
 
-                            {new Date(t.close_time || t.open_time).toLocaleString()}
+                            {formatTradeTime(t.close_time || t.open_time)}
 
                           </td>
 

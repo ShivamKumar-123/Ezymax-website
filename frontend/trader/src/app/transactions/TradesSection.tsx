@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
+import { formatTradeTime } from '@/lib/tradeTime';
 import {
   RefreshCcw,
   TrendingUp,
@@ -790,7 +791,7 @@ function TradeDetailBody({ kind, data, accountNumber }: { kind: TradeTab; data: 
     items.push({ label: 'Opened', value: <span className="text-text-secondary text-[11px]">{new Date(openedRaw).toLocaleString()}</span> });
   }
   if (kind === 'closed' && data.close_time) {
-    items.push({ label: 'Closed', value: <span className="text-text-secondary text-[11px]">{new Date(data.close_time).toLocaleString()}</span> });
+    items.push({ label: 'Closed', value: <span className="text-text-secondary text-[11px]">{formatTradeTime(data.close_time)}</span> });
   }
   items.push({ label: 'Trade ID', value: <span className="font-mono text-[10px] text-text-tertiary break-all">{data.id}</span> });
 

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTradingStore, type Position, type InstrumentInfo } from '@/stores/tradingStore';
 import { clsx } from 'clsx';
 import api from '@/lib/api/client';
+import { formatTradeTime, formatTradeTimeShort } from '@/lib/tradeTime';
 import toast from 'react-hot-toast';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import {
@@ -122,19 +123,8 @@ function estimatePositionMargin(
 }
 
 function formatPositionOpenedAt(iso: string | undefined): string {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleString(undefined, {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '—';
-  }
+  // Server time, like every other trade stamp in the app (see lib/tradeTime).
+  return formatTradeTimeShort(iso);
 }
 
 function partitionCloneLots(pos: Position, instruments: InstrumentInfo[]): number {
@@ -1673,7 +1663,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               </div>
                             </div>
                             <div className="flex items-center justify-between gap-2 pt-1 border-t border-border-glass/40">
-                              <span className="text-[10px] text-text-tertiary">{new Date(trade.close_time).toLocaleString()}</span>
+                              <span className="text-[10px] text-text-tertiary">{formatTradeTime(trade.close_time)}</span>
                               <button
                                 type="button"
                                 onClick={() => setShareClosed(trade)}
@@ -1759,7 +1749,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td className={clsx(td, 'text-[10px] text-text-tertiary')}>
                               <div className="flex items-center justify-between gap-2">
-                                <span>{new Date(trade.close_time).toLocaleString()}</span>
+                                <span>{formatTradeTime(trade.close_time)}</span>
                                 <button
                                   type="button"
                                   onClick={() => setShareClosed(trade)}
