@@ -40,10 +40,24 @@ def _parse_one_ip(raw: str) -> str | None:
 
 
 def client_ip_for_inet(request: Request) -> str | None:
-    """Return a value PostgreSQL INET accepts, or None."""
+    """Return a value PostgreSQL INET accepts, or None.
+
+    SECURITY: the client controls the LEFTMOST X-Forwarded-For entry (nginx
+    appends the real peer via $proxy_add_x_forwarded_for), so trusting the
+    first entry let an attacker spoof their IP and bypass per-IP rate limits
+    (and forge audit-log IPs). Prefer Cloudflare's CF-Connecting-IP, which the
+    edge sets to the real client and overwrites any client-supplied value;
+    else fall back to the RIGHTMOST X-Forwarded-For entry (the hop our own
+    nginx appended); else the direct peer.
+    """
+    cf = request.headers.get("cf-connecting-ip") or request.headers.get("CF-Connecting-IP")
+    got = _parse_one_ip(cf) if cf else None
+    if got:
+        return got
     ff = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
     if ff:
-        for part in ff.split(","):
+        parts = [p for p in ff.split(",") if p.strip()]
+        for part in reversed(parts):  # rightmost = trusted (nginx-appended)
             got = _parse_one_ip(part)
             if got:
                 return got
