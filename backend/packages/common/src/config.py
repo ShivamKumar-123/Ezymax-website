@@ -209,6 +209,14 @@ class Settings(BaseSettings):
     # Deposit proof screenshots + user payout QR for manual withdrawals (gateway). Mount same path in admin for review.
     WALLET_UPLOAD_ROOT: str = "uploads/wallet"
 
+    # H-AUTH-1: comma-separated CIDRs of proxies we operate (nginx, docker
+    # bridge, load balancers). client_ip_for_inet walks X-Forwarded-For from the
+    # right and returns the last hop NOT in one of these ranges — the real
+    # client — so a spoofed leftmost XFF entry can't bypass per-IP limits.
+    # DECISION default covers loopback + the RFC1918 ranges our nginx/docker
+    # network uses; tighten to the exact proxy IPs in production if desired.
+    TRUSTED_PROXY_CIDRS: str = "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
     class Config:
         env_file = ".env"
         # The root .env legitimately carries vars for other consumers

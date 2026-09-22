@@ -22,6 +22,10 @@ from fastapi import HTTPException, Request
 
 # ─── IP helpers ──────────────────────────────────────────────────────────
 
+_TRUSTED_NETS_CACHE: list | None = None
+_TRUSTED_NETS_RAW: str | None = None
+
+
 def _parse_one_ip(raw: str) -> str | None:
     h = raw.strip()
     if not h:
@@ -39,16 +43,49 @@ def _parse_one_ip(raw: str) -> str | None:
         return None
 
 
-def client_ip_for_inet(request: Request) -> str | None:
-    """Return a value PostgreSQL INET accepts, or None.
+def _trusted_proxy_networks() -> list:
+    """Parse TRUSTED_PROXY_CIDRS into ip_network objects (cached per settings)."""
+    global _TRUSTED_NETS_CACHE, _TRUSTED_NETS_RAW
+    try:
+        from packages.common.src.config import get_settings
+        raw = get_settings().TRUSTED_PROXY_CIDRS or ""
+    except Exception:
+        raw = ""
+    if raw == _TRUSTED_NETS_RAW and _TRUSTED_NETS_CACHE is not None:
+        return _TRUSTED_NETS_CACHE
+    nets = []
+    for chunk in raw.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        try:
+            nets.append(ipaddress.ip_network(chunk, strict=False))
+        except ValueError:
+            continue
+    _TRUSTED_NETS_RAW = raw
+    _TRUSTED_NETS_CACHE = nets
+    return nets
 
-    SECURITY: the client controls the LEFTMOST X-Forwarded-For entry (nginx
-    appends the real peer via $proxy_add_x_forwarded_for), so trusting the
-    first entry let an attacker spoof their IP and bypass per-IP rate limits
-    (and forge audit-log IPs). Prefer Cloudflare's CF-Connecting-IP, which the
-    edge sets to the real client and overwrites any client-supplied value;
-    else fall back to the RIGHTMOST X-Forwarded-For entry (the hop our own
-    nginx appended); else the direct peer.
+
+def _is_trusted_proxy(ip: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return any(addr in net for net in _trusted_proxy_networks())
+
+
+def client_ip_for_inet(request: Request) -> str | None:
+    """Return the real client IP as a value PostgreSQL INET accepts, or None.
+
+    SECURITY (H-AUTH-1): the client controls the LEFTMOST X-Forwarded-For entries
+    (nginx appends the real peer via $proxy_add_x_forwarded_for), so trusting the
+    first entry let an attacker spoof their IP and bypass per-IP rate limits (and
+    forge audit-log IPs). We prefer Cloudflare's CF-Connecting-IP (the edge
+    overwrites any client value), then walk X-Forwarded-For from the RIGHT and
+    return the last hop that is NOT one of our own proxies (TRUSTED_PROXY_CIDRS)
+    — the genuine client. A single trusted rightmost hop still resolves to the
+    entry to its left, and a fully-trusted chain falls back to the direct peer.
     """
     cf = request.headers.get("cf-connecting-ip") or request.headers.get("CF-Connecting-IP")
     got = _parse_one_ip(cf) if cf else None
@@ -56,11 +93,16 @@ def client_ip_for_inet(request: Request) -> str | None:
         return got
     ff = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
     if ff:
-        parts = [p for p in ff.split(",") if p.strip()]
-        for part in reversed(parts):  # rightmost = trusted (nginx-appended)
-            got = _parse_one_ip(part)
-            if got:
-                return got
+        parts = [_parse_one_ip(p) for p in ff.split(",")]
+        parts = [p for p in parts if p]
+        # Walk right→left, skipping our own proxy hops; first non-trusted = client.
+        for ip in reversed(parts):
+            if not _is_trusted_proxy(ip):
+                return ip
+        # Whole chain is trusted proxies (e.g. single nginx hop) → leftmost entry
+        # is the closest to the client we have.
+        if parts:
+            return parts[0]
     host = request.client.host if request.client else None
     return _parse_one_ip(str(host)) if host else None
 
