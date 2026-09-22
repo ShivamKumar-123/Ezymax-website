@@ -822,6 +822,21 @@ async def delete_trading_account(
             description="Trading account closed — balance returned to main wallet",
         ))
 
+    # C-MONEY-1: bonus `credit` is voided on closure (it is non-withdrawable and
+    # must not be swept to the main wallet). Previously it was zeroed silently,
+    # leaving no ledger trace of funds leaving the account. Record the removal so
+    # the transaction history reconciles.
+    removed_credit = account.credit or Decimal("0")
+    if removed_credit > 0:
+        db.add(Transaction(
+            user_id=user.id,
+            account_id=account.id,
+            type="credit_removed",
+            amount=-removed_credit,
+            balance_after=Decimal("0"),
+            description="Trading account closed — non-withdrawable bonus credit removed",
+        ))
+
     account.balance = Decimal("0")
     account.credit = Decimal("0")
     account.equity = Decimal("0")
