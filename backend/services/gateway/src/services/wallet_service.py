@@ -38,6 +38,7 @@ from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.withdrawal_limits import available_to_withdraw
 from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
@@ -1475,10 +1476,22 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     # main_wallet). Balance check uses whichever source is authoritative.
     pref = getattr(req, "source", None)
     source_kind, source_row = await _resolve_debit_source(db, user_id, preference=pref)
+    # C-MONEY-3 / H-MONEY-1: for a trading account, only funds NOT backing open
+    # positions are withdrawable — never the raw balance (which includes margin
+    # locked in live trades). Routed through the shared helper so every
+    # withdrawal path agrees.
     if source_kind == "trading":
-        available = source_row.balance or Decimal("0")
+        available = available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
     else:
-        available = source_row.main_wallet_balance if source_row else Decimal("0")
+        available = available_to_withdraw(
+            "main",
+            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+        )
     if available < req.amount:
         if source_kind == "trading":
             detail = (
@@ -1616,10 +1629,20 @@ async def create_manual_withdrawal(
 
     # Resolve debit source — same logic as create_withdrawal.
     source_kind, source_row = await _resolve_debit_source(db, user_id)
+    # C-MONEY-3 / H-MONEY-1: trading-account withdrawals exclude margin-backed
+    # funds via the shared helper (see create_withdrawal).
     if source_kind == "trading":
-        available = source_row.balance or Decimal("0")
+        available = available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
     else:
-        available = source_row.main_wallet_balance if source_row else Decimal("0")
+        available = available_to_withdraw(
+            "main",
+            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+        )
     if available < amount:
         if source_kind == "trading":
             raise HTTPException(

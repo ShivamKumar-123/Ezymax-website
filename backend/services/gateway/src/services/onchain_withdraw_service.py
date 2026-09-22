@@ -116,20 +116,19 @@ async def create_onchain_withdrawal(
     # Resolve debit source — honor explicit user choice if provided,
     # else auto-route (wallet-bound when present, else main_wallet).
     from .wallet_service import _resolve_debit_source
+    from packages.common.src.withdrawal_limits import available_to_withdraw
     source_kind, source_row = await _resolve_debit_source(db, user_id, preference=source)
     if source_kind == "trading":
-        # SECURITY: only funds NOT backing open positions are withdrawable.
-        # Using the full balance let a user withdraw margin that collateralises
-        # live trades. Cap by (balance - margin_used) and by free_margin (which
-        # also reflects floating P&L).
-        _bal = source_row.balance or Decimal("0")
-        available = _bal - (source_row.margin_used or Decimal("0"))
-        if source_row.free_margin is not None:
-            available = min(available, source_row.free_margin)
-        if available < 0:
-            available = Decimal("0")
+        # C-MONEY-3 / H-MONEY-1: only funds NOT backing open positions are
+        # withdrawable — via the shared helper so every withdrawal path agrees.
+        available = available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
     else:
-        available = user.main_wallet_balance or Decimal("0")
+        available = available_to_withdraw("main", main_wallet_balance=user.main_wallet_balance)
     if available < amount:
         if source_kind == "trading":
             raise HTTPException(
