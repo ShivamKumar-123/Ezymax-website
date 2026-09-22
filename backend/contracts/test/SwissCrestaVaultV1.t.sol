@@ -162,12 +162,13 @@ contract SwissCrestaVaultV1Test is Test {
     function test_Withdraw_RevertsWhenNotWithdrawer() public {
         vm.prank(alice); vault.deposit(100 * 1e6);
 
+        bytes32 role = vault.WITHDRAWER_ROLE();
         vm.prank(mallory);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 mallory,
-                vault.WITHDRAWER_ROLE()
+                role
             )
         );
         vault.withdraw(mallory, 50 * 1e6, APPROVAL_1);
@@ -225,12 +226,16 @@ contract SwissCrestaVaultV1Test is Test {
     // ── Pause ──────────────────────────────────────────────────────────
 
     function test_Pause_OnlyPauser() public {
+        // Read the role BEFORE pranking — a view call here would otherwise
+        // consume the prank meant for pause(), so the revert would name the
+        // default sender instead of mallory.
+        bytes32 role = vault.PAUSER_ROLE();
         vm.prank(mallory);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 mallory,
-                vault.PAUSER_ROLE()
+                role
             )
         );
         vault.pause();
@@ -238,12 +243,13 @@ contract SwissCrestaVaultV1Test is Test {
 
     function test_Unpause_OnlyPauser() public {
         vm.prank(admin); vault.pause();
+        bytes32 role = vault.PAUSER_ROLE();
         vm.prank(mallory);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 mallory,
-                vault.PAUSER_ROLE()
+                role
             )
         );
         vault.unpause();
@@ -267,12 +273,13 @@ contract SwissCrestaVaultV1Test is Test {
 
     function test_RecoverToken_RevertsWhenNotAdmin() public {
         other.mint(address(vault), 100 ether);
+        bytes32 role = vault.DEFAULT_ADMIN_ROLE();
         vm.prank(mallory);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 mallory,
-                vault.DEFAULT_ADMIN_ROLE()
+                role
             )
         );
         vault.recoverToken(address(other), 100 ether);
