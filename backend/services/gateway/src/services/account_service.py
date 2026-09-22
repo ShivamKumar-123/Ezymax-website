@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -704,6 +704,21 @@ async def delete_trading_account(
         raise HTTPException(
             status_code=400,
             detail="Close all open positions before deleting this account.",
+        )
+
+    # C-MONEY-1 (DECISION default): also refuse while pending orders exist rather
+    # than silently cancelling them — a pending order is a standing instruction
+    # the user should knowingly cancel before closing the account.
+    pending_orders = (await db.execute(
+        select(func.count()).select_from(Order).where(
+            Order.account_id == account_id,
+            Order.status.in_((OrderStatus.PENDING.value, OrderStatus.PARTIALLY_FILLED.value)),
+        )
+    )).scalar() or 0
+    if pending_orders:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cancel {pending_orders} pending order(s) before deleting this account.",
         )
 
     # 1. (No open positions remain here — guarded above.) Kept as a defensive

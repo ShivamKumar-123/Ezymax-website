@@ -16,13 +16,17 @@ from services.gateway.src.services.account_service import delete_trading_account
 
 
 class _Res:
-    def __init__(self, scalar=None, first=None, items=None):
+    def __init__(self, scalar=None, first=None, items=None, count=None):
         self._scalar = scalar
         self._first = first
         self._items = items or []
+        self._count = count
 
     def scalar_one_or_none(self):
         return self._scalar
+
+    def scalar(self):
+        return self._count
 
     def first(self):
         return self._first
@@ -67,6 +71,7 @@ class DeleteAccountCreditRemovedTests(unittest.TestCase):
         results = [
             _Res(scalar=account),   # select TradingAccount
             _Res(first=None),       # select open Position.id (none)
+            _Res(count=0),          # count pending orders (none)
             _Res(items=[]),         # select open Position rows (none)
             _Res(),                 # update Order (ignored)
             _Res(scalar=None),      # select MasterAccount (none)
@@ -93,7 +98,7 @@ class DeleteAccountCreditRemovedTests(unittest.TestCase):
         )
         user = SimpleNamespace(id=uid, main_wallet_balance=Decimal("0"), email="t@x.com")
         results = [
-            _Res(scalar=account), _Res(first=None), _Res(items=[]),
+            _Res(scalar=account), _Res(first=None), _Res(count=0), _Res(items=[]),
             _Res(), _Res(scalar=None), _Res(items=[]),
         ]
         db = _DB(results, user)
