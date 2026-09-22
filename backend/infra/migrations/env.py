@@ -7,7 +7,7 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from alembic import context
@@ -74,6 +74,14 @@ def do_run_migrations(connection):
         compare_type=True,
         compare_server_default=True,
     )
+
+    # Ensure the uuid-ossp extension exists before any migration runs. Many
+    # historical migrations use uuid_generate_v4() as a column default. Prod
+    # had the extension created out-of-band, but a fresh database (e.g. the CI
+    # throwaway Postgres) does not, so the first migration calling
+    # uuid_generate_v4() failed with "function does not exist". Idempotent and
+    # safe on every run.
+    connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
 
     with context.begin_transaction():
         context.run_migrations()
