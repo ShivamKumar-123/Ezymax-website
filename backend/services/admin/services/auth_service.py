@@ -163,16 +163,26 @@ async def admin_login(
 
 async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLoginResponse:
     try:
+        # H-ADMIN-1: verify_exp=True. Previously an EXPIRED admin token could be
+        # refreshed indefinitely, so a single leaked (even long-expired) token
+        # granted permanent access. Refresh now only re-issues while the current
+        # 8h token is still valid (a sliding session).
+        # DECISION: this replaces the insecure "refresh any expired token" flow.
+        # A full refresh-token table with rotation (per H-ADMIN-1) is tracked as
+        # an open item in REMEDIATION.md; it would let sessions outlive the 8h
+        # access token without weakening expiry verification.
         payload = jwt.decode(
             body.access_token,
             settings.ADMIN_JWT_SECRET,
             algorithms=[settings.ADMIN_JWT_ALGORITHM],
-            options={"verify_exp": False},
+            options={"verify_exp": True},
         )
         if payload.get("type") != "admin":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
         admin_id = payload.get("admin_id")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please sign in again")
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
