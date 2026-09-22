@@ -948,6 +948,15 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
     # 6-digit numeric code — the user types it into the app's reset-password
     # screen. reset_password() verifies hash_token(code), so the same backend
     # path handles it; no magic link needed.
+    # SECURITY: invalidate any prior unused reset codes for this user, so only
+    # ONE code is ever valid at a time. Previously every forgot-password request
+    # added another live code, and none were bound/capped — requesting resets
+    # repeatedly widened the brute-force surface across accounts.
+    await db.execute(
+        update(PasswordResetToken)
+        .where(PasswordResetToken.user_id == user.id, PasswordResetToken.used.is_(False))
+        .values(used=True)
+    )
     raw = f"{secrets.randbelow(10**6):06d}"
     token_hash = hash_token(raw)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)

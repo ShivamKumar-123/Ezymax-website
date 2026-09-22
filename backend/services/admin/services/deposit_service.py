@@ -835,13 +835,34 @@ async def mark_withdrawal_paid(
     return {"message": "Withdrawal marked as paid", "tx_hash": tx_hash}
 
 
+def _safe_upload_path(stored: str) -> Path:
+    """Resolve a stored upload path and confine it to the uploads tree.
+
+    SECURITY: deposit `screenshot_url` and withdrawal QR paths can be
+    client-influenced (POST /wallet/deposit accepts a client screenshot_url).
+    Passing that straight to Path()/FileResponse let a crafted absolute or
+    ../-traversal value make the admin server read ARBITRARY files. We resolve
+    the path and require it to live under the uploads root, else 404.
+    """
+    from packages.common.src.config import get_settings
+    uploads_root = Path(
+        get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
+    ).resolve().parent  # e.g. /app/uploads — covers wallet/, qr/, etc.
+    p = Path(stored).resolve()
+    try:
+        p.relative_to(uploads_root)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="File not found")
+    return p
+
+
 async def download_deposit_screenshot(deposit_id: uuid.UUID, db: AsyncSession):
     """Serve manual deposit proof file (same filesystem path gateway wrote)."""
     result = await db.execute(select(Deposit).where(Deposit.id == deposit_id))
     deposit = result.scalar_one_or_none()
     if not deposit or not deposit.screenshot_url:
         raise HTTPException(status_code=404, detail="Screenshot not found")
-    p = Path(deposit.screenshot_url)
+    p = _safe_upload_path(deposit.screenshot_url)
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File missing on server")
     return FileResponse(str(p), filename=p.name, media_type="application/octet-stream")
@@ -856,7 +877,7 @@ async def download_withdrawal_payout_qr(withdrawal_id: uuid.UUID, db: AsyncSessi
     raw = w.bank_details.get("user_payout_qr_path") if isinstance(w.bank_details, dict) else None
     if not raw:
         raise HTTPException(status_code=404, detail="No payout QR on file")
-    p = Path(str(raw))
+    p = _safe_upload_path(str(raw))
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File missing on server")
     return FileResponse(str(p), filename=p.name, media_type="application/octet-stream")

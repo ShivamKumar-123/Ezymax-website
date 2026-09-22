@@ -685,7 +685,24 @@ async def delete_trading_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 1. Close any open/partial positions on this account at open_price (flat pnl).
+    # SECURITY: refuse deletion while open positions exist. Auto-closing them
+    # at open_price (zero P&L) erased a trader's floating LOSS — a user could
+    # open a losing position, delete the account, and walk away flat, pushing
+    # the loss onto the broker. Force a real close (which realises P&L) first.
+    existing_open = (await db.execute(
+        select(Position.id).where(
+            Position.account_id == account_id,
+            Position.status.in_((PositionStatus.OPEN.value, PositionStatus.PARTIALLY_CLOSED.value)),
+        ).limit(1)
+    )).first()
+    if existing_open:
+        raise HTTPException(
+            status_code=400,
+            detail="Close all open positions before deleting this account.",
+        )
+
+    # 1. (No open positions remain here — guarded above.) Kept as a defensive
+    #    no-op sweep in case a partial slips through a race; still flat-closes.
     open_pos_q = await db.execute(
         select(Position).where(
             Position.account_id == account_id,
@@ -790,8 +807,10 @@ async def delete_trading_account(
     for alloc in follower_alloc_q.scalars().all():
         alloc.status = "closed"
 
-    # 5. Sweep own balance + credit to owner's main wallet.
-    sweep = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
+    # 5. Sweep only the WITHDRAWABLE balance to the owner's main wallet. Bonus
+    #    `credit` is non-withdrawable and must NOT become withdrawable via
+    #    account deletion (that was a free cash-out of bonus funds).
+    sweep = (account.balance or Decimal("0"))
     if sweep > 0:
         user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + sweep
         db.add(Transaction(
