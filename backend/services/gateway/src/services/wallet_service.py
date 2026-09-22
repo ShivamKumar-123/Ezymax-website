@@ -288,6 +288,28 @@ def _send_deposit_failed_email(
         logger.warning("deposit failed email send failed: %s", _e)
 
 
+def _safe_stored_upload(stored: str | None) -> str | None:
+    """C-ADMIN-1 (write-time): only persist a screenshot/proof path we can
+    confine to the uploads tree. The generic create_deposit accepts a
+    client-supplied screenshot_url; a crafted absolute or ``..`` value would
+    later be handed to the admin download endpoint. Drop anything we can't
+    confine (server-written upload paths always pass)."""
+    if not stored:
+        return None
+    raw = get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
+    base = Path(raw)
+    if not base.is_absolute():
+        base = Path.cwd() / base
+    base = base.resolve().parent
+    try:
+        p = Path(stored)
+        rel = p.resolve().relative_to(base) if p.is_absolute() else Path(stored)
+        safe_join_under_base(base, *rel.parts)
+    except (ValueError, PathTraversalError):
+        return None
+    return stored
+
+
 def _wallet_upload_root() -> Path:
     raw = get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
     p = Path(raw)
@@ -378,7 +400,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         amount=req.amount,
         method=db_method,
         transaction_id=req.transaction_id,
-        screenshot_url=req.screenshot_url,
+        screenshot_url=_safe_stored_upload(req.screenshot_url),
         crypto_tx_hash=getattr(req, "crypto_tx_hash", None),
         crypto_address=getattr(req, "crypto_address", None),
         bank_account_id=bank.id if bank else None,

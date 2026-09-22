@@ -13,7 +13,19 @@ from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal
 from packages.common.src.notify import create_notification
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.admin_schemas import DepositOut, WithdrawalOut, PaginatedResponse
+from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from dependencies import write_audit_log
+
+# C-ADMIN-1: only proof/QR image + PDF uploads may ever be served back, and each
+# with its real content type (never a generic octet-stream that a browser might
+# mishandle, nor an arbitrary extension a traversal could smuggle in).
+_DOWNLOAD_MEDIA_TYPES = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".pdf": "application/pdf",
+}
 
 
 def _deposit_to_out(d: Deposit, user: User = None) -> DepositOut:
@@ -835,25 +847,43 @@ async def mark_withdrawal_paid(
     return {"message": "Withdrawal marked as paid", "tx_hash": tx_hash}
 
 
-def _safe_upload_path(stored: str) -> Path:
-    """Resolve a stored upload path and confine it to the uploads tree.
-
-    SECURITY: deposit `screenshot_url` and withdrawal QR paths can be
-    client-influenced (POST /wallet/deposit accepts a client screenshot_url).
-    Passing that straight to Path()/FileResponse let a crafted absolute or
-    ../-traversal value make the admin server read ARBITRARY files. We resolve
-    the path and require it to live under the uploads root, else 404.
-    """
+def _uploads_root() -> Path:
     from packages.common.src.config import get_settings
-    uploads_root = Path(
+    # e.g. WALLET_UPLOAD_ROOT=/app/uploads/wallet → base /app/uploads covers
+    # wallet/, qr/, deposits/, withdrawals/ … under one confinement root.
+    return Path(
         get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
-    ).resolve().parent  # e.g. /app/uploads — covers wallet/, qr/, etc.
-    p = Path(stored).resolve()
+    ).resolve().parent
+
+
+def _safe_upload_path(stored: str) -> Path:
+    """Resolve a stored upload path, confine it strictly under the uploads root
+    via the shared safe_join_under_base helper, and require a served-file type.
+
+    SECURITY (C-ADMIN-1): deposit `screenshot_url` and withdrawal QR paths can be
+    client-influenced. Passing them straight to Path()/FileResponse let a crafted
+    absolute or ``..`` value make the admin server read ARBITRARY files. We reduce
+    the value to its components under the uploads root and re-join them one
+    segment at a time (each rejected if it contains ``/``, ``\\`` or ``..``), then
+    require an allow-listed image/PDF extension; anything else is 404.
+    """
+    uploads_root = _uploads_root()
+    raw = Path(stored)
     try:
-        p.relative_to(uploads_root)
-    except ValueError:
+        rel = raw.resolve().relative_to(uploads_root) if raw.is_absolute() else raw
+        p = safe_join_under_base(uploads_root, *rel.parts)
+    except (ValueError, PathTraversalError):
+        raise HTTPException(status_code=404, detail="File not found")
+    if p.suffix.lower() not in _DOWNLOAD_MEDIA_TYPES:
         raise HTTPException(status_code=404, detail="File not found")
     return p
+
+
+def _serve(p: Path) -> FileResponse:
+    if not p.is_file():
+        raise HTTPException(status_code=404, detail="File missing on server")
+    media_type = _DOWNLOAD_MEDIA_TYPES.get(p.suffix.lower(), "application/octet-stream")
+    return FileResponse(str(p), filename=p.name, media_type=media_type)
 
 
 async def download_deposit_screenshot(deposit_id: uuid.UUID, db: AsyncSession):
@@ -862,10 +892,7 @@ async def download_deposit_screenshot(deposit_id: uuid.UUID, db: AsyncSession):
     deposit = result.scalar_one_or_none()
     if not deposit or not deposit.screenshot_url:
         raise HTTPException(status_code=404, detail="Screenshot not found")
-    p = _safe_upload_path(deposit.screenshot_url)
-    if not p.is_file():
-        raise HTTPException(status_code=404, detail="File missing on server")
-    return FileResponse(str(p), filename=p.name, media_type="application/octet-stream")
+    return _serve(_safe_upload_path(deposit.screenshot_url))
 
 
 async def download_withdrawal_payout_qr(withdrawal_id: uuid.UUID, db: AsyncSession):
@@ -877,10 +904,7 @@ async def download_withdrawal_payout_qr(withdrawal_id: uuid.UUID, db: AsyncSessi
     raw = w.bank_details.get("user_payout_qr_path") if isinstance(w.bank_details, dict) else None
     if not raw:
         raise HTTPException(status_code=404, detail="No payout QR on file")
-    p = _safe_upload_path(str(raw))
-    if not p.is_file():
-        raise HTTPException(status_code=404, detail="File missing on server")
-    return FileResponse(str(p), filename=p.name, media_type="application/octet-stream")
+    return _serve(_safe_upload_path(str(raw)))
 
 
 async def approve_with_razorpay(
