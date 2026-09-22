@@ -184,61 +184,29 @@ async def open_live_account(
         # Demo users get a starter virtual balance; use min_deposit if set, else $10,000.
         new_balance = min_d if min_d > 0 else Decimal("10000")
     else:
-        # Lock existing live accounts (after the user) since the funding sweep
-        # below may debit them; ascending id keeps the lock order canonical.
-        live_q = await db.execute(
-            select(TradingAccount).where(
-                TradingAccount.user_id == user_id,
-                TradingAccount.is_demo == False,
-            ).with_for_update().order_by(TradingAccount.id)
-        )
-        existing_live = list(live_q.scalars().all())
         wallet_bal = user.main_wallet_balance or Decimal("0")
-        live_total = sum((a.balance or Decimal("0")) for a in existing_live)
-        available = wallet_bal + live_total
-        # If the admin has set a minimum-deposit on this group, enforce it
-        # *always*. The earlier "first-time user with no money opens at $0"
-        # loophole let brand-new accounts get created with no funding — the
-        # accounts page then rendered empty equity rows that looked broken.
-        # Users now have to deposit first; refusal message tells them where
-        # to go.
+        # H-MONEY-4: a new live account is funded ONLY by an explicit transfer
+        # from the main wallet — never by silently sweeping the user's other
+        # trading accounts (a hidden cross-account move that surprised users and
+        # drained live positions' collateral). If the wallet is short, refuse and
+        # tell the user to deposit / transfer to the main wallet first.
         if min_d > 0:
-            if available < min_d:
+            if wallet_bal < min_d:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        f"You need at least ${float(min_d):.2f} available across your main wallet "
-                        "and existing live accounts to open this account type. Deposit or add funds first."
+                        f"You need at least ${float(min_d):.2f} in your main wallet to open this "
+                        "account type. Deposit, or transfer funds to your main wallet first."
                     ),
                 )
-            # Prefer the main wallet first (the natural place users expect
-            # funding to come from after deposits / account closures).
-            remaining = min_d
-            take_from_wallet = min(wallet_bal, remaining)
-            if take_from_wallet > 0:
-                user.main_wallet_balance = wallet_bal - take_from_wallet
-                remaining -= take_from_wallet
-                db.add(Transaction(
-                    user_id=user.id,
-                    type="transfer",
-                    amount=-take_from_wallet,
-                    balance_after=user.main_wallet_balance,
-                    description="Main wallet → new trading account funding",
-                ))
-            # If wallet alone wasn't enough, top up by sweeping the existing
-            # live accounts (largest-first) — preserves the prior fallback
-            # behaviour for users who never used the main wallet flow.
-            if remaining > 0:
-                for acc in sorted(existing_live, key=lambda x: x.balance or Decimal("0"), reverse=True):
-                    if remaining <= 0:
-                        break
-                    bal = acc.balance or Decimal("0")
-                    take = min(bal, remaining)
-                    if take > 0:
-                        acc.balance = bal - take
-                        acc.equity = acc.balance
-                        acc.free_margin = acc.balance
-                        remaining -= take
+            user.main_wallet_balance = wallet_bal - min_d
+            db.add(Transaction(
+                user_id=user.id,
+                type="transfer",
+                amount=-min_d,
+                balance_after=user.main_wallet_balance,
+                description="Main wallet → new trading account funding",
+            ))
             new_balance = min_d
 
     num = generate_account_number()
