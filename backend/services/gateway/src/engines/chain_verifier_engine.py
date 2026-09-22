@@ -176,12 +176,28 @@ async def _verify_one(deposit_id) -> None:
                 deposit, wallet, expected_value, decimals,
             )
         else:
+            # SECURITY: bind plain-transfer verification to the depositing
+            # user's own wallet. Without this, any user could submit someone
+            # else's USDT transfer to the public admin address and be credited.
+            # The vault path already enforces this; mirror it here. Unlinked
+            # wallet → manual_review (admin decides) rather than a silent
+            # auto-credit or a hard reject.
+            u = (await db.execute(
+                select(User).where(User.id == deposit.user_id)
+            )).scalar_one_or_none()
+            user_wallet = (u.wallet_address or "").strip() if u else ""
+            if not user_wallet:
+                deposit.status = "manual_review"
+                deposit.rejection_reason = "user_wallet_not_linked — cannot verify sender"
+                await db.commit()
+                return
             result = await verifier(
                 deposit.crypto_tx_hash,
                 wallet.address,
                 expected_value,
                 int(wallet.min_confirmations),
                 contract_address=USDT_CONTRACTS.get(net, ""),
+                expected_from=user_wallet,
             )
 
         logger.info(
@@ -280,8 +296,10 @@ async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
     """Mirror the credit logic used by the existing oxapay/razorpay
     webhook handlers so balances, transactions, bonuses, and emails all
     behave the same way regardless of which deposit method was used."""
+    # Row-lock the user so concurrent credits (another deposit, an oxapay
+    # webhook) can't lost-update main_wallet_balance.
     user = (await db.execute(
-        select(User).where(User.id == deposit.user_id)
+        select(User).where(User.id == deposit.user_id).with_for_update()
     )).scalar_one_or_none()
     if not user:
         logger.error("user not found for deposit %s", deposit.id)

@@ -118,7 +118,16 @@ async def create_onchain_withdrawal(
     from .wallet_service import _resolve_debit_source
     source_kind, source_row = await _resolve_debit_source(db, user_id, preference=source)
     if source_kind == "trading":
-        available = source_row.balance or Decimal("0")
+        # SECURITY: only funds NOT backing open positions are withdrawable.
+        # Using the full balance let a user withdraw margin that collateralises
+        # live trades. Cap by (balance - margin_used) and by free_margin (which
+        # also reflects floating P&L).
+        _bal = source_row.balance or Decimal("0")
+        available = _bal - (source_row.margin_used or Decimal("0"))
+        if source_row.free_margin is not None:
+            available = min(available, source_row.free_margin)
+        if available < 0:
+            available = Decimal("0")
     else:
         available = user.main_wallet_balance or Decimal("0")
     if available < amount:
@@ -138,7 +147,9 @@ async def create_onchain_withdrawal(
     # Debit immediately (frozen). Admin re-credits on reject.
     amt = Decimal(amount)
     if source_kind == "trading":
-        source_row.balance = available - amt
+        # Debit the real balance by the withdrawn amount (NOT `available`,
+        # which is now the free-margin-capped withdrawable figure).
+        source_row.balance = (source_row.balance or Decimal("0")) - amt
         source_row.equity = (source_row.equity or Decimal("0")) - amt
         source_row.free_margin = (source_row.free_margin or Decimal("0")) - amt
     else:

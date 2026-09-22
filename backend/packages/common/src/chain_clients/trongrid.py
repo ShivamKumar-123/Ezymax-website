@@ -93,13 +93,17 @@ async def _trongrid_get(client: httpx.AsyncClient, path: str) -> dict:
 async def verify_usdt_transfer(
     tx_hash: str, expected_to: str, expected_value: int, min_confs: int,
     *, contract_address: str,
+    expected_from: str | None = None,
     tolerance_bps: int = 50,
 ) -> dict:
     """expected_to may be base58 (T...) or hex; we normalize both.
     expected_value is in 6-decimal USDT base units (5 USDT == 5_000_000)."""
+    expected_from_20 = None
     try:
         _, expected_to_20 = _normalize_admin_address(expected_to)
         _, contract_20 = _normalize_admin_address(contract_address)
+        if expected_from:
+            _, expected_from_20 = _normalize_admin_address(expected_from)
     except Exception as e:
         return {"ok": False, "confirmations": 0,
                 "reason": f"address_decode_error:{e}", "final_failure": True}
@@ -146,6 +150,16 @@ async def verify_usdt_transfer(
                     "reason": f"wrong_tx_type:{c0.get('type')}", "final_failure": True}
 
         params = (c0.get("parameter") or {}).get("value") or {}
+
+        # SECURITY: sender (owner_address) must be the depositing user's own
+        # wallet — otherwise anyone could claim a stranger's USDT transfer to
+        # the admin address.
+        if expected_from:
+            owner = (params.get("owner_address") or "").lower()
+            if not expected_from_20 or (owner != expected_from_20 and owner[-40:] != expected_from_20):
+                return {"ok": False, "confirmations": 0,
+                        "reason": f"wrong_sender:{owner}", "final_failure": True}
+
         called_contract = (params.get("contract_address") or "").lower()
         # `contract_address` here is hex with the `41` prefix (21 bytes).
         if called_contract != contract_20 and called_contract[-40:] != contract_20:

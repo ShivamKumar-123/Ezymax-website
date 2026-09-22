@@ -109,6 +109,7 @@ async def _fetch_head_block(client: httpx.AsyncClient, api_key: str) -> Optional
 async def verify_usdt_transfer(
     tx_hash: str, expected_to: str, expected_value: int, min_confs: int,
     *, contract_address: str,
+    expected_from: str | None = None,
     tolerance_bps: int = 50,  # 0.5% slippage tolerance
 ) -> dict:
     """See chain_clients.__init__ for the contract."""
@@ -143,6 +144,15 @@ async def verify_usdt_transfer(
         if receipt.get("status") != "0x1":
             return {"ok": False, "confirmations": 0, "reason": "tx_reverted",
                     "final_failure": True}
+
+        # SECURITY: the tx sender must be the depositing user's own wallet.
+        # Without this, any user could submit someone else's transfer to the
+        # public admin address and have it credited to their account.
+        if expected_from:
+            from_addr = (tx.get("from") or "").lower()
+            if from_addr != expected_from.lower():
+                return {"ok": False, "confirmations": 0,
+                        "reason": f"wrong_sender:{from_addr}", "final_failure": True}
 
         to_addr = (tx.get("to") or "").lower()
         if to_addr != contract_lc:

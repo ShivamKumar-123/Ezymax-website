@@ -194,7 +194,10 @@ async def confirm_tx_hash(
             detail="A different tx hash is already on this deposit",
         )
 
-    deposit.crypto_tx_hash = th
+    # Store normalised (lowercase) so the (network, crypto_tx_hash) unique
+    # index catches case-variant re-use of the same tx across deposits.
+    # Lowercase EVM/Tron hashes still resolve fine at chain-lookup time.
+    deposit.crypto_tx_hash = th.lower()
     if deposit.status == "initiated":
         deposit.status = "submitted"
     await db.commit()
