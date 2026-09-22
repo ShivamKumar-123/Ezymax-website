@@ -23,6 +23,7 @@ from packages.common.src.models import (
     User,
 )
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
+from packages.common.src.row_locks import lock_user
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
@@ -120,8 +121,10 @@ async def open_live_account(
 ) -> dict:
     from .auth_service import generate_account_number
 
-    u = await db.execute(select(User).where(User.id == user_id))
-    user = u.scalar_one_or_none()
+    # C-TRADE-4 / H-TRADE-1: lock the user row (canonical: user before account)
+    # so funding a new account can't race a concurrent transfer/withdrawal that
+    # also spends main_wallet_balance.
+    user = await lock_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     # Demo users are locked to demo accounts. Real users can also open
@@ -181,11 +184,13 @@ async def open_live_account(
         # Demo users get a starter virtual balance; use min_deposit if set, else $10,000.
         new_balance = min_d if min_d > 0 else Decimal("10000")
     else:
+        # Lock existing live accounts (after the user) since the funding sweep
+        # below may debit them; ascending id keeps the lock order canonical.
         live_q = await db.execute(
             select(TradingAccount).where(
                 TradingAccount.user_id == user_id,
                 TradingAccount.is_demo == False,
-            )
+            ).with_for_update().order_by(TradingAccount.id)
         )
         existing_live = list(live_q.scalars().all())
         wallet_bal = user.main_wallet_balance or Decimal("0")

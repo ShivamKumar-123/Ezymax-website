@@ -63,11 +63,12 @@ class StopCopyRealBalanceTests(unittest.TestCase):
         user = SimpleNamespace(id=uid, main_wallet_balance=Decimal("0"))
         results = [
             _Res(scalar=allocation),  # select InvestorAllocation
+            _Res(scalar=user),        # lock_user (SELECT User FOR UPDATE)
             _Res(items=[]),           # select open CopyTrade (none)
             _Res(scalar=None),        # select MasterAccount (none)
-            _Res(scalar=user),        # select User
+            _Res(scalar=inv_acct),    # lock_account (SELECT TradingAccount FOR UPDATE)
         ]
-        db = _DB(results, inv_acct)
+        db = _DB(results, None)
         out = asyncio.run(stop_copy(allocation.id, uid, db))
 
         # refund equals the REAL balance (1200), not allocation_amount (1000).

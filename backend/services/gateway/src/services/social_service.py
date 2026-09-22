@@ -16,6 +16,7 @@ from packages.common.src.models import (
     Referral, AccountGroup, Instrument,
 )
 from packages.common.src.copy_fees import apply_hwm_fee
+from packages.common.src.row_locks import lock_user, lock_account
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
@@ -372,8 +373,9 @@ async def start_copy(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="Provider has reached maximum investors")
 
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
+    # C-TRADE-4 / H-TRADE-1: lock the user row (canonical: user before account)
+    # so two concurrent subscriptions can't both spend the same wallet balance.
+    user = await lock_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -390,10 +392,9 @@ async def start_copy(
     investor_account: TradingAccount
     if account_id is not None:
         # ── Existing-account path ──
-        acc_q = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == account_id)
-        )
-        acc = acc_q.scalar_one_or_none()
+        # Lock the account (after the user — canonical order) before checking
+        # its balance against the allocation.
+        acc = await lock_account(db, account_id)
         if not acc or acc.user_id != user_id:
             raise HTTPException(status_code=400, detail="Account not found or not yours")
         if acc.is_demo:
@@ -700,6 +701,11 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     if allocation.status != "active":
         raise HTTPException(status_code=400, detail="Subscription already inactive")
 
+    # C-TRADE-4 / H-TRADE-1: acquire the balance-mutation locks up front in the
+    # canonical order (user, then account) so the refund can't race a concurrent
+    # transfer/subscribe on the same wallet or CF account.
+    user = await lock_user(db, user_id)
+
     # Close open copied positions and calculate PnL
     from packages.common.src.redis_client import PriceChannel
     open_copies_q = await db.execute(
@@ -722,7 +728,7 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     # account, so deleting the account afterwards swept the same funds a second
     # time (double refund).
     inv_acct = (
-        await db.get(TradingAccount, allocation.investor_account_id)
+        await lock_account(db, allocation.investor_account_id)
         if allocation.investor_account_id else None
     )
 
@@ -792,10 +798,7 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     # No master-pool deduct: signal/copy trade keeps follower funds in the follower's
     # own CF account throughout. Master never held this money.
 
-    # Return capital + PnL to main wallet
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-
+    # Return capital + PnL to main wallet (user row already locked above).
     # C-TRADE-1: refund the CF account's REAL balance (capital with realised P&L
     # already applied above), then zero the account so it can't be swept again.
     # Fall back to the reconstructed figure only for legacy allocations that
