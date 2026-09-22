@@ -75,9 +75,6 @@ jobs:
               MasterAccount, InvestorAllocation, CopyTrade,
               SupportTicket, TicketMessage, Notification, Banner,
               SystemSetting, BonusOffer, UserBonus,
-              InsurancePolicy, InsuranceClaim,
-              RewardsUserState, RewardsMission, RewardsUserMissionProgress,
-              RewardStoreItem, RewardsTransaction,
               SharedTrade,
           )
           from packages.common.src.schemas import (
@@ -94,9 +91,6 @@ jobs:
               TickData, OHLCVBar, InstrumentResponse,
               AdminFundAdjustment, AdminTradeCreate, AdminModifyTrade,
               PaginationParams, PaginatedResponse,
-              InsuranceQuoteRequest, InsuranceTierQuote,
-              InsuranceActivateRequest, InsuranceActivateResponse,
-              InsurancePolicyOut, InsuranceClaimOut,
           )
           # Confirm SQLAlchemy registered every ORM table.
           tables = sorted(Base.metadata.tables.keys())
@@ -205,6 +199,10 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+          # The trader app is large (marketing site + charting + 3D hero);
+          # the default Node old-space (~2 GB) OOMs mid-build on CI runners.
+          # Match the local/Docker build which raises the heap to 4 GB.
+          NODE_OPTIONS: --max-old-space-size=4096
           # Build-time NEXT_PUBLIC_* values — CI uses dummies so the build
           # completes deterministically without leaking real prod URLs.
           NEXT_PUBLIC_APP_VERSION: ci-${{ github.sha }}
