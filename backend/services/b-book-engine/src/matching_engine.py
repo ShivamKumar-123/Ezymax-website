@@ -70,8 +70,13 @@ class MatchingEngine:
         while self._running:
             try:
                 async with AsyncSessionLocal() as db:
+                    # H-TRADE-9: lock the pending rows with SKIP LOCKED so that
+                    # with multiple engine workers each row is processed by
+                    # exactly one worker — rows another worker already holds are
+                    # skipped this pass instead of being double-filled.
                     result = await db.execute(
                         select(Order).where(Order.status == OrderStatus.PENDING)
+                        .with_for_update(skip_locked=True)
                     )
                     pending_orders = result.scalars().all()
 
@@ -123,6 +128,12 @@ class MatchingEngine:
         # market orders in the gateway. The order stays pending and will
         # fill on the first tick after maintenance ends (if still valid).
         if await get_bool_setting("maintenance_mode", False):
+            return
+
+        # H-TRADE-9: re-check status before filling. The row is held under the
+        # monitor's SKIP LOCKED lock, but this guards against a status change
+        # applied earlier in the same batch (expiry) or a stale in-memory copy.
+        if order.status != OrderStatus.PENDING:
             return
 
         # Lock the account row: a pending fill races concurrent gateway
