@@ -716,6 +716,16 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     )
     master = master_result.scalar_one_or_none()
 
+    # C-TRADE-1: the follower's capital lives in their own CF account. Realise
+    # P&L into THAT account and later refund its real balance — the old code
+    # credited allocation_amount + P&L to the wallet without ever zeroing the CF
+    # account, so deleting the account afterwards swept the same funds a second
+    # time (double refund).
+    inv_acct = (
+        await db.get(TradingAccount, allocation.investor_account_id)
+        if allocation.investor_account_id else None
+    )
+
     for copy in open_copies:
         investor_pos = await db.get(Position, copy.investor_position_id)
         if not investor_pos or investor_pos.status != PositionStatus.OPEN:
@@ -758,6 +768,9 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             )
         net = gross - perf_fee
         total_pnl += net
+        # Realise this position's P&L onto the CF account balance.
+        if inv_acct is not None:
+            inv_acct.balance = (inv_acct.balance or Decimal("0")) + net
 
         investor_pos.status = PositionStatus.CLOSED.value
         investor_pos.close_price = close_price
@@ -783,9 +796,23 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
 
-    return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
-    if return_amount < 0:
-        return_amount = Decimal("0")
+    # C-TRADE-1: refund the CF account's REAL balance (capital with realised P&L
+    # already applied above), then zero the account so it can't be swept again.
+    # Fall back to the reconstructed figure only for legacy allocations that
+    # never had a dedicated CF account.
+    if inv_acct is not None:
+        return_amount = inv_acct.balance or Decimal("0")
+        if return_amount < 0:
+            return_amount = Decimal("0")
+        inv_acct.balance = Decimal("0")
+        inv_acct.equity = Decimal("0")
+        inv_acct.free_margin = Decimal("0")
+        inv_acct.margin_used = Decimal("0")
+        inv_acct.is_active = False
+    else:
+        return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
+        if return_amount < 0:
+            return_amount = Decimal("0")
 
     if user:
         user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
