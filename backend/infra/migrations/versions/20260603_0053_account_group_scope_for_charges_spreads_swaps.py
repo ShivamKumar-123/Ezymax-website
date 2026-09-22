@@ -57,7 +57,7 @@ def upgrade() -> None:
         # Extend the scope CHECK constraint to accept the new value. The
         # original constraint was defined in migration 0001 (initial baseline)
         # as a 4-value enum; we drop + recreate with 'account_group' added.
-        op.execute(f"ALTER TABLE {table} DROP CONSTRAINT {table}_scope_check")
+        op.execute(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {table}_scope_check")
         op.execute(
             f"ALTER TABLE {table} ADD CONSTRAINT {table}_scope_check "
             f"CHECK (scope IN ('default','segment','instrument','user','account_group'))"
@@ -69,7 +69,7 @@ def downgrade() -> None:
         # Strip any account_group rows so the old 4-value CHECK doesn't fail
         # when restored. Cheap because these tables are small.
         op.execute(f"DELETE FROM {table} WHERE scope = 'account_group'")
-        op.execute(f"ALTER TABLE {table} DROP CONSTRAINT {table}_scope_check")
+        op.execute(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {table}_scope_check")
         op.execute(
             f"ALTER TABLE {table} ADD CONSTRAINT {table}_scope_check "
             f"CHECK (scope IN ('default','segment','instrument','user'))"
