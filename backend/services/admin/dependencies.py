@@ -198,11 +198,12 @@ def require_permission(permission: str):
             select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)
         )
         employee = result.scalar_one_or_none()
-        if employee is None:
-            # role="admin" user with no employee record = legacy full admin.
-            if admin.role == "admin":
-                return admin
-        else:
+        # C-ADMIN-2: no "role=admin without an ACTIVE employees row = full
+        # admin" fallthrough. Such a user now gets 403; access requires an
+        # active employees row that grants the permission (or super_admin,
+        # handled above). See docs/audit/REMEDIATION.md for the query that
+        # finds any role='admin' users left without an employees row.
+        if employee is not None:
             role_perms = EMPLOYEE_ROLE_PERMISSIONS.get(employee.role, set())
             extra = set(employee.extra_permissions or [])
             effective = role_perms | extra
