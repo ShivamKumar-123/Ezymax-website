@@ -24,6 +24,7 @@ from packages.common.src.auth import (
 )
 
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.redis_client import redis_client
 
 logger = logging.getLogger("auth_service")
 
@@ -981,26 +982,80 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
     return msg
 
 
-async def reset_password(token: str, new_password: str, request: Request, db: AsyncSession) -> dict:
+async def reset_password(
+    token: str, new_password: str, request: Request, db: AsyncSession,
+    email: str | None = None,
+) -> dict:
     await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "reset-password", 20, 600.0)
     token_hash = hash_token(token.strip())
     now = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(PasswordResetToken).where(
-            PasswordResetToken.token_hash == token_hash,
-            PasswordResetToken.used.is_(False),
-            PasswordResetToken.expires_at > now,
-        )
+
+    # C-AUTH-1: bind the code to a user and cap attempts in Redis, independent
+    # of IP. With the e-mail, the token lookup is scoped to that user, so a
+    # 6-digit code can only be brute-forced against ONE account, and only
+    # 10 attempts / 15 min are allowed.
+    user = None
+    if email:
+        user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+        if user is not None:
+            try:
+                key = f"pwreset_attempts_user:{user.id}"
+                n = await redis_client.incr(key)
+                if n == 1:
+                    await redis_client.expire(key, 900)
+                if n > 10:
+                    raise AuthServiceError("Too many reset attempts. Please try again later.")
+            except AuthServiceError:
+                raise
+            except Exception:
+                pass  # Redis unavailable → fall back to DB + HTTP rate limits.
+
+    q = select(PasswordResetToken).where(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used.is_(False),
+        PasswordResetToken.expires_at > now,
     )
-    row = result.scalar_one_or_none()
+    if user is not None:
+        q = q.where(PasswordResetToken.user_id == user.id)
+    row = (await db.execute(q)).scalar_one_or_none()
     if not row:
-        raise AuthServiceError("Invalid or expired reset link")
-    user = await db.get(User, row.user_id)
-    if not user:
-        raise AuthServiceError("Invalid or expired reset link")
-    user.password_hash = hash_password(new_password)
+        raise AuthServiceError("Invalid or expired reset code")
+
+    # Per-token attempt cap (5).
+    try:
+        tkey = f"pwreset_attempts_token:{row.id}"
+        tn = await redis_client.incr(tkey)
+        if tn == 1:
+            await redis_client.expire(tkey, 900)
+        if tn > 5:
+            row.used = True
+            await db.commit()
+            raise AuthServiceError("Too many attempts on this code. Request a new one.")
+    except AuthServiceError:
+        raise
+    except Exception:
+        pass
+
+    resolved = user or await db.get(User, row.user_id)
+    if not resolved:
+        raise AuthServiceError("Invalid or expired reset code")
+
+    resolved.password_hash = hash_password(new_password)
     row.used = True
+
+    # C-AUTH-1: a successful reset revokes every existing session and refresh
+    # token for the user, so a prior attacker session is invalidated.
+    await db.execute(
+        update(UserRefreshToken)
+        .where(UserRefreshToken.user_id == resolved.id, UserRefreshToken.revoked.is_(False))
+        .values(revoked=True)
+    )
+    await db.execute(
+        update(UserSession)
+        .where(UserSession.user_id == resolved.id, UserSession.is_active.is_(True))
+        .values(is_active=False)
+    )
     await db.commit()
     return {"message": "Password has been reset. You can sign in now."}
 

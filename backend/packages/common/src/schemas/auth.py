@@ -34,6 +34,9 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
+    # C-AUTH-1: the reset request now carries the e-mail so the code is bound
+    # to a single user (a 6-digit code guessed against ONE account, not all).
+    email: EmailStr
     # Accepts the 6-digit reset code (app) or a longer token (legacy link).
     token: str = Field(min_length=6, max_length=512)
     new_password: str = Field(min_length=8, max_length=128)

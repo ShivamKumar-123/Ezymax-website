@@ -332,7 +332,7 @@ async def forgot_password(req: ForgotPasswordRequest, request: Request, db: Asyn
 @router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(req: ResetPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
     try:
-        result = await _reset_password(token=req.token, new_password=req.new_password, request=request, db=db)
+        result = await _reset_password(email=req.email, token=req.token, new_password=req.new_password, request=request, db=db)
         return MessageResponse(**result)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
