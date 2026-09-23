@@ -3,7 +3,8 @@ import asyncio
 import json as _json
 import logging
 import time as _time
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db, AsyncSessionLocal
@@ -11,6 +12,9 @@ from packages.common.src.redis_client import redis_client
 from packages.common.src.schemas import InstrumentResponse, TickData
 from packages.common.src.instrumentation import get_rate_limiter
 from packages.common.src.config import get_settings
+from packages.common.src.auth import get_current_user
+from packages.common.src.rate_limit import rate_limit_http
+from packages.common.src.models import Instrument
 from packages.common.src import bars_store, infoway_history
 from ..services import instrument_service
 
@@ -230,10 +234,12 @@ def _schedule_bg_backfill(sym: str, tf: str, resolution: str) -> None:
 @_limiter.exempt
 async def get_bars(
     symbol: str,
+    request: Request,
     resolution: str = Query(default="5"),
     from_time: int = Query(default=0, alias="from"),
     to_time: int = Query(default=0, alias="to"),
     live: int = Query(default=0),
+    current_user: dict = Depends(get_current_user),
     # How many bars the caller actually wants. The response used to be a
     # hard-coded 5000 rows (~445 KB) for EVERY chart open regardless of the
     # request — the mobile chart's `limit` was silently ignored, which is
@@ -257,6 +263,19 @@ async def get_bars(
     """
     tf = _TV_RESOLUTION_TO_TF.get(resolution, "5m")
     sym = symbol.upper()
+
+    # H-TRADE-7: this endpoint can trigger outbound provider calls (Infoway /
+    # Binance) for the requested symbol, so it must be authenticated, per-user
+    # rate-limited, and the symbol validated against our instrument table before
+    # any external fetch — otherwise it was an unauthenticated SSRF-ish amplifier
+    # for arbitrary symbols.
+    rate_limit_http(request, f"instrument-bars:{current_user['user_id']}", 120, 60.0)
+    exists = (await db.execute(
+        select(Instrument.id).where(Instrument.symbol == sym).limit(1)
+    )).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Unknown instrument")
+
     bar_sec = bars_store.TF_SECONDS.get(tf, 300)
     now_epoch = int(_time.time())
 
