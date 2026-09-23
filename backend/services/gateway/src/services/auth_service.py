@@ -10,7 +10,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from packages.common.src.config import get_settings
 from packages.common.src.models import (
@@ -20,7 +20,7 @@ from packages.common.src.models import (
 from packages.common.src.schemas import TokenResponse
 from packages.common.src.auth import (
     hash_password, verify_password, create_access_token,
-    hash_token, decode_token,
+    hash_token, decode_token, invalidate_session_cache,
 )
 
 from packages.common.src.email_branding import apply_email_brand
@@ -357,8 +357,15 @@ async def issue_auth_json_response(
     All inserts (session, refresh, optional audit log) are flushed together and
     committed atomically. Any exception raised before this commit leaves the
     transaction open for the route handler to roll back."""
-    token, expires = create_access_token(str(user.id), user.role)
+    # H-AUTH-3: bind the token to its user_sessions row via a sid claim (set the
+    # session id explicitly so no extra flush is needed) and record how the
+    # session was established (amr) — a real login vs a derived/bootstrap session.
+    sid = uuid4()
+    _login_actions = {"LOGIN", "WALLET_LOGIN", "OAUTH_GOOGLE_LOGIN", "OAUTH_GOOGLE_REGISTER", "REGISTER", "DEMO_LOGIN"}
+    amr = "login" if (user_audit_action in _login_actions) else "derived"
+    token, expires = create_access_token(str(user.id), user.role, sid=str(sid), amr=amr)
     new_session = UserSession(
+        id=sid,
         user_id=user.id,
         token_hash=hash_token(token),
         ip_address=client_ip_for_inet(request),
@@ -1310,6 +1317,7 @@ async def logout_user(user_id: UUID, request: Request, db: AsyncSession) -> JSON
     )
     for s in result.scalars().all():
         s.is_active = False
+        await invalidate_session_cache(s.id)  # H-AUTH-3: make revocation instant
     await db.commit()
 
     resp = JSONResponse(content={"message": "Logged out"})
