@@ -79,7 +79,9 @@ class Settings(BaseSettings):
     # Hostnames that are the PLATFORM's own (comma-separated, no scheme).
     # A login/signup arriving from one of these hosts is never attributed
     # to a tenant, and tenant login-isolation fails OPEN for them.
-    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,localhost,127.0.0.1"
+    # Phase 3: api. and admin. are reserved so a broker can't claim them as a
+    # custom domain (is_platform_domain also blocks any *.swisscresta.com).
+    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,api.swisscresta.com,admin.swisscresta.com,localhost,127.0.0.1"
     # The origin IP tenants must point their A record at (shown in the
     # domain-connect wizard and checked by DNS verification).
     PLATFORM_PUBLIC_IP: str = ""

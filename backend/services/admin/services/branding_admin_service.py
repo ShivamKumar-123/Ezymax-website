@@ -148,7 +148,7 @@ async def set_custom_domain(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-    if domain in broker_tenancy.platform_hosts():
+    if broker_tenancy.is_platform_domain(domain):
         raise HTTPException(status_code=422, detail="That domain belongs to the platform")
 
     # Partial unique index enforces this too, but a friendly 409 beats an
