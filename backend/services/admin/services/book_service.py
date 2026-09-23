@@ -232,11 +232,22 @@ async def get_lp_settings(db: AsyncSession) -> dict:
             continue
         raw = row.value
         val = raw if isinstance(raw, str) else (json.dumps(raw) if raw is not None else "")
-        # Mask secrets
-        if key in ("lp_api_key", "lp_api_secret") and val and len(val) > 4:
-            val = "●" * (len(val) - 4) + val[-4:]
+        # H-FE-ADMIN-2: never return the real secret. Expose only a masked
+        # preview plus a boolean the form uses to show "key set" without ever
+        # holding the value; the save path ignores the masked sentinel so a
+        # no-edit submit can't overwrite the stored secret with dots.
+        if key in ("lp_api_key", "lp_api_secret"):
+            settings[f"has_{key}"] = bool(val)
+            val = ("●" * (len(val) - 4) + val[-4:]) if val and len(val) > 4 else ("●●●●" if val else "")
         settings[key] = val
     return settings
+
+
+def _is_masked_or_empty(value: str) -> bool:
+    """A submitted secret that is blank or still the masked preview means the
+    user did not type a new value — leave the stored secret untouched."""
+    v = (value or "").strip()
+    return (not v) or ("●" in v)
 
 
 async def save_lp_settings(
@@ -251,6 +262,10 @@ async def save_lp_settings(
         "lp_api_secret": api_secret,
     }
     for key, value in pairs.items():
+        # H-FE-ADMIN-2: a blank or still-masked secret submission means "unchanged"
+        # — skip it so the real stored secret is preserved.
+        if key in ("lp_api_key", "lp_api_secret") and _is_masked_or_empty(value):
+            continue
         result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
         row = result.scalar_one_or_none()
         # JSONB column: store as a JSON string value so reads round-trip to Python str.
