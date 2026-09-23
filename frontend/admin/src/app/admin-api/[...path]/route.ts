@@ -43,6 +43,13 @@ async function proxy(req: NextRequest, segments: string[]): Promise<NextResponse
   // x-forwarded-host on tenant domains; fall back to Host for direct hits.
   const fwdHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
   if (fwdHost) headers.set('x-forwarded-host', fwdHost);
+  // Forward the original request scheme so admin-api's _request_is_https()
+  // marks the fx_admin session cookie Secure in production. Without this the
+  // proxy→admin-api hop is plain http and the cookie was set without Secure.
+  const fwdProto =
+    req.headers.get('x-forwarded-proto') ||
+    (req.nextUrl.protocol ? req.nextUrl.protocol.replace(/:$/, '') : undefined);
+  if (fwdProto) headers.set('x-forwarded-proto', fwdProto);
 
   const method = req.method.toUpperCase();
   const hasBody = !['GET', 'HEAD'].includes(method);
