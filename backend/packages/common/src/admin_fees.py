@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import User, Transaction
+from .row_locks import lock_user
 
 
 async def credit_admin_fee(
@@ -39,6 +40,12 @@ async def credit_admin_fee(
         admin_user = admin_q2.scalar_one_or_none()
 
     if admin_user:
+        # C-TRADE-4 (Medium): lock the recipient User row before crediting its
+        # main_wallet_balance so the fee credit can't race a concurrent balance
+        # mutation on the same account (admin fund op, another fee credit, …).
+        locked = await lock_user(db, admin_user.id)
+        if locked is not None:
+            admin_user = locked
         admin_user.main_wallet_balance = (
             admin_user.main_wallet_balance or Decimal("0")
         ) + amount
