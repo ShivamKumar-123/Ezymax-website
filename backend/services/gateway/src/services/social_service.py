@@ -44,6 +44,27 @@ async def _live_open_pnl(pos, instrument) -> float:
     return float(pos.profit or 0)
 
 
+async def _pool_value_with_floating(db: AsyncSession, pool_account) -> Decimal:
+    """H-TRADE-2: value a PAMM pool at balance PLUS the live floating P&L of its
+    open positions, so NAV for subscribe/redeem reflects true value. Using bare
+    balance let a joiner buy units cheaply during an unrealised gain (or dear
+    during a loss), diluting existing holders."""
+    base = pool_account.balance or Decimal("0")
+    pos_rows = (await db.execute(
+        select(Position).where(
+            Position.account_id == pool_account.id,
+            Position.status == PositionStatus.OPEN,
+        )
+    )).scalars().all()
+    floating = Decimal("0")
+    for pos in pos_rows:
+        inst = pos.instrument
+        if not inst:
+            continue
+        floating += Decimal(str(await _live_open_pnl(pos, inst)))
+    return base + floating
+
+
 def _gen_investor_account_number(copy_type: str = "signal") -> str:
     """Generate a unique account number for an auto-created investor sub-account."""
     prefix = "CF"  # Copy Fund
@@ -897,7 +918,9 @@ async def withdraw_managed_account(
         total_units = Decimal(str(total_units_q.scalar() or 0))
         my_units = allocation.units or Decimal("0")
         alloc_amt = allocation.allocation_amount or Decimal("0")  # cost basis
-        pool_balance = pool_account.balance or Decimal("0")
+        # H-TRADE-2: value the pool at equity (balance + floating P&L of open
+        # positions), not bare balance, so the redeem NAV is fair.
+        pool_balance = await _pool_value_with_floating(db, pool_account)
 
         # Investor share = their units valued at the current NAV
         # (NAV = pool_balance / total_units). Redeeming the full share removes
@@ -920,7 +943,9 @@ async def withdraw_managed_account(
         # The FULL share leaves the pool. The performance fee does NOT linger in
         # the pool (that would inflate the remaining investors' NAV) — it is
         # paid out to the master's own wallet below.
-        pool_account.balance = max(Decimal("0"), pool_balance - share_value)
+        # H-TRADE-2: reduce the REAL settled balance by the cash paid out, not the
+        # equity figure used for NAV (pool_balance now includes floating P&L).
+        pool_account.balance = max(Decimal("0"), (pool_account.balance or Decimal("0")) - share_value)
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
         pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
 
@@ -1686,7 +1711,8 @@ async def invest_managed_account(
     # first investor (or an empty pool). MAM is unaffected (units stays 0).
     pamm_new_units = Decimal("0")
     if master.master_type == "pamm" and pool_account is not None:
-        pool_value_before = pool_account.balance or Decimal("0")
+        # H-TRADE-2: NAV uses pool equity (balance + floating P&L), not balance.
+        pool_value_before = await _pool_value_with_floating(db, pool_account)
         tot_units_q = await db.execute(
             select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
                 InvestorAllocation.master_id == master_id,
