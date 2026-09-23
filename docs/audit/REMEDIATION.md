@@ -133,8 +133,14 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
   `balance − margin_used`; consider routing them through the helper too.
 - **H-ADMIN-1** — implemented as `verify_exp=True` (sliding refresh within the 8h
   window). A full admin refresh-token table with rotation is not done.
-- **H-MONEY-2** — bonus still credits `main_wallet_balance`; a non-withdrawable
-  bonus bucket + wagering release is deferred (DECISION in `bonus_service.py`).
+- **H-MONEY-2** — DONE (commit 50a0cc9c): bonuses are now non-withdrawable —
+  `available_to_withdraw` subtracts the user's outstanding active `UserBonus`
+  from the main-wallet withdrawable across all three withdrawal paths. (Wagering
+  release logic — flipping a bonus to withdrawable after N lots — is still a
+  future product decision.)
+- **C-TRADE-4** — DONE in full (commit 9ebebf4e): copy-engine mirror-close and
+  the overnight-fee engine now lock the account row (SELECT FOR UPDATE) before
+  mutating balance, closing the last two unlocked balance-write paths.
 - **H-AUTH-2** — step-up wired into wallet disconnect (the withdrawal-address
   change choke point). The finding also lists 2FA-disable and email-change; those
   have no self-service trader endpoint in this codebase.
