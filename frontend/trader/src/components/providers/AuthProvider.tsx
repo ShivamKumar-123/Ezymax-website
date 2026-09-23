@@ -9,40 +9,47 @@ import toast from 'react-hot-toast';
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee', 'manager', 'support']);
 
 /** Single source of truth for "this URL renders without auth".
- *  Covers the marketing site (home + every (landing)/* route),
- *  legal pages, the public trade-share short URLs, and /auth/*. */
-const PUBLIC_EXACT_PATHS = new Set<string>([
-  '/',
-  // Top-level marketing pages (light + dark legacy)
-  '/about', '/contact', '/how-it-works', '/platforms', '/white-label',
-  '/privacy', '/terms', '/risk',
-  // New Swistrade-port marketing pages
-  '/careers', '/collaboration', '/group', '/institutional',
-  '/introducing-brokers', '/money-managers', '/partners',
-  // home/page marketing rebuild pages
-  '/policy', '/how-it-works', '/white-label',
-  // Legacy marketing routes still in the (landing) group
-  '/trading/overview', '/protocol',
-  '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto',
-  '/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading',
-  '/platforms/ib-management', '/platforms/super-admin',
-  '/accounts/standard', '/accounts/pro', '/accounts/demo',
+ *  H-FE-2/H-FE-3: the public set is derived from the (landing) route group —
+ *  every route under src/app/(landing)/* is public marketing/legal content, so
+ *  we allow-list by TOP-LEVEL SEGMENT. This list mirrors the (landing)/*
+ *  directories; keep the two in sync when adding a marketing page. Previously a
+ *  hand-kept exact-path set silently missed new pages (/faq, /markets,
+ *  /download, /services/*, /products/*, /academy/*, …), bouncing anonymous
+ *  visitors off legitimate public pages. */
+const PUBLIC_LANDING_SEGMENTS = new Set<string>([
+  'about', 'academy', 'account-types', 'accounts', 'careers', 'company',
+  'collaboration', 'contact', 'delete-account', 'deposit-withdrawal',
+  'download', 'education', 'faq', 'group', 'how-it-works', 'institutional',
+  'introducing-brokers', 'markets', 'money-managers', 'partners', 'platforms',
+  'policy', 'privacy', 'products', 'protocol', 'restricted-countries', 'risk',
+  'risk-warning', 'services', 'terms', 'trading', 'white-label',
 ]);
+
+function _firstSegment(pathname: string): string {
+  return pathname.split('/')[1] || '';
+}
 
 function isPublicPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
+  if (pathname === '/') return true;
   if (pathname.startsWith('/auth')) return true;
   if (pathname.startsWith('/s/')) return true;       // public share-trade short links
   // Chrome-free chart embed for the mobile app's WebView. It authenticates via
-  // a ?token= query param (the WebView has NO session cookie), so the cookie-
-  // based AuthProvider must NEVER treat it as "logged out" and bounce it to
-  // /auth/login — that showed a login page inside the app's chart. Exempt it
-  // like the public share pages; the page guards its own data with the token.
+  // the token in the URL (the WebView has NO session cookie), so the cookie-
+  // based AuthProvider must NEVER treat it as "logged out" and bounce it.
   if (pathname.startsWith('/chart')) return true;
   if (pathname.startsWith('/app-chart')) return true; // APK's dedicated chart
-  if (pathname.startsWith('/company')) return true;  // legacy company/* tree
-  if (pathname.startsWith('/education')) return true;
-  return PUBLIC_EXACT_PATHS.has(pathname);
+  // The app's own /accounts management page is private; its marketing children
+  // (/accounts/demo|pro|standard) stay public via the segment set below.
+  if (pathname === '/accounts' || pathname.startsWith('/accounts/')) {
+    return pathname.startsWith('/accounts/demo')
+      || pathname.startsWith('/accounts/pro')
+      || pathname.startsWith('/accounts/standard');
+  }
+  if (pathname === '/trading' || pathname.startsWith('/trading/')) {
+    return !pathname.startsWith('/trading/terminal');
+  }
+  return PUBLIC_LANDING_SEGMENTS.has(_firstSegment(pathname));
 }
 
 function MaintenanceScreen() {

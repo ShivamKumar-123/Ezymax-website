@@ -137,6 +137,27 @@ function isTradePath(path: string): boolean {
   return TRADE_PREFIXES.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'));
 }
 
+/* ── H-FE-3: private-route auth guard (defence in depth) ──────────
+ * Unambiguously-authenticated app sections. A request to one of these
+ * with no session cookie is redirected to /auth/login by the middleware,
+ * in addition to the client-side AuthProvider gate. Ambiguous prefixes
+ * shared with marketing (/accounts, /trading) are intentionally omitted
+ * so we never bounce a legitimate marketing visitor. */
+const PRIVATE_APP_PREFIXES = [
+  '/dashboard', '/wallet', '/deposit', '/portfolio', '/transactions',
+  '/profile', '/kyc', '/social', '/pamm', '/ai-strategies',
+  '/algo-connector', '/business',
+];
+
+function isPrivateAppPath(path: string): boolean {
+  return PRIVATE_APP_PREFIXES.some((p) => path === p || path.startsWith(p + '/'));
+}
+
+function hasSessionCookie(req: NextRequest): boolean {
+  // Cookie names from backend config (ACCESS/REFRESH_TOKEN_COOKIE_NAME).
+  return req.cookies.has('pt_access') || req.cookies.has('pt_refresh');
+}
+
 function isNeutral(path: string): boolean {
   if (NEUTRAL_EXACT.has(path)) return true;
   return NEUTRAL_PREFIXES.some((p) => path.startsWith(p));
@@ -165,6 +186,18 @@ export function middleware(req: NextRequest) {
         },
       );
     }
+  }
+
+  // H-FE-3: defence-in-depth auth guard — runs on every host, before the host
+  // split. A private app route with no session cookie is redirected to login
+  // (the client AuthProvider enforces this too). Neutral paths (/api, /_next,
+  // static) are skipped so proxied API calls keep handling their own auth.
+  if (!isNeutral(path) && isPrivateAppPath(path) && !hasSessionCookie(req)) {
+    const loginUrl = new URL('/auth/login', req.url);
+    loginUrl.searchParams.set('next', path);
+    const r = NextResponse.redirect(loginUrl, 307);
+    r.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    return r;
   }
 
   const marketingHost = process.env.NEXT_PUBLIC_MARKETING_HOST;
