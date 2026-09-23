@@ -56,6 +56,18 @@ psql_q() {
 
 log() { echo "[$(date '+%F %T')] $*"; }
 
+# H-INF-1: CERTBOT / NGINX come from .env and are executed (often as root), so a
+# writable .env would otherwise be arbitrary code execution. Only run a binary
+# from a fixed allow-list of expected system paths.
+case "$CERTBOT" in
+  /usr/bin/certbot|/usr/local/bin/certbot) ;;
+  *) log "FATAL: BRANDING_CERTBOT_BIN not allow-listed: $CERTBOT"; exit 1 ;;
+esac
+case "$NGINX" in
+  /usr/sbin/nginx|/usr/bin/nginx) ;;
+  *) log "FATAL: BRANDING_NGINX_BIN not allow-listed: $NGINX"; exit 1 ;;
+esac
+
 write_block() {  # $1 domain  $2 app_subdomain
   local domain="$1" sub="$2" names admin_host certname
   admin_host="admin.${domain}"
