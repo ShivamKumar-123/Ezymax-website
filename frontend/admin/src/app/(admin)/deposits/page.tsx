@@ -345,6 +345,7 @@ export default function DepositsPage() {
 
   const handleAction = async () => {
     if (!actionModal) return;
+    if (actionLoading) return;  // in-flight guard: never fire a money action twice
     if (actionModal.type === 'reject' && !actionReason.trim()) {
       toast.error('Reason is required for rejection');
       return;
