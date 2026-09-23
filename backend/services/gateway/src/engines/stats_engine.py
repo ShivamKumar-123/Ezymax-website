@@ -23,6 +23,7 @@ from packages.common.src.models import (
     MasterAccount, TradingAccount, TradeHistory, InvestorAllocation, Transaction,
 )
 from packages.common.src.admin_fees import credit_admin_fee
+from packages.common.src.row_locks import lock_account
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("stats-engine")
@@ -230,7 +231,9 @@ class StatsEngine:
             if daily_rate <= 0:
                 continue
 
-            master_account = await db.get(TradingAccount, master.account_id)
+            # C-TRADE-4 (Medium): lock the master pool row before crediting the
+            # management-fee share (held for the whole allocations loop below).
+            master_account = await lock_account(db, master.account_id)
             if not master_account:
                 continue
 
@@ -247,7 +250,10 @@ class StatsEngine:
                 if fee <= 0:
                     continue
 
-                investor_account = await db.get(TradingAccount, alloc.investor_account_id)
+                # C-TRADE-4 (Medium): lock the investor account, then re-check
+                # balance >= fee under the lock before debiting, so the mgmt-fee
+                # debit can't race a concurrent close / transfer / withdrawal.
+                investor_account = await lock_account(db, alloc.investor_account_id)
                 if not investor_account or (investor_account.balance or Decimal("0")) < fee:
                     logger.info(
                         "Skip mgmt fee: insufficient balance investor=%s fee=%s",
