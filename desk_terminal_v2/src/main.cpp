@@ -56,6 +56,12 @@ int main(int argc, char* argv[]) {
     qRegisterMetaType<AccountInfo>("AccountInfo");
     qRegisterMetaType<TradeResult>("TradeResult");
 
+    // H-INF-6: allow plaintext http/ws endpoints ONLY when explicitly opted in
+    // for local development. Must be set before Config::load() validates the
+    // stored endpoints.
+    if (app.arguments().contains(QStringLiteral("--allow-insecure")))
+        Config::setAllowInsecure(true);
+
     Config cfg = Config::load();
     Theme::setMode(Theme::fromName(cfg.theme));
     applyTheme(app);
