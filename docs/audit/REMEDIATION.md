@@ -6,14 +6,14 @@ One commit per finding. Every money/auth fix has a pure-unit pytest under
 `backend/tests/` (DB-free: fake-session / SimpleNamespace mocks + `asyncio.run`,
 matching the existing test style — no live Postgres fixture exists).
 
-**Status:** Phase 1 (Critical) complete · Phase 2 (High) substantially complete
-(large session-revocation + spread-consistency + host-OPS items deferred, see
-Open items) · Phase 3 (Medium) — highest-value backend/data items done, the
-remainder itemised under Open items.
+**Status:** Phase 1 (Critical) complete · Phase 2 (High) **complete** (every
+finding addressed; some host/build-dependent parts landed as the code fix + a
+documented OPS follow-up) · Phase 3 (Medium) — highest-value backend/data items
+done, the remainder itemised under Open items.
 
-**Verification (this run):**
-- `python -m pytest backend/tests -q` → **132 passed**.
-- AST parse of all 328 backend `*.py` → 0 errors.
+**Verification (latest run):**
+- `python -m pytest backend/tests -q` → **136 passed**.
+- AST parse of all backend `*.py` → 0 errors.
 - `npx tsc --noEmit` in `frontend/trader` and `frontend/admin` → 0 errors each.
 - `git grep -n 'verify_exp": False'` → no matches.
 - `git diff --stat main..fix/audit-2026-09` → 73 files, +3495 / −423.
@@ -75,9 +75,13 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 | H-FE-2/H-FE-3 | 563d8ce2 | public routes derived from `(landing)` segments + middleware auth guard. | tsc |
 | H-FE-ADMIN-1 | 56b78d25 | datetime-local ↔ UTC round-trip helpers (no-op save). | tsc |
 | H-AUTH-2 | f8b4dae0 | step-up required to disconnect wallet (withdrawal-address change). | test_stepup_wallet_unlink |
-| H-AUTH-3 (partial) | 1a445410 | stop echoing access token in cookie-auth JSON body (`JWT_INCLUDE_LEGACY_JSON_TOKEN=False`). | test_json_token_gate |
+| H-AUTH-3 | 1a445410, 2166439b | token JSON body off for cookie clients; **sid claim + per-request session-revocation** (Redis-cached, logout busts cache, grandfather sid-less tokens). | test_json_token_gate, test_session_revocation |
 | H-INF-8 | c014ab77 | CI: pytest job (Postgres+Redis), admin lint hard gate, migration admin creds. | ci.yml |
 | H-FE-ADMIN-2 | 1f1d6c4c | Book/LP settings: don't overwrite secret with masked/empty submit; expose `has_*` flags. | test_lp_secret_masking |
+| H-TRADE-8 | dd2ac80c | SL/TP engine evaluates triggers against the per-user quote (resolve_user_quote) when USER_SPREAD_AT_EXECUTION is on. | AST + review |
+| H-INF-1 | 7a5a22cd | white-label agent allow-lists BRANDING_CERTBOT_BIN/NGINX_BIN before exec. | bash -n |
+| H-INF-2/4 | 246f8ecb | backup.sh safe `.env` KEY=VALUE parser (no `source`), mandatory GPG in prod; restore.sh EXIT-trap fix. | bash -n |
+| H-INF-6 | 789b93ee | desktop terminal refuses non-https/wss endpoints unless `--allow-insecure`. | review (no C++ toolchain) |
 
 ## Phase 3 — Medium (done so far)
 
@@ -91,24 +95,24 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 
 ## Open items / deviations (need a decision or a follow-up pass)
 
-**Deferred (large / higher-risk, deliberately not attempted this pass):**
-- **H-AUTH-3 (full)** — per-request session revocation via a `sid` claim +
-  Redis-cached `user_sessions` check, with revoke on logout/ban/role-change. This
-  is a hot-path change touching every authenticated request; done wrong it logs
-  everyone out. Mitigations already in place: `get_current_user` enforces account
-  status per request, sessions+refresh tokens are revoked on password reset
-  (C-AUTH-1), refresh is gated on email_verified (H-AUTH-4), and the access token
-  is no longer echoed to JS (done above). The `sid` enforcement remains open.
-- **H-TRADE-8** — per-user quote consistency across SL/TP / risk / copy engines
-  when `USER_SPREAD_AT_EXECUTION=true`. Off by default; making the engines
-  resolve per-user quotes per tick is a large change with performance impact.
-- **H-INF-1** — move cron target scripts to a root-owned dir + allow-list
-  `BRANDING_*_BIN` (host shell / install scripts — OPS).
-- **H-INF-2..5** — backup script hardening (safe `.env` parser, back up
-  `backend/uploads`, mandatory GPG, `restore.sh` trap + `pg_restore`, single
-  backup path). Shell scripts run on the host — OPS, not unit-testable here.
-- **H-INF-6** — desktop terminal (C++/Qt) token storage in the OS keychain +
-  https/wss enforcement. Separate native codebase.
+**Phase 2 — remaining sub-parts (code fix landed; these need the host/build):**
+- **H-AUTH-3** — bootstrap-session `amr` restriction NOT added (it interacts with
+  admin impersonation, which legitimately bootstraps). Session-revocation core is
+  done. Password-reset/ban revocation take effect within the ~15s session-cache
+  TTL (logout busts instantly).
+- **H-TRADE-8** — wired into the SL/TP engine; the risk-engine stop-out and copy-
+  engine close paths still read the broadcast quote (same helper is ready to drop
+  in). Off by default (`USER_SPREAD_AT_EXECUTION`).
+- **H-INF-1** — allow-list added; relocating the cron target scripts to a root-
+  owned `/usr/local/lib/<app>/` at install time is an OPS step.
+- **H-INF-2..5** — safe `.env` parse + mandatory-GPG-in-prod + restore trap done;
+  the **backup-path consolidation** (one of `scripts/backup.sh` vs
+  `deploy/scripts/backup-db.sh`) and switching the canonical dump to custom-format
+  `pg_restore` are left as an operator decision (they change the on-disk format
+  and the restore procedure; can't be validated without the host).
+- **H-INF-6** — https/wss enforcement + `--allow-insecure` done. OS-keychain
+  token storage and algo-key revoke-on-logout need the Qt keychain lib + a build,
+  so they remain open.
 
 **Spec deviations to note:**
 - **C-MONEY-3** — `available_to_withdraw` uses `(balance − margin_used)` capped by
