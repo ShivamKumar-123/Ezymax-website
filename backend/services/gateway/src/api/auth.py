@@ -355,9 +355,18 @@ async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSes
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
+class _Verify2faRequest(BaseModel):
+    code: str
+
+
+class _ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
 @router.post("/2fa/verify")
 async def verify_2fa(
-    code: str,
+    body: _Verify2faRequest,
     request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -373,7 +382,7 @@ async def verify_2fa(
     from ..services.auth_service import rate_limit_http
     rate_limit_http(request, "2fa-verify", 5, 600.0)
     try:
-        return await _verify_2fa(user_id=current_user["user_id"], code=code, db=db)
+        return await _verify_2fa(user_id=current_user["user_id"], code=body.code, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -391,13 +400,15 @@ async def regenerate_2fa_backup_codes(
 
 @router.post("/password/change")
 async def change_password(
-    old_password: str, new_password: str,
+    body: _ChangePasswordRequest,
     current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
 ):
+    # Phase 3: credentials arrive in the JSON body, not query params (which land
+    # in access logs / browser history / Referer).
     try:
         return await _change_password(
             user_id=current_user["user_id"],
-            old_password=old_password, new_password=new_password, db=db,
+            old_password=body.old_password, new_password=body.new_password, db=db,
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
