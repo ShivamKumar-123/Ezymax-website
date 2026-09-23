@@ -54,13 +54,14 @@ async def platform_status():
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    """Legacy one-shot registration. Kept for back-compat (older mobile
-    builds, scripts) but the trader web frontend now uses the
-    register/start + register/verify pair so the `users` row isn't
-    created until the email is OTP-verified."""
+    """Registration entry point. H-AUTH-4: this now delegates to the pending
+    (OTP-first) flow instead of the legacy `register_user`, which reclaimed an
+    unverified stub in place and issued session cookies before the email was
+    verified. No `users` row is created and no session is issued until the OTP
+    is confirmed via /auth/register/verify."""
     try:
-        return await register_user(
-            email=req.email, password=req.password,
+        return await pending_registration_service.start_pending_registration(
+            email=str(req.email), password=req.password,
             first_name=req.first_name, last_name=req.last_name,
             phone=req.phone, country=req.country,
             referral_code=req.referral_code,

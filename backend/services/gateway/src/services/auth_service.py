@@ -466,42 +466,27 @@ async def register_user(
         select(User).where(func.lower(User.email) == email.lower())
     )
     existing_user = existing.scalar_one_or_none()
-    if existing_user is not None and existing_user.email_verified:
+    if existing_user is not None:
+        # H-AUTH-4: no "reclaim" of an existing account — verified or not.
+        # Overwriting an unverified stub in place let anyone reset another
+        # in-progress signup's credentials/profile. Registration goes through
+        # the OTP-first pending flow (start/verify); this legacy helper is no
+        # longer wired to /auth/register and refuses any existing address.
         raise AuthServiceError("Email already registered")
 
-    if existing_user is not None:
-        # The address belongs to an account that never completed email
-        # verification. Those stubs can't log in and are hidden from the
-        # admin user list, so we let a fresh signup reclaim the email:
-        # overwrite the old credentials/profile in place (same row, so any
-        # FK children stay valid) and re-issue the OTP via the normal auth
-        # response below. This is safe because nobody ever proved ownership
-        # of an unverified address.
-        user = existing_user
-        user.email = email
-        user.password_hash = hash_password(password)
-        user.first_name = first_name
-        user.last_name = last_name
-        user.phone = phone
-        user.country = country
-        user.role = "user"
-        user.status = "active"
-        user.kyc_status = "pending"
-        await db.flush()
-    else:
-        user = User(
-            email=email,
-            password_hash=hash_password(password),
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            country=country,
-            role="user",
-            status="active",
-            kyc_status="pending",
-        )
-        db.add(user)
-        await db.flush()
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone,
+        country=country,
+        role="user",
+        status="active",
+        kyc_status="pending",
+    )
+    db.add(user)
+    await db.flush()
 
     if referral_code:
         await _consume_referral(db, user.id, referral_code)
@@ -883,6 +868,15 @@ async def refresh_token(request: Request, db: AsyncSession) -> JSONResponse:
     user = await db.get(User, row.user_id)
     if not user or user.status in ("banned", "blocked"):
         raise AuthServiceError("Not authenticated", 401)
+    # H-AUTH-4: a session must not be renewable while the email is unverified —
+    # otherwise a pre-verification session (or one issued by an older build)
+    # could be refreshed indefinitely. Demo and wallet-placeholder accounts have
+    # no e-mail to verify and are exempt.
+    _is_wallet_placeholder = (user.email or "").lower().endswith("@wallet.swisscresta.local")
+    if not getattr(user, "email_verified", False) and not getattr(user, "is_demo", False) and not _is_wallet_placeholder:
+        row.revoked = True
+        await db.flush()
+        raise AuthServiceError("Please verify your email to continue.", 403)
     # If a staff role somehow still holds a trader refresh token (e.g.
     # issued before the login-side block was added), refuse to renew it.
     # The session will die on next refresh instead of cycling forever.
