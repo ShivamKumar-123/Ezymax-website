@@ -1843,11 +1843,18 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # H-MONEY-2: bonus credit is non-withdrawable, and moving it to a trading
+    # account would launder it into withdrawable balance (trading withdrawals
+    # ignore bonus). Only the real (non-bonus) main balance may be transferred.
     main_bal = user_row.main_wallet_balance or Decimal("0")
-    if main_bal < amt:
+    available = available_to_withdraw(
+        "main", main_wallet_balance=main_bal,
+        outstanding_bonus=await outstanding_bonus(db, user_id),
+    )
+    if available < amt:
         raise HTTPException(
             status_code=400,
-            detail=f"Insufficient main wallet balance. Available: ${float(main_bal):.2f}",
+            detail=f"Insufficient transferable main wallet balance. Available: ${float(available):.2f}",
         )
 
     acc_q = await db.execute(
