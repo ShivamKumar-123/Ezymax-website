@@ -253,6 +253,14 @@ _KNOWN_WEAK_ADMIN_PASSWORDS = {
     "",
 }
 
+# H-INF-9: default DB passwords baked into docker-compose fallbacks and the
+# config defaults. A production deploy that never overrode POSTGRES_PASSWORD /
+# TIMESCALE_PASSWORD ships with a publicly-known DB password — treat it like a
+# default JWT secret and refuse to boot. Matched as a substring of the DSN.
+_WEAK_DB_PASSWORDS = {
+    "swisscresta_dev",
+}
+
 
 def _assert_production_secrets(s: Settings) -> None:
     """Refuse to start in production with default secrets baked into the
@@ -282,6 +290,13 @@ def _assert_production_secrets(s: Settings) -> None:
                 "for local dev; production deploys MUST set a strong password "
                 "(e.g. `openssl rand -base64 24`)."
             )
+        if any(f":{pw}@" in (getattr(s, n, "") or "")
+               for n in ("DATABASE_URL", "TIMESCALE_URL") for pw in _WEAK_DB_PASSWORDS):
+            log.warning(
+                "Using the DEFAULT dev DB password (swisscresta_dev). Acceptable "
+                "for local dev; production deploys MUST set POSTGRES_PASSWORD / "
+                "TIMESCALE_PASSWORD to strong values."
+            )
         return
     bad: list[str] = []
     for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
@@ -290,6 +305,11 @@ def _assert_production_secrets(s: Settings) -> None:
             bad.append(name)
     if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
         bad.append("ADMIN_PASSWORD")
+    # H-INF-9: refuse a default DB password in either DSN.
+    for name in ("DATABASE_URL", "TIMESCALE_URL"):
+        dsn = getattr(s, name, "") or ""
+        if any(f":{pw}@" in dsn for pw in _WEAK_DB_PASSWORDS):
+            bad.append(name)
     if bad:
         raise RuntimeError(
             "Refusing to start: ENVIRONMENT=production but the following "
