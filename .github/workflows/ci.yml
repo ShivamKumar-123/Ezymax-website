@@ -141,7 +141,66 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+          # H-INF-8: provide a strong admin credential so any bootstrap/seed the
+          # migration path touches doesn't fall back to a weak default.
+          ADMIN_EMAIL: ci-admin@swisscresta.local
+          ADMIN_PASSWORD: ci-$RANDOM-$RANDOM-Str0ng!pw
         run: alembic -c infra/migrations/alembic.ini upgrade head
+
+  backend-tests:
+    name: Backend — pytest (Postgres + Redis)
+    runs-on: ubuntu-latest
+    # H-INF-8: run the backend test suite with real Postgres + Redis services
+    # available, so DB/Redis-backed tests can be added without infra changes.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: swisscresta
+          POSTGRES_PASSWORD: swisscresta_ci
+          POSTGRES_DB: swisscresta
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U swisscresta -d swisscresta"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install backend + test deps
+        working-directory: backend
+        run: |
+          pip install -e packages/common
+          pip install -r services/gateway/requirements.txt
+          pip install slowapi pytest
+
+      - name: Run pytest
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+          TIMESCALE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+          REDIS_URL: redis://localhost:6379/0
+          ENVIRONMENT: development
+          JWT_SECRET: ci-stub-secret-1234567890123456789012
+          USER_JWT_SECRET: ci-stub-secret-1234567890123456789012
+          ADMIN_JWT_SECRET: ci-stub-secret-1234567890123456789012
+        run: python -m pytest tests -q
 
   contracts:
     name: Contracts — forge test
@@ -188,10 +247,12 @@ jobs:
       # `continue-on-error: true` because the trader app has ~85 pre-existing
       # warnings under the new flat ESLint config that are tracked as Batch G
       # backlog. Remove the flag once the warning count is back to 0.
+      # H-INF-8: lint is a HARD gate for the admin app; the trader app keeps
+      # continue-on-error until its pre-existing warning backlog is cleared.
       - name: Lint
         working-directory: frontend/${{ matrix.app }}
         run: npm run lint
-        continue-on-error: true
+        continue-on-error: ${{ matrix.app == 'trader' }}
       # Build verifies the route manifest + bundle generation. Matches what
       # the Dockerfile does (sans the standalone flag — that's set at Docker
       # build time, not in CI).
