@@ -41,6 +41,9 @@ export type NavItem = {
   label: string;
   href: string;
   children?: { label: string; href: string }[];
+  // When true the link points off-site (e.g. the liquidity subdomain) and is
+  // rendered as a plain <a target="_blank"> instead of a Next <Link>.
+  external?: boolean;
 };
 
 /**
@@ -61,6 +64,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: 'Admin & Back Office', href: '/platforms/super-admin' },
     ],
   },
+  { label: 'Liquidity', href: 'https://liquidity.swisscresta.com', external: true },
   {
     label: 'Solutions',
     href: '/services/market-research',

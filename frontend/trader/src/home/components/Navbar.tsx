@@ -82,13 +82,19 @@ function DesktopNavLink({ item, pathname }: { item: NavItem; pathname: string })
   };
 
   if (!item.children) {
+    const linkClass = `relative whitespace-nowrap rounded px-3 py-5 font-body text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      active ? 'text-foreground' : 'text-foreground/70 hover:text-foreground'
+    }`;
+    // External items (e.g. the liquidity subdomain) open in a new tab.
+    if (item.external) {
+      return (
+        <a href={item.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+          {item.label}
+        </a>
+      );
+    }
     return (
-      <Link
-        href={item.href}
-        className={`relative whitespace-nowrap rounded px-3 py-5 font-body text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-          active ? 'text-foreground' : 'text-foreground/70 hover:text-foreground'
-        }`}
-      >
+      <Link href={item.href} className={linkClass}>
         {item.label}
         {/* Full-width underline rather than a floating dot — it reads as a
             tab indicator and sits flush with the nav's bottom hairline. */}
@@ -180,12 +186,17 @@ function MobileNavRow({
   const [open, setOpen] = useState(false);
 
   if (!item.children) {
+    const rowClass =
+      'font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 block';
+    if (item.external) {
+      return (
+        <a href={item.href} target="_blank" rel="noopener noreferrer" onClick={onSelect} className={rowClass}>
+          {item.label}
+        </a>
+      );
+    }
     return (
-      <Link
-        href={item.href}
-        onClick={onSelect}
-        className="font-display uppercase text-2xl tracking-tight text-foreground/85 hover:text-foreground py-2 block"
-      >
+      <Link href={item.href} onClick={onSelect} className={rowClass}>
         {item.label}
       </Link>
     );
