@@ -519,6 +519,28 @@ async def register_user(
 
 # ─── Login ────────────────────────────────────────────────────────────────
 
+async def _enforce_2fa(user, totp_code: str | None, db: AsyncSession) -> None:
+    """Verify the user's second factor when 2FA is enabled. Shared by password
+    login AND Google login (M: Google sign-in previously skipped 2FA entirely,
+    letting a stolen Google session bypass the user's TOTP). Accepts a 6-digit
+    TOTP or a one-time backup code."""
+    if not getattr(user, "two_factor_enabled", False):
+        return
+    secret = (user.two_factor_secret or "").strip()
+    if not secret:
+        raise AuthServiceError(
+            "Two-factor authentication is misconfigured for this account. Contact support.", 403
+        )
+    if not totp_code:
+        raise AuthServiceError("2FA code required")
+    totp = pyotp.TOTP(secret)
+    ok = totp.verify(totp_code)
+    if not ok:
+        ok = await consume_2fa_backup_code(user.id, totp_code, db)
+    if not ok:
+        raise AuthServiceError("Invalid 2FA code", 401)
+
+
 async def login_user(
     email: str,
     password: str,
@@ -602,25 +624,7 @@ async def login_user(
                 "Platform is under maintenance. Please try again later.", 503
             )
 
-    if user.two_factor_enabled:
-        secret = (user.two_factor_secret or "").strip()
-        if not secret:
-            raise AuthServiceError(
-                "Two-factor authentication is misconfigured for this account. Contact support.", 403
-            )
-        if not totp_code:
-            raise AuthServiceError("2FA code required")
-        totp = pyotp.TOTP(secret)
-        # Accept either a 6-digit TOTP from the authenticator OR a
-        # one-time backup code (XXXXX-XXXXX). Backup codes are a
-        # legitimate self-service recovery path so a lost phone doesn't
-        # require a support-ticket account-recovery (the social-
-        # engineering attack surface — audit H2).
-        ok = totp.verify(totp_code)
-        if not ok:
-            ok = await consume_2fa_backup_code(user.id, totp_code, db)
-        if not ok:
-            raise AuthServiceError("Invalid 2FA code", 401)
+    await _enforce_2fa(user, totp_code, db)
 
     return await issue_auth_json_response(user, request, db, user_audit_action="LOGIN")
 
@@ -705,6 +709,7 @@ async def google_oauth(
     referral_code: str | None,
     request: Request,
     db: AsyncSession,
+    totp_code: str | None = None,
 ) -> JSONResponse:
     """Verify a Google id_token and sign the user in. Creates a new user, links to an
     existing email-based account, or returns the existing google-linked user."""
@@ -821,6 +826,9 @@ async def google_oauth(
         raise AuthServiceError("Account has been banned", 403)
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
+
+    # M: enforce 2FA on Google sign-in too (was password-login only).
+    await _enforce_2fa(user, totp_code, db)
 
     # Same staff-only block as login_user(): if a staff user happens to
     # have the trader Google flow hit their existing email, refuse to

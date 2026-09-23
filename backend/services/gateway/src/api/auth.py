@@ -180,6 +180,7 @@ async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession
             referral_code=req.referral_code,
             request=request,
             db=db,
+            totp_code=req.totp_code,
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

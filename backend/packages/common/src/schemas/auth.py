@@ -58,6 +58,9 @@ class GoogleAuthRequest(BaseModel):
 
     id_token: str = Field(min_length=20, max_length=8192)
     referral_code: Optional[str] = None
+    # M: when the account has 2FA enabled, Google sign-in must also present the
+    # TOTP / backup code (the client retries with this after a "2FA code required").
+    totp_code: Optional[str] = None
 
 
 # ─── Wallet (SIWE / EIP-4361) sign-in ────────────────────────────────
