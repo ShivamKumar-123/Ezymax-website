@@ -31,6 +31,7 @@ from packages.common.src.price_cache import price_cache
 from packages.common.src.admin_fees import credit_admin_fee
 from packages.common.src.copy_fees import apply_hwm_fee
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.row_locks import lock_account
 from packages.common.src.notify import create_notification
 
 logging.basicConfig(level=logging.INFO)
@@ -717,7 +718,10 @@ class CopyTradeEngine:
         investor_pos.profit = net_profit
         investor_pos.closed_at = datetime.now(timezone.utc)
 
-        investor_account = await db.get(TradingAccount, investor_pos.account_id)
+        # C-TRADE-4: lock the CF account row before crediting the mirror-close
+        # P&L, so this can't race a manual close / transfer / withdrawal on the
+        # same account (each of which also mutates balance under its own lock).
+        investor_account = await lock_account(db, investor_pos.account_id)
         if investor_account:
             investor_account.balance = (investor_account.balance or Decimal("0")) + net_profit
             margin_release = (investor_pos.lots * contract_size * investor_pos.open_price) / Decimal(

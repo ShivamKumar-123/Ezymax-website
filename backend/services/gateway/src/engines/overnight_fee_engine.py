@@ -27,6 +27,7 @@ from sqlalchemy.orm import selectinload
 
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.row_locks import lock_account
 from packages.common.src.models import (
     AccountGroup, InstrumentConfig, Position, PositionStatus,
     TradingAccount, Transaction, User,
@@ -168,18 +169,26 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             pos.last_swap_at = now
             continue
 
+        # C-TRADE-4: lock the account row before the balance mutation so the
+        # overnight charge can't race a concurrent close / transfer / withdrawal
+        # on the same account. Re-read balance under the lock (the selectinload'd
+        # `account` above is only used for the read-only eligibility checks).
+        locked = await lock_account(db, account.id)
+        if locked is None:
+            continue
+
         # Apply fee — deduct from balance, mark on the position, and write
         # a Transaction row for audit.
-        new_balance = (Decimal(str(account.balance or 0))) - fee
-        account.balance = new_balance
-        account.equity = new_balance + Decimal(str(account.credit or 0))
-        account.free_margin = account.equity - Decimal(str(account.margin_used or 0))
+        new_balance = (Decimal(str(locked.balance or 0))) - fee
+        locked.balance = new_balance
+        locked.equity = new_balance + Decimal(str(locked.credit or 0))
+        locked.free_margin = locked.equity - Decimal(str(locked.margin_used or 0))
         pos.swap = (Decimal(str(pos.swap or 0))) - fee  # swap is conventionally negative for charges
         pos.last_swap_at = now
 
         db.add(Transaction(
-            user_id=account.user_id,
-            account_id=account.id,
+            user_id=locked.user_id,
+            account_id=locked.id,
             type="swap",
             amount=-fee,
             balance_after=new_balance,
