@@ -70,7 +70,10 @@ class SLTPEngine:
     async def _load_prices(self):
         """Load latest prices directly from Redis keys instead of pubsub."""
         try:
-            keys = await redis_client.keys("tick:*")
+            # Phase 3: SCAN, not KEYS. KEYS is O(N) over the entire keyspace and
+            # blocks the single-threaded Redis for every SL/TP tick; scan_iter
+            # walks the keyspace in small cursored batches without blocking.
+            keys = [k async for k in redis_client.scan_iter(match="tick:*", count=500)]
             if not keys:
                 return
             values = await redis_client.mget(keys)
