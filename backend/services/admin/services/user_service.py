@@ -37,7 +37,7 @@ from packages.common.src.admin_schemas import (
     FundRequest, CreditRequest,
 )
 from packages.common.src.kyc_identifiers import mask_aadhaar
-from dependencies import write_audit_log
+from dependencies import write_audit_log, assert_broker_scope
 
 settings = get_settings()
 
@@ -724,6 +724,13 @@ async def login_as_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
+
+    # Phase 3 (impersonation scope): a broker actor may only impersonate a user
+    # in their own pool. Platform admins pass through. Load the actor row and
+    # enforce broker scope before minting an impersonation token.
+    actor = (await db.execute(select(User).where(User.id == admin_id))).scalar_one_or_none()
+    if actor is not None:
+        await assert_broker_scope(actor, user_id, db)
 
     # Privilege guard (audit H5). Even if a non-super-admin somehow holds
     # the `users.impersonate` permission (via Employee.extra_permissions
