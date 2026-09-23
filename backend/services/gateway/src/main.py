@@ -8,12 +8,12 @@ from uuid import UUID
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select
+from sqlalchemy import func, select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
 from packages.common.src.database import get_db, AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel, BARS_UPDATES_CHANNEL
+from packages.common.src.redis_client import redis_client, PriceChannel, BARS_UPDATES_CHANNEL, CONFIG_INSTRUMENTS_RELOAD_CHANNEL
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import close_producer
 from packages.common.src.auth import decode_token, require_onboarded
@@ -495,15 +495,19 @@ async def _load_user_spread_overrides(
     user_id: str,
     trading_account_id: str | None = None,
 ) -> dict[str, tuple[Decimal, str, Decimal, int]]:
-    """symbol -> (spread_value, spread_type, pip_size, digits) for the
-    user's enabled user-scope spread overrides. A row without an
-    instrument applies to every active instrument (blanket override);
-    instrument-specific rows win over the blanket one.
+    """symbol -> (spread_value, spread_type, pip_size, digits) for the trader's
+    EFFECTIVE spread, so the live /ws/prices quote matches what a fill would use.
 
-    Account targeting: rows pinned to a trading account apply only when
-    the client reports trading THAT account (``set_account`` control
-    message); they then beat the user-wide (NULL account) rows. Rows
-    pinned to other accounts are ignored."""
+    Resolves the same priority chain as resolve_spread_config's user+tier layers
+    (so an admin per-tier / per-user spread edit shows LIVE on the stream, not
+    only at execution):
+      1. user + this instrument   (account-pinned row beats user-wide)
+      2. user + blanket           (account-pinned beats user-wide)
+      3. account_group + this instrument   (tier)
+      4. account_group + blanket           (tier)
+    Instrument / segment / default spread is already baked into the broadcast
+    tick by market-data, so it needs no override here — those levels flow through
+    unchanged and reflect live via market-data's own pub/sub reload."""
     try:
         uid = UUID(str(user_id))
     except (ValueError, TypeError):
@@ -517,46 +521,85 @@ async def _load_user_spread_overrides(
     out: dict[str, tuple[Decimal, str, Decimal, int]] = {}
     try:
         async with AsyncSessionLocal() as db:
+            group_id: UUID | None = None
             if acct_uuid is not None:
                 # Never let a client claim someone else's account context.
-                owner = (
+                row = (
                     await db.execute(
-                        select(TradingAccount.id).where(
-                            TradingAccount.id == acct_uuid,
+                        select(TradingAccount.account_group_id, TradingAccount.user_id)
+                        .where(TradingAccount.id == acct_uuid)
+                    )
+                ).first()
+                if row is None or row[1] != uid:
+                    acct_uuid = None
+                else:
+                    group_id = row[0]
+            if group_id is None:
+                # No pinned account (or not owned) — use the tier of the user's
+                # oldest live account so the per-tier spread still applies.
+                group_id = (
+                    await db.execute(
+                        select(TradingAccount.account_group_id).where(
                             TradingAccount.user_id == uid,
-                        )
+                            TradingAccount.is_demo == False,  # noqa: E712
+                        ).order_by(TradingAccount.created_at.asc()).limit(1)
                     )
                 ).scalar_one_or_none()
-                if owner is None:
-                    acct_uuid = None
+
+            conds = [
+                and_(func.lower(SpreadConfig.scope) == "user", SpreadConfig.user_id == uid)
+            ]
+            if group_id is not None:
+                conds.append(
+                    and_(func.lower(SpreadConfig.scope) == "account_group",
+                         SpreadConfig.account_group_id == group_id)
+                )
             rows = (
                 await db.execute(
                     select(SpreadConfig).where(
-                        func.lower(SpreadConfig.scope) == "user",
                         SpreadConfig.is_enabled == True,  # noqa: E712
-                        SpreadConfig.user_id == uid,
+                        or_(*conds),
                     )
                 )
             ).scalars().all()
             if not rows:
                 return {}
-            # (instrument_id | None) -> (value, type); account-pinned rows
-            # overwrite user-wide ones for the same slot.
-            slots: dict = {}
-            for pinned in (False, True):
-                for cfg in rows:
+
+            # Resolve the four candidate slots. rank encodes account-pinned > user
+            # -wide within the user scope; user always beats group (handled by the
+            # per-instrument fallback order below).
+            user_inst: dict = {}          # instrument_id -> (val, type, rank)
+            user_blanket: tuple | None = None
+            group_inst: dict = {}         # instrument_id -> (val, type)
+            group_blanket: tuple | None = None
+            for cfg in rows:
+                val = Decimal(str(cfg.value or 0))
+                if val <= 0:
+                    continue
+                st = (cfg.spread_type or "pips").lower()
+                scope = (cfg.scope or "").lower()
+                if scope == "user":
                     is_pinned = cfg.trading_account_id is not None
-                    if is_pinned != pinned:
-                        continue
                     if is_pinned and (acct_uuid is None or cfg.trading_account_id != acct_uuid):
-                        continue
-                    val = Decimal(str(cfg.value or 0))
-                    if val <= 0:
-                        continue
-                    slots[cfg.instrument_id] = (val, (cfg.spread_type or "pips").lower())
-            if not slots:
+                        continue  # pinned to a different account — ignore
+                    rank = 2 if is_pinned else 1
+                    if cfg.instrument_id is None:
+                        if user_blanket is None or rank > user_blanket[2]:
+                            user_blanket = (val, st, rank)
+                    else:
+                        ex = user_inst.get(cfg.instrument_id)
+                        if ex is None or rank > ex[2]:
+                            user_inst[cfg.instrument_id] = (val, st, rank)
+                elif scope == "account_group":
+                    if cfg.instrument_id is None:
+                        if group_blanket is None:
+                            group_blanket = (val, st)
+                    else:
+                        group_inst.setdefault(cfg.instrument_id, (val, st))
+
+            if not (user_inst or user_blanket or group_inst or group_blanket):
                 return {}
-            blanket = slots.get(None)
+
             insts = (
                 await db.execute(select(Instrument).where(Instrument.is_active == True))  # noqa: E712
             ).scalars().all()
@@ -564,12 +607,18 @@ async def _load_user_spread_overrides(
                 sym = (inst.symbol or "").strip().upper()
                 if not sym:
                     continue
-                cfg2 = slots.get(inst.id) or blanket
-                if cfg2 is None:
+                # Priority: user+inst → user+blanket → group+inst → group+blanket.
+                eff = (
+                    user_inst.get(inst.id)
+                    or user_blanket
+                    or group_inst.get(inst.id)
+                    or group_blanket
+                )
+                if eff is None:
                     continue
                 pip = Decimal(str(inst.pip_size or "0.0001"))
                 digits = int(inst.digits or 5)
-                out[sym] = (cfg2[0], cfg2[1], pip, digits)
+                out[sym] = (eff[0], eff[1], pip, digits)
     except Exception as exc:
         logger.warning("user spread override load failed for %s: %s", user_id, exc)
     return out
@@ -617,7 +666,9 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         return
     await websocket.accept()
     pubsub = redis_client.pubsub()
-    await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
+    # Also subscribe to the config-reload channel so an admin spread edit is
+    # reflected on THIS live connection instantly (pub/sub), not on the 30s poll.
+    await pubsub.subscribe(PriceChannel.PRICE_CHANNEL, CONFIG_INSTRUMENTS_RELOAD_CHANNEL)
 
     # Per-user display spread (empty dict = pass-through fast path). The
     # client can pin the context to one trading account via a
@@ -647,17 +698,29 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
             # Wait for the first message up to the next flush deadline,
             # then drain everything queued without blocking.
             wait = max(0.005, FLUSH_INTERVAL - (_now() - last_flush))
+            config_reloaded = False
             message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=wait)
             while message:
                 if message["type"] == "message":
-                    raw_tick = message["data"]
-                    try:
-                        sym = str(json.loads(raw_tick).get("symbol") or "")
-                    except (ValueError, TypeError):
-                        sym = ""
-                    if sym:
-                        pending[sym] = raw_tick
+                    ch = message.get("channel")
+                    if isinstance(ch, bytes):
+                        ch = ch.decode("utf-8", "ignore")
+                    if ch == CONFIG_INSTRUMENTS_RELOAD_CHANNEL:
+                        # Admin changed spread/instrument config — reload overrides.
+                        config_reloaded = True
+                    else:
+                        raw_tick = message["data"]
+                        try:
+                            sym = str(json.loads(raw_tick).get("symbol") or "")
+                        except (ValueError, TypeError):
+                            sym = ""
+                        if sym:
+                            pending[sym] = raw_tick
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0)
+
+            if config_reloaded and user_id:
+                overrides = await _load_user_spread_overrides(user_id, active_account_id)
+                last_override_reload = asyncio.get_event_loop().time()
 
             now_flush = _now()
             if pending and now_flush - last_flush >= FLUSH_INTERVAL:
@@ -697,7 +760,7 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         pass
     finally:
         _ws_release(user_id)
-        await pubsub.unsubscribe(PriceChannel.PRICE_CHANNEL)
+        await pubsub.unsubscribe(PriceChannel.PRICE_CHANNEL, CONFIG_INSTRUMENTS_RELOAD_CHANNEL)
         await pubsub.close()
 
 
