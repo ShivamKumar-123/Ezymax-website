@@ -482,7 +482,11 @@ async def reject_deposit(
     deposit_id: uuid.UUID, reason: str | None,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
-    result = await db.execute(select(Deposit).where(Deposit.id == deposit_id))
+    # Phase 3: lock the row like approve_deposit does, so a reject can't race a
+    # concurrent approve/auto-approve (both passing the pending check).
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+    )
     deposit = result.scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")

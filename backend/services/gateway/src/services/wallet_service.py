@@ -22,7 +22,7 @@ canonical reference (Deposit → User → tagged TradingAccount, all with
 import logging
 import uuid as uuid_lib
 from pathlib import Path
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 from datetime import datetime
 
@@ -627,6 +627,32 @@ async def handle_oxapay_webhook(
         return
 
     if oxapay_status == "paid":
+        # Phase 3 (OxaPay amount binding): the credited amount is always the
+        # recorded deposit.amount, never a client value. As a tamper check, if
+        # the callback echoes a USD invoice amount that does NOT match our
+        # record, do not auto-credit — route to manual review. (OxaPay only
+        # sends 'paid' on full settlement; underpayment arrives as a different
+        # status and is not credited here.)
+        _cb_amount = None
+        for _k in ("amount", "price_amount", "priceAmount"):
+            if payload.get(_k) is not None:
+                try:
+                    _cb_amount = Decimal(str(payload.get(_k)))
+                    break
+                except (InvalidOperation, ValueError, TypeError):
+                    continue
+        if _cb_amount is not None and abs(_cb_amount - (deposit.amount or Decimal("0"))) > Decimal("0.01"):
+            deposit.status = "manual_review"
+            deposit.rejection_reason = (
+                f"oxapay_amount_mismatch callback={_cb_amount} expected={deposit.amount}"
+            )
+            await db.commit()
+            logger.error(
+                "OxaPay webhook: amount mismatch deposit=%s callback=%s expected=%s → manual_review",
+                order_id, _cb_amount, deposit.amount,
+            )
+            return
+
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
 
