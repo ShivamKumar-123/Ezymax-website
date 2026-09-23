@@ -39,7 +39,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.withdrawal_limits import available_to_withdraw
-from packages.common.src.bonus_service import apply_deposit_bonus
+from packages.common.src.bonus_service import apply_deposit_bonus, outstanding_bonus
 from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
@@ -1477,6 +1477,7 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
         available = available_to_withdraw(
             "main",
             main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
         )
     if available < req.amount:
         if source_kind == "trading":
@@ -1628,6 +1629,7 @@ async def create_manual_withdrawal(
         available = available_to_withdraw(
             "main",
             main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
         )
     if available < amount:
         if source_kind == "trading":

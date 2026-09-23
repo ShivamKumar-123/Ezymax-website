@@ -128,7 +128,12 @@ async def create_onchain_withdrawal(
             free_margin=source_row.free_margin,
         )
     else:
-        available = available_to_withdraw("main", main_wallet_balance=user.main_wallet_balance)
+        from packages.common.src.bonus_service import outstanding_bonus
+        available = available_to_withdraw(
+            "main",
+            main_wallet_balance=user.main_wallet_balance,
+            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
+        )
     if available < amount:
         if source_kind == "trading":
             raise HTTPException(

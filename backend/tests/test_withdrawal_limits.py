@@ -46,6 +46,21 @@ class WithdrawalLimitsTests(unittest.TestCase):
             Decimal("777"),
         )
 
+    def test_main_wallet_excludes_outstanding_bonus(self):
+        # H-MONEY-2: a non-withdrawable bonus can't be cashed out.
+        self.assertEqual(
+            available_to_withdraw("main", main_wallet_balance=Decimal("500"),
+                                  outstanding_bonus=Decimal("120")),
+            Decimal("380"),
+        )
+
+    def test_main_wallet_bonus_never_negative(self):
+        self.assertEqual(
+            available_to_withdraw("main", main_wallet_balance=Decimal("50"),
+                                  outstanding_bonus=Decimal("120")),
+            Decimal("0"),
+        )
+
     def test_none_inputs_safe(self):
         self.assertEqual(available_to_withdraw("trading"), Decimal("0"))
         self.assertEqual(available_to_withdraw("main"), Decimal("0"))

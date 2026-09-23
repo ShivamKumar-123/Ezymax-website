@@ -25,11 +25,18 @@ def available_to_withdraw(
     margin_used=None,
     free_margin=None,
     main_wallet_balance=None,
+    outstanding_bonus=None,
 ) -> Decimal:
-    """Return the amount withdrawable from the given source. See module docstring."""
+    """Return the amount withdrawable from the given source. See module docstring.
+
+    H-MONEY-2: for the main wallet, subtract the user's outstanding (un-released)
+    bonus credit — deposit bonuses are non-withdrawable, so they must not be
+    cashable via a wallet withdrawal even though they were credited to the
+    main-wallet balance."""
     if kind == "trading":
         avail = _d(balance) - _d(margin_used)
         if free_margin is not None:
             avail = min(avail, _d(free_margin))
         return avail if avail > Decimal("0") else Decimal("0")
-    return _d(main_wallet_balance)
+    avail = _d(main_wallet_balance) - _d(outstanding_bonus)
+    return avail if avail > Decimal("0") else Decimal("0")

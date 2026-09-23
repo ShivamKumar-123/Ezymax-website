@@ -17,10 +17,22 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import BonusOffer, Transaction, UserBonus
+
+
+async def outstanding_bonus(db: AsyncSession, user_id) -> Decimal:
+    """H-MONEY-2: total un-released bonus credit for a user (status='active').
+    Subtracted from the main-wallet withdrawable so bonuses can't be cashed out."""
+    total = (await db.execute(
+        select(func.coalesce(func.sum(UserBonus.amount), 0)).where(
+            UserBonus.user_id == user_id,
+            UserBonus.status == "active",
+        )
+    )).scalar()
+    return Decimal(str(total or 0))
 
 
 async def apply_deposit_bonus(db: AsyncSession, user_row, deposit) -> list[tuple[str, Decimal]]:
