@@ -68,7 +68,12 @@ class TradingAccount(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="accounts")
-    positions = relationship("Position", back_populates="account", lazy="selectin")
+    # Phase 3: noload, not selectin. selectin eagerly pulled EVERY position for a
+    # TradingAccount on every account query (a large, usually-unneeded join);
+    # nothing reads account.positions (positions are always queried directly by
+    # account_id), so don't auto-load them. Access returns empty rather than
+    # firing a query.
+    positions = relationship("Position", back_populates="account", lazy="noload")
     account_group = relationship("AccountGroup", lazy="selectin")
 
 
