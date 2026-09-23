@@ -427,6 +427,67 @@ function TradingViewChartInner({
     }
   }, [selectedSymbol]);
 
+  // Re-shift the whole series when the admin changes the spread live.
+  //
+  // The chart draws MID bars shifted to a BID basis by subtracting the current
+  // half-spread (datafeed `toBid`), but that shift is only applied as each bar
+  // is produced — already-drawn history and the forming candle keep the OLD
+  // offset. `ask − bid` is otherwise rock-steady per symbol (the backend
+  // tick-quantises it), so a real jump in the half-spread means an admin
+  // spread edit just landed on /ws/prices. When that happens we force the
+  // datafeed to re-request bars (`resetData`) so the ENTIRE series is re-shifted
+  // with the new offset — no seam between old and new bars, and the last price
+  // tracks the new bid immediately (matching the order panel + P&L, which are
+  // already live off the same tick).
+  useEffect(() => {
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const halfSpreadFrom = (p: { bid: number; ask: number } | undefined): number | null => {
+      if (!p) return null;
+      const hs = (Number(p.ask) - Number(p.bid)) / 2;
+      return Number.isFinite(hs) && hs > 0 ? hs : null;
+    };
+    const inst = useTradingStore
+      .getState()
+      .instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+    const digits = typeof inst?.digits === 'number' ? inst.digits : 5;
+    // Below half a display tick: filters float round-trip jitter, but well
+    // under the ≥½-tick move a real spread change produces.
+    const eps = Math.pow(10, -digits) * 0.25;
+    let last = halfSpreadFrom(useTradingStore.getState().prices[sym]);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetChart = () => {
+      const w = widgetRef.current;
+      if (!w || !readyRef.current) return;
+      try {
+        const chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart?.();
+        // Re-requests getBars for the visible range → toBid re-runs with the
+        // fresh half-spread. The realtime subscribeBars stays connected.
+        chart?.resetData?.();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const unsub = useTradingStore.subscribe((state) => {
+      const hs = halfSpreadFrom(state.prices[sym]);
+      if (hs == null) return;
+      if (last == null) { last = hs; return; }
+      if (Math.abs(hs - last) > eps) {
+        last = hs;
+        // A spread edit is one discrete jump; debounce coalesces any burst
+        // and lets the new bid/ask settle before the (heavier) reset.
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(resetChart, 250);
+      }
+    });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsub();
+    };
+  }, [selectedSymbol]);
+
   // Projected P&L (account currency) if this position were closed at `price`.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const computePnlAt = useCallback((pos: any, price: number): number => {
