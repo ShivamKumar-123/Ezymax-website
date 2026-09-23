@@ -320,42 +320,12 @@ async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
         description=f"Deposit to main wallet - USDT {(deposit.network or '').upper()} (auto)",
     ))
 
-    # Bonus offer application — same shape as oxapay path.
-    bonus_msg = ""
-    applied_bonuses: list[tuple[str, Decimal]] = []
-    now = datetime.utcnow()
-    offers_q = await db.execute(
-        select(BonusOffer).where(
-            BonusOffer.is_active == True,  # noqa: E712
-            BonusOffer.bonus_type.in_(["deposit", "welcome"]),
-            BonusOffer.min_deposit <= deposit.amount,
-        )
+    # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
+    from packages.common.src.bonus_service import apply_deposit_bonus
+    applied_bonuses = await apply_deposit_bonus(db, user, deposit)
+    bonus_msg = "".join(
+        f" + ${float(a):.2f} bonus ({n})" for n, a in applied_bonuses
     )
-    for offer in offers_q.scalars().all():
-        if offer.starts_at and offer.starts_at > now:
-            continue
-        if offer.expires_at and offer.expires_at < now:
-            continue
-        if offer.percentage and offer.percentage > 0:
-            bonus_amount = deposit.amount * offer.percentage / Decimal("100")
-        elif offer.fixed_amount and offer.fixed_amount > 0:
-            bonus_amount = offer.fixed_amount
-        else:
-            continue
-        if offer.max_bonus and bonus_amount > offer.max_bonus:
-            bonus_amount = offer.max_bonus
-
-        user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + bonus_amount
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="bonus",
-            amount=bonus_amount,
-            balance_after=user.main_wallet_balance,
-            description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
-        ))
-        bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
-        applied_bonuses.append((offer.name, bonus_amount))
 
     try:
         await notify.create_notification(
