@@ -1,0 +1,32 @@
+# Phase 3 (root .dockerignore): keep secrets, VCS history and local caches OUT
+# of every image build context. Without this, a `COPY . .` in any service
+# Dockerfile could bake .env files or the full .git history into the image.
+.git
+.gitignore
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/id_rsa*
+
+# Python caches / local venvs
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# Node local installs + build caches (images run a clean install)
+**/node_modules/
+**/.next/
+**/npm-debug.log*
+
+# Editor / OS cruft + logs
+**/.DS_Store
+**/*.log
+**/.idea/
+**/.vscode/
